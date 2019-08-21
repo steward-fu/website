@@ -136,7 +136,8 @@ var my_function =
 'MmGetSystemAddressForMdlSafe MmGetMdlByteCount IoCompleteRequest '    +
 'MmGetMdlVirtualAddress SDL_Init SDL_SetVideoMode SDL_RWFromFile '     +
 'SDL_LoadBMP_RW SDL_UpperBlit SDL_Flip SDL_Delay SDL_FreeSurface '     +
-'SDL_Quit SDL_ShowCursor SDL_BlitSurface SDL_LoadBMP SDL_PollEvent ';
+'SDL_Quit SDL_ShowCursor SDL_BlitSurface SDL_LoadBMP SDL_PollEvent '   +
+'ExitProcess crt_printf ';
 
 this.regexList = [
 {regex: SyntaxHighlighter.regexLib.singleLineCComments, css:'comments'},

@@ -44,63 +44,71 @@
 <div id="content">
 <script type="text/javascript" src="../../../header.js"></script>
 <div id="page">
-<h3>Windows Driver Model &gt;&gt; WDK 7.1 &gt;&gt; C/C++ &gt;&gt; Advanced &gt;&gt; File Operation</h3>
-<p><b>DO_NEITHER_IO用法</b></p>
+<h3>Windows Driver Model &gt;&gt; WDK 7.1 (C/C++) &gt;&gt; Advanced &gt;&gt; File Operation</h3>
+<p><b>IRP用法</b></p>
 <hr size="1">
 <p>
-Github <a href="https://github.com/steward-fu/driver">https://github.com/steward-fu/driver</a><br><br>
+參考資訊：<br>
+1. <a href="https://github.com/steward-fu/wdm">Source Code</a><br><br>
 
-基本上，Microsoft沒有定義DO_NEITHER_IO這個Flag，而Neither I/O的意思就是Neither Buffered Nor Direct I/O，因此，當沒有設定DO_BUFFERED_IO或DO_DIRECT_IO Flag時，就會使用Neither的方式，使用這種方式時，I/O Manager會將User Buffer的指標，透過操作後，傳遞給驅動程式使用，因此，驅動程式可以直接存取User Buffer的資料，所以存取速度可以得到很大的改善，對於有速度要求的驅動程式來說，建議使用Neither的方式，不過，關於User Buffer指標的存取問題上，會遇到更多需要面對的問題，如：指標的有效性以及多次存取的同步問題，因此，在選擇使用上，更需要考量到這些需要額外付出的代價是否值得使用，因為，驅動程式以及User Application雙方都需要很嚴謹的看待這塊共用的Buffer。<br><br>
+基本上，驅動程式(韌體)的基本功能就是當作User Mode Application(軟體)和硬體的溝通橋樑，軟體可以透過很多種方式和驅動程式溝通，而最常用的溝通方式就是把驅動程式當做是一個檔案在操作，軟體可以透過檔案讀寫的方式和驅動程式做資料傳遞的動作，驅動程式最後再把資料輸出到硬體裝置上，而在Windows系統上，可以使用CreateFile(檔案開啟)、ReadFile(讀取檔案)、WriteFile(寫入檔案)、CloseHandle(關閉檔案)等檔案操作的Win32 API，而驅動程式如何跟軟體串接起來呢？驅動程式必須在DriverEntry()設定IRP_MJ_CREATE(<b>CreateFile</b>)、IRP_MJ_READ(<b>ReadFile</b>)、IRP_MJ_WRITE(<b>WriteFile</b>)、IRP_MJ_CLOSE(<b>CloseHandle</b>)的Callback副程式，這樣I/O Manager才會知道如何串起這條溝通管道。<br><br>
 
-Microsoft的說明網頁：<br>
-<a href="https://docs.microsoft.com/en-us/windows-hardware/drivers/kernel/using-neither-buffered-nor-direct-i-o">https://docs.microsoft.com/en-us/windows-hardware/drivers/kernel/using-neither-buffered-nor-direct-i-o</a><br><br>
+<b>基本的步驟如下：</b><br>
+1. 安裝驅動程式時，驅動程式註冊自己的名字、註冊檔案的Callback副程式<br>
+2. 軟體開啟檔案(使用驅動程式的名字(GUID或者Symbolic))，I/O Manager呼叫驅動程式的IRP_MJ_CREATE<br>
+3. 軟體讀寫檔案，I/O Manager呼叫驅動程式的IRP_MJ_READ、IRP_MJ_WRITE<br>
+4. 軟體關閉檔案，I/O Manager呼叫驅動程式的IRP_MJ_CLOSE<br><br>
 
-記憶體指標：
+當然，使用者可能也很好奇，為何軟體不直接跟硬體溝通就好，還要透過一個這麼複雜的驅動程式當作溝通橋樑？當軟體可以直接溝通硬體時，會造成太多衝突，以及優先順序問題，而因為可以直接控制硬體，因此，寫出一個非惡意但具有破壞性的軟體時，是間接可以把一個系統搞壞掉，這也是為何要在Win98之後，架構出一個驅動程式的原因，至少有一個溝通和協調的機制，當然隨著系統的發展，規定就會變成越來嚴格，這也是Microsoft致力於保護系統的最好方式！<br><br>
+
+對應的溝通管道
 </p>
 <table>
 <tr>
-  <th>IRP</th>
-  <th>Buffer</th>
-  <th>Length</th>
+  <th>Win32 API</th>
+  <th>Kernel IRP</th>
 </tr>
 <tr>
+  <td>CreateFile()</td>
+  <td>IRP_MJ_CREATE</td>
+</tr>
+<tr>
+  <td>ReadFile()</td>
   <td>IRP_MJ_READ</td>
-  <td>(Irp)<br>UserBuffer</td>
-  <td>(IrpStack)<br>Parameters.Read.Length</td>
 </tr>
 <tr>
+  <td>WriteFile()</td>
   <td>IRP_MJ_WRITE</td>
-  <td>(Irp)<br>UserBuffer</td>
-  <td>(IrpStack)<br>Parameters.Write.Length</td>
 </tr>
-</table><br>
-
+<tr>
+  <td>CloseHandle()</td>
+  <td>IRP_MJ_CLOSE</td>
+</tr>
+</table>
 <p>
+接著司徒將介紹如何在驅動程式做檔案的基本操作<br><br>
+
 main.c
 </p>
+
 <pre class="brush:cpp">
 #include &lt;wdm.h&gt;
 
-#define DEV_NAME  L"\\Device\\firstFile-Neither"
-#define SYM_NAME  L"\\DosDevices\\firstFile-Neither"
-#define MSG       "File Operation (DO_NEITHER_IO)"
-
-char szBuffer[255]={0};
 PDEVICE_OBJECT gNextDevice=NULL;
-  
+
 NTSTATUS AddDevice(PDRIVER_OBJECT pOurDriver, PDEVICE_OBJECT pPhyDevice)
 {
   PDEVICE_OBJECT pOurDevice=NULL;
   UNICODE_STRING usDeviceName;
   UNICODE_STRING usSymboName;
 
-  DbgPrint(MSG);
-  RtlInitUnicodeString(&amp;usDeviceName, DEV_NAME);
+  RtlInitUnicodeString(&amp;usDeviceName, L"\\Device\\MyDriver");
   IoCreateDevice(pOurDriver, 0, &amp;usDeviceName, FILE_DEVICE_UNKNOWN, 0, FALSE, &amp;pOurDevice);
-  RtlInitUnicodeString(&amp;usSymboName, SYM_NAME);
+  RtlInitUnicodeString(&amp;usSymboName, L"\\DosDevices\\MyDriver");
   IoCreateSymbolicLink(&amp;usSymboName, &amp;usDeviceName);
   gNextDevice = IoAttachDeviceToDeviceStack(pOurDevice, pPhyDevice);
   pOurDevice-&gt;Flags&amp;= ~DO_DEVICE_INITIALIZING;
+  pOurDevice-&gt;Flags|= DO_BUFFERED_IO;
   return STATUS_SUCCESS;
 }
 
@@ -110,11 +118,11 @@ void Unload(PDRIVER_OBJECT pOurDriver)
 
 NTSTATUS IrpPnp(PDEVICE_OBJECT pOurDevice, PIRP pIrp)
 {
-  UNICODE_STRING usSymboName;
   PIO_STACK_LOCATION psk = IoGetCurrentIrpStackLocation(pIrp);
+  UNICODE_STRING usSymboName;
 
   if(psk-&gt;MinorFunction == IRP_MN_REMOVE_DEVICE){
-    RtlInitUnicodeString(&amp;usSymboName, SYM_NAME);
+    RtlInitUnicodeString(&amp;usSymboName, L"\\DosDevices\\MyDriver");
     IoDeleteSymbolicLink(&amp;usSymboName);
     IoDetachDevice(gNextDevice);
     IoDeleteDevice(pOurDevice);
@@ -125,28 +133,16 @@ NTSTATUS IrpPnp(PDEVICE_OBJECT pOurDevice, PIRP pIrp)
 
 NTSTATUS IrpFile(PDEVICE_OBJECT pOurDevice, PIRP pIrp)
 {
-  ULONG Len;
-  PUCHAR pBuf;
   PIO_STACK_LOCATION psk = IoGetCurrentIrpStackLocation(pIrp);
-
   switch(psk-&gt;MajorFunction){
   case IRP_MJ_CREATE:
-    memset(szBuffer, 0, sizeof(szBuffer));
     DbgPrint("IRP_MJ_CREATE\n");
     break;
   case IRP_MJ_READ:
-    pBuf = pIrp-&gt;UserBuffer;
-    Len = psk-&gt;Parameters.Read.Length;
-    memcpy(pBuf, szBuffer, Len);
     DbgPrint("IRP_MJ_READ\n");
-    DbgPrint("Buf: %s, Len: %d\n", szBuffer, Len);
     break;
   case IRP_MJ_WRITE:
-    pBuf = pIrp-&gt;UserBuffer;
-    Len = psk-&gt;Parameters.Write.Length;
-    memcpy(szBuffer, pBuf, Len);
     DbgPrint("IRP_MJ_WRITE\n");
-    DbgPrint("Buf: %s, Len: %d\n", szBuffer, Len);
     break;
   case IRP_MJ_CLOSE:
     DbgPrint("IRP_MJ_CLOSE\n");
@@ -169,15 +165,11 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT pOurDriver, PUNICODE_STRING pOurRegistry)
 }
 </pre>
 <p>
-<b>DriverEntry()</b>設定檔案相關的Callback副程式。<br>
-<b>IrpFile()</b>收到IRP_MJ_WRITE時，Driver複製User Buffer的內容到Driver自己的Buffer(gszBuffer)，當收到IRP_MJ_READ時，將gszBuffer內容又複製到User Buffer，完成暫存的功能，注意此處指標取得的方式。<br>
-<b>IrpPnp()</b>只處理釋放資源的工作。<br>
-<b>Unload()</b>不做任何處理。<br>
-<b>AddDevice()</b>Create Device和Symbolic Link並且設定使用DO_DIRECT_IO的傳輸方式。<br><br>
+<b>IrpFile()</b>處理檔案相關的IRP，目前只列印IRP資訊，其餘不處理。<br><br>
 
-app.cpp
+為了測試驅動程式的檔案讀寫IRP，我們需要一個User Mode Application做測試(app.c)</b>
 </p>
-<pre class="brush:cpp">
+<pre class="brush: cpp">
 #define INITGUID
 #include &lt;windows.h&gt;
 #include &lt;strsafe.h&gt;
@@ -187,36 +179,44 @@ app.cpp
 
 int __cdecl main(int argc, char* argv[])
 {
-  HANDLE hFile = NULL;
-  DWORD dwRet = 0;
-  char szBuffer[255]={0};
+  DWORD dwRet=0;
+  char szBuffer[32]={0};
+  HANDLE hFile=INVALID_HANDLE_VALUE;
 
-  hFile = CreateFile("\\\\.\\firstFile-Neither", GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+  hFile = CreateFile("\\\\.\\MyDriver", GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
   if(hFile == INVALID_HANDLE_VALUE){
-    printf("failed to open firstFile driver\n");
-    return 1;
+    printf("failed to open mydriver\n");
+    return -1;
   }
-
-  strncpy(szBuffer, "Testing Only", sizeof(szBuffer));
-  WriteFile(hFile, szBuffer, strlen(szBuffer) + 1, &amp;dwRet, NULL);
-  printf("WR: %s\n", szBuffer);
-
-  memset(szBuffer, 0, sizeof(szBuffer));
+  WriteFile(hFile, szBuffer, sizeof(szBuffer), &amp;dwRet, NULL);
   ReadFile(hFile, szBuffer, sizeof(szBuffer), &amp;dwRet, NULL);
-  printf("RD: %s\n", szBuffer);
   CloseHandle(hFile);
   return 0;
 }
 </pre><br>
 
 <p>
-結果<br>
-<img src="cpp_fops-neither/1.jpg" class="maxSize"><br>
-<img src="cpp_fops-neither/2.jpg" class="maxSize">
+sources
+</p>
+
+<pre class="brush:cpp">
+TARGETNAME=app
+TARGETTYPE=PROGRAM
+TARGETPATH=obj
+UMTYPE=console
+UMBASE=0x0400000
+SOURCES=app.c
+USE_MSVCRT=1
+</pre><br>
+
+<p>
+一樣使用WDK編譯，接著執行該User Mode Application就可以看到結果<br>
+<img src="cpp_file/1.jpg" class="maxSize"><br>
+<img src="cpp_file/2.jpg" class="maxSize">
 </p>
 
 <p>
-<br><a href="../../../driver.htm">返回上一頁</a>
+<a href="../../../driver.htm">返回上一頁</a>
 </p>
 
 </div>
