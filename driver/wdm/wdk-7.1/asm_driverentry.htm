@@ -44,16 +44,16 @@
 <div id="content">
 <script type="text/javascript" src="../../../header.js"></script>
 <div id="page">
-<h3>Windows Driver Model &gt;&gt; WDK 7.1 (C/C++)</h3>
+<h3>Windows Driver Model &gt;&gt; WDK 7.1 (Assembly)</h3>
 <p><b>DriverEntry()</b></p>
 <hr size="1">
 <p>
-C/C++程式的進入點是main()，而對於WDM而言，它的進入點則是DriverEntry()，Microsoft規定DriverEntry()必須使用C語言方式Export，若是使用C++檔案(.cpp)撰寫，則必須使用<b>export "C"</b>關鍵字做修飾輸出，否則系統將無法正確載入驅動程式。<br><br>
+C/C++程式的進入點是main()，而對於WDM而言，它的進入點則是DriverEntry()，如果沒有export DriverEntry()，系統將無法正確載入驅動程式。<br><br>
 
 DriverEntry()定義如下
 ：</p>
 <pre class="brush:cpp">
-NTSTATUS DriverEntry(PDRIVER_OBJECT, PUNICODE_STRING);
+DriverEntry proc :PDRIVER_OBJECT, :PUNICODE_STRING
 </pre><br>
 
 <p>
@@ -78,20 +78,20 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT, PUNICODE_STRING);
 <p>
 範例： 
 </p>
-
 <pre class="brush:cpp">
-NTSTATUS DriverEntry(PDRIVER_OBJECT pOurDriver, PUNICODE_STRING pOurRegistry)
-{
-  pOurDriver-&gt;MajorFunction[IRP_MJ_PNP] = IrpPnp;
-  pOurDriver-&gt;MajorFunction[IRP_MJ_CREATE] =
-  pOurDriver-&gt;MajorFunction[IRP_MJ_CLOSE] =
-  pOurDriver-&gt;MajorFunction[IRP_MJ_READ] = 
-  pOurDriver-&gt;MajorFunction[IRP_MJ_WRITE] = IrpFile;
-  pOurDriver-&gt;DriverUnload = DriverUnload;
-  pOurDriver-&gt;DriverExtension-&gt;AddDevice = AddDevice;
-
-  return STATUS_SUCCESS;
-}
+DriverEntry proc pOurDriver:PDRIVER_OBJECT, pOurRegistry:PUNICODE_STRING
+  mov eax, pOurDriver
+  mov (DRIVER_OBJECT PTR [eax]).MajorFunction[IRP_MJ_PNP    * (sizeof PVOID)], offset IrpPnp
+  mov (DRIVER_OBJECT PTR [eax]).MajorFunction[IRP_MJ_CREATE * (sizeof PVOID)], offset IrpFile
+  mov (DRIVER_OBJECT PTR [eax]).MajorFunction[IRP_MJ_CLOSE  * (sizeof PVOID)], offset IrpFile
+  mov (DRIVER_OBJECT PTR [eax]).MajorFunction[IRP_MJ_WRITE  * (sizeof PVOID)], offset IrpFile
+  mov (DRIVER_OBJECT PTR [eax]).MajorFunction[IRP_MJ_READ   * (sizeof PVOID)], offset IrpFile
+  mov (DRIVER_OBJECT PTR [eax]).DriverUnload, offset Unload
+  mov eax, (DRIVER_OBJECT PTR [eax]).DriverExtension
+  mov (DRIVER_EXTENSION PTR [eax]).AddDevice, AddDevice
+  mov eax, STATUS_SUCCESS
+  ret
+DriverEntry endp
 </pre>
 
 <p>

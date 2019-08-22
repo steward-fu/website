@@ -49,7 +49,8 @@
 <hr size="1">
 <p>
 參考資訊：<br>
-1. <a href="https://github.com/steward-fu/wdm">Source Code</a><br><br>
+1. <a href="http://four-f.narod.ru/">Four-F</a><br>
+2. <a href="https://github.com/steward-fu/wdm">Source Code</a><br><br>
 
 使用Assembly語言寫驅動程式是一件相當挑戰的事情，畢竟討論資源相對稀少，加上Assembly語言的可讀性比C/C++差以及Microsoft提供的Include及範例程式都是以C/C++語言為主，因此，比較少聽過有人使用Assembly語言開發WDM驅動程式，雖然困難重重，不過若能排除這些困難，自己重頭慢慢建立一支組合語言WDM驅動程式，細心品味Assembly語言的優雅，那將是一件意義非凡的事情。Microsoft Assembly語言經過多次改進，目前已經可以支援高階語法，如：If、While、Struct等語法，已經越來越高階，所以不該再把Assembly語言，想像是落後的語言，想對每個細節的瞭解，Assembly語言還是最佳的選擇，司徒接著就介紹如何使用Assembly語言寫一支<b>Hello, world!</b>的WDM驅動程式，畢竟<b>Hello, world!</b>還是最經典以及簡單的入門首選。<br><br>
 
@@ -67,8 +68,11 @@ include c:\masm32\include\w2k\ntddkbd.inc
 include c:\masm32\Macros\Strings.mac
 includelib c:\masm32\lib\wxp\i386\ntoskrnl.lib
 
+public DriverEntry
+
 .const
 DEV_NAME word "\","D","e","v","i","c","e","\","M","y","D","r","i","v","e","r",0
+MSG      byte "Hello, world!",0
 
 .data
 pNextDevice PDEVICE_OBJECT 0
@@ -78,7 +82,7 @@ AddDevice proc pOurDriver:PDRIVER_OBJECT, pPhyDevice:PDEVICE_OBJECT
   local pOurDevice:PDEVICE_OBJECT
   local suDevName:UNICODE_STRING
 
-  invoke DbgPrint, $CTA0("Hello, world")
+  invoke DbgPrint, offset MSG
   invoke RtlInitUnicodeString, addr suDevName, offset DEV_NAME
   invoke IoCreateDevice, pOurDriver, 0, addr suDevName, FILE_DEVICE_UNKNOWN, 0, FALSE, addr pOurDevice
   invoke IoAttachDeviceToDeviceStack, pOurDevice, pPhyDevice
@@ -197,30 +201,27 @@ DESCRIPTION="MyDriver"
 <p>
 INF內容也是很制式的，我們先知道如何使用就可以，司徒之後會教導大家如何寫INF檔案。<br><br>
 
-編譯程式：<br>
-1. 開始 &gt; 程式集 &gt; Windows Driver Kits &gt; WDK xxxx.xxxx &gt; Build Environments &gt; Windows XP &gt; x86 Checked Build Environment<br>
-2. 開啟Command Line之後，請使用cd命令移到你的目前資料夾<br>
-3. 接著輸入編譯指令：
+編譯程式：
 </p>
 <pre>
-ml /c /coff /Cp "main.asm"
-link /MAP /debug /debugtype:cv /nologo /driver:WDM /base:0x10000 /align:64 /out:"main.sys" /subsystem:native "main.obj"
+C:\masm32\bin\ml /c /coff /Cp "main.asm"
+C:\masm32\bin\link /MAP /debug /debugtype:cv /nologo /driver:WDM /base:0x10000 /align:64 /out:"main.sys" /subsystem:native "main.obj"
 </pre><br>
 
 <p>
 安裝程式：<br>
 在開始安裝驅動程式之前，我們需要先下載除錯工具，讓驅動程式的Debug訊息可以顯示在除錯工具上面，目前在Kernel Mode以及User Mode上，最佳的Debug輸出訊息工具是DbgView，該公司目前已經被Microsoft併購，所以可以從Microsoft網站下載，下載完後執行DbgView並將<b>Capture &gt; Capture Kernel</b>選項打勾，接著<b>重啟</b>DbgView<br>
-<img src="cpp_hello/1.jpg" class="maxSize"><br><br>
-
-對於驅動程式的安裝工具，司徒目前先使用NuMega公司製作的安裝工具EzDriverInstaller，請將main.sys和main.inf放在同一個目錄並執行EzDriverInstaller，選擇<b>File &gt; Open...</b>(開啟main.inf檔案)，接著按<b>Add New Device</b>就可以在DbgView上面看到輸出訊息<br>
-<img src="cpp_hello/2.jpg" class="maxSize"><br>
 <img src="asm_hello/1.jpg" class="maxSize"><br><br>
 
+對於驅動程式的安裝工具，司徒目前先使用NuMega公司製作的安裝工具EzDriverInstaller，請將main.sys和main.inf放在同一個目錄並執行EzDriverInstaller，選擇<b>File &gt; Open...</b>(開啟main.inf檔案)，接著按<b>Add New Device</b>就可以在DbgView上面看到輸出訊息<br>
+<img src="asm_hello/2.jpg" class="maxSize"><br>
+<img src="asm_hello/3.jpg" class="maxSize"><br><br>
+
 Device Manager<br>
-<img src="cpp_hello/4.jpg" class="maxSize"><br><br>
+<img src="asm_hello/4.jpg" class="maxSize"><br><br>
 
 Device<br>
-<img src="cpp_hello/5.jpg" class="maxSize">
+<img src="asm_hello/5.jpg" class="maxSize">
 </p>
 
 <p>

@@ -44,14 +44,15 @@
 <div id="content">
 <script type="text/javascript" src="../../../header.js"></script>
 <div id="page">
-<h3>Windows Driver Model &gt;&gt; WDK 7.1 (C/C++) &gt;&gt; Advanced &gt;&gt; File Operation</h3>
-<p><b>DO_DIRECT_IO(DMA)用法</b></p>
+<h3>Windows Driver Model &gt;&gt; WDK 7.1 (C/C++) &gt;&gt; File</h3>
+<p><b>DO_DIRECT_IO(DMA)</b></p>
 <hr size="1">
 <p>
-Github <a href="https://github.com/steward-fu/driver">https://github.com/steward-fu/driver</a><br><br>
+參考資訊：<br>
+1. <a href="https://github.com/steward-fu/wdm">Source Code</a><br><br>
 
-DO_DIRECT_IO的作法就是操作Mapping Buffer的概念，I/O Manager會把User Buffer重新Mapping成一塊Driver可以操作的MDL記憶體，比較值得注意的是，如果有涉及到使用DMA的方式，則比須使用特殊的API取得記憶體指標(相較於PIO方式)，這樣的流程可以參考如下圖表說明(IRP_MJ_READ)：<br>
-<img src="cpp_file-direct-dma/3.jpg" class="maxSize"><br><br>
+由於我們練習的驅動程式位於上層，本身並沒有觸及過多DMA的細節操作，因此，DO_DIRECT_IO的DMA作法會跟PIO一樣，唯一的區別就是取得DMA位址的方式，必須使用特殊的API取得，這篇練習在於說明有這樣的記憶體差別，當使用者實際觸及DMA驅動程式時，必須詳細閱讀DMA的操作方式，而關於DO_DIRECT_IO(DMA)的流程，可以參考如下圖表說明(IRP_MJ_READ)：<br>
+<img src="asm_file-direct-dma/1.jpg" class="maxSize"><br><br>
 
 記憶體指標：
 </p>
@@ -76,16 +77,14 @@ DO_DIRECT_IO的作法就是操作Mapping Buffer的概念，I/O Manager會把User
 <p>
 main.c
 </p>
-
 <pre class="brush:cpp">
 #include &lt;wdm.h&gt;
 
-#define DEV_NAME  L"\\Device\\firstFile-Direct-DMA"
-#define SYM_NAME  L"\\DosDevices\\firstFile-Direct-DMA"
-#define MSG       "File Operation (DO_DIRECT_IO DMA)"
+#define DEV_NAME L"\\Device\\MyDriver"
+#define SYM_NAME L"\\DosDevices\\MyDriver"
 
 char szBuffer[255]={0};
-PDEVICE_OBJECT gNextDevice=NULL;
+PDEVICE_OBJECT pNextDevice=NULL;
 
 NTSTATUS AddDevice(PDRIVER_OBJECT pOurDriver, PDEVICE_OBJECT pPhyDevice)
 {
@@ -93,12 +92,11 @@ NTSTATUS AddDevice(PDRIVER_OBJECT pOurDriver, PDEVICE_OBJECT pPhyDevice)
   UNICODE_STRING usDeviceName;
   UNICODE_STRING usSymboName;
 
-  DbgPrint(MSG);
   RtlInitUnicodeString(&amp;usDeviceName, DEV_NAME);
   IoCreateDevice(pOurDriver, 0, &amp;usDeviceName, FILE_DEVICE_UNKNOWN, 0, FALSE, &amp;pOurDevice);
   RtlInitUnicodeString(&amp;usSymboName, SYM_NAME);
   IoCreateSymbolicLink(&amp;usSymboName, &amp;usDeviceName);
-  gNextDevice = IoAttachDeviceToDeviceStack(pOurDevice, pPhyDevice);
+  pNextDevice = IoAttachDeviceToDeviceStack(pOurDevice, pPhyDevice);
   pOurDevice-&gt;Flags&amp;= ~DO_DEVICE_INITIALIZING;
   pOurDevice-&gt;Flags|= DO_DIRECT_IO;
   return STATUS_SUCCESS;
@@ -116,11 +114,11 @@ NTSTATUS IrpPnp(PDEVICE_OBJECT pOurDevice, PIRP pIrp)
   if(psk-&gt;MinorFunction == IRP_MN_REMOVE_DEVICE){
     RtlInitUnicodeString(&amp;usSymboName, SYM_NAME);
     IoDeleteSymbolicLink(&amp;usSymboName);
-    IoDetachDevice(gNextDevice);
+    IoDetachDevice(pNextDevice);
     IoDeleteDevice(pOurDevice);
   }
   IoSkipCurrentIrpStackLocation(pIrp);
-  return IoCallDriver(gNextDevice, pIrp);
+  return IoCallDriver(pNextDevice, pIrp);
 }
 
 NTSTATUS IrpFile(PDEVICE_OBJECT pOurDevice, PIRP pIrp)
@@ -132,24 +130,23 @@ NTSTATUS IrpFile(PDEVICE_OBJECT pOurDevice, PIRP pIrp)
   switch(psk-&gt;MajorFunction){
   case IRP_MJ_CREATE:
     memset(szBuffer, 0, sizeof(szBuffer));
-    DbgPrint("IRP_MJ_CREATE\n");
+    DbgPrint("IRP_MJ_CREATE");
     break;
   case IRP_MJ_READ:
     pBuf = MmGetMdlVirtualAddress(pIrp-&gt;MdlAddress);
     Len = MmGetMdlByteCount(pIrp-&gt;MdlAddress);
     memcpy(pBuf, szBuffer, Len);
-    DbgPrint("IRP_MJ_READ\n");
-    DbgPrint("Buf: %s, Len: %d\n", szBuffer, Len);
+    DbgPrint("IRP_MJ_READ");
     break;
   case IRP_MJ_WRITE:
     pBuf = MmGetMdlVirtualAddress(pIrp-&gt;MdlAddress);
     Len = MmGetMdlByteCount(pIrp-&gt;MdlAddress);
     memcpy(szBuffer, pBuf, Len);
-    DbgPrint("IRP_MJ_WRITE\n");
-    DbgPrint("Buf: %s, Len: %d\n", szBuffer, Len);
+    DbgPrint("IRP_MJ_WRITE");
+    DbgPrint("Buffer: %s, Length: %d", szBuffer, Len);
     break;
   case IRP_MJ_CLOSE:
-    DbgPrint("IRP_MJ_CLOSE\n");
+    DbgPrint("IRP_MJ_CLOSE");
     break;
   }
   IoCompleteRequest(pIrp, IO_NO_INCREMENT);
@@ -169,11 +166,7 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT pOurDriver, PUNICODE_STRING pOurRegistry)
 }
 </pre>
 <p>
-<b>DriverEntry()</b>設定檔案相關的Callback副程式。<br>
-<b>IrpFile()</b>收到IRP_MJ_WRITE時，Driver複製User Buffer的內容到Driver自己的Buffer(gszBuffer)，當收到IRP_MJ_READ時，將gszBuffer內容又複製到User Buffer，完成暫存的功能，注意此處指標取得的方式跟DO_BUFFERED_IO有所不同。<br>
-<b>IrpPnp()</b>只處理釋放資源的工作。<br>
-<b>Unload()</b>不做任何處理。<br>
-<b>AddDevice()</b>Create Device和Symbolic Link並且設定使用DO_DIRECT_IO的傳輸方式。<br><br>
+<b>IrpFile()</b>收到IRP_MJ_WRITE時，Driver複製User Buffer的內容到szBuffer，而收到IRP_MJ_READ時，將szBuffer內容又複製回User Buffer，完成暫存的功能，IoStatus.Information的數值就是ReadFile()或WriteFile()完成的長度。<br><br>
 
 app.cpp
 </p>
@@ -189,20 +182,21 @@ int __cdecl main(int argc, char* argv[])
 {
   HANDLE hFile = NULL;
   DWORD dwRet = 0;
-  char pucBuffer[255]={0};
+  char szBuffer[255]={0};
 
-  hFile = CreateFile("\\\\.\\firstFile-Direct-DMA", GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
-  if (hFile == INVALID_HANDLE_VALUE) {
-    printf("failed to open driver\n");
+  hFile = CreateFile("\\\\.\\MyDriver", GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+  if(hFile == INVALID_HANDLE_VALUE){
+    printf("failed to open mydriver");
     return 1;
   }
 
-  strncpy(pucBuffer, "Testing Only", sizeof(pucBuffer));
-  WriteFile(hFile, pucBuffer, strlen(pucBuffer) + 1, &amp;dwRet, NULL);
-  printf("WR: %s\n", pucBuffer);
+  strncpy(szBuffer, "I am error", sizeof(szBuffer));
+  WriteFile(hFile, szBuffer, strlen(szBuffer) + 1, &amp;dwRet, NULL);
+  printf("WR: %s\n", szBuffer);
 
-  ReadFile(hFile, pucBuffer, sizeof(pucBuffer), &amp;dwRet, NULL);
-  printf("RD: %s\n", pucBuffer);
+  memset(szBuffer, 0, sizeof(szBuffer));
+  ReadFile(hFile, szBuffer, sizeof(szBuffer), &amp;dwRet, NULL);
+  printf("RD: %s\n", szBuffer);
   CloseHandle(hFile);
   return 0;
 }
@@ -210,8 +204,8 @@ int __cdecl main(int argc, char* argv[])
 
 <p>
 結果<br>
-<img src="cpp_file-direct-dma/1.jpg" class="maxSize"><br>
-<img src="cpp_file-direct-dma/2.jpg" class="maxSize">
+<img src="asm_file-buffer/2.jpg" class="maxSize"><br>
+<img src="asm_file-buffer/3.jpg" class="maxSize">
 </p>
 
 <p>

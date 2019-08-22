@@ -44,7 +44,7 @@
 <div id="content">
 <script type="text/javascript" src="../../../header.js"></script>
 <div id="page">
-<h3>Windows Driver Model &gt;&gt; WDK 7.1 (C/C++)</h3>
+<h3>Windows Driver Model &gt;&gt; WDK 7.1 (Assembly)</h3>
 <p><b>AddDevice()</b></p>
 <hr size="1">
 <p>
@@ -52,7 +52,7 @@
 
 AddDevice()副程式定義如下：</p>
 <pre class="brush:cpp">
-NTSTATUS AddDevice(PDRIVER_OBJECT, PDEVICE_OBJECT);
+AddDevice proc :PDRIVER_OBJECT, :PDEVICE_OBJECT
 </pre><br>
 
 <p>
@@ -66,28 +66,34 @@ NTSTATUS AddDevice(PDRIVER_OBJECT, PDEVICE_OBJECT);
 </p>
 
 <pre class="brush:cpp">
-PDEVICE_OBJECT gNextDevice=NULL;
+DEV_NAME word "\","D","e","v","i","c","e","\","M","y","D","r","i","v","e","r",0
+SYM_NAME word "\","D","o","s","D","e","v","i","c","e","s","\","M","y","D","r","i","v","e","r",0
 
-NTSTATUS AddDevice(PDRIVER_OBJECT pOurDriver, PDEVICE_OBJECT pPhyDevice)
-{
-  PDEVICE_OBJECT pOurDevice;
-  UNICODE_STRING usDeviceName;
-  UNICODE_STRING usSymboName;
+AddDevice proc pOurDriver:PDRIVER_OBJECT, pPhyDevice:PDEVICE_OBJECT
+  local pOurDevice:PDEVICE_OBJECT
+  local suDevName:UNICODE_STRING
+  local szSymName:UNICODE_STRING
 
-  // Step 1
-  RtlInitUnicodeString(&amp;usDeviceName, L"\\Device\\MyDriver");
-  RtlInitUnicodeString(&amp;usSymboName, L"\\DosDevices\\MyDriver");
-  IoCreateDevice(pDrvObj, 0, &amp;usDeviceName, FILE_DEVICE_UNKNOWN, 0, FALSE, &amp;pOurDevice);
-  IoCreateSymbolicLink(&amp;usSymboName, &amp;usDeviceName);
-
-  // Step 2
-  gNextDevice = IoAttachDeviceToDeviceStack(pOurDevice, pPhyDevice);
-
-  // Step 3
-  pOurDevice-&gt;Flags&amp;= ~DO_DEVICE_INITIALIZING;
-  pOurDevice-&gt;Flags|= DO_BUFFERED_IO;
-  return STATUS_SUCCESS;
-}
+  ;// Step 1   
+  invoke RtlInitUnicodeString, addr suDevName, offset DEV_NAME
+  invoke RtlInitUnicodeString, addr szSymName, offset SYM_NAME
+  invoke IoCreateDevice, pOurDriver, sizeof OurDeviceExtension, addr suDevName, FILE_DEVICE_UNKNOWN, 0, FALSE, addr pOurDevice
+  invoke IoCreateSymbolicLink, addr szSymName, addr suDevName
+  
+  ;// Step 2
+  invoke IoAttachDeviceToDeviceStack, pOurDevice, pPhyDevice
+  push eax
+  mov eax, pOurDevice
+  mov eax, (DEVICE_OBJECT PTR [eax]).DeviceExtension
+  pop (OurDeviceExtension PTR [eax]).pNextDevice
+    
+  ;// Step 3
+  mov eax, pOurDevice
+  or (DEVICE_OBJECT PTR [eax]).Flags, DO_BUFFERED_IO
+  and (DEVICE_OBJECT PTR [eax]).Flags, not DO_DEVICE_INITIALIZING
+  mov eax, STATUS_SUCCESS
+  ret
+AddDevice endp
 </pre>
 
 <p>

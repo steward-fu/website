@@ -44,16 +44,17 @@
 <div id="content">
 <script type="text/javascript" src="../../../header.js"></script>
 <div id="page">
-<h3>Windows Driver Model &gt;&gt; WDK 7.1 &gt;&gt; C/C++ &gt;&gt; Advanced &gt;&gt; File Operation</h3>
-<p><b>DO_BUFFERED_IO用法</b></p>
+<h3>Windows Driver Model &gt;&gt; WDK 7.1 &gt;&gt; C/C++ &gt;&gt; File</h3>
+<p><b>DO_BUFFERED_IO</b></p>
 <hr size="1">
 <p>
-Github <a href="https://github.com/steward-fu/driver">https://github.com/steward-fu/driver</a><br><br>
+參考資訊：<br>
+1. <a href="https://github.com/steward-fu/wdm">Source Code</a><br><br>
 
 DO_BUFFERED_IO的處理手法就是I/O Manager會在Kernel配置一塊跟User Buffer一樣大小的記憶體，Driver只能對該配置的記憶體做讀寫的操作，而讀寫的操作都會同步回User Buffer，也因為結果都需要整塊複製回User Buffer，因此，DO_BUFFERED_IO的方式會消耗比較大的資源，速度也比較慢。<br><br>
 
 參考如下微軟的圖表說明(IRP_MJ_READ)：<br>
-<img src="cpp_file-buffer/3.jpg" class="maxSize"><br><br>
+<img src="asm_file-buffer/1.jpg" class="maxSize"><br><br>
 
 記憶體指標：
 </p>
@@ -80,16 +81,14 @@ DO_BUFFERED_IO的處理手法就是I/O Manager會在Kernel配置一塊跟User Bu
 
 main.c
 </p>
-
 <pre class="brush:cpp">
 #include &lt;wdm.h&gt;
 
-#define DEV_NAME    L"\\Device\\firstFile-Buffer"
-#define SYM_NAME    L"\\DosDevices\\firstFile-Buffer"
-#define MSG         "File Operation (DO_BUFFERED_IO) !"
+#define DEV_NAME L"\\Device\\MyDriver"
+#define SYM_NAME L"\\DosDevices\\MyDriver"
 
-char gszBuffer[255]={0};
-PDEVICE_OBJECT gNextDevice=NULL;
+char szBuffer[255]={0};
+PDEVICE_OBJECT pNextDevice=NULL;
 
 NTSTATUS AddDevice(PDRIVER_OBJECT pOurDriver, PDEVICE_OBJECT pPhyDevice)
 {
@@ -97,12 +96,11 @@ NTSTATUS AddDevice(PDRIVER_OBJECT pOurDriver, PDEVICE_OBJECT pPhyDevice)
   UNICODE_STRING usDeviceName;
   UNICODE_STRING usSymboName;
 
-  DbgPrint(MSG);
   RtlInitUnicodeString(&amp;usDeviceName, DEV_NAME);
   IoCreateDevice(pOurDriver, 0, &amp;usDeviceName, FILE_DEVICE_UNKNOWN, 0, FALSE, &amp;pOurDevice);
   RtlInitUnicodeString(&amp;usSymboName, SYM_NAME);
   IoCreateSymbolicLink(&amp;usSymboName, &amp;usDeviceName);
-  gNextDevice = IoAttachDeviceToDeviceStack(pOurDevice, pPhyDevice);
+  pNextDevice = IoAttachDeviceToDeviceStack(pOurDevice, pPhyDevice);
   pOurDevice-&gt;Flags&amp;= ~DO_DEVICE_INITIALIZING;
   pOurDevice-&gt;Flags|= DO_BUFFERED_IO;
   return STATUS_SUCCESS;
@@ -120,11 +118,11 @@ NTSTATUS IrpPnp(PDEVICE_OBJECT pOurDevice, PIRP pIrp)
   if(psk-&gt;MinorFunction == IRP_MN_REMOVE_DEVICE){
     RtlInitUnicodeString(&amp;usSymboName, SYM_NAME);
     IoDeleteSymbolicLink(&amp;usSymboName);
-    IoDetachDevice(gNextDevice);
+    IoDetachDevice(pNextDevice);
     IoDeleteDevice(pOurDevice);
   }
   IoSkipCurrentIrpStackLocation(pIrp);
-  return IoCallDriver(gNextDevice, pIrp);
+  return IoCallDriver(pNextDevice, pIrp);
 }
 
 NTSTATUS IrpFile(PDEVICE_OBJECT pOurDevice, PIRP pIrp)
@@ -133,24 +131,24 @@ NTSTATUS IrpFile(PDEVICE_OBJECT pOurDevice, PIRP pIrp)
 
   switch(psk-&gt;MajorFunction){
   case IRP_MJ_CREATE:
-    memset(gszBuffer, 0, sizeof(gszBuffer));
-    DbgPrint("IRP_MJ_CREATE\n");
+    memset(szBuffer, 0, sizeof(szBuffer));
+    DbgPrint("IRP_MJ_CREATE");
     break;
   case IRP_MJ_READ:
-    strcpy(pIrp-&gt;AssociatedIrp.SystemBuffer, gszBuffer);
-    DbgPrint("IRP_MJ_READ\n");
+    strcpy(pIrp-&gt;AssociatedIrp.SystemBuffer, szBuffer);
+    DbgPrint("IRP_MJ_READ");
     pIrp-&gt;IoStatus.Status = STATUS_SUCCESS;
-    pIrp-&gt;IoStatus.Information = strlen(gszBuffer);
+    pIrp-&gt;IoStatus.Information = strlen(szBuffer);
     break;
   case IRP_MJ_WRITE:
-    strcpy(gszBuffer, pIrp-&gt;AssociatedIrp.SystemBuffer);
-    DbgPrint("IRP_MJ_WRITE\n");
-    DbgPrint("Buffer: %s\n", gszBuffer);
+    strcpy(szBuffer, pIrp-&gt;AssociatedIrp.SystemBuffer);
+    DbgPrint("IRP_MJ_WRITE");
+    DbgPrint("Buffer: %s, Length: %d", szBuffer, psk-&gt;Parameters.Write.Length);
     pIrp-&gt;IoStatus.Status = STATUS_SUCCESS;
-    pIrp-&gt;IoStatus.Information = strlen(gszBuffer);
+    pIrp-&gt;IoStatus.Information = strlen(szBuffer);
     break;
   case IRP_MJ_CLOSE:
-    DbgPrint("IRP_MJ_CLOSE\n");
+    DbgPrint("IRP_MJ_CLOSE");
     break;
   }
   IoCompleteRequest(pIrp, IO_NO_INCREMENT);
@@ -170,15 +168,10 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT pOurDriver, PUNICODE_STRING pOurRegistry)
 }
 </pre>
 <p>
-<b>DriverEntry()</b>設定檔案相關的Callback副程式。<br>
-<b>IrpFile()</b>收到IRP_MJ_WRITE時，Driver複製User Buffer的內容到Driver自己的Buffer(gszBuffer)，當收到IRP_MJ_READ時，將gszBuffer內容又複製到User Buffer，完成暫存的功能，IoStatus.Information的數值就是ReadFile()或WriteFile()完成的長度。<br>
-<b>IrpPnp()</b>只處理釋放資源的工作。<br>
-<b>Unload()</b>不做任何處理。<br>
-<b>AddDevice()</b>Create Device和Symbolic Link並且設定使用DO_BUFFERED_IO的傳輸方式。<br><br>
+<b>IrpFile()</b>收到IRP_MJ_WRITE時，Driver複製User Buffer的內容到szBuffer，而收到IRP_MJ_READ時，將szBuffer內容又複製回User Buffer，完成暫存的功能，IoStatus.Information的數值就是ReadFile()或WriteFile()完成的長度。<br><br>
 
 app.cpp
 </p>
-
 <pre class="brush:cpp">
 #define INITGUID
 #include &lt;windows.h&gt;
@@ -193,13 +186,13 @@ int __cdecl main(int argc, char* argv[])
   DWORD dwRet = 0;
   char szBuffer[255]={0};
 
-  hFile = CreateFile("\\\\.\\firstFile-Buffer", GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+  hFile = CreateFile("\\\\.\\MyDriver", GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
   if(hFile == INVALID_HANDLE_VALUE){
-    printf("failed to open firstFile driver\n");
+    printf("failed to open mydriver");
     return 1;
   }
 
-  strncpy(szBuffer, "Testing Only", sizeof(szBuffer));
+  strncpy(szBuffer, "I am error", sizeof(szBuffer));
   WriteFile(hFile, szBuffer, strlen(szBuffer) + 1, &amp;dwRet, NULL);
   printf("WR: %s\n", szBuffer);
 
@@ -213,8 +206,8 @@ int __cdecl main(int argc, char* argv[])
 
 <p>
 結果<br>
-<img src="cpp_file-buffer/1.jpg" class="maxSize"><br>
-<img src="cpp_file-buffer/2.jpg" class="maxSize">
+<img src="asm_file-buffer/2.jpg" class="maxSize"><br>
+<img src="asm_file-buffer/3.jpg" class="maxSize">
 </p>
 
 <p>

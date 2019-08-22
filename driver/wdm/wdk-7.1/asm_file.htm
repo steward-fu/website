@@ -44,12 +44,13 @@
 <div id="content">
 <script type="text/javascript" src="../../../header.js"></script>
 <div id="page">
-<h3>Windows Driver Model &gt;&gt; WDK 7.1 &gt;&gt; MASM32 &gt;&gt; Advanced</h3>
-<p><b>IRP用法</b></p>
+<h3>Windows Driver Model &gt;&gt; WDK 7.1 (Assembly) &gt;&gt; File</h3>
+<p><b>IRP</b></p>
 <hr size="1">
 <p>
 參考資訊：<br>
-1. <a href="https://github.com/steward-fu/wdm">Source Code</a><br><br>
+1. <a href="http://four-f.narod.ru/">Four-F</a><br>
+2. <a href="https://github.com/steward-fu/wdm">Source Code</a><br><br>
 
 基本上，驅動程式(韌體)的基本功能就是當作User Mode Application(軟體)和硬體的溝通橋樑，軟體可以透過很多種方式和驅動程式溝通，而最常用的溝通方式就是把驅動程式當做是一個檔案在操作，軟體可以透過檔案讀寫的方式和驅動程式做資料傳遞的動作，驅動程式最後再把資料輸出到硬體裝置上，而在Windows系統上，可以使用CreateFile(檔案開啟)、ReadFile(讀取檔案)、WriteFile(寫入檔案)、CloseHandle(關閉檔案)等檔案操作的Win32 API，而驅動程式如何跟軟體串接起來呢？驅動程式必須在DriverEntry()設定IRP_MJ_CREATE(<b>CreateFile</b>)、IRP_MJ_READ(<b>ReadFile</b>)、IRP_MJ_WRITE(<b>WriteFile</b>)、IRP_MJ_CLOSE(<b>CloseHandle</b>)的Callback副程式，這樣I/O Manager才會知道如何串起這條溝通管道。<br><br>
 
@@ -263,19 +264,16 @@ end start
 
 <p>
 編譯App：<br>
-1. 開始 &gt; 程式集 &gt; Windows Driver Kits &gt; WDK xxxx.xxxx &gt; Build Environments &gt; Windows XP &gt; x86 Checked Build Environment<br>
-2. 開啟Command Line之後，請使用cd命令移到你的目前資料夾<br>
-3. 接著輸入編譯指令：
 </p>
 <pre>
-ml /c /coff /Cp /Zi /Zd "app.asm"
-link /SUBSYSTEM:CONSOLE /DEBUG /VERSION:4.0 /OUT:"app.exe" "app.obj"
+C:\masm32\bin\ml /c /coff /Cp "main.asm"
+C:\masm32\bin\link /MAP /debug /debugtype:cv /nologo /driver:WDM /base:0x10000 /align:64 /out:"main.sys" /subsystem:native "main.obj"
 </pre><br>
 
 <p>
 接著執行該User Mode Application就可以看到結果<br>
-<img src="cpp_file/1.jpg" class="maxSize"><br>
-<img src="cpp_file/2.jpg" class="maxSize">
+<img src="asm_file/1.jpg" class="maxSize"><br>
+<img src="asm_file/2.jpg" class="maxSize">
 </p>
 
 <p>

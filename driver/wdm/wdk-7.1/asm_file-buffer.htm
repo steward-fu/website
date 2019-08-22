@@ -1,4 +1,4 @@
-﻿<!--
+<!--
  ____________________________________________________________
 |                                                            |
 |    DESIGN + Pat Heard { http://fullahead.org }             |
@@ -44,52 +44,45 @@
 <div id="content">
 <script type="text/javascript" src="../../../header.js"></script>
 <div id="page">
-<h3>Windows Driver Model >> WDK 7.1 >> MASM32 >> Advanced</h3>
-<p><b>File(DO_BUFFERED_IO)</b></p>
+<h3>Windows Driver Model &gt;&gt; WDK 7.1 (Assembly) &gt;&gt; File</h3>
+<p><b>DO_BUFFERED_IO</b></p>
 <hr size="1">
 <p>
-[Github] <a href="https://github.com/steward-fu/gh_driver.git">https://github.com/steward-fu/gh_driver.git</a><br>
+參考資訊：<br>
+1. <a href="http://four-f.narod.ru/">Four-F</a><br>
+2. <a href="https://github.com/steward-fu/wdm">Source Code</a><br><br>
 
-</p><br>
+DO_BUFFERED_IO的處理手法就是I/O Manager會在Kernel配置一塊跟User Buffer一樣大小的記憶體，Driver只能對該配置的記憶體做讀寫的操作，而讀寫的操作都會同步回User Buffer，也因為結果都需要整塊複製回User Buffer，因此，DO_BUFFERED_IO的方式會消耗比較大的資源，速度也比較慢。<br><br>
 
-<table>
-  <thead>
-    <tr>
-      <th>IRP</th>
-      <th>Buffer</th>
-      <th>Length</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>IRP_MJ_READ</td>
-      <td>(Irp)<br>AssociatedIrp.SystemBuffer</td>
-      <td>(IrpStack)<br>Parameters.Read.Length</td>
-    </tr>
-    <tr>
-      <td>IRP_MJ_WRITE</td>
-      <td>(Irp)<br>AssociatedIrp.SystemBuffer</td>
-      <td>(IrpStack)<br>Parameters.Write.Length</td>
-    </tr>
-  </tbody>
-</table>
+參考如下微軟的圖表說明(IRP_MJ_READ)：<br>
+<img src="asm_file-buffer/1.jpg" class="maxSize"><br><br>
 
-<p>
-main.asm
+記憶體指標：
 </p>
 
+<table>
+<tr>
+  <th>IRP</th>
+  <th>Buffer</th>
+  <th>Length</th>
+</tr>
+<tr>
+  <td>IRP_MJ_READ</td>
+  <td>(Irp)<br>AssociatedIrp.SystemBuffer</td>
+  <td>(IrpStack)<br>Parameters.Read.Length</td>
+</tr>
+<tr>
+  <td>IRP_MJ_WRITE</td>
+  <td>(Irp)<br>AssociatedIrp.SystemBuffer</td>
+  <td>(IrpStack)<br>Parameters.Write.Length</td>
+</tr>
+</table>
+<p>
+在做Driver的檔案操作時，其讀寫是順序性的，除非Driver使用Pending IRP的處理手法，不然，不需擔心指標複寫錯誤的問題。<br><br>
+
+main.asm
+</p>
 <pre class="brush:cpp">
-;//========================================================================================================
-;//  Basically, all of files downloaded from my website can be modified or redistributed for any purpose.
-;//  It is my honor to share my interesting to everybody.
-;//  If you find any illeage content out from my website, please contact me firstly.
-;//  I will remove all of the illeage parts.
-;//  Thanks :)
-;//  
-;//  Steward Fu
-;//  steward.fu@gmail.com
-;//  https://steward-fu.github.io/website/index.htm
-;//========================================================================================================*/
 .386p
 .model flat, stdcall
 option casemap:none
@@ -109,11 +102,10 @@ OurDeviceExtension struct
 OurDeviceExtension ends
 
 .const
-DEV_NAME word "\","D","e","v","i","c","e","\","f","i","r","s","t","F","i","l","e","-","B","u","f","f","e","r",0
-SYM_NAME word "\","D","o","s","D","e","v","i","c","e","s","\","f","i","r","s","t","F","i","l","e","-","B","u","f","f","e","r",0
+DEV_NAME word "\","D","e","v","i","c","e","\","M","y","D","r","i","v","e","r",0
+SYM_NAME word "\","D","o","s","D","e","v","i","c","e","s","\","M","y","D","r","i","v","e","r",0
   
 .code
-;//*** process open/close irp
 IrpOpenClose proc uses ebx pOurDevice:PDEVICE_OBJECT, pIrp:PIRP
   IoGetCurrentIrpStackLocation pIrp
   movzx ebx, (IO_STACK_LOCATION PTR [eax]).MajorFunction
@@ -132,7 +124,6 @@ IrpOpenClose proc uses ebx pOurDevice:PDEVICE_OBJECT, pIrp:PIRP
   ret
 IrpOpenClose endp
  
-;//*** process read/write irp
 IrpReadWrite proc uses ebx ecx pOurDevice:PDEVICE_OBJECT, pIrp:PIRP
   local dwLen:dword
   local pBuf:dword
@@ -157,7 +148,7 @@ IrpReadWrite proc uses ebx ecx pOurDevice:PDEVICE_OBJECT, pIrp:PIRP
     mov eax, pIrp
     push (_IRP PTR [eax]).AssociatedIrp.SystemBuffer
     pop pBuf
-    invoke DbgPrint, $CTA0("Buf: %s, Len: %d"), pBuf, dwLen
+    invoke DbgPrint, $CTA0("Buffer: %s, Length: %d"), pBuf, dwLen
     
     mov eax, pdx
     mov ebx, pBuf
@@ -192,16 +183,13 @@ IrpReadWrite proc uses ebx ecx pOurDevice:PDEVICE_OBJECT, pIrp:PIRP
   ret
 IrpReadWrite endp
  
-;//*** system will vist this routine when it needs to add new device
 AddDevice proc pOurDriver:PDRIVER_OBJECT, pPhyDevice:PDEVICE_OBJECT
   local pOurDevice:PDEVICE_OBJECT
   local suDevName:UNICODE_STRING
   local szSymName:UNICODE_STRING
-  
-  invoke DbgPrint, $CTA0("MASM32 WDM driver tutorial for File-Buffer")
+
   invoke RtlInitUnicodeString, addr suDevName, offset DEV_NAME
   invoke RtlInitUnicodeString, addr szSymName, offset SYM_NAME
-  
   invoke IoCreateDevice, pOurDriver, sizeof OurDeviceExtension, addr suDevName, FILE_DEVICE_UNKNOWN, 0, FALSE, addr pOurDevice
   .if eax == STATUS_SUCCESS
     invoke IoAttachDeviceToDeviceStack, pOurDevice, pPhyDevice
@@ -223,13 +211,11 @@ AddDevice proc pOurDriver:PDRIVER_OBJECT, pPhyDevice:PDEVICE_OBJECT
   ret
 AddDevice endp
   
-;//*** it is time to unload our driver
-Unload proc pDrvObj:PDRIVER_OBJECT
+Unload proc pOurDriver:PDRIVER_OBJECT
   xor eax, eax
   ret
 Unload endp
   
-;//*** process pnp irp
 IrpPnp proc uses ebx pOurDevice:PDEVICE_OBJECT, pIrp:PIRP
   local pdx:PTR OurDeviceExtension
   local szSymName:UNICODE_STRING
@@ -260,7 +246,6 @@ IrpPnp proc uses ebx pOurDevice:PDEVICE_OBJECT, pIrp:PIRP
   ret
 IrpPnp endp
   
-;//*** driver entry
 DriverEntry proc pOurDriver:PDRIVER_OBJECT, pOurRegistry:PUNICODE_STRING
   mov eax, pOurDriver
   mov (DRIVER_OBJECT PTR [eax]).MajorFunction[IRP_MJ_PNP    * (sizeof PVOID)], offset IrpPnp
@@ -277,118 +262,12 @@ DriverEntry endp
 end DriverEntry
 .end
 </pre>
-
 <p>
-main.inf
-</p>
+<b>IrpFile()</b>收到IRP_MJ_WRITE時，Driver複製User Buffer的內容到szBuffer，而收到IRP_MJ_READ時，將szBuffer內容又複製回User Buffer，完成暫存的功能，IoStatus.Information的數值就是ReadFile()或WriteFile()完成的長度。<br><br>
 
-<pre class="brush:cpp">
-;//========================================================================================================
-;//  Basically, all of files downloaded from my website can be modified or redistributed for any purpose.
-;//  It is my honor to share my interesting to everybody.
-;//  If you find any illeage content out from my website, please contact me firstly.
-;//  I will remove all of the illeage parts.
-;//  Thanks :)
-;/  
-;//  Steward Fu
-;//  steward.fu@gmail.com
-;//  https://steward-fu.github.io/website/index.htm
-;//========================================================================================================*/
-[Version]
-Signature=$CHICAGO$
-Class=Unknown
-Provider=%MFGNAME%
-DriverVer=12/23/2016,1.0.0.0
-   
-[DestinationDirs]
-DefaultDestDir=10,System32\Drivers
-   
-[Manufacturer]
-%MFGNAME%=DeviceList
-   
-[SourceDisksFiles]
-main.sys=1,,,
-   
-[SourceDisksNames]
-1=%INSTDISK%,,,
-   
-[DeviceList]
-%DESCRIPTION%=DriverInstall, *firstFile-Buffer
-   
-[DriverInstall.NT]
-CopyFiles=DriverCopyFiles
-   
-[DriverCopyFiles]
-main.sys,,,2
-   
-[DriverInstall.NT.Services]
-AddService=FILEIO,2,DriverService
-   
-[DriverService]
-ServiceType=1
-StartType=3
-ErrorControl=1
-ServiceBinary=%10%\system32\drivers\main.sys
-   
-[DriverInstall.NT.HW]
-AddReg=DriverHwAddReg
-   
-[DriverHwAddReg]
-HKR,,SampleInfo,,""
-   
-[DriverInstall]
-AddReg=DriverAddReg
-CopyFiles=DriverCopyFiles
-   
-[DriverAddReg]
-HKR,,DevLoader,,*ntkern
-HKR,,NTMPDriver,,main.sys
-   
-[DriverInstall.HW]
-AddReg=DriverHwAddReg
-   
-[Strings]
-MFGNAME="firstFile-Buffer"
-INSTDISK="firstFile-Buffer Disc"
-DESCRIPTION="firstFile-Buffer(Assembly)"
-</pre>
-
-<p>
-Debug Log<br>
-<img src="asm_file-buffer/1.jpg" class="maxSize">
-</p>
-
-<p>
-Device Manager<br>
-<img src="asm_file-buffer/2.jpg" class="maxSize">
-</p>
-
-<p>
-Device<br>
-<img src="asm_file-buffer/3.jpg" class="maxSize">
-</p>
-
-<p>
-Symbolic Link<br>
-<img src="asm_file-buffer/4.jpg" class="maxSize">
-</p>
-
-<p>
 app.asm
 </p>
-
 <pre class="brush:cpp">
-;//========================================================================================================
-;//  Basically, all of files downloaded from my website can be modified or redistributed for any purpose.
-;//  It is my honor to share my interesting to everybody.
-;//  If you find any illeage content out from my website, please contact me firstly.
-;//  I will remove all of the illeage parts.
-;//  Thanks :)
-;//  
-;//  Steward Fu
-;//  steward.fu@gmail.com
-;//  https://steward-fu.github.io/website/index.htm
-;//========================================================================================================*/
 .386p
 .model flat, stdcall
 option casemap:none
@@ -405,48 +284,43 @@ includelib c:\masm32\lib\msvcrt.lib
 includelib c:\masm32\lib\kernel32.lib
 
 .const
-DEV_NAME        db "\\.\firstFile-Buffer",0
-ERR_OPEN_DRIVER db "failed to open firstFile-Buffer driver !",0
-SEND_MSG        db "this is test message !",0
-WRITE_MSG       db "Write: %s",10,13,0
-READ_MSG        db "Read: %s",10,13,0
+DEV_NAME db "\\.\MyDriver",0
+MSG_ERR  db "failed to open mydriver",0
+MSG_SEND db "I am error",0
+MSG_WR   db "WR: %s",10,13,0
+MSG_RD   db "RD: %s",10,13,0
 
 .data?
-hFile     dd ?
-dwRet     dd ?
-szBuffer  db  256 dup(?)
+hFile    dd ?
+dwRet    dd ?
+szBuffer db 256 dup(?)
 
 .code
 start:
   invoke CreateFile, offset DEV_NAME, GENERIC_READ or GENERIC_WRITE, FILE_SHARE_READ, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0
   .if eax == INVALID_HANDLE_VALUE
-    invoke crt_printf, offset ERR_OPEN_DRIVER
-    invoke ExitProcess, 0
+    invoke crt_printf, offset MSG_ERR
+    invoke ExitProcess, -1
   .endif
   mov hFile, eax
 
-  invoke wsprintf, offset szBuffer, offset SEND_MSG
-  invoke StrLen, offset szBuffer
+  invoke StrLen, offset MSG_SEND
+  inc eax
   mov dwRet, eax
-  invoke crt_printf, offset WRITE_MSG, offset szBuffer
-  invoke WriteFile, hFile, offset szBuffer, dwRet, offset dwRet, 0
+  invoke crt_printf, offset MSG_WR, offset MSG_SEND
+  invoke WriteFile, hFile, offset MSG_SEND, dwRet, offset dwRet, 0
   invoke crt_memset, offset szBuffer, 0, 255
   invoke ReadFile, hFile, offset szBuffer, 255, offset dwRet, 0
-  invoke crt_printf, offset READ_MSG, offset szBuffer
+  invoke crt_printf, offset MSG_RD, offset szBuffer
   invoke CloseHandle, hFile
 
   invoke ExitProcess, 0
 end start
-</pre>
+</pre><br>
 
-<p>
-執行App<br>
-<img src="asm_file-buffer/5.jpg" class="maxSize">
-</p>
-
-<p>
-Debug Log<br>
-<img src="asm_file-buffer/6.jpg" class="maxSize">
+結果<br>
+<img src="asm_file-buffer/2.jpg" class="maxSize"><br>
+<img src="asm_file-buffer/3.jpg" class="maxSize">
 </p>
 
 <p>
