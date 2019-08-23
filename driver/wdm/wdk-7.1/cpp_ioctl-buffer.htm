@@ -1,4 +1,4 @@
-﻿<!--
+<!--
  ____________________________________________________________
 |                                                            |
 |    DESIGN + Pat Heard { http://fullahead.org }             |
@@ -44,34 +44,34 @@
 <div id="content">
 <script type="text/javascript" src="../../../header.js"></script>
 <div id="page">
-<h3>Windows Driver Model &gt;&gt; WDK 7.1 &gt;&gt; C/C++ >> Advanced &gt;&gt; IOCTL Operation</h3>
-<p><b>METHOD_BUFFERED用法</b></p>
+<h3>Windows Driver Model &gt;&gt; WDK 7.1 (C/C++) &gt;&gt; IOCTL</h3>
+<p><b>METHOD_BUFFERED</b></p>
 <hr size="1">
 <p>
-Github <a href="https://github.com/steward-fu/driver.git">https://github.com/steward-fu/driver.git</a><br><br>
+參考資訊：<br>
+1. <a href="http://four-f.narod.ru/">Four-F</a><br>
+2. <a href="https://github.com/steward-fu/wdm">Source Code</a><br><br>
 
-IOCTL METHOD_BUFFERED的操作方式就如同File DO_BUFFERED_IO的說明，I/O Manager會在驅動程式返回IRP時，回填資料到User Buffer，使用者可以參考如下圖表說明：<br>
-<img src="cpp_fops-buffer/3.jpg" class="maxSize"><br>
-除了效率有差別之外，在寫這種驅動程式唯一要注意的就是指標的取得方式。<br><br>
+DO_BUFFERED_IO的處理手法就是I/O Manager會在Kernel配置一塊跟User Buffer一樣大小的記憶體，Driver只能對該配置的記憶體做讀寫的操作，而讀寫的操作都會同步回User Buffer，也因為結果都需要整塊複製回User Buffer，因此，DO_BUFFERED_IO的方式會消耗比較大的資源，速度也比較慢。<br><br>
+
+參考如下微軟的圖表說明(IRP_MJ_READ)：<br>
+<img src="asm_file-buffer/1.jpg" class="maxSize"><br><br>
 
 記憶體指標：
 </p>
 <table>
 <tr>
   <th></th>
-  <th>Type</th>
   <th>Buffer</th>
   <th>Length</th>
 </tr>
 <tr>
   <td>Input</td>
-  <td>METHOD_BUFFERED</td>
   <td>(Irp)<br>AssociatedIrp.SystemBuffer</td>
   <td>(IrpStack)<br>Parameters.DeviceIoControl.InputBufferLength</td>
 </tr>
 <tr>
   <td>Output</td>
-  <td>METHOD_BUFFERED</td>
   <td>(Irp)<br>AssociatedIrp.SystemBuffer</td>
   <td>(IrpStack)<br>Parameters.DeviceIoControl.OutputBufferLength</td>
 <tr>
@@ -80,19 +80,17 @@ IOCTL METHOD_BUFFERED的操作方式就如同File DO_BUFFERED_IO的說明，I/O 
 <p>
 main.c
 </p>
-
 <pre class="brush:cpp">
 #include &lt;wdm.h&gt;
 
-#define IOCTL_BUFFER_SET CTL_CODE(FILE_DEVICE_UNKNOWN, 0x800, METHOD_BUFFERED, FILE_ANY_ACCESS)
-#define IOCTL_BUFFER_GET CTL_CODE(FILE_DEVICE_UNKNOWN, 0x801, METHOD_BUFFERED, FILE_ANY_ACCESS)
+#define IOCTL_SET CTL_CODE(FILE_DEVICE_UNKNOWN, 0x800, METHOD_BUFFERED, FILE_ANY_ACCESS)
+#define IOCTL_GET CTL_CODE(FILE_DEVICE_UNKNOWN, 0x801, METHOD_BUFFERED, FILE_ANY_ACCESS)
 
-#define DEV_NAME  L"\\Device\\firstIOCTL-Buffer"
-#define SYM_NAME  L"\\DosDevices\\firstIOCTL-Buffer"
-#define MSG       "Input Output Control(IOCTL-METHOD_BUFFERED)"
+#define DEV_NAME L"\\Device\\MyDriver"
+#define SYM_NAME L"\\DosDevices\\MyDriver"
 
 char szBuffer[255]={0};
-PDEVICE_OBJECT gNextDevice=NULL;
+PDEVICE_OBJECT pNextDevice=NULL;
 
 NTSTATUS AddDevice(PDRIVER_OBJECT pOurDriver, PDEVICE_OBJECT pPhyDevice)
 {
@@ -100,12 +98,11 @@ NTSTATUS AddDevice(PDRIVER_OBJECT pOurDriver, PDEVICE_OBJECT pPhyDevice)
   UNICODE_STRING usDeviceName;
   UNICODE_STRING usSymboName;
 
-  DbgPrint(MSG);
   RtlInitUnicodeString(&amp;usDeviceName, DEV_NAME);
   IoCreateDevice(pOurDriver, 0, &amp;usDeviceName, FILE_DEVICE_UNKNOWN, 0, FALSE, &amp;pOurDevice);
   RtlInitUnicodeString(&amp;usSymboName, SYM_NAME);
   IoCreateSymbolicLink(&amp;usSymboName, &amp;usDeviceName);
-  gNextDevice = IoAttachDeviceToDeviceStack(pOurDevice, pPhyDevice);
+  pNextDevice = IoAttachDeviceToDeviceStack(pOurDevice, pPhyDevice);
   pOurDevice-&gt;Flags&amp;= ~DO_DEVICE_INITIALIZING;
   pOurDevice-&gt;Flags|= DO_BUFFERED_IO;
   return STATUS_SUCCESS;
@@ -124,11 +121,11 @@ NTSTATUS IrpPnp(PDEVICE_OBJECT pOurDevice, PIRP pIrp)
   if(psk-&gt;MinorFunction == IRP_MN_REMOVE_DEVICE){
     RtlInitUnicodeString(&amp;usSymboName, SYM_NAME);
     IoDeleteSymbolicLink(&amp;usSymboName);
-    IoDetachDevice(gNextDevice);
+    IoDetachDevice(pNextDevice);
     IoDeleteDevice(pOurDevice);
   }
   IoSkipCurrentIrpStackLocation(pIrp);
-  return IoCallDriver(gNextDevice, pIrp);
+  return IoCallDriver(pNextDevice, pIrp);
 }
 
 NTSTATUS IrpIOCTL(PDEVICE_OBJECT pOurDevice, PIRP pIrp)
@@ -137,15 +134,15 @@ NTSTATUS IrpIOCTL(PDEVICE_OBJECT pOurDevice, PIRP pIrp)
   PIO_STACK_LOCATION psk = IoGetCurrentIrpStackLocation(pIrp);
 
   switch(psk-&gt;Parameters.DeviceIoControl.IoControlCode){
-  case IOCTL_BUFFER_SET:
-    DbgPrint("IOCTL_BUFFER_SET\n");
+  case IOCTL_SET:
+    DbgPrint("IOCTL_SET");
     Len = psk-&gt;Parameters.DeviceIoControl.InputBufferLength;
     memcpy(szBuffer, pIrp-&gt;AssociatedIrp.SystemBuffer, Len);
-    DbgPrint("Buf: %s, Len: %d\n", szBuffer, Len);
+    DbgPrint("Buffer: %s, Length: %d", szBuffer, Len);
     break;
-  case IOCTL_BUFFER_GET:
-    DbgPrint("IOCTL_BUFFER_GET\n");
-    Len = psk-&gt;Parameters.DeviceIoControl.OutputBufferLength;
+  case IOCTL_GET:
+    DbgPrint("IOCTL_GET");
+    Len = strlen(szBuffer)+1;
     memcpy(pIrp-&gt;AssociatedIrp.SystemBuffer, szBuffer, Len);
     break;
   }
@@ -161,10 +158,10 @@ NTSTATUS IrpFile(PDEVICE_OBJECT pOurDevice, PIRP pIrp)
 
   switch(psk-&gt;MajorFunction){
   case IRP_MJ_CREATE:
-    DbgPrint("IRP_MJ_CREATE\n");
+    DbgPrint("IRP_MJ_CREATE");
     break;
   case IRP_MJ_CLOSE:
-    DbgPrint("IRP_MJ_CLOSE\n");
+    DbgPrint("IRP_MJ_CLOSE");
     break;
   }
   IoCompleteRequest(pIrp, IO_NO_INCREMENT);
@@ -183,14 +180,9 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT pOurDriver, PUNICODE_STRING pOurRegistry)
 }
 </pre>
 <p>
-<b>DriverEntry()</b>設置Callback副程式，注意IOCTL使用的是IRP_MJ_DEVICE_CONTROL。<br>
-<b>IrpFile()</b>只列印訊息。<br>
-<b>IrpIOCTL()</b>只做簡單資料暫存動作，注意這裡使用的Input/Output Buffer是對應於User Application的資料，雙邊必須一致，回傳的長度則是位於IoStatus.Information。<br>
-<b>IrpPnp()</b>只處理釋放資源的工作。<br>
-<b>Unload()</b>目前不作任何處理。<br>
-<b>AddDevice()</b>Create Device、Symbolic Link。<br><br>
+<b>IrpIOCTL()</b>收到IOCTL_SET時，Driver複製User Buffer的內容到szBuffer，而收到IOCTL_GET時，將szBuffer內容又複製回User Buffer，完成暫存的功能，IoStatus.Information的數值就是OutBufferSize回傳的長度。<br><br>
 
-app.cpp
+app.c
 </p>
 <pre class="brush:cpp">
 #define INITGUID
@@ -201,24 +193,25 @@ app.cpp
 #include &lt;stdio.h&gt;
 #include &lt;stdlib.h&gt;
 
-#define IOCTL_BUFFER_SET CTL_CODE(FILE_DEVICE_UNKNOWN, 0x800, METHOD_BUFFERED, FILE_ANY_ACCESS)
-#define IOCTL_BUFFER_GET CTL_CODE(FILE_DEVICE_UNKNOWN, 0x801, METHOD_BUFFERED, FILE_ANY_ACCESS)
- 
+#define IOCTL_SET CTL_CODE(FILE_DEVICE_UNKNOWN, 0x800, METHOD_BUFFERED, FILE_ANY_ACCESS)
+#define IOCTL_GET CTL_CODE(FILE_DEVICE_UNKNOWN, 0x801, METHOD_BUFFERED, FILE_ANY_ACCESS)
+
 int __cdecl main(int argc, char* argv[])
 {
-  HANDLE hFile = NULL;
   DWORD dwRet = 0;
-  char szBuffer[255]={"Testing Only"};
+  HANDLE hFile = NULL;
+  char szBuffer[255]={"I am error"};
 
-  hFile = CreateFile("\\\\.\\firstIOCTL-Buffer", GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+  hFile = CreateFile("\\\\.\\MyDriver", GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
   if (hFile == INVALID_HANDLE_VALUE) {
-    printf("failed to open driver\n");
+    printf("failed to open mydriver");
     return 1;
   }
-  DeviceIoControl(hFile, IOCTL_BUFFER_SET, szBuffer, strlen(szBuffer), NULL, 0, &amp;dwRet, NULL);
+  printf("SET: %s, %d\n", szBuffer, strlen(szBuffer)+1);
+  DeviceIoControl(hFile, IOCTL_SET, szBuffer, strlen(szBuffer)+1, NULL, 0, &amp;dwRet, NULL);
   memset(szBuffer, 0, sizeof(szBuffer));
-  DeviceIoControl(hFile, IOCTL_BUFFER_GET, NULL, 0, szBuffer, sizeof(szBuffer), &amp;dwRet, NULL);
-  printf("IOCTL_BUFFER_GET: %s\n", szBuffer);
+  DeviceIoControl(hFile, IOCTL_GET, NULL, 0, szBuffer, sizeof(szBuffer), &amp;dwRet, NULL);
+  printf("GET: %s, %d\n", szBuffer, dwRet);
   CloseHandle(hFile);
   return 0;
 }
@@ -226,8 +219,8 @@ int __cdecl main(int argc, char* argv[])
 
 <p>
 結果<br>
-<img src="cpp_ioctl-buffer/1.jpg" class="maxSize"><br>
-<img src="cpp_ioctl-buffer/2.jpg" class="maxSize">
+<img src="asm_ioctl-buffer/2.jpg" class="maxSize"><br>
+<img src="asm_ioctl-buffer/3.jpg" class="maxSize">
 </p>
 
 <p>

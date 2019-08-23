@@ -29,7 +29,7 @@ var my_constant =
 '__module_description __module_author __module_kernel_version tl0 '    +
 'dptr p0 p1 p2 p3 UMTYPE UMBASE USE_MSVCRT IRP_MJ_DEVICE_CONTROL '     +
 'SDL_INIT_VIDEO SDL_HWSURFACE SDL_KEYDOWN r0 r1 r2 r3 r4 r5 r6 r7 r8 ' +
-'r10 r11 r12 ';
+'r10 r11 r12 METHOD_BUFFERED FILE_ANY_ACCESS FILE_SHARE_READ ';
 
 var my_keyword =
 'ptr PTR proto PROTO struct STRUCT UNION union ends ENDS 386p 486p b ' +
@@ -137,7 +137,7 @@ var my_function =
 'MmGetMdlVirtualAddress SDL_Init SDL_SetVideoMode SDL_RWFromFile '     +
 'SDL_LoadBMP_RW SDL_UpperBlit SDL_Flip SDL_Delay SDL_FreeSurface '     +
 'SDL_Quit SDL_ShowCursor SDL_BlitSurface SDL_LoadBMP SDL_PollEvent '   +
-'ExitProcess crt_printf ';
+'ExitProcess crt_printf DeviceIoControl CTL_CODE ';
 
 this.regexList = [
 {regex: SyntaxHighlighter.regexLib.singleLineCComments, css:'comments'},

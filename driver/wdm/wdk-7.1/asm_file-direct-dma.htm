@@ -156,11 +156,6 @@ IrpReadWrite proc uses ebx ecx pOurDevice:PDEVICE_OBJECT, pIrp:PIRP
     invoke DbgPrint, $CTA0("IRP_MJ_READ")
     
     mov eax, pIrp
-    MmGetMdlByteCount (_IRP ptr [eax]).MdlAddress
-    push eax
-    pop dwLen
-
-    mov eax, pIrp
     MmGetMdlVirtualAddress (_IRP ptr [eax]).MdlAddress
     push eax
     pop pBuf
@@ -171,7 +166,13 @@ IrpReadWrite proc uses ebx ecx pOurDevice:PDEVICE_OBJECT, pIrp:PIRP
   
     mov eax, pdx
     mov ebx, pBuf
-    invoke memcpy, ebx, addr (OurDeviceExtension PTR [eax]).szBuffer, dwLen
+    invoke strcpy, ebx, addr (OurDeviceExtension PTR [eax]).szBuffer
+    
+    mov eax, pdx
+    invoke strlen, addr (OurDeviceExtension PTR [eax]).szBuffer
+    inc eax
+    push eax
+    pop dwLen
   .endif
   
   mov eax, pIrp
@@ -288,8 +289,8 @@ includelib c:\masm32\lib\kernel32.lib
 DEV_NAME db "\\.\MyDriver",0
 MSG_ERR  db "failed to open mydriver",0
 MSG_SEND db "I am error",0
-MSG_WR   db "WR: %s",10,13,0
-MSG_RD   db "RD: %s",10,13,0
+MSG_WR   db "WR: %s, %d",10,13,0
+MSG_RD   db "RD: %s, %d",10,13,0
 
 .data?
 hFile    dd ?
@@ -308,11 +309,11 @@ start:
   invoke StrLen, offset MSG_SEND
   inc eax
   mov dwRet, eax
-  invoke crt_printf, offset MSG_WR, offset MSG_SEND
+  invoke crt_printf, offset MSG_WR, offset MSG_SEND, dwRet
   invoke WriteFile, hFile, offset MSG_SEND, dwRet, offset dwRet, 0
   invoke crt_memset, offset szBuffer, 0, 255
   invoke ReadFile, hFile, offset szBuffer, 255, offset dwRet, 0
-  invoke crt_printf, offset MSG_RD, offset szBuffer
+  invoke crt_printf, offset MSG_RD, offset szBuffer, dwRet
   invoke CloseHandle, hFile
 
   invoke ExitProcess, 0

@@ -44,19 +44,25 @@
 <div id="content">
 <script type="text/javascript" src="../../../header.js"></script>
 <div id="page">
-<h3>Windows Driver Model >> WDK 7.1 >> MASM32 >> Advanced</h3>
-<p><b>IOCTL(METHOD_OUT_DIRECT)</b></p>
+<h3>Windows Driver Model &gt;&gt; WDK 7.1 (Assembly) &gt;&gt; IOCTL</h3>
+<p><b>METHOD_IN_DIRECT、METHOD_OUT_DIRECT</b></p>
 <hr size="1">
 <p>
-[Github] <a href="https://github.com/steward-fu/gh_driver.git">https://github.com/steward-fu/gh_driver.git</a><br>
+參考資訊：<br>
+1. <a href="http://four-f.narod.ru/">Four-F</a><br>
+2. <a href="https://github.com/steward-fu/wdm">Source Code</a><br><br>
 
-</p><br>
+DO_DIRECT_IO的概念就是直接Mapping User Buffer，然後驅動程式使用該Mapped的MDL(Memory Description List)操作，相較於DO_BUFFERED_IO，因為不須I/O Manager更新回User Buffer，因此，效率會比較好，而相比File的DO_DIRECT_IO，IOCTL細分成METHOD_IN_DIRECT和METHOD_OUT_DIRECT兩種，這是因為IOCTL有區分Input和Output Buffer的緣故，因此，會有方向行的考量，Microsoft針對這部份的描述，僅說明MDL描述會有讀寫存取的區分，但是司徒實際測試，發現DeviceIoControl()的Input和Output Buffer是可以混用的，意思就是Input Buffer可以充當Input或Output Buffer使用，而Output Buffer也可以充當Input或Output Buffer使用，只要驅動程式跟User Application定義好即可，當然，METHOD_IN_DIRECT和METHOD_OUT_DIRECT也是可以混用的，關於這部份的細節，有興趣的使用者可以研讀WRK代碼，不過，深怕未知問題可能發生，建議還是依照Microsoft規定去撰寫驅動程式會比較保險。<br><br>
 
+Microsoft針對I/O部份的說明：<br>
+<a href="https://docs.microsoft.com/en-us/windows-hardware/drivers/kernel/buffer-descriptions-for-i-o-control-codes">buffer-descriptions-for-i-o-control-codes</a><br><br>
+
+記憶體指標：
+</p>
 <table>
   <thead>
     <tr>
       <th></th>
-      <th>Type</th>
       <th>Buffer</th>
       <th>Length</th>
     </tr>
@@ -64,35 +70,21 @@
   <tbody>
     <tr>
       <td>Input</td>
-      <td>METHOD_OUT_DIRECT</td>
       <td>(Irp)<br>AssociatedIrp.SystemBuffer</td>
       <td>(IrpStack)<br>Parameters.DeviceIoControl.InputBufferLength</td>
     </tr>
     <tr>
       <td>Output</td>
-      <td>METHOD_OUT_DIRECT</td>
-      <td>(MDL)MmGetSystemAddressForMdlSafe<br></td>
+      <td>(MDL)<br>MmGetSystemAddressForMdlSafe<br></td>
       <td>(IrpStack)<br>Parameters.DeviceIoControl.OutputBufferLength</td>
     </tr>
   </tbody>
-</table>
+</table><br>
 
 <p>
 main.asm
 </p>
-
-<pre class="brush:cpp">
-;//========================================================================================================
-;//  Basically, all of files downloaded from my website can be modified or redistributed for any purpose.
-;//  It is my honor to share my interesting to everybody.
-;//  If you find any illeage content out from my website, please contact me firstly.
-;//  I will remove all of the illeage parts.
-;//  Thanks :)
-;//  
-;//  Steward Fu
-;//  steward.fu@gmail.com
-;//  https://steward-fu.github.io/website/../../../driver.htm
-;//========================================================================================================*/
+<pre class="brush: cpp">
 .386p
 .model flat, stdcall
 option casemap:none
@@ -110,18 +102,18 @@ public DriverEntry
 OurDeviceExtension struct
   pNextDev PDEVICE_OBJECT ?
   szBuffer byte 1024 dup(?)
-  dwBufferLength dword ?
 OurDeviceExtension ends
 
-IOCTL_DIRECT_GET  equ CTL_CODE(FILE_DEVICE_UNKNOWN, 800h, METHOD_OUT_DIRECT, FILE_ANY_ACCESS)
-IOCTL_DIRECT_SET  equ CTL_CODE(FILE_DEVICE_UNKNOWN, 801h, METHOD_OUT_DIRECT, FILE_ANY_ACCESS)
+IOCTL_GET  equ CTL_CODE(FILE_DEVICE_UNKNOWN, 800h, METHOD_OUT_DIRECT, FILE_ANY_ACCESS)
+IOCTL_SET  equ CTL_CODE(FILE_DEVICE_UNKNOWN, 801h, METHOD_IN_DIRECT, FILE_ANY_ACCESS)
  
 .const
-DEV_NAME word "\","D","e","v","i","c","e","\","f","i","r","s","t","I","O","C","T","L","-","D","i","r","e","c","t","-","O","u","t",0
-SYM_NAME word "\","D","o","s","D","e","v","i","c","e","s","\","f","i","r","s","t","I","O","C","T","L","-","D","i","r","e","c","t","-","O","u","t",0
+DEV_NAME word "\","D","e","v","i","c","e","\","M","y","D","r","i","v","e","r",0
+SYM_NAME word "\","D","o","s","D","e","v","i","c","e","s","\","M","y","D","r","i","v","e","r",0
+MSG_GET  byte "IOCTL_GET",0
+MSG_SET  byte "IOCTL_SET",0
 
 .code
-;// process file irp
 IrpOpenClose proc uses ebx pOurDevice:PDEVICE_OBJECT, pIrp:PIRP
   IoGetCurrentIrpStackLocation pIrp
   movzx ebx, (IO_STACK_LOCATION PTR [eax]).MajorFunction
@@ -139,7 +131,6 @@ IrpOpenClose proc uses ebx pOurDevice:PDEVICE_OBJECT, pIrp:PIRP
   ret
 IrpOpenClose endp
 
-;// process ioctl irp
 IrpIOCTL proc uses ebx ecx pOurDevice:PDEVICE_OBJECT, pIrp:PIRP
   local dwLen: DWORD
   local pdx:PTR OurDeviceExtension
@@ -154,39 +145,36 @@ IrpIOCTL proc uses ebx ecx pOurDevice:PDEVICE_OBJECT, pIrp:PIRP
 
   IoGetCurrentIrpStackLocation pIrp
   mov eax, (IO_STACK_LOCATION PTR [eax]).Parameters.DeviceIoControl.IoControlCode
-  .if eax == IOCTL_DIRECT_GET
-    invoke DbgPrint, $CTA0("_IOCTL_DIRECT_GET")
- 
-    mov eax, pdx
-    push (OurDeviceExtension PTR [eax]).dwBufferLength
-    pop dwLen
+  .if eax == IOCTL_GET
+    invoke DbgPrint, offset MSG_GET
  
     mov eax, pIrp
     MmGetSystemAddressForMdlSafe (_IRP ptr [eax]).MdlAddress, LowPagePriority
     push eax
     pop pBuf
- 
+    
     mov eax, pdx
-    invoke memcpy, pBuf, addr (OurDeviceExtension PTR [eax]).szBuffer, dwLen
-    invoke DbgPrint, $CTA0("Buf: %s, Len: %d"), pBuf, dwLen
-  .elseif eax == IOCTL_DIRECT_SET
-    invoke DbgPrint, $CTA0("_IOCTL_DIRECT_SET")
+    invoke strcpy, pBuf, addr (OurDeviceExtension PTR [eax]).szBuffer
+    
+    mov eax, pdx
+    invoke strlen, addr (OurDeviceExtension PTR [eax]).szBuffer
+    inc eax
+    push eax
+    pop dwLen
+  .elseif eax == IOCTL_SET
+    invoke DbgPrint, offset MSG_SET
  
     IoGetCurrentIrpStackLocation pIrp
     push (IO_STACK_LOCATION PTR [eax]).Parameters.DeviceIoControl.InputBufferLength 
     pop dwLen
     
-    push dwLen
-    mov eax, pdx
-    pop (OurDeviceExtension PTR [eax]).dwBufferLength
- 
     mov eax, pIrp
     push (_IRP PTR [eax]).AssociatedIrp.SystemBuffer
     pop pBuf
  
     mov eax, pdx
     invoke memcpy, addr (OurDeviceExtension PTR [eax]).szBuffer, pBuf, dwLen
-    invoke DbgPrint, $CTA0("Buf: %s, Len: %d"), pBuf, dwLen
+    invoke DbgPrint, $CTA0("Buffer: %s, Length: %d"), pBuf, dwLen
   .endif
 
   mov eax, pIrp
@@ -198,8 +186,7 @@ IrpIOCTL proc uses ebx ecx pOurDevice:PDEVICE_OBJECT, pIrp:PIRP
   ret
 IrpIOCTL endp
 
-;//*** process pnp irp
-IrpPnP proc uses ebx pOurDevice:PDEVICE_OBJECT, pIrp:PIRP
+IrpPnp proc uses ebx pOurDevice:PDEVICE_OBJECT, pIrp:PIRP
   local pdx:PTR OurDeviceExtension
   local szSymName:UNICODE_STRING
 
@@ -227,18 +214,15 @@ IrpPnP proc uses ebx pOurDevice:PDEVICE_OBJECT, pIrp:PIRP
   mov eax, pdx
   invoke IoCallDriver, (OurDeviceExtension PTR [eax]).pNextDev, pIrp
   ret
-IrpPnP endp
+IrpPnp endp
 
-;//*** system will vist this routine when it needs to add new device
 AddDevice proc pOurDriver:PDRIVER_OBJECT, pPhyDevice:PDEVICE_OBJECT
   local pOurDevice:PDEVICE_OBJECT
   local suDevName:UNICODE_STRING
   local szSymName:UNICODE_STRING
-  
-  invoke DbgPrint, $CTA0("MASM32 WDM driver tutorial for Device IOCTL-Direct-Out")
+
   invoke RtlInitUnicodeString, addr suDevName, offset DEV_NAME
   invoke RtlInitUnicodeString, addr szSymName, offset SYM_NAME
-  
   invoke IoCreateDevice, pOurDriver, sizeof OurDeviceExtension, addr suDevName, FILE_DEVICE_UNKNOWN, 0, FALSE, addr pOurDevice
   .if eax == STATUS_SUCCESS
     invoke IoAttachDeviceToDeviceStack, pOurDevice, pPhyDevice
@@ -259,17 +243,15 @@ AddDevice proc pOurDriver:PDRIVER_OBJECT, pPhyDevice:PDEVICE_OBJECT
   .endif
   ret
 AddDevice endp
-  
-;//*** it is time to unload our driver
+
 Unload proc pOurDriver:PDRIVER_OBJECT
   xor eax, eax
   ret
 Unload endp
 
-;//*** driver entry
 DriverEntry proc pOurDriver:PDRIVER_OBJECT, pOurRegistry:PUNICODE_STRING
   mov eax, pOurDriver
-  mov (DRIVER_OBJECT PTR [eax]).MajorFunction[IRP_MJ_PNP    * (sizeof PVOID)], offset IrpPnP
+  mov (DRIVER_OBJECT PTR [eax]).MajorFunction[IRP_MJ_PNP    * (sizeof PVOID)], offset IrpPnp
   mov (DRIVER_OBJECT PTR [eax]).MajorFunction[IRP_MJ_CREATE * (sizeof PVOID)], offset IrpOpenClose
   mov (DRIVER_OBJECT PTR [eax]).MajorFunction[IRP_MJ_CLOSE  * (sizeof PVOID)], offset IrpOpenClose
   mov (DRIVER_OBJECT PTR [eax]).MajorFunction[IRP_MJ_DEVICE_CONTROL * (sizeof PVOID)], offset IrpIOCTL
@@ -282,114 +264,12 @@ DriverEntry endp
 end DriverEntry
 .end
 </pre>
-
 <p>
-main.inf
-</p>
+<b>IrpIOCTL()</b>收到IOCTL_SET時，Driver複製User Buffer的內容到szBuffer，而收到IOCTL_GET時，將szBuffer內容又複製回User Buffer，完成暫存的功能，IoStatus.Information的數值就是OutBufferSize回傳的長度。<br><br>
 
-<pre class="brush:cpp">
-;//========================================================================================================
-;//  Basically, all of files downloaded from my website can be modified or redistributed for any purpose.
-;//  It is my honor to share my interesting to everybody.
-;//  If you find any illeage content out from my website, please contact me firstly.
-;//  I will remove all of the illeage parts.
-;//  Thanks :)
-;//  
-;//  Steward Fu
-;//  steward.fu@gmail.com
-;//  https://steward-fu.github.io/website/../../../driver.htm
-;//========================================================================================================*/
-[Version]
-Signature=$CHICAGO$
-Class=Unknown
-Provider=%MFGNAME%
-DriverVer=12/23/2016,1.0.0.0
-   
-[DestinationDirs]
-DefaultDestDir=10,System32\Drivers
-   
-[Manufacturer]
-%MFGNAME%=DeviceList
-   
-[SourceDisksFiles]
-main.sys=1,,,
-   
-[SourceDisksNames]
-1=%INSTDISK%,,,
-   
-[DeviceList]
-%DESCRIPTION%=DriverInstall, *firstIOCTL-Direct-Out
-   
-[DriverInstall.NT]
-CopyFiles=DriverCopyFiles
-   
-[DriverCopyFiles]
-main.sys,,,2
-   
-[DriverInstall.NT.Services]
-AddService=FILEIO,2,DriverService
-   
-[DriverService]
-ServiceType=1
-StartType=3
-ErrorControl=1
-ServiceBinary=%10%\system32\drivers\main.sys
-   
-[DriverInstall.NT.HW]
-AddReg=DriverHwAddReg
-   
-[DriverHwAddReg]
-HKR,,SampleInfo,,""
-   
-[DriverInstall]
-AddReg=DriverAddReg
-CopyFiles=DriverCopyFiles
-   
-[DriverAddReg]
-HKR,,DevLoader,,*ntkern
-HKR,,NTMPDriver,,main.sys
-   
-[DriverInstall.HW]
-AddReg=DriverHwAddReg
-   
-[Strings]
-MFGNAME="firstIOCTL-Direct-Out"
-INSTDISK="firstIOCTL-Direct-Out Disc"
-DESCRIPTION="firstIOCTL-Direct-Out(Assembly)"
-</pre>
-
-<p>
-<img src="asm_ioctl-direct-out/1.jpg" class="maxSize">
-</p>
-
-<p>
-<img src="asm_ioctl-direct-out/2.jpg" class="maxSize">
-</p>
-
-<p>
-<img src="asm_ioctl-direct-out/3.jpg" class="maxSize">
-</p>
-
-<p>
-<img src="asm_ioctl-direct-out/4.jpg" class="maxSize">
-</p>
-
-<p>
 app.asm
 </p>
-
-<pre class="brush:cpp">
-;//========================================================================================================
-;//  Basically, all of files downloaded from my website can be modified or redistributed for any purpose.
-;//  It is my honor to share my interesting to everybody.
-;//  If you find any illeage content out from my website, please contact me firstly.
-;//  I will remove all of the illeage parts.
-;//  Thanks :)
-;//  
-;//  Steward Fu
-;//  steward.fu@gmail.com
-;//  https://steward-fu.github.io/website/../../../driver.htm
-;//========================================================================================================*/
+<pre class="brush: cpp">
 .386p
 .model flat, stdcall
 option casemap:none
@@ -407,48 +287,50 @@ includelib c:\masm32\lib\masm32.lib
 includelib c:\masm32\lib\msvcrt.lib
 includelib c:\masm32\lib\kernel32.lib
 
-IOCTL_DIRECT_GET  equ CTL_CODE(FILE_DEVICE_UNKNOWN, 800h, METHOD_OUT_DIRECT, FILE_ANY_ACCESS)
-IOCTL_DIRECT_SET  equ CTL_CODE(FILE_DEVICE_UNKNOWN, 801h, METHOD_OUT_DIRECT, FILE_ANY_ACCESS)
+IOCTL_GET equ CTL_CODE(FILE_DEVICE_UNKNOWN, 800h, METHOD_OUT_DIRECT, FILE_ANY_ACCESS)
+IOCTL_SET equ CTL_CODE(FILE_DEVICE_UNKNOWN, 801h, METHOD_IN_DIRECT, FILE_ANY_ACCESS)
 
 .const 
-DEV_NAME  db "\\.\firstIOCTL-Direct-Out",0
+DEV_NAME db "\\.\MyDriver",0
+MSG_ERR  db "failed to open mydriver",0
+MSG_SEND db "I am error",0
+MSG_WR   db "SET: %s, %d",10,13,0
+MSG_RD   db "GET: %s, %d",10,13,0
 
 .data?
-hFile     dd ?
-dwRet     dd ?
-szBuffer  db 255 dup(?)
+hFile    dd ?
+dwRet    dd ?
+szBuffer db 255 dup(?)
 
 .code
 start:
   invoke CreateFile, offset DEV_NAME, GENERIC_READ or GENERIC_WRITE, FILE_SHARE_READ, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0
   .if eax == INVALID_HANDLE_VALUE
-    invoke crt_printf, $CTA0("failed to open firstIOCTL-Direct-Out driver")
-    invoke ExitProcess, 0
+    invoke crt_printf, offset MSG_ERR
+    invoke ExitProcess, -1
   .endif
   mov hFile, eax
   
-  ;// IOCTL_DIRECT_SET
-  invoke wsprintf, offset szBuffer, $CT0("test is testing message")
-  invoke StrLen, offset szBuffer
+  invoke crt_memset, offset szBuffer, 0, 255
+  invoke StrLen, offset MSG_SEND
   inc eax
   mov dwRet, eax
-  invoke DeviceIoControl, hFile, IOCTL_DIRECT_SET, offset szBuffer, dwRet, NULL, 0, offset dwRet, NULL
-  ;// IOCTL_DIRECT_GET
-  invoke crt_memset, offset szBuffer, 0, 255
-  invoke DeviceIoControl, hFile, IOCTL_DIRECT_GET, NULL, 0, offset szBuffer, 255, offset dwRet, NULL
-  invoke crt_printf, $CTA0("_IOCTL_DIRECT_GET: %s\n"), offset szBuffer
-
+  invoke crt_printf, offset MSG_WR, offset MSG_SEND, dwRet
+  invoke DeviceIoControl, hFile, IOCTL_SET, offset MSG_SEND, dwRet, NULL, 0, offset dwRet, NULL
+  
+  push 0
+  pop dwRet
+  invoke DeviceIoControl, hFile, IOCTL_GET, NULL, 0, offset szBuffer, 255, offset dwRet, NULL
+  invoke crt_printf, offset MSG_RD, offset szBuffer, dwRet
   invoke CloseHandle, hFile
   invoke ExitProcess, 0
 end start
-</pre>
+</pre><br>
 
 <p>
-<img src="asm_ioctl-direct-out/5.jpg" class="maxSize">
-</p>
-
-<p>
-<img src="asm_ioctl-direct-out/6.jpg" class="maxSize">
+結果<br>
+<img src="asm_ioctl-buffer/2.jpg" class="maxSize"><br>
+<img src="asm_ioctl-buffer/3.jpg" class="maxSize">
 </p>
 
 <p>

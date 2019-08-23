@@ -127,7 +127,6 @@ NTSTATUS IrpPnp(PDEVICE_OBJECT pOurDevice, PIRP pIrp)
 
 NTSTATUS IrpFile(PDEVICE_OBJECT pOurDevice, PIRP pIrp)
 {
-  ULONG Len;
   PUCHAR pBuf;
   PIO_STACK_LOCATION psk = IoGetCurrentIrpStackLocation(pIrp);
 
@@ -138,16 +137,18 @@ NTSTATUS IrpFile(PDEVICE_OBJECT pOurDevice, PIRP pIrp)
     break;
   case IRP_MJ_READ:
     pBuf = MmGetSystemAddressForMdlSafe(pIrp-&gt;MdlAddress, LowPagePriority);
-    Len = MmGetMdlByteCount(pIrp-&gt;MdlAddress);
-    memcpy(pBuf, szBuffer, Len);
+    strcpy(pBuf, szBuffer);
     DbgPrint("IRP_MJ_READ");
+    pIrp-&gt;IoStatus.Status = STATUS_SUCCESS;
+    pIrp-&gt;IoStatus.Information = strlen(szBuffer)+1;
     break;
   case IRP_MJ_WRITE:
     pBuf = MmGetSystemAddressForMdlSafe(pIrp-&gt;MdlAddress, LowPagePriority);
-    Len = MmGetMdlByteCount(pIrp-&gt;MdlAddress);
-    memcpy(szBuffer, pBuf, Len);
+    strcpy(szBuffer, pBuf);
     DbgPrint("IRP_MJ_WRITE");
-    DbgPrint("Buffer: %s, Length: %d", szBuffer, Len);
+    DbgPrint("Buffer: %s, Length: %d", szBuffer, psk-&gt;Parameters.Write.Length);
+    pIrp-&gt;IoStatus.Status = STATUS_SUCCESS;
+    pIrp-&gt;IoStatus.Information = strlen(szBuffer)+1;
     break;
   case IRP_MJ_CLOSE:
     DbgPrint("IRP_MJ_CLOSE");
@@ -196,11 +197,11 @@ int __cdecl main(int argc, char* argv[])
 
   strncpy(szBuffer, "I am error", sizeof(szBuffer));
   WriteFile(hFile, szBuffer, strlen(szBuffer) + 1, &amp;dwRet, NULL);
-  printf("WR: %s\n", szBuffer);
+  printf("WR: %s, %d\n", szBuffer, dwRet);
 
   memset(szBuffer, 0, sizeof(szBuffer));
   ReadFile(hFile, szBuffer, sizeof(szBuffer), &amp;dwRet, NULL);
-  printf("RD: %s\n", szBuffer);
+  printf("RD: %s, %d\n", szBuffer, dwRet);
   CloseHandle(hFile);
   return 0;
 }

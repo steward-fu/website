@@ -156,10 +156,6 @@ IrpReadWrite proc uses ebx ecx pOurDevice:PDEVICE_OBJECT, pIrp:PIRP
   .elseif ebx == IRP_MJ_READ
     invoke DbgPrint, $CTA0("IRP_MJ_READ")
     
-    IoGetCurrentIrpStackLocation pIrp
-    push (IO_STACK_LOCATION PTR [eax]).Parameters.Read._Length
-    pop dwLen
-    
     mov eax, pIrp
     push (_IRP PTR [eax]).AssociatedIrp.SystemBuffer
     pop pBuf
@@ -170,7 +166,13 @@ IrpReadWrite proc uses ebx ecx pOurDevice:PDEVICE_OBJECT, pIrp:PIRP
   
     mov eax, pdx
     mov ebx, pBuf
-    invoke memcpy, ebx, addr (OurDeviceExtension PTR [eax]).szBuffer, dwLen
+    invoke strcpy, ebx, addr (OurDeviceExtension PTR [eax]).szBuffer
+    
+    mov eax, pdx
+    invoke strlen, addr (OurDeviceExtension PTR [eax]).szBuffer
+    inc eax
+    push eax
+    pop dwLen
   .endif
   
   mov eax, pIrp
@@ -261,6 +263,7 @@ DriverEntry proc pOurDriver:PDRIVER_OBJECT, pOurRegistry:PUNICODE_STRING
 DriverEntry endp
 end DriverEntry
 .end
+
 </pre>
 <p>
 <b>IrpFile()</b>收到IRP_MJ_WRITE時，Driver複製User Buffer的內容到szBuffer，而收到IRP_MJ_READ時，將szBuffer內容又複製回User Buffer，完成暫存的功能，IoStatus.Information的數值就是ReadFile()或WriteFile()完成的長度。<br><br>
@@ -287,8 +290,8 @@ includelib c:\masm32\lib\kernel32.lib
 DEV_NAME db "\\.\MyDriver",0
 MSG_ERR  db "failed to open mydriver",0
 MSG_SEND db "I am error",0
-MSG_WR   db "WR: %s",10,13,0
-MSG_RD   db "RD: %s",10,13,0
+MSG_WR   db "WR: %s, %d",10,13,0
+MSG_RD   db "RD: %s, %d",10,13,0
 
 .data?
 hFile    dd ?
@@ -307,17 +310,18 @@ start:
   invoke StrLen, offset MSG_SEND
   inc eax
   mov dwRet, eax
-  invoke crt_printf, offset MSG_WR, offset MSG_SEND
+  invoke crt_printf, offset MSG_WR, offset MSG_SEND, dwRet
   invoke WriteFile, hFile, offset MSG_SEND, dwRet, offset dwRet, 0
   invoke crt_memset, offset szBuffer, 0, 255
   invoke ReadFile, hFile, offset szBuffer, 255, offset dwRet, 0
-  invoke crt_printf, offset MSG_RD, offset szBuffer
+  invoke crt_printf, offset MSG_RD, offset szBuffer, dwRet
   invoke CloseHandle, hFile
 
   invoke ExitProcess, 0
 end start
 </pre><br>
 
+<p>
 結果<br>
 <img src="asm_file-buffer/2.jpg" class="maxSize"><br>
 <img src="asm_file-buffer/3.jpg" class="maxSize">

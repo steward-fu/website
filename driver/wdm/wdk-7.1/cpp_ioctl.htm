@@ -44,19 +44,23 @@
 <div id="content">
 <script type="text/javascript" src="../../../header.js"></script>
 <div id="page">
-<h3>Windows Driver Model &gt;&gt; WDK 7.1 (C/C++) &gt;&gt; Advanced &gt;&gt; IOCTL Operation</h3>
-<p><b>IRP用法</b></p>
+<h3>Windows Driver Model &gt;&gt; WDK 7.1 (C/C++) &gt;&gt; IOCTL</h3>
+<p><b>IRP</b></p>
 <hr size="1">
 <p>
-Github <a href="https://github.com/steward-fu/driver">https://github.com/steward-fu/driver</a><br><br>
+參考資訊：<br>
+1. <a href="http://four-f.narod.ru/">Four-F</a><br>
+2. <a href="https://github.com/steward-fu/wdm">Source Code</a><br><br>
 
-Input Output Control(IOCTL)是另一種可以跟驅動程式溝通的管道，有别於IRP_MJ_READ和IRP_MJ_WRITE的操作方式；IOCTL帶有命令參數並且將Buffer分成Input和Ouput兩個獨立的參數，因此，當驅動程式收到App傳送過來的IOCTL後，就可以依據命令對Input或Output Buffer做處理，相較於IRP_MJ_READ和IRP_MJ_WRITE，IOCTL相當適合在設定或者控制方面的應用；而IRP_MJ_READ和IRP_MJ_WRITE則是比較適合資料傳輸的應用。IOCTL Input和Output Buffer的屬性也是需要做設定，分為Buffered、Direct和Neither這三種設定方式，感覺是不是跟File Operation的Buffer設定方式很相似呢？沒錯，運作原理基本上是一樣的，雖然表面看起來有點複雜，其實只要把Buffer的設定方式搞懂後，使用者就可以發現，整個運作原理是相當容易理解的。<br><br>
+Input Output Control(IOCTL)是另一種可以跟驅動程式溝通的方式，本身帶有命令參數，驅動程式可以依據不一樣的命令做不一樣的事情，而除了命令以外，IOCTL更把Buffer切成Input和Output兩塊，單一次命令的運作就可以完成讀寫的動作，Buffer的屬性也是需要做設定才可以使用，分為Buffered、Direct和Neither這三種設定方式，感覺是不是跟File的Buffer設定方式很相似呢？沒錯，基本上是一樣的，雖然司徒講得有點複雜，不過，只要把Buffer的設定方式搞懂後，使用者就可以發現，整個運作原理是相當容易理解的。<br><br>
 
-至於IOCTL到底是什麼東西呢？其實它只是一個32Bit的數值，欄位如下所示，透過Microsoft的Macro(CTL_CODE)定義該數值，說穿了，只要App跟驅動程式都可以互相知道對方的意思(IOCTL數值)就可以，當然有一些是Microsoft定義保留的Global IOCTL，在使用上，需要特別注意一下。<br>
-<img src="cpp_ioctl/3.jpg" class="maxSize"><br>
-Ref. <a href="https://docs.microsoft.com/en-us/windows-hardware/drivers/kernel/defining-i-o-control-codes">https://docs.microsoft.com/en-us/windows-hardware/drivers/kernel/defining-i-o-control-codes</a><br><br>
+當然，使用者可能好奇，IRP_MJ_READ和IRP_MJ_WRITE是否可以取代IRP_MJ_DEVICE_CONTROL的功能呢？答案：肯定是可以的，只要把資料做編碼，功能上是可以取代的，只是這樣的作法，把控制應用以及大量傳輸的概念都綁在一起，失去原有的設計本質，因此，如果以資料為傳輸目的，建議使用IRP_MJ_READ和IRQP_MJ_WRITE，而以控制應用為目的時，則建議使用IRP_MJ_DEVICE_CONTROL的方式。<br><br>
 
-IOCTL相關的IRP：
+至於IOCTL命令到底是什麼東西呢？其實就是一個編碼後的32Bit的數值，欄位如下所示，透過Microsoft的Macro(CTL_CODE)定義該數值，說穿了，只要App跟驅動程式都可以互相知道對方的意思(IOCTL命令)就可以，當然有一些是Microsoft定義保留的Global IOCTL，在使用上，需要特別注意一下。<br>
+<img src="asm_ioctl/1.jpg" class="maxSize"><br>
+Ref. <a href="https://docs.microsoft.com/en-us/windows-hardware/drivers/kernel/defining-i-o-control-codes">defining-i-o-control-codes</a><br><br>
+
+對應的溝通管道：
 </p>
 
 <table>
@@ -79,7 +83,7 @@ IOCTL相關的IRP：
 </table><br>
 
 <p>
-IOCTL命令：
+取得方式：
 </p>
 <table>
 <tr>
@@ -101,12 +105,11 @@ main.c
 <pre class="brush:cpp">
 #include &lt;wdm.h&gt;
 
-#define IOCTL_TEST  CTL_CODE(FILE_DEVICE_UNKNOWN, 0x800, METHOD_BUFFERED, FILE_ANY_ACCESS) 
-#define DEV_NAME    L"\\Device\\firstIOCTL"
-#define SYM_NAME    L"\\DosDevices\\firstIOCTL"
-#define MSG         "Input Output Control(IOCTL)"
+#define DEV_NAME L"\\Device\\MyDriver"
+#define SYM_NAME L"\\DosDevices\\MyDriver"
+#define IOCTL_TEST CTL_CODE(FILE_DEVICE_UNKNOWN, 0x800, METHOD_BUFFERED, FILE_ANY_ACCESS) 
 
-PDEVICE_OBJECT gNextDevice=NULL;
+PDEVICE_OBJECT pNextDevice=NULL;
 
 NTSTATUS AddDevice(PDRIVER_OBJECT pOurDriver, PDEVICE_OBJECT pPhyDevice)
 {
@@ -114,12 +117,11 @@ NTSTATUS AddDevice(PDRIVER_OBJECT pOurDriver, PDEVICE_OBJECT pPhyDevice)
   UNICODE_STRING usDeviceName;
   PDEVICE_OBJECT pOurDevice=NULL;
 
-  DbgPrint(MSG);
   RtlInitUnicodeString(&amp;usDeviceName, DEV_NAME);
   IoCreateDevice(pOurDriver, 0, &amp;usDeviceName, FILE_DEVICE_UNKNOWN, 0, FALSE, &amp;pOurDevice);
   RtlInitUnicodeString(&amp;usSymboName, SYM_NAME);
   IoCreateSymbolicLink(&amp;usSymboName, &amp;usDeviceName);
-  gNextDevice = IoAttachDeviceToDeviceStack(pOurDevice, pPhyDevice);
+  pNextDevice = IoAttachDeviceToDeviceStack(pOurDevice, pPhyDevice);
   pOurDevice-&gt;Flags&amp;= ~DO_DEVICE_INITIALIZING;
   pOurDevice-&gt;Flags|= DO_BUFFERED_IO;
   return STATUS_SUCCESS;
@@ -137,11 +139,11 @@ NTSTATUS IrpPnp(PDEVICE_OBJECT pOurDevice, PIRP pIrp)
   if(psk-&gt;MinorFunction == IRP_MN_REMOVE_DEVICE){
     RtlInitUnicodeString(&amp;usSymboName, SYM_NAME);
     IoDeleteSymbolicLink(&amp;usSymboName);
-    IoDetachDevice(gNextDevice);
+    IoDetachDevice(pNextDevice);
     IoDeleteDevice(pOurDevice);
   }
   IoSkipCurrentIrpStackLocation(pIrp);
-  return IoCallDriver(gNextDevice, pIrp);
+  return IoCallDriver(pNextDevice, pIrp);
 }
 
 NTSTATUS IrpIOCTL(PDEVICE_OBJECT pOurDevice, PIRP pIrp)
@@ -150,7 +152,7 @@ NTSTATUS IrpIOCTL(PDEVICE_OBJECT pOurDevice, PIRP pIrp)
 
   switch(psk-&gt;Parameters.DeviceIoControl.IoControlCode){
   case IOCTL_TEST:
-    DbgPrint("IOCTL_TEST\n");
+    DbgPrint("IOCTL_TEST");
     break;
   }
   IoCompleteRequest(pIrp, IO_NO_INCREMENT);
@@ -163,10 +165,10 @@ NTSTATUS IrpFile(PDEVICE_OBJECT pOurDevice, PIRP pIrp)
 
   switch(psk-&gt;MajorFunction){
   case IRP_MJ_CREATE:
-    DbgPrint("IRP_MJ_CREATE\n");
+    DbgPrint("IRP_MJ_CREATE");
     break;
   case IRP_MJ_CLOSE:
-    DbgPrint("IRP_MJ_CLOSE\n");
+    DbgPrint("IRP_MJ_CLOSE");
     break;
   }
   IoCompleteRequest(pIrp, IO_NO_INCREMENT);
@@ -185,14 +187,9 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT pOurDriver, PUNICODE_STRING pOurRegistry)
 }
 </pre>
 <p>
-<b>DriverEntry()</b>：設定相關Callback副程式。<br>
-<b>AddDevice()</b>：Create Device、Symbolic Link。<br>
-<b>IrpPnp()</b>：只處理移除事件。<br>
-<b>Unload()</b>：目前不作任何處理。<br>
-<b>IrpFile()</b>：只有列印訊息。<br>
-<b>IrpIOCTL()</b>：只關心IOCTL_TEST命令。<br><br>
+<b>IrpIOCTL()</b>僅列印IOCTL_TEST命令。<br><br>
 
-app.cpp
+app.c
 </p>
 <pre class="brush:cpp">
 #define INITGUID
@@ -210,9 +207,9 @@ int __cdecl main(int argc, char* argv[])
   DWORD dwRet = 0;
   HANDLE hFile = NULL;
 
-  hFile = CreateFile("\\\\.\\firstIOCTL", GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+  hFile = CreateFile("\\\\.\\MyDriver", GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
   if (hFile == INVALID_HANDLE_VALUE) {
-    printf("failed to open driver\n");
+    printf("failed to open mydriver");
     return 1;
   }
   DeviceIoControl(hFile, IOCTL_TEST, NULL, 0, NULL, 0, &amp;dwRet, NULL);  
@@ -223,8 +220,8 @@ int __cdecl main(int argc, char* argv[])
 
 <p>
 結果<br>
-<img src="cpp_ioctl/1.jpg" class="maxSize"><br>
-<img src="cpp_ioctl/2.jpg" class="maxSize">
+<img src="asm_ioctl/2.jpg" class="maxSize"><br>
+<img src="asm_ioctl/3.jpg" class="maxSize">
 </p>
 
 <p>

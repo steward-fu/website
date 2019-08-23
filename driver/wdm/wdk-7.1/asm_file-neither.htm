@@ -166,15 +166,10 @@ IrpReadWrite proc uses ebx ecx pOurDevice:PDEVICE_OBJECT, pIrp:PIRP
     .endif
   .elseif ebx == IRP_MJ_READ
     invoke DbgPrint, $CTA0("IRP_MJ_READ")
-    
-    IoGetCurrentIrpStackLocation pIrp
-    push (IO_STACK_LOCATION PTR [eax]).Parameters.Read._Length
-    pop dwLen
    
     mov eax, pIrp
     push (_IRP PTR [eax]).UserBuffer
     pop pBuf
-    invoke DbgPrint, $CTA0("Address: 0x%x, Length: %d"), pBuf, dwLen
 
     mov bWritable, 0
     _try
@@ -185,7 +180,14 @@ IrpReadWrite proc uses ebx ecx pOurDevice:PDEVICE_OBJECT, pIrp:PIRP
     
       mov eax, pdx
       mov ebx, pBuf
-      invoke memcpy, ebx, addr (OurDeviceExtension PTR [eax]).szBuffer, dwLen
+      invoke strcpy, ebx, addr (OurDeviceExtension PTR [eax]).szBuffer
+      
+      mov eax, pdx
+      invoke strlen, addr (OurDeviceExtension PTR [eax]).szBuffer
+      inc eax
+      push eax
+      pop dwLen
+    
       mov bWritable, 1
     _finally
     
@@ -306,8 +308,8 @@ includelib c:\masm32\lib\kernel32.lib
 DEV_NAME db "\\.\MyDriver",0
 MSG_ERR  db "failed to open mydriver",0
 MSG_SEND db "I am error",0
-MSG_WR   db "WR: %s",10,13,0
-MSG_RD   db "RD: %s",10,13,0
+MSG_WR   db "WR: %s, %d",10,13,0
+MSG_RD   db "RD: %s, %d",10,13,0
 
 .data?
 hFile    dd ?
@@ -326,15 +328,16 @@ start:
   invoke StrLen, offset MSG_SEND
   inc eax
   mov dwRet, eax
-  invoke crt_printf, offset MSG_WR, offset MSG_SEND
+  invoke crt_printf, offset MSG_WR, offset MSG_SEND, dwRet
   invoke WriteFile, hFile, offset MSG_SEND, dwRet, offset dwRet, 0
   invoke crt_memset, offset szBuffer, 0, 255
   invoke ReadFile, hFile, offset szBuffer, 255, offset dwRet, 0
-  invoke crt_printf, offset MSG_RD, offset szBuffer
+  invoke crt_printf, offset MSG_RD, offset szBuffer, dwRet
   invoke CloseHandle, hFile
 
   invoke ExitProcess, 0
 end start
+
 </pre><br>
 
 <p>

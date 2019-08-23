@@ -44,53 +44,65 @@
 <div id="content">
 <script type="text/javascript" src="../../../header.js"></script>
 <div id="page">
-<h3>Windows Driver Model >> WDK 7.1 >> MASM32 >> Advanced</h3>
-<p><b>IOCTL Operation</b></p>
+<h3>Windows Driver Model &gt;&gt; WDK 7.1 (Assembly) &gt;&gt; IOCTL</h3>
+<p><b>IRP</b></p>
 <hr size="1">
 <p>
-[Github] <a href="https://github.com/steward-fu/gh_driver.git">https://github.com/steward-fu/gh_driver.git</a><br>
+參考資訊：<br>
+1. <a href="http://four-f.narod.ru/">Four-F</a><br>
+2. <a href="https://github.com/steward-fu/wdm">Source Code</a><br><br>
 
-</p><br>
+Input Output Control(IOCTL)是另一種可以跟驅動程式溝通的方式，本身帶有命令參數，驅動程式可以依據不一樣的命令做不一樣的事情，而除了命令以外，IOCTL更把Buffer切成Input和Output兩塊，單一次命令的運作就可以完成讀寫的動作，Buffer的屬性也是需要做設定才可以使用，分為Buffered、Direct和Neither這三種設定方式，感覺是不是跟File的Buffer設定方式很相似呢？沒錯，基本上是一樣的，雖然司徒講得有點複雜，不過，只要把Buffer的設定方式搞懂後，使用者就可以發現，整個運作原理是相當容易理解的。<br><br>
+
+當然，使用者可能好奇，IRP_MJ_READ和IRP_MJ_WRITE是否可以取代IRP_MJ_DEVICE_CONTROL的功能呢？答案：肯定是可以的，只要把資料做編碼，功能上是可以取代的，只是這樣的作法，把控制應用以及大量傳輸的概念都綁在一起，失去原有的設計本質，因此，如果以資料為傳輸目的，建議使用IRP_MJ_READ和IRQP_MJ_WRITE，而以控制應用為目的時，則建議使用IRP_MJ_DEVICE_CONTROL的方式。<br><br>
+
+至於IOCTL命令到底是什麼東西呢？其實就是一個編碼後的32Bit的數值，欄位如下所示，透過Microsoft的Macro(CTL_CODE)定義該數值，說穿了，只要App跟驅動程式都可以互相知道對方的意思(IOCTL命令)就可以，當然有一些是Microsoft定義保留的Global IOCTL，在使用上，需要特別注意一下。<br>
+<img src="asm_ioctl/1.jpg" class="maxSize"><br>
+Ref. <a href="https://docs.microsoft.com/en-us/windows-hardware/drivers/kernel/defining-i-o-control-codes">defining-i-o-control-codes</a><br><br>
+
+對應的溝通管道：
+</p>
 
 <table>
-  <thead>
-    <tr>
-      <th>Win32 API</th>
-      <th>Kernel IRP</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>CreateFile()</td>
-      <td>IRP_MJ_CREATE</td>
-    </tr>
-    <tr>
-      <td>DeviceIoControl()</td>
-      <td>IRP_MJ_DEVICE_CONTROL</td>
-    </tr>
-    <tr>
-      <td>CloseFile()</td>
-      <td>IRP_MJ_CLOSE</td>
-    </tr>
-  </tbody>
-</table>
+<tr>
+  <th>Win32 API</th>
+  <th>Kernel IRP</th>
+</tr>
+<tr>
+  <td>CreateFile()</td>
+  <td>IRP_MJ_CREATE</td>
+</tr>
+<tr>
+  <td>DeviceIoControl()</td>
+  <td>IRP_MJ_DEVICE_CONTROL</td>
+</tr>
+<tr>
+  <td>CloseFile()</td>
+  <td>IRP_MJ_CLOSE</td>
+</tr>
+</table><br>
+
+<p>
+取得方式：
+</p>
+<table>
+<tr>
+  <th>
+  IOCTL Code
+  </th>
+</tr>
+<tr>
+  <td>
+  (IrpStack)<br>
+  Parameters.DeviceIoControl.IoControlCode
+  </td>
+</tr>
+</table><br>
 
 <p>
 main.asm
 </p>
-
 <pre class="brush:cpp">
-;//========================================================================================================
-;//  Basically, all of files downloaded from my website can be modified or redistributed for any purpose.
-;//  It is my honor to share my interesting to everybody.
-;//  If you find any illeage content out from my website, please contact me firstly.
-;//  I will remove all of the illeage parts.
-;//  Thanks :)
-;//  
-;//  Steward Fu
-;//  steward.fu@gmail.com
-;//  https://steward-fu.github.io/website/index.htm
-;//========================================================================================================*/
 .386p
 .model flat, stdcall
 option casemap:none
@@ -111,14 +123,14 @@ OurDeviceExtension struct
   dwBufferLength dword ?
 OurDeviceExtension ends
 
-IOCTL_TEST  equ CTL_CODE(FILE_DEVICE_UNKNOWN, 800h, METHOD_BUFFERED, FILE_ANY_ACCESS)
+IOCTL_TEST equ CTL_CODE(FILE_DEVICE_UNKNOWN, 800h, METHOD_BUFFERED, FILE_ANY_ACCESS)
  
 .const
-DEV_NAME word "\","D","e","v","i","c","e","\","f","i","r","s","t","I","O","C","T","L",0
-SYM_NAME word "\","D","o","s","D","e","v","i","c","e","s","\","f","i","r","s","t","I","O","C","T","L",0
+DEV_NAME word "\","D","e","v","i","c","e","\","M","y","D","r","i","v","e","r",0
+SYM_NAME word "\","D","o","s","D","e","v","i","c","e","s","\","M","y","D","r","i","v","e","r",0
+SHOW_MSG byte "IOCTL_TEST",0
 
 .code
-;// process file irp
 IrpOpenClose proc uses ebx pOurDevice:PDEVICE_OBJECT, pIrp:PIRP
   IoGetCurrentIrpStackLocation pIrp
   movzx ebx, (IO_STACK_LOCATION PTR [eax]).MajorFunction
@@ -136,7 +148,6 @@ IrpOpenClose proc uses ebx pOurDevice:PDEVICE_OBJECT, pIrp:PIRP
   ret
 IrpOpenClose endp
 
-;// process ioctl irp
 IrpIOCTL proc uses ebx ecx pOurDevice:PDEVICE_OBJECT, pIrp:PIRP
   local dwLen: DWORD
   local pdx:PTR OurDeviceExtension
@@ -151,7 +162,7 @@ IrpIOCTL proc uses ebx ecx pOurDevice:PDEVICE_OBJECT, pIrp:PIRP
   IoGetCurrentIrpStackLocation pIrp
   mov eax, (IO_STACK_LOCATION PTR [eax]).Parameters.DeviceIoControl.IoControlCode
   .if eax == IOCTL_TEST
-    invoke DbgPrint, $CTA0("_IOCTL_TEST")
+    invoke DbgPrint, offset SHOW_MSG
   .endif
 
   mov eax, pIrp
@@ -163,7 +174,6 @@ IrpIOCTL proc uses ebx ecx pOurDevice:PDEVICE_OBJECT, pIrp:PIRP
   ret
 IrpIOCTL endp
 
-;//*** process pnp irp
 IrpPnP proc uses ebx pOurDevice:PDEVICE_OBJECT, pIrp:PIRP
   local pdx:PTR OurDeviceExtension
   local szSymName:UNICODE_STRING
@@ -194,16 +204,13 @@ IrpPnP proc uses ebx pOurDevice:PDEVICE_OBJECT, pIrp:PIRP
   ret
 IrpPnP endp
 
-;//*** system will vist this routine when it needs to add new device
 AddDevice proc pOurDriver:PDRIVER_OBJECT, pPhyDevice:PDEVICE_OBJECT
   local pOurDevice:PDEVICE_OBJECT
   local suDevName:UNICODE_STRING
   local szSymName:UNICODE_STRING
-  
-  invoke DbgPrint, $CTA0("MASM32 WDM driver tutorial for Device IOCTL")
+
   invoke RtlInitUnicodeString, addr suDevName, offset DEV_NAME
   invoke RtlInitUnicodeString, addr szSymName, offset SYM_NAME
-  
   invoke IoCreateDevice, pOurDriver, sizeof OurDeviceExtension, addr suDevName, FILE_DEVICE_UNKNOWN, 0, FALSE, addr pOurDevice
   .if eax == STATUS_SUCCESS
     invoke IoAttachDeviceToDeviceStack, pOurDevice, pPhyDevice
@@ -224,14 +231,12 @@ AddDevice proc pOurDriver:PDRIVER_OBJECT, pPhyDevice:PDEVICE_OBJECT
   .endif
   ret
 AddDevice endp
-  
-;//*** it is time to unload our driver
+
 Unload proc pOurDriver:PDRIVER_OBJECT
   xor eax, eax
   ret
 Unload endp
 
-;//*** driver entry
 DriverEntry proc pOurDriver:PDRIVER_OBJECT, pOurRegistry:PUNICODE_STRING
   mov eax, pOurDriver
   mov (DRIVER_OBJECT PTR [eax]).MajorFunction[IRP_MJ_PNP    * (sizeof PVOID)], offset IrpPnP
@@ -247,114 +252,12 @@ DriverEntry endp
 end DriverEntry
 .end
 </pre>
-
 <p>
-main.inf
-</p>
+<b>IrpIOCTL()</b>僅列印IOCTL_TEST命令。<br><br>
 
-<pre class="brush:cpp">
-;//========================================================================================================
-;//  Basically, all of files downloaded from my website can be modified or redistributed for any purpose.
-;//  It is my honor to share my interesting to everybody.
-;//  If you find any illeage content out from my website, please contact me firstly.
-;//  I will remove all of the illeage parts.
-;//  Thanks :)
-;//  
-;//  Steward Fu
-;//  steward.fu@gmail.com
-;//  https://steward-fu.github.io/website/index.htm
-;//========================================================================================================*/
-[Version]
-Signature=$CHICAGO$
-Class=Unknown
-Provider=%MFGNAME%
-DriverVer=12/23/2016,1.0.0.0
-   
-[DestinationDirs]
-DefaultDestDir=10,System32\Drivers
-   
-[Manufacturer]
-%MFGNAME%=DeviceList
-   
-[SourceDisksFiles]
-main.sys=1,,,
-   
-[SourceDisksNames]
-1=%INSTDISK%,,,
-   
-[DeviceList]
-%DESCRIPTION%=DriverInstall, *firstIOCTL
-   
-[DriverInstall.NT]
-CopyFiles=DriverCopyFiles
-   
-[DriverCopyFiles]
-main.sys,,,2
-   
-[DriverInstall.NT.Services]
-AddService=FILEIO,2,DriverService
-   
-[DriverService]
-ServiceType=1
-StartType=3
-ErrorControl=1
-ServiceBinary=%10%\system32\drivers\main.sys
-   
-[DriverInstall.NT.HW]
-AddReg=DriverHwAddReg
-   
-[DriverHwAddReg]
-HKR,,SampleInfo,,""
-   
-[DriverInstall]
-AddReg=DriverAddReg
-CopyFiles=DriverCopyFiles
-   
-[DriverAddReg]
-HKR,,DevLoader,,*ntkern
-HKR,,NTMPDriver,,main.sys
-   
-[DriverInstall.HW]
-AddReg=DriverHwAddReg
-   
-[Strings]
-MFGNAME="firstIOCTL"
-INSTDISK="firstIOCTL Disc"
-DESCRIPTION="firstIOCTL(Assembly)"
-</pre>
-
-<p>
-<img src="asm_ioctl/1.jpg" class="maxSize">
-</p>
-
-<p>
-<img src="asm_ioctl/2.jpg" class="maxSize">
-</p>
-
-<p>
-<img src="asm_ioctl/3.jpg" class="maxSize">
-</p>
-
-<p>
-<img src="asm_ioctl/4.jpg" class="maxSize">
-</p>
-
-<p>
 app.asm
 </p>
-
 <pre class="brush:cpp">
-;//========================================================================================================
-;//  Basically, all of files downloaded from my website can be modified or redistributed for any purpose.
-;//  It is my honor to share my interesting to everybody.
-;//  If you find any illeage content out from my website, please contact me firstly.
-;//  I will remove all of the illeage parts.
-;//  Thanks :)
-;//  
-;//  Steward Fu
-;//  steward.fu@gmail.com
-;//  https://steward-fu.github.io/website/index.htm
-;//========================================================================================================*/
 .386p
 .model flat, stdcall
 option casemap:none
@@ -372,37 +275,34 @@ includelib c:\masm32\lib\masm32.lib
 includelib c:\masm32\lib\msvcrt.lib
 includelib c:\masm32\lib\kernel32.lib
 
-IOCTL_TEST  equ CTL_CODE(FILE_DEVICE_UNKNOWN, 800h, METHOD_BUFFERED, FILE_ANY_ACCESS)
+IOCTL_TEST equ CTL_CODE(FILE_DEVICE_UNKNOWN, 800h, METHOD_BUFFERED, FILE_ANY_ACCESS)
 
 .const 
-DEV_NAME  db "\\.\firstIOCTL",0
+DEV_NAME db "\\.\MyDriver",0
 
 .data?
-hFile     dd ?
-dwRet     dd ?
+hFile dd ?
+dwRet dd ?
 
 .code
 start:
   invoke CreateFile, offset DEV_NAME, GENERIC_READ or GENERIC_WRITE, FILE_SHARE_READ, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0
   .if eax == INVALID_HANDLE_VALUE
-    invoke crt_printf, $CTA0("failed to open firstIOCTL driver")
-    invoke ExitProcess, 0
+    invoke crt_printf, $CTA0("failed to open mydriver")
+    invoke ExitProcess, -1
   .endif
-  mov hFile, eax
   
+  mov hFile, eax
   invoke DeviceIoControl, hFile, IOCTL_TEST, NULL, 0, NULL, 0, offset dwRet, NULL
-
   invoke CloseHandle, hFile
   invoke ExitProcess, 0
 end start
-</pre>
+</pre><br>
 
 <p>
-<img src="asm_ioctl/5.jpg" class="maxSize">
-</p>
-
-<p>
-<img src="asm_ioctl/6.jpg" class="maxSize">
+結果<br>
+<img src="asm_ioctl/2.jpg" class="maxSize"><br>
+<img src="asm_ioctl/3.jpg" class="maxSize">
 </p>
 
 <p>
