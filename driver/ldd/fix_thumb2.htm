@@ -44,63 +44,75 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>PocketBeagle</h3>
-<p><b>build uboot 201507</b></p>
+<h3>Linux Device Driver</h3>
+<p><b>解決"unknown relocation: 10"問題</b></p>
 <hr size="1">
 <p>
-編譯步驟如下：
+司徒遇到的問題如下：
 </p>
-<pre>
-$ cd
-$ wget https://github.com/steward-fu/pocketbeagle/releases/download/v1.0/gcc-4.9.tar.gz
-$ tar xvf gcc-4.9.tar.gz
-$ sudo mv gcc-4.9 /opt
-$ export PATH=$PATH:/opt/gcc-4.9/bin
-
-$ wget https://github.com/steward-fu/pocketbeagle/releases/download/v1.0/uboot-201507.tar.gz
-$ tar zxvf uboot-201507.tar.gz
-$ cd uboot
-$ ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- make am335x_evm_config
-$ ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- make
+<pre class="brush:cpp">
+# insmod test.ko 
+[    7.175590] hello: unknown relocation: 10
+[    7.206189] hello: unknown relocation: 10
+insmod: can't insert 'test.ko': invalid module format
 </pre><br>
 
 <p>
-把MLO、u-boot.img放到第一個FAT分區，然後上電就可以看到UART訊息(115200 bps)
+定位到位置在：arch/arm/kernel/module.c
 </p>
-<pre>
-U-Boot SPL 2015.07 (Aug 23 2019 - 11:24:20)
-reading args
-spl_load_image_fat_os: error reading image args, err - -1
-reading u-boot.img
-reading u-boot.img
-
-
-U-Boot 2015.07 (Aug 23 2019 - 11:24:20 -0400)
-
-       Watchdog enabled
-I2C:   ready
-DRAM:  512 MiB
-NAND:  0 MiB
-MMC:   OMAP SD/MMC: 0, OMAP SD/MMC: 1
-reading uboot.env
-
-** Unable to read "uboot.env" from mmc0:1 **
-Using default environment
-
-Net:   &lt;ethaddr&gt; not set. Validating first E-fuse MAC
-Phy 4 not found
-cpsw, usb_ether
-Hit any key to stop autoboot:  0 
-switch to partitions #0, OK
-mmc0 is current device
-SD/MMC found on device 0
-switch to partitions #0, OK
-mmc0 is current device
-SD/MMC found on device 0
+<pre class="brush:cpp">
+263     default:
+264       pr_err("%s: unknown relocation: %u\n",
+265              module->name, ELF32_R_TYPE(rel->r_info));
+266       return -ENOEXEC;
+267     }
+268   }
+269   return 0;
+270 }
 </pre><br>
 
 <p>
-<br><a href="../../mcu.htm">返回上一頁</a>
+發現10的定義值如下：
+</p>
+<pre>
+#define R_ARM_THM_CALL 10
+</pre><br>
+
+<p>
+往回找一下，發現在同一段
+</p>
+<pre>
+160 #ifdef CONFIG_THUMB2_KERNEL
+161   case R_ARM_THM_CALL:
+162   case R_ARM_THM_JUMP24:
+</pre><br>
+
+<p>
+THUMB2沒有被Enable<br>
+<img src="fix_thumb2/1.jpg" class="maxSize"><br>
+Enable後，再度編譯Kernel，出現很多編譯問題...<br><br>
+
+最後，司徒發現原來是export問題，原本的的export如下：
+</p>
+<pre>
+export ARCH=arm
+export CROSS=arm-linux-gnueabihf-
+export CC=${CROSS}gcc
+export LD=${CROSS}ld
+export AS=${CROSS}as
+export CXX=${CROSS}g++
+</pre><br>
+
+<p>
+改成如下即可解決<b>unknown relocation: 10</b>的問題
+</p>
+<pre>
+export ARCH=arm
+export CROSS_COMPILE=arm-linux-gnueabihf-
+</pre><br>
+
+<p>
+<br><a href="../../driver.htm">返回上一頁</a>
 </p>
 
 </div>

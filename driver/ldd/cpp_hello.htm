@@ -44,63 +44,102 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>PocketBeagle</h3>
-<p><b>build uboot 201507</b></p>
+<h3>Linux Device Driver &gt;&gt; C/C++</h3>
+<p><b>hello, world!</b></p>
 <hr size="1">
 <p>
-編譯步驟如下：
+參考資訊：<br>
+1. <a href="http://www.plantation-productions.com/Webster/LinuxAsm/">LinuxAsm</a><br><br>
+
+<b>hello, world!</b>永遠都是作為第一個教學範例，除了可以知道基本程式的框架之外，最主要的原因在於熟悉如何編譯和執行程式，司徒將以這樣的流程來介紹如何撰寫一個<b>hello, world!</b>驅動程式，而在此涉獵的Linux指令則必須依賴使用者先行上網學習，這部份是事前必須準備的東西，接著就先架設編譯環境。<br><br>
+
+Debian 9 (x64)
 </p>
 <pre>
-$ cd
+$ cd 
 $ wget https://github.com/steward-fu/pocketbeagle/releases/download/v1.0/gcc-4.9.tar.gz
 $ tar xvf gcc-4.9.tar.gz
-$ sudo mv gcc-4.9 /opt
+$ sudo mv gcc-4.9 /opt/
 $ export PATH=$PATH:/opt/gcc-4.9/bin
 
-$ wget https://github.com/steward-fu/pocketbeagle/releases/download/v1.0/uboot-201507.tar.gz
-$ tar zxvf uboot-201507.tar.gz
-$ cd uboot
-$ ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- make am335x_evm_config
-$ ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- make
+$ wget https://github.com/steward-fu/pocketbeagle/releases/download/v1.0/kernel-4.1.18.tar.gz
+$ tar xvf kernel-4.1.18.tar.gz
+$ cd kernel
+$ ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- make am335x_b4_deconfig
+$ ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- make clean
+$ ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- make zImage dtbs modules -j4
+$ cd
 </pre><br>
-
 <p>
-把MLO、u-boot.img放到第一個FAT分區，然後上電就可以看到UART訊息(115200 bps)
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;linux/init.h&gt;
+#include &lt;linux/device.h&gt;
+#include &lt;linux/module.h&gt;
+ 
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("Steward_Fu");
+MODULE_DESCRIPTION("Linux Driver");
+ 
+static int __init ldd_init(void)
+{
+  printk("hello, world!\n");
+  return 0;
+}
+ 
+static void __exit ldd_exit(void)
+{
+  printk("unload it\n");
+}
+ 
+module_init(ldd_init);
+module_exit(ldd_exit);
+</pre>
+<p>
+<b>ldd_init()</b>掛載驅動程式時，系統執行呼叫的副程式，目前僅列印訊息，其餘事情不處理。<br>
+<b>ldd_exit()</b>卸載驅動程式時，系統呼叫的副程式，目前僅列印訊息，其餘事情不處理。<br><br>
+
+Makefile
 </p>
 <pre>
-U-Boot SPL 2015.07 (Aug 23 2019 - 11:24:20)
-reading args
-spl_load_image_fat_os: error reading image args, err - -1
-reading u-boot.img
-reading u-boot.img
+export ARCH=arm
+export CROSS_COMPILE=arm-linux-gnueabihf-
+KERNEL=$(HOME)/kernel
 
+obj-m += main.o
+all:
+  make -C $(KERNEL) M=$(PWD) modules
 
-U-Boot 2015.07 (Aug 23 2019 - 11:24:20 -0400)
+clean:
+  make -C $(KERNEL) M=$(PWD) clean
+</pre>
+<p>
+接著輸入make指令編譯就可以產生main.ko<br><br>
 
-       Watchdog enabled
-I2C:   ready
-DRAM:  512 MiB
-NAND:  0 MiB
-MMC:   OMAP SD/MMC: 0, OMAP SD/MMC: 1
-reading uboot.env
+把main.ko複製到第一個FAT磁區，接著插入SDCard，開機執行如下指令即可：
+</p>
+<pre>
+# cd /boot
+# ls
+MLO             main.ko         zImage
+am335x-evm.dtb  u-boot.img
 
-** Unable to read "uboot.env" from mmc0:1 **
-Using default environment
-
-Net:   &lt;ethaddr&gt; not set. Validating first E-fuse MAC
-Phy 4 not found
-cpsw, usb_ether
-Hit any key to stop autoboot:  0 
-switch to partitions #0, OK
-mmc0 is current device
-SD/MMC found on device 0
-switch to partitions #0, OK
-mmc0 is current device
-SD/MMC found on device 0
+# insmod main.ko
+[   15.059811] hello, world!
 </pre><br>
 
 <p>
-<br><a href="../../mcu.htm">返回上一頁</a>
+如果要卸載驅動程式，只要輸入如下指令即可
+</p>
+<pre>
+# rmmod main
+[   21.139729] unload it
+</pre><br>
+
+<p>
+<br><a href="../../driver.htm">返回上一頁</a>
 </p>
 
 </div>

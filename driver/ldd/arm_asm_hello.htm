@@ -1,0 +1,162 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Linux Device Driver &gt;&gt; Assembly (ARM)</h3>
+<p><b>hello, world!</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="http://www.plantation-productions.com/Webster/LinuxAsm/">LinuxAsm</a><br><br>
+
+<b>hello, world!</b>永遠都是作為第一個教學範例，除了可以知道基本程式的框架之外，最主要的原因在於熟悉如何編譯和執行程式，司徒將以這樣的流程來介紹如何撰寫一個<b>hello, world!</b>驅動程式，而在此涉獵的Linux指令則必須依賴使用者先行上網學習，這部份是事前必須準備的東西，接著就先架設編譯環境。<br><br>
+
+Debian 9 (x64)
+</p>
+<pre>
+$ cd 
+$ wget https://github.com/steward-fu/pocketbeagle/releases/download/v1.0/gcc-4.9.tar.gz
+$ tar xvf gcc-4.9.tar.gz
+$ sudo mv gcc-4.9 /opt/
+$ export PATH=$PATH:/opt/gcc-4.9/bin
+
+$ wget https://github.com/steward-fu/pocketbeagle/releases/download/v1.0/kernel-4.1.18.tar.gz
+$ tar xvf kernel-4.1.18.tar.gz
+$ cd kernel
+$ ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- make am335x_b4_deconfig
+$ ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- make clean
+$ ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- make zImage dtbs modules -j4
+$ cd
+</pre><br>
+<p>
+
+ldd.S(ldd.S如果改成ldd.s，則會被make clean刪掉，請注意)
+</p>
+<pre class="brush:cpp">
+.global init_module
+.global cleanup_module
+.extern printk
+
+.section .modinfo
+__mod_kernel_version: .asciz "kernel_version=4.1.18";    .align
+__mod_license:        .asciz "license=GPL";              .align
+__mod_author:         .asciz "author=Steward_Fu";        .align
+__mod_description:    .asciz "description=Linux Driver"; .align
+ 
+.section .text
+msg_load:   .asciz "hello, world!\n"; .align
+msg_unload: .asciz "unload it\n";     .align
+ 
+.section .text
+.align
+cleanup_module:
+  push {lr}
+  ldr r0, =msg_unload
+  bl printk
+  pop {pc}
+
+.align
+init_module:
+  push {lr}
+  ldr r0, =msg_load
+  bl printk
+  mov r0, #0
+  pop {pc}
+.end
+</pre>
+<p>
+<b>init_module()</b>掛載驅動程式時，系統執行呼叫的副程式，目前僅列印訊息，其餘事情不處理。<br>
+<b>cleanup_module()</b>卸載驅動程式時，系統呼叫的副程式，目前僅列印訊息，其餘事情不處理。<br><br>
+
+Makefile
+</p>
+<pre>
+export ARCH=arm
+export CROSS_COMPILE=arm-linux-gnueabihf-
+export AS=${CROSS_COMPILE}as
+KERNEL=$(HOME)/kernel
+
+obj-m += main.o
+main-objs:= ldd.o
+all:
+  $(AS) -o ldd.o ldd.S
+  make -C $(KERNEL) M=$(PWD) modules
+
+clean:
+  make -C $(KERNEL) M=$(PWD) clean
+</pre>
+<p>
+接著輸入make指令編譯就可以產生main.ko<br><br>
+
+把main.ko複製到第一個FAT磁區，接著插入SDCard，開機執行如下指令即可：
+</p>
+<pre>
+# cd /boot
+# ls
+MLO             main.ko         zImage
+am335x-evm.dtb  u-boot.img
+
+# insmod main.ko
+[   25.472901] hello, world!
+
+</pre><br>
+
+<p>
+如果要卸載驅動程式，只要輸入如下指令即可
+</p>
+<pre>
+# rmmod main
+[   73.074343] unload it
+</pre><br>
+
+<p>
+<br><a href="../../driver.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
