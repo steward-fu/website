@@ -1,4 +1,4 @@
-﻿<!--
+<!--
  ____________________________________________________________
 |                                                            |
 |    DESIGN + Pat Heard { http://fullahead.org }             |
@@ -44,44 +44,29 @@
 <div id="content">
 <script type="text/javascript" src="../../../header.js"></script>
 <div id="page">
-<h3>Windows Driver Model >> WDK 7.1 >> C/C++ >> Advanced</h3>
+<h3>Windows Driver Model &gt;&gt; WDK 7.1 (C/C++)</h3>
 <p><b>StartIO</b></p>
 <hr size="1">
 <p>
-[Github] <a href="https://github.com/steward-fu/gh_driver.git">https://github.com/steward-fu/gh_driver.git</a>
-</p>
+參考資訊：<br>
+1. <a href="http://four-f.narod.ru/">Four-F</a><br>
+2. <a href="https://github.com/steward-fu/wdm">Source Code</a><br><br>
 
-<p>
-1. DriverStartIo<br>
-2. IoMarkIrpPending<br>
-3. IoStartNextPacket
-</p>
+StartIO提供一個序列化的機制，讓使用者可以依照順序處理IRP，這個機制對於某些只能序列執行的硬體相當有幫助，省去用軟體實現序列化的程式碼，使用的步驟：<br>
+1. IoMarkIrpPending()<br>
+2. IoStartNextPacket()<br><br>
 
-<p>
 main.c
 </p>
-
 <pre class="brush:cpp">
-/*========================================================================================================
-  Basically, all of files downloaded from my website can be modified or redistributed for any purpose.
-  It is my honor to share my interesting to everybody.
-  If you find any illeage content out from my website, please contact me firstly.
-  I will remove all of the illeage parts.
-  Thanks :)
-   
-  Steward Fu
-  steward.fu@gmail.com
-  https://steward-fu.github.io/website/index.htm
-========================================================================================================*/
 #include &lt;wdm.h&gt;
 
-#define DEV_NAME  L"\\Device\\firstStartIO"
-#define SYM_NAME  L"\\DosDevices\\firstStartIO"
-#define MSG       "WDM driver tutorial for StartIO"
+#define DEV_NAME L"\\Device\\MyDriver"
+#define SYM_NAME L"\\DosDevices\\MyDriver"
 
-PDEVICE_OBJECT gNextDevice=NULL;
-char szBuffer[1024]={0};
+char szBuffer[255]={0};
 ULONG dwBufferLength=0;
+PDEVICE_OBJECT pNextDevice=NULL;
 
 VOID StartIo(struct _DEVICE_OBJECT *pOurDevice, struct _IRP *pIrp)
 {
@@ -89,15 +74,15 @@ VOID StartIo(struct _DEVICE_OBJECT *pOurDevice, struct _IRP *pIrp)
   PIO_STACK_LOCATION psk = IoGetCurrentIrpStackLocation(pIrp);
   switch(psk-&gt;MajorFunction){
   case IRP_MJ_READ:
-    dwLen = psk-&gt;Parameters.Read.Length;
+    dwLen = strlen(szBuffer)+1;
     strcpy(pIrp-&gt;AssociatedIrp.SystemBuffer, szBuffer);
-    DbgPrint("StartIo, IRP_MJ_READ\n");
+    DbgPrint("StartIo, IRP_MJ_READ");
     break;
   case IRP_MJ_WRITE:
     dwLen = psk-&gt;Parameters.Write.Length;
     strcpy(szBuffer, pIrp-&gt;AssociatedIrp.SystemBuffer);
-    DbgPrint("StartIo, IRP_MJ_WRITE\n");
-    DbgPrint("StartIo, Buffer: %s\n", szBuffer);
+    DbgPrint("StartIo, IRP_MJ_WRITE");
+    DbgPrint("Buffer: %s, Length: %d", szBuffer, dwLen);
     break;
   }
   pIrp-&gt;IoStatus.Status = STATUS_SUCCESS;
@@ -106,31 +91,27 @@ VOID StartIo(struct _DEVICE_OBJECT *pOurDevice, struct _IRP *pIrp)
   IoStartNextPacket(pOurDevice, FALSE);
 }
 
-//*** system will vist this routine when it needs to add new device
 NTSTATUS AddDevice(PDRIVER_OBJECT pOurDriver, PDEVICE_OBJECT pPhyDevice)
 {
   PDEVICE_OBJECT pOurDevice=NULL;
   UNICODE_STRING usDeviceName;
   UNICODE_STRING usSymboName;
 
-  DbgPrint(MSG);
   RtlInitUnicodeString(&amp;usDeviceName, DEV_NAME);
   IoCreateDevice(pOurDriver, 0, &amp;usDeviceName, FILE_DEVICE_UNKNOWN, 0, FALSE, &amp;pOurDevice);
   RtlInitUnicodeString(&amp;usSymboName, SYM_NAME);
   IoCreateSymbolicLink(&amp;usSymboName, &amp;usDeviceName);
-  gNextDevice = IoAttachDeviceToDeviceStack(pOurDevice, pPhyDevice);
+  pNextDevice = IoAttachDeviceToDeviceStack(pOurDevice, pPhyDevice);
   pOurDevice-&gt;Flags&amp;= ~DO_DEVICE_INITIALIZING;
   pOurDevice-&gt;Flags|= DO_BUFFERED_IO;
   return STATUS_SUCCESS;
 }
-  
-//*** it is time to unload our driver
+
 void Unload(PDRIVER_OBJECT pOurDriver)
 {
   pOurDriver = pOurDriver;
 }
 
-//*** process pnp irp
 NTSTATUS IrpPnp(PDEVICE_OBJECT pOurDevice, PIRP pIrp)
 {
   PIO_STACK_LOCATION psk = IoGetCurrentIrpStackLocation(pIrp);
@@ -139,41 +120,39 @@ NTSTATUS IrpPnp(PDEVICE_OBJECT pOurDevice, PIRP pIrp)
   if(psk-&gt;MinorFunction == IRP_MN_REMOVE_DEVICE){
     RtlInitUnicodeString(&amp;usSymboName, SYM_NAME);
     IoDeleteSymbolicLink(&amp;usSymboName);
-    IoDetachDevice(gNextDevice);
+    IoDetachDevice(pNextDevice);
     IoDeleteDevice(pOurDevice);
   }
   IoSkipCurrentIrpStackLocation(pIrp);
-  return IoCallDriver(gNextDevice, pIrp);
+  return IoCallDriver(pNextDevice, pIrp);
 }
 
-//*** process file irp
 NTSTATUS IrpFile(PDEVICE_OBJECT pOurDevice, PIRP pIrp)
 {
   PIO_STACK_LOCATION psk = IoGetCurrentIrpStackLocation(pIrp);
 
   switch(psk-&gt;MajorFunction){
   case IRP_MJ_CREATE:
-    DbgPrint("IrpFile, IRP_MJ_CREATE\n");
+    DbgPrint("IRP_MJ_CREATE");
     break;
   case IRP_MJ_WRITE:
-    DbgPrint("IrpFile, IRP_MJ_WRITE\n");
+    DbgPrint("IrpFile, IRP_MJ_WRITE");
     IoMarkIrpPending(pIrp);
     IoStartPacket(pOurDevice, pIrp, 0, NULL);
     return STATUS_PENDING;
   case IRP_MJ_READ:
-    DbgPrint("IrpFile, IRP_MJ_READ\n");
+    DbgPrint("IrpFile, IRP_MJ_READ");
     IoMarkIrpPending(pIrp);
     IoStartPacket(pOurDevice, pIrp, 0, NULL);
     return STATUS_PENDING;
   case IRP_MJ_CLOSE:
-    DbgPrint("IrpFile, IRP_MJ_CLOSE\n");
+    DbgPrint("IRP_MJ_CLOSE");
     break;
   }
   IoCompleteRequest(pIrp, IO_NO_INCREMENT);
   return STATUS_SUCCESS;
 }
-  
-//*** driver entry
+
 NTSTATUS DriverEntry(PDRIVER_OBJECT pOurDriver, PUNICODE_STRING pOurRegistry)
 {
   pOurDriver-&gt;MajorFunction[IRP_MJ_PNP] = IrpPnp;
@@ -187,100 +166,12 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT pOurDriver, PUNICODE_STRING pOurRegistry)
   return STATUS_SUCCESS;
 }
 </pre>
-
 <p>
-main.inf
+<b>IrpFile()</b>IRP_MJ_READ和IRP_MJ_WRITE使用StartIO方式處理<br><br>
+
+app.c
 </p>
-
 <pre class="brush:cpp">
-;/*========================================================================================================
-;//  Basically, all of files downloaded from my website can be modified or redistributed for any purpose.
-;//  It is my honor to share my interesting to everybody.
-;//  If you find any illeage content out from my website, please contact me firstly.
-;//  I will remove all of the illeage parts.
-;//  Thanks :)
-;//   
-;//  Steward Fu
-;//  steward.fu@gmail.com
-;//  https://steward-fu.github.io/website/index.htm
-;//========================================================================================================*/
-[Version]
-Signature=$CHICAGO$
-Class=Unknown
-Provider=%MFGNAME%
-DriverVer=01/06/2017,1.0.0.0
- 
-[Manufacturer]
-%MFGNAME%=DeviceList
- 
-[DeviceList]
-%DESCRIPTION%=DriverInstall, *firstStartIO
- 
-[DestinationDirs]
-DefaultDestDir=10,System32\Drivers
- 
-[SourceDisksFiles]
-main.sys=1,,,
- 
-[SourceDisksNames]
-1=%INSTDISK%,,,
- 
-[DriverInstall.NT]
-CopyFiles=DriverCopyFiles
- 
-[DriverCopyFiles]
-main.sys,,,2
- 
-[DriverInstall.NT.Services]
-AddService=firstStartIO,2,DriverService
- 
-[DriverService]
-ServiceType=1
-StartType=3
-ErrorControl=1
-ServiceBinary=%10%\system32\drivers\main.sys
- 
-[DriverInstall.NT.HW]
-AddReg=DriverHwAddReg
- 
-[DriverHwAddReg]
-HKR,,SampleInfo,,""
- 
-[DriverInstall]
-AddReg=DriverAddReg
-CopyFiles=DriverCopyFiles
- 
-[DriverAddReg]
-HKR,,DevLoader,,*ntkern
-HKR,,NTMPDriver,,main.sys
- 
-[DriverInstall.HW]
-AddReg=DriverHwAddReg
- 
-[Strings]
-MFGNAME="firstStartIO"
-INSTDISK="firstStartIO Disc"
-DESCRIPTION="firstStartIO"
-</pre>
-
-<p>
-app.cpp
-</p>
-
-<pre class="brush:cpp">
-/*========================================================================================================
-  Basically, all of files downloaded from my website can be modified or redistributed for any purpose.
-  It is my honor to share my interesting to everybody.
-  If you find any illeage content out from my website, please contact me firstly.
-  I will remove all of the illeage parts.
-  Thanks :)
-   
-  Steward Fu
-  steward.fu@gmail.com
-  https://steward-fu.github.io/website/index.htm
-========================================================================================================*/
-#include &lt;DriverSpecs.h&gt;
-__user_code  
 #define INITGUID
 #include &lt;windows.h&gt;
 #include &lt;winioctl.h&gt;
@@ -288,56 +179,39 @@ __user_code
 #include &lt;setupapi.h&gt;
 #include &lt;stdio.h&gt;
 #include &lt;stdlib.h&gt;
-#define WHILE(a) __pragma(warning(suppress:4127)) while(a)
 
-//*** main entry point
 int __cdecl main(int argc, char* argv[])
 {
-  HANDLE hFile = NULL;
-  DWORD dwRet = 0;
-  char pucBuffer[255]={0};
+  DWORD len=0;
+  DWORD dwRet=0;
+  HANDLE hFile=NULL;
+  char szBuffer[255]={0};
  
-  hFile = CreateFile("\\\\.\\firstStartIO", GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+  hFile = CreateFile("\\\\.\\MyDriver", GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
   if (hFile == INVALID_HANDLE_VALUE) {
-    printf("failed to open driver\n");
-    return 1;
+    printf("failed to open mydriver\n");
+    return -1;
   }
- 
-  // write data to driver
-  sprintf_s(pucBuffer, sizeof(pucBuffer), "This is test message !");
-  WriteFile(hFile, pucBuffer, strlen(pucBuffer) + 1, &amp;dwRet, NULL);
-  printf("write to driver: %s\n", pucBuffer);
- 
-  // read data from driver
-  ReadFile(hFile, pucBuffer, sizeof(pucBuffer), &amp;dwRet, NULL);
-  printf("read from driver: %s\n", pucBuffer);
+
+  sprintf_s(szBuffer, sizeof(szBuffer), "I am error");
+  len = strlen(szBuffer)+1;
+  printf("WR: %s\n", szBuffer);
+  printf("Length: %d\n", len);
+  WriteFile(hFile, szBuffer, len, &amp;dwRet, NULL);
+
+  memset(szBuffer, 0, sizeof(szBuffer));
+  ReadFile(hFile, szBuffer, sizeof(szBuffer), &amp;dwRet, NULL);
+  printf("RD: %s\n", szBuffer);
+  printf("Length: %d\n", dwRet);
   CloseHandle(hFile);
   return 0;
 }
-</pre>
+</pre><br>
 
 <p>
-<img src="cpp_startio/1.jpg" class="maxSize">
-</p>
-
-<p>
-<img src="cpp_startio/2.jpg" class="maxSize">
-</p>
-
-<p>
-<img src="cpp_startio/3.jpg" class="maxSize">
-</p>
-
-<p>
-<img src="cpp_startio/4.jpg" class="maxSize">
-</p>
-
-<p>
-<img src="cpp_startio/5.jpg" class="maxSize">
-</p>
-
-<p>
-<img src="cpp_startio/6.jpg" class="maxSize">
+結果<br>
+<img src="asm_startio/1.jpg" class="maxSize"><br>
+<img src="asm_startio/2.jpg" class="maxSize">
 </p>
 
 <p>

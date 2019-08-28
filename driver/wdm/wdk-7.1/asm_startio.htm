@@ -1,4 +1,4 @@
-﻿<!--
+<!--
  ____________________________________________________________
 |                                                            |
 |    DESIGN + Pat Heard { http://fullahead.org }             |
@@ -44,36 +44,21 @@
 <div id="content">
 <script type="text/javascript" src="../../../header.js"></script>
 <div id="page">
-<h3>Windows Driver Model >> WDK 7.1 >> MASM32 >> Advanced</h3>
+<h3>Windows Driver Model &gt;&gt; WDK 7.1 (Assembly)</h3>
 <p><b>StartIO</b></p>
 <hr size="1">
 <p>
-[Github] <a href="https://github.com/steward-fu/gh_driver.git">https://github.com/steward-fu/gh_driver.git</a><br>
+參考資訊：<br>
+1. <a href="http://four-f.narod.ru/">Four-F</a><br>
+2. <a href="https://github.com/steward-fu/wdm">Source Code</a><br><br>
 
-</p>
+StartIO提供一個序列化的機制，讓使用者可以依照順序處理IRP，這個機制對於某些只能序列執行的硬體相當有幫助，省去用軟體實現序列化的程式碼，使用的步驟：<br>
+1. IoMarkIrpPending()<br>
+2. IoStartNextPacket()<br><br>
 
-<p>
-1. DriverStartIo<br>
-2. IoMarkIrpPending<br>
-3. IoStartNextPacket
-</p>
-
-<p>
 main.asm
 </p>
-
 <pre class="brush:cpp">
-;//========================================================================================================
-;//  Basically, all of files downloaded from my website can be modified or redistributed for any purpose.
-;//  It is my honor to share my interesting to everybody.
-;//  If you find any illeage content out from my website, please contact me firstly.
-;//  I will remove all of the illeage parts.
-;//  Thanks :)
-;//  
-;//  Steward Fu
-;//  steward.fu@gmail.com
-;//  https://steward-fu.github.io/website/../../../driver.htm
-;//========================================================================================================*/
 .386p
 .model flat, stdcall
 option casemap:none
@@ -88,17 +73,15 @@ includelib c:\masm32\lib\wxp\i386\ntoskrnl.lib
 public DriverEntry
 
 OurDeviceExtension struct
-  pNextDev        PDEVICE_OBJECT ?
-  szBuffer        BYTE 1024 dup(?)
-  dwBufferLength  DWORD ?
+  pNextDev PDEVICE_OBJECT ?
+  szBuffer BYTE 255 dup(?)
 OurDeviceExtension ends
 
 .const
-DEV_NAME word "\","D","e","v","i","c","e","\","f","i","r","s","t","S","t","a","r","t","I","O",0
-SYM_NAME word "\","D","o","s","D","e","v","i","c","e","s","\","f","i","r","s","t","S","t","a","r","t","I","O",0
+DEV_NAME word "\","D","e","v","i","c","e","\","M","y","D","r","i","v","e","r",0
+SYM_NAME word "\","D","o","s","D","e","v","i","c","e","s","\","M","y","D","r","i","v","e","r",0
 
 .code
-;//*** startio routine
 StartIo proc uses ebx pOurDevice:PDEVICE_OBJECT, pIrp:PIRP
   local pdx:PTR OurDeviceExtension
   local dwLen:DWORD
@@ -113,23 +96,26 @@ StartIo proc uses ebx pOurDevice:PDEVICE_OBJECT, pIrp:PIRP
   pop pBuf
   
   IoGetCurrentIrpStackLocation pIrp
-  Push (IO_STACK_LOCATION PTR [eax]).Parameters.Write._Length
-  pop dwLen
   movzx ebx, (IO_STACK_LOCATION PTR [eax]).MajorFunction
   .if ebx == IRP_MJ_WRITE
-    invoke DbgPrint, $CTA0("StartIo: IRP_MJ_WRITE")
-    mov eax, pdx
-    push dwLen
-    pop (OurDeviceExtension PTR [eax]).dwBufferLength
-    invoke memcpy, addr (OurDeviceExtension PTR [eax]).szBuffer, pBuf, dwLen
-    invoke DbgPrint, $CTA0("len: %d"), dwLen
-  .elseif ebx == IRP_MJ_READ
-    invoke DbgPrint, $CTA0("StartIo: IRP_MJ_READ")
-    mov eax, pdx
-    push (OurDeviceExtension PTR [eax]).dwBufferLength
+    invoke DbgPrint, $CTA0("StartIo, IRP_MJ_WRITE")
+    IoGetCurrentIrpStackLocation pIrp
+    Push (IO_STACK_LOCATION PTR [eax]).Parameters.Write._Length
     pop dwLen
+    
+    mov eax, pdx
+    invoke memcpy, addr (OurDeviceExtension PTR [eax]).szBuffer, pBuf, dwLen
+    invoke DbgPrint, $CTA0("Buffer: %s, Length: %d"), pBuf, dwLen
+  .elseif ebx == IRP_MJ_READ
+    invoke DbgPrint, $CTA0("StartIo, IRP_MJ_READ")
+    mov eax, pdx
+    invoke strlen, addr (OurDeviceExtension PTR [eax]).szBuffer
+    inc eax
+    push eax
+    pop dwLen
+    
+    mov eax, pdx
     invoke memcpy, pBuf, addr (OurDeviceExtension PTR [eax]).szBuffer, dwLen
-    invoke DbgPrint, $CTA0("buf: %s"), pBuf
   .endif
   
   mov eax, pIrp
@@ -142,15 +128,14 @@ StartIo proc uses ebx pOurDevice:PDEVICE_OBJECT, pIrp:PIRP
   ret
 StartIo endp
 
-;//*** process file irp
 IrpFile proc uses ebx pOurDevice:PDEVICE_OBJECT, pIrp:PIRP
   IoGetCurrentIrpStackLocation pIrp
   movzx ebx, (IO_STACK_LOCATION PTR [eax]).MajorFunction
   .if (ebx == IRP_MJ_CREATE) || (ebx == IRP_MJ_CLOSE) 
     .if (ebx == IRP_MJ_CREATE)
-      invoke DbgPrint, $CTA0("IrpFile: IRP_MJ_CREATE")
+      invoke DbgPrint, $CTA0("IRP_MJ_CREATE")
     .else
-      invoke DbgPrint, $CTA0("IrpFile: IRP_MJ_CLOSE")
+      invoke DbgPrint, $CTA0("IRP_MJ_CLOSE")
     .endif
     mov eax, pIrp
     and (_IRP PTR [eax]).IoStatus.Information, 0
@@ -160,9 +145,9 @@ IrpFile proc uses ebx pOurDevice:PDEVICE_OBJECT, pIrp:PIRP
   .elseif (ebx == IRP_MJ_READ) || (ebx == IRP_MJ_WRITE)
     IoGetCurrentIrpStackLocation pIrp
     .if (ebx == IRP_MJ_READ)
-      invoke DbgPrint, $CTA0("IrpFile: IRP_MJ_READ")
+      invoke DbgPrint, $CTA0("IrpFile, IRP_MJ_READ")
     .else
-      invoke DbgPrint, $CTA0("IrpFile: IRP_MJ_WRITE")
+      invoke DbgPrint, $CTA0("IrpFile, IRP_MJ_WRITE")
     .endif
     IoMarkIrpPending pIrp
     invoke IoStartPacket, pOurDevice, pIrp, 0, NULL
@@ -171,8 +156,7 @@ IrpFile proc uses ebx pOurDevice:PDEVICE_OBJECT, pIrp:PIRP
   ret
 IrpFile endp
 
-;//*** process pnp irp
-IrpPnP proc uses ebx pDevObj:PDEVICE_OBJECT, pIrp:PIRP
+IrpPnp proc uses ebx pDevObj:PDEVICE_OBJECT, pIrp:PIRP
   local pdx:PTR OurDeviceExtension
   local szSymName:UNICODE_STRING
 
@@ -200,18 +184,15 @@ IrpPnP proc uses ebx pDevObj:PDEVICE_OBJECT, pIrp:PIRP
   mov eax, pdx
   invoke IoCallDriver, (OurDeviceExtension PTR [eax]).pNextDev, pIrp
   ret
-IrpPnP endp
+IrpPnp endp
 
-;//*** system will vist this routine when it needs to add new device
 AddDevice proc pOurDriver:PDRIVER_OBJECT, pPhyDevice:PDEVICE_OBJECT
   local pOurDevice:PDEVICE_OBJECT
   local suDevName:UNICODE_STRING
   local szSymName:UNICODE_STRING
 
-  invoke DbgPrint, $CTA0("MASM32 WDM driver tutorial for StartIO")
   invoke RtlInitUnicodeString, addr suDevName, offset DEV_NAME
   invoke RtlInitUnicodeString, addr szSymName, offset SYM_NAME
-
   invoke IoCreateDevice, pOurDriver, sizeof OurDeviceExtension, addr suDevName, FILE_DEVICE_UNKNOWN, 0, FALSE, addr pOurDevice
   .if eax == STATUS_SUCCESS
     invoke IoAttachDeviceToDeviceStack, pOurDevice, pPhyDevice
@@ -232,17 +213,15 @@ AddDevice proc pOurDriver:PDRIVER_OBJECT, pPhyDevice:PDEVICE_OBJECT
   .endif
   ret
 AddDevice endp
-  
-;//*** it is time to unload our driver
+
 Unload proc pOurDriver:PDRIVER_OBJECT
   xor eax, eax
   ret
 Unload endp
 
-;//*** driver entry
 DriverEntry proc pOurDriver:PDRIVER_OBJECT, pOurRegistry:PUNICODE_STRING
   mov eax, pOurDriver
-  mov (DRIVER_OBJECT PTR [eax]).MajorFunction[IRP_MJ_PNP    * (sizeof PVOID)], offset IrpPnP
+  mov (DRIVER_OBJECT PTR [eax]).MajorFunction[IRP_MJ_PNP    * (sizeof PVOID)], offset IrpPnp
   mov (DRIVER_OBJECT PTR [eax]).MajorFunction[IRP_MJ_CREATE * (sizeof PVOID)], offset IrpFile
   mov (DRIVER_OBJECT PTR [eax]).MajorFunction[IRP_MJ_CLOSE  * (sizeof PVOID)], offset IrpFile
   mov (DRIVER_OBJECT PTR [eax]).MajorFunction[IRP_MJ_WRITE  * (sizeof PVOID)], offset IrpFile
@@ -257,114 +236,12 @@ DriverEntry endp
 end DriverEntry
 .end
 </pre>
-
 <p>
-startio.inf
-</p>
+<b>IrpFile()</b>IRP_MJ_READ和IRP_MJ_WRITE使用StartIO方式處理<br><br>
 
-<pre class="brush:cpp">
-;//========================================================================================================
-;//  Basically, all of files downloaded from my website can be modified or redistributed for any purpose.
-;//  It is my honor to share my interesting to everybody.
-;//  If you find any illeage content out from my website, please contact me firstly.
-;//  I will remove all of the illeage parts.
-;//  Thanks :)
-;//  
-;//  Steward Fu
-;//  steward.fu@gmail.com
-;//  https://steward-fu.github.io/website/../../../driver.htm
-;//========================================================================================================*/
-[Version]
-Signature=$CHICAGO$
-Class=Unknown
-Provider=%MFGNAME%
-DriverVer=12/23/2016,1.0.0.0
-   
-[DestinationDirs]
-DefaultDestDir=10,System32\Drivers
-   
-[Manufacturer]
-%MFGNAME%=DeviceList
-   
-[SourceDisksFiles]
-main.sys=1,,,
-   
-[SourceDisksNames]
-1=%INSTDISK%,,,
-   
-[DeviceList]
-%DESCRIPTION%=DriverInstall, *firstStartIO
-   
-[DriverInstall.NT]
-CopyFiles=DriverCopyFiles
-   
-[DriverCopyFiles]
-main.sys,,,2
-   
-[DriverInstall.NT.Services]
-AddService=FILEIO,2,DriverService
-   
-[DriverService]
-ServiceType=1
-StartType=3
-ErrorControl=1
-ServiceBinary=%10%\system32\drivers\main.sys
-   
-[DriverInstall.NT.HW]
-AddReg=DriverHwAddReg
-   
-[DriverHwAddReg]
-HKR,,SampleInfo,,""
-   
-[DriverInstall]
-AddReg=DriverAddReg
-CopyFiles=DriverCopyFiles
-   
-[DriverAddReg]
-HKR,,DevLoader,,*ntkern
-HKR,,NTMPDriver,,main.sys
-   
-[DriverInstall.HW]
-AddReg=DriverHwAddReg
-   
-[Strings]
-MFGNAME="firstStartIO"
-INSTDISK="firstStartIO Disc"
-DESCRIPTION="firstStartIO(Assembly)"
-</pre>
-
-<p>
-<img src="asm_startio/1.jpg" class="maxSize">
-</p>
-
-<p>
-<img src="asm_startio/2.jpg" class="maxSize">
-</p>
-
-<p>
-<img src="asm_startio/3.jpg" class="maxSize">
-</p>
-
-<p>
-<img src="asm_startio/4.jpg" class="maxSize">
-</p>
-
-<p>
 app.asm
 </p>
-
 <pre class="brush:cpp">
-;//========================================================================================================
-;//  Basically, all of files downloaded from my website can be modified or redistributed for any purpose.
-;//  It is my honor to share my interesting to everybody.
-;//  If you find any illeage content out from my website, please contact me firstly.
-;//  I will remove all of the illeage parts.
-;//  Thanks :)
-;//  
-;//  Steward Fu
-;//  steward.fu@gmail.com
-;//  https://steward-fu.github.io/website/../../../driver.htm
-;//========================================================================================================*/
 .386p
 .model flat, stdcall
 option casemap:none
@@ -382,49 +259,47 @@ includelib c:\masm32\lib\msvcrt.lib
 includelib c:\masm32\lib\kernel32.lib
 
 .const
-DEV_NAME        db "\\.\firstStartIO",0
-ERR_OPEN_DRIVER db "failed to open firstStartIO driver !",0
-SEND_MSG        db "this is test message !",0
-WRITE_MSG       db "Write: %s",10,13,0
-READ_MSG        db "Read: %s",10,13,0
-LEN_MSG         db "Length: %d",10,13,0
+DEV_NAME  db "\\.\MyDriver",0
+ERR_OPEN  db "failed to open mydriver",10,13,0
+MSG_SEND  db "I am error",0
+MSG_WRITE db "WR: %s",10,13,0
+MSG_READ  db "RD: %s",10,13,0
+MSG_LEN   db "Length: %d",10,13,0
 
 .data?
 hFile     dd ?
 dwRet     dd ?
-szBuffer  db  256 dup(?)
+szBuffer  db 256 dup(?)
 
 .code
 start:
   invoke CreateFile, offset DEV_NAME, GENERIC_READ or GENERIC_WRITE, FILE_SHARE_READ, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0
   .if eax == INVALID_HANDLE_VALUE
-    invoke crt_printf, offset ERR_OPEN_DRIVER
-    invoke ExitProcess, 0
+    invoke crt_printf, offset ERR_OPEN
+    invoke ExitProcess, -1
   .endif
   mov hFile, eax
 
-  invoke wsprintf, offset szBuffer, offset SEND_MSG
+  invoke wsprintf, offset szBuffer, offset MSG_SEND
   invoke StrLen, offset szBuffer
+  inc eax
   mov dwRet, eax
-  invoke crt_printf, offset WRITE_MSG, offset szBuffer
-  invoke crt_printf, offset LEN_MSG, dwRet
+  invoke crt_printf, offset MSG_WRITE, offset szBuffer
+  invoke crt_printf, offset MSG_LEN, dwRet
   invoke WriteFile, hFile, offset szBuffer, dwRet, offset dwRet, 0
   invoke crt_memset, offset szBuffer, 0, 255
   invoke ReadFile, hFile, offset szBuffer, 255, offset dwRet, 0
-  invoke crt_printf, offset READ_MSG, offset szBuffer
-  invoke crt_printf, offset LEN_MSG, dwRet
+  invoke crt_printf, offset MSG_READ, offset szBuffer
+  invoke crt_printf, offset MSG_LEN, dwRet
   invoke CloseHandle, hFile
-
   invoke ExitProcess, 0
 end start
-</pre>
+</pre><br>
 
 <p>
-<img src="asm_startio/5.jpg" class="maxSize">
-</p>
-
-<p>
-<img src="asm_startio/6.jpg" class="maxSize">
+結果<br>
+<img src="asm_startio/1.jpg" class="maxSize"><br>
+<img src="asm_startio/2.jpg" class="maxSize">
 </p>
 
 <p>
