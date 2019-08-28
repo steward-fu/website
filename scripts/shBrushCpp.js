@@ -137,7 +137,7 @@ var my_function =
 'MmGetMdlVirtualAddress SDL_Init SDL_SetVideoMode SDL_RWFromFile '     +
 'SDL_LoadBMP_RW SDL_UpperBlit SDL_Flip SDL_Delay SDL_FreeSurface '     +
 'SDL_Quit SDL_ShowCursor SDL_BlitSurface SDL_LoadBMP SDL_PollEvent '   +
-'ExitProcess crt_printf DeviceIoControl CTL_CODE ';
+'ExitProcess crt_printf DeviceIoControl CTL_CODE IoInitializeTimer ';
 
 this.regexList = [
 {regex: SyntaxHighlighter.regexLib.singleLineCComments, css:'comments'},

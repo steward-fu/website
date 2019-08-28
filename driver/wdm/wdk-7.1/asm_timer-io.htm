@@ -1,4 +1,4 @@
-﻿<!--
+<!--
  ____________________________________________________________
 |                                                            |
 |    DESIGN + Pat Heard { http://fullahead.org }             |
@@ -44,36 +44,19 @@
 <div id="content">
 <script type="text/javascript" src="../../../header.js"></script>
 <div id="page">
-<h3>Windows Driver Model >> WDK 7.1 >> MASM32 >> Advanced</h3>
-<p><b>Timer(I/O)</b></p>
+<h3>Windows Driver Model &gt;&gt; WDK 7.1 (Assembly) &gt;&gt; Timer</h3>
+<p><b>I/O</b></p>
 <hr size="1">
 <p>
-[Github] <a href="https://github.com/steward-fu/gh_driver.git">https://github.com/steward-fu/gh_driver.git</a><br>
+參考資訊：<br>
+1. <a href="http://four-f.narod.ru/">Four-F</a><br>
+2. <a href="https://github.com/steward-fu/wdm">Source Code</a><br><br>
 
-</p>
+IoTimer是Windows內核提供的一個Timer，呼叫的間隔固定為每秒一次，使用步驟：IoInitializeTimer() &gt; IoStartTimer() &gt; IoStopTimer()<br><br>
 
-<p>
-1. IoInitializeTimer<br>
-2. IoStartTimer(固定每秒執行)<br>
-3. IoStopTimer
-</p>
-
-<p>
 main.asm
 </p>
-
 <pre class="brush:cpp">
-;//========================================================================================================
-;//  Basically, all of files downloaded from my website can be modified or redistributed for any purpose.
-;//  It is my honor to share my interesting to everybody.
-;//  If you find any illeage content out from my website, please contact me firstly.
-;//  I will remove all of the illeage parts.
-;//  Thanks :)
-;//  
-;//  Steward Fu
-;//  steward.fu@gmail.com
-;//  https://steward-fu.github.io/website/../../../driver.htm
-;//========================================================================================================*/
 .386p
 .model flat, stdcall
 option casemap:none
@@ -88,19 +71,20 @@ includelib c:\masm32\lib\wxp\i386\ntoskrnl.lib
 public DriverEntry
 
 OurDeviceExtension struct
-  pNextDev    PDEVICE_OBJECT ?
-  dwTimerCnt  DWORD ?       
+  pNextDev   PDEVICE_OBJECT ?
+  dwTimerCnt DWORD ?       
 OurDeviceExtension ends
 
-IOCTL_TIMER_START  equ CTL_CODE(FILE_DEVICE_UNKNOWN, 800h, METHOD_BUFFERED,    FILE_ANY_ACCESS)
-IOCTL_TIMER_STOP   equ CTL_CODE(FILE_DEVICE_UNKNOWN, 801h, METHOD_BUFFERED,    FILE_ANY_ACCESS)
+IOCTL_START equ CTL_CODE(FILE_DEVICE_UNKNOWN, 800h, METHOD_BUFFERED, FILE_ANY_ACCESS)
+IOCTL_STOP  equ CTL_CODE(FILE_DEVICE_UNKNOWN, 801h, METHOD_BUFFERED, FILE_ANY_ACCESS)
 
 .const
-DEV_NAME word "\","D","e","v","i","c","e","\","f","i","r","s","t","T","i","m","e","r","-","I","O",0
-SYM_NAME word "\","D","o","s","D","e","v","i","c","e","s","\","f","i","r","s","t","T","i","m","e","r","-","I","O",0
+DEV_NAME  word "\","D","e","v","i","c","e","\","M","y","D","r","i","v","e","r",0
+SYM_NAME  word "\","D","o","s","D","e","v","i","c","e","s","\","M","y","D","r","i","v","e","r",0
+MSG_START byte "IOCTL_START",0
+MSG_STOP  byte "IOCTL_STOP",0
 
 .code
-;//*** timer routine
 OnTimer proc pOurDevice:PDEVICE_OBJECT, pContext:PVOID
   mov eax, pOurDevice
   mov eax, (DEVICE_OBJECT PTR [eax]).DeviceExtension
@@ -109,7 +93,6 @@ OnTimer proc pOurDevice:PDEVICE_OBJECT, pContext:PVOID
   ret
 OnTimer endp
 
-;//*** process file irp
 IrpOpenClose proc uses ebx pOurDevice:PDEVICE_OBJECT, pIrp:PIRP
   IoGetCurrentIrpStackLocation pIrp
   movzx ebx, (IO_STACK_LOCATION PTR [eax]).MajorFunction
@@ -127,7 +110,6 @@ IrpOpenClose proc uses ebx pOurDevice:PDEVICE_OBJECT, pIrp:PIRP
   ret
 IrpOpenClose endp
 
-;//*** process ioctl irp
 IrpIOCTL proc uses ebx ecx pOurDevice:PDEVICE_OBJECT, pIrp:PIRP
   local dwLen: DWORD
   local pdx:PTR OurDeviceExtension
@@ -144,13 +126,13 @@ IrpIOCTL proc uses ebx ecx pOurDevice:PDEVICE_OBJECT, pIrp:PIRP
 
   IoGetCurrentIrpStackLocation pIrp
   mov eax, (IO_STACK_LOCATION PTR [eax]).Parameters.DeviceIoControl.IoControlCode
-  .if eax == IOCTL_TIMER_START
-    invoke DbgPrint, $CTA0("_IOCTL_TIMER_START")
+  .if eax == IOCTL_START
+    invoke DbgPrint, offset MSG_START
     mov eax, pdx
     mov (OurDeviceExtension PTR[eax]).dwTimerCnt, 0
     invoke IoStartTimer, pOurDevice
-  .elseif eax == IOCTL_TIMER_STOP
-    invoke DbgPrint, $CTA0("_IOCTL_TIMER_STOP")
+  .elseif eax == IOCTL_STOP
+    invoke DbgPrint, offset MSG_STOP
     invoke IoStopTimer, pOurDevice
   .endif
 
@@ -163,8 +145,7 @@ IrpIOCTL proc uses ebx ecx pOurDevice:PDEVICE_OBJECT, pIrp:PIRP
   ret
 IrpIOCTL endp
 
-;//*** process pnp irp
-IrpPnP proc uses ebx pDevObj:PDEVICE_OBJECT, pIrp:PIRP
+IrpPnp proc uses ebx pDevObj:PDEVICE_OBJECT, pIrp:PIRP
   local pdx:PTR OurDeviceExtension
   local szSymName:UNICODE_STRING
 
@@ -183,7 +164,6 @@ IrpPnP proc uses ebx pDevObj:PDEVICE_OBJECT, pIrp:PIRP
     mov eax, pIrp
     mov (_IRP PTR [eax]).IoStatus.Status, STATUS_SUCCESS
 
-    ;// free allocated resources
     mov eax, pdx
     invoke IoDetachDevice, (OurDeviceExtension PTR [eax]).pNextDev
     invoke IoDeleteDevice, pDevObj
@@ -193,18 +173,15 @@ IrpPnP proc uses ebx pDevObj:PDEVICE_OBJECT, pIrp:PIRP
   mov eax, pdx
   invoke IoCallDriver, (OurDeviceExtension PTR [eax]).pNextDev, pIrp
   ret
-IrpPnP endp
+IrpPnp endp
 
-;//*** system will vist this routine when it needs to add new device
 AddDevice proc pOurDriver:PDRIVER_OBJECT, pPhyDevice:PDEVICE_OBJECT
   local pOurDevice:PDEVICE_OBJECT
   local suDevName:UNICODE_STRING
   local szSymName:UNICODE_STRING
 
-  invoke DbgPrint, $CTA0("MASM32 WDM driver tutorial for Timer-IO")
   invoke RtlInitUnicodeString, addr suDevName, offset DEV_NAME
   invoke RtlInitUnicodeString, addr szSymName, offset SYM_NAME
-
   invoke IoCreateDevice, pOurDriver, sizeof OurDeviceExtension, addr suDevName, FILE_DEVICE_UNKNOWN, 0, FALSE, addr pOurDevice
   .if eax == STATUS_SUCCESS
     invoke IoAttachDeviceToDeviceStack, pOurDevice, pPhyDevice
@@ -227,17 +204,15 @@ AddDevice proc pOurDriver:PDRIVER_OBJECT, pPhyDevice:PDEVICE_OBJECT
   .endif
   ret
 AddDevice endp
-  
-;//*** it is time to unload our driver
+
 Unload proc pOurDriver:PDRIVER_OBJECT
   xor eax, eax
   ret
 Unload endp
 
-;//*** driver entry
 DriverEntry proc pOurDriver:PDRIVER_OBJECT, pOurRegistry:PUNICODE_STRING
   mov eax, pOurDriver
-  mov (DRIVER_OBJECT PTR [eax]).MajorFunction[IRP_MJ_PNP    * (sizeof PVOID)], offset IrpPnP
+  mov (DRIVER_OBJECT PTR [eax]).MajorFunction[IRP_MJ_PNP    * (sizeof PVOID)], offset IrpPnp
   mov (DRIVER_OBJECT PTR [eax]).MajorFunction[IRP_MJ_CREATE * (sizeof PVOID)], offset IrpOpenClose
   mov (DRIVER_OBJECT PTR [eax]).MajorFunction[IRP_MJ_CLOSE  * (sizeof PVOID)], offset IrpOpenClose
   mov (DRIVER_OBJECT PTR [eax]).MajorFunction[IRP_MJ_DEVICE_CONTROL * (sizeof PVOID)], offset IrpIOCTL
@@ -250,114 +225,14 @@ DriverEntry endp
 end DriverEntry
 .end
 </pre>
-
 <p>
-timer-io.inf
-</p>
+<b>AddDevice()</b>初始化IoTimer<br>
+<b>IrpIOCTL()</b>IoTimer啟動或停止<br>
+<b>OnTimer()</b>僅列印訊息，其餘事情不做<br><br>
 
-<pre class="brush:cpp">
-;//========================================================================================================
-;//  Basically, all of files downloaded from my website can be modified or redistributed for any purpose.
-;//  It is my honor to share my interesting to everybody.
-;//  If you find any illeage content out from my website, please contact me firstly.
-;//  I will remove all of the illeage parts.
-;//  Thanks :)
-;//  
-;//  Steward Fu
-;//  steward.fu@gmail.com
-;//  https://steward-fu.github.io/website/../../../driver.htm
-;//========================================================================================================*/
-[Version]
-Signature=$CHICAGO$
-Class=Unknown
-Provider=%MFGNAME%
-DriverVer=12/23/2016,1.0.0.0
-   
-[DestinationDirs]
-DefaultDestDir=10,System32\Drivers
-   
-[Manufacturer]
-%MFGNAME%=DeviceList
-   
-[SourceDisksFiles]
-main.sys=1,,,
-   
-[SourceDisksNames]
-1=%INSTDISK%,,,
-   
-[DeviceList]
-%DESCRIPTION%=DriverInstall, *firstTimer-IO
-   
-[DriverInstall.NT]
-CopyFiles=DriverCopyFiles
-   
-[DriverCopyFiles]
-main.sys,,,2
-   
-[DriverInstall.NT.Services]
-AddService=FILEIO,2,DriverService
-   
-[DriverService]
-ServiceType=1
-StartType=3
-ErrorControl=1
-ServiceBinary=%10%\system32\drivers\main.sys
-   
-[DriverInstall.NT.HW]
-AddReg=DriverHwAddReg
-   
-[DriverHwAddReg]
-HKR,,SampleInfo,,""
-   
-[DriverInstall]
-AddReg=DriverAddReg
-CopyFiles=DriverCopyFiles
-   
-[DriverAddReg]
-HKR,,DevLoader,,*ntkern
-HKR,,NTMPDriver,,main.sys
-   
-[DriverInstall.HW]
-AddReg=DriverHwAddReg
-   
-[Strings]
-MFGNAME="firstTimer-IO"
-INSTDISK="firstTimer-IO Disc"
-DESCRIPTION="firstTimer-IO(Assembly)"
-</pre>
-
-<p>
-<img src="asm_timer-io/1.jpg" class="maxSize">
-</p>
-
-<p>
-<img src="asm_timer-io/2.jpg" class="maxSize">
-</p>
-
-<p>
-<img src="asm_timer-io/3.jpg" class="maxSize">
-</p>
-
-<p>
-<img src="asm_timer-io/4.jpg" class="maxSize">
-</p>
-
-<p>
 app.asm
 </p>
-
 <pre class="brush:cpp">
-;//========================================================================================================
-;//  Basically, all of files downloaded from my website can be modified or redistributed for any purpose.
-;//  It is my honor to share my interesting to everybody.
-;//  If you find any illeage content out from my website, please contact me firstly.
-;//  I will remove all of the illeage parts.
-;//  Thanks :)
-;//  
-;//  Steward Fu
-;//  steward.fu@gmail.com
-;//  https://steward-fu.github.io/website/../../../driver.htm
-;//========================================================================================================*/
 .386p
 .model flat, stdcall
 option casemap:none
@@ -375,11 +250,11 @@ includelib c:\masm32\lib\masm32.lib
 includelib c:\masm32\lib\msvcrt.lib
 includelib c:\masm32\lib\kernel32.lib
  
-IOCTL_TIMER_START  equ CTL_CODE(FILE_DEVICE_UNKNOWN, 800h, METHOD_BUFFERED,    FILE_ANY_ACCESS)
-IOCTL_TIMER_STOP   equ CTL_CODE(FILE_DEVICE_UNKNOWN, 801h, METHOD_BUFFERED,    FILE_ANY_ACCESS)
+IOCTL_START equ CTL_CODE(FILE_DEVICE_UNKNOWN, 800h, METHOD_BUFFERED, FILE_ANY_ACCESS)
+IOCTL_STOP  equ CTL_CODE(FILE_DEVICE_UNKNOWN, 801h, METHOD_BUFFERED, FILE_ANY_ACCESS)
  
 .const
-DEV_NAME db "\\.\firstTimer-IO",0
+DEV_NAME db "\\.\MyDriver",0
  
 .data?
 hFile dd ?
@@ -389,26 +264,24 @@ dwRet dd ?
 start:
   invoke CreateFile, offset DEV_NAME, GENERIC_READ or GENERIC_WRITE, FILE_SHARE_READ, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0
   .if eax == INVALID_HANDLE_VALUE
-    invoke crt_printf, $CTA0("failed to open firstTimer-IO driver")
-    invoke ExitProcess, 0
+    invoke crt_printf, $CTA0("failed to open mydriver\n")
+    invoke ExitProcess, -1
   .endif
   mov hFile, eax
    
-  invoke DeviceIoControl, hFile, IOCTL_TIMER_START, NULL, 0, NULL, 0, offset dwRet, NULL
+  invoke DeviceIoControl, hFile, IOCTL_START, NULL, 0, NULL, 0, offset dwRet, NULL
   invoke Sleep, 3000
-  invoke DeviceIoControl, hFile, IOCTL_TIMER_STOP, NULL, 0, NULL, 0, offset dwRet, NULL
+  invoke DeviceIoControl, hFile, IOCTL_STOP, NULL, 0, NULL, 0, offset dwRet, NULL
 
   invoke CloseHandle, hFile
   invoke ExitProcess, 0
 end start
-</pre>
+</pre><br>
 
 <p>
-<img src="asm_timer-io/5.jpg" class="maxSize">
-</p>
-
-<p>
-<img src="asm_timer-io/6.jpg" class="maxSize">
+結果<br>
+<img src="asm_timer-io/1.jpg" class="maxSize"><br>
+<img src="asm_timer-io/2.jpg" class="maxSize">
 </p>
 
 <p>
