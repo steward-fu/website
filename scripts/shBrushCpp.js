@@ -30,7 +30,7 @@ var my_constant =
 'dptr p0 p1 p2 p3 UMTYPE UMBASE USE_MSVCRT IRP_MJ_DEVICE_CONTROL '     +
 'SDL_INIT_VIDEO SDL_HWSURFACE SDL_KEYDOWN r0 r1 r2 r3 r4 r5 r6 r7 r8 ' +
 'r10 r11 r12 METHOD_BUFFERED FILE_ANY_ACCESS FILE_SHARE_READ '         +
-'STATUS_PENDING INFINITE ';
+'STATUS_PENDING INFINITE STATUS_CANCELLED ';
 
 var my_keyword =
 'ptr PTR proto PROTO struct STRUCT UNION union ends ENDS 386p 486p b ' +
@@ -50,7 +50,7 @@ var my_keyword =
 'using uuid virtual void volatile whcar_t while macro req vararg fill '+
 'rodata endm zero equiv exitm bit org jmp ajmp ljmp sjmp clr setb jnb '+
 'jb cjne jc nop mod movc anl orl xrl jz jnz PROGRAM rlc thumb_func '   +
-'sub cmp thumb cpu syntax unified cortex-m3 bne Push ';
+'sub cmp thumb cpu syntax unified cortex-m3 bne Push lea edi esi endw ';
 
 var my_type =
 'NTSTATUS OBJECT_ATTRIBUTES UNICODE_STRING dd dw unsigned skip '       +
@@ -142,7 +142,8 @@ var my_function =
 'crt_memset wsprintf IoMarkIrpPending IoStartPacket StrLen sprintf_s ' +
 'IsListEmpty RemoveHeadList InsertHeadList KeSetTimerEx '              +
 'InitializeListHead KeInitializeTimer KeInitializeDpc CreateEvent '    +
-'WaitForSingleObject KeCancelTimer CONTAINING_RECORD ';
+'WaitForSingleObject KeCancelTimer CONTAINING_RECORD '                 +
+'IoStartNextPacket Sleep CancelIo SleepEx ';
 
 this.regexList = [
 {regex: SyntaxHighlighter.regexLib.singleLineCComments, css:'comments'},
