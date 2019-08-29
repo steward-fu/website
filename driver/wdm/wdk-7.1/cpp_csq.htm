@@ -1,4 +1,4 @@
-﻿<!--
+<!--
  ____________________________________________________________
 |                                                            |
 |    DESIGN + Pat Heard { http://fullahead.org }             |
@@ -44,53 +44,48 @@
 <div id="content">
 <script type="text/javascript" src="../../../header.js"></script>
 <div id="page">
-<h3>Windows Driver Model >> WDK 7.1 >> C/C++ >> Advanced</h3>
+<h3>Windows Driver Model &gt;&gt; WDK 7.1 (C/C++)</h3>
 <p><b>Cancel-Safe IRP Queue(CSQ)</b></p>
 <hr size="1">
 <p>
-[Github] <a href="https://github.com/steward-fu/gh_driver.git">https://github.com/steward-fu/gh_driver.git</a>
-</p>
+參考資訊：<br>
+1. <a href="https://github.com/steward-fu/wdm">Source Code</a><br>
+2. <a href="https://docs.microsoft.com/zh-tw/windows-hardware/drivers/kernel/cancel-safe-irp-queues">cancel-safe-irp-queues</a><br><br>
 
-<p>
+Cancel-Safe IRP Queues(CSQ)是Microsoft提供的一個Cancel框架，這個框架概念就是讓使用者只專注在Cancel的資料處理上，而不是Cancel的同步處理上，畢竟每個人做出來的Cancel同步機制可能不同，但是原理是一樣的，因此，Microsoft提供了一個專門框架給驅動程式使用並且建議使用這個框架處理Cancel Irp，下圖是說明的圖片：<br>
+<img src="asm_csq/1.jpg" class="maxSize"><br>
+對於CSQ細節有興趣的使用者可以參考上面的參考資訊，而設定的Callback如下所示：<br>
+1. CsqInsertIrp<br>
+2. CsqRemoveIrp<br>
+3. CsqPeekNextIrp<br>
+4. CsqAcquireLock<br>
+5. CsqReleaseLock<br>
+6. CsqCompleteCanceledIrp<br><br>
+
 main.c
 </p>
-
 <pre class="brush:cpp">
-/*========================================================================================================
-  Basically, all of files downloaded from my website can be modified or redistributed for any purpose.
-  It is my honor to share my interesting to everybody.
-  If you find any illeage content out from my website, please contact me firstly.
-  I will remove all of the illeage parts.
-  Thanks :)
-   
-  Steward Fu
-  steward.fu@gmail.com
-  https://steward-fu.github.io/website/index.htm
-========================================================================================================*/
 #include &lt;wdm.h&gt;
 
-#define IOCTL_QUEUE_IT    CTL_CODE(FILE_DEVICE_UNKNOWN, 0x800, METHOD_NEITHER, FILE_ANY_ACCESS)
-#define IOCTL_PROCESS_IT  CTL_CODE(FILE_DEVICE_UNKNOWN, 0x801, METHOD_NEITHER, FILE_ANY_ACCESS)
+#define IOCTL_QUEUE   CTL_CODE(FILE_DEVICE_UNKNOWN, 0x800, METHOD_NEITHER, FILE_ANY_ACCESS)
+#define IOCTL_PROCESS CTL_CODE(FILE_DEVICE_UNKNOWN, 0x801, METHOD_NEITHER, FILE_ANY_ACCESS)
 
-#define DEV_NAME  L"\\Device\\firstCSQ"
-#define SYM_NAME  L"\\DosDevices\\firstCSQ"
-#define MSG       "WDM driver tutorial for CSQ"
+#define DEV_NAME L"\\Device\\MyDriver"
+#define SYM_NAME L"\\DosDevices\\MyDriver"
 
-PDEVICE_OBJECT gNextDevice=NULL;
-LIST_ENTRY stQueue={0};
-KDPC stTimeDPC={0};
-KTIMER stTime={0};
+KDPC stDPC={0};
 IO_CSQ stCsq={0};
-KSPIN_LOCK stQueueLock={0};
+KTIMER stTime={0};
+KSPIN_LOCK stLock={0};
+LIST_ENTRY stQueue={0};
+PDEVICE_OBJECT pNextDevice=NULL;
 
-//*** insert csq
 VOID CsqInsertIrp(struct _IO_CSQ *pCsq, PIRP pIrp)
 {
   DbgPrint("CsqInsertIrp");
   InsertTailList(&amp;stQueue, &amp;pIrp-&gt;Tail.Overlay.ListEntry);
 }
 
-//*** remove csq
 VOID CsqRemoveIrp(PIO_CSQ pCsq, PIRP pIrp)
 {
   UNREFERENCED_PARAMETER(pCsq);
@@ -98,7 +93,6 @@ VOID CsqRemoveIrp(PIO_CSQ pCsq, PIRP pIrp)
   RemoveEntryList(&amp;pIrp-&gt;Tail.Overlay.ListEntry);
 }
 
-//*** complete cancel irp
 VOID CsqCompleteCanceledIrp(PIO_CSQ pCsq, PIRP pIrp)
 {
   UNREFERENCED_PARAMETER(pCsq);
@@ -108,7 +102,6 @@ VOID CsqCompleteCanceledIrp(PIO_CSQ pCsq, PIRP pIrp)
   IoCompleteRequest(pIrp, IO_NO_INCREMENT);
 }
 
-//*** next csq
 PIRP CsqPeekNextIrp(PIO_CSQ pCsq, PIRP pIrp, PVOID PeekContext)
 {
   PIRP pNextIrp=NULL;
@@ -141,34 +134,31 @@ PIRP CsqPeekNextIrp(PIO_CSQ pCsq, PIRP pIrp, PVOID PeekContext)
   return pNextIrp;
 }
 
-//*** lock csq
 VOID CsqAcquireLock(PIO_CSQ pCsq, KIRQL *pIrql)
 {
   DbgPrint("CsqAcquireLock");
-  KeAcquireSpinLock(&amp;stQueueLock, pIrql);
+  KeAcquireSpinLock(&amp;stLock, pIrql);
 }
 
-//*** release csq
 VOID CsqReleaseLock(PIO_CSQ pCsq, KIRQL pIrql)
 {
   if(pIrql == DISPATCH_LEVEL){
-    KeReleaseSpinLockFromDpcLevel(&amp;stQueueLock);
+    KeReleaseSpinLockFromDpcLevel(&amp;stLock);
     DbgPrint("CsqReleaseLock at DPC level");
   }
   else{
-    KeReleaseSpinLock(&amp;stQueueLock, pIrql);
+    KeReleaseSpinLock(&amp;stLock, pIrql);
     DbgPrint("CsqReleaseLock at Passive level");
   }
 }
 
-//*** timer routine
 VOID OnTimer(struct _KDPC *Dpc, PVOID DeferredContext, PVOID SystemArgument1, PVOID SystemArgument2)
 {
   PIRP pIrp;
   PLIST_ENTRY plist;
   if(IsListEmpty(&amp;stQueue) == TRUE){
     KeCancelTimer(&amp;stTime);
-    DbgPrint("OnTimer: Process successfully");
+    DbgPrint("Finish");
   }
   else{
     plist = RemoveHeadList(&amp;stQueue);
@@ -177,48 +167,44 @@ VOID OnTimer(struct _KDPC *Dpc, PVOID DeferredContext, PVOID SystemArgument1, PV
       pIrp-&gt;IoStatus.Status = STATUS_SUCCESS;
       pIrp-&gt;IoStatus.Information = 0;
       IoCompleteRequest(pIrp, IO_NO_INCREMENT);
-      DbgPrint("OnTimer: Complete Irp");
+      DbgPrint("Complete Irp");
     }
     else{
       pIrp-&gt;CancelRoutine = NULL;
       pIrp-&gt;IoStatus.Status = STATUS_CANCELLED;
       pIrp-&gt;IoStatus.Information = 0;
       IoCompleteRequest(pIrp, IO_NO_INCREMENT);
-      DbgPrint("OnTimer: Cancel Irp");
+      DbgPrint("Cancel Irp");
     }
   }
 }
 
-//*** system will vist this routine when it needs to add new device
 NTSTATUS AddDevice(PDRIVER_OBJECT pOurDriver, PDEVICE_OBJECT pPhyDevice)
 {
   PDEVICE_OBJECT pOurDevice=NULL;
   UNICODE_STRING usDeviceName;
   UNICODE_STRING usSymboName;
 
-  DbgPrint(MSG);
   RtlInitUnicodeString(&amp;usDeviceName, DEV_NAME);
   IoCreateDevice(pOurDriver, 0, &amp;usDeviceName, FILE_DEVICE_UNKNOWN, 0, FALSE, &amp;pOurDevice);
   RtlInitUnicodeString(&amp;usSymboName, SYM_NAME);
   IoCreateSymbolicLink(&amp;usSymboName, &amp;usDeviceName);
-  gNextDevice = IoAttachDeviceToDeviceStack(pOurDevice, pPhyDevice);
+  pNextDevice = IoAttachDeviceToDeviceStack(pOurDevice, pPhyDevice);
   pOurDevice-&gt;Flags&amp;= ~DO_DEVICE_INITIALIZING;
   pOurDevice-&gt;Flags|= DO_BUFFERED_IO;
   
   InitializeListHead(&amp;stQueue);
   KeInitializeTimer(&amp;stTime);
-  KeInitializeDpc(&amp;stTimeDPC, OnTimer, pOurDevice);
+  KeInitializeDpc(&amp;stDPC, OnTimer, pOurDevice);
   IoCsqInitialize(&amp;stCsq, CsqInsertIrp, CsqRemoveIrp, CsqPeekNextIrp, CsqAcquireLock, CsqReleaseLock, CsqCompleteCanceledIrp);
   return STATUS_SUCCESS;
 }
-  
-//*** it is time to unload our driver
+
 void Unload(PDRIVER_OBJECT pOurDriver)
 {
   pOurDriver = pOurDriver;
 }
 
-//*** process pnp irp
 NTSTATUS IrpPnp(PDEVICE_OBJECT pOurDevice, PIRP pIrp)
 {
   PIO_STACK_LOCATION psk = IoGetCurrentIrpStackLocation(pIrp);
@@ -227,29 +213,28 @@ NTSTATUS IrpPnp(PDEVICE_OBJECT pOurDevice, PIRP pIrp)
   if(psk-&gt;MinorFunction == IRP_MN_REMOVE_DEVICE){
     RtlInitUnicodeString(&amp;usSymboName, SYM_NAME);
     IoDeleteSymbolicLink(&amp;usSymboName);
-    IoDetachDevice(gNextDevice);
+    IoDetachDevice(pNextDevice);
     IoDeleteDevice(pOurDevice);
   }
   IoSkipCurrentIrpStackLocation(pIrp);
-  return IoCallDriver(gNextDevice, pIrp);
+  return IoCallDriver(pNextDevice, pIrp);
 }
 
-//*** process ioctl irp
 NTSTATUS IrpIOCTL(PDEVICE_OBJECT pOurDevice, PIRP pIrp)
 {
   LARGE_INTEGER stTimePeriod;
   PIO_STACK_LOCATION psk = IoGetCurrentIrpStackLocation(pIrp);
 
   switch(psk-&gt;Parameters.DeviceIoControl.IoControlCode){
-  case IOCTL_QUEUE_IT:
-    DbgPrint("IrpIOCTL, IOCTL_QUEUE_IT\n");
+  case IOCTL_QUEUE:
+    DbgPrint("IOCTL_QUEUE");
     IoCsqInsertIrp(&amp;stCsq, pIrp, NULL);
     return STATUS_PENDING;
-  case IOCTL_PROCESS_IT:
-    DbgPrint("IrpIOCTL, IOCTL_PROCESS_IT\n");
+  case IOCTL_PROCESS:
+    DbgPrint("IOCTL_PROCESS");
     stTimePeriod.HighPart|= -1;
     stTimePeriod.LowPart = -1000000;
-    KeSetTimerEx(&amp;stTime, stTimePeriod, 1000, &amp;stTimeDPC);
+    KeSetTimerEx(&amp;stTime, stTimePeriod, 1000, &amp;stDPC);
     break;
   }
   pIrp-&gt;IoStatus.Information = 0;
@@ -258,24 +243,22 @@ NTSTATUS IrpIOCTL(PDEVICE_OBJECT pOurDevice, PIRP pIrp)
   return STATUS_SUCCESS;
 }
 
-//*** process file irp
 NTSTATUS IrpFile(PDEVICE_OBJECT pOurDevice, PIRP pIrp)
 {
   PIO_STACK_LOCATION psk = IoGetCurrentIrpStackLocation(pIrp);
 
   switch(psk-&gt;MajorFunction){
   case IRP_MJ_CREATE:
-    DbgPrint("IrpFile, IRP_MJ_CREATE\n");
+    DbgPrint("IRP_MJ_CREATE");
     break;
   case IRP_MJ_CLOSE:
-    DbgPrint("IrpFile, IRP_MJ_CLOSE\n");
+    DbgPrint("IRP_MJ_CLOSE");
     break;
   }
   IoCompleteRequest(pIrp, IO_NO_INCREMENT);
   return STATUS_SUCCESS;
 }
-  
-//*** driver entry
+
 NTSTATUS DriverEntry(PDRIVER_OBJECT pOurDriver, PUNICODE_STRING pOurRegistry)
 {
   pOurDriver-&gt;MajorFunction[IRP_MJ_PNP] = IrpPnp;
@@ -287,100 +270,20 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT pOurDriver, PUNICODE_STRING pOurRegistry)
   return STATUS_SUCCESS;
 }
 </pre>
-
 <p>
-main.inf
+<b>AddDevice()</b>初始化List、DPC Timer和CSQ的Callback<br>
+<b>IrpIOCTL()</b>IOCTL_QUEUE把Irp加入List，IOCTL_PROCESS開始處理Irp<br>
+<b>OnTimer()</b>定時查看是否有需要處理的Irp<br>
+<b>CsqReleaseLock()</b>同步CSQ Irp用<br>
+<b>CsqAcquireLock()</b>同步CSQ Irp用<br>
+<b>CsqPeekNextIrp()</b>需要手動移除CSQ Irp時使用，目前沒有使用到<br>
+<b>CsqCompleteCanceledIrp</b>處理Cancel Irp用<br>
+<b>CsqRemoveIrp()</b>Irp被CSQ移除時呼叫<br>
+<b>CsqInsertIrp()</b>Irp被加入到CSQ時呼叫<br><br>
+
+app.c
 </p>
-
 <pre class="brush:cpp">
-;/*========================================================================================================
-;//  Basically, all of files downloaded from my website can be modified or redistributed for any purpose.
-;//  It is my honor to share my interesting to everybody.
-;//  If you find any illeage content out from my website, please contact me firstly.
-;//  I will remove all of the illeage parts.
-;//  Thanks :)
-;//   
-;//  Steward Fu
-;//  steward.fu@gmail.com
-;//  https://steward-fu.github.io/website/index.htm
-;//========================================================================================================*/
-[Version]
-Signature=$CHICAGO$
-Class=Unknown
-Provider=%MFGNAME%
-DriverVer=01/06/2017,1.0.0.0
- 
-[Manufacturer]
-%MFGNAME%=DeviceList
- 
-[DeviceList]
-%DESCRIPTION%=DriverInstall, *firstCSQ
- 
-[DestinationDirs]
-DefaultDestDir=10,System32\Drivers
- 
-[SourceDisksFiles]
-main.sys=1,,,
- 
-[SourceDisksNames]
-1=%INSTDISK%,,,
- 
-[DriverInstall.NT]
-CopyFiles=DriverCopyFiles
- 
-[DriverCopyFiles]
-main.sys,,,2
- 
-[DriverInstall.NT.Services]
-AddService=firstCSQ,2,DriverService
- 
-[DriverService]
-ServiceType=1
-StartType=3
-ErrorControl=1
-ServiceBinary=%10%\system32\drivers\main.sys
- 
-[DriverInstall.NT.HW]
-AddReg=DriverHwAddReg
- 
-[DriverHwAddReg]
-HKR,,SampleInfo,,""
- 
-[DriverInstall]
-AddReg=DriverAddReg
-CopyFiles=DriverCopyFiles
- 
-[DriverAddReg]
-HKR,,DevLoader,,*ntkern
-HKR,,NTMPDriver,,main.sys
- 
-[DriverInstall.HW]
-AddReg=DriverHwAddReg
- 
-[Strings]
-MFGNAME="firstCSQ"
-INSTDISK="firstCSQ Disc"
-DESCRIPTION="firstCSQ"
-</pre>
-
-<p>
-app.cpp
-</p>
-
-<pre class="brush:cpp">
-/*========================================================================================================
-  Basically, all of files downloaded from my website can be modified or redistributed for any purpose.
-  It is my honor to share my interesting to everybody.
-  If you find any illeage content out from my website, please contact me firstly.
-  I will remove all of the illeage parts.
-  Thanks :)
-   
-  Steward Fu
-  steward.fu@gmail.com
-  https://steward-fu.github.io/website/index.htm
-========================================================================================================*/
-#include &lt;DriverSpecs.h&gt;
-__user_code  
 #define INITGUID
 #include &lt;windows.h&gt;
 #include &lt;winioctl.h&gt;
@@ -388,58 +291,46 @@ __user_code
 #include &lt;setupapi.h&gt;
 #include &lt;stdio.h&gt;
 #include &lt;stdlib.h&gt;
-#define WHILE(a) __pragma(warning(suppress:4127)) while(a)
-
-#define IOCTL_QUEUE_IT    CTL_CODE(FILE_DEVICE_UNKNOWN, 0x800, METHOD_NEITHER, FILE_ANY_ACCESS)
-#define IOCTL_PROCESS_IT  CTL_CODE(FILE_DEVICE_UNKNOWN, 0x801, METHOD_NEITHER, FILE_ANY_ACCESS)
  
-//*** main entry point
+#define IOCTL_QUEUE   CTL_CODE(FILE_DEVICE_UNKNOWN, 0x800, METHOD_NEITHER, FILE_ANY_ACCESS)
+#define IOCTL_PROCESS CTL_CODE(FILE_DEVICE_UNKNOWN, 0x801, METHOD_NEITHER, FILE_ANY_ACCESS)
+ 
 int __cdecl main(int argc, char* argv[])
 {
   int i=0;
-  HANDLE hFile = NULL;
   DWORD dwRet = 0;
-  OVERLAPPED ov={0};
-
-  hFile = CreateFile("\\\\.\\firstCSQ", GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_FLAG_OVERLAPPED | FILE_ATTRIBUTE_NORMAL, NULL);
+  HANDLE hFile = NULL;
+  OVERLAPPED ov[3]={0};
+ 
+  hFile = CreateFile("\\\\.\\MyDriver", GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_FLAG_OVERLAPPED | FILE_ATTRIBUTE_NORMAL, NULL);
   if (hFile == INVALID_HANDLE_VALUE) {
-    printf("failed to open driver\n");
-    return 1;
+    printf("failed to open mydriver\n");
+    return -1;
   }
   for(i=0; i&lt;3; i++){
-    memset(&amp;ov, 0, sizeof(ov));
-    ov.hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
-    DeviceIoControl(hFile, IOCTL_QUEUE_IT, NULL, 0, NULL, 0, &amp;dwRet, &amp;ov);
+    memset(&amp;ov[i], 0, sizeof(ov[i]));
+    ov[i].hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+    printf("queue event\n");
+    DeviceIoControl(hFile, IOCTL_QUEUE, NULL, 0, NULL, 0, &amp;dwRet, &amp;ov[i]);
   }
-  DeviceIoControl(hFile, IOCTL_PROCESS_IT, NULL, 0, NULL, 0, &amp;dwRet, NULL);
-  Sleep(10000);
+  printf("process all of events\n");
+  DeviceIoControl(hFile, IOCTL_PROCESS, NULL, 0, NULL, 0, &amp;dwRet, NULL);
+  Sleep(1000);
+  CancelIo(hFile);
+  for(i=0; i&lt;3; i++){
+    WaitForSingleObject(ov[i].hEvent, INFINITE);
+    CloseHandle(ov[i].hEvent);
+    printf("wait complete\n");
+  }
   CloseHandle(hFile);
   return 0;
 }
-</pre>
+</pre><br>
 
 <p>
-<img src="cpp_csq/1.jpg" class="maxSize">
-</p>
-
-<p>
-<img src="cpp_csq/2.jpg" class="maxSize">
-</p>
-
-<p>
-<img src="cpp_csq/3.jpg" class="maxSize">
-</p>
-
-<p>
-<img src="cpp_csq/4.jpg" class="maxSize">
-</p>
-
-<p>
-<img src="cpp_csq/5.jpg" class="maxSize">
-</p>
-
-<p>
-<img src="cpp_csq/6.jpg" class="maxSize">
+結果<br>
+<img src="asm_csq/2.jpg" class="maxSize"><br>
+<img src="asm_csq/3.jpg" class="maxSize">
 </p>
 
 <p>

@@ -1,4 +1,4 @@
-﻿<!--
+<!--
  ____________________________________________________________
 |                                                            |
 |    DESIGN + Pat Heard { http://fullahead.org }             |
@@ -44,30 +44,28 @@
 <div id="content">
 <script type="text/javascript" src="../../../header.js"></script>
 <div id="page">
-<h3>Windows Driver Model >> WDK 7.1 >> MASM32 >> Advanced</h3>
+<h3>Windows Driver Model &gt;&gt; WDK 7.1 (Assembly)</h3>
 <p><b>Cancel-Safe IRP Queue(CSQ)</b></p>
 <hr size="1">
 <p>
-[Github] <a href="https://github.com/steward-fu/gh_driver.git">https://github.com/steward-fu/gh_driver.git</a><br>
+參考資訊：<br>
+1. <a href="http://four-f.narod.ru/">Four-F</a><br>
+2. <a href="https://github.com/steward-fu/wdm">Source Code</a><br>
+3. <a href="https://docs.microsoft.com/zh-tw/windows-hardware/drivers/kernel/cancel-safe-irp-queues">cancel-safe-irp-queues</a><br><br>
 
-</p>
+Cancel-Safe IRP Queues(CSQ)是Microsoft提供的一個Cancel框架，這個框架概念就是讓使用者只專注在Cancel的資料處理上，而不是Cancel的同步處理上，畢竟每個人做出來的Cancel同步機制可能不同，但是原理是一樣的，因此，Microsoft提供了一個專門框架給驅動程式使用並且建議使用這個框架處理Cancel Irp，下圖是說明的圖片：<br>
+<img src="asm_csq/1.jpg" class="maxSize"><br>
+對於CSQ細節有興趣的使用者可以參考上面的參考資訊，而設定的Callback如下所示：<br>
+1. CsqInsertIrp<br>
+2. CsqRemoveIrp<br>
+3. CsqPeekNextIrp<br>
+4. CsqAcquireLock<br>
+5. CsqReleaseLock<br>
+6. CsqCompleteCanceledIrp<br><br>
 
-<p>
 main.asm
 </p>
-
 <pre class="brush:cpp">
-;//========================================================================================================
-;//  Basically, all of files downloaded from my website can be modified or redistributed for any purpose.
-;//  It is my honor to share my interesting to everybody.
-;//  If you find any illeage content out from my website, please contact me firstly.
-;//  I will remove all of the illeage parts.
-;//  Thanks :)
-;//  
-;//  Steward Fu
-;//  steward.fu@gmail.com
-;//  https://steward-fu.github.io/website/../../../driver.htm
-;//========================================================================================================*/
 .386p
 .model flat, stdcall
 option casemap:none
@@ -86,32 +84,34 @@ includelib c:\masm32\lib\wxp\i386\csq.lib
 public DriverEntry
 
 OurDeviceExtension struct
-  pNextDev    PDEVICE_OBJECT ?
-  stQueue         LIST_ENTRY      <>
-  stTimeDPC       KDPC            <>
-  stTime          KTIMER          <>
-  stCsq           IO_CSQ          <>
-  stQueueLock     KSPIN_LOCK      <>
+  pNextDev PDEVICE_OBJECT ?
+  stQueue  LIST_ENTRY &lt;&gt;
+  stDPC    KDPC &lt;&gt;
+  stTime   KTIMER &lt;&gt;
+  stCsq    IO_CSQ &lt;&gt;
+  stLock   KSPIN_LOCK &lt;&gt;
 OurDeviceExtension ends
 
-IOCTL_QUEUE_IT    equ CTL_CODE(FILE_DEVICE_UNKNOWN, 800h, METHOD_BUFFERED,    FILE_ANY_ACCESS)
-IOCTL_PROCESS_IT  equ CTL_CODE(FILE_DEVICE_UNKNOWN, 801h, METHOD_BUFFERED,    FILE_ANY_ACCESS)
+IOCTL_QUEUE   equ CTL_CODE(FILE_DEVICE_UNKNOWN, 800h, METHOD_BUFFERED, FILE_ANY_ACCESS)
+IOCTL_PROCESS equ CTL_CODE(FILE_DEVICE_UNKNOWN, 801h, METHOD_BUFFERED, FILE_ANY_ACCESS)
 
 .const
-DEV_NAME word "\","D","e","v","i","c","e","\","f","i","r","s","t","C","S","Q",0
-SYM_NAME word "\","D","o","s","D","e","v","i","c","e","s","\","f","i","r","s","t","C","S","Q",0
+DEV_NAME    word "\","D","e","v","i","c","e","\","M","y","D","r","i","v","e","r",0
+SYM_NAME    word "\","D","o","s","D","e","v","i","c","e","s","\","M","y","D","r","i","v","e","r",0
+MSG_QUEUE   byte "IOCTL_QUEUE",0
+MSG_PROCESS byte "IOCTL_PROCESS",0
 
 .code
-;//*** insert csq
 CsqInsertIrp proc uses ebx ecx pCsqInfo:PIO_CSQ, pIrp:PIRP
   local pdx:PTR DevExt
-
+  
   invoke DbgPrint, $CTA0("CsqInsertIrp")
+  
   ;// CONTAINING_RECORD 
   mov eax, pCsqInfo
   sub eax, OurDeviceExtension.stCsq
   mov pdx, eax
-  ;// Queue this Irp
+
   mov ebx, pdx
   lea ebx, (OurDeviceExtension PTR [ebx]).stQueue
   mov ecx, pIrp
@@ -120,26 +120,24 @@ CsqInsertIrp proc uses ebx ecx pCsqInfo:PIO_CSQ, pIrp:PIRP
   ret
 CsqInsertIrp endp
 
-;//*** remove csq
 CsqRemoveIrp proc pCsqInfo:PIO_CSQ, pIrp:PIRP
-    invoke DbgPrint, $CTA0("CsqRemoveIrp")
-    mov eax, pIrp
-    lea eax, (_IRP PTR [eax]).Tail.Overlay.ListEntry
-    RemoveEntryList eax
-    ret
+  invoke DbgPrint, $CTA0("CsqRemoveIrp")
+  mov eax, pIrp
+  lea eax, (_IRP PTR [eax]).Tail.Overlay.ListEntry
+  RemoveEntryList eax
+  ret
 CsqRemoveIrp endp
 
-;//*** complete cancel irp
 CsqCompleteCanceledIrp proc pCsqInfo:PIO_CSQ, pIrp:PIRP
   local pdx:PTR OurDeviceExtension
   
   invoke DbgPrint, $CTA0("CsqCompleteCanceledIrp")
   
-  ; CONTAINING_RECORD 
+  ;// CONTAINING_RECORD 
   mov eax, pCsqInfo
   sub eax, OurDeviceExtension.stCsq
   mov pdx, eax
-  ; Complete Irp
+
   mov eax, pIrp
   mov (_IRP PTR [eax]).IoStatus.Status, STATUS_CANCELLED
   push 0
@@ -148,7 +146,6 @@ CsqCompleteCanceledIrp proc pCsqInfo:PIO_CSQ, pIrp:PIRP
   ret
 CsqCompleteCanceledIrp endp 
 
-;//*** next csq
 CsqPeekNextIrp proc uses ebx pCsqInfo:PIO_CSQ, pIrp:PIRP, pPeekContext:PVOID
   local pdx:PTR OurDeviceExtension
   local listHead:PTR LIST_ENTRY
@@ -158,11 +155,12 @@ CsqPeekNextIrp proc uses ebx pCsqInfo:PIO_CSQ, pIrp:PIRP, pPeekContext:PVOID
   
   invoke DbgPrint, $CTA0("CsqPeekNextIrp")
   mov nextIrp, NULL
+  
   ; CONTAINING_RECORD 
   mov eax, pCsqInfo
   sub eax, OurDeviceExtension.stCsq
   mov pdx, eax
-  ; Peek next Irp
+  
   mov eax, pdx
   lea eax, (OurDeviceExtension PTR [eax]).stQueue
   mov listHead, eax
@@ -185,7 +183,7 @@ CsqPeekNextIrp proc uses ebx pCsqInfo:PIO_CSQ, pIrp:PIRP, pPeekContext:PVOID
     mov eax, nextEntry
     sub eax, _IRP.Tail.Overlay.ListEntry
     mov nextIrp, eax
-    ; irpStack = IoGetCurrentIrpStackLocation(nextIrp)
+
     IoGetCurrentIrpStackLocation nextIrp
     mov irpStack, eax
     
@@ -209,12 +207,10 @@ CsqPeekNextIrp proc uses ebx pCsqInfo:PIO_CSQ, pIrp:PIRP, pPeekContext:PVOID
     mov eax, nextEntry
     mov ebx, listHead
   .endw
-  
   mov eax, nextIrp
   ret
 CsqPeekNextIrp endp
 
-;//*** lock csq
 CsqAcquireLock proc uses ecx pCsqInfo:PIO_CSQ, pIrql:PKIRQL
   local pdx:PTR OurDeviceExtension
   
@@ -224,16 +220,15 @@ CsqAcquireLock proc uses ecx pCsqInfo:PIO_CSQ, pIrql:PKIRQL
   mov eax, pCsqInfo
   sub eax, OurDeviceExtension.stCsq
   mov pdx, eax
-  ; Acquire spinlock
+
   mov eax, pdx
-  lea ecx, (OurDeviceExtension PTR [eax]).stQueueLock
+  lea ecx, (OurDeviceExtension PTR [eax]).stLock
   fastcall KfAcquireSpinLock, ecx
   mov ecx, pIrql
   mov [ecx], al
   ret
 CsqAcquireLock endp
 
-;//*** release csq
 CsqReleaseLock proc uses ecx edx pCsqInfo:PIO_CSQ, Irql:KIRQL
   local pdx:PTR DevExt
   
@@ -241,10 +236,10 @@ CsqReleaseLock proc uses ecx edx pCsqInfo:PIO_CSQ, Irql:KIRQL
   mov eax, pCsqInfo
   sub eax, OurDeviceExtension.stCsq
   mov pdx, eax
-  ; Relase spinlock
+
   mov dl, Irql
   mov eax, pdx
-  lea ecx, (OurDeviceExtension PTR [eax]).stQueueLock
+  lea ecx, (OurDeviceExtension PTR [eax]).stLock
   .if dl == DISPATCH_LEVEL
     fastcall KefReleaseSpinLockFromDpcLevel, ecx
     push eax
@@ -260,7 +255,6 @@ CsqReleaseLock proc uses ecx edx pCsqInfo:PIO_CSQ, Irql:KIRQL
   ret
 CsqReleaseLock endp
 
-;//*** timer routine
 OnTimer proc uses ebx pDpc:PKDPC, pContext:PVOID, pArg1:PVOID, PArg2:PVOID
   mov eax, pContext
   mov eax, (DEVICE_OBJECT PTR [eax]).DeviceExtension
@@ -270,23 +264,24 @@ OnTimer proc uses ebx pDpc:PKDPC, pContext:PVOID, pArg1:PVOID, PArg2:PVOID
     mov eax, pContext
     mov eax, (DEVICE_OBJECT PTR [eax]).DeviceExtension
     invoke KeCancelTimer, addr (OurDeviceExtension PTR [eax]).stTime
-    invoke DbgPrint, $CTA0("OnTimer: Process successfully")
+    invoke DbgPrint, $CTA0("Finish")
   .else
     mov eax, pContext
     mov eax, (DEVICE_OBJECT PTR [eax]).DeviceExtension
     lea eax, (OurDeviceExtension PTR [eax]).stQueue
     RemoveHeadList eax
+    
     ; CONTAINING_RECORD 
     sub eax, _IRP.Tail.Overlay.ListEntry
     mov bl, (_IRP PTR [eax]).Cancel
-    ; complete queued Irp if the cancel bit isn't TRUE
+
     .if bl != TRUE
       mov (_IRP PTR [eax]).IoStatus.Status, STATUS_SUCCESS
       push 0
       pop (_IRP PTR [eax]).IoStatus.Information
       fastcall IofCompleteRequest, eax, IO_NO_INCREMENT
       mov eax, STATUS_SUCCESS
-      invoke DbgPrint, $CTA0("OnTimer: Process Irp")
+      invoke DbgPrint, $CTA0("Complete Irp")
     .else
       mov (_IRP PTR [eax]).CancelRoutine, NULL
       mov (_IRP PTR [eax]).IoStatus.Status, STATUS_CANCELLED
@@ -294,13 +289,12 @@ OnTimer proc uses ebx pDpc:PKDPC, pContext:PVOID, pArg1:PVOID, PArg2:PVOID
       pop (_IRP PTR [eax]).IoStatus.Information
       fastcall IofCompleteRequest, eax, IO_NO_INCREMENT
       mov eax, STATUS_CANCELLED
-      invoke DbgPrint, $CTA0("OnTimer: Cancel Irp")
+      invoke DbgPrint, $CTA0("Cancel Irp")
     .endif
   .endif
   ret
 OnTimer endp
 
-;//*** process file irp
 IrpOpenClose proc uses ebx pDevObj:PDEVICE_OBJECT, pIrp:PIRP
   IoGetCurrentIrpStackLocation pIrp
   movzx ebx, (IO_STACK_LOCATION PTR [eax]).MajorFunction
@@ -318,14 +312,9 @@ IrpOpenClose proc uses ebx pDevObj:PDEVICE_OBJECT, pIrp:PIRP
   ret
 IrpOpenClose endp
 
-;//*** process ioctl irp
 IrpIOCTL proc uses ebx ecx pOurDevice:PDEVICE_OBJECT, pIrp:PIRP
-  local dwLen: DWORD
   local pdx:PTR Dev_Ext
   local stTimePeriod:LARGE_INTEGER
-
-  push 0
-  pop dwLen
 
   mov eax, pOurDevice
   push (DEVICE_OBJECT PTR [eax]).DeviceExtension
@@ -333,33 +322,32 @@ IrpIOCTL proc uses ebx ecx pOurDevice:PDEVICE_OBJECT, pIrp:PIRP
 
   IoGetCurrentIrpStackLocation pIrp
   mov eax, (IO_STACK_LOCATION PTR [eax]).Parameters.DeviceIoControl.IoControlCode
-  .if eax == IOCTL_QUEUE_IT
-    invoke DbgPrint, $CTA0("_IOCTL_QUEUE_IT")
+  .if eax == IOCTL_QUEUE
+    invoke DbgPrint, offset MSG_QUEUE
     
     mov ebx, pdx
     lea ebx, (OurDeviceExtension PTR [ebx]).stCsq
     invoke IoCsqInsertIrp, ebx, pIrp, NULL
     mov eax, STATUS_PENDING
     ret
-  .elseif eax == IOCTL_PROCESS_IT
-    invoke DbgPrint, $CTA0("_IOCTL_PROCESS_IT")
+  .elseif eax == IOCTL_PROCESS
+    invoke DbgPrint, offset MSG_PROCESS
     or stTimePeriod.HighPart, -1
     mov stTimePeriod.LowPart, -10000000
     mov ebx, pdx
-    invoke KeSetTimerEx, addr (OurDeviceExtension PTR [ebx]).stTime, stTimePeriod.LowPart, stTimePeriod.HighPart, 1000, addr (OurDeviceExtension PTR [ebx]).stTimeDPC
+    invoke KeSetTimerEx, addr (OurDeviceExtension PTR [ebx]).stTime, stTimePeriod.LowPart, stTimePeriod.HighPart, 1000, addr (OurDeviceExtension PTR [ebx]).stDPC
   .endif
 
   mov eax, pIrp
   mov (_IRP PTR [eax]).IoStatus.Status, STATUS_SUCCESS
-  push dwLen
+  push 0
   pop (_IRP PTR [eax]).IoStatus.Information 
   fastcall IofCompleteRequest, pIrp, IO_NO_INCREMENT
   mov eax, STATUS_SUCCESS
   ret
 IrpIOCTL endp
 
-;//*** process pnp irp
-IrpPnP proc uses ebx pDevObj:PDEVICE_OBJECT, pIrp:PIRP
+IrpPnp proc uses ebx pDevObj:PDEVICE_OBJECT, pIrp:PIRP
   local pdx:PTR OurDeviceExtension
   local szSymName:UNICODE_STRING
 
@@ -387,18 +375,15 @@ IrpPnP proc uses ebx pDevObj:PDEVICE_OBJECT, pIrp:PIRP
   mov eax, pdx
   invoke IoCallDriver, (OurDeviceExtension PTR [eax]).pNextDev, pIrp
   ret
-IrpPnP endp
+IrpPnp endp
 
-;//*** system will vist this routine when it needs to add new device
 AddDevice proc uses ebx pOurDriver:PDRIVER_OBJECT, pPhyDevice:PDEVICE_OBJECT
   local pOurDevice:PDEVICE_OBJECT
   local suDevName:UNICODE_STRING
   local szSymName:UNICODE_STRING
 
-  invoke DbgPrint, $CTA0("MASM32 WDM driver tutorial for Cancel-Safe IRP Queue(CSQ)")
   invoke RtlInitUnicodeString, addr suDevName, offset DEV_NAME
   invoke RtlInitUnicodeString, addr szSymName, offset SYM_NAME
-
   invoke IoCreateDevice, pOurDriver, sizeof OurDeviceExtension, addr suDevName, FILE_DEVICE_UNKNOWN, 0, FALSE, addr pOurDevice
   .if eax == STATUS_SUCCESS
     invoke IoAttachDeviceToDeviceStack, pOurDevice, pPhyDevice
@@ -412,24 +397,20 @@ AddDevice proc uses ebx pOurDriver:PDRIVER_OBJECT, pPhyDevice:PDEVICE_OBJECT
       or (DEVICE_OBJECT PTR [eax]).Flags, DO_BUFFERED_IO
       and (DEVICE_OBJECT PTR [eax]).Flags, not DO_DEVICE_INITIALIZING
       mov eax, STATUS_SUCCESS
-      
-      ;// initialize queue
+
       mov ebx, pOurDevice
       mov ebx, (DEVICE_OBJECT PTR [ebx]).DeviceExtension
       lea ebx, (OurDeviceExtension PTR [ebx]).stQueue
       InitializeListHead ebx
-      
-      ;// initialize timer
+
       mov eax, pOurDevice
       mov eax, (DEVICE_OBJECT PTR [eax]).DeviceExtension
       invoke KeInitializeTimer, addr (OurDeviceExtension ptr [eax]).stTime
-      
-      ;// initialize dpc
+
       mov eax, pOurDevice
       mov eax, (DEVICE_OBJECT PTR [eax]).DeviceExtension
-      invoke KeInitializeDpc, addr (OurDeviceExtension ptr [eax]).stTimeDPC, offset OnTimer, pOurDevice
-      
-      ; initialize Csq
+      invoke KeInitializeDpc, addr (OurDeviceExtension ptr [eax]).stDPC, offset OnTimer, pOurDevice
+
       mov ebx, pOurDevice
       mov ebx, (DEVICE_OBJECT PTR [ebx]).DeviceExtension
       lea ebx, (OurDeviceExtension PTR [ebx]).stCsq
@@ -441,17 +422,15 @@ AddDevice proc uses ebx pOurDriver:PDRIVER_OBJECT, pPhyDevice:PDEVICE_OBJECT
   .endif
   ret
 AddDevice endp
-  
-;//*** it is time to unload our driver
+
 Unload proc pOurDriver:PDRIVER_OBJECT
   xor eax, eax
   ret
 Unload endp
 
-;//*** driver entry
 DriverEntry proc pOurDriver:PDRIVER_OBJECT, pOurRegistry:PUNICODE_STRING
   mov eax, pOurDriver
-  mov (DRIVER_OBJECT PTR [eax]).MajorFunction[IRP_MJ_PNP    * (sizeof PVOID)], offset IrpPnP
+  mov (DRIVER_OBJECT PTR [eax]).MajorFunction[IRP_MJ_PNP    * (sizeof PVOID)], offset IrpPnp
   mov (DRIVER_OBJECT PTR [eax]).MajorFunction[IRP_MJ_CREATE * (sizeof PVOID)], offset IrpOpenClose
   mov (DRIVER_OBJECT PTR [eax]).MajorFunction[IRP_MJ_CLOSE  * (sizeof PVOID)], offset IrpOpenClose
   mov (DRIVER_OBJECT PTR [eax]).MajorFunction[IRP_MJ_DEVICE_CONTROL * (sizeof PVOID)], offset IrpIOCTL
@@ -464,126 +443,25 @@ DriverEntry endp
 end DriverEntry
 .end
 </pre>
-
-<pre>
-/MAP /nologo /driver:WDM /base:0x10000 /align:64 /out:$O /subsystem:native $C
-</pre>
-
 <p>
-<img src="asm_csq/1.jpg" class="maxSize">
-</p>
+<b>AddDevice()</b>初始化List、DPC Timer和CSQ的Callback<br>
+<b>IrpIOCTL()</b>IOCTL_QUEUE把Irp加入List，IOCTL_PROCESS開始處理Irp<br>
+<b>OnTimer()</b>定時查看是否有需要處理的Irp<br>
+<b>CsqReleaseLock()</b>同步CSQ Irp用<br>
+<b>CsqAcquireLock()</b>同步CSQ Irp用<br>
+<b>CsqPeekNextIrp()</b>需要手動移除CSQ Irp時使用，目前沒有使用到<br>
+<b>CsqCompleteCanceledIrp</b>處理Cancel Irp用<br>
+<b>CsqRemoveIrp()</b>Irp被CSQ移除時呼叫<br>
+<b>CsqInsertIrp()</b>Irp被加入到CSQ時呼叫<br><br>
 
-<p>
-main.inf
-</p>
 
-<pre class="brush:cpp">
-;//========================================================================================================
-;//  Basically, all of files downloaded from my website can be modified or redistributed for any purpose.
-;//  It is my honor to share my interesting to everybody.
-;//  If you find any illeage content out from my website, please contact me firstly.
-;//  I will remove all of the illeage parts.
-;//  Thanks :)
-;//  
-;//  Steward Fu
-;//  steward.fu@gmail.com
-;//  https://steward-fu.github.io/website/../../../driver.htm
-;//========================================================================================================*/
-[Version]
-Signature=$CHICAGO$
-Class=Unknown
-Provider=%MFGNAME%
-DriverVer=12/23/2016,1.0.0.0
-   
-[DestinationDirs]
-DefaultDestDir=10,System32\Drivers
-   
-[Manufacturer]
-%MFGNAME%=DeviceList
-   
-[SourceDisksFiles]
-main.sys=1,,,
-   
-[SourceDisksNames]
-1=%INSTDISK%,,,
-   
-[DeviceList]
-%DESCRIPTION%=DriverInstall, *firstCSQ
-   
-[DriverInstall.NT]
-CopyFiles=DriverCopyFiles
-   
-[DriverCopyFiles]
-main.sys,,,2
-   
-[DriverInstall.NT.Services]
-AddService=FILEIO,2,DriverService
-   
-[DriverService]
-ServiceType=1
-StartType=3
-ErrorControl=1
-ServiceBinary=%10%\system32\drivers\main.sys
-   
-[DriverInstall.NT.HW]
-AddReg=DriverHwAddReg
-   
-[DriverHwAddReg]
-HKR,,SampleInfo,,""
-   
-[DriverInstall]
-AddReg=DriverAddReg
-CopyFiles=DriverCopyFiles
-   
-[DriverAddReg]
-HKR,,DevLoader,,*ntkern
-HKR,,NTMPDriver,,main.sys
-   
-[DriverInstall.HW]
-AddReg=DriverHwAddReg
-   
-[Strings]
-MFGNAME="firstCSQ"
-INSTDISK="firstCSQ Disc"
-DESCRIPTION="firstCSQ(Assembly)"
-</pre>
-
-<p>
-<img src="asm_csq/2.jpg" class="maxSize">
-</p>
-
-<p>
-<img src="asm_csq/3.jpg" class="maxSize">
-</p>
-
-<p>
-<img src="asm_csq/4.jpg" class="maxSize">
-</p>
-
-<p>
-<img src="asm_csq/5.jpg" class="maxSize">
-</p>
-
-<p>
 app.asm
 </p>
-
 <pre class="brush:cpp">
-;//========================================================================================================
-;//  Basically, all of files downloaded from my website can be modified or redistributed for any purpose.
-;//  It is my honor to share my interesting to everybody.
-;//  If you find any illeage content out from my website, please contact me firstly.
-;//  I will remove all of the illeage parts.
-;//  Thanks :)
-;//  
-;//  Steward Fu
-;//  steward.fu@gmail.com
-;//  https://steward-fu.github.io/website/../../../driver.htm
-;//========================================================================================================*/
 .386p
 .model flat, stdcall
 option casemap:none
- 
+  
 include c:\masm32\include\windows.inc
 include c:\masm32\include\masm32.inc
 include c:\masm32\include\user32.inc
@@ -591,136 +469,81 @@ include c:\masm32\include\msvcrt.inc
 include c:\masm32\include\kernel32.inc
 include c:\masm32\include\w2k\ntddkbd.inc
 include c:\masm32\Macros\Strings.mac
-  
+   
 includelib c:\masm32\lib\user32.lib
 includelib c:\masm32\lib\masm32.lib
 includelib c:\masm32\lib\msvcrt.lib
 includelib c:\masm32\lib\kernel32.lib
- 
-IOCTL_QUEUE_IT    equ CTL_CODE(FILE_DEVICE_UNKNOWN, 800h, METHOD_BUFFERED,    FILE_ANY_ACCESS)
-IOCTL_PROCESS_IT  equ CTL_CODE(FILE_DEVICE_UNKNOWN, 801h, METHOD_BUFFERED,    FILE_ANY_ACCESS)
- 
+  
+IOCTL_QUEUE   equ CTL_CODE(FILE_DEVICE_UNKNOWN, 800h, METHOD_BUFFERED, FILE_ANY_ACCESS)
+IOCTL_PROCESS equ CTL_CODE(FILE_DEVICE_UNKNOWN, 801h, METHOD_BUFFERED, FILE_ANY_ACCESS)
+  
 .const
-DEV_NAME db "\\.\firstCSQ",0
- 
+DEV_NAME db "\\.\MyDriver",0
+  
 .data?
 cnt   dd ?
 hFile dd ?
 dwRet dd ?
+event dd 3 dup(?)
 ov OVERLAPPED &lt;?&gt;
-
+ 
 .code
 start:
   invoke CreateFile, offset DEV_NAME, GENERIC_READ or GENERIC_WRITE, FILE_SHARE_READ, 0, OPEN_EXISTING, FILE_FLAG_OVERLAPPED or FILE_ATTRIBUTE_NORMAL, 0
   .if eax == INVALID_HANDLE_VALUE
-    invoke crt_printf, $CTA0("failed to open firstTimer-IO driver")
-    invoke ExitProcess, 0
+    invoke crt_printf, $CTA0("failed to open mydriver\n")
+    invoke ExitProcess, -1
   .endif
   mov hFile, eax
   invoke crt_memset, offset ov, 0, sizeof OVERLAPPED
-  
-  mov cnt, 10
+   
+  mov cnt, 3
   .while cnt &gt; 0
-    invoke CreateEvent,NULL, TRUE, FALSE, NULL
+    invoke CreateEvent, NULL, TRUE, FALSE, NULL
     push eax
     pop ov.hEvent
-    invoke crt_printf, $CTA0("queue it\n")
-    invoke DeviceIoControl, hFile, IOCTL_QUEUE_IT, NULL, 0, NULL, 0, offset dwRet, offset ov
+     
+    mov ecx, cnt
+    mov edi, offset event
+    mov [edi + ecx * 4], eax
+     
+    invoke crt_printf, $CTA0("queue event\n")
+    invoke DeviceIoControl, hFile, IOCTL_QUEUE, NULL, 0, NULL, 0, offset dwRet, offset ov
     invoke CloseHandle, ov.hEvent
     sub cnt, 1
   .endw
-  
-  invoke crt_printf, $CTA0("process it\n")
-  invoke DeviceIoControl, hFile, IOCTL_PROCESS_IT, NULL, 0, NULL, 0, offset dwRet, NULL
-  invoke Sleep, 3000
+   
+  invoke crt_printf, $CTA0("process all of events\n")
+  invoke DeviceIoControl, hFile, IOCTL_PROCESS, NULL, 0, NULL, 0, offset dwRet, NULL
+  invoke Sleep, 1000
   invoke CancelIo, hFile
+   
+  mov cnt, 3
+  .while cnt &gt; 0
+    mov ecx, cnt
+    mov edi, offset event
+    mov eax, [edi + ecx * 4]
+      
+    push eax
+    pop ov.hEvent
+      
+    invoke WaitForSingleObject, ov.hEvent, INFINITE
+    invoke CloseHandle, ov.hEvent
+    invoke crt_printf, $CTA0("wait complete\n")
+    sub cnt, 1
+  .endw
+   
   invoke CloseHandle, hFile
   invoke ExitProcess, 0
 end start
-</pre>
+</pre><br>
 
 <p>
-<img src="asm_csq/6.jpg" class="maxSize">
+結果<br>
+<img src="asm_csq/2.jpg" class="maxSize"><br>
+<img src="asm_csq/3.jpg" class="maxSize">
 </p>
-
-<pre class="brush:cpp">
-00000000  0.00000000  MASM32 WDM driver tutorial for Cancel-Safe IRP Queue(CSQ) 
-00000001  45.93228531 IRP_MJ_CREATE 
-00000002  45.93270111 _IOCTL_QUEUE_IT 
-00000003  45.93272781 CsqAcquireLock  
-00000004  45.93275452 CsqInsertIrp  
-00000005  45.93278122 CsqReleaseLock at Passive level   
-00000006  45.93310928 _IOCTL_QUEUE_IT 
-00000007  45.93313599 CsqAcquireLock  
-00000008  45.93316269 CsqInsertIrp  
-00000009  45.93318939 CsqReleaseLock at Passive level   
-00000010  45.93351746 _IOCTL_QUEUE_IT 
-00000011  45.93354416 CsqAcquireLock  
-00000012  45.93356705 CsqInsertIrp  
-00000013  45.93359375 CsqReleaseLock at Passive level   
-00000014  45.93391800 _IOCTL_QUEUE_IT 
-00000015  45.93394470 CsqAcquireLock  
-00000016  45.93396759 CsqInsertIrp  
-00000017  45.93399429 CsqReleaseLock at Passive level   
-00000018  45.93440628 _IOCTL_QUEUE_IT 
-00000019  45.93443298 CsqAcquireLock  
-00000020  45.93445587 CsqInsertIrp  
-00000021  45.93448257 CsqReleaseLock at Passive level   
-00000022  45.93481827 _IOCTL_QUEUE_IT 
-00000023  45.93484497 CsqAcquireLock  
-00000024  45.93487167 CsqInsertIrp  
-00000025  45.93489456 CsqReleaseLock at Passive level   
-00000026  45.93521881 _IOCTL_QUEUE_IT 
-00000027  45.93524551 CsqAcquireLock  
-00000028  45.93527222 CsqInsertIrp  
-00000029  45.93529892 CsqReleaseLock at Passive level   
-00000030  45.93531418 _IOCTL_QUEUE_IT 
-00000031  45.93542099 CsqAcquireLock  
-00000032  45.93544769 CsqInsertIrp  
-00000033  45.93547440 CsqReleaseLock at Passive level   
-00000034  45.93581009 _IOCTL_QUEUE_IT 
-00000035  45.93583679 CsqAcquireLock  
-00000036  45.93586349 CsqInsertIrp  
-00000037  45.93588638 CsqReleaseLock at Passive level   
-00000038  45.93624115 _IOCTL_QUEUE_IT 
-00000039  45.93629074 CsqAcquireLock  
-00000040  45.93631363 CsqInsertIrp  
-00000041  45.93634033 CsqReleaseLock at Passive level   
-00000042  45.93667603 _IOCTL_PROCESS_IT 
-00000043  46.93683624 OnTimer: Process Irp  
-00000044  47.93827438 OnTimer: Process Irp  
-00000045  48.93971634 OnTimer: Process Irp  
-00000046  48.93976212 CsqAcquireLock  
-00000047  48.93978882 CsqRemoveIrp  
-00000048  48.93981552 CsqReleaseLock at Passive level   
-00000049  48.93983841 CsqCompleteCanceledIrp  
-00000050  48.93986511 CsqAcquireLock  
-00000051  48.93989182 CsqRemoveIrp  
-00000052  48.93991470 CsqReleaseLock at Passive level   
-00000053  48.93994141 CsqCompleteCanceledIrp  
-00000054  48.93996811 CsqAcquireLock  
-00000055  48.93999100 CsqRemoveIrp  
-00000056  48.94001770 CsqReleaseLock at Passive level   
-00000057  48.94004059 CsqCompleteCanceledIrp  
-00000058  48.94006729 CsqAcquireLock  
-00000059  48.94009399 CsqRemoveIrp  
-00000060  48.94012070 CsqReleaseLock at Passive level   
-00000061  48.94014359 CsqCompleteCanceledIrp  
-00000062  48.94017029 CsqAcquireLock  
-00000063  48.94018936 CsqRemoveIrp  
-00000064  48.94021606 CsqReleaseLock at Passive level   
-00000065  48.94024277 CsqCompleteCanceledIrp  
-00000066  48.94026566 CsqAcquireLock  
-00000067  48.94029236 CsqRemoveIrp  
-00000068  48.94031525 CsqReleaseLock at Passive level   
-00000069  48.94034195 CsqCompleteCanceledIrp  
-00000070  48.94036865 CsqAcquireLock  
-00000071  48.94039154 CsqRemoveIrp  
-00000072  48.94041824 CsqReleaseLock at Passive level   
-00000073  48.94044113 CsqCompleteCanceledIrp  
-00000074  48.94973755 IRP_MJ_CLOSE  
-00000075  49.94115067 OnTimer: Process successfully 
-</pre>
 
 <p>
 <br><a href="../../../driver.htm">返回上一頁</a>
