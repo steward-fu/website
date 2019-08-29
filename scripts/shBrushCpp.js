@@ -30,7 +30,7 @@ var my_constant =
 'dptr p0 p1 p2 p3 UMTYPE UMBASE USE_MSVCRT IRP_MJ_DEVICE_CONTROL '     +
 'SDL_INIT_VIDEO SDL_HWSURFACE SDL_KEYDOWN r0 r1 r2 r3 r4 r5 r6 r7 r8 ' +
 'r10 r11 r12 METHOD_BUFFERED FILE_ANY_ACCESS FILE_SHARE_READ '         +
-'STATUS_PENDING ';
+'STATUS_PENDING INFINITE ';
 
 var my_keyword =
 'ptr PTR proto PROTO struct STRUCT UNION union ends ENDS 386p 486p b ' +
@@ -100,7 +100,7 @@ var my_type =
 '_stat __stat64 _stati64 terminate_function time_t __time64_t '        +
 '_timeb __timeb64 tm uintptr_t _utimbuf va_list wchar_t wctrans_t '    +
 'wctype_t wint_t signed TCHAR file_operations cdev kobject list_head ' +
-'SDL_Surface SDL_Event ';
+'SDL_Surface SDL_Event OVERLAPPED KTIMER ';
 
 var my_function =
 'RtlUnicodeStringPrintf RtlInitUnicodeString printk _T init_module '   +
@@ -139,7 +139,10 @@ var my_function =
 'SDL_LoadBMP_RW SDL_UpperBlit SDL_Flip SDL_Delay SDL_FreeSurface '     +
 'SDL_Quit SDL_ShowCursor SDL_BlitSurface SDL_LoadBMP SDL_PollEvent '   +
 'ExitProcess crt_printf DeviceIoControl CTL_CODE IoInitializeTimer '   +
-'crt_memset wsprintf IoMarkIrpPending IoStartPacket StrLen sprintf_s ';
+'crt_memset wsprintf IoMarkIrpPending IoStartPacket StrLen sprintf_s ' +
+'IsListEmpty RemoveHeadList InsertHeadList KeSetTimerEx '              +
+'InitializeListHead KeInitializeTimer KeInitializeDpc CreateEvent '    +
+'WaitForSingleObject KeCancelTimer CONTAINING_RECORD ';
 
 this.regexList = [
 {regex: SyntaxHighlighter.regexLib.singleLineCComments, css:'comments'},

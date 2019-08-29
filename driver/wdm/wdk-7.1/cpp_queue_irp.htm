@@ -1,4 +1,4 @@
-﻿<!--
+<!--
  ____________________________________________________________
 |                                                            |
 |    DESIGN + Pat Heard { http://fullahead.org }             |
@@ -44,51 +44,61 @@
 <div id="content">
 <script type="text/javascript" src="../../../header.js"></script>
 <div id="page">
-<h3>Windows Driver Model >> WDK 7.1 >> C/C++ >> Advanced</h3>
+<h3>Windows Driver Model &gt;&gt; WDK 7.1 (C/C++)</h3>
 <p><b>Queue IRP</b></p>
 <hr size="1">
 <p>
-[Github] <a href="https://github.com/steward-fu/gh_driver.git">https://github.com/steward-fu/gh_driver.git</a>
-</p>
+參考資訊：<br>
+1. <a href="http://four-f.narod.ru/">Four-F</a><br>
+2. <a href="https://github.com/steward-fu/wdm">Source Code</a><br><br>
 
-<p>
+驅動程式作為User Application跟硬體的溝通橋樑，最常遇到的問題就是硬體處理速度不夠快，導致驅動程式需要等待硬體完成後，再繼續處理下一筆資料，但是驅動程式如果要跟User Application溝通這些同步事情，會產生額外的等待時間，因此，為了達到比較好的處理效能，一般驅動程式做會Queue Irp的動作，讓處理的間隔可以縮到最小，這也是這篇教學要說明的東西，教導使用者一些Queue Irp的基本觀念和作法。<br><br>
+
+首先要知道的就是，儲存Irp的地方在哪？在Windows驅動程式裡，可以使用List作為儲存媒介(使用者也可以使用其它方式儲存)，使用步驟相當簡單，如下所示：<br>
+1. InitializeListHead()<br>
+2. InsertHeadList()<br>
+3. IsListEmpty()<br>
+4. RemoveHeadList()<br>
+首先初始化List(<b>InitializeListHead()</b>)，接著插入(<b>InsertHeadList()</b>)需要儲存的資料，接著判斷List是否還有資料(<b>IsListEmpty()</b>)，假如還有資料，則取出(<b>RemoveHeadList()</b>)處裡<br><br>
+
+Irp是處裡資料的最小單位，一個Irp通常代表處理一筆資料的訊息，因此，當硬體來不及處理資料時，驅動程式需要做Pending Irp的動作，讓User Application知道這筆資料稍後處理，Pending Irp的步驟如下：<br>
+1. IoMarkIrpPending()<br>
+2. IoCompleteRequest(STATUS_PENDING)<br>
+回傳Pending，告知I/O Manager，這筆Irp資料先Pending一下，稍後處理<br><br>
+
+接著就是User Application如何知道資料是否處理完畢或者被Pending了呢？在CreateFile()時，如果沒有用FILE_FLAG_OVERLAPPED，則代表每一筆資料都是必須完成才會回傳，此種寫法也稱為Blocking方式，如：呼叫WriteFile()後，必須等待驅動程式完成該Irp才會繼續往下，否則呼叫WriteFile()後，會卡在這個Win32 API，相反地，如果CreateFile()使用FILE_FLAG_OVERLAPPED，而呼叫WriteFile()時，驅動程式回傳Pending，則WriteFile()會馬上回傳ERROR_IO_PENDING，告知User Application，該筆資料驅動程式會稍後處裡，此種寫法也稱為Non-Blocking方式，那如何得知該筆資料處理完畢了呢？當使用Non-Blocking寫法，會在WriteFile()傳入一個OVERLAPPED參數，該參數裡面有一個Event，用來告知是否已經處理完畢了。<br><br>
+
+Queue IRP流程:<br>
+1. InsertHeadList()<br>
+2. IoMarkIrpPending()<br>
+3. IoCompleteRequest(STATUS_PENDING)<br>
+4. IsListEmpty()<br>
+5. RemoveHeadList()<br>
+6. IoCompleteRequest(STATUS_SUCCESS)<br><br>
+
 main.c
 </p>
-
 <pre class="brush:cpp">
-/*========================================================================================================
-  Basically, all of files downloaded from my website can be modified or redistributed for any purpose.
-  It is my honor to share my interesting to everybody.
-  If you find any illeage content out from my website, please contact me firstly.
-  I will remove all of the illeage parts.
-  Thanks :)
-   
-  Steward Fu
-  steward.fu@gmail.com
-  https://steward-fu.github.io/website/index.htm
-========================================================================================================*/
 #include &lt;wdm.h&gt;
 
-#define IOCTL_QUEUE_IT    CTL_CODE(FILE_DEVICE_UNKNOWN, 0x800, METHOD_NEITHER, FILE_ANY_ACCESS)
-#define IOCTL_PROCESS_IT  CTL_CODE(FILE_DEVICE_UNKNOWN, 0x801, METHOD_NEITHER, FILE_ANY_ACCESS)
+#define IOCTL_QUEUE   CTL_CODE(FILE_DEVICE_UNKNOWN, 0x800, METHOD_NEITHER, FILE_ANY_ACCESS)
+#define IOCTL_PROCESS CTL_CODE(FILE_DEVICE_UNKNOWN, 0x801, METHOD_NEITHER, FILE_ANY_ACCESS)
 
-#define DEV_NAME  L"\\Device\\firstQueue"
-#define SYM_NAME  L"\\DosDevices\\firstQueue"
-#define MSG       "WDM driver tutorial for Queue"
+#define DEV_NAME L"\\Device\\MyDriver"
+#define SYM_NAME L"\\DosDevices\\MyDriver"
 
 PDEVICE_OBJECT gNextDevice=NULL;
 LIST_ENTRY stQueue={0};
 KDPC stTimeDPC={0};
 KTIMER stTime={0};
 
-//*** timer routine
 VOID OnTimer(struct _KDPC *Dpc, PVOID DeferredContext, PVOID SystemArgument1, PVOID SystemArgument2)
 {
   PIRP pIrp;
   PLIST_ENTRY plist;
   if(IsListEmpty(&amp;stQueue) == TRUE){
     KeCancelTimer(&amp;stTime);
-    DbgPrint("OnTimer: Process successfully");
+    DbgPrint("Finish");
   }
   else{
     plist = RemoveHeadList(&amp;stQueue);
@@ -96,18 +106,16 @@ VOID OnTimer(struct _KDPC *Dpc, PVOID DeferredContext, PVOID SystemArgument1, PV
     pIrp-&gt;IoStatus.Status = STATUS_SUCCESS;
     pIrp-&gt;IoStatus.Information = 0;
     IoCompleteRequest(pIrp, IO_NO_INCREMENT);
-    DbgPrint("OnTimer: Processing Irp");
+    DbgPrint("Complete Irp");
   }
 }
 
-//*** system will vist this routine when it needs to add new device
 NTSTATUS AddDevice(PDRIVER_OBJECT pOurDriver, PDEVICE_OBJECT pPhyDevice)
 {
   PDEVICE_OBJECT pOurDevice=NULL;
   UNICODE_STRING usDeviceName;
   UNICODE_STRING usSymboName;
 
-  DbgPrint(MSG);
   RtlInitUnicodeString(&amp;usDeviceName, DEV_NAME);
   IoCreateDevice(pOurDriver, 0, &amp;usDeviceName, FILE_DEVICE_UNKNOWN, 0, FALSE, &amp;pOurDevice);
   RtlInitUnicodeString(&amp;usSymboName, SYM_NAME);
@@ -121,14 +129,12 @@ NTSTATUS AddDevice(PDRIVER_OBJECT pOurDriver, PDEVICE_OBJECT pPhyDevice)
   KeInitializeDpc(&amp;stTimeDPC, OnTimer, pOurDevice);
   return STATUS_SUCCESS;
 }
-  
-//*** it is time to unload our driver
+
 void Unload(PDRIVER_OBJECT pOurDriver)
 {
   pOurDriver = pOurDriver;
 }
 
-//*** process pnp irp
 NTSTATUS IrpPnp(PDEVICE_OBJECT pOurDevice, PIRP pIrp)
 {
   PIO_STACK_LOCATION psk = IoGetCurrentIrpStackLocation(pIrp);
@@ -144,23 +150,22 @@ NTSTATUS IrpPnp(PDEVICE_OBJECT pOurDevice, PIRP pIrp)
   return IoCallDriver(gNextDevice, pIrp);
 }
 
-//*** process ioctl irp
 NTSTATUS IrpIOCTL(PDEVICE_OBJECT pOurDevice, PIRP pIrp)
 {
   LARGE_INTEGER stTimePeriod;
   PIO_STACK_LOCATION psk = IoGetCurrentIrpStackLocation(pIrp);
 
   switch(psk-&gt;Parameters.DeviceIoControl.IoControlCode){
-  case IOCTL_QUEUE_IT:
-    DbgPrint("IrpIOCTL, IOCTL_QUEUE_IT\n");
+  case IOCTL_QUEUE:
+    DbgPrint("IOCTL_QUEUE");
     InsertHeadList(&amp;stQueue, &amp;pIrp-&gt;Tail.Overlay.ListEntry);
     IoMarkIrpPending(pIrp);
     return STATUS_PENDING;
-  case IOCTL_PROCESS_IT:
-    DbgPrint("IrpIOCTL, IOCTL_PROCESS_IT\n");
+  case IOCTL_PROCESS:
+    DbgPrint("IOCTL_PROCESS");
     stTimePeriod.HighPart|= -1;
-    stTimePeriod.LowPart = -1000000;
-    KeSetTimerEx(&amp;stTime, stTimePeriod, 1000, &amp;stTimeDPC);
+    stTimePeriod.LowPart = -10000000;
+    KeSetTimerEx(&amp;stTime, stTimePeriod, 10, &amp;stTimeDPC);
     break;
   }
   pIrp-&gt;IoStatus.Information = 0;
@@ -169,24 +174,22 @@ NTSTATUS IrpIOCTL(PDEVICE_OBJECT pOurDevice, PIRP pIrp)
   return STATUS_SUCCESS;
 }
 
-//*** process file irp
 NTSTATUS IrpFile(PDEVICE_OBJECT pOurDevice, PIRP pIrp)
 {
   PIO_STACK_LOCATION psk = IoGetCurrentIrpStackLocation(pIrp);
 
   switch(psk-&gt;MajorFunction){
   case IRP_MJ_CREATE:
-    DbgPrint("IrpFile, IRP_MJ_CREATE\n");
+    DbgPrint("IRP_MJ_CREATE");
     break;
   case IRP_MJ_CLOSE:
-    DbgPrint("IrpFile, IRP_MJ_CLOSE\n");
+    DbgPrint("IRP_MJ_CLOSE");
     break;
   }
   IoCompleteRequest(pIrp, IO_NO_INCREMENT);
   return STATUS_SUCCESS;
 }
-  
-//*** driver entry
+
 NTSTATUS DriverEntry(PDRIVER_OBJECT pOurDriver, PUNICODE_STRING pOurRegistry)
 {
   pOurDriver-&gt;MajorFunction[IRP_MJ_PNP] = IrpPnp;
@@ -198,100 +201,14 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT pOurDriver, PUNICODE_STRING pOurRegistry)
   return STATUS_SUCCESS;
 }
 </pre>
-
 <p>
-main.inf
+<b>AddDevice()</b>初始List以及DPC Timer，DPC Timer用來定期確認List是否還有資料需要處理，當然，使用Thread檢查或許更恰當些<br>
+<b>IrpIOCTL()</b>IOCTL_QUEUE代表該IOCTL會被Queue起來，稍後處理，而當收到IOCTL_PROCESS時，則啟動DPC Timer開始處理那些被Queue起來的Irp<br>
+<b>OnTimer()</b>處理Queue裡面的Irp<br><br>
+
+app.c
 </p>
-
 <pre class="brush:cpp">
-;/*========================================================================================================
-;//  Basically, all of files downloaded from my website can be modified or redistributed for any purpose.
-;//  It is my honor to share my interesting to everybody.
-;//  If you find any illeage content out from my website, please contact me firstly.
-;//  I will remove all of the illeage parts.
-;//  Thanks :)
-;//   
-;//  Steward Fu
-;//  steward.fu@gmail.com
-;//  https://steward-fu.github.io/website/index.htm
-;//========================================================================================================*/
-[Version]
-Signature=$CHICAGO$
-Class=Unknown
-Provider=%MFGNAME%
-DriverVer=01/06/2017,1.0.0.0
- 
-[Manufacturer]
-%MFGNAME%=DeviceList
- 
-[DeviceList]
-%DESCRIPTION%=DriverInstall, *firstQueue
- 
-[DestinationDirs]
-DefaultDestDir=10,System32\Drivers
- 
-[SourceDisksFiles]
-main.sys=1,,,
- 
-[SourceDisksNames]
-1=%INSTDISK%,,,
- 
-[DriverInstall.NT]
-CopyFiles=DriverCopyFiles
- 
-[DriverCopyFiles]
-main.sys,,,2
- 
-[DriverInstall.NT.Services]
-AddService=firstQueue,2,DriverService
- 
-[DriverService]
-ServiceType=1
-StartType=3
-ErrorControl=1
-ServiceBinary=%10%\system32\drivers\main.sys
- 
-[DriverInstall.NT.HW]
-AddReg=DriverHwAddReg
- 
-[DriverHwAddReg]
-HKR,,SampleInfo,,""
- 
-[DriverInstall]
-AddReg=DriverAddReg
-CopyFiles=DriverCopyFiles
- 
-[DriverAddReg]
-HKR,,DevLoader,,*ntkern
-HKR,,NTMPDriver,,main.sys
- 
-[DriverInstall.HW]
-AddReg=DriverHwAddReg
- 
-[Strings]
-MFGNAME="firstQueue"
-INSTDISK="firstQueue Disc"
-DESCRIPTION="firstQueue"
-</pre>
-
-<p>
-app.cpp
-</p>
-
-<pre class="brush:cpp">
-/*========================================================================================================
-  Basically, all of files downloaded from my website can be modified or redistributed for any purpose.
-  It is my honor to share my interesting to everybody.
-  If you find any illeage content out from my website, please contact me firstly.
-  I will remove all of the illeage parts.
-  Thanks :)
-   
-  Steward Fu
-  steward.fu@gmail.com
-  https://steward-fu.github.io/website/index.htm
-========================================================================================================*/
-#include &lt;DriverSpecs.h&gt;
-__user_code  
 #define INITGUID
 #include &lt;windows.h&gt;
 #include &lt;winioctl.h&gt;
@@ -299,58 +216,44 @@ __user_code
 #include &lt;setupapi.h&gt;
 #include &lt;stdio.h&gt;
 #include &lt;stdlib.h&gt;
-#define WHILE(a) __pragma(warning(suppress:4127)) while(a)
 
-#define IOCTL_QUEUE_IT    CTL_CODE(FILE_DEVICE_UNKNOWN, 0x800, METHOD_NEITHER, FILE_ANY_ACCESS)
-#define IOCTL_PROCESS_IT  CTL_CODE(FILE_DEVICE_UNKNOWN, 0x801, METHOD_NEITHER, FILE_ANY_ACCESS)
+#define IOCTL_QUEUE   CTL_CODE(FILE_DEVICE_UNKNOWN, 0x800, METHOD_NEITHER, FILE_ANY_ACCESS)
+#define IOCTL_PROCESS CTL_CODE(FILE_DEVICE_UNKNOWN, 0x801, METHOD_NEITHER, FILE_ANY_ACCESS)
  
-//*** main entry point
 int __cdecl main(int argc, char* argv[])
 {
   int i=0;
-  HANDLE hFile = NULL;
   DWORD dwRet = 0;
-  OVERLAPPED ov={0};
+  HANDLE hFile = NULL;
+  OVERLAPPED ov[3]={0};
 
-  hFile = CreateFile("\\\\.\\firstQueue", GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_FLAG_OVERLAPPED | FILE_ATTRIBUTE_NORMAL, NULL);
+  hFile = CreateFile("\\\\.\\MyDriver", GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_FLAG_OVERLAPPED | FILE_ATTRIBUTE_NORMAL, NULL);
   if (hFile == INVALID_HANDLE_VALUE) {
-    printf("failed to open driver\n");
-    return 1;
+    printf("failed to open mydriver\n");
+    return -1;
   }
   for(i=0; i&lt;3; i++){
-    memset(&amp;ov, 0, sizeof(ov));
-    ov.hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
-    DeviceIoControl(hFile, IOCTL_QUEUE_IT, NULL, 0, NULL, 0, &amp;dwRet, &amp;ov);
+    memset(&amp;ov[i], 0, sizeof(ov[i]));
+    ov[i].hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+    printf("queue event\n");
+    DeviceIoControl(hFile, IOCTL_QUEUE, NULL, 0, NULL, 0, &amp;dwRet, &amp;ov[i]);
   }
-  DeviceIoControl(hFile, IOCTL_PROCESS_IT, NULL, 0, NULL, 0, &amp;dwRet, NULL);
-  Sleep(10000);
+  printf("process all of events\n");
+  DeviceIoControl(hFile, IOCTL_PROCESS, NULL, 0, NULL, 0, &amp;dwRet, NULL);
+  for(i=0; i&lt;3; i++){
+    WaitForSingleObject(ov[i].hEvent, INFINITE);
+    CloseHandle(ov[i].hEvent);
+    printf("wait complete\n");
+  }
   CloseHandle(hFile);
   return 0;
 }
-</pre>
+</pre><br>
 
 <p>
-<img src="cpp_queue_irp/1.jpg" class="maxSize">
-</p>
-
-<p>
-<img src="cpp_queue_irp/2.jpg" class="maxSize">
-</p>
-
-<p>
-<img src="cpp_queue_irp/3.jpg" class="maxSize">
-</p>
-
-<p>
-<img src="cpp_queue_irp/4.jpg" class="maxSize">
-</p>
-
-<p>
-<img src="cpp_queue_irp/5.jpg" class="maxSize">
-</p>
-
-<p>
-<img src="cpp_queue_irp/6.jpg" class="maxSize">
+結果<br>
+<img src="asm_queue_irp/1.jpg" class="maxSize"><br>
+<img src="asm_queue_irp/2.jpg" class="maxSize">
 </p>
 
 <p>
