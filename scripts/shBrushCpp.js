@@ -30,7 +30,7 @@ var my_constant =
 'dptr p0 p1 p2 p3 UMTYPE UMBASE USE_MSVCRT IRP_MJ_DEVICE_CONTROL '     +
 'SDL_INIT_VIDEO SDL_HWSURFACE SDL_KEYDOWN r0 r1 r2 r3 r4 r5 r6 r7 r8 ' +
 'r10 r11 r12 METHOD_BUFFERED FILE_ANY_ACCESS FILE_SHARE_READ '         +
-'STATUS_PENDING INFINITE STATUS_CANCELLED FILE_FLAG_OVERLAPPED ';
+'STATUS_PENDING INFINITE STATUS_CANCELLED FILE_FLAG_OVERLAPPED MAXIMUM_ALLOWED FILE_SHARE_WRITE ';
 
 var my_keyword =
 'ptr PTR proto PROTO struct STRUCT UNION union ends ENDS 386p 486p b ' +
@@ -50,7 +50,7 @@ var my_keyword =
 'using uuid virtual void volatile whcar_t while macro req vararg fill '+
 'rodata endm zero equiv exitm bit org jmp ajmp ljmp sjmp clr setb jnb '+
 'jb cjne jc nop mod movc anl orl xrl jz jnz PROGRAM rlc thumb_func '   +
-'sub cmp thumb cpu syntax unified cortex-m3 bne Push lea edi esi endw __cdecl ';
+'sub cmp thumb cpu syntax unified cortex-m3 bne Push lea edi esi endw __cdecl WINAPI ';
 
 var my_type =
 'NTSTATUS OBJECT_ATTRIBUTES UNICODE_STRING dd dw unsigned skip '       +
@@ -99,7 +99,7 @@ var my_type =
 '_onexit_t _PNH ptrdiff_t _purecall_handler sig_atomic_t size_t '      +
 '_stat __stat64 _stati64 terminate_function time_t __time64_t '        +
 '_timeb __timeb64 tm uintptr_t _utimbuf va_list wchar_t wctrans_t '    +
-'wctype_t wint_t signed TCHAR file_operations cdev kobject list_head ' +
+'wctype_t wint_t signed TCHAR file_operations cdev kobject list_head NT_OPEN_FILE ACCESS_MASK POBJECT_ATTRIBUTES ' +
 'SDL_Surface SDL_Event OVERLAPPED KTIMER ';
 
 var my_function =
@@ -143,8 +143,8 @@ var my_function =
 'IsListEmpty RemoveHeadList InsertHeadList KeSetTimerEx '              +
 'InitializeListHead KeInitializeTimer KeInitializeDpc CreateEvent '    +
 'WaitForSingleObject KeCancelTimer CONTAINING_RECORD '                 +
-'IoStartNextPacket Sleep CancelIo SleepEx InsertTailList '             +
-'RemoveEntryList UNREFERENCED_PARAMETER KeAcquireSpinLock '            +
+'IoStartNextPacket Sleep CancelIo SleepEx InsertTailList NtOpenFileStruct '             +
+'RemoveEntryList UNREFERENCED_PARAMETER KeAcquireSpinLock LoadLibrary GetProcAddress '            +
 'KeReleaseSpinLockFromDpcLevel KeReleaseSpinLockFromDpcLevel KeReleaseSpinLock IoCsqInitialize IoCsqInsertIrp ';
 
 this.regexList = [
@@ -164,8 +164,8 @@ css:'my_type bold'},
 ];
 };
 
-	Brush.prototype	= new SyntaxHighlighter.Highlighter();
-	Brush.aliases	= ['cpp', 'c'];
-	SyntaxHighlighter.brushes.Cpp = Brush;
-	typeof(exports) != 'undefined' ? exports.Brush = Brush : null;
+  Brush.prototype  = new SyntaxHighlighter.Highlighter();
+  Brush.aliases  = ['cpp', 'c'];
+  SyntaxHighlighter.brushes.Cpp = Brush;
+  typeof(exports) != 'undefined' ? exports.Brush = Brush : null;
 })();

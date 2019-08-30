@@ -48,13 +48,10 @@
 <p><b>ZwQueryValueKey()使用方式</b></p>
 <hr size="1">
 <p>
-相較於RtlQueryRegistryValues()的使用方式，Zw相關的Registry API使用方式會比較貼近User Mode應用程式，都會有Open、Query、Close這三個步驟，但是，比較麻煩的是Query還有分Basic、Full、Partial三種取得資料的方式。
-</p>
+相較於RtlQueryRegistryValues()的使用方式，Zw相關的Registry API使用方式會比較貼近User Application的寫法，都會有Open、Query、Close這三個步驟，但是，比較麻煩的是Query還有分Basic、Full、Partial三種取得資料的方式。<br><br>
 
-<p>
 副程式：
 </p>
-
 <pre class="brush:cpp">
 NTSTATUS GetRegistryValue(PCWSTR pwcsValueName, ULONG *pReturnLength, UCHAR *pucReturnBuffer, PWSTR pRegistryPath)
 {
@@ -108,13 +105,10 @@ NTSTATUS GetRegistryValue(PCWSTR pwcsValueName, ULONG *pReturnLength, UCHAR *puc
 </pre>
 
 <p>
-上面這一段程式可以當成參考程式，使用者可以好好利用。該程式首先開啟Key位置，接著Query相關Value，目前司徒使用Partial的方式，其它兩種(Basic、Full)也都可以使用，而Query的方式也有另一種用途，那就是偵測實際需要的Buffer Size，如果使用者無法確定要讀取的Value需要多大的Buffer，可以使用司徒目前的做法，傳入0(ulLength)去取得需要的Buffer Size，然後再根據此Size動態配置記憶體，比較特別要注意的是，Query會自動將Value Type儲存在KEY_VALUE_PARTIAL_INFORMATION的變數中，因此，使用者就不需要再去查詢或固定Value的型態，當然，REG_DWORD、REG_BINARY、REG_SZ等型態都適用，當Query完之後，記得使用Close方式關閉。
-</p>
+上面這一段程式可以當成參考程式，使用者可以好好利用。該程式首先開啟Key位置，接著Query相關Value，目前司徒使用Partial的方式，其它兩種(Basic、Full)也都可以使用，而Query的方式也有另一種用途，那就是偵測實際需要的Buffer Size，如果使用者無法確定要讀取的Value需要多大的Buffer，可以使用司徒目前的做法，傳入0(ulLength)去取得需要的Buffer Size，然後再根據此Size動態配置記憶體，比較特別要注意的是，Query會自動將Value Type儲存在KEY_VALUE_PARTIAL_INFORMATION的變數中，因此，使用者就不需要再去查詢或固定Value的型態，當然，REG_DWORD、REG_BINARY、REG_SZ等型態都適用，當Query完之後，記得使用Close方式關閉。<br><br>
 
-<p>
 呼叫範例：
 </p>
-
 <pre class="brush:cpp">
 ULONG ulLength;
 UCHAR aucTemp[255]={0};
@@ -128,7 +122,6 @@ else{
   DbgPrint("GetRegistryValue Value: Byte0:0x%X, Byte1:0x%X\n", aucTemp[0], aucTemp[1]);
 }
 </pre>
-
 <p>
 上面的範例是取得Key(L"\\Registry\\Machine\\SYSTEM\\CurrentControlSet\\Services\\firstWDM\\Parameters\\")下的Temp數值(REG_BINARY)。
 </p>

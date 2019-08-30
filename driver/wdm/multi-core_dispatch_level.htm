@@ -49,9 +49,9 @@
 <hr size="1">
 <p>
 Lucas同事最近又開始假認真了！剛好Spencer也來插花，於是再度激起研究討論的熱誠，遇到的問題如下：<br>
-在多核CPU上，如果有一個Thread或Function位於DISPATCH_LEVEL時，其餘CPU在幹嘛？<br><br>
+<b>在多核CPU上，如果有一個Thread或Function位於DISPATCH_LEVEL時，其餘CPU在幹嘛？</b><br><br>
 
-寫過驅動程式的使用者都知道，於DISPATCH_LEVEL(軟體最高LEVEL)時，不會發生Context Switch且也不能存取Pageable Memory，因此，按理推斷，在多核CPU下，其餘CPU理應被Block住才是，不是嗎？不然為何無法做Context Switch？或者其餘CPU只能處理IRQ >= DISPATCH_LEVEL的Thread？還是其餘CPU正常處理其餘(包含PASSIVE_LEVEL)的Thread？<br><br>
+寫過驅動程式的使用者都知道，於DISPATCH_LEVEL(軟體最高LEVEL)時，不會發生Context Switch且也不能存取Pageable Memory，因此，按理推斷，在多核CPU下，其餘CPU理應被Block住才是，不是嗎？不然為何無法做Context Switch？或者其餘CPU只能處理<b>IRQ>=DISPATCH_LEVEL</b>的Thread？還是其餘CPU正常處理其餘(包含PASSIVE_LEVEL)的Thread？<br><br>
 
 說實話，司徒覺得其它CPU應該被Block住，否則Context Switch是可以發生的，當然這個Block不是說OS已經掛點，因為OS還是會受硬體IRQ觸發，畢竟硬體的IRQ還是高於軟體的IRQ，但是顯然這個觀念僅適用於單核CPU，在過往的驅動程式相關書籍中，也幾乎不提及多核CPU下的實際運作情形為何，畢竟Windows OS還不是全部開源，要摸清這些細節也不是那麼容易，因此，司徒寫了一個Legacy Driver做測試，這個Driver會創造出30個Thread，每個Thread進入後，提高IRQ至DISPATCH_LEVEL，然後透過DbgPrint()列印字串，接著降回原本IRQ LEVEL(PASSIV_LEVE)，迴圈次數為20，避免系統GUI無法運作，程式碼如下所示。<br><br>
 
