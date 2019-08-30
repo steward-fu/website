@@ -44,28 +44,36 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>Windows NT Driver &gt;&gt; C/C++</h3>
+<h3>Windows NT Driver &gt;&gt; Delphi</h3>
 <p><b>Hello, world!</b></p>
 <hr size="1">
 <p>
 參考資訊：<br>
-1. <a href="https://github.com/steward-fu/ntdriver">Source Code</a><br><br>
+1. <a href="https://github.com/steward-fu/ntdriver">Source Code</a><br>
+2. <a href="http://www.delphibasics.info/home/delphibasicsprojects/delphidriverdevelopmentkit">delphidriverdevelopmentkit</a><br><br>
 
-main.c
+main.pas
 </p>
+
 <pre class="brush:cpp">
-#include &lt;wdm.h&gt;
+unit main;
 
-void Unload(PDRIVER_OBJECT pOurDriver)
-{
-}
+interface
+uses DDDK;
+function _DriverEntry(pOurDriver:PDriverObject;pOurRegistry:PUnicodeString):NTSTATUS; stdcall;
 
-NTSTATUS DriverEntry(PDRIVER_OBJECT pOurDriver, PUNICODE_STRING pOurRegistry)
-{
-  DbgPrint("Hello, world!");
-  pOurDriver-&gt;DriverUnload = Unload;
-  return STATUS_SUCCESS;
-}
+implementation
+procedure DriverUnload(pOurDriver:PDriverObject); stdcall;
+begin
+end;
+
+function _DriverEntry(pOurDriver:PDriverObject;pOurRegistry:PUnicodeString):NTSTATUS; stdcall;
+begin
+  DbgPrint('Hello, world!', []);
+  pOurDriver^.DriverUnload:=@DriverUnload;
+  Result:=STATUS_SUCCESS;
+end;
+end.
 </pre>
 <p>
 程式很簡單，算是一個簡單的框架，使用者可以善加利用。<br>
@@ -73,32 +81,34 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT pOurDriver, PUNICODE_STRING pOurRegistry)
 <b>DriverEntry()</b>僅列印訊息和設定Unload Callback<br>
 配置或者刪除資源一定是成雙成對，在DriverEntry()配資源就會在Unload()釋放資源，這是基本的準則。<br><br>
 
-sources
+編譯程式：
 </p>
-<pre class="brush:cpp">
-TARGETNAME=main
-TARGETTYPE=DRIVER
-TARGETPATH=obj
-SOURCES=main.c
-</pre>
+<pre>
+c:\dddk\bin\dcc32.exe -Uc:\dddk\inc -B -CG -JP -$A-,C-,D-,G-,H-,I-,L-,P-,V-,W+,Y- main.pas
+c:\dddk\bin\omf2d.exe main.obj
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEDbgPrint=_DbgPrint 2>nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEIoCreateDevice=_IoCreateDevice@28 2>nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEIoCompleteRequest=_IoCompleteRequest@8 2>nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEIoDeleteDevice=_IoDeleteDevice@4 2>nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEIoCreateSymbolicLink=_IoCreateSymbolicLink@8 2>nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEIoDeleteSymbolicLink=_IoDeleteSymbolicLink@4 2>nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CERtlInitUnicodeString=_RtlInitUnicodeString@8 2>nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEInterlockedExchange=@InterlockedExchange@8 2>nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEZwOpenProcess=_ZwOpenProcess@16 2>nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEKeServiceDescriptorTable=_KeServiceDescriptorTable 2>nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEProbeForRead=_ProbeForRead@12 2>nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEExFreePool=_ExFreePool@4 2>nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEKeWaitForSingleObject=_KeWaitForSingleObject@20 2>nul 
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEExAllocatePool=_ExAllocatePool@8 2>nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEExAllocatePoolWithQuota=_ExAllocatePoolWithQuota@8 2>nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEExAllocatePoolWithTag=_ExAllocatePoolWithTag@12 2>nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEKeInitializeMutex=_KeInitializeMutex@8 2>nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEKeReleaseMutex=_KeReleaseMutex@8 2>nul
+c:\dddk\bin\link.exe /NOLOGO /ALIGN:32 /BASE:0x10000 /SUBSYSTEM:NATIVE /DRIVER /FORCE:UNRESOLVED /FORCE:MULTIPLE /ENTRY:DriverEntry c:\dddk\inc\DDDK.obj C:\dddk\lib\ntoskrnl.lib main.obj /out:main.sys
+</pre><br>
 
 <p>
-sources會指定編譯輸出的檔名以及需要編譯的參數、檔案。<br><br>
-
-makefile
-</p>
-<pre class="brush:cpp">
-!INCLUDE $(NTMAKEENV)\makefile.def
-</pre>
-
-<p>
-makefile內容是固定的。<br><br>
-
-編譯程式：<br>
-1. 開始 &gt; 程式集 &gt; Windows Driver Kits &gt; WDK xxxx.xxxx &gt; Build Environments &gt; Windows XP &gt; x86 Checked Build Environment<br>
-2. 開啟Command Line之後，請使用cd命令移到你的目前資料夾<br>
-3. 接著輸入編譯指令：<b>build -cefw</b><br><br>
-
 安裝程式：<br>
 在開始安裝驅動程式之前，我們需要先下載除錯工具，讓驅動程式的Debug訊息可以顯示在除錯工具上面，目前在Kernel Mode以及User Mode上，最佳的Debug輸出訊息工具是DbgView，該公司目前已經被Microsoft併購，所以可以從Microsoft網站下載，下載完後執行DbgView並將<b>Capture &gt; Capture Kernel</b>選項打勾，接著<b>重啟</b>DbgView<br>
 <img src="asm_hello/1.jpg" class="maxSize"><br><br>

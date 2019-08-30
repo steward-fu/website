@@ -44,305 +44,81 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>Windows NT Driver >> WDK 7.1 >> MASM32 >> Basic</h3>
+<h3>Windows NT Driver &gt;&gt; Assembly</h3>
 <p><b>Hello, world!</b></p>
 <hr size="1">
 <p>
-[Github] <a href="https://github.com/steward-fu/gh_driver.git">https://github.com/steward-fu/gh_driver.git</a>
-</p>
+參考資訊：<br>
+1. <a href="http://four-f.narod.ru/">Four-F</a><br>
+2. <a href="https://github.com/steward-fu/ntdriver">Source Code</a><br><br>
 
-<p>
-使用Assembly語言寫驅動程式是一件相當快樂的事情，因為你正使用低階的語言去實現驅動程式，感覺沒有什麼被隱藏，相對的，你會是很瞭解驅動程式細節的人，司徒最愛學習Assembly語言，因為Assembly語言可以建立相當多的思考絲路，是一個很值得學習的語言。司徒目前先介紹一下如何使用Microsoft Assembly(MASM)語言去寫一個Legacy的<b>Hello, world!</b>驅動程式。
+main.asm
 </p>
-
-<p>
-編寫程式：<br>
-新增<b>c:\legacy\main.asm</b>
-</p>
-
 <pre class="brush:cpp">
-;//===========================================================================
-;// Copyright (c) 2015 by Steward Fu
-;// All rights reserved
-;// 2015/05/05
-;//===========================================================================
 .386p
 .model flat, stdcall
 option casemap:none
 
-includelib C:\WinDDK\7600.16385.1\lib\wxp\i386\ntoskrnl.lib
+include c:\masm32\include\w2k\ntstatus.inc
+include c:\masm32\include\w2k\ntddk.inc
+include c:\masm32\include\w2k\ntoskrnl.inc
+include c:\masm32\include\w2k\ntddkbd.inc
+include c:\masm32\Macros\Strings.mac
+includelib c:\masm32\lib\wxp\i386\ntoskrnl.lib
 
-STATUS_SUCCESS           equ 0
-FALSE                    equ 0
-FILE_DEVICE_UNKNOWN      equ 22h
-IRP_MJ_MAXIMUM_FUNCTION  equ 1bh
-PVOID   typedef PTR
-PCHAR   typedef PTR BYTE
-BOOLEAN typedef BYTE
-
-;// structure definition
-UNICODE_STRING STRUCT
- woLength      WORD  ?
- MaximumLength WORD  ?
- Buffer        DWORD ?
-UNICODE_STRING ENDS
-PUNICODE_STRING typedef PTR UNICODE_STRING
-
-LIST_ENTRY STRUCT
- Flink DWORD ?
- Blink DWORD ?
-LIST_ENTRY ENDS
-PLIST_ENTRY typedef PTR LIST_ENTRY
-
-DRIVER_OBJECT STRUCT
- _Type            SWORD ?
- _Size            SWORD ?
- DeviceObject     PVOID ?
- Flags            DWORD ?
- DriverStart      PVOID ?
- DriverSize       DWORD ?
- DriverSection    PVOID ?
- DriverExtension  PVOID ?
- DriverName       UNICODE_STRING &lt;&gt;
- HardwareDatabase PVOID ?
- FastIoDispatch   PVOID ?
- DriverInit       PVOID ?
- DriverStartIo    PVOID ?
- DriverUnload     PVOID ?
- MajorFunction    PVOID (IRP_MJ_MAXIMUM_FUNCTION + 1) dup(?)
-DRIVER_OBJECT ENDS
-PDRIVER_OBJECT typedef PTR DRIVER_OBJECT
-
-DISPATCHER_HEADER STRUCT
- _Type        BYTE   ?
- Absolute     BYTE   ?
- _Size        BYTE   ?
- Inserted     BYTE   ?
- SignalState  SDWORD ?
- WaitListHead LIST_ENTRY &lt;&gt;
-DISPATCHER_HEADER ENDS
- 
-KEVENT STRUCT
- Header DISPATCHER_HEADER &lt;&gt;
-KEVENT ENDS
-PKEVENT typedef PTR KEVENT
-PRKEVENT typedef PTR KEVENT
-
-KDEVICE_QUEUE_ENTRY STRUCT
- DeviceListEntry LIST_ENTRY &lt;&gt;
- SortKey         DWORD ?
- Inserted        BYTE  ?
-                 db 3 dup(?)
-KDEVICE_QUEUE_ENTRY ENDS
-PKDEVICE_QUEUE_ENTRY typedef PTR KDEVICE_QUEUE_ENTRY
-PRKDEVICE_QUEUE_ENTRY typedef PTR KDEVICE_QUEUE_ENTRY
-
-KDEVICE_QUEUE STRUCT
- _Type          SWORD ?
- _Size          SWORD ?
- DeviceListHead LIST_ENTRY &lt;&gt;
- slLock         DWORD ?
- Busy           BYTE  ?
-                db    3 dup(?)
-KDEVICE_QUEUE ENDS
-PKDEVICE_QUEUE typedef PTR KDEVICE_QUEUE
-PRKDEVICE_QUEUE typedef PTR KDEVICE_QUEUE
-
-KDPC STRUCT
- _Type           SWORD ?
- Number          BYTE  ?
- Importance      BYTE  ?
- DpcListEntry    LIST_ENTRY &lt;&gt;
- DeferredRoutine PVOID ?
- DeferredContext PVOID ?
- SystemArgument1 PVOID ?
- SystemArgument2 PVOID ?
- _Lock           PVOID ?
-KDPC ENDS
-PKDPC typedef PTR KDPC
-
-WAIT_CONTEXT_BLOCK STRUCT
- WaitQueueEntry       KDEVICE_QUEUE_ENTRY &lt;&gt;
- DeviceRoutine        PVOID ?
- DeviceContext        PVOID ?
- NumberOfMapRegisters DWORD ?
- DeviceObject         PVOID ?
- CurrentIrp           PVOID ?
- BufferChainingDpc    PVOID ?
-WAIT_CONTEXT_BLOCK ENDS
-PWAIT_CONTEXT_BLOCK typedef PTR WAIT_CONTEXT_BLOCK
-
-DEVICE_OBJECT STRUCT
- _Type           SWORD  ?
- _Size           WORD   ?
- ReferenceCount  SDWORD ?
- DriverObject    PVOID  ?
- NextDevice      PVOID  ?
- AttachedDevice  PVOID  ?
- CurrentIrp      PVOID  ?
- Timer           PVOID  ?
- Flags           DWORD  ?
- Characteristics DWORD  ?
- Vpb             PVOID  ?
- DeviceExtension PVOID  ?
- DeviceType      DWORD  ?
- StackSize       BYTE   ?
-                 db 3 dup(?)
- UNION Queue
-  ListEntry LIST_ENTRY         &lt;&gt;
-  Wcb       WAIT_CONTEXT_BLOCK &lt;&gt;
- ENDS
- AlignmentRequirement  DWORD  ?
- DeviceQueue           KDEVICE_QUEUE &lt;&gt;
- Dpc                   KDPC   &lt;&gt;
- ActiveThreadCount     DWORD  ?
- SecurityDescriptor    PVOID  ?
- DeviceLock            KEVENT &lt;&gt;
- SectorSize            WORD   ?
- Spare1                WORD   ?
- DeviceObjectExtension PVOID  ?
- Reserved              PVOID  ?
-DEVICE_OBJECT ENDS
-PDEVICE_OBJECT typedef PTR DEVICE_OBJECT
-
-;// export function
 public DriverEntry
 
-;// import function
-RtlInitUnicodeString        proto stdcall :DWORD, :DWORD
-IoDeleteSymbolicLink        proto stdcall :DWORD
-IoDeleteDevice              proto stdcall :DWORD
-IoCreateDevice              proto stdcall :DWORD, :DWORD, :DWORD, :DWORD, :DWORD, :DWORD, :DWORD
-IoCreateSymbolicLink        proto stdcall :DWORD, :DWORD
-DbgPrint                    proto C :DWORD, :VARARG
-
 .const
-DEV_NAME word "\","D","e","v","i","c","e","\","f","i","r","s","t","L","e","g","a","c","y",0
-SYM_NAME word "\","D","o","s","D","e","v","i","c","e","s","\","f","i","r","s","t","L","e","g","a","c","y",0              
-MSG_HELLO_WORLD db "Steward Legacy(Nt-Style) Driver Tutorial(Assembly), Hello, world!",0
-
-.data
-gpDevObj PDEVICE_OBJECT 0
+MSG byte "Hello, world!",0
 
 .code
-;//===========================================================================
-;// description:
-;//  it is time to free allocated resources
-;//
-;// parameter:
-;//  pDrvObj
-;//   driver object
-;//
-;// return:
-;//  none
-;//===========================================================================
-DriverUnload proc pDrvObj:PDRIVER_OBJECT
- local szSymName:UNICODE_STRING
- 
- invoke RtlInitUnicodeString, addr szSymName, offset SYM_NAME
- invoke IoDeleteSymbolicLink, addr szSymName     
- invoke IoDeleteDevice, gpDevObj
- xor eax, eax
- ret
-DriverUnload endp
+Unload proc pOurDriver:PDRIVER_OBJECT
+  xor eax, eax
+  ret
+Unload endp
 
-;//===========================================================================
-;//description:
-;// driver entry point
-;//
-;//parameter:
-;// pDrvObj: driver object
-;// pusRegPath: registry path for this driver
-;//
-;//return:
-;// status   
-;//===========================================================================
-DriverEntry proc pDrvObj:PDRIVER_OBJECT, pusRegPath:PUNICODE_STRING
- local pFunDev:PDEVICE_OBJECT
- local suDevName:UNICODE_STRING
- local szSymName:UNICODE_STRING
- 
- invoke DbgPrint, offset MSG_HELLO_WORLD
- invoke RtlInitUnicodeString, addr suDevName, offset DEV_NAME
- invoke RtlInitUnicodeString, addr szSymName, offset SYM_NAME
- invoke IoCreateDevice, pDrvObj, 0, addr suDevName, FILE_DEVICE_UNKNOWN, 0, FALSE, addr pFunDev 
- invoke IoCreateSymbolicLink, addr szSymName, addr suDevName
- 
- mov eax, pDrvObj
- mov (DRIVER_OBJECT PTR [eax]).DriverUnload, offset DriverUnload
- push pFunDev
- pop gpDevObj
- 
- mov eax, STATUS_SUCCESS
- ret
+DriverEntry proc pOurDriver:PDRIVER_OBJECT, pOurRegistry:PUNICODE_STRING
+  invoke DbgPrint, offset MSG
+  mov eax, pOurDriver
+  mov (DRIVER_OBJECT PTR [eax]).DriverUnload, offset Unload
+  mov eax, STATUS_SUCCESS
+  ret
 DriverEntry endp
 end DriverEntry
 .end
 </pre>
-
-<table>
-  <thead>
-    <tr>
-      <th align="left">.386p</th>
-      <th>使用386 Privilege指令</th>
-    </tr>
-    <tr>
-      <th align="left">.model flat, stdcall</th>
-      <th>flat模式(沒有分段)、C語言calling convention</th>
-    </tr>
-    <tr>
-      <th align="left">option casemap:none</th>
-      <th>區分大小寫</th>
-    </tr>
-    <tr>
-      <th align="left">includelib</th>
-      <th>Include library</th>
-    </tr>
-    <tr>
-      <th align="left">include</th>
-      <th>Include file</th>
-    </tr>
-  </thead>
-</table>
- 
 <p>
-Microsoft Assembly語言的語法不算難，多看幾次就會瞭解。
-</p>
+程式很簡單，算是一個簡單的框架，使用者可以善加利用。<br>
+<b>Unload()</b>沒有處理任何事情<br>
+<b>DriverEntry()</b>僅列印訊息和設定Unload Callback<br>
+配置或者刪除資源一定是成雙成對，在DriverEntry()配資源就會在Unload()釋放資源，這是基本的準則。<br><br>
 
-<p>
-編譯程式：<br>
-1. 開始 &rArr; 程式集 &rArr; Windows Driver Kits &rArr; WDK xxxx.xxxx &rArr; Build Environments &rArr; Windows XP &rArr; Launch Windows XP x86 Checked Build Environment<br>
-2. 開啟Command Line之後，請使用CD命令移到你的目前資料夾：<b>cd c:\legacy</b><br>
-3. 輸入編譯指令：
+編譯程式：
 </p>
-
 <pre>
-C:\&gt; C:\WinDDK\7600.16385.1\bin\x86\ml /nologo /c /coff main.asm
-C:\&gt; C:\WinDDK\7600.16385.1\bin\x86\x86\link /nologo /driver /base:0x10000 /align:32 /out:firstLegacy.sys /subsystem:native main.obj
-</pre>
+C:\masm32\bin\ml /c /coff /Cp "main.asm"
+C:\masm32\bin\link /MAP /nologo /driver /base:0x10000 /align:64 /out:"main.sys" /subsystem:native "main.obj"
+</pre><br>
 
 <p>
 安裝程式：<br>
-在開始安裝驅動程式之前，我們需要先下載需要的除錯工具，讓驅動程式的Debug訊息可以顯示在除錯工具上面，目前在Kernel Mode以及User Mode上，最佳的Debug輸出訊息工具是DbgView，該公司目前已經被Microsoft併購，所以可以從Microsoft網站下載，下載後，執行DbgView並將<b>Capture &rArr; Capture Kernel</b>選項打勾，接著<b>重啟</b>DbgView<br>
-<img src="asm_hello/1.jpg" class="maxSize">
-</p>
+在開始安裝驅動程式之前，我們需要先下載除錯工具，讓驅動程式的Debug訊息可以顯示在除錯工具上面，目前在Kernel Mode以及User Mode上，最佳的Debug輸出訊息工具是DbgView，該公司目前已經被Microsoft併購，所以可以從Microsoft網站下載，下載完後執行DbgView並將<b>Capture &gt; Capture Kernel</b>選項打勾，接著<b>重啟</b>DbgView<br>
+<img src="asm_hello/1.jpg" class="maxSize"><br><br>
 
-<p>
-接著，請將firstLegacy.sys複製到c:\windows\system32\drivers資料夾下，Legacy(Nt-Style)驅動程式的安裝很方便，它是使用Service的方式安裝，所以叫出Command Line並且使用輸入如下命令進行安裝
+Legacy(Nt-Style)驅動程式的安裝很方便，它是使用Service的方式安裝，因此，複製main.sys到<b>c:\windows\system32\drivers</b>資料夾下並輸入如下命令進行安裝
 </p>
- 
 <pre>
-C:\&gt; sc create firstLegacy binPath= "c:\windows\system32\drivers\firstLegacy.sys" type= "kernel" start= "demand" error= "normal" Displayname= "firstLegacy"
-c:\&gt; sc start firstLegacy
+C:\&gt; sc create MyDriver binPath= "c:\windows\system32\drivers\main.sys" type= "kernel" start= "demand" error= "normal" Displayname= "MyDriver"
+c:\&gt; sc start MyDriver
 </pre>
-
 <p>
-P.S. 要記得在"="前面都需要一個空格。
-</p>
+P.S. 要記得在"="前面都需要一個空格。<br><br>
 
-<p> 
 輸入完上列指令後，就可以看到輸出的<b>Hello, world!</b>字串。<br>
-<img src="asm_hello/2.jpg" class="maxSize">
+<img src="asm_hello/2.jpg" class="maxSize"><br><br>
+
+當然，使用者也可以使用Four-F撰寫的<a href="https://github.com/steward-fu/wdm/blob/master/tools/KmdManager.exe">KmdManager</a>進行安裝，開啟KmdManager後，載入main.sys後，選擇Register &gt; Run即可<br>
+<img src="asm_hello/3.jpg" class="maxSize">
 </p>
 
 <p>
