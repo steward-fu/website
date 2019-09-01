@@ -44,15 +44,35 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>Windows Driver Model &gt;&gt; Assembly</h3>
-<p><b>開發環境</b></p>
+<h3>Windows NT Driver &gt;&gt; Assembly</h3>
+<p><b>DriverUnload()</b></p>
 <hr size="1">
 <p>
-司徒目前是使用MASM32(v11)搭配KmdKit(v12)工具包來開發Windows驅動程式，KmdKit本身就已經有包含i386的一些常用Library，基本上，KmdKit是以Legacy Driver(WinNT Driver)為主的開發工具包，當然也可以用MASM32來開發WDM Driver，因此，如果使用者要開發的驅動程式不是需要太過複雜的Library，基本上，不需要安裝WDK開發工具，直接使用司徒打包的檔案就可以，由於目前俄羅斯網友(Four-F)的網站已經關閉了，因此KmdKit工具包目前已經沒有在維護，最後一個由Four-F釋出的版本就是v12版，司徒覺得蠻可惜的，因此司徒目前是基於v12版繼續做維護，加入如WDM、USB相關的Include和Macro定義，並且也加入WinXP x86、Win7 x86等常用的WDM Library檔案。<br><br>
-<b>安裝步驟：</b><br>
-1. 安裝<a href="https://github.com/steward-fu/wdm/blob/master/tools/masm32v11r_kernel.zip">masm32v11r_kernel.zip</a>裡面的install(路徑安裝於C:\)<br>
-2. 把Kernel資料夾裡面的東西，覆蓋到<b>c:\masm32\</b>
+當驅動程式準備被系統卸載時，DriverUnload()會被系統呼叫，這是驅動程式最後可以釋放資源的地方，若沒有適當的釋放資源，則驅動程式無法被卸載，遇到這種狀況時，系統會提示需要重新開機才可以正確卸載驅動程式。<br><br>
+
+DriverUnload()副程式定義如下：</p>
+<pre class="brush:cpp">
+Unload proc :PDRIVER_OBJECT
+</pre><br>
+
+<p>
+範例：
 </p>
+<pre class="brush:cpp">
+SYM_NAME word "\","D","o","s","D","e","v","i","c","e","s","\","M","y","D","r","i","v","e","r",0
+
+Unload proc pOurDriver:PDRIVER_OBJECT
+  local szSymName:UNICODE_STRING
+
+  invoke RtlInitUnicodeString, addr szSymName, offset SYM_NAME
+  invoke IoDeleteSymbolicLink, addr szSymName
+
+  mov eax, pOurDriver
+  invoke IoDeleteDevice, (DRIVER_OBJECT PTR [eax]).DeviceObject
+  xor eax, eax
+  ret
+Unload endp
+</pre>
 
 <p>
 <br><a href="../../driver.htm">返回上一頁</a>

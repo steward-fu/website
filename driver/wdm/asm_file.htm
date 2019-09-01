@@ -52,7 +52,7 @@
 1. <a href="http://four-f.narod.ru/">Four-F</a><br>
 2. <a href="https://github.com/steward-fu/wdm">Source Code</a><br><br>
 
-基本上，驅動程式(韌體)的基本功能就是當作User Mode Application(軟體)和硬體的溝通橋樑，軟體可以透過很多種方式和驅動程式溝通，而最常用的溝通方式就是把驅動程式當做是一個檔案在操作，軟體可以透過檔案讀寫的方式和驅動程式做資料傳遞的動作，驅動程式最後再把資料輸出到硬體裝置上，而在Windows系統上，可以使用CreateFile(檔案開啟)、ReadFile(讀取檔案)、WriteFile(寫入檔案)、CloseHandle(關閉檔案)等檔案操作的Win32 API，而驅動程式如何跟軟體串接起來呢？驅動程式必須在DriverEntry()設定IRP_MJ_CREATE(<b>CreateFile</b>)、IRP_MJ_READ(<b>ReadFile</b>)、IRP_MJ_WRITE(<b>WriteFile</b>)、IRP_MJ_CLOSE(<b>CloseHandle</b>)的Callback副程式，這樣I/O Manager才會知道如何串起這條溝通管道。<br><br>
+基本上，驅動程式(韌體)的基本功能就是當作User Application(軟體)和硬體的溝通橋樑，軟體可以透過很多種方式和驅動程式溝通，而最常用的溝通方式就是把驅動程式當做是一個檔案在操作，軟體可以透過檔案讀寫的方式和驅動程式做資料傳遞的動作，驅動程式最後再把資料輸出到硬體裝置上，而在Windows系統上，可以使用CreateFile(檔案開啟)、ReadFile(讀取檔案)、WriteFile(寫入檔案)、CloseHandle(關閉檔案)等檔案操作的Win32 API，而驅動程式如何跟軟體串接起來呢？驅動程式必須在DriverEntry()設定IRP_MJ_CREATE(<b>CreateFile</b>)、IRP_MJ_READ(<b>ReadFile</b>)、IRP_MJ_WRITE(<b>WriteFile</b>)、IRP_MJ_CLOSE(<b>CloseHandle</b>)的Callback副程式，這樣I/O Manager才會知道如何串起這條溝通管道。<br><br>
 
 <b>基本的步驟如下：</b><br>
 1. 安裝驅動程式時，驅動程式註冊自己的名字、註冊檔案的Callback副程式<br>
@@ -155,16 +155,15 @@ AddDevice proc pOurDriver:PDRIVER_OBJECT, pPhyDevice:PDEVICE_OBJECT
       mov eax, pOurDevice
       or (DEVICE_OBJECT PTR [eax]).Flags, DO_BUFFERED_IO
       and (DEVICE_OBJECT PTR [eax]).Flags, not DO_DEVICE_INITIALIZING
-      mov eax, STATUS_SUCCESS
+      invoke IoCreateSymbolicLink, addr szSymName, addr suDevName
     .else
       mov eax, STATUS_UNSUCCESSFUL
     .endif      
-    invoke IoCreateSymbolicLink, addr szSymName, addr suDevName
   .endif
   ret
 AddDevice endp
 
-Unload proc pDrvObj:PDRIVER_OBJECT
+Unload proc pOurDriver:PDRIVER_OBJECT
   xor eax, eax
   ret
 Unload endp
@@ -218,7 +217,7 @@ end DriverEntry
 <p>
 <b>IrpFile()</b>處理檔案相關的IRP，目前只列印IRP資訊，其餘不處理。<br><br>
 
-為了測試驅動程式的檔案讀寫IRP，我們需要一個User Mode Application做測試(app.asm)</b>
+為了測試驅動程式的檔案讀寫IRP，我們需要一個User Application做測試(app.asm)</b>
 </p>
 <pre class="brush: cpp">
 .386p
@@ -266,12 +265,12 @@ end start
 編譯App：<br>
 </p>
 <pre>
-C:\masm32\bin\ml /c /coff /Cp "main.asm"
-C:\masm32\bin\link /MAP /debug /debugtype:cv /nologo /driver:WDM /base:0x10000 /align:64 /out:"main.sys" /subsystem:native "main.obj"
+C:\masm32\bin\ml /c /coff /Cp /Zi /Zd "app.asm"
+C:\masm32\bin\link /SUBSYSTEM:CONSOLE /DEBUG /VERSION:4.0 /OUT:"app.exe" "app.obj"
 </pre><br>
 
 <p>
-接著執行該User Mode Application就可以看到結果<br>
+接著執行該User Application就可以看到結果<br>
 <img src="asm_file/1.jpg" class="maxSize"><br>
 <img src="asm_file/2.jpg" class="maxSize">
 </p>
