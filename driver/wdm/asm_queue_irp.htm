@@ -222,7 +222,7 @@ IrpPnp proc uses ebx pDevObj:PDEVICE_OBJECT, pIrp:PIRP
   ret
 IrpPnp endp
 
-AddDevice proc uses ebx pOurDriver:PDRIVER_OBJECT, pPhyDevice:PDEVICE_OBJECT
+AddDevice proc pOurDriver:PDRIVER_OBJECT, pPhyDevice:PDEVICE_OBJECT
   local pOurDevice:PDEVICE_OBJECT
   local suDevName:UNICODE_STRING
   local szSymName:UNICODE_STRING
@@ -241,12 +241,11 @@ AddDevice proc uses ebx pOurDriver:PDRIVER_OBJECT, pPhyDevice:PDEVICE_OBJECT
       mov eax, pOurDevice
       or (DEVICE_OBJECT PTR [eax]).Flags, DO_BUFFERED_IO
       and (DEVICE_OBJECT PTR [eax]).Flags, not DO_DEVICE_INITIALIZING
-      mov eax, STATUS_SUCCESS
 
-      mov ebx, pOurDevice
-      mov ebx, (DEVICE_OBJECT PTR [ebx]).DeviceExtension
-      lea ebx, (OurDeviceExtension PTR [ebx]).stQueue
-      InitializeListHead ebx
+      mov eax, pOurDevice
+      mov eax, (DEVICE_OBJECT PTR [eax]).DeviceExtension
+      lea eax, (OurDeviceExtension PTR [eax]).stQueue
+      InitializeListHead eax
 
       mov eax, pOurDevice
       mov eax, (DEVICE_OBJECT PTR [eax]).DeviceExtension

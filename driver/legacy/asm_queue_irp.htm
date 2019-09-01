@@ -44,18 +44,37 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>Windows Driver Model &gt;&gt; Assembly</h3>
-<p><b>Cancel IRP</b></p>
+<h3>Windows NT Driver &gt;&gt; Assembly</h3>
+<p><b>Queue IRP</b></p>
 <hr size="1">
 <p>
 參考資訊：<br>
 1. <a href="http://four-f.narod.ru/">Four-F</a><br>
-2. <a href="https://github.com/steward-fu/wdm">Source Code</a><br>
-3. <a href="https://docs.microsoft.com/en-us/windows-hardware/drivers/kernel/canceling-irps">canceling-irps</a><br><br>
+2. <a href="https://github.com/steward-fu/ntdriver">Source Code</a><br><br>
 
-有處理Irp就會有Cancel Irp的時候，Cancel Irp本身就是一個很複雜的課題，司徒在這一篇教學不會做深入探討，有興趣的使用者可以參考上面的參考資訊，取而代之的，司徒只是點出，在處理Irp時，使用者要意識到該Irp可能已經被Cancel掉了，作法上，也是可以切割成很多時期，如：Irp處理前，Irp處裡中，Irp處裡後，因此，在設計驅動程式時，對於Cancel機制有必要嚴謹看待，因為，BSOD常常就是這樣發生了，不過司徒在此僅針對Irp處裡前，作簡單判斷，是否User Application已經Cancel這個Irp，如果沒有被Cancel，則Complete Irp，相反地，如果被Cancel，則Cancel Irp，Cancel作法如下：<br>
-1. CancelRoutine(NULL)<br>
-2. IoCompleteRequest(STATUS_CANCELLED)<br><br>
+驅動程式作為User Application跟硬體的溝通橋樑，最常遇到的問題就是硬體處理速度不夠快，導致驅動程式需要等待硬體完成後，再繼續處理下一筆資料，但是驅動程式如果要跟User Application溝通這些同步事情，會產生額外的等待時間，因此，為了達到比較好的處理效能，一般驅動程式做會Queue Irp的動作，讓處理的間隔可以縮到最小，這也是這篇教學要說明的東西，教導使用者一些Queue Irp的基本觀念和作法。<br><br>
+
+首先要知道的就是，儲存Irp的地方在哪？在Windows驅動程式裡，可以使用List作為儲存媒介(使用者也可以使用其它方式儲存)，使用步驟相當簡單，如下所示：<br>
+1. InitializeListHead()<br>
+2. InsertHeadList()<br>
+3. IsListEmpty()<br>
+4. RemoveHeadList()<br>
+首先初始化List(<b>InitializeListHead()</b>)，接著插入(<b>InsertHeadList()</b>)需要儲存的資料，接著判斷List是否還有資料(<b>IsListEmpty()</b>)，假如還有資料，則取出(<b>RemoveHeadList()</b>)處裡<br><br>
+
+Irp是處裡資料的最小單位，一個Irp通常代表處理一筆資料的訊息，因此，當硬體來不及處理資料時，驅動程式需要做Pending Irp的動作，讓User Application知道這筆資料稍後處理，Pending Irp的步驟如下：<br>
+1. IoMarkIrpPending()<br>
+2. IoCompleteRequest(STATUS_PENDING)<br>
+回傳Pending，告知I/O Manager，這筆Irp資料先Pending一下，稍後處理<br><br>
+
+接著就是User Application如何知道資料是否處理完畢或者被Pending了呢？在CreateFile()時，如果沒有用FILE_FLAG_OVERLAPPED，則代表每一筆資料都是必須完成才會回傳，此種寫法也稱為Blocking方式，如：呼叫WriteFile()後，必須等待驅動程式完成該Irp才會繼續往下，否則呼叫WriteFile()後，會卡在這個Win32 API，相反地，如果CreateFile()使用FILE_FLAG_OVERLAPPED，而呼叫WriteFile()時，驅動程式回傳Pending，則WriteFile()會馬上回傳ERROR_IO_PENDING，告知User Application，該筆資料驅動程式會稍後處裡，此種寫法也稱為Non-Blocking方式，那如何得知該筆資料處理完畢了呢？當使用Non-Blocking寫法，會在WriteFile()傳入一個OVERLAPPED參數，該參數裡面有一個Event，用來告知是否已經處理完畢了。<br><br>
+
+Queue IRP流程:<br>
+1. InsertHeadList()<br>
+2. IoMarkIrpPending()<br>
+3. IoCompleteRequest(STATUS_PENDING)<br>
+4. IsListEmpty()<br>
+5. RemoveHeadList()<br>
+6. IoCompleteRequest(STATUS_SUCCESS)<br><br>
 
 main.asm
 </p>
@@ -90,7 +109,7 @@ MSG_QUEUE   byte "IOCTL_QUEUE",0
 MSG_PROCESS byte "IOCTL_PROCESS",0
 
 .code
-OnTimer proc uses ebx pDpc:PKDPC, pContext:PVOID, pArg1:PVOID, PArg2:PVOID
+OnTimer proc pDpc:PKDPC, pContext:PVOID, pArg1:PVOID, PArg2:PVOID
   mov eax, pContext
   mov eax, (DEVICE_OBJECT PTR [eax]).DeviceExtension
   lea eax, (OurDeviceExtension PTR [eax]).stQueue
@@ -105,24 +124,14 @@ OnTimer proc uses ebx pDpc:PKDPC, pContext:PVOID, pArg1:PVOID, PArg2:PVOID
     mov eax, (DEVICE_OBJECT PTR [eax]).DeviceExtension
     lea eax, (OurDeviceExtension PTR [eax]).stQueue
     RemoveHeadList eax
-    ; CONTAINING_RECORD 
+    
+    ;// CONTAINING_RECORD 
     sub eax, _IRP.Tail.Overlay.ListEntry
-    mov bl, (_IRP PTR [eax]).Cancel
-    .if bl != TRUE
-      mov (_IRP PTR [eax]).IoStatus.Status, STATUS_SUCCESS
-      push 0
-      pop (_IRP PTR [eax]).IoStatus.Information
-      fastcall IofCompleteRequest, eax, IO_NO_INCREMENT
-      mov eax, STATUS_SUCCESS
-      invoke DbgPrint, $CTA0("Complete Irp")
-    .else
-      mov (_IRP PTR [eax]).CancelRoutine, NULL
-      mov (_IRP PTR [eax]).IoStatus.Status, STATUS_CANCELLED
-      push 0
-      pop (_IRP PTR [eax]).IoStatus.Information
-      fastcall IofCompleteRequest, eax, IO_NO_INCREMENT
-      invoke DbgPrint, $CTA0("Cancel Irp")
-    .endif
+    mov (_IRP PTR [eax]).IoStatus.Status, STATUS_SUCCESS
+    push 0
+    pop (_IRP PTR [eax]).IoStatus.Information
+    fastcall IofCompleteRequest, eax, IO_NO_INCREMENT
+    invoke DbgPrint, $CTA0("Complete Irp")
   .endif
   ret
 OnTimer endp
@@ -145,12 +154,8 @@ IrpOpenClose proc uses ebx pDevObj:PDEVICE_OBJECT, pIrp:PIRP
 IrpOpenClose endp
 
 IrpIOCTL proc uses ebx ecx pOurDevice:PDEVICE_OBJECT, pIrp:PIRP
-  local dwLen: DWORD
   local pdx:PTR Dev_Ext
   local stTimePeriod:LARGE_INTEGER
-
-  push 0
-  pop dwLen
 
   mov eax, pOurDevice
   push (DEVICE_OBJECT PTR [eax]).DeviceExtension
@@ -160,7 +165,7 @@ IrpIOCTL proc uses ebx ecx pOurDevice:PDEVICE_OBJECT, pIrp:PIRP
   mov eax, (IO_STACK_LOCATION PTR [eax]).Parameters.DeviceIoControl.IoControlCode
   .if eax == IOCTL_QUEUE
     invoke DbgPrint, offset MSG_QUEUE
-    
+
     mov ebx, pdx
     lea ebx, (OurDeviceExtension PTR [ebx]).stQueue
     mov ecx, pIrp
@@ -171,106 +176,67 @@ IrpIOCTL proc uses ebx ecx pOurDevice:PDEVICE_OBJECT, pIrp:PIRP
     ret
   .elseif eax == IOCTL_PROCESS
     invoke DbgPrint, offset MSG_PROCESS
+    
     or stTimePeriod.HighPart, -1
     mov stTimePeriod.LowPart, -10000000
     mov ebx, pdx
-    invoke KeSetTimerEx, addr (OurDeviceExtension PTR [ebx]).stTime, stTimePeriod.LowPart, stTimePeriod.HighPart, 1000, addr (OurDeviceExtension PTR [ebx]).stDPC
+    invoke KeSetTimerEx, addr (OurDeviceExtension PTR [ebx]).stTime, stTimePeriod.LowPart, stTimePeriod.HighPart, 10, addr (OurDeviceExtension PTR [ebx]).stDPC
   .endif
 
   mov eax, pIrp
   mov (_IRP PTR [eax]).IoStatus.Status, STATUS_SUCCESS
-  push dwLen
+  push 0
   pop (_IRP PTR [eax]).IoStatus.Information 
   fastcall IofCompleteRequest, pIrp, IO_NO_INCREMENT
   mov eax, STATUS_SUCCESS
   ret
 IrpIOCTL endp
 
-IrpPnp proc uses ebx pDevObj:PDEVICE_OBJECT, pIrp:PIRP
-  local pdx:PTR OurDeviceExtension
-  local szSymName:UNICODE_STRING
-
-  mov eax, pDevObj
-  push (DEVICE_OBJECT PTR [eax]).DeviceExtension
-  pop pdx
-   
-  IoGetCurrentIrpStackLocation pIrp
-  movzx ebx, (IO_STACK_LOCATION PTR [eax]).MinorFunction
-  .if ebx == IRP_MN_START_DEVICE
-    mov eax, pIrp
-    mov (_IRP PTR [eax]).IoStatus.Status, STATUS_SUCCESS
-  .elseif ebx == IRP_MN_REMOVE_DEVICE
-    invoke RtlInitUnicodeString, addr szSymName, offset SYM_NAME
-    invoke IoDeleteSymbolicLink, addr szSymName     
-    mov eax, pIrp
-    mov (_IRP PTR [eax]).IoStatus.Status, STATUS_SUCCESS
-
-    mov eax, pdx
-    invoke IoDetachDevice, (OurDeviceExtension PTR [eax]).pNextDev
-    invoke IoDeleteDevice, pDevObj
-  .endif
-  IoSkipCurrentIrpStackLocation pIrp
-
-  mov eax, pdx
-  invoke IoCallDriver, (OurDeviceExtension PTR [eax]).pNextDev, pIrp
-  ret
-IrpPnp endp
-
-AddDevice proc pOurDriver:PDRIVER_OBJECT, pPhyDevice:PDEVICE_OBJECT
-  local pOurDevice:PDEVICE_OBJECT
-  local suDevName:UNICODE_STRING
-  local szSymName:UNICODE_STRING
-
-  invoke RtlInitUnicodeString, addr suDevName, offset DEV_NAME
-  invoke RtlInitUnicodeString, addr szSymName, offset SYM_NAME
-  invoke IoCreateDevice, pOurDriver, sizeof OurDeviceExtension, addr suDevName, FILE_DEVICE_UNKNOWN, 0, FALSE, addr pOurDevice
-  .if eax == STATUS_SUCCESS
-    invoke IoAttachDeviceToDeviceStack, pOurDevice, pPhyDevice
-    .if eax != NULL
-      push eax
-      mov eax, pOurDevice
-      mov eax, (DEVICE_OBJECT PTR [eax]).DeviceExtension
-      pop (OurDeviceExtension PTR [eax]).pNextDev
-
-      mov eax, pOurDevice
-      or (DEVICE_OBJECT PTR [eax]).Flags, DO_BUFFERED_IO
-      and (DEVICE_OBJECT PTR [eax]).Flags, not DO_DEVICE_INITIALIZING
-      
-      mov eax, pOurDevice
-      mov eax, (DEVICE_OBJECT PTR [eax]).DeviceExtension
-      lea eax, (OurDeviceExtension PTR [eax]).stQueue
-      InitializeListHead eax
-
-      mov eax, pOurDevice
-      mov eax, (DEVICE_OBJECT PTR [eax]).DeviceExtension
-      invoke KeInitializeTimer, addr (OurDeviceExtension ptr [eax]).stTime
-
-      mov eax, pOurDevice
-      mov eax, (DEVICE_OBJECT PTR [eax]).DeviceExtension
-      invoke KeInitializeDpc, addr (OurDeviceExtension ptr [eax]).stDPC, offset OnTimer, pOurDevice
-      invoke IoCreateSymbolicLink, addr szSymName, addr suDevName
-    .else
-      mov eax, STATUS_UNSUCCESSFUL
-    .endif      
-  .endif
-  ret
-AddDevice endp
-
 Unload proc pOurDriver:PDRIVER_OBJECT
+  local szSymName:UNICODE_STRING
+         
+  invoke RtlInitUnicodeString, addr szSymName, offset SYM_NAME
+  invoke IoDeleteSymbolicLink, addr szSymName
+         
+  mov eax, pOurDriver
+  invoke IoDeleteDevice, (DRIVER_OBJECT PTR [eax]).DeviceObject
   xor eax, eax
   ret
 Unload endp
-
+  
 DriverEntry proc pOurDriver:PDRIVER_OBJECT, pOurRegistry:PUNICODE_STRING
+  local pOurDevice:PDEVICE_OBJECT
+  local suDevName:UNICODE_STRING
+  local szSymName:UNICODE_STRING
+    
   mov eax, pOurDriver
-  mov (DRIVER_OBJECT PTR [eax]).MajorFunction[IRP_MJ_PNP    * (sizeof PVOID)], offset IrpPnp
   mov (DRIVER_OBJECT PTR [eax]).MajorFunction[IRP_MJ_CREATE * (sizeof PVOID)], offset IrpOpenClose
   mov (DRIVER_OBJECT PTR [eax]).MajorFunction[IRP_MJ_CLOSE  * (sizeof PVOID)], offset IrpOpenClose
   mov (DRIVER_OBJECT PTR [eax]).MajorFunction[IRP_MJ_DEVICE_CONTROL * (sizeof PVOID)], offset IrpIOCTL
   mov (DRIVER_OBJECT PTR [eax]).DriverUnload, offset Unload
-  mov eax, (DRIVER_OBJECT PTR [eax]).DriverExtension
-  mov (DRIVER_EXTENSION PTR [eax]).AddDevice, AddDevice
-  mov eax, STATUS_SUCCESS
+    
+  invoke RtlInitUnicodeString, addr suDevName, offset DEV_NAME
+  invoke RtlInitUnicodeString, addr szSymName, offset SYM_NAME
+  invoke IoCreateDevice, pOurDriver, sizeof OurDeviceExtension, addr suDevName, FILE_DEVICE_UNKNOWN, 0, FALSE, addr pOurDevice
+  .if eax == STATUS_SUCCESS
+    mov eax, pOurDevice
+    or (DEVICE_OBJECT PTR [eax]).Flags, DO_BUFFERED_IO
+    and (DEVICE_OBJECT PTR [eax]).Flags, not DO_DEVICE_INITIALIZING
+    
+    mov eax, pOurDevice
+    mov eax, (DEVICE_OBJECT PTR [eax]).DeviceExtension
+    lea eax, (OurDeviceExtension PTR [eax]).stQueue
+    InitializeListHead eax
+
+    mov eax, pOurDevice
+    mov eax, (DEVICE_OBJECT PTR [eax]).DeviceExtension
+    invoke KeInitializeTimer, addr (OurDeviceExtension ptr [eax]).stTime
+
+    mov eax, pOurDevice
+    mov eax, (DEVICE_OBJECT PTR [eax]).DeviceExtension
+    invoke KeInitializeDpc, addr (OurDeviceExtension ptr [eax]).stDPC, offset OnTimer, pOurDevice
+    invoke IoCreateSymbolicLink, addr szSymName, addr suDevName
+  .endif
   ret
 DriverEntry endp
 end DriverEntry
@@ -279,7 +245,7 @@ end DriverEntry
 <p>
 <b>AddDevice()</b>初始List以及DPC Timer，DPC Timer用來定期確認List是否還有資料需要處理，當然，使用Thread檢查或許更恰當些<br>
 <b>IrpIOCTL()</b>IOCTL_QUEUE代表該IOCTL會被Queue起來，稍後處理，而當收到IOCTL_PROCESS時，則啟動DPC Timer開始處理那些被Queue起來的Irp<br>
-<b>OnTimer()</b>處理Queue裡面的Irp，在處理前，先判斷該Irp是否已經被Cancel了<br><br>
+<b>OnTimer()</b>處理Queue裡面的Irp<br><br>
 
 app.asm
 </p>
@@ -312,7 +278,7 @@ cnt   dd ?
 hFile dd ?
 dwRet dd ?
 event dd 3 dup(?)
-ov OVERLAPPED &lt;?&gt;
+ov    OVERLAPPED &lt;?&gt;
 
 .code
 start:
@@ -336,30 +302,26 @@ start:
     
     invoke crt_printf, $CTA0("queue event\n")
     invoke DeviceIoControl, hFile, IOCTL_QUEUE, NULL, 0, NULL, 0, offset dwRet, offset ov
-    invoke CloseHandle, ov.hEvent
     sub cnt, 1
   .endw
   
   invoke crt_printf, $CTA0("process all of events\n")
   invoke DeviceIoControl, hFile, IOCTL_PROCESS, NULL, 0, NULL, 0, offset dwRet, NULL
-  invoke Sleep, 1000
-  invoke CancelIo, hFile
   
   mov cnt, 3
   .while cnt &gt; 0
     mov ecx, cnt
     mov edi, offset event
     mov eax, [edi + ecx * 4]
-     
+    
     push eax
     pop ov.hEvent
-     
-    invoke WaitForSingleObject, ov.hEvent, INFINITE
+    
+    invoke WaitForSingleObject, ov.hEvent, INFINITE 
     invoke CloseHandle, ov.hEvent
     invoke crt_printf, $CTA0("wait complete\n")
     sub cnt, 1
   .endw
-  
   invoke CloseHandle, hFile
   invoke ExitProcess, 0
 end start
@@ -367,8 +329,8 @@ end start
 
 <p>
 結果<br>
-<img src="asm_cancel_irp/1.jpg" class="maxSize"><br>
-<img src="asm_cancel_irp/2.jpg" class="maxSize">
+<img src="../wdm/asm_queue_irp/1.jpg" class="maxSize"><br>
+<img src="../wdm/asm_queue_irp/2.jpg" class="maxSize">
 </p>
 
 <p>
