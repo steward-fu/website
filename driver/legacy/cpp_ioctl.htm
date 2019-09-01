@@ -44,13 +44,12 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>Windows NT Driver &gt;&gt; Assembly &gt;&gt; IOCTL</h3>
+<h3>Windows NT Driver &gt;&gt; C/C++ &gt;&gt; IOCTL</h3>
 <p><b>IRP</b></p>
 <hr size="1">
 <p>
 參考資訊：<br>
-1. <a href="http://four-f.narod.ru/">Four-F</a><br>
-2. <a href="https://github.com/steward-fu/ntdriver">Source Code</a><br><br>
+1. <a href="https://github.com/steward-fu/ntdriver">Source Code</a><br><br>
 
 Input Output Control(IOCTL)是另一種可以跟驅動程式溝通的方式，本身帶有命令參數，驅動程式可以依據不一樣的命令做不一樣的事情，而除了命令以外，IOCTL更把Buffer切成Input和Output兩塊，單一次命令的運作就可以完成讀寫的動作，Buffer的屬性也是需要做設定才可以使用，分為Buffered、Direct和Neither這三種設定方式，感覺是不是跟File的Buffer設定方式很相似呢？沒錯，基本上是一樣的，雖然司徒講得有點複雜，不過，只要把Buffer的設定方式搞懂後，使用者就可以發現，整個運作原理是相當容易理解的。<br><br>
 
@@ -100,146 +99,103 @@ Ref. <a href="https://docs.microsoft.com/en-us/windows-hardware/drivers/kernel/d
 </table><br>
 
 <p>
-main.asm
+main.c
 </p>
 <pre class="brush:cpp">
-.386p
-.model flat, stdcall
-option casemap:none
- 
-include c:\masm32\include\w2k\ntstatus.inc
-include c:\masm32\include\w2k\ntddk.inc
-include c:\masm32\include\w2k\ntoskrnl.inc
-include c:\masm32\include\w2k\ntddkbd.inc
-include c:\masm32\include\wxp\wdm.inc
-include c:\masm32\Macros\Strings.mac
-includelib c:\masm32\lib\wxp\i386\ntoskrnl.lib
+#include &lt;wdm.h&gt;
+
+#define DEV_NAME L"\\Device\\MyDriver"
+#define SYM_NAME L"\\DosDevices\\MyDriver"
+#define IOCTL_TEST CTL_CODE(FILE_DEVICE_UNKNOWN, 0x800, METHOD_BUFFERED, FILE_ANY_ACCESS) 
   
-public DriverEntry
- 
-IOCTL_TEST equ CTL_CODE(FILE_DEVICE_UNKNOWN, 800h, METHOD_BUFFERED, FILE_ANY_ACCESS)
- 
-.const
-DEV_NAME word "\","D","e","v","i","c","e","\","M","y","D","r","i","v","e","r",0
-SYM_NAME word "\","D","o","s","D","e","v","i","c","e","s","\","M","y","D","r","i","v","e","r",0
-SHOW_MSG byte "IOCTL_TEST",0
-
-.code
-IrpOpenClose proc uses ebx pOurDevice:PDEVICE_OBJECT, pIrp:PIRP
-  IoGetCurrentIrpStackLocation pIrp
-  movzx ebx, (IO_STACK_LOCATION PTR [eax]).MajorFunction
-  .if ebx == IRP_MJ_CREATE
-    invoke DbgPrint, $CTA0("IRP_MJ_CREATE")
-  .elseif ebx == IRP_MJ_CLOSE
-    invoke DbgPrint, $CTA0("IRP_MJ_CLOSE")
-  .endif
-
-  mov eax, pIrp
-  and (_IRP PTR [eax]).IoStatus.Information, 0
-  mov (_IRP PTR [eax]).IoStatus.Status, STATUS_SUCCESS
-  fastcall IofCompleteRequest, pIrp, IO_NO_INCREMENT
-  mov eax, STATUS_SUCCESS
-  ret
-IrpOpenClose endp
-
-IrpIOCTL proc uses ebx ecx pOurDevice:PDEVICE_OBJECT, pIrp:PIRP
-  IoGetCurrentIrpStackLocation pIrp
-  mov eax, (IO_STACK_LOCATION PTR [eax]).Parameters.DeviceIoControl.IoControlCode
-  .if eax == IOCTL_TEST
-    invoke DbgPrint, offset SHOW_MSG
-  .endif
-
-  mov eax, pIrp
-  mov (_IRP PTR [eax]).IoStatus.Status, STATUS_SUCCESS
-  push 0
-  pop (_IRP PTR [eax]).IoStatus.Information 
-  fastcall IofCompleteRequest, pIrp, IO_NO_INCREMENT
-  mov eax, STATUS_SUCCESS
-  ret
-IrpIOCTL endp
-
-Unload proc pOurDriver:PDRIVER_OBJECT
-  local szSymName:UNICODE_STRING
+void Unload(PDRIVER_OBJECT pOurDriver)
+{
+  UNICODE_STRING usSymboName;
        
-  invoke RtlInitUnicodeString, addr szSymName, offset SYM_NAME
-  invoke IoDeleteSymbolicLink, addr szSymName
-       
-  mov eax, pOurDriver
-  invoke IoDeleteDevice, (DRIVER_OBJECT PTR [eax]).DeviceObject
-  xor eax, eax
-  ret
-Unload endp
+  RtlInitUnicodeString(&amp;usSymboName, L"\\DosDevices\\MyDriver");
+  IoDeleteSymbolicLink(&amp;usSymboName);
+  IoDeleteDevice(pOurDriver-&gt;DeviceObject);
+}
 
-DriverEntry proc pOurDriver:PDRIVER_OBJECT, pOurRegistry:PUNICODE_STRING
-  local pOurDevice:PDEVICE_OBJECT
-  local suDevName:UNICODE_STRING
-  local szSymName:UNICODE_STRING
+NTSTATUS IrpIOCTL(PDEVICE_OBJECT pOurDevice, PIRP pIrp)
+{
+  PIO_STACK_LOCATION psk = IoGetCurrentIrpStackLocation(pIrp);
+
+  switch(psk-&gt;Parameters.DeviceIoControl.IoControlCode){
+  case IOCTL_TEST:
+    DbgPrint("IOCTL_TEST");
+    break;
+  }
+  IoCompleteRequest(pIrp, IO_NO_INCREMENT);
+  return STATUS_SUCCESS;
+}
+
+NTSTATUS IrpFile(PDEVICE_OBJECT pOurDevice, PIRP pIrp)
+{
+  PIO_STACK_LOCATION psk = IoGetCurrentIrpStackLocation(pIrp);
+
+  switch(psk-&gt;MajorFunction){
+  case IRP_MJ_CREATE:
+    DbgPrint("IRP_MJ_CREATE");
+    break;
+  case IRP_MJ_CLOSE:
+    DbgPrint("IRP_MJ_CLOSE");
+    break;
+  }
+  IoCompleteRequest(pIrp, IO_NO_INCREMENT);
+  return STATUS_SUCCESS;
+}
   
-  mov eax, pOurDriver
-  mov (DRIVER_OBJECT PTR [eax]).MajorFunction[IRP_MJ_CREATE * (sizeof PVOID)], offset IrpOpenClose
-  mov (DRIVER_OBJECT PTR [eax]).MajorFunction[IRP_MJ_CLOSE  * (sizeof PVOID)], offset IrpOpenClose
-  mov (DRIVER_OBJECT PTR [eax]).MajorFunction[IRP_MJ_DEVICE_CONTROL * (sizeof PVOID)], offset IrpIOCTL
-  mov (DRIVER_OBJECT PTR [eax]).DriverUnload, offset Unload
+NTSTATUS DriverEntry(PDRIVER_OBJECT pOurDriver, PUNICODE_STRING pOurRegistry)
+{
+  PDEVICE_OBJECT pOurDevice=NULL;
+  UNICODE_STRING usDeviceName;
+  UNICODE_STRING usSymboName;
   
-  invoke RtlInitUnicodeString, addr suDevName, offset DEV_NAME
-  invoke RtlInitUnicodeString, addr szSymName, offset SYM_NAME
-  invoke IoCreateDevice, pOurDriver, 0, addr suDevName, FILE_DEVICE_UNKNOWN, 0, FALSE, addr pOurDevice
-  .if eax == STATUS_SUCCESS
-    mov eax, pOurDevice
-    or (DEVICE_OBJECT PTR [eax]).Flags, DO_BUFFERED_IO
-    and (DEVICE_OBJECT PTR [eax]).Flags, not DO_DEVICE_INITIALIZING
-    invoke IoCreateSymbolicLink, addr szSymName, addr suDevName
-  .endif
-  ret
-DriverEntry endp
-end DriverEntry
-.end
+  pOurDriver-&gt;MajorFunction[IRP_MJ_CREATE] =
+  pOurDriver-&gt;MajorFunction[IRP_MJ_CLOSE] = IrpFile;
+  pOurDriver-&gt;MajorFunction[IRP_MJ_DEVICE_CONTROL] = IrpIOCTL;
+  pOurDriver-&gt;DriverUnload = Unload;
+    
+  RtlInitUnicodeString(&amp;usDeviceName, L"\\Device\\MyDriver");
+  IoCreateDevice(pOurDriver, 0, &amp;usDeviceName, FILE_DEVICE_UNKNOWN, 0, FALSE, &amp;pOurDevice);
+  RtlInitUnicodeString(&amp;usSymboName, L"\\DosDevices\\MyDriver");
+  IoCreateSymbolicLink(&amp;usSymboName, &amp;usDeviceName);
+  pOurDevice-&gt;Flags&amp;= ~DO_DEVICE_INITIALIZING;
+  pOurDevice-&gt;Flags|= DO_BUFFERED_IO;
+  return STATUS_SUCCESS;
+}
 </pre>
 <p>
 <b>IrpIOCTL()</b>僅列印IOCTL_TEST命令。<br><br>
 
-app.asm
+app.c
 </p>
 <pre class="brush:cpp">
-.386p
-.model flat, stdcall
-option casemap:none
+#define INITGUID
+#include &lt;windows.h&gt;
+#include &lt;winioctl.h&gt;
+#include &lt;strsafe.h&gt;
+#include &lt;setupapi.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
 
-include c:\masm32\include\windows.inc
-include c:\masm32\include\masm32.inc
-include c:\masm32\include\user32.inc
-include c:\masm32\include\msvcrt.inc
-include c:\masm32\include\kernel32.inc
-include c:\masm32\include\w2k\ntddkbd.inc
-include c:\masm32\Macros\Strings.mac
+#define IOCTL_TEST CTL_CODE(FILE_DEVICE_UNKNOWN, 0x800, METHOD_BUFFERED, FILE_ANY_ACCESS)
  
-includelib c:\masm32\lib\user32.lib
-includelib c:\masm32\lib\masm32.lib
-includelib c:\masm32\lib\msvcrt.lib
-includelib c:\masm32\lib\kernel32.lib
+int __cdecl main(int argc, char* argv[])
+{
+  DWORD dwRet = 0;
+  HANDLE hFile = NULL;
 
-IOCTL_TEST equ CTL_CODE(FILE_DEVICE_UNKNOWN, 800h, METHOD_BUFFERED, FILE_ANY_ACCESS)
-
-.const 
-DEV_NAME db "\\.\MyDriver",0
-
-.data?
-hFile dd ?
-dwRet dd ?
-
-.code
-start:
-  invoke CreateFile, offset DEV_NAME, GENERIC_READ or GENERIC_WRITE, FILE_SHARE_READ, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0
-  .if eax == INVALID_HANDLE_VALUE
-    invoke crt_printf, $CTA0("failed to open mydriver")
-    invoke ExitProcess, -1
-  .endif
-  
-  mov hFile, eax
-  invoke DeviceIoControl, hFile, IOCTL_TEST, NULL, 0, NULL, 0, offset dwRet, NULL
-  invoke CloseHandle, hFile
-  invoke ExitProcess, 0
-end start
+  hFile = CreateFile("\\\\.\\MyDriver", GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+  if (hFile == INVALID_HANDLE_VALUE) {
+    printf("failed to open mydriver");
+    return 1;
+  }
+  DeviceIoControl(hFile, IOCTL_TEST, NULL, 0, NULL, 0, &amp;dwRet, NULL);  
+  CloseHandle(hFile);
+  return 0;
+}
 </pre><br>
 
 <p>
