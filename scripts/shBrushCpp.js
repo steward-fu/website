@@ -17,7 +17,7 @@ var my_constant =
 'DriverInstall .NT.Services DriverCopyFiles FILE_ATTRIBUTE_NORMAL '    +
 'DriverService .NT.HW .NT DriverHwAddReg DriverAddReg .HW Strings '    +
 'STATUS_UNSUCCESSFUL IRP_MN_START_DEVICE IRP_MN_REMOVE_DEVICE '        +
-'IRP_MJ_MAXIMUM_FUNCTION eax ebx ecx edx IO_NO_INCREMENT ECX EDX EAX ' +
+'IRP_MJ_MAXIMUM_FUNCTION eax ebx ecx edx IO_NO_INCREMENT ECX EDX EAX bl ' +
 'IRP_MJ_CREATE_NAMED_PIPE EBX ECHO ERROR GENERIC_ALL GENERIC_READ '    +
 'GENERIC_WRITE INVALID_HANDLE_VALUE OPEN_EXISTING MINORBITS MINORMASK '+
 'WDF_NO_EVENT_CALLBACK WdfDriverInitNonPnpDriver CREATE_ALWAYS th0 '   +
@@ -37,13 +37,13 @@ var my_keyword =
 '586p 686p model flat stdcall option casemap none includelib equ text '+
 'dup MACRO REQ IFDIFI ENDIF ENDM mov inc dec add code data proc ascii '+
 'endp local invoke call addr offset ADDR OFFSET push pop or and asciz '+
-'endif ret not xor movzx elseif end include uses externdef syscall bl '+
+'endif ret not xor movzx elseif end include uses externdef syscall '+
 'textequ IFNB for FOR IF OPATTR AND ELSEIF EQ ELSE IFIDNI TEXTEQU irp '+
 'break case catch class const __finally __exception __try __init ifnb '+
 'const_cast continue private public protected __declspec __exit endr ' +
 'default delete deprecated dllexport dllimport do dynamic_cast align ' +
 'else enum explicit extern if for friend goto inline assume section '  +
-'mutable naked namespace new noinline noreturn nothrow near es ds bl ' +
+'mutable naked namespace new noinline noreturn nothrow near es ds ' +
 'register reinterpret_cast return selectany cseg segment para far cs ' +
 'sizeof static static_cast struct switch template this global ldr str '+
 'thread throw true false try typedef typeid typename union adr rept '  +

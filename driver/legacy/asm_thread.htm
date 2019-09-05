@@ -117,12 +117,12 @@ MyThread proc pParam:DWORD
   ret
 MyThread endp
 
-IrpOpenClose proc uses ebx pOurDevice:PDEVICE_OBJECT, pIrp:PIRP
+IrpOpenClose proc pOurDevice:PDEVICE_OBJECT, pIrp:PIRP
   IoGetCurrentIrpStackLocation pIrp
-  movzx ebx, (IO_STACK_LOCATION PTR [eax]).MajorFunction
-  .if ebx == IRP_MJ_CREATE
+  movzx eax, (IO_STACK_LOCATION PTR [eax]).MajorFunction
+  .if eax == IRP_MJ_CREATE
     invoke DbgPrint, $CTA0("IRP_MJ_CREATE")
-  .elseif ebx == IRP_MJ_CLOSE
+  .elseif eax == IRP_MJ_CLOSE
     invoke DbgPrint, $CTA0("IRP_MJ_CLOSE")
   .endif
 
@@ -134,7 +134,7 @@ IrpOpenClose proc uses ebx pOurDevice:PDEVICE_OBJECT, pIrp:PIRP
   ret
 IrpOpenClose endp
 
-IrpIOCTL proc uses ebx ecx pOurDevice:PDEVICE_OBJECT, pIrp:PIRP
+IrpIOCTL proc pOurDevice:PDEVICE_OBJECT, pIrp:PIRP
   local dwLen: DWORD
   local pdx:PTR OurDeviceExtension
   local pBuf:DWORD
@@ -153,8 +153,8 @@ IrpIOCTL proc uses ebx ecx pOurDevice:PDEVICE_OBJECT, pIrp:PIRP
   .if eax == IOCTL_START
     invoke DbgPrint, offset MSG_START
 
-    mov ebx, pdx
-    and (OurDeviceExtension PTR [ebx]).bExit, 0
+    mov eax, pdx
+    and (OurDeviceExtension PTR [eax]).bExit, 0
 
     ;// user thread
     invoke PsCreateSystemThread, addr hThread, THREAD_ALL_ACCESS, NULL, -1, NULL, offset MyThread, pOurDevice
@@ -163,16 +163,16 @@ IrpIOCTL proc uses ebx ecx pOurDevice:PDEVICE_OBJECT, pIrp:PIRP
     ;//invoke PsCreateSystemThread, addr hThread, THREAD_ALL_ACCESS, NULL, NULL, NULL, offset MyThread, pOurDevice
     
     .if eax == STATUS_SUCCESS
-      mov ebx, pdx
+      mov eax, pdx
       invoke ObReferenceObjectByHandle, hThread, THREAD_ALL_ACCESS, NULL, KernelMode, addr (OurDeviceExtension PTR [ebx]).pThread, NULL
       invoke ZwClose, hThread
     .endif
 
   .elseif eax == IOCTL_STOP
     invoke DbgPrint, offset MSG_STOP
-    mov ebx, pdx
-    mov (OurDeviceExtension PTR [ebx]).bExit, TRUE
-    push (OurDeviceExtension PTR [ebx]).pThread
+    mov eax, pdx
+    mov (OurDeviceExtension PTR [eax]).bExit, TRUE
+    push (OurDeviceExtension PTR [eax]).pThread
     pop pThread
     mov eax, pThread
     .if eax != NULL
@@ -198,7 +198,6 @@ Unload proc pOurDriver:PDRIVER_OBJECT
            
   mov eax, pOurDriver
   invoke IoDeleteDevice, (DRIVER_OBJECT PTR [eax]).DeviceObject
-  xor eax, eax
   ret
 Unload endp
     
