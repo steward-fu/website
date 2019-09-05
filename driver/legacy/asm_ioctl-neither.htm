@@ -104,8 +104,8 @@ OurDeviceExtension struct
   szBuffer byte 255 dup(?)
 OurDeviceExtension ends
 
-IOCTL_NEITHER_GET  equ CTL_CODE(FILE_DEVICE_UNKNOWN, 800h, METHOD_NEITHER, FILE_ANY_ACCESS)
-IOCTL_NEITHER_SET  equ CTL_CODE(FILE_DEVICE_UNKNOWN, 801h, METHOD_NEITHER, FILE_ANY_ACCESS)
+IOCTL_GET  equ CTL_CODE(FILE_DEVICE_UNKNOWN, 800h, METHOD_NEITHER, FILE_ANY_ACCESS)
+IOCTL_SET  equ CTL_CODE(FILE_DEVICE_UNKNOWN, 801h, METHOD_NEITHER, FILE_ANY_ACCESS)
  
 .const
 DEV_NAME word "\","D","e","v","i","c","e","\","M","y","D","r","i","v","e","r",0
@@ -145,7 +145,7 @@ IrpIOCTL proc pOurDevice:PDEVICE_OBJECT, pIrp:PIRP
 
   IoGetCurrentIrpStackLocation pIrp
   mov eax, (IO_STACK_LOCATION PTR [eax]).Parameters.DeviceIoControl.IoControlCode
-  .if eax == IOCTL_NEITHER_GET
+  .if eax == IOCTL_GET
     invoke DbgPrint, offset MSG_GET
  
     mov eax, pIrp
@@ -160,7 +160,7 @@ IrpIOCTL proc pOurDevice:PDEVICE_OBJECT, pIrp:PIRP
     inc eax
     push eax
     pop dwLen
-  .elseif eax == IOCTL_NEITHER_SET
+  .elseif eax == IOCTL_SET
     invoke DbgPrint, offset MSG_SET
     IoGetCurrentIrpStackLocation pIrp
     push (IO_STACK_LOCATION PTR [eax]).Parameters.DeviceIoControl.InputBufferLength 
