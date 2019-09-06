@@ -27,13 +27,13 @@ var my_constant =
 'module_exit __mod_kernel_version __mod_license __mod_author modinfo ' +
 '__mod_description __this_module THIS_MODULE __module_license owner '  +
 '__module_description __module_author __module_kernel_version tl0 '    +
-'dptr p0 p1 p2 p3 UMTYPE UMBASE USE_MSVCRT IRP_MJ_DEVICE_CONTROL '     +
+'dptr p0 p1 p2 p3 UMTYPE UMBASE USE_MSVCRT IRP_MJ_DEVICE_CONTROL KernelMode THREAD_ALL_ACCESS Executive '     +
 'SDL_INIT_VIDEO SDL_HWSURFACE SDL_KEYDOWN r0 r1 r2 r3 r4 r5 r6 r7 r8 ' +
 'r10 r11 r12 METHOD_BUFFERED FILE_ANY_ACCESS FILE_SHARE_READ METHOD_NEITHER '         +
 'STATUS_PENDING INFINITE STATUS_CANCELLED FILE_FLAG_OVERLAPPED MAXIMUM_ALLOWED FILE_SHARE_WRITE ';
 
 var my_keyword =
-'ptr PTR proto PROTO struct STRUCT UNION union ends ENDS 386p 486p b ' +
+'ptr PTR proto PROTO struct STRUCT UNION union ends ENDS 386p 486p b program procedure Nil shl then ' +
 '586p 686p model flat stdcall option casemap none includelib equ text '+
 'dup MACRO REQ IFDIFI ENDIF ENDM mov inc dec add code data proc ascii '+
 'endp local invoke call addr offset ADDR OFFSET push pop or and asciz '+
@@ -49,7 +49,7 @@ var my_keyword =
 'thread throw true false try typedef typeid typename union adr rept '  +
 'using uuid virtual void volatile whcar_t while macro req vararg fill '+
 'rodata endm zero equiv exitm bit org jmp ajmp ljmp sjmp clr setb jnb '+
-'jb cjne jc nop mod movc anl orl xrl jz jnz PROGRAM rlc thumb_func '   +
+'jb cjne jc nop mod movc anl orl xrl jz jnz PROGRAM rlc thumb_func function var begin interface implementation unit '   +
 'sub cmp thumb cpu syntax unified cortex-m3 bne Push lea edi esi endw __cdecl WINAPI ';
 
 var my_type =
@@ -103,9 +103,9 @@ var my_type =
 'SDL_Surface SDL_Event OVERLAPPED KTIMER ';
 
 var my_function =
-'RtlUnicodeStringPrintf RtlInitUnicodeString printk _T init_module '   +
-'InitializeObjectAttributes ZwOpenKey ZwQueryValueKey ZwClose open '   +
-'ExAllocatePoolWithTag RtlCopyMemory ExFreePool DbgPrint DriverEntry ' +
+'RtlUnicodeStringPrintf RtlInitUnicodeString printk _T init_module WriteLn StrCopy FillChar Format KeDelayExecutionThread PsTerminateSystemThread IoGetCurrentProcess '   +
+'InitializeObjectAttributes ZwOpenKey ZwQueryValueKey ZwClose open ObReferenceObjectByHandle KeWaitForSingleObject ObDereferenceObject '   +
+'ExAllocatePoolWithTag RtlCopyMemory ExFreePool DbgPrint DriverEntry _DriverEntry ' +
 'IoCreateDevice IoCreateSymbolicLink IoAttachDeviceToDeviceStack '     +
 'RtlQueryRegistryValues WdfDriverCreate RtlZeroMemory cleanup_module ' +
 'WdfDeviceCreate KdPrint IoDeleteSymbolicLink IoDetachDevice ioctl '   +

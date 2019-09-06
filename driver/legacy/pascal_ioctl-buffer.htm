@@ -129,7 +129,7 @@ begin
   case code of 
   IOCTL_GET:begin
     DbgPrint('IOCTL_GET', []);
-    len:= strlen(@szBuffer[0]);
+    len:= strlen(@szBuffer[0])+1;
     memcpy(pIrp^.AssociatedIrp.SystemBuffer, @szBuffer[0], len);
   end;
   IOCTL_SET:begin
@@ -183,7 +183,7 @@ end.
 <p>
 <b>IrpIOCTL()</b>收到IOCTL_SET時，Driver複製User Buffer的內容到szBuffer，而收到IOCTL_GET時，將szBuffer內容又複製回User Buffer，完成暫存的功能，IoStatus.Information的數值就是OutBufferSize回傳的長度。<br><br>
 
-app.dpr
+app.pas
 </p>
 <pre class="brush:cpp">
 program main;
@@ -219,14 +219,14 @@ begin
   begin
     StrCopy(buf, 'I am error');
     len:= strlen(buf)+1;
-    set_code:= (FILE_DEVICE_UNKNOWN shl 16) or (FILE_ANY_ACCESS Shl 14) or ($800 shl 2) or (METHOD_BUFFERED);
-    get_code:= (FILE_DEVICE_UNKNOWN shl 16) or (FILE_ANY_ACCESS Shl 14) or ($801 shl 2) or (METHOD_BUFFERED);
+    set_code:= (FILE_DEVICE_UNKNOWN shl 16) or (FILE_ANY_ACCESS shl 14) or ($800 shl 2) or (METHOD_BUFFERED);
+    get_code:= (FILE_DEVICE_UNKNOWN shl 16) or (FILE_ANY_ACCESS shl 14) or ($801 shl 2) or (METHOD_BUFFERED);
     DeviceIoControl(fd, set_code, @buf, len, Nil, 0, ret, Nil);
     WriteLn(Output, Format('SET: %s, %d', [buf, len]));
 
     FillChar(buf, sizeof(buf), #0);
     DeviceIoControl(fd, get_code, Nil, 0, @buf, len, ret, Nil);
-    WriteLn(Output, Format('GET: %s, %d', [buf, len]));
+    WriteLn(Output, Format('GET: %s, %d', [buf, ret]));
     
     CloseHandle(fd);
   end else
