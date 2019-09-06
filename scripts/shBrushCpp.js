@@ -105,7 +105,7 @@ var my_type =
 var my_function =
 'RtlUnicodeStringPrintf RtlInitUnicodeString printk _T init_module WriteLn StrCopy FillChar Format KeDelayExecutionThread PsTerminateSystemThread IoGetCurrentProcess '   +
 'InitializeObjectAttributes ZwOpenKey ZwQueryValueKey ZwClose open ObReferenceObjectByHandle KeWaitForSingleObject ObDereferenceObject '   +
-'ExAllocatePoolWithTag RtlCopyMemory ExFreePool DbgPrint DriverEntry _DriverEntry ' +
+'ExAllocatePoolWithTag RtlCopyMemory ExFreePool DbgPrint DriverEntry _DriverEntry IoStartTimer IoStopTimer ' +
 'IoCreateDevice IoCreateSymbolicLink IoAttachDeviceToDeviceStack '     +
 'RtlQueryRegistryValues WdfDriverCreate RtlZeroMemory cleanup_module ' +
 'WdfDeviceCreate KdPrint IoDeleteSymbolicLink IoDetachDevice ioctl '   +
