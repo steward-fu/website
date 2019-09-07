@@ -30,7 +30,7 @@ var my_constant =
 'dptr p0 p1 p2 p3 UMTYPE UMBASE USE_MSVCRT IRP_MJ_DEVICE_CONTROL KernelMode THREAD_ALL_ACCESS Executive '     +
 'SDL_INIT_VIDEO SDL_HWSURFACE SDL_KEYDOWN r0 r1 r2 r3 r4 r5 r6 r7 r8 ' +
 'r10 r11 r12 METHOD_BUFFERED FILE_ANY_ACCESS FILE_SHARE_READ METHOD_NEITHER '         +
-'STATUS_PENDING INFINITE STATUS_CANCELLED FILE_FLAG_OVERLAPPED MAXIMUM_ALLOWED FILE_SHARE_WRITE ';
+'STATUS_PENDING INFINITE STATUS_CANCELLED FILE_FLAG_OVERLAPPED MAXIMUM_ALLOWED FILE_SHARE_WRITE DISPATCH_LEVEL ';
 
 var my_keyword =
 'ptr PTR proto PROTO struct STRUCT UNION union ends ENDS 386p 486p b program procedure Nil shl then ' +
@@ -53,7 +53,7 @@ var my_keyword =
 'sub cmp thumb cpu syntax unified cortex-m3 bne Push lea edi esi endw __cdecl WINAPI ';
 
 var my_type =
-'NTSTATUS OBJECT_ATTRIBUTES UNICODE_STRING dd dw unsigned skip '       +
+'NTSTATUS OBJECT_ATTRIBUTES UNICODE_STRING dd dw unsigned skip IO_CSQ KSPIN_LOCK '       +
 'KEY_VALUE_PARTIAL_INFORMATION PKEY_VALUE_PARTIAL_INFORMATION '        +
 'DEVICE_OBJECT DRIVER_OBJECT PDEVICE_OBJECT PDRIVER_OBJECT '           +
 'UNICODE_STRING PUNICODE_STRING RTL_QUERY_REGISTRY_TABLE '             +
@@ -106,16 +106,16 @@ var my_function =
 'RtlUnicodeStringPrintf RtlInitUnicodeString printk _T init_module WriteLn StrCopy FillChar Format KeDelayExecutionThread PsTerminateSystemThread IoGetCurrentProcess '   +
 'InitializeObjectAttributes ZwOpenKey ZwQueryValueKey ZwClose open ObReferenceObjectByHandle KeWaitForSingleObject ObDereferenceObject '   +
 'ExAllocatePoolWithTag RtlCopyMemory ExFreePool DbgPrint DriverEntry _DriverEntry IoStartTimer IoStopTimer ' +
-'IoCreateDevice IoCreateSymbolicLink IoAttachDeviceToDeviceStack '     +
+'IoCreateDevice IoCreateSymbolicLink IoAttachDeviceToDeviceStack KefReleaseSpinLockFromDpcLevel KfReleaseSpinLock '     +
 'RtlQueryRegistryValues WdfDriverCreate RtlZeroMemory cleanup_module ' +
 'WdfDeviceCreate KdPrint IoDeleteSymbolicLink IoDetachDevice ioctl '   +
 'IoDeleteDevice IoCallDriver IoGetCurrentIrpStackLocation close '      +
 'IoSkipCurrentIrpStackLocation IofCompleteRequest memcpy CreateFile '  +
 'ReadFile WriteFile CloseHandle printf getch _getch register_chrdev '  +
 'NT_SUCCESS __drv_requiresIRQL WDF_DRIVER_CONFIG_INIT fastcall '       +
-'assert isalnum isalpha iscntrl isdigit isgraph islower isprint'       +
+'assert isalnum isalpha iscntrl isdigit isgraph islower isprint KiReleaseSpinLock KiAcquireSpinLock '       +
 'ispunct isspace isupper isxdigit tolower toupper errno localeconv '   +
-'setlocale acos asin atan atan2 ceil cos cosh exp fabs floor fmod '    +
+'setlocale acos asin atan atan2 ceil cos cosh exp fabs floor fmod KeInitializeSpinLock '    +
 'frexp ldexp log log10 modf pow sin sinh sqrt tan tanh jmp_buf '       +
 'longjmp setjmp raise signal sig_atomic_t va_arg va_end va_start '     +
 'clearerr fclose feof ferror fflush fgetc fgetpos fgets fopen release '+
