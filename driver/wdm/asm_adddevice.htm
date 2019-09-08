@@ -29,7 +29,7 @@
   <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
   
   <script type="text/javascript" src="../../scripts/shCore.js"></script>
-  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
 
   <!-- Conditional comment to apply opacity fix for IE #content background.
        Invalid CSS, but can be removed without harming design -->
@@ -51,7 +51,7 @@
 當系統找到對應的裝置(透過INF檔案安裝)且驅動程式被系統載入後，AddDevice()就會被系統呼叫，而AddDevice()是在DriverEntry()裡面註冊的，所以系統才會知道AddDevice()位於何處，名稱不一定要用AddDevice，但是參數跟回傳值必須遵照Microsoft的定義，否則會有問題。<br><br>
 
 AddDevice()副程式定義如下：</p>
-<pre class="brush:cpp">
+<pre class="brush:asm">
 AddDevice proc :PDRIVER_OBJECT, :PDEVICE_OBJECT
 </pre><br>
 
@@ -65,7 +65,7 @@ AddDevice proc :PDRIVER_OBJECT, :PDEVICE_OBJECT
 範例：
 </p>
 
-<pre class="brush:cpp">
+<pre class="brush:asm">
 DEV_NAME word "\","D","e","v","i","c","e","\","M","y","D","r","i","v","e","r",0
 SYM_NAME word "\","D","o","s","D","e","v","i","c","e","s","\","M","y","D","r","i","v","e","r",0
 
@@ -74,20 +74,20 @@ AddDevice proc pOurDriver:PDRIVER_OBJECT, pPhyDevice:PDEVICE_OBJECT
   local suDevName:UNICODE_STRING
   local szSymName:UNICODE_STRING
 
-  ;// Step 1   
+  ; Step 1   
   invoke RtlInitUnicodeString, addr suDevName, offset DEV_NAME
   invoke RtlInitUnicodeString, addr szSymName, offset SYM_NAME
   invoke IoCreateDevice, pOurDriver, sizeof OurDeviceExtension, addr suDevName, FILE_DEVICE_UNKNOWN, 0, FALSE, addr pOurDevice
   invoke IoCreateSymbolicLink, addr szSymName, addr suDevName
   
-  ;// Step 2
+  ; Step 2
   invoke IoAttachDeviceToDeviceStack, pOurDevice, pPhyDevice
   push eax
   mov eax, pOurDevice
   mov eax, (DEVICE_OBJECT PTR [eax]).DeviceExtension
   pop (OurDeviceExtension PTR [eax]).pNextDevice
     
-  ;// Step 3
+  ; Step 3
   mov eax, pOurDevice
   or (DEVICE_OBJECT PTR [eax]).Flags, DO_BUFFERED_IO
   and (DEVICE_OBJECT PTR [eax]).Flags, not DO_DEVICE_INITIALIZING
