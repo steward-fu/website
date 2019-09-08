@@ -29,7 +29,7 @@
   <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
   
   <script type="text/javascript" src="../../scripts/shCore.js"></script>
-  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
 
   <!-- Conditional comment to apply opacity fix for IE #content background.
        Invalid CSS, but can be removed without harming design -->
@@ -80,7 +80,7 @@ DO_BUFFERED_IO的處理手法就是I/O Manager會在Kernel配置一塊跟User Bu
 <p>
 main.asm
 </p>
-<pre class="brush:cpp">
+<pre class="brush:asm">
 .386p
 .model flat, stdcall
 option casemap:none
@@ -99,8 +99,8 @@ OurDeviceExtension struct
   szBuffer byte 255 dup(?)
 OurDeviceExtension ends
 
-IOCTL_GET  equ CTL_CODE(FILE_DEVICE_UNKNOWN, 800h, METHOD_BUFFERED, FILE_ANY_ACCESS)
-IOCTL_SET  equ CTL_CODE(FILE_DEVICE_UNKNOWN, 801h, METHOD_BUFFERED, FILE_ANY_ACCESS)
+IOCTL_GET equ CTL_CODE(FILE_DEVICE_UNKNOWN, 800h, METHOD_BUFFERED, FILE_ANY_ACCESS)
+IOCTL_SET equ CTL_CODE(FILE_DEVICE_UNKNOWN, 801h, METHOD_BUFFERED, FILE_ANY_ACCESS)
  
 .const
 DEV_NAME word "\","D","e","v","i","c","e","\","M","y","D","r","i","v","e","r",0
@@ -131,9 +131,7 @@ IrpIOCTL proc pOurDevice:PDEVICE_OBJECT, pIrp:PIRP
   local pdx:PTR OurDeviceExtension
   local pBuf:DWORD
 
-  push 0
-  pop dwLen
-
+  and dwLen, 0
   mov eax, pOurDevice
   push (DEVICE_OBJECT PTR [eax]).DeviceExtension
   pop pdx
@@ -220,7 +218,7 @@ end DriverEntry
 
 app.asm
 </p>
-<pre class="brush:cpp">
+<pre class="brush:asm">
 .386p
 .model flat, stdcall
 option casemap:none

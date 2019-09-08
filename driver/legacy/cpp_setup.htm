@@ -44,30 +44,16 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>Windows Driver Model &gt;&gt; Assembly</h3>
-<p><b>DriverUnload()</b></p>
+<h3>Windows NT Driver &gt;&gt; C/C++</h3>
+<p><b>開發環境</b></p>
 <hr size="1">
 <p>
-當驅動程式準備被系統卸載時，DriverUnload()會被系統呼叫，這是驅動程式最後可以釋放資源的地方，若沒有適當的釋放資源，則驅動程式無法被卸載，遇到這種狀況時，系統會提示需要重新開機才可以正確卸載驅動程式。<br><br>
+Windows NT Driver主要使用C語言作為開發語言，當然也可以使用Assembly、Pascal等語言開發，司徒之後也會介紹如何使用其它語言開發驅動程式，因為司徒覺得多多嘗試使用其它語言開發，將有助於知識的增長。目前Windows NT Driver的驅動程式都可以在Win98以後的系統上安裝，當然Server版本也可以安裝使用，唯一要注意的是，在x64系統下，驅動程式必須要有數位簽章才可以正確安裝使用，否則只能使用Debug模式或停止數位簽章檢查安裝測試。Windows NT Driver主要使用Driver Development Kit(DDK)或者Windows Driver Kit(WDK)作為編譯環境，並且可以搭配Visual Studio作為開發編輯環境，目前司徒使用的DDK版本為WDK 7600.16385.1，使用者可以至Microsoft官網下載安裝，下載完是一個ISO檔案，使用者可以使用虛擬光碟掛載，並手動執行setup.exe進行安裝，由於這一版可以選擇的項目不多且體積較小，司徒建議全部安裝。<br><br>
 
-DriverUnload()副程式定義如下：</p>
-<pre class="brush:cpp">
-Unload proc :PDRIVER_OBJECT
-</pre><br>
+安裝完成後，DDK不會有一個整合開發環境IDE，它僅使用Command Line方式編譯，而該Command Line可以在如下路徑取得：<br>
+<b>開始 &gt; 程式集 &gt; Windows Driver Kits &gt; WDK 7600.16385.1 &gt; Build Environments</b><br><br>
 
-<p>
-因為WDM驅動程式會收到PNP Remove Device的IRP，所以當系統要卸載驅動程式時，系統會呼叫PNP Callback副程式並帶入IRP_MN_REMOVE_DEVICE(IRP_MJ_PNP)，WDM驅動程式一般會在那個地方釋放資源，若是Legacy驅動程式，因為裝置物件是在DriverEntry()產生，加上又沒有IRP_MN_REMOVE_DEVICE IRP，所以必須在DriverUnload()釋放資源。<br><br>
-
-範例：
-</p>
-<pre class="brush:cpp">
-Unload proc pOurDriver:PDRIVER_OBJECT
-  ret
-Unload endp
-</pre>
-
-<p>
-WDM驅動程式的DriverUnload()一般不做任何事情，因為釋放資源的地方已經改到IRP_MN_REMOVE_DEVICE的地方，原因在於WDM驅動程式的資源配置是在AddDevice()配置，所以釋放資源的地方就變成是收到IRP_MN_REMOVE_DEVICE時才移除之前配置的資源，當然，如果使用者有在DriverEntry()配置資源，那相對應的，理應在DriverUnload()釋放這些配置的資源。
+在裡面可以找到很多作業系統的編譯環境，為了確保某些API在某些平台可能沒有，司徒建議選擇明確的系統編譯環境，避免發生問題，另外，每個編譯版本會分成Checked、Free兩種方式，Checked用來Debug驅動程式，所以裡面可以埋一些Debug資訊，而Free版本則是Release給客戶的版本，沒有相關的Debug資訊，執行的速度會比較快一些，因此，在編譯每個驅動程式之前，需要先確定是Debug或者Release版本的驅動程式。
 </p>
 
 <p>

@@ -29,7 +29,7 @@
   <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
   
   <script type="text/javascript" src="../../scripts/shCore.js"></script>
-  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
 
   <!-- Conditional comment to apply opacity fix for IE #content background.
        Invalid CSS, but can be removed without harming design -->
@@ -44,7 +44,7 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>Windows NT Driver &gt;&gt; Assembly</h3>
+<h3>Windows NT Driver &gt;&gt; C/C++</h3>
 <p><b>DriverEntry()</b></p>
 <hr size="1">
 <p>
@@ -52,8 +52,8 @@ C/C++程式的進入點是main()，而對於Windows NT Driver而言，它的進�
 
 DriverEntry()定義如下
 ：</p>
-<pre class="brush:asm">
-DriverEntry proc :PDRIVER_OBJECT, :PUNICODE_STRING
+<pre class="brush:cpp">
+NTSTATUS DriverEntry(PDRIVER_OBJECT, PUNICODE_STRING)
 </pre><br>
 
 <p>
@@ -70,36 +70,31 @@ DriverEntry proc :PDRIVER_OBJECT, :PUNICODE_STRING
 
 範例： 
 </p>
-<pre class="brush:asm">
-DEV_NAME word "\","D","e","v","i","c","e","\","M","y","D","r","i","v","e","r",0
-SYM_NAME word "\","D","o","s","D","e","v","i","c","e","s","\","M","y","D","r","i","v","e","r",0
+<pre class="brush:cpp">
+NTSTATUS DriverEntry(PDRIVER_OBJECT pOurDriver, PUNICODE_STRING pOurRegistry)
+{
+  PDEVICE_OBJECT pOurDevice=NULL;
+  UNICODE_STRING usDeviceName;
+  UNICODE_STRING usSymboName;
 
-DriverEntry proc pOurDriver:PDRIVER_OBJECT, pOurRegistry:PUNICODE_STRING
-  local pOurDevice:PDEVICE_OBJECT
-  local suDevName:UNICODE_STRING
-  local szSymName:UNICODE_STRING
+  // Step 1
+  pOurDriver->MajorFunction[IRP_MJ_CREATE] =
+  pOurDriver->MajorFunction[IRP_MJ_READ] =
+  pOurDriver->MajorFunction[IRP_MJ_WRITE] =
+  pOurDriver->MajorFunction[IRP_MJ_CLOSE] = IrpFile;
+  pOurDriver->DriverUnload = Unload;
+  
+  // Step 2
+  RtlInitUnicodeString(&amp;usDeviceName, L"\\Device\\MyDriver");
+  IoCreateDevice(pOurDriver, 0, &amp;usDeviceName, FILE_DEVICE_UNKNOWN, 0, FALSE, &pOurDevice);
+  RtlInitUnicodeString(&amp;usSymboName, L"\\DosDevices\\MyDriver");
+  IoCreateSymbolicLink(&amp;usSymboName, &usDeviceName);
 
-  ; Step 1
-  mov eax, pOurDriver
-  mov (DRIVER_OBJECT PTR [eax]).MajorFunction[IRP_MJ_CREATE * (sizeof PVOID)], offset IrpFile
-  mov (DRIVER_OBJECT PTR [eax]).MajorFunction[IRP_MJ_CLOSE  * (sizeof PVOID)], offset IrpFile
-  mov (DRIVER_OBJECT PTR [eax]).MajorFunction[IRP_MJ_WRITE  * (sizeof PVOID)], offset IrpFile
-  mov (DRIVER_OBJECT PTR [eax]).MajorFunction[IRP_MJ_READ   * (sizeof PVOID)], offset IrpFile
-  mov (DRIVER_OBJECT PTR [eax]).DriverUnload, offset Unload
-
-  ; Step 2
-  invoke RtlInitUnicodeString, addr suDevName, offset DEV_NAME
-  invoke RtlInitUnicodeString, addr szSymName, offset SYM_NAME
-  invoke IoCreateDevice, pOurDriver, sizeof OurDeviceExtension, addr suDevName, FILE_DEVICE_UNKNOWN, 0, FALSE, addr pOurDevice
-  invoke IoCreateSymbolicLink, addr szSymName, addr suDevName
-   
-  ; Step 3
-  mov eax, pOurDevice
-  or (DEVICE_OBJECT PTR [eax]).Flags, DO_BUFFERED_IO
-  and (DEVICE_OBJECT PTR [eax]).Flags, not DO_DEVICE_INITIALIZING
-  mov eax, STATUS_SUCCESS
-  ret
-DriverEntry endp
+  // Step 3
+  pOurDevice->Flags&amp;= ~DO_DEVICE_INITIALIZING;
+  pOurDevice->Flags|= DO_BUFFERED_IO;
+  return STATUS_SUCCESS;
+}
 </pre>
 <p>
 <b>Step 1：</b>設定相關對應的Callback，這樣I/O Manager才會知道如何呼叫相對應的副程式。<br>
