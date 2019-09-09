@@ -127,6 +127,7 @@ NTSTATUS IrpPnp(PDEVICE_OBJECT pOurDevice, PIRP pIrp)
 
 NTSTATUS IrpFile(PDEVICE_OBJECT pOurDevice, PIRP pIrp)
 {
+  ULONG len=0;
   PUCHAR pBuf;
   PIO_STACK_LOCATION psk = IoGetCurrentIrpStackLocation(pIrp);
 
@@ -143,12 +144,13 @@ NTSTATUS IrpFile(PDEVICE_OBJECT pOurDevice, PIRP pIrp)
     pIrp-&gt;IoStatus.Information = strlen(szBuffer)+1;
     break;
   case IRP_MJ_WRITE:
+    len = MmGetMdlByteCount(pIrp-&gt;MdlAddress);
     pBuf = MmGetSystemAddressForMdlSafe(pIrp-&gt;MdlAddress, LowPagePriority);
     strcpy(szBuffer, pBuf);
     DbgPrint("IRP_MJ_WRITE");
-    DbgPrint("Buffer: %s, Length: %d", szBuffer, psk-&gt;Parameters.Write.Length);
+    DbgPrint("Buffer: %s, Length: %d", szBuffer, len);
     pIrp-&gt;IoStatus.Status = STATUS_SUCCESS;
-    pIrp-&gt;IoStatus.Information = strlen(szBuffer)+1;
+    pIrp-&gt;IoStatus.Information = len;
     break;
   case IRP_MJ_CLOSE:
     DbgPrint("IRP_MJ_CLOSE");

@@ -106,7 +106,7 @@ P.S. Windows APIs String Parsing代表是否需要轉置Namespace(WinXP呼叫Rtl
 #include &lt;stdio.h&gt;
 #pragma comment(lib, "ntdll.lib")
 
-typedef NTSTATUS (__stdcall *NT_OPEN_FILE)(OUT PHANDLE FileHandle, IN ACCESS_MASK DesiredAccess, IN POBJECT_ATTRIBUTES ObjectAttributes, OUT PIO_STATUS_BLOCK IoStatusBlock, IN ULONG ShareAccess, IN ULONG OpenOptions);
+typedef NTSTATUS (__stdcall *NT_OPEN_FILE)(PHANDLE FileHandle, ACCESS_MASK DesiredAccess, POBJECT_ATTRIBUTES ObjectAttributes, PIO_STATUS_BLOCK IoStatusBlock, ULONG ShareAccess, ULONG OpenOptions);
 
 void WINAPI RtlInitUnicodeString(PUNICODE_STRING target, LPCWSTR source)
 {
@@ -123,7 +123,7 @@ void DoNtOpenFile(wchar_t *name)
 {
   PVOID Info;
   NT_OPEN_FILE NtOpenFileStruct;
-  HMODULE hModule = LoadLibrary(("ntdll.dll"));
+  HMODULE hModule = LoadLibrary("ntdll.dll");
   NtOpenFileStruct = (NT_OPEN_FILE)GetProcAddress(hModule, "NtOpenFile");
   if(NtOpenFileStruct != NULL){
     UNICODE_STRING filename;
@@ -156,7 +156,7 @@ void DoCreateFile(char *name)
   }
 }
 
-int __cdecl main(int argc, CHAR* argv[])
+int __cdecl main(int argc, char* argv[])
 {
   // device namespace
   DoCreateFile("\\\\.\\ndis");
