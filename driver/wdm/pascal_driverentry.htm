@@ -29,7 +29,7 @@
   <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
   
   <script type="text/javascript" src="../../scripts/shCore.js"></script>
-  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushPas.js"></script>
 
   <!-- Conditional comment to apply opacity fix for IE #content background.
        Invalid CSS, but can be removed without harming design -->
@@ -44,15 +44,15 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>Windows Driver Model &gt;&gt; Assembly</h3>
+<h3>Windows Driver Model &gt;&gt; Pascal</h3>
 <p><b>DriverEntry()</b></p>
 <hr size="1">
 <p>
 C/C++程式的進入點是main()，而對於WDM而言，它的進入點則是DriverEntry()，如果沒有export DriverEntry()，系統將無法正確載入驅動程式。<br><br>
 
 DriverEntry()定義如下：</p>
-<pre class="brush:asm">
-DriverEntry proc :PDRIVER_OBJECT, :PUNICODE_STRING
+<pre class="brush:pas">
+function _DriverEntry(:PDRIVER_OBJECT; :PUNICODE_STRING):NTSTATUS; stdcall;
 </pre><br>
 
 <p>
@@ -77,20 +77,14 @@ DriverEntry proc :PDRIVER_OBJECT, :PUNICODE_STRING
 <p>
 範例： 
 </p>
-<pre class="brush:asm">
-DriverEntry proc pOurDriver:PDRIVER_OBJECT, pOurRegistry:PUNICODE_STRING
-  mov eax, pOurDriver
-  mov (DRIVER_OBJECT PTR [eax]).MajorFunction[IRP_MJ_PNP    * (sizeof PVOID)], offset IrpPnp
-  mov (DRIVER_OBJECT PTR [eax]).MajorFunction[IRP_MJ_CREATE * (sizeof PVOID)], offset IrpFile
-  mov (DRIVER_OBJECT PTR [eax]).MajorFunction[IRP_MJ_CLOSE  * (sizeof PVOID)], offset IrpFile
-  mov (DRIVER_OBJECT PTR [eax]).MajorFunction[IRP_MJ_WRITE  * (sizeof PVOID)], offset IrpFile
-  mov (DRIVER_OBJECT PTR [eax]).MajorFunction[IRP_MJ_READ   * (sizeof PVOID)], offset IrpFile
-  mov (DRIVER_OBJECT PTR [eax]).DriverUnload, offset Unload
-  mov eax, (DRIVER_OBJECT PTR [eax]).DriverExtension
-  mov (DRIVER_EXTENSION PTR [eax]).AddDevice, AddDevice
-  mov eax, STATUS_SUCCESS
-  ret
-DriverEntry endp
+<pre class="brush:pas">
+function _DriverEntry(pOurDriver:PDRIVER_OBJECT; pOurRegistry:PUNICODE_STRING):NTSTATUS; stdcall;
+begin
+  pOurDriver^.MajorFunction[IRP_MJ_PNP]:= @IrpPnp;
+  pOurDriver^.DriverExtension^.AddDevice:=@AddDevice;
+  pOurDriver^.DriverUnload:=@Unload;
+  Result:=STATUS_SUCCESS;
+end;
 </pre>
 
 <p>

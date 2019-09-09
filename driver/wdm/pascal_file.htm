@@ -44,12 +44,12 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>Windows NT Driver &gt;&gt; Pascal &gt;&gt; File</h3>
+<h3>Windows Driver Model &gt;&gt; Pascal &gt;&gt; File</h3>
 <p><b>IRP</b></p>
 <hr size="1">
 <p>
 參考資訊：<br>
-1. <a href="https://github.com/steward-fu/ntdriver">Source Code</a><br>
+1. <a href="https://github.com/steward-fu/wdm">Source Code</a><br>
 2. <a href="http://www.delphibasics.info/home/delphibasicsprojects/delphidriverdevelopmentkit">delphidriverdevelopmentkit</a><br><br>
 
 基本上，驅動程式(韌體)的基本功能就是當作User Application(軟體)和硬體的溝通橋樑，軟體可以透過很多種方式和驅動程式溝通，而最常用的溝通方式就是把驅動程式當做是一個檔案在操作，軟體可以透過檔案讀寫的方式和驅動程式做資料傳遞的動作，驅動程式最後再把資料輸出到硬體裝置上，而在Windows系統上，可以使用CreateFile(檔案開啟)、ReadFile(讀取檔案)、WriteFile(寫入檔案)、CloseHandle(關閉檔案)等檔案操作的Win32 API，而驅動程式如何跟軟體串接起來呢？驅動程式必須在DriverEntry()設定IRP_MJ_CREATE(<b>CreateFile</b>)、IRP_MJ_READ(<b>ReadFile</b>)、IRP_MJ_WRITE(<b>WriteFile</b>)、IRP_MJ_CLOSE(<b>CloseHandle</b>)的Callback副程式，這樣I/O Manager才會知道如何串起這條溝通管道。<br><br>
@@ -95,92 +95,95 @@ main.pas
 unit main;
 
 interface
-  uses 
+  uses
     DDDK;
     
-  const 
+  const
     DEV_NAME = '\Device\MyDriver';
     SYM_NAME = '\DosDevices\MyDriver';
-    
-  function _DriverEntry(pOurDriver:PDriverObject; pOurRegistry:PUnicodeString):NTSTATUS; stdcall;
+
+  function _DriverEntry(pOurDriver:PDRIVER_OBJECT; pOurRegistry:PUNICODE_STRING):NTSTATUS; stdcall;
 
 implementation
-
-function IrpOpen(pOurDevice:PDeviceObject; pIrp:PIrp):NTSTATUS; stdcall;
-begin
-  DbgPrint('IRP_MJ_CREATE', []);
-  Result:= STATUS_SUCCESS;
-  pIrp^.IoStatus.Information:= 0;
-  pIrp^.IoStatus.Status:= Result;
-  IoCompleteRequest(pIrp, IO_NO_INCREMENT);
-end;
-
-function IrpRead(pOurDevice:PDeviceObject; pIrp:PIrp):NTSTATUS; stdcall;
-begin
-  DbgPrint('IRP_MJ_READ', []);
-  Result:= STATUS_SUCCESS;
-  pIrp^.IoStatus.Information:= 0;
-  pIrp^.IoStatus.Status:= Result;
-  IoCompleteRequest(pIrp, IO_NO_INCREMENT);
-end;
-
-function IrpWrite(pOurDevice:PDeviceObject; pIrp:PIrp):NTSTATUS; stdcall;
-begin
-  DbgPrint('IRP_MJ_WRITE', []);
-  Result:= STATUS_SUCCESS;
-  pIrp^.IoStatus.Information:= 0;
-  pIrp^.IoStatus.Status:= Result;
-  IoCompleteRequest(pIrp, IO_NO_INCREMENT);
-end;
-
-function IrpClose(pOurDevice:PDeviceObject; pIrp:PIrp):NTSTATUS; stdcall;
-begin
-  DbgPrint('IRP_MJ_CLOSE', []);
-  Result:= STATUS_SUCCESS;
-  pIrp^.IoStatus.Information:= 0;
-  pIrp^.IoStatus.Status:= Result;
-  IoCompleteRequest(pIrp, IO_NO_INCREMENT);
-end;
-
-procedure Unload(pOurDriver:PDriverObject); stdcall;
 var
-  szSymName: TUnicodeString;
-
+  pNextDevice: PDEVICE_OBJECT;
+  
+procedure Unload(pOurDriver:PDRIVER_OBJECT); stdcall;
 begin
-  RtlInitUnicodeString(@szSymName, SYM_NAME);
-  IoDeleteSymbolicLink(@szSymName);
-  IoDeleteDevice(pOurDriver^.DeviceObject);
 end;
 
-function _DriverEntry(pOurDriver:PDriverObject; pOurRegistry:PUnicodeString):NTSTATUS; stdcall;
+function IrpFile(pOurDevice:PDEVICE_OBJECT; pIrp:PIRP):NTSTATUS; stdcall;
 var
-  suDevName: TUnicodeString;
-  szSymName: TUnicodeString;
-  pOurDevice: PDeviceObject;
+  psk: PIO_STACK_LOCATION;
+  
+begin
+  psk:= IoGetCurrentIrpStackLocation(pIrp);
+  case psk^.MajorFunction of
+  IRP_MJ_CREATE:
+    DbgPrint('IRP_MJ_CREATE', []);
+  IRP_MJ_READ:
+    DbgPrint('IRP_MJ_READ', []);
+  IRP_MJ_WRITE:
+    DbgPrint('IRP_MJ_WRITE', []);
+  IRP_MJ_CLOSE:
+    DbgPrint('IRP_MJ_CLOSE', []);
+  end;
+  
+  IoCompleteRequest(pIrp, IO_NO_INCREMENT);
+  Result:= STATUS_SUCCESS;
+end;
+
+function IrpPnp(pOurDevice:PDEVICE_OBJECT; pIrp:PIRP):NTSTATUS; stdcall;
+var
+  psk: PIO_STACK_LOCATION;
+  suSymName: UNICODE_STRING;
+  
+begin
+  psk:= IoGetCurrentIrpStackLocation(pIrp);
+  if psk^.MinorFunction = IRP_MN_REMOVE_DEVICE then
+  begin
+    RtlInitUnicodeString(@suSymName, SYM_NAME);
+    IoDetachDevice(pNextDevice);
+    IoDeleteDevice(pOurDevice);
+    IoDeleteSymbolicLink(@suSymName);
+  end;
+  IoSkipCurrentIrpStackLocation(pIrp);
+  Result:= IoCallDriver(pNextDevice, pIrp);
+end;
+
+function AddDevice(pOurDriver:PDRIVER_OBJECT; pPhyDevice:PDEVICE_OBJECT):NTSTATUS; stdcall;
+var
+  suDevName: UNICODE_STRING;
+  suSymName: UNICODE_STRING;
+  pOurDevice: PDEVICE_OBJECT;
   
 begin
   RtlInitUnicodeString(@suDevName, DEV_NAME);
-  RtlInitUnicodeString(@szSymName, SYM_NAME);
-  Result:= IoCreateDevice(pOurDriver, 0, @suDevName, FILE_DEVICE_UNKNOWN, 0, FALSE, pOurDevice);
+  RtlInitUnicodeString(@suSymName, SYM_NAME);
+  IoCreateDevice(pOurDriver, 0, @suDevName, FILE_DEVICE_UNKNOWN, 0, FALSE, pOurDevice);
+  pNextDevice:= IoAttachDeviceToDeviceStack(pOurDevice, pPhyDevice);
+  pOurDevice^.Flags:= pOurDevice^.Flags or DO_BUFFERED_IO;
+  pOurDevice^.Flags:= pOurDevice^.Flags and not DO_DEVICE_INITIALIZING;
+  Result:= IoCreateSymbolicLink(@suSymName, @suDevName);
+end;
 
-  if NT_SUCCESS(Result) then
-  begin
-    pOurDriver^.MajorFunction[IRP_MJ_CREATE]:= @IrpOpen;
-    pOurDriver^.MajorFunction[IRP_MJ_READ]  := @IrpRead;
-    pOurDriver^.MajorFunction[IRP_MJ_WRITE] := @IrpWrite;
-    pOurDriver^.MajorFunction[IRP_MJ_CLOSE] := @IrpClose;
-    pOurDriver^.DriverUnload := @Unload;
-    pOurDevice^.Flags:= pOurDevice^.Flags or DO_BUFFERED_IO;
-    pOurDevice^.Flags:= pOurDevice^.Flags and not DO_DEVICE_INITIALIZING;
-    Result:= IoCreateSymbolicLink(@szSymName, @suDevName);
-  end;
+function _DriverEntry(pOurDriver:PDRIVER_OBJECT; pOurRegistry:PUNICODE_STRING):NTSTATUS; stdcall;
+begin
+  pOurDriver^.MajorFunction[IRP_MJ_PNP]:= @IrpPnp;
+  pOurDriver^.MajorFunction[IRP_MJ_CREATE]:= @IrpFile;
+  pOurDriver^.MajorFunction[IRP_MJ_READ]:= @IrpFile;
+  pOurDriver^.MajorFunction[IRP_MJ_WRITE]:= @IrpFile;
+  pOurDriver^.MajorFunction[IRP_MJ_CLOSE]:= @IrpFile;
+  pOurDriver^.DriverExtension^.AddDevice:=@AddDevice;
+  pOurDriver^.DriverUnload:=@Unload;
+  Result:=STATUS_SUCCESS;
 end;
 end.
 </pre>
 <p>
 <b>IrpFile()</b>處理檔案相關的IRP，目前只列印IRP資訊，其餘不處理。<br><br>
 
-為了測試驅動程式的檔案讀寫IRP，我們需要一個User Application做測試，程式碼如下：</b>
+為了測試驅動程式的檔案讀寫IRP，我們需要一個User Application做測試(app.pas)</b>
 </p>
 <pre class="brush:pas">
 program main;
@@ -219,8 +222,9 @@ begin
   end;
 end.
 </pre><br>
+
 <p>
-編譯App：
+編譯App：<br>
 </p>
 <pre>
 del /s /q app.exe
@@ -229,8 +233,8 @@ c:\dddk\bin\dcc32.exe -Uc:\dddk\inc /b /dReleaseCompilation app.pas
 
 <p>
 接著執行該User Application就可以看到結果<br>
-<img src="../wdm/asm_file/1.jpg" class="maxSize"><br>
-<img src="../wdm/asm_file/2.jpg" class="maxSize">
+<img src="asm_file/1.jpg" class="maxSize"><br>
+<img src="asm_file/2.jpg" class="maxSize">
 </p>
 
 <p>
