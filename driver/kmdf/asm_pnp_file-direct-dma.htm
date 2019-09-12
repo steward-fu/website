@@ -44,17 +44,15 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>Kernel Mode Driver Framework &gt;&gt; Assembly (PNP) &gt;&gt; File</h3>
-<p><b>WdfDeviceIoDirect(PIO)</b></p>
+<h3>Kernel Mode Driver Framework&gt;&gt; Assembly (PNP) &gt;&gt; File</h3>
+<p><b>WdfDeviceIoDirect(DMA)</b></p>
 <hr size="1">
 <p>
 參考資訊：<br>
 1. <a href="https://github.com/steward-fu/kmdf">Source Code</a><br><br>
 
-WdfDeviceIoDirect的概念就是直接Mapping User Buffer，然後Driver使用該Mapped的MDL(Memory Description List)操作，相較於WdfDeviceIoBuffered，因為不須I/O Manager更新回User Buffer，因此，效率會比較好，而如果Driver會操作到DMA(Direct Memory Access)記憶體的話，不適用此方式，雖然司徒目前還沒有寫過DMA相關的Windows Driver，不過依據Microsoft的說明文件來看，使用DMA的話，必須使用另一個API(MmGetMdlVirtualAddress)去取得DMA實體記憶體位址，反之，如果不是DMA的操作，就是PIO(Programmed I/O)方式。
-</p>
+由於我們練習的驅動程式位於上層，本身並沒有觸及過多DMA的細節操作，因此，WdfDeviceIoDirect的DMA作法會跟PIO一樣，唯一的區別就是取得DMA位址的方式，必須使用特殊的API取得，這篇練習在於說明有這樣的記憶體差別，當使用者實際觸及DMA驅動程式時，必須詳細閱讀DMA的操作方式。<br><br>
 
-<p>
 記憶體指標：
 </p>
 <table>
@@ -65,12 +63,12 @@ WdfDeviceIoDirect的概念就是直接Mapping User Buffer，然後Driver使用�
 </tr>
 <tr>
   <td>EvtIoRead</td>
-  <td>WdfRequestRetrieveOutputWdmMdl() &gt; MmGetSystemAddressForMdlSafe()</td>
+  <td>WdfRequestRetrieveOutputWdmMdl() &gt; MmGetMdlVirtualAddress()</td>
   <td>傳入的第三個參數</td>
 </tr>
 <tr>
   <td>EvtIoWrite</td>
-  <td>WdfRequestRetrieveInputWdmMdl() &gt; MmGetSystemAddressForMdlSafe()</td>
+  <td>WdfRequestRetrieveInputWdmMdl() &gt; MmGetMdlVirtualAddress()</td>
   <td>傳入的第三個參數</td>
 </tr>
 </table><br>
@@ -89,7 +87,6 @@ include c:\masm32\include\w2k\ntstatus.inc
 include c:\masm32\include\w2k\ntddk.inc
 include c:\masm32\include\w2k\ntoskrnl.inc
 include c:\masm32\include\w2k\ntddkbd.inc
-include c:\masm32\include\wxp\wdm.inc
 include c:\masm32\include\wdf\umdf\1.9\wudfddi_types.inc
 include c:\masm32\include\wdf\kmdf\1.9\wdf.inc
 include c:\masm32\include\wdf\kmdf\1.9\wdftypes.inc
@@ -140,7 +137,7 @@ IrpRead proc Queue:WDFQUEUE, Request:WDFREQUEST, _Length:DWORD
   inc eax
   mov len, eax
   invoke WdfRequestRetrieveOutputWdmMdl, Request, addr mdl
-  MmGetSystemAddressForMdlSafe mdl, LowPagePriority
+  MmGetMdlVirtualAddress mdl
   invoke memcpy, eax, offset szBuffer, len
   invoke WdfRequestCompleteWithInformation, Request, STATUS_SUCCESS, len
   ret
@@ -151,7 +148,7 @@ IrpWrite proc Queue:WDFQUEUE, Request:WDFREQUEST, _Length:DWORD
   
   invoke DbgPrint, $CTA0("IrpWrite")
   invoke WdfRequestRetrieveInputWdmMdl, Request, addr mdl
-  MmGetSystemAddressForMdlSafe mdl, LowPagePriority
+  MmGetMdlVirtualAddress mdl
   invoke memcpy, offset szBuffer, eax, _Length
   invoke DbgPrint, $CTA0("Buffer: %s, Length:%d"), offset szBuffer, _Length
   invoke WdfRequestCompleteWithInformation, Request, STATUS_SUCCESS, _Length
@@ -168,12 +165,12 @@ AddDevice proc Driver:WDFDRIVER, pDeviceInit:PWDFDEVICE_INIT
   invoke RtlInitUnicodeString, addr suDevName, offset DEV_NAME
   invoke RtlInitUnicodeString, addr szSymName, offset SYM_NAME
   invoke WdfDeviceInitAssignName, pDeviceInit, addr suDevName
-  
   invoke WdfDeviceInitSetIoType, pDeviceInit, WdfDeviceIoDirect
   invoke WDF_FILEOBJECT_CONFIG_INIT, addr file_cfg, offset IrpFileCreate, offset IrpFileClose, NULL
   invoke WdfDeviceInitSetFileObjectConfig, pDeviceInit, addr file_cfg, WDF_NO_OBJECT_ATTRIBUTES
   invoke WdfDeviceCreate, addr pDeviceInit, WDF_NO_OBJECT_ATTRIBUTES, addr device
-  invoke WdfDeviceCreateSymbolicLink, device, addr szSymName  
+  invoke WdfDeviceCreateSymbolicLink, device, addr szSymName
+  
   invoke WDF_IO_QUEUE_CONFIG_INIT_DEFAULT_QUEUE, addr ioqueue_cfg, WdfIoQueueDispatchSequential
   lea eax, ioqueue_cfg
   mov (WDF_IO_QUEUE_CONFIG ptr [eax]).EvtIoRead, offset IrpRead
@@ -215,16 +212,16 @@ includelib c:\masm32\lib\msvcrt.lib
 includelib c:\masm32\lib\kernel32.lib
 
 .const
-DEV_NAME db "\\.\MyDriver",0
-MSG_ERR  db "failed to open mydriver",10,13,0
-MSG_SEND db "I am error",0
-MSG_WR   db "WR: %s, %d",10,13,0
-MSG_RD   db "RD: %s, %d",10,13,0
+DEV_NAME  db "\\.\MyDriver",0
+MSG_ERR   db "failed to open mydriver",10,13,0
+MSG_SEND  db "I am error",0
+MSG_WRITE db "WR: %s, %d",10,13,0
+MSG_READ  db "RD: %s, %d",10,13,0
 
 .data?
 hFile    dd ?
 dwRet    dd ?
-szBuffer db 255 dup(?)
+szBuffer db 256 dup(?)
 
 .code
 start:
@@ -238,14 +235,13 @@ start:
   invoke StrLen, offset MSG_SEND
   inc eax
   mov dwRet, eax
-  invoke crt_printf, offset MSG_WR, offset MSG_SEND, eax
+  invoke crt_printf, offset MSG_WRITE, offset MSG_SEND, dwRet
   invoke WriteFile, hFile, offset MSG_SEND, dwRet, offset dwRet, 0
   invoke crt_memset, offset szBuffer, 0, 255
   invoke ReadFile, hFile, offset szBuffer, 255, offset dwRet, 0
-  invoke crt_printf, offset MSG_RD, offset szBuffer, dwRet
+  invoke crt_printf, offset MSG_READ, offset szBuffer, dwRet
   invoke CloseHandle, hFile
   invoke ExitProcess, 0
-  
 end start
 </pre><br>
 
