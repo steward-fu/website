@@ -1,4 +1,4 @@
-<!--
+﻿<!--
  ____________________________________________________________
 |                                                            |
 |    DESIGN + Pat Heard { http://fullahead.org }             |
@@ -44,32 +44,64 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>Kernel Mode Driver Framework &gt;&gt; Assembly (PNP) &gt;&gt; File</h3>
-<p><b>WdfDeviceIoBuffered</b></p>
+<h3>Kernel Mode Driver Framework &gt;&gt; Assembly (PNP) &gt;&gt; IOCTL</h3>
+<p><b>IRP</b></p>
 <hr size="1">
 <p>
 參考資訊：<br>
-1. <a href="https://github.com/steward-fu/kmdf">Source Code</a><br><br>
+1. <a href="https://github.com/steward-fu/wdm">Source Code</a><br><br>
 
-WdfDeviceIoBuffered的處理手法就是I/O Manager會在Kernel配置一塊跟User Buffer一樣大小的記憶體，Driver只能對該配置的記憶體做讀寫的操作，而讀寫的操作都會同步回User Buffer，也因為結果都需要整塊複製回User Buffer，因此，WdfDeviceIoBuffered的方式會消耗比較大的資源，速度也比較慢。<br><br>
+Input Output Control(IOCTL)是另一種可以跟驅動程式溝通的方式，本身帶有命令參數，驅動程式可以依據不一樣的命令做不一樣的事情，而除了命令以外，IOCTL更把Buffer切成Input和Output兩塊，單一次命令的運作就可以完成讀寫的動作，Buffer的屬性也是需要做設定才可以使用，分為Buffered、Direct和Neither這三種設定方式，感覺是不是跟File的Buffer設定方式很相似呢？沒錯，基本上是一樣的，雖然司徒講得有點複雜，不過，只要把Buffer的設定方式搞懂後，使用者就可以發現，整個運作原理是相當容易理解的。<br><br>
 
-記憶體指標：
+當然，使用者可能好奇，EvtIoRead和EvtIoWrite是否可以取代EvtIoDeviceControl的功能呢？答案：肯定是可以的，只要把資料做編碼，功能上是可以取代的，只是這樣的作法，把控制應用以及大量傳輸的概念都綁在一起，失去原有的設計本質，因此，如果以資料為傳輸目的，建議使用EvtIoRead和EvtIoWrite，而以控制應用為目的時，則建議使用EvtIoDeviceControl的方式。<br><br>
+
+至於IOCTL命令到底是什麼東西呢？其實就是一個編碼後的32Bit的數值，欄位如下所示：
+</p>
+<pre>
+#define CTL_CODE(DeviceType, Function, Transfer, Access) (((DeviceType) &lt;&lt; 16) | ((Access) &lt;&lt; 14) | ((Function) &lt;&lt; 2) | (Transfer))
+</pre><br>
+
+<p>
+表格如下：<br>
+<img src="../wdm/asm_ioctl/1.jpg" class="maxSize"><br>
+Ref. <a href="https://docs.microsoft.com/en-us/windows-hardware/drivers/kernel/defining-i-o-control-codes">defining-i-o-control-codes</a><br>
+透過Microsoft的Macro(CTL_CODE)定義該數值，說穿了，只要App跟驅動程式都可以互相知道對方的意思(IOCTL命令)就可以，當然有一些是Microsoft定義保留的Global IOCTL，在使用上，需要特別注意一下。<br><br>
+
+對應的溝通管道：
+</p>
+
+<table>
+<tr>
+  <th>Win32 API</th>
+  <th>Kernel Event</th>
+</tr>
+<tr>
+  <td>CreateFile()</td>
+  <td>EvtDeviceFileCreate</td>
+</tr>
+<tr>
+  <td>DeviceIoControl()</td>
+  <td>EvtIoDeviceControl</td>
+</tr>
+<tr>
+  <td>CloseFile()</td>
+  <td>EvtFileClose</td>
+</tr>
+</table><br>
+
+<p>
+取得方式：
 </p>
 <table>
 <tr>
-  <th>Event</th>
-  <th>Buffer</th>
-  <th>Length</th>
+  <th>
+  IOCTL Code
+  </th>
 </tr>
 <tr>
-  <td>EvtIoRead</td>
-  <td>WdfRequestRetrieveOutputMemory() &gt; WdfMemoryGetBuffer()</td>
-  <td>傳入的第三個參數</td>
-</tr>
-<tr>
-  <td>EvtIoWrite</td>
-  <td>WdfRequestRetrieveInputMemory() &gt; WdfMemoryGetBuffer()</td>
-  <td>傳入的第三個參數</td>
+  <td>
+  傳入的第五個參數
+  </td>
 </tr>
 </table><br>
 
@@ -87,6 +119,7 @@ include c:\masm32\include\w2k\ntstatus.inc
 include c:\masm32\include\w2k\ntddk.inc
 include c:\masm32\include\w2k\ntoskrnl.inc
 include c:\masm32\include\w2k\ntddkbd.inc
+include c:\masm32\include\wxp\wdm.inc
 include c:\masm32\include\wdf\umdf\1.9\wudfddi_types.inc
 include c:\masm32\include\wdf\kmdf\1.9\wdf.inc
 include c:\masm32\include\wdf\kmdf\1.9\wdftypes.inc
@@ -108,13 +141,12 @@ includelib C:\masm32\lib\wdf\kmdf\i386\1.9\wdfldr.lib
 includelib C:\masm32\lib\wdf\kmdf\i386\1.9\wdfdriverentry.lib
 
 public DriverEntry
+IOCTL_TEST equ CTL_CODE(FILE_DEVICE_UNKNOWN, 800h, METHOD_BUFFERED, FILE_ANY_ACCESS)
 
 .const
 DEV_NAME word "\","D","e","v","i","c","e","\","M","y","D","r","i","v","e","r",0
 SYM_NAME word "\","D","o","s","D","e","v","i","c","e","s","\","M","y","D","r","i","v","e","r",0
-
-.data
-szBuffer byte 255 dup(0)
+MSG_IOCTL byte "IOCTL_TEST",0
 
 .code
 IrpFileCreate proc Device:WDFDEVICE, Request:WDFREQUEST, FileObject:WDFFILEOBJECT
@@ -128,30 +160,13 @@ IrpFileClose proc FileObject:WDFFILEOBJECT
   ret
 IrpFileClose endp
 
-IrpRead proc Queue:WDFQUEUE, Request:WDFREQUEST, _Length:DWORD
-  local len:DWORD
-  local memory:WDFMEMORY
-  
-  invoke DbgPrint, $CTA0("IrpRead")
-  invoke strlen, offset szBuffer
-  inc eax
-  mov len, eax
-  invoke WdfRequestRetrieveOutputMemory, Request, addr memory
-  invoke WdfMemoryCopyFromBuffer, memory, 0, offset szBuffer, len
-  invoke WdfRequestCompleteWithInformation, Request, STATUS_SUCCESS, len
+IrpIOCTL proc Queue:WDFQUEUE, Request:WDFREQUEST, OutputBufferLength:DWORD, InputBufferLength:DWORD, IoControlCode:DWORD
+  .if IoControlCode == IOCTL_TEST
+    invoke DbgPrint, offset MSG_IOCTL
+  .endif
+  invoke WdfRequestComplete, Request, STATUS_SUCCESS
   ret
-IrpRead endp
-
-IrpWrite proc Queue:WDFQUEUE, Request:WDFREQUEST, _Length:DWORD
-  local memory:WDFMEMORY
-  
-  invoke DbgPrint, $CTA0("IrpWrite")
-  invoke WdfRequestRetrieveInputMemory, Request, addr memory
-  invoke WdfMemoryCopyToBuffer, memory, 0, offset szBuffer, _Length
-  invoke DbgPrint, $CTA0("Buffer: %s, Length:%d"), offset szBuffer, _Length
-  invoke WdfRequestCompleteWithInformation, Request, STATUS_SUCCESS, _Length
-  ret
-IrpWrite endp
+IrpIOCTL endp
 
 AddDevice proc Driver:WDFDRIVER, pDeviceInit:PWDFDEVICE_INIT
   local device:WDFDEVICE
@@ -159,7 +174,7 @@ AddDevice proc Driver:WDFDRIVER, pDeviceInit:PWDFDEVICE_INIT
   local szSymName:UNICODE_STRING
   local file_cfg:WDF_FILEOBJECT_CONFIG
   local ioqueue_cfg:WDF_IO_QUEUE_CONFIG
-  
+
   invoke RtlInitUnicodeString, addr suDevName, offset DEV_NAME
   invoke RtlInitUnicodeString, addr szSymName, offset SYM_NAME
   invoke WdfDeviceInitAssignName, pDeviceInit, addr suDevName
@@ -168,11 +183,9 @@ AddDevice proc Driver:WDFDRIVER, pDeviceInit:PWDFDEVICE_INIT
   invoke WdfDeviceInitSetFileObjectConfig, pDeviceInit, addr file_cfg, WDF_NO_OBJECT_ATTRIBUTES
   invoke WdfDeviceCreate, addr pDeviceInit, WDF_NO_OBJECT_ATTRIBUTES, addr device
   invoke WdfDeviceCreateSymbolicLink, device, addr szSymName
-  
   invoke WDF_IO_QUEUE_CONFIG_INIT_DEFAULT_QUEUE, addr ioqueue_cfg, WdfIoQueueDispatchSequential
   lea eax, ioqueue_cfg
-  mov (WDF_IO_QUEUE_CONFIG ptr [eax]).EvtIoRead, offset IrpRead
-  mov (WDF_IO_QUEUE_CONFIG ptr [eax]).EvtIoWrite, offset IrpWrite
+  mov (WDF_IO_QUEUE_CONFIG ptr [eax]).EvtIoDeviceControl, offset IrpIOCTL
   invoke WdfIoQueueCreate, device, addr ioqueue_cfg, WDF_NO_OBJECT_ATTRIBUTES, WDF_NO_HANDLE
   ret
 AddDevice endp
@@ -188,8 +201,7 @@ end DriverEntry
 .end
 </pre>
 <p>
-<b>IrpWrite()</b>複製User Application的資料到szBuffer<br>
-<b>IrpRead()</b>回填資料給User Application<br><br>
+<b>IrpIOCTL()</b>僅列印IOCTL_TEST命令。<br><br>
 
 app.asm
 </p>
@@ -203,50 +215,43 @@ include c:\masm32\include\masm32.inc
 include c:\masm32\include\user32.inc
 include c:\masm32\include\msvcrt.inc
 include c:\masm32\include\kernel32.inc
-
+include c:\masm32\include\w2k\ntddkbd.inc
+include c:\masm32\Macros\Strings.mac
+ 
 includelib c:\masm32\lib\user32.lib
 includelib c:\masm32\lib\masm32.lib
 includelib c:\masm32\lib\msvcrt.lib
 includelib c:\masm32\lib\kernel32.lib
 
-.const
-DEV_NAME  db "\\.\MyDriver",0
-MSG_ERR   db "failed to open mydriver",10,13,0
-MSG_SEND  db "I am error",0
-MSG_WRITE db "WR: %s, %d",10,13,0
-MSG_READ  db "RD: %s, %d",10,13,0
+IOCTL_TEST equ CTL_CODE(FILE_DEVICE_UNKNOWN, 800h, METHOD_BUFFERED, FILE_ANY_ACCESS)
+
+.const 
+DEV_NAME db "\\.\MyDriver",0
 
 .data?
-hFile    dd ?
-dwRet    dd ?
-szBuffer db 256 dup(?)
+hFile dd ?
+dwRet dd ?
 
 .code
 start:
   invoke CreateFile, offset DEV_NAME, GENERIC_READ or GENERIC_WRITE, FILE_SHARE_READ, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0
   .if eax == INVALID_HANDLE_VALUE
-    invoke crt_printf, offset MSG_ERR
+    invoke crt_printf, $CTA0("failed to open mydriver")
     invoke ExitProcess, -1
   .endif
   
   mov hFile, eax
-  invoke StrLen, offset MSG_SEND
-  inc eax
-  mov dwRet, eax
-  invoke crt_printf, offset MSG_WRITE, offset MSG_SEND, dwRet
-  invoke WriteFile, hFile, offset MSG_SEND, dwRet, offset dwRet, 0
-  invoke crt_memset, offset szBuffer, 0, 255
-  invoke ReadFile, hFile, offset szBuffer, 255, offset dwRet, 0
-  invoke crt_printf, offset MSG_READ, offset szBuffer, dwRet
+  invoke DeviceIoControl, hFile, IOCTL_TEST, NULL, 0, NULL, 0, offset dwRet, NULL
   invoke CloseHandle, hFile
   invoke ExitProcess, 0
+  
 end start
 </pre><br>
 
 <p>
 結果<br>
-<img src="asm_pnp_file-buffer/2.jpg" class="maxSize"><br>
-<img src="asm_pnp_file-buffer/1.jpg" class="maxSize">
+<img src="asm_pnp_ioctl/2.jpg" class="maxSize"><br>
+<img src="asm_pnp_ioctl/1.jpg" class="maxSize">
 </p>
 
 <p>
