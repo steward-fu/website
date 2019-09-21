@@ -1,0 +1,220 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>LPC2103</h3>
+<p><b>LED測試程式</b></p>
+<hr size="1">
+<p>
+main.s
+</p>
+<pre class="brush:asm">
+.text
+.align 2
+.global _start
+_start:
+  bal reset
+_undef:
+  bal .
+_swi:
+  bal .
+_prefetch_abort:
+  bal .
+_data_abort:
+  bal .
+_reserved:
+  bal .
+_irq:
+  bal .
+  bal .
+
+reset:
+  ldr r1, =PINSEL0
+  ldr r2, =0x00000000
+  str r2, [r1]
+  ldr r1, =IODIR
+  ldr r2, =0x00008000
+  str r2, [r1]
+
+loop:
+  ldr r0, =IOCLR
+  ldr r1, =0x00008000
+  str r1, [r0,#0x00]
+  ldr r4, =100000
+1:
+  nop
+  subs r4, r4, #1
+  bne 1b
+  ldr r0, =IOSET
+  ldr r1, =0x00008000
+  str r1, [r0, #0x00]
+  ldr r4, =100000
+1:
+  nop
+  subs r4, r4, #1
+  bne 1b
+  bal loop
+  .end
+</pre><br>
+
+<p>
+main.ld
+</p>
+<pre>
+MEMORY {
+  flash : ORIGIN = 0, LENGTH = 120K
+  ram : ORIGIN = 0x40000000, LENGTH = 64K
+}
+
+__stack_end__ = 0x40000000 + 64K - 4;
+SECTIONS {
+  . = 0;
+  startup : { *(.startup)} &gt;flash
+  prog : {
+    *(.text)
+    *(.rodata)
+    *(.rodata*)
+    *(.glue_7)
+    *(.glue_7t)
+  } &gt;flash
+  __end_of_text__ = .;
+  .data : {
+    __data_beg__ = .;
+    __data_beg_src__ = __end_of_text__;
+    *(.data)
+    __data_end__ = .;
+  } &gt;ram AT&gt;flash
+  .bss : {
+    __bss_beg__ = .;
+    *(.bss)
+  } &gt;ram
+  . = ALIGN(32 / 8);
+}
+. = ALIGN(32 / 8);
+_end = .;
+_bss_end__ = . ; __bss_end__ = . ; __end__ = . ;
+PROVIDE(end = .);
+PROVIDE(undefined_instruction_exception = endless_loop);
+PROVIDE(software_interrupt_exception = endless_loop);
+PROVIDE(prefetch_abort_exception = endless_loop);
+PROVIDE(data_abort_exception = endless_loop);
+PROVIDE(reserved_exception = endless_loop);
+PROVIDE(interrupt_exception = endless_loop);
+PROVIDE(fast_interrupt_exception = endless_loop);
+PROVIDE(IOPIN = 0xe0028000);
+PROVIDE(IODIR = 0xE0028008);
+PROVIDE(IOCLR = 0xE002800C);
+PROVIDE(IOSET = 0xE0028004);
+PROVIDE(U0RBR = 0xE000C000);
+PROVIDE(U0THR = 0xE000C000);
+PROVIDE(U0IER = 0xE000C004);
+PROVIDE(U0IIR = 0xE000C008);
+PROVIDE(U0FCR = 0xE000C008);
+PROVIDE(U0LCR = 0xE000C00C);
+PROVIDE(U0LSR = 0xE000C014);
+PROVIDE(U0SCR = 0xE000C01C);
+PROVIDE(U0DLL = 0xE000C000);
+PROVIDE(U0DLM = 0xE000C004);
+PROVIDE(PLLCON = 0xE01FC080);
+PROVIDE(PLLCFG = 0xE01FC084);
+PROVIDE(PLLSTAT = 0xE01FC088);
+PROVIDE(PLLFEED = 0xE01FC08C);
+PROVIDE(MAMCR = 0xE01FC000);
+PROVIDE(MAMTIM = 0xE01FC004);
+PROVIDE(VPBDIV = 0xE01FC100);
+PROVIDE(T0IR = 0xE0004000);
+PROVIDE(T0TCR = 0xE0004004);
+PROVIDE(T0TC = 0xE0004008);
+PROVIDE(T0PR = 0xE000400C);
+PROVIDE(T0PC = 0xE0004010);
+PROVIDE(T0MCR = 0xE0004014);
+PROVIDE(T0MR0 = 0xE0004018);
+PROVIDE(T0MR1 = 0xE000401C);
+PROVIDE(T0MR2 = 0xE0004020);
+PROVIDE(T0MR3 = 0xE0004024);
+PROVIDE(T0CCR = 0xE0004028);
+PROVIDE(T0CR0 = 0xE000402C);
+PROVIDE(T0CR1 = 0xE0004030);
+PROVIDE(T0CR2 = 0xE0004034);
+PROVIDE(T0EMR = 0xE000403C);
+PROVIDE(PINSEL0 = 0xe002c000);
+PROVIDE(PINSEL1 = 0xe002c004);
+</pre><br>
+
+<p>
+Makefile
+</p>
+<pre>
+all:
+  arm-none-eabi-as -ggdb -mcpu=arm7 -o main.o main.s
+  arm-none-eabi-ld -T main.ld -o main.elf main.o
+  arm-none-eabi-objcopy -O ihex main.elf main.ihx
+  packihx main.ihx > main.hex
+
+clean:
+  rm -rf main.ihx main.hex main.o main.elf
+</pre><br>
+
+<p>
+使用Flash Magic燒錄，步驟如下：<br>
+1. Power off<br>
+2. 按住ISP按鈕<br>
+3. Flash Magic按下Start<br>
+4. Power on<br>
+<img src="led/1.jpg" class="maxSize"><br><br>
+
+完成<br>
+<img src="led/2.jpg" class="maxSize"><br><br>
+</p>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
