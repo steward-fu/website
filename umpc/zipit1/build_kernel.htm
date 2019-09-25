@@ -45,24 +45,33 @@
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
 <h3>Zipit Z1</h3>
-<p><b>介紹</b></p>
+<p><b>build kernel</b></p>
 <hr size="1">
 <p>
-自從司徒不小心入手多台Zipit Z2之後，又再次不小心入手Zipit Z1機器，雖然Zipit Z1的規格比Zipit Z2來得更差，Zipit Z2好逮也是ARM 9等級，而Zipit Z1則是ARM 7規格，不過可以再度好好探索ARM 7處理器，司徒心想還是相當值得，因此，司徒入手三台Zipit Z1機器，剛好做為這一系列教學的機器，也順便可以好好整理ARM 7處理器的相關教學文章，不失為一石多鳥之計。<br><br>
-
-簡要規格
+編譯步驟如下：
 </p>
-<table>
-  <tr><th>CPU</th><td>Cirrus EP7312 ARM7 90MHz</td></tr>
-  <tr><th>RAM</th><td>16MB</td></tr>
-  <tr><th>Storage</th><td>2MB</td></tr>
-  <tr><th>Screen</th><td>4.25" 320x240(4 gray level)</td></tr>
-  <tr><th>Keyboard</th><td>QWERTY</td></tr>
-  <tr><th>WLAN</th><td>Wi-Fi 802.11 b</td></tr>
-  <tr><th>Battery</th><td>3.7V 1230mA</td></tr>
-  <tr><th>Dimension</th><td>105mm x 93mm x 23mm</td></tr>
-  <tr><th>Weight</th><td>350g</td></tr>
-</table><br>
+<pre>
+$ cd
+$ wget https://github.com/steward-fu/zipit-z1/releases/download/v1.0/cross-3.2.tar.gz
+$ 7za x cross-3.2.tar.gz
+$ sudo mv usr/local/arm /opt/zipit1
+$ export PATH=$PATH:/opt/zipit1/bin
+
+$ wget https://github.com/steward-fu/zipit-z1/releases/download/v1.0/kernel.7z
+$ 7za x kernel.7z
+$ cd kernel
+$ tar xvf linux-2.4.21.tar.gz
+$ cd linux-2.4.21
+$ zcat ../patch-2.4.21-rmk1.gz | patch -p1
+$ patch -p1 &lt; ../patch-2.4.21-rmk1-zipit
+$ cp arch/arm/defconfig .config
+$ vim Makefile +22
+  CROSS_COMPILE = arm-linux-
+
+$ ARCH=arm make menuconfig
+$ ARCH=arm make clean
+$ ARCH=arm make zImage
+</pre><br>
 
 <p>
 <br><br><a href="../../umpc.htm">返回上一頁</a>
