@@ -29,7 +29,7 @@
   <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
   
   <script type="text/javascript" src="../../scripts/shCore.js"></script>
-  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushScad.js"></script>
 
   <!-- Conditional comment to apply opacity fix for IE #content background.
        Invalid CSS, but can be removed without harming design -->
@@ -55,7 +55,345 @@
 <img src="mod/4.jpg" class="maxSize"><br>
 <img src="mod/5.jpg" class="maxSize"><br>
 <img src="uart/2.jpg" class="maxSize"><br>
-<img src="uart/3.jpg" class="maxSize">
+<img src="uart/3.jpg" class="maxSize"><br><br>
+
+OpenSCAD
+</p>
+<pre class="brush:scad">
+// Steward Fu
+// https://steward-fu.github.io/website/index.htm
+
+$fn = 50;
+
+module meniscus(h=10, r=1){
+  difference(){
+    translate([r/2+0.1, r/2+0.1, 0]){
+      cube([r+0.2, r+0.1, h+0.2], center=true);
+    }
+    cylinder(h=h+0.2, r=r, center=true);
+  }
+}
+
+module cube_round_all(w=10, h=10, z=10, tk=1, rad=0.3){
+  difference(){
+    hull(){
+      sphere(rad);
+      translate([w, 0, 0]){
+        sphere(rad);
+      }
+      translate([w, h, 0]){
+        sphere(rad);
+      }
+      translate([0, h, 0]){
+        sphere(rad);
+      }
+      translate([0, 0, z]){
+        sphere(rad);
+      }
+      translate([w, 0, z]){
+        sphere(rad);
+      }
+      translate([w, h, z]){
+        sphere(rad);
+      }
+      translate([0, h, z]){
+        sphere(rad);
+      }
+    }
+    hull(){
+      translate([tk, tk, tk]){
+        sphere(rad);
+      }
+      translate([w-tk, tk, tk]){
+        sphere(rad);
+      }
+      translate([w-tk, h-tk, tk]){
+        sphere(rad);
+      }
+      translate([tk, h-tk, tk]){
+        sphere(rad);
+      }
+      translate([tk, tk, z-tk]){
+        sphere(rad);
+      }
+      translate([w-tk, tk, z-tk]){
+        sphere(rad);
+      }
+      translate([w-tk, h-tk, z-tk]){
+        sphere(rad);
+      }
+      translate([tk, h-tk, z-tk]){
+        sphere(rad);
+      }
+    }
+  }
+}
+
+module cube_round_corner(w=10, h=10, z=10, r=1){
+  difference(){
+    cube([w, h, z], center=true);
+    translate([(w/2)-r, (h/2)-r]){
+      rotate(0){  
+        meniscus(z, r);
+      }
+    }
+    translate([(-w/2)+r, (h/2)-r]){
+      rotate(90){
+        meniscus(z, r);
+      }
+    }
+    translate([(-w/2)+r, (-h/2)+r]){
+      rotate(180){
+        meniscus(z, r);
+      }
+    }
+    translate([(w/2)-r, (-h/2)+r]){
+      rotate(270){
+        meniscus(z, r);
+      }
+    }
+  }
+}
+
+module screw1(){
+  translate([0, 0, 6]){
+    difference(){
+      cylinder(5.5, 2.7, 2.7);
+      cylinder(5.5, 1, 1);
+    }
+  }
+}
+
+module screw2(){
+  translate([0, 0, 8]){
+    difference(){
+      cylinder(3.5, 2.7, 2.7);
+      cylinder(3.5, 1, 1);
+    }
+  }
+}
+
+module lcd(){
+  difference(){
+    cube([100, 73, 5]);
+    translate([11, 9, 0]){
+      cube([78, 58, 5]);
+    }
+    translate([1, 1, 1]){
+      cube([92, 71, 5]);
+    }
+    translate([76, 0, 1]){
+      cube([6, 20, 5]);
+    }
+  }
+}
+
+module gb_dpad(){
+  difference(){
+    cube([33, 33, 7], center=true);
+    translate([0, 0, 1]){
+      cube([31, 31, 7], center=true);
+    }
+    cube([22, 8, 10], center=true);
+    cube([8, 22, 10], center=true);
+  }
+  
+  translate([0, 0, -1]){
+    difference(){
+      cylinder(5, 15, 15, center=true);
+      cylinder(5, 14, 14, center=true);
+    }
+  }
+}
+
+module gb_ab(){
+  difference(){
+    cube([34, 20, 7]);
+    translate([1, 1, 1]){
+      cube([32, 18, 7]);
+    }
+    
+    translate([9, 9.5, 0]){
+      cylinder(10, 5.6, 5.6);
+    }
+    translate([34-9, 9.5, 0]){
+      cylinder(10, 5.6, 5.6);
+    }
+  }
+  
+  translate([5, 1, 0]){
+    cube([29, 1, 7]);
+  }
+  translate([0, 18, 0]){
+    cube([29, 1, 7]);
+  }
+  
+  translate([9, 9.5, 2.5]){
+    difference(){
+      cylinder(5, 6.6, 6.6, center=true);
+      cylinder(5, 5.6, 5.6, center=true);
+      rotate([0, 0, 20]){
+        translate([0, 0, 0]){
+          cube([20, 2.5, 7], center=true);
+        }
+      }
+    }  
+  }
+  translate([34-9, 9.5, 2.5]){
+    difference(){
+      cylinder(5, 6.6, 6.6, center=true);
+      cylinder(5, 5.6, 5.6, center=true);
+      rotate([0, 0, 20]){
+        translate([0, 0, 0]){
+          cube([20, 2.5, 7], center=true);
+        }
+      }
+    }
+  }
+}
+
+module gb_ss(){
+  difference(){
+    cube([34, 14, 7]);
+    translate([1, 1, 5]){
+      cube([31, 12, 7]);
+    }
+    
+    translate([9, 7, 0]){
+      rotate([0, 0, 150]){
+        cube_round_corner(w=11, h=3, z=10, r=1);
+      }
+    }
+    
+    translate([24, 6.5, 0]){
+      rotate([0, 0, 150]){
+        cube_round_corner(w=11, h=3, z=10, r=1);
+      }
+    }
+    
+    translate([9, 7, 5]){
+      rotate([0, 0, 150]){
+        cube_round_corner(w=13, h=5, z=5, r=1);
+      }
+    }
+    
+    translate([24, 6.5, 5]){
+      rotate([0, 0, 150]){
+        cube_round_corner(w=13, h=5, z=5, r=1);
+      }
+    }
+  }
+}
+
+module front_cover(){
+  difference(){
+    cube_round_all(w=105, h=108, z=10, tk=1.5, rad=3);
+    translate([-10, -10, -5]){
+      cube([150, 150, 7]);
+    }
+
+    translate([2.5, 35, 5]){
+      cube([100, 73, 10]);
+    }
+    
+    translate([1.5, 0.5, 5]){
+      cube([33, 33, 10]);
+    }
+    
+    translate([73, 3, 5]){
+      rotate([0, 0, 25]){
+        cube([33, 19, 10]);
+      }
+    }
+    
+    translate([33.5, 0, 5]){
+      cube([34, 14, 10]);
+    }
+  }
+
+  translate([102.5, 35, 13]){
+    rotate([0, 180, 0]){
+      lcd();
+    }
+  }
+
+  translate([18, 17, 9.5]){
+    rotate([0, 180, 0]){
+      gb_dpad();
+    }
+  }
+
+  translate([103.5, 16.5, 13]){
+    rotate([0, 180, 25]){
+      gb_ab();
+    }
+  }
+
+  translate([67.5, 0, 13]){
+    rotate([0, 180, 0]){
+      gb_ss();
+    }
+  }
+  
+  translate([0.25, 0.25, 0]){
+    screw1();
+  }
+  translate([33.5, 0.25, 0]){
+    screw1();
+  }
+  translate([69.5, 5, 0]){
+    screw1();
+  }
+  translate([104, 0.25, 0]){
+    screw1();
+  }
+  translate([37, 16, 0]){
+    screw1();
+  }
+  translate([64, 16, 0]){
+    screw1();
+  }
+  translate([78, 28, 0]){
+    screw1();
+  }
+  translate([90, 9, 0]){
+    screw1();
+  }
+  translate([101, 26, 0]){
+    screw1();
+  }
+  translate([0.25, 30, 0]){
+    screw1();
+  }
+  translate([36, 30, 0]){
+    screw1();
+  }
+  
+  translate([0.25, 45, 0]){
+    screw2();
+  }
+  translate([0.25, 75, 0]){
+    screw2();
+  }
+  translate([0.25, 105, 0]){
+    screw2();
+  }
+  translate([104, 45, 0]){
+    screw2();
+  }
+  translate([104, 75, 0]){
+    screw2();
+  }
+  translate([104, 105, 0]){
+    screw2();
+  }
+}
+
+front_cover();
+</pre><br>
+<p>
+<img src="mod/6.jpg" class="maxSize"><br>
+<img src="mod/7.jpg" class="maxSize"><br>
 </p>
 
 <p>
