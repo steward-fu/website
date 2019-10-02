@@ -44,64 +44,14 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>MAIX Bit AI K210</h3>
-<p><b>Button測試程式</b></p>
+<h3>Lichee Tang</h3>
+<p><b>編譯燒錄Hummingbird E203(蜂鳥E203)</b></p>
 <hr size="1">
 <p>
-首先查看板上LED和Button的電路圖位置<br>
-<img src="button/1.jpg" class="maxSize"><br>
-<img src="led/2.jpg" class="maxSize"><br><br>
-
-在<b>kendryte-standalone-sdk-0.5.6/src/</b>下，產生一個button資料夾並且撰寫一個main.c
-</p>
-<pre class="brush:cpp">
-#include &lt;stdio.h&gt;
-#include &lt;unistd.h&gt;
-#include "fpioa.h"
-#include "gpio.h"
-
-int main(void)
-{
-  fpioa_set_function(12, FUNC_GPIO1); // LED
-  fpioa_set_function(13, FUNC_GPIO2); // LED
-  fpioa_set_function(14, FUNC_GPIO3); // LED
-  fpioa_set_function(16, FUNC_GPIO4); // BOOT Button
-
-  gpio_init();
-  gpio_set_drive_mode(1, GPIO_DM_OUTPUT); // GPIO1
-  gpio_set_drive_mode(2, GPIO_DM_OUTPUT); // GPIO2
-  gpio_set_drive_mode(3, GPIO_DM_OUTPUT); // GPIO3
-  gpio_set_drive_mode(4, GPIO_DM_INPUT); // GPIO4
-
-  gpio_pin_value_t value = GPIO_PV_HIGH;
-  gpio_set_pin(1, value); // GPIO1
-  gpio_set_pin(2, value); // GPIO2
-  gpio_set_pin(3, value); // GPIO3
-  while(1){
-    if(gpio_get_pin(4)){ // GPIO4
-      gpio_set_pin(1, GPIO_PV_HIGH);
-    }
-    else{
-      gpio_set_pin(1, GPIO_PV_LOW);
-    }
-  }
-  return 0;
-}
-</pre>
-<p>
-由於GPIO可以Remap，因此，司徒分別Remap到GPIO1~GPIO4腳位<br><br>
-
-編譯程式
-</p>
-<pre>
-$ cmake .. -DPROJ=button -DTOOLCHAIN=/opt/k210/bin &amp;&amp; make
-</pre>
-<p>
-接著使用gdb除錯或者使用kflash燒錄<br><br>
-
-完成<br>
-<img src="button/2.jpg" class="maxSize"><br>
-<img src="button/3.jpg" class="maxSize">
+由於司徒無法直接燒錄Github上面的e203egmini_new.bit檔案，因此，司徒只好自己重新編譯一次，過程如下說明：<br>
+1. 下載<a href="https://github.com/Lichee-Pi/Tang_E203_Mini">E203 Source</a><br>
+2. 使用Anlogic TD開啟<b>Tang_E203_Mini\project\e203egmini_new.al</b><br>
+3. 編譯後就可以燒錄產生的e203egmini_new.bit檔案
 </p>
 
 <p>

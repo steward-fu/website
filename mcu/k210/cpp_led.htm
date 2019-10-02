@@ -1,0 +1,109 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>MAIX Bit AI K210 &gt;&gt; C/C++</h3>
+<p><b>LED</b></p>
+<hr size="1">
+<p>
+首先查看板上LED的電路圖位置<br>
+<img src="cpp_led/1.jpg" class="maxSize"><br>
+<img src="cpp_led/2.jpg" class="maxSize"><br><br>
+
+在<b>kendryte-standalone-sdk-0.5.6/src/</b>下，產生一個led資料夾並且撰寫一個main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;unistd.h&gt;
+#include "fpioa.h"
+#include "gpio.h"
+
+int main(void)
+{
+  fpioa_set_function(12, FUNC_GPIO1);
+  fpioa_set_function(13, FUNC_GPIO2);
+  fpioa_set_function(14, FUNC_GPIO3);
+
+  gpio_init();
+  gpio_set_drive_mode(1, GPIO_DM_OUTPUT); // GPIO1
+  gpio_set_drive_mode(2, GPIO_DM_OUTPUT); // GPIO2
+  gpio_set_drive_mode(3, GPIO_DM_OUTPUT); // GPIO3
+
+  gpio_pin_value_t value = GPIO_PV_HIGH;
+  gpio_set_pin(1, value); // GPIO1
+  gpio_set_pin(2, value); // GPIO2
+  gpio_set_pin(3, value); // GPIO3
+  while(1){
+    sleep(1);
+    gpio_set_pin(1, value = !value); // GPIO1
+  }
+  return 0;
+}
+</pre>
+<p>
+由於GPIO可以Remap，因此，司徒把RGB分別Remap到GPIO1~GPIO3腳位<br><br>
+
+編譯程式
+</p>
+<pre>
+$ cmake .. -DPROJ=led -DTOOLCHAIN=/opt/k210/bin &amp;&amp; make
+</pre>
+<p>
+接著使用gdb除錯或者使用kflash燒錄<br><br>
+
+完成<br>
+<img src="cpp_led/3.jpg" class="maxSize"><br>
+<img src="cpp_led/4.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
