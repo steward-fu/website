@@ -29,7 +29,7 @@
   <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
   
   <script type="text/javascript" src="../../scripts/shCore.js"></script>
-  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
 
   <!-- Conditional comment to apply opacity fix for IE #content background.
        Invalid CSS, but can be removed without harming design -->
@@ -44,15 +44,15 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>Kernel Mode Driver Framework &gt;&gt; Assembly (PNP)</h3>
+<h3>Kernel Mode Driver Framework &gt;&gt; C/C++ (PNP)</h3>
 <p><b>DriverEntry()</b></p>
 <hr size="1">
 <p>
-C/C++程式的進入點是main()，而對於KMDF驅動程式而言，它的進入點則是DriverEntry()，如果沒有export DriverEntry()，系統將無法正確載入驅動程式。<br><br>
+C/C++程式的進入點是main()，而對於Windows NT Driver而言，它的進入點則是DriverEntry()，如果沒有export DriverEntry()，系統將無法正確載入驅動程式，如果檔案副檔名是<b>.cpp</b>，記得加上extern "C"關鍵字修飾。<br><br>
 
 DriverEntry()定義如下：</p>
-<pre class="brush:asm">
-DriverEntry proc :PDRIVER_OBJECT, :PUNICODE_STRING
+<pre class="brush:cpp">
+NTSTATUS DriverEntry(PDRIVER_OBJECT, PUNICODE_STRING);
 </pre><br>
 
 <p>
@@ -79,16 +79,15 @@ DriverEntry proc :PDRIVER_OBJECT, :PUNICODE_STRING
 <p>
 範例： 
 </p>
-<pre class="brush:asm">
-DriverEntry proc pOurDriver:PDRIVER_OBJECT, pOurRegistry:PUNICODE_STRING
-  local config:WDF_DRIVER_CONFIG
-  
-  invoke WDF_DRIVER_CONFIG_INIT, addr config, AddDevice
-  lea eax, config
-  mov (WDF_DRIVER_CONFIG ptr [eax]).EvtDriverUnload, DriverUnload
-  invoke WdfDriverCreate, pOurDriver, pOurRegistry, WDF_NO_OBJECT_ATTRIBUTES, addr config, WDF_NO_HANDLE
-  ret
-DriverEntry endp
+<pre class="brush:cpp">
+NTSTATUS DriverEntry(PDRIVER_OBJECT pOurDriver, PUNICODE_STRING pRegistry)
+{
+  WDF_DRIVER_CONFIG config;
+
+  WDF_DRIVER_CONFIG_INIT(&amp;config, AddDevice);
+  config.EvtDriverUnload = DriverUnload;
+  return WdfDriverCreate(pOurDriver, pRegistry, WDF_NO_OBJECT_ATTRIBUTES, &amp;config, WDF_NO_HANDLE);
+}
 </pre>
 <p>
 基本上，PNP類型的驅動程式不需設置DriverUnload Callback副程式，除非需要在DriverEntry()和DriverUnload()配置或刪除資源，因為PNP類型的驅動程式主要以AddDevice()為主要入口，資源的配置應該改在這個地方，需要注意DriverEntry()的回傳值部份，因為回傳值會決定載入驅動程式的成功或失敗，另外，除了DriverEntry()名稱必須固定以外，其餘Callbak的名稱可以隨意命名。<br><br>
