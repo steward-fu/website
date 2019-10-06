@@ -69,16 +69,20 @@ function AddDevice(:PDRIVER_OBJECT; :PDEVICE_OBJECT):NTSTATUS; stdcall;
 
 <pre class="brush:pas">
 DEV_NAME = '\Device\MyDriver';
+SYM_NAME = '\DosDevices\MyDriver';
 
 function AddDevice(pOurDriver:PDRIVER_OBJECT; pPhyDevice:PDEVICE_OBJECT):NTSTATUS; stdcall;
 var
-  suDevName:UNICODE_STRING;
-  pOurDevice:PDEVICE_OBJECT;
+  suDevName: UNICODE_STRING;
+  suSymName: UNICODE_STRING;
+  pOurDevice: PDEVICE_OBJECT;
   
 begin
-  // Step 1 
+  // Step 1
   RtlInitUnicodeString(@suDevName, DEV_NAME);
+  RtlInitUnicodeString(@suSymName, SYM_NAME);
   IoCreateDevice(pOurDriver, 0, @suDevName, FILE_DEVICE_UNKNOWN, 0, FALSE, pOurDevice);
+  Result:= IoCreateSymbolicLink(@suSymName, @suDevName);
 
   // Step 2
   pNextDevice:= IoAttachDeviceToDeviceStack(pOurDevice, pPhyDevice);
@@ -86,7 +90,6 @@ begin
   // Step 3
   pOurDevice^.Flags:= pOurDevice^.Flags or DO_BUFFERED_IO;
   pOurDevice^.Flags:= pOurDevice^.Flags and not DO_DEVICE_INITIALIZING;
-  Result:= STATUS_SUCCESS;
 end;
 </pre>
 
