@@ -75,8 +75,9 @@ var
   
 begin
   DbgPrint('Hello, world!', []);
+  RtlInitUnicodeString(@suDevName, DEV_NAME);
   WdfDeviceInitAssignName(pDeviceInit, @suDevName);
-  WdfDeviceCreate(pDeviceInit, WDF_NO_OBJECT_ATTRIBUTES, @device);
+  WdfDeviceCreate(@pDeviceInit, WDF_NO_OBJECT_ATTRIBUTES, @device);
   Result:= STATUS_SUCCESS;
 end;
 
@@ -93,7 +94,7 @@ end.
 </pre>
 <p>
 <b>DriverEntry()</b>產生WDF Driver Object並且註冊AddDevice Callback<br>
-<b>AddDevice()</b>產生WDF Device Object並且輸出Debug字串<br><br>
+<b>AddDevice()</b>產生WDF Device Object並且輸出Debug字串，另外，得助於編譯器的幫助，DEV_NAME會被展開成WCHAR型態，而非CHAR型態。<br><br>
 
 loader.asm
 </p>
@@ -257,6 +258,7 @@ c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEMmMapLockedPagesSpecifyCache=_
 c:\dddk\bin\link.exe /entry:FxDriverEntry@8  /NOLOGO /ALIGN:64 /BASE:0x10000 /SUBSYSTEM:NATIVE /DRIVER /FORCE:UNRESOLVED /FORCE:MULTIPLE c:\dddk\inc\DDDK.obj c:\dddk\lib\ntoskrnl.lib c:\dddk\lib\wdf\kmdf\i386\1.9\wdfdriverentry.lib c:\dddk\lib\wdf\kmdf\i386\1.9\wdfldr.lib main.obj loader.obj /out:main.sys
 del /s /q main.dcu
 del /s /q main.obj
+del /s /q loader.obj
 </pre><br>
 
 <p>
@@ -272,9 +274,20 @@ Device Manager<br>
 <img src="asm_pnp_hello/2.jpg" class="maxSize"><br><br>
 
 Device<br>
-<img src="asm_pnp_hello/3.jpg" class="maxSize">
-</p>
+<img src="asm_pnp_hello/3.jpg" class="maxSize"><br><br>
 
+司徒接著說明一下為了需要這個Loader？因為在Link階段，FxDriverEntryWorker()無法找到對應的DriverEntry()，即使司徒已經確定Export成_DriverEntry@8，而另一個問題則是<b>Security Cookie Check</b>，這部份尚不知如何從dcc32.exe設定，因此，司徒只好提供一個Loader，讓這個Loader可以跟FxDriverEntryWork()連結，順便解掉Cookie問題
+</p>
+<pre>
+wdfdriverentry.lib(stub.obj) : error LNK2019: unresolved external symbol _DriverEntry@8 referenced in function _FxDriverEntryWorker@8
+wdfdriverentry.lib(stub.obj) : error LNK2019: unresolved external symbol ___security_init_cookie referenced in function _FxDriverEntry@8
+</pre><br>
+
+<p>
+當然，如果強制安裝使用，必定產生BSOD，原因如下：<br>
+<img src="pascal_pnp_hello/1.jpg" class="maxSize"><br>
+原本要指到security_init_cookie()的地方，變成指到PE Header，雖然司徒嘗試手動Patch修復，但是，安裝後還是有點問題，於是，司徒最後只好使用一個簡單的Loader替代。
+</p>
 
 <p>
 <br><a href="../../driver.htm">返回上一頁</a>
