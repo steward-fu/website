@@ -1,0 +1,287 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushPas.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Kernel Mode Driver Framework &gt;&gt; Pascal (PNP)</h3>
+<p><b>Hello, world!</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://github.com/steward-fu/kmdf.git">Source Code</a><br><br>
+
+main.pas
+</p>
+<pre class="brush:pas">
+unit main;
+
+interface
+  uses
+    DDDK;
+    
+  const
+    DEV_NAME = '\Device\MyDriver';
+
+  function __DriverEntry(pOurDriver:PDRIVER_OBJECT; pOurRegistry:PUNICODE_STRING):NTSTATUS; stdcall;
+
+implementation
+
+function AddDevice(pOurDriver:WDFDRIVER; pDeviceInit:PWDFDEVICE_INIT):NTSTATUS; stdcall;
+var
+  device: WDFDEVICE;
+  suDevName: UNICODE_STRING;
+  pOurDevice: PDEVICE_OBJECT;
+  
+begin
+  DbgPrint('Hello, world!', []);
+  WdfDeviceInitAssignName(pDeviceInit, @suDevName);
+  WdfDeviceCreate(pDeviceInit, WDF_NO_OBJECT_ATTRIBUTES, @device);
+  Result:= STATUS_SUCCESS;
+end;
+
+function __DriverEntry(pOurDriver:PDRIVER_OBJECT; pOurRegistry:PUNICODE_STRING):NTSTATUS; stdcall;
+var
+  config: WDF_DRIVER_CONFIG;
+  
+begin
+  WDF_DRIVER_CONFIG_INIT(@config, AddDevice);
+  WdfDriverCreate(pOurDriver, pOurRegistry, WDF_NO_OBJECT_ATTRIBUTES, @config, WDF_NO_HANDLE);
+  Result:= STATUS_SUCCESS;
+end;
+end.
+</pre>
+<p>
+<b>DriverEntry()</b>產生WDF Driver Object並且註冊AddDevice Callback<br>
+<b>AddDevice()</b>產生WDF Device Object並且輸出Debug字串<br><br>
+
+loader.asm
+</p>
+<pre class="brush:pas">
+.386p
+.model flat, stdcall
+option casemap:none
+
+include c:\masm32\Macros\Strings.mac
+include c:\masm32\include\w2k\ntdef.inc
+include c:\masm32\include\w2k\ntstatus.inc
+include c:\masm32\include\w2k\ntddk.inc
+include c:\masm32\include\w2k\ntoskrnl.inc
+include c:\masm32\include\w2k\ntddkbd.inc
+include c:\masm32\include\wdf\umdf\1.9\wudfddi_types.inc
+include c:\masm32\include\wdf\kmdf\1.9\wdf.inc
+include c:\masm32\include\wdf\kmdf\1.9\wdftypes.inc
+include c:\masm32\include\wdf\kmdf\1.9\wdfglobals.inc
+include c:\masm32\include\wdf\kmdf\1.9\wdffuncenum.inc
+include c:\masm32\include\wdf\kmdf\1.9\wdfobject.inc
+include c:\masm32\include\wdf\kmdf\1.9\wdfdevice.inc
+include c:\masm32\include\wdf\kmdf\1.9\wdfdriver.inc
+
+includelib c:\masm32\lib\wxp\i386\BufferOverflowK.lib 
+includelib c:\masm32\lib\wdf\kmdf\i386\1.9\wdfldr.lib
+includelib c:\masm32\lib\wdf\kmdf\i386\1.9\wdfdriverentry.lib
+
+public DriverEntry
+extern _DriverEntry:proc
+
+DriverEntry proc pOurDriver:PDRIVER_OBJECT, pOurRegistry:PUNICODE_STRING
+  push pOurRegistry
+  push pOurDriver
+  call _DriverEntry
+  ret
+DriverEntry endp
+end DriverEntry
+.end
+</pre>
+<p>
+由於dcc32.exe缺少<b>Buffer Security Check</b>編譯選項，因此，司徒使用MASM32寫了一個Loader，當作中間媒介。<br><br>
+
+main.inf
+</p>
+<pre class="brush:pas">
+[Version]
+Signature=$CHICAGO$
+Class=Unknown
+Provider=%MFGNAME%
+DriverVer=8/21/2019,1.0.0.0
+ 
+[Manufacturer]
+%MFGNAME%=DeviceList
+ 
+[DeviceList]
+%DESCRIPTION%=DriverInstall, *MyDriver
+ 
+[DestinationDirs]
+DefaultDestDir=10,System32\Drivers
+ 
+[SourceDisksFiles]
+main.sys=1,,,
+ 
+[SourceDisksNames]
+1=%INSTDISK%,,,
+ 
+[DriverInstall.NT]
+CopyFiles=DriverCopyFiles
+ 
+[DriverCopyFiles]
+main.sys,,,2
+ 
+[DriverInstall.NT.Services]
+AddService=FILEIO,2,DriverService
+ 
+[DriverService]
+ServiceType=1
+StartType=3
+ErrorControl=1
+ServiceBinary=%10%\system32\drivers\main.sys
+ 
+[DriverInstall.NT.HW]
+AddReg=DriverHwAddReg
+ 
+[DriverHwAddReg]
+HKR,,SampleInfo,,""
+ 
+[DriverInstall]
+AddReg=DriverAddReg
+CopyFiles=DriverCopyFiles
+ 
+[DriverAddReg]
+HKR,,DevLoader,,*ntkern
+HKR,,NTMPDriver,,main.sys
+ 
+[DriverInstall.HW]
+AddReg=DriverHwAddReg
+ 
+[Strings]
+MFGNAME="MyDriver"
+INSTDISK="MyDriver Disc"
+DESCRIPTION="MyDriver"
+</pre>
+<p>
+INF內容也是很制式的，我們先知道如何使用就可以，司徒之後會教導大家如何寫INF檔案<br><br>
+
+編譯程式：
+</p>
+<pre>
+del /s /q main.sys
+c:\masm32\bin\ml /c /coff /Cp "loader.asm"
+c:\dddk\bin\dcc32.exe -Uc:\dddk\inc -B -CG -JP -$A-,C-,D-,G-,H-,I-,L-,P-,V-,W+,Y- main.pas
+c:\dddk\bin\omf2d.exe main.obj
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEWdfFunctions=_WdfFunctions 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEWdfDriverGlobals=_WdfDriverGlobals 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEZwClose=_ZwClose@4 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEDbgPrint=_DbgPrint 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEExFreePool=_ExFreePool@4 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEKeSetTimer=_KeSetTimer@16 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEIoStopTimer=_IoStopTimer@4 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEIoCallDriver=_IoCallDriver@8 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEIoStartTimer=_IoStartTimer@4 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEKeSetTimerEx=_KeSetTimerEx@20 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEProbeForRead=_ProbeForRead@12 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CERtlZeroMemory=_RtlZeroMemory@8 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEKeCancelTimer=_KeCancelTimer@4 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEIoStartPacket=_IoStartPacket@16 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEZwOpenProcess=_ZwOpenProcess@16 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEIoDetachDevice=_IoDetachDevice@4 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEIoDeleteDevice=_IoDeleteDevice@4 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEExAllocatePool=_ExAllocatePool@8 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEKeReleaseMutex=_KeReleaseMutex@8 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEIoCsqInsertIrp=_IoCsqInsertIrp@12 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEIoCreateDevice=_IoCreateDevice@28 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEKeInitializeDpc=_KeInitializeDpc@12 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEIoCsqInitialize=_IoCsqInitialize@28 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEIoStartNextPacket=_IoStartNextPacket@8 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEIoCompleteRequest=_IoCompleteRequest@8 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEKeInitializeMutex=_KeInitializeMutex@8 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEKeInitializeTimer=_KeInitializeTimer@4 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEKeReleaseSpinLock=_KeReleaseSpinLock@8 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEIoInitializeTimer=_IoInitializeTimer@12 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEObDereferenceObject=_ObDereferenceObject@4 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEIoGetCurrentProcess=_IoGetCurrentProcess@0 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEInterlockedExchange=@InterlockedExchange@8 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEKeInitializeSpinLock=_KeInitializeSpinLock@4 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEIoCreateSymbolicLink=_IoCreateSymbolicLink@8 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEIoDeleteSymbolicLink=_IoDeleteSymbolicLink@4 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CERtlInitUnicodeString=_RtlInitUnicodeString@8 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEPsCreateSystemThread=_PsCreateSystemThread@28 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEKeWaitForSingleObject=_KeWaitForSingleObject@20 2&gt;nul 
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEExAllocatePoolWithTag=_ExAllocatePoolWithTag@12 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEKeDelayExecutionThread=_KeDelayExecutionThread@12 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEKeServiceDescriptorTable=_KeServiceDescriptorTable 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEExAllocatePoolWithQuota=_ExAllocatePoolWithQuota@8 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEPsTerminateSystemThread=_PsTerminateSystemThread@4 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEObReferenceObjectByHandle=_ObReferenceObjectByHandle@24 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEIoAttachDeviceToDeviceStack=_IoAttachDeviceToDeviceStack@8 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEMmMapLockedPagesSpecifyCache=_MmMapLockedPagesSpecifyCache@24 2&gt;nul
+c:\dddk\bin\link.exe /entry:FxDriverEntry@8  /NOLOGO /ALIGN:64 /BASE:0x10000 /SUBSYSTEM:NATIVE /DRIVER /FORCE:UNRESOLVED /FORCE:MULTIPLE c:\dddk\inc\DDDK.obj c:\dddk\lib\ntoskrnl.lib c:\dddk\lib\wdf\kmdf\i386\1.9\wdfdriverentry.lib c:\dddk\lib\wdf\kmdf\i386\1.9\wdfldr.lib main.obj loader.obj /out:main.sys
+del /s /q main.dcu
+del /s /q main.obj
+</pre><br>
+
+<p>
+安裝程式：<br>
+在開始安裝驅動程式之前，我們需要先下載除錯工具，讓驅動程式的Debug訊息可以顯示在除錯工具上面，目前在Kernel Mode以及User Mode上，最佳的Debug輸出訊息工具是DbgView，該公司目前已經被Microsoft併購，所以可以從Microsoft網站下載，下載完後執行DbgView並將<b>Capture > Capture Kernel</b>和<b>Enable Verbose Kernel Output</b>選項打勾，接著<b>重啟</b>DbgView<br>
+<img src="asm_pnp_hello/4.jpg" class="maxSize"><br><br>
+
+對於驅動程式的安裝工具，司徒目前先使用NuMega公司製作的安裝工具EzDriverInstaller，請將main.sys和main.inf放在同一個目錄並執行EzDriverInstaller，選擇<b>File > Open...</b>(開啟main.inf檔案)，接著按<b>Add New Device</b>就可以在DbgView上面看到輸出訊息<br>
+<img src="asm_pnp_hello/5.jpg" class="maxSize"><br>
+<img src="asm_pnp_hello/1.jpg" class="maxSize"><br><br>
+
+Device Manager<br>
+<img src="asm_pnp_hello/2.jpg" class="maxSize"><br><br>
+
+Device<br>
+<img src="asm_pnp_hello/3.jpg" class="maxSize">
+</p>
+
+
+<p>
+<br><a href="../../driver.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
