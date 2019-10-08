@@ -16,49 +16,25 @@
  */
 ;(function()
 {
-	// CommonJS
-	typeof(require) != 'undefined' ? SyntaxHighlighter = require('shCore').SyntaxHighlighter : null;
+  typeof(require) != 'undefined' ? SyntaxHighlighter = require('shCore').SyntaxHighlighter : null;
 
-	function Brush()
-	{
-		// Contributed by Gheorghe Milas and Ahmad Sherif
-	
-		var keywords =  'and assert break class continue def del elif else ' +
-						'except exec finally for from global if import in is ' +
-						'lambda not or pass print raise return try yield while';
+  function Brush(){
+    var my_constant = 'False True'
+    var my_keyword =  'import from def while if default for range break in else elif'
+    var my_type = 'argparse path os serial threading time sys stdout args'
+    var my_function = 'exists open ArgumentParser add_argument readchar input raw_input start parse_args close read write len sleep exit print geteuid Serial Thread'
 
-		var funcs = '__import__ abs all any apply basestring bin bool buffer callable ' +
-					'chr classmethod cmp coerce compile complex delattr dict dir ' +
-					'divmod enumerate eval execfile file filter float format frozenset ' +
-					'getattr globals hasattr hash help hex id input int intern ' +
-					'isinstance issubclass iter len list locals long map max min next ' +
-					'object oct open ord pow print property range raw_input reduce ' +
-					'reload repr reversed round set setattr slice sorted staticmethod ' +
-					'str sum super tuple type type unichr unicode vars xrange zip';
+    this.regexList = [
+      {regex: /#.*/g, css: 'my_preprocessor'},
+      {regex: new RegExp(this.getKeywords(my_type),'gm'), css:'my_type bold'},
+      {regex: new RegExp(this.getKeywords(my_keyword),'gm'), css:'my_keyword bold'},
+      {regex: new RegExp(this.getKeywords(my_constant),'gm'), css:'my_constant bold'},
+      {regex: new RegExp(this.getKeywords(my_function),'gm'), css:'my_function bold'},
+      ];
+  };
 
-		var special =  'None True False self cls class_';
-
-		this.regexList = [
-				{ regex: SyntaxHighlighter.regexLib.singleLinePerlComments, css: 'comments' },
-				{ regex: /^\s*@\w+/gm, 										css: 'decorator' },
-				{ regex: /(['\"]{3})([^\1])*?\1/gm, 						css: 'comments' },
-				{ regex: /"(?!")(?:\.|\\\"|[^\""\n])*"/gm, 					css: 'string' },
-				{ regex: /'(?!')(?:\.|(\\\')|[^\''\n])*'/gm, 				css: 'string' },
-				{ regex: /\+|\-|\*|\/|\%|=|==/gm, 							css: 'keyword' },
-				{ regex: /\b\d+\.?\w*/g, 									css: 'value' },
-				{ regex: new RegExp(this.getKeywords(funcs), 'gmi'),		css: 'functions' },
-				{ regex: new RegExp(this.getKeywords(keywords), 'gm'), 		css: 'keyword' },
-				{ regex: new RegExp(this.getKeywords(special), 'gm'), 		css: 'color1' }
-				];
-			
-		this.forHtmlScript(SyntaxHighlighter.regexLib.aspScriptTags);
-	};
-
-	Brush.prototype	= new SyntaxHighlighter.Highlighter();
-	Brush.aliases	= ['py', 'python'];
-
-	SyntaxHighlighter.brushes.Python = Brush;
-
-	// CommonJS
-	typeof(exports) != 'undefined' ? exports.Brush = Brush : null;
+  Brush.prototype  = new SyntaxHighlighter.Highlighter();
+  Brush.aliases  = ['py', 'python'];
+  SyntaxHighlighter.brushes.Delphi = Brush;
+  typeof(exports) != 'undefined' ? exports.Brush = Brush : null;
 })();
