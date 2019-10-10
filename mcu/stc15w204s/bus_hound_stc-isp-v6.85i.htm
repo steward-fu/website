@@ -44,17 +44,14 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>STC STC15W204S</h3>
+<h3>STC15W204S</h3>
 <p><b>逆向STC-ISP V6.85I(Bus Hound)</b></p>
 <hr size="1">
 <p>
-雖然使用IDA Pro可以完整逆出原始程式碼的樣子，不過需要花費一些時間，因此，司徒打算使用較快速的方式，那就是使用Bus Hound錄取資料的傳輸過程並且參考網路上既有的逆向Protocol，這樣司徒就可以模仿傳送資料，達到在N900上燒錄的目標，接著就讓司徒介紹一下這個過程。
-</p>
+雖然使用IDA Pro可以完整逆出原始程式碼的樣子，不過需要花費一些時間，因此，司徒打算使用較快速的方式，那就是使用Bus Hound錄取資料的傳輸過程並且參考網路上既有的逆向Protocol，這樣司徒就可以模仿傳送資料，達到在N900上燒錄的目標，接著就讓司徒介紹一下這個過程。<br><br>
 
-<p>
 首先寫一個最簡單的GPIO輸出程式並且在Keil C上編譯輸出Hex檔案，主程式如下：
 </p>
-
 <pre class="brush:cpp">
 sfr p3 = 0xb0;
 
@@ -63,21 +60,19 @@ void main(void)
   p3 = 0x00;
   while(1);
 }
-</pre>
+</pre><br>
 
 <p>
 Hex內容如下：
 </p>
-
 <pre>
 02 00 11 75 80 FF 75 90 FF 75 A0 FF E4 F5 B0 80 
 FE 78 7F E4 F6 D8 FD 75 81 07 02 00 03 00 
-</pre>
+</pre><br>
 
 <p>
 Bus Hound錄到的燒錄過程：
 </p>
-
 <pre>
 Bus Hound 6.01 capture on Windows XP Service Pack 3 (x86). Complements of www.perisoft.net
 
@@ -277,58 +272,57 @@ Device  Address              Length    Phase  Data                      Descript
   15                                1  IN     00                        .                      324.1.0        
   15                                1  IN     08                        .                      325.1.0        
   15                                5  IN     04 54 00 c8  16           .T...                  326.1.0        
-</pre>
+</pre><br>
 
 <p>
 根據網路上的分析，封包的傳輸流程，可以分成如下幾個步驟：
 </p>
-
 <pre>
-(PC Out) &rArr; Pulse 
+(PC Out) &gt; Pulse 
            (7f)
-(PC In)  &lArr; Infomation packet 
+(PC In)  &gt; Infomation packet 
            (46 b9 68 00 34 50 91 11 6a 8a f7 ba 9f 00 a8 ee e0 fd 26 03 03 81 72 54 00 f5 14 04 06 70 8a 02 29 2b 2f 30 2c 00 14 10 04 e7 ec 6b bf ff ff 15 08 25 01 12 0c 16)
-(PC Out) &rArr; Frequency challenges round 1
+(PC Out) &gt; Frequency challenges round 1
            (46 b9 6a 00 20 00 0b 00 c0 80 c0 ff c0 00 80 80 80 ff 80 00 40 80 40 ff 40 00 00 80 00 00 00 0a 12 16 fe)
-(PC In)  &lArr; Frequency responses
+(PC In)  &gt; Frequency responses
            (46 b9 68 00 20 00 0b 0d 58 13 07 18 c0 1a 82 25 ae 30 da 36 1b 4c 55 61 db 54 c5 76 08 00 00 08 28 16)
-(PC Out) &rArr; Frequency challenges round 2
+(PC Out) &gt; Frequency challenges round 2
            (46 b9 6a 00 20 00 0c 69 80 6a 80 6b 80 6c 80 6d 80 6e 80 64 40 65 40 66 40 67 40 68 40 69 40 0a 02 16 fe)
-(PC In)  &lArr; Frequency responses
+(PC In)  &gt; Frequency responses
            (46 b9 68 00 20 00 0c 23 dd 23 fb 24 0f 24 32 24 4b 24 64 47 ff 48 2c 48 63 48 90 48 81 48 a4 09 24 16)
-(PC Out) &rArr; Baudrate switch
+(PC Out) &gt; Baudrate switch
            (46 b9 6a 00 0e 01 64 40 ff d0 80 6b 81 04 58 16)
-(PC In)  &lArr; Ack
+(PC In)  &gt; Ack
            (46 b9 68 00 07 01 00 70 16)
-(PC Out) &rArr; Prepare
+(PC Out) &gt; Prepare
            (46 b9 6a 00 0b 05 00 00 5a a5 01 79 16)
-(PC In)  &lArr; Ack
+(PC In)  &gt; Ack
            (46 b9 68 00 07 05 00 74 16)
-(PC Out) &rArr; Erase
+(PC Out) &gt; Erase
            (46 b9 6a 00 0b 03 00 00 5a a5 01 77 16)
-(PC In)  &lArr; Ack + UID
+(PC In)  &gt; Ack + UID
            (46 b9 68 00 0e 03 f5 14 00 d6 05 aa 28 03 2f 16)
-(PC Out) &rArr; Write block 1
+(PC Out) &gt; Write block 1
            (46 b9 6a 00 8b 22 00 00 5a a5 02 00 11 75 80 ff 75 90 ff 75 a0 ff e4 f5 b0 80 fe 78 7f e4 f6 d8 fd 75 81 07 02 00 03 ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 74 81 16)
-(PC In)  &lArr; Ack
+(PC In)  &gt; Ack
            (46 b9 68 00 08 02 54 00 c6 16)
-(PC Out) &rArr; Write block 2
+(PC Out) &gt; Write block 2
            (46 b9 6a 00 8b 02 00 80 5a a5 ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 81 f6 16)
-(PC In)  &lArr; Ack
+(PC In)  &gt; Ack
            (46 b9 68 00 08 02 54 00 c6 16)
-(PC Out) &rArr; Write block 3
+(PC Out) &gt; Write block 3
            (46 b9 6a 00 8b 02 01 00 5a a5 ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 81 77 16)
-(PC In)  &lArr; Ack
+(PC In)  &gt; Ack
            (46 b9 68 00 08 02 54 00 c6 16)
-(PC Out) &rArr; Write block 4
+(PC Out) &gt; Write block 4
            (46 b9 6a 00 8b 02 01 80 5a a5 ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 81 f7 16)
-(PC In)  &lArr; Ack
+(PC In)  &gt; Ack
            (46 b9 68 00 08 02 54 00 c6 16)
-(PC Out) &rArr; Option packet
+(PC Out) &gt; Option packet
            (46 b9 6a 00 4b 04 00 00 5a a5 ff ff ff 00 ff ff 00 ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 00 00 ff a8 ff a8 ff 90 ff fd 03 ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ec ff ff ff 6a bf f7 ba 9f 39 cc 16)
-(PC In)  &lArr; Ack
+(PC In)  &gt; Ack
            (46 b9 68 00 08 04 54 00 c8 16)
-</pre>
+</pre><br>
 
 <p>
 <br><a href="../../mcu.htm">返回上一頁</a>

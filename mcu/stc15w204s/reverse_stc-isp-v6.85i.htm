@@ -44,47 +44,34 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>STC STC15W204S</h3>
+<h3>STC15W204S</h3>
 <p><b>逆向STC-ISP V6.85I(IDA Pro)</b></p>
 <hr size="1">
 <p>
-由於司徒計劃在N900上開發STC15W204S單晶片的開源專案，目標是所有東西都在N900上完成開發，當然，包含燒錄的步驟也在N900上完成，因此，司徒的首要步驟就是先取得Linux平台上的STC-ISP燒錄軟體，不過，STC-ISP公司並沒有Linux平台上的相關資源，因此，也不可能提供Linux平台上的燒錄軟體，更不可能提供STC單晶片的燒錄Protocol，實在是相當遺憾的做法。雖然網路上，有一些熱心的開發者有提供自製的燒錄軟體，如：gSTC-ISP、stc-isp、stcflash、stcgal，不過支援的STC單晶片型號還是不及Windows STC-ISP多，因此，司徒打算使用逆向工程的方式去逆向Windows STC-ISP，而目前最新的版本是V6.85I，因此，司徒就鎖定這個版本，因為逆向的過程還蠻花費時間的，因此，司徒將利用空閒的時間，慢慢的逆向Windows STC-ISP，期望有多餘時間可以逆向移植到Linux平台上，讓司徒的N900可以順利燒錄STC單晶片。
-</p>
+由於司徒想要在N900上開發STC15W204S程式，希望所有東西都在N900上完成，當然，包含也燒錄步驟，因此，首要步驟就是先取得Linux平台上的STC-ISP燒錄軟體，不過，原廠並沒有Linux平台上的相關資源，因此，也不可能提供Linux平台上的燒錄軟體，更不可能提供燒錄的Protocol，實在是相當遺憾的做法。雖然網路上，有一些熱心的開發者有提供自製的燒錄軟體，如：gSTC-ISP、stc-isp、stcflash、stcgal，不過支援的STC單晶片型號還是不及Windows STC-ISP多，因此，司徒打算使用逆向工程的方式去逆向Windows STC-ISP，而目前最新的版本是V6.85I，因此，司徒就鎖定這個版本，因為逆向的過程還蠻花費時間的，因此，司徒將利用空閒的時間，慢慢的逆向Windows STC-ISP，期望有多餘時間可以逆向移植到Linux平台上。<br><br>
 
-<p>
 司徒使用IDA Pro逆向Windows STC-ISP，大致瞄一下後，猜測Windows STC-ISP是使用MFC Dialog介面設計的程式，因此，我們可以使用Resource Hacker反查Dialog的Item ID，藉由這ID逆向找出Command的處理副程式位址，目前司徒比較想知道<b>Open Code File</b>和<b>Download/Program</b>的副程式內容，因此，首先找出<b>Open Code File</b>的ID<br>
 <img src="reverse_stc-isp-v6.85i/5.jpg" class="maxSize"><br>
 <img src="reverse_stc-isp-v6.85i/1.jpg" class="maxSize"><br>
-<img src="reverse_stc-isp-v6.85i/2.jpg" class="maxSize">
-</p>
+<img src="reverse_stc-isp-v6.85i/2.jpg" class="maxSize"><br><br>
 
-<p>
 接著是<b>Download/Program</b>的ID<br>
 <img src="reverse_stc-isp-v6.85i/3.jpg" class="maxSize"><br>
-<img src="reverse_stc-isp-v6.85i/4.jpg" class="maxSize">
-</p>
+<img src="reverse_stc-isp-v6.85i/4.jpg" class="maxSize"><br><br>
 
-<p>
-<b>Open Code File</b>的ID是1087；而<b>Download/Program</b>則是1087，接著可以使用這兩個ID定位出這兩個副程式的位址，不過比較奇怪的是<b>Open Code File</b>副程式似乎無法使用IDA Pro逆向成C語言，雖然有AntiDebug的味道，不過應該不是固意設計的，不然應該沒這麼好逆，司徒使用如下方式修復：<br>
-<img src="reverse_stc-isp-v6.85i/6.jpg" class="maxSize">
-</p>
+<b>Open Code File</b>的ID是1087；而<b>Download/Program</b>則是1087，接著可以使用這兩個ID定位出這兩個副程式的位址，不過比較奇怪的是，<b>Open Code File</b>副程式似乎無法使用IDA Pro逆向成C語言，感覺有Anti-Debug的味道，不過應該不是固意設計的，不然應該沒這麼好逆，司徒使用如下方式修復：<br>
+<img src="reverse_stc-isp-v6.85i/6.jpg" class="maxSize"><br><br>
 
-<p>
 在<b>align 10h</b>上按滑鼠右鍵並選擇<b>Undefine</b><br>
 <img src="reverse_stc-isp-v6.85i/7.jpg" class="maxSize"><br>
-<img src="reverse_stc-isp-v6.85i/8.jpg" class="maxSize">
-</p>
+<img src="reverse_stc-isp-v6.85i/8.jpg" class="maxSize"><br><br>
 
-<p>
-接著在0x433CE0上按滑鼠右鍵並選擇<b>Create function...</b>
+接著在0x433CE0上按滑鼠右鍵並選擇<b>Create function...</b><br>
 <img src="reverse_stc-isp-v6.85i/9.jpg" class="maxSize"><br>
-<img src="reverse_stc-isp-v6.85i/10.jpg" class="maxSize">
-</p>
+<img src="reverse_stc-isp-v6.85i/10.jpg" class="maxSize"><br><br>
 
-<p>
 目前找出的<b>Open Code File</b>副程式內容如下：
 </p>
-
 <pre class="brush: cpp">
 int __thiscall sub_433CE0(CWnd *this) // Open Code File
 {
@@ -120,44 +107,44 @@ int __thiscall sub_433CE0(CWnd *this) // Open Code File
 
   v1 = this;
   v2 = (char *)this + 28280;
-  CFileDialog::CFileDialog(&v25, 1, 0, *((_DWORD *)this + 7070), 6144, aIntelHexBina_0, 0);
+  CFileDialog::CFileDialog(&amp;v25, 1, 0, *((_DWORD *)this + 7070), 6144, aIntelHexBina_0, 0);
   v30 = 0;
   v26 += 12;
-  v27 = (int)&unk_4931C4;
+  v27 = (int)&amp;unk_4931C4;
   if ( !dword_49DE08 )
     v27 = (int)aOpenCodeFile;
-  if ( CFileDialog::DoModal((CFileDialog *)&v25) == 1 )
+  if ( CFileDialog::DoModal((CFileDialog *)&amp;v25) == 1 )
   {
-    v3 = *(const unsigned __int8 **)CFileDialog::GetFileExt(&v25, &v19);
+    v3 = *(const unsigned __int8 **)CFileDialog::GetFileExt(&amp;v25, &amp;v19);
     LOBYTE(v30) = 1;
-    if ( !mbsicmp(v3, &byte_492E58)
-      || (v4 = (const unsigned __int8 **)CFileDialog::GetFileExt(&v25, &v20),
-          v5 = mbsicmp(*v4, &byte_493048) == 0,
-          CString::~CString((CString *)&v20),
+    if ( !mbsicmp(v3, &amp;byte_492E58)
+      || (v4 = (const unsigned __int8 **)CFileDialog::GetFileExt(&amp;v25, &amp;v20),
+          v5 = mbsicmp(*v4, &amp;byte_493048) == 0,
+          CString::~CString((CString *)&amp;v20),
           v6 = v5,
           v18 = 0,
           v6) )
       v18 = 1;
     LOBYTE(v30) = 0;
-    CString::~CString((CString *)&v19);
+    CString::~CString((CString *)&amp;v19);
     if ( v18 )
     {
-      v7 = CFileDialog::GetPathName(&v25, &v19);
+      v7 = CFileDialog::GetPathName(&amp;v25, &amp;v19);
       LOBYTE(v30) = 2;
       v8 = CString::operator=((char *)v1 + 28272, v7);
       CString::operator=((char *)v1 + 28276, v8);
       LOBYTE(v30) = 0;
-      CString::~CString((CString *)&v19);
+      CString::~CString((CString *)&amp;v19);
       sub_42F120(v1, 0);
     }
     else
     {
-      v9 = CFileDialog::GetPathName(&v25, &v19);
+      v9 = CFileDialog::GetPathName(&amp;v25, &amp;v19);
       LOBYTE(v30) = 3;
       v10 = CString::operator=((char *)v1 + 28264, v9);
       CString::operator=(v2, v10);
       LOBYTE(v30) = 0;
-      CString::~CString((CString *)&v19);
+      CString::~CString((CString *)&amp;v19);
       sub_431CC0(v1, 0);
       sub_42EB60(v1);
       sub_431C70(v1);
@@ -165,19 +152,19 @@ int __thiscall sub_433CE0(CWnd *this) // Open Code File
       v11 = (HWND)*((_DWORD *)v1 + 626);
       v12 = 0;
       lParam = 8;
-      if ( SendMessageA(v11, 0x1304u, 0, 0) > 0 )
+      if ( SendMessageA(v11, 0x1304u, 0, 0) &gt; 0 )
       {
         do
         {
-          SendMessageA(*((HWND *)v1 + 626), 0x1305u, v12, (LPARAM)&lParam);
+          SendMessageA(*((HWND *)v1 + 626), 0x1305u, v12, (LPARAM)&amp;lParam);
           if ( !v24 )
             break;
           ++v12;
         }
-        while ( v12 < SendMessageA(*((HWND *)v1 + 626), 0x1304u, 0, 0) );
+        while ( v12 &lt; SendMessageA(*((HWND *)v1 + 626), 0x1304u, 0, 0) );
       }
       if ( v12 != SendMessageA(*((HWND *)v1 + 626), 0x1304u, 0, 0)
-        && v12 != SendMessageA(*((HWND *)v1 + 626), 0x130Bu, 0, 0) )
+        &amp;&amp; v12 != SendMessageA(*((HWND *)v1 + 626), 0x130Bu, 0, 0) )
       {
         SendMessageA(*((HWND *)v1 + 626), 0x130Cu, v12, 0);
         v13 = GetParent(*((HWND *)v1 + 626));
@@ -190,27 +177,26 @@ int __thiscall sub_433CE0(CWnd *this) // Open Code File
     }
   }
   v16 = (HWND)*((_DWORD *)v1 + 626);
-  memset(&lParam, 0, 0x1Cu);
+  memset(&amp;lParam, 0, 0x1Cu);
   lParam = 9;
-  v22 = &v29;
+  v22 = &amp;v29;
   v23 = 128;
-  SendMessageA(v16, 0x1305u, 2u, (LPARAM)&lParam);
+  SendMessageA(v16, 0x1305u, 2u, (LPARAM)&amp;lParam);
   if ( v24 == 14 )
   {
     SendMessageA(*((HWND *)v1 + 626), 0x1308u, 2u, 0);
-    SendMessageA(*((HWND *)v1 + 626), 0x1307u, 0xFu, (LPARAM)&lParam);
+    SendMessageA(*((HWND *)v1 + 626), 0x1307u, 0xFu, (LPARAM)&amp;lParam);
   }
   v30 = 4;
-  CString::~CString((CString *)&v28);
+  CString::~CString((CString *)&amp;v28);
   v30 = -1;
-  return CDialog::~CDialog((CDialog *)&v25);
+  return CDialog::~CDialog((CDialog *)&amp;v25);
 }
-</pre>
+</pre><br>
 
 <p>
 <b>Download/Program</b>內容如下：
 </p>
-
 <pre class="brush: cpp">
 int __thiscall sub_407620(int this) // Download/Program
 {
@@ -285,7 +271,7 @@ int __thiscall sub_407620(int this) // Download/Program
     else
     {
       SetupComm(*(HANDLE *)(v1 + 16), 0x2000u, 0x2000u);
-      GetCommState(*(HANDLE *)(v1 + 16), &DCB);
+      GetCommState(*(HANDLE *)(v1 + 16), &amp;DCB);
       v5 = *(_DWORD *)(v1 + 304);
       v6 = *(_BYTE *)(v1 + 312);
       DCB.BaudRate = *(_DWORD *)(v1 + 192);
@@ -293,15 +279,15 @@ int __thiscall sub_407620(int this) // Download/Program
       DCB.Parity = v5 != 0 ? 2 : 0;
       v7 = *(void **)(v1 + 16);
       DCB.ByteSize = 8;
-      *((_DWORD *)&DCB + 2) |= 1u;
-      SetCommState(v7, &DCB);
+      *((_DWORD *)&amp;DCB + 2) |= 1u;
+      SetCommState(v7, &amp;DCB);
       v8 = *(void **)(v1 + 16);
       CommTimeouts.ReadIntervalTimeout = 0;
       CommTimeouts.ReadTotalTimeoutMultiplier = 10;
       CommTimeouts.ReadTotalTimeoutConstant = 0;
       CommTimeouts.WriteTotalTimeoutMultiplier = 0;
       CommTimeouts.WriteTotalTimeoutConstant = 5000;
-      SetCommTimeouts(v8, &CommTimeouts);
+      SetCommTimeouts(v8, &amp;CommTimeouts);
       PurgeComm(*(HANDLE *)(v1 + 16), 0xFu);
     }
     v24 = 127;
@@ -314,12 +300,12 @@ int __thiscall sub_407620(int this) // Download/Program
         return 3;
       if ( (unsigned __int8)sub_4070F0(v1) )
         return 2;
-      if ( !*(_BYTE *)(v1 + 20) && !*(_BYTE *)(v1 + 22) )
+      if ( !*(_BYTE *)(v1 + 20) &amp;&amp; !*(_BYTE *)(v1 + 22) )
       {
         v14 = *(_DWORD *)(v1 + 320);
-        if ( (signed int)v14 >= 8 )
+        if ( (signed int)v14 &gt;= 8 )
           v14 = 8;
-        sub_406C00(v1, &Buffer, v14);
+        sub_406C00(v1, &amp;Buffer, v14);
         sub_4075A0(0);
       }
     }
@@ -347,7 +333,7 @@ int __thiscall sub_407620(int this) // Download/Program
       sub_406830(v1, v18, v22);
     }
   }
-  if ( v15 && *(_BYTE *)(v1 + 508) == 82 )
+  if ( v15 &amp;&amp; *(_BYTE *)(v1 + 508) == 82 )
   {
     v19 = aU8DSIC;
     if ( !*(_DWORD *)(v1 + 180) )
@@ -355,7 +341,7 @@ int __thiscall sub_407620(int this) // Download/Program
     sub_406830(v1, v19, v22);
   }
   v20 = *(_BYTE *)(v1 + 508);
-  if ( v20 && v20 != 80 )
+  if ( v20 &amp;&amp; v20 != 80 )
   {
     if ( v20 == -128 )
       goto LABEL_40;
@@ -374,9 +360,9 @@ LABEL_40:
     {
       if ( (unsigned __int8)sub_4070F0(v1) )
         return 2;
-      if ( !*(_BYTE *)(v1 + 20) && !*(_BYTE *)(v1 + 22) )
+      if ( !*(_BYTE *)(v1 + 20) &amp;&amp; !*(_BYTE *)(v1 + 22) )
       {
-        sub_406C00(v1, &Buffer, 1u);
+        sub_406C00(v1, &amp;Buffer, 1u);
         sub_4075A0(0);
       }
       if ( (unsigned __int8)sub_406E70(v1, (LPVOID)(v1 + 508), 1) )
