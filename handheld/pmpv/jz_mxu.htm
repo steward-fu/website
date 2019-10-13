@@ -1,0 +1,1849 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>PMP V</h3>
+<p><b>jz_mxu.h</b></p>
+<hr size="1">
+<p>
+程式碼如下：
+</p>
+<pre class="brush:cpp">
+/* Jz47xx Ingenic Media Extension Instruction Set
+
+   These are ~60 SIMD instructions for the Jz47xx MIPS core.
+   
+   To compile assembly files using these instructions, they
+   must be piped through a bash script called mxu_as.
+*/
+
+#ifndef JZ_MXU_H_
+#define JZ_MXU_H_
+
+#define ptn0 0
+#define ptn1 1
+#define ptn2 2
+#define ptn3 3
+
+#ifdef C_VERSION
+
+/* MXU registers */
+
+#ifndef MXU_REGS_USE_ARRAY
+
+#define xr0 0
+static int xr1, xr2, xr3, xr4, xr5, xr6, xr7, xr8, xr9;
+static int xr10, xr11, xr12, xr13, xr14, xr15, xr16;
+
+#else
+
+static int mxu_xr[17] = {0};
+
+#define xr0        mxu_xr[ 0]
+#define xr1        mxu_xr[ 1]
+#define xr2        mxu_xr[ 2]
+#define xr3        mxu_xr[ 3]
+#define xr4        mxu_xr[ 4]
+#define xr5        mxu_xr[ 5]
+#define xr6        mxu_xr[ 6]
+#define xr7        mxu_xr[ 7]
+#define xr8        mxu_xr[ 8]
+#define xr9        mxu_xr[ 9]
+#define xr10       mxu_xr[10]
+#define xr11       mxu_xr[11]
+#define xr12       mxu_xr[12]
+#define xr13       mxu_xr[13]
+#define xr14       mxu_xr[14]
+#define xr15       mxu_xr[15]
+#define xr16       mxu_xr[16]
+
+#endif
+
+#else /* C_VERSION */
+
+#define xr0  0
+#define xr1  1
+#define xr2  2
+#define xr3  3
+#define xr4  4
+#define xr5  5
+#define xr6  6
+#define xr7  7
+#define xr8  8
+#define xr9  9
+#define xr10 10
+#define xr11 11
+#define xr12 12
+#define xr13 13
+#define xr14 14
+#define xr15 15
+#define xr16 16
+
+#endif /* C_VERSION */
+
+#ifdef C_VERSION
+
+#define S32I2M(xr, r)        if (&amp;xr != mxu_xr) xr = r
+#define S32M2I(xr)           xr
+#define S32LDD(xr, p, o)     if (&amp;xr != mxu_xr) xr = *(long*)((unsigned long)p + o)
+#define S32STD(xr, p, o)     *(long*)((unsigned long)p + o) = xr
+
+#define S32LDDV(xr, p, o, s)    if (&amp;xr != mxu_xr) xr = *(long*)((unsigned long)p + ((o) &lt;&lt; s))
+#define S32STDV(xr, p, o, s)    *(long*)((unsigned long)p + ((o) &lt;&lt; s)) = xr
+
+#define S32LDIV(xra, rb, rc, strd2) \
+{\
+    if (&amp;xra != mxu_xr) xra = *(long*)((unsigned long)rb + ((rc) &lt;&lt; strd2));\
+    rb  = (char*)rb + ((rc) &lt;&lt; strd2);\
+}
+
+#define S32SDIV(xra, rb, rc, strd2) \
+{\
+    *(long*)((unsigned long)rb + ((rc) &lt;&lt; strd2)) = xra;\
+    rb  = (char*)rb + ((rc) &lt;&lt; strd2);\
+}
+
+#define S32LDI(xra, rb, o) \
+{\
+    if (&amp;xra != mxu_xr) xra = *(long*)((unsigned long)rb + o);\
+    rb  = (char*)rb + o;\
+}
+
+#define S32SDI(xra, rb, o) \
+{\
+    *(long*)((unsigned long)rb + o) = xra;\
+    rb  = (char*)rb + o;\
+}
+
+#define S32LDIV(xra, rb, rc, strd2) \
+{\
+    if (&amp;xra != mxu_xr) xra = *(long*)((unsigned long)rb + ((rc) &lt;&lt; strd2));\
+    rb  = (char*)rb + ((rc) &lt;&lt; strd2);\
+}
+
+#define S32SDIV(xra, rb, rc, strd2) \
+{\
+    *(long*)((unsigned long)rb + ((rc) &lt;&lt; strd2)) = xra;\
+    rb  = (char*)rb + ((rc) &lt;&lt; strd2);\
+}
+
+#define Q16ADD_AS_WW(a, b, c, d) \
+{\
+    short bh = b &gt;&gt; 16;\
+    short bl = b &amp; 0xFFFF;\
+    short ch = c &gt;&gt; 16;\
+    short cl = c &amp; 0xFFFF;\
+    int ah = bh + ch;\
+    int al = bl + cl;\
+    int dh = bh - ch;\
+    int dl = bl - cl;\
+    if (&amp;a != mxu_xr) a = (ah &lt;&lt; 16) | (al &amp; 0xFFFF);\
+    if (&amp;d != mxu_xr) d = (dh &lt;&lt; 16) | (dl &amp; 0xFFFF);\
+}
+
+#define Q16ADD_AS_XW(a, b, c, d) \
+{\
+    short bh = b &gt;&gt; 16;\
+    short bl = b &amp; 0xFFFF;\
+    short ch = c &gt;&gt; 16;\
+    short cl = c &amp; 0xFFFF;\
+    int ah = bl + ch;\
+    int al = bh + cl;\
+    int dh = bl - ch;\
+    int dl = bh - cl;\
+    if (&amp;a != mxu_xr) a = (ah &lt;&lt; 16) | (al &amp; 0xFFFF);\
+    if (&amp;d != mxu_xr) d = (dh &lt;&lt; 16) | (dl &amp; 0xFFFF);\
+}
+
+#define Q16ADD_AA_WW(a, b, c, d) \
+{\
+    short bh = b &gt;&gt; 16;\
+    short bl = b &amp; 0xFFFF;\
+    short ch = c &gt;&gt; 16;\
+    short cl = c &amp; 0xFFFF;\
+    int ah = bh + ch;\
+    int al = bl + cl;\
+    if (&amp;a != mxu_xr) a = (ah &lt;&lt; 16) | (al &amp; 0xFFFF);\
+    if (&amp;d != mxu_xr) d = (ah &lt;&lt; 16) | (al &amp; 0xFFFF);\
+}
+
+#define D16MUL_LW(a, b, c, d)\
+{\
+    short bl = b &amp; 0xFFFF;\
+    short cl = c &amp; 0xFFFF;\
+    short ch = c &gt;&gt; 16;\
+    if (&amp;a != mxu_xr) a = ch * bl;\
+    if (&amp;d != mxu_xr) d = cl * bl;\
+}
+
+#define D16MUL_WW(a, b, c, d)\
+{\
+    short bh = b &gt;&gt; 16;\
+    short bl = b &amp; 0xFFFF;\
+    short ch = c &gt;&gt; 16;\
+    short cl = c &amp; 0xFFFF;\
+    if (&amp;a != mxu_xr) a = ch * bh;\
+    if (&amp;d != mxu_xr) d = cl * bl;\
+}
+
+#define D16MAC_AA_LW(a, b, c, d)\
+{\
+    short bl = b &amp; 0xFFFF;\
+    short cl = c &amp; 0xFFFF;\
+    short ch = c &gt;&gt; 16;\
+    if (&amp;a != mxu_xr) a += ch * bl;\
+    if (&amp;d != mxu_xr) d += cl * bl;\
+}
+
+#define D16MUL_HW(a, b, c, d)\
+{\
+    short bh = b &gt;&gt; 16;\
+    short cl = c &amp; 0xFFFF;\
+    short ch = c &gt;&gt; 16;\
+    if (&amp;a != mxu_xr) a = ch * bh;\
+    if (&amp;d != mxu_xr) d = cl * bh;\
+}
+
+#define D16MAC_AA_HW(a, b, c, d)\
+{\
+    short bh = b &gt;&gt; 16;\
+    short cl = c &amp; 0xFFFF;\
+    short ch = c &gt;&gt; 16;\
+    if (&amp;a != mxu_xr) a += ch * bh;\
+    if (&amp;d != mxu_xr) d += cl * bh;\
+}
+
+#define D32SLL(a, b, c, d, sft)\
+{\
+    if (&amp;a != mxu_xr) a = b &lt;&lt; sft;\
+    if (&amp;d != mxu_xr) d = c &lt;&lt; sft;\
+}
+
+#define D32SARL(a, b, c, sft) if (&amp;a != mxu_xr) a = (((long)b &gt;&gt; sft) &lt;&lt; 16) | (((long)c &gt;&gt; sft) &amp; 0xFFFF)
+
+#define S32SFL(a, b, c, d, ptn) \
+{\
+    unsigned char b3 = (unsigned char)((unsigned long)b &gt;&gt; 24);\
+    unsigned char b2 = (unsigned char)((unsigned long)b &gt;&gt; 16);\
+    unsigned char b1 = (unsigned char)((unsigned long)b &gt;&gt;  8);\
+    unsigned char b0 = (unsigned char)((unsigned long)b &gt;&gt;  0);\
+    unsigned char c3 = (unsigned char)((unsigned long)c &gt;&gt; 24);\
+    unsigned char c2 = (unsigned char)((unsigned long)c &gt;&gt; 16);\
+    unsigned char c1 = (unsigned char)((unsigned long)c &gt;&gt;  8);\
+    unsigned char c0 = (unsigned char)((unsigned long)c &gt;&gt;  0);\
+    unsigned char a3, a2, a1, a0, d3, d2, d1, d0;\
+    if (ptn0 == ptn)    \
+    {\
+        a3 = b3;\
+        a2 = c3;\
+        a1 = b2;\
+        a0 = c2;\
+        d3 = b1;\
+        d2 = c1;\
+        d1 = b0;\
+        d0 = c0;\
+    }\
+    else if (ptn1 == ptn)\
+    {\
+        a3 = b3;\
+        a2 = b1;\
+        a1 = c3;\
+        a0 = c1;\
+        d3 = b2;\
+        d2 = b0;\
+        d1 = c2;\
+        d0 = c0;\
+    }\
+    else if (ptn2 == ptn)\
+    {\
+        a3 = b3;\
+        a2 = c3;\
+        a1 = b1;\
+        a0 = c1;\
+        d3 = b2;\
+        d2 = c2;\
+        d1 = b0;\
+        d0 = c0;\
+    }\
+    else if (ptn3 == ptn)\
+    {\
+        a3 = b3;\
+        a2 = b2;\
+        a1 = c3;\
+        a0 = c2;\
+        d3 = b1;\
+        d2 = b0;\
+        d1 = c1;\
+        d0 = c0;\
+    }\
+    if (&amp;a != mxu_xr) a = ((unsigned long)a3 &lt;&lt; 24) | ((unsigned long)a2 &lt;&lt; 16) | ((unsigned long)a1 &lt;&lt; 8) | (unsigned long)a0;\
+    if (&amp;d != mxu_xr) d = ((unsigned long)d3 &lt;&lt; 24) | ((unsigned long)d2 &lt;&lt; 16) | ((unsigned long)d1 &lt;&lt; 8) | (unsigned long)d0;\
+}
+
+#define D32SAR(a, b, c, d, sft)\
+{\
+    if (&amp;a != mxu_xr) a = (long)b &gt;&gt; sft;\
+    if (&amp;d != mxu_xr) d = (long)c &gt;&gt; sft;\
+}
+
+#define D32SLR(a, b, c, d, sft)\
+{\
+    if (&amp;a != mxu_xr) a = (unsigned long)b &gt;&gt; sft;\
+    if (&amp;d != mxu_xr) d = (unsigned long)c &gt;&gt; sft;\
+}
+#define Q16SLL(a,b,c,d,sft)\
+{\
+    short bh=b&gt;&gt;16;\
+    short bl=b&amp;0xffff;\
+    short ch=c&gt;&gt;16;\
+    short cl=c&amp;0xffff;\
+    if(&amp;a!=mxu_xr) a=((bh&lt;&lt;sft)&lt;&lt;16)|(((long)bl&lt;&lt;sft) &amp; 0xffff);\
+    if(&amp;d!=mxu_xr) d=((dh&lt;&lt;sft)&lt;&lt;16)|(((long)bl&lt;&lt;sft) &amp; 0xffff);\
+}
+
+#define Q16SAR(a,b,c,d,sft)\
+{\
+   short bh = b &gt;&gt; 16;\
+   short bl = b &amp; 0xffff;\
+   short ch = c &gt;&gt; 16;\
+   short cl = c &amp; 0xffff;\
+   if(&amp;a!=mxu_xr) a=(((short)bh&gt;&gt;sft)&lt;&lt;16)|((long)((short)b1&gt;&gt;sft) &amp; 0xffff);\
+   if(&amp;d!=mxu_xr) d=(((short)ch&gt;&gt;sft)&lt;&lt;16)|((long)((short)cl&gt;&gt;sft) &amp; 0xffff);\
+}
+
+#define D32ACC_AA(a, b, c, d)\
+{\
+    int _b = b;\
+    int _c = c;\
+    int _a = a;\
+    int _d = d;\
+    if (&amp;a != mxu_xr) a = _a + _b + _c;\
+    if (&amp;d != mxu_xr) d = _d + _b + _c;\
+}
+
+#define D32ACC_AS(a, b, c, d)\
+{\
+    int _b = b;\
+    int _c = c;\
+    int _a = a;\
+    int _d = d;\
+    if (&amp;a != mxu_xr) a = _a + _b + _c;\
+    if (&amp;d != mxu_xr) d = _d + _b - _c;\
+}
+
+#define D32ADD_AS(a, b, c, d)\
+{\
+    int _b = b;\
+    int _c = c;\
+    if (&amp;a != mxu_xr) a = _b + _c;\
+    if (&amp;d != mxu_xr) d = _b - _c;\
+}
+
+#define D32ADD_SS(a, b, c, d)\
+{\
+    int _b = b;\
+    int _c = c;\
+    if (&amp;a != mxu_xr) a = _b - _c;\
+    if (&amp;d != mxu_xr) d = _b - _c;\
+}
+
+#define D32ADD_AA(a, b, c, d)\
+{\
+    int _b = b;\
+    int _c = c;\
+    if (&amp;a != mxu_xr) a = _b + _c;\
+    if (&amp;d != mxu_xr) d = _b + _c;\
+}
+
+#define D16MADL_AA_WW(a, b, c, d)                                  \
+ do {                                                             \
+    short _ah = a &gt;&gt; 16;\
+    short _al = (a &lt;&lt; 16) &gt;&gt; 16;\
+    short _bh = b &gt;&gt; 16;\
+    short _bl = (b &lt;&lt; 16) &gt;&gt; 16;\
+    short _ch = c &gt;&gt; 16;\
+    short _cl = (c &lt;&lt; 16) &gt;&gt; 16;\
+    int L32, R32; \
+    L32 = _bh * _ch;\
+    R32 = _bl * _cl; \
+    _ah += (L32 &lt;&lt; 16) &gt;&gt; 16; \
+    _al += (R32 &lt;&lt; 16) &gt;&gt; 16; \
+    if (&amp;d != mxu_xr) d = (_ah &lt;&lt; 16) + (_al &amp; 0xffff);\
+  } while (0)
+
+#define D16MACF_AA_WW(a, b, c, d)                          \
+ do {                                                             \
+    short _bh = b &gt;&gt; 16;\
+    short _bl = (b &lt;&lt; 16) &gt;&gt; 16;\
+    short _ch = c &gt;&gt; 16;\
+    short _cl = (c &lt;&lt; 16) &gt;&gt; 16;\
+    int L32, R32; \
+    L32 = (_bh * _ch) &lt;&lt; 1;\
+    R32 = (_bl * _cl) &lt;&lt; 1; \
+    L32 = a + L32; \
+    R32 = d + R32; \
+    if (&amp;a != mxu_xr) a = ((((L32 &gt;&gt; 15) + 1) &gt;&gt; 1) &lt;&lt; 16) + ((((R32 &gt;&gt; 15) + 1) &gt;&gt; 1) &amp; 0xffff);\
+  } while (0)
+
+#define D16MAC_AA_WW(a, b, c, d)                           \
+do {                                                             \
+    short _bh = b &gt;&gt; 16;\
+    short _bl = (b &lt;&lt; 16) &gt;&gt; 16;\
+    short _ch = c &gt;&gt; 16;\
+    short _cl = (c &lt;&lt; 16) &gt;&gt; 16;\
+    int L32, R32; \
+    L32 = (_bh * _ch);\
+    R32 = (_bl * _cl); \
+    if (&amp;a != mxu_xr) a = a + L32;\
+    if (&amp;d != mxu_xr) d = d + R32;\
+  } while (0)
+
+#define D16MAC_SS_WW(a, b, c, d)                           \
+do {                                                             \
+    short _bh = b &gt;&gt; 16;\
+    short _bl = (b &lt;&lt; 16) &gt;&gt; 16;\
+    short _ch = c &gt;&gt; 16;\
+    short _cl = (c &lt;&lt; 16) &gt;&gt; 16;\
+    int L32, R32; \
+    L32 = (_bh * _ch);\
+    R32 = (_bl * _cl); \
+    if (&amp;a != mxu_xr) a = a - L32;\
+    if (&amp;d != mxu_xr) d = d - R32;\
+  } while (0)
+
+#define D16MAC_SA_HW(a, b, c, d)                           \
+do {                                                             \
+    short _bh = b &gt;&gt; 16;\
+    short _bl = (b &lt;&lt; 16) &gt;&gt; 16;\
+    short _ch = c &gt;&gt; 16;\
+    short _cl = (c &lt;&lt; 16) &gt;&gt; 16;\
+    int L32, R32; \
+    L32 = (_bh * _ch);\
+    R32 = (_bh * _cl); \
+    if (&amp;a != mxu_xr) a = a - L32;\
+    if (&amp;d != mxu_xr) d = d + R32;\
+  } while (0)
+
+#define D16MAC_SS_HW(a, b, c, d)                           \
+do {                                                             \
+    short _bh = b &gt;&gt; 16;\
+    short _bl = (b &lt;&lt; 16) &gt;&gt; 16;\
+    short _ch = c &gt;&gt; 16;\
+    short _cl = (c &lt;&lt; 16) &gt;&gt; 16;\
+    int L32, R32; \
+    L32 = (_bh * _ch);\
+    R32 = (_bh * _cl); \
+    if (&amp;a != mxu_xr) a = a - L32;\
+    if (&amp;d != mxu_xr) d = d - R32;\
+  } while (0)
+
+#define D16MAC_AS_HW(a, b, c, d)                           \
+do {                                                             \
+    short _bh = b &gt;&gt; 16;\
+    short _bl = (b &lt;&lt; 16) &gt;&gt; 16;\
+    short _ch = c &gt;&gt; 16;\
+    short _cl = (c &lt;&lt; 16) &gt;&gt; 16;\
+    int L32, R32; \
+    L32 = (_bh * _ch);\
+    R32 = (_bh * _cl); \
+    if (&amp;a != mxu_xr) a = a + L32;\
+    if (&amp;d != mxu_xr) d = d - R32;\
+  } while (0)
+
+#define D16MAC_AS_LW(a, b, c, d)                           \
+do {                                                             \
+    short _bh = b &gt;&gt; 16;\
+    short _bl = (b &lt;&lt; 16) &gt;&gt; 16;\
+    short _ch = c &gt;&gt; 16;\
+    short _cl = (c &lt;&lt; 16) &gt;&gt; 16;\
+    int L32, R32; \
+    L32 = (_bl * _ch);\
+    R32 = (_bl * _cl); \
+    if (&amp;a != mxu_xr) a = a + L32;\
+    if (&amp;d != mxu_xr) d = d - R32;\
+  } while (0)
+
+
+#define D16MAC_SA_LW(a, b, c, d)                           \
+do {                                                             \
+    short _bh = b &gt;&gt; 16;\
+    short _bl = (b &lt;&lt; 16) &gt;&gt; 16;\
+    short _ch = c &gt;&gt; 16;\
+    short _cl = (c &lt;&lt; 16) &gt;&gt; 16;\
+    int L32, R32; \
+    L32 = (_bl * _ch);\
+    R32 = (_bl * _cl); \
+    if (&amp;a != mxu_xr) a = a - L32;\
+    if (&amp;d != mxu_xr) d = d + R32;\
+  } while (0)
+
+#define D16MAC_SS_LW(a, b, c, d)                           \
+do {                                                             \
+    short _bh = b &gt;&gt; 16;\
+    short _bl = (b &lt;&lt; 16) &gt;&gt; 16;\
+    short _ch = c &gt;&gt; 16;\
+    short _cl = (c &lt;&lt; 16) &gt;&gt; 16;\
+    int L32, R32; \
+    L32 = (_bl * _ch);\
+    R32 = (_bl * _cl); \
+    if (&amp;a != mxu_xr) a = a - L32;\
+    if (&amp;d != mxu_xr) d = d - R32;\
+  } while (0)
+
+
+#define Q8ADDE_AA(xra, xrb, xrc, xrd) \
+{\
+    unsigned char b3 = (unsigned char)((unsigned long)xrb &gt;&gt; 24);\
+    unsigned char b2 = (unsigned char)((unsigned long)xrb &gt;&gt; 16);\
+    unsigned char b1 = (unsigned char)((unsigned long)xrb &gt;&gt;  8);\
+    unsigned char b0 = (unsigned char)((unsigned long)xrb &gt;&gt;  0);\
+    unsigned char c3 = (unsigned char)((unsigned long)xrc &gt;&gt; 24);\
+    unsigned char c2 = (unsigned char)((unsigned long)xrc &gt;&gt; 16);\
+    unsigned char c1 = (unsigned char)((unsigned long)xrc &gt;&gt;  8);\
+    unsigned char c0 = (unsigned char)((unsigned long)xrc &gt;&gt;  0);\
+    short ah, al, dh, dl;\
+    ah = b3 + c3;\
+    al = b2 + c2;\
+    dh = b1 + c1;\
+    dl = b0 + c0;\
+    if (&amp;xra != mxu_xr) xra = ((unsigned long)ah &lt;&lt; 16) | (unsigned short)al;\
+    if (&amp;xrd != mxu_xr) xrd = ((unsigned long)dh &lt;&lt; 16) | (unsigned short)dl;\
+}
+
+#define Q16SAT(xra, xrb, xrc) \
+{\
+    short bh = xrb &gt;&gt; 16;\
+    short bl = xrb &amp; 0xFFFF;\
+    short ch = xrc &gt;&gt; 16;\
+    short cl = xrc &amp; 0xFFFF;\
+    if (bh &gt; 255) bh = 255;\
+    if (bh &lt; 0) bh = 0;\
+    if (bl &gt; 255) bl = 255;\
+    if (bl &lt; 0) bl = 0;\
+    if (ch &gt; 255) ch = 255;\
+    if (ch &lt; 0) ch = 0;\
+    if (cl &gt; 255) cl = 255;\
+    if (cl &lt; 0) cl = 0;\
+    if (&amp;xra != mxu_xr) xra = ((unsigned)bh &lt;&lt; 24) | ((unsigned)bl &lt;&lt; 16) | ((unsigned)ch &lt;&lt; 8) | (unsigned)cl;\
+}
+
+#define Q8SAD(xra, xrb, xrc, xrd)    \
+{\
+    short b3 = (unsigned char)((unsigned long)xrb &gt;&gt; 24);\
+    short b2 = (unsigned char)((unsigned long)xrb &gt;&gt; 16);\
+    short b1 = (unsigned char)((unsigned long)xrb &gt;&gt;  8);\
+    short b0 = (unsigned char)((unsigned long)xrb &gt;&gt;  0);\
+    short c3 = (unsigned char)((unsigned long)xrc &gt;&gt; 24);\
+    short c2 = (unsigned char)((unsigned long)xrc &gt;&gt; 16);\
+    short c1 = (unsigned char)((unsigned long)xrc &gt;&gt;  8);\
+    short c0 = (unsigned char)((unsigned long)xrc &gt;&gt;  0);\
+    int int0, int1, int2, int3;\
+    int3 = labs(b3 - c3);\
+    int2 = labs(b2 - c2);\
+    int1 = labs(b1 - c1);\
+    int0 = labs(b0 - c0);\
+    if (&amp;xra != mxu_xr) xra  = int0 + int1 + int2 + int3;\
+    if (&amp;xrd != mxu_xr) xrd += int0 + int1 + int2 + int3;\
+}
+
+#define Q8AVGR(xra, xrb, xrc) \
+{\
+    short b3 = (unsigned char)((unsigned long)xrb &gt;&gt; 24);\
+    short b2 = (unsigned char)((unsigned long)xrb &gt;&gt; 16);\
+    short b1 = (unsigned char)((unsigned long)xrb &gt;&gt;  8);\
+    short b0 = (unsigned char)((unsigned long)xrb &gt;&gt;  0);\
+    short c3 = (unsigned char)((unsigned long)xrc &gt;&gt; 24);\
+    short c2 = (unsigned char)((unsigned long)xrc &gt;&gt; 16);\
+    short c1 = (unsigned char)((unsigned long)xrc &gt;&gt;  8);\
+    short c0 = (unsigned char)((unsigned long)xrc &gt;&gt;  0);\
+    unsigned char a3, a2, a1, a0;\
+    a3 = (unsigned char)((b3 + c3 + 1) &gt;&gt; 1);\
+    a2 = (unsigned char)((b2 + c2 + 1) &gt;&gt; 1);\
+    a1 = (unsigned char)((b1 + c1 + 1) &gt;&gt; 1);\
+    a0 = (unsigned char)((b0 + c0 + 1) &gt;&gt; 1);\
+    if (&amp;xra != mxu_xr) xra = ((unsigned long)a3 &lt;&lt; 24) | ((unsigned long)a2 &lt;&lt; 16) | ((unsigned long)a1 &lt;&lt; 8) | (unsigned long)a0;\
+}
+
+#define S32ALN(xra, xrb, xrc, rs) \
+{\
+    if (0 == rs)\
+    {\
+        if (&amp;xra != mxu_xr) xra = xrb;\
+    }\
+    else if (1 == rs)\
+    {\
+        if (&amp;xra != mxu_xr) xra = (xrb &lt;&lt; 8) | ((unsigned long)xrc &gt;&gt; 24);\
+    }\
+    else if (2 == rs)\
+    {\
+        if (&amp;xra != mxu_xr) xra = (xrb &lt;&lt; 16) | ((unsigned long)xrc &gt;&gt; 16);\
+    }\
+    else if (3 == rs)\
+    {\
+        if (&amp;xra != mxu_xr) xra = (xrb &lt;&lt; 24) | ((unsigned long)xrc &gt;&gt; 8);\
+    }\
+    else if (4 == rs)\
+    {\
+        if (&amp;xra != mxu_xr) xra = xrc;\
+    }\
+}
+
+#else /* C_VERSION */
+
+/***********************************LD/SD***********************************/
+#define S32LDD(xra,rb,s12)                                        \
+  do {                                                            \
+    __asm__ __volatile ("S32LDD xr%0,%z1,%2"                    \
+            :                                                    \
+            :"K"(xra),"d" (rb),"I"(s12));                        \
+  } while (0)
+
+#define S32STD(xra,rb,s12)                                        \
+  do {                                                            \
+    __asm__ __volatile ("S32STD xr%0,%z1,%2"                    \
+           :                                                    \
+            :"K"(xra),"d" (rb),"I"(s12):"memory");                    \
+  } while (0)
+
+#define S32LDDV(xra,rb,rc,strd2)                                \
+  do {                                                            \
+    __asm__ __volatile ("S32LDDV xr%0,%z1,%z2,%3"                \
+           :                                                    \
+           :"K"(xra),"d" (rb),"d"(rc),"K"(strd2));                \
+  } while (0)
+
+#define S32STDV(xra,rb,rc,strd2)                                \
+  do {                                                            \
+    __asm__ __volatile ("S32STDV xr%0,%z1,%z2,%3"                \
+           :                                                    \
+            :"K"(xra),"d" (rb),"d"(rc),"K"(strd2):"memory");        \
+  } while (0)
+
+#define S32LDI(xra,rb,s12)                                        \
+  do {                                                            \
+    __asm__ __volatile ("S32LDI xr%1,%z0,%2"                    \
+           :"+d" (rb)                                            \
+           :"K"(xra),"I"(s12));                                    \
+  } while (0)
+
+#define S32SDI(xra,rb,s12)                                        \
+  do {                                                            \
+    __asm__ __volatile ("S32SDI xr%1,%z0,%2"                    \
+           :"+d" (rb)                                            \
+            :"K"(xra),"I"(s12):"memory");            \
+  } while (0)
+
+#define S32LDIV(xra,rb,rc,strd2)                                \
+  do {                                                            \
+    __asm__ __volatile ("S32LDIV xr%1,%z0,%z2,%3"                \
+           :"+d" (rb)                                            \
+           :"K"(xra),"d"(rc),"K"(strd2));                        \
+  } while (0)
+
+#define S32SDIV(xra,rb,rc,strd2)                                \
+  do {                                                            \
+    __asm__ __volatile ("S32SDIV xr%1,%z0,%z2,%3"                \
+           :"+d" (rb)                                            \
+            :"K"(xra),"d"(rc),"K"(strd2):"memory");                    \
+  } while (0)
+
+/***********************************D16MUL***********************************/
+#define D16MUL_WW(xra,xrb,xrc,xrd)                              \
+ do {                                                             \
+    __asm__ __volatile ("D16MUL xr%0,xr%1,xr%2,xr%3,WW"         \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define D16MUL_LW(xra,xrb,xrc,xrd)                              \
+ do {                                                             \
+    __asm__ __volatile ("D16MUL xr%0,xr%1,xr%2,xr%3,LW"         \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define D16MUL_HW(xra,xrb,xrc,xrd)                              \
+ do {                                                             \
+    __asm__ __volatile ("D16MUL xr%0,xr%1,xr%2,xr%3,HW"         \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define D16MUL_XW(xra,xrb,xrc,xrd)                              \
+ do {                                                             \
+    __asm__ __volatile ("D16MUL xr%0,xr%1,xr%2,xr%3,XW"         \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+/**********************************D16MULF*******************************/
+#define D16MULF_WW(xra,xrb,xrc)                                 \
+    do {                                                         \
+    __asm__ __volatile ("D16MULF xr%0,xr%1,xr%2,WW"                \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc));                  \
+  } while (0)
+
+#define D16MULF_LW(xra,xrb,xrc)                                 \
+ do {                                                             \
+    __asm__ __volatile ("D16MULF xr%0,xr%1,xr%2,LW"                \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc));                  \
+  } while (0)
+
+#define D16MULF_HW(xra,xrb,xrc)                                    \
+ do {                                                             \
+    __asm__ __volatile ("D16MULF xr%0,xr%1,xr%2,HW"                \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc));                  \
+  } while (0)
+
+#define D16MULF_XW(xra,xrb,xrc)                                 \
+ do {                                                             \
+    __asm__ __volatile ("D16MULF xr%0,xr%1,xr%2,XW"                \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc));                  \
+  } while (0)
+
+/***********************************D16MAC********************************/
+#define D16MAC_AA_WW(xra,xrb,xrc,xrd)                           \
+ do {                                                             \
+    __asm__ __volatile ("D16MAC xr%0,xr%1,xr%2,xr%3,AA,WW"      \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define D16MAC_AA_LW(xra,xrb,xrc,xrd)                           \
+ do {                                                             \
+    __asm__ __volatile ("D16MAC xr%0,xr%1,xr%2,xr%3,AA,LW"      \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define D16MAC_AA_HW(xra,xrb,xrc,xrd)                           \
+ do {                                                             \
+    __asm__ __volatile ("D16MAC xr%0,xr%1,xr%2,xr%3,AA,HW"      \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define D16MAC_AA_XW(xra,xrb,xrc,xrd)                           \
+ do {                                                             \
+    __asm__ __volatile ("D16MAC xr%0,xr%1,xr%2,xr%3,AA,XW"      \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define D16MAC_AS_WW(xra,xrb,xrc,xrd)                           \
+ do {                                                             \
+    __asm__ __volatile ("D16MAC xr%0,xr%1,xr%2,xr%3,AS,WW"      \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define D16MAC_AS_LW(xra,xrb,xrc,xrd)                           \
+ do {                                                             \
+    __asm__ __volatile ("D16MAC xr%0,xr%1,xr%2,xr%3,AS,LW"      \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define D16MAC_AS_HW(xra,xrb,xrc,xrd)                           \
+ do {                                                             \
+    __asm__ __volatile ("D16MAC xr%0,xr%1,xr%2,xr%3,AS,HW"      \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define D16MAC_AS_XW(xra,xrb,xrc,xrd)                           \
+ do {                                                             \
+    __asm__ __volatile ("D16MAC xr%0,xr%1,xr%2,xr%3,AS,XW"      \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define D16MAC_SA_WW(xra,xrb,xrc,xrd)                           \
+ do {                                                             \
+    __asm__ __volatile ("D16MAC xr%0,xr%1,xr%2,xr%3,SA,WW"      \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define D16MAC_SA_LW(xra,xrb,xrc,xrd)                           \
+ do {                                                             \
+    __asm__ __volatile ("D16MAC xr%0,xr%1,xr%2,xr%3,SA,LW"      \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define D16MAC_SA_HW(xra,xrb,xrc,xrd)                           \
+ do {                                                             \
+    __asm__ __volatile ("D16MAC xr%0,xr%1,xr%2,xr%3,SA,HW"      \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define D16MAC_SA_XW(xra,xrb,xrc,xrd)                           \
+ do {                                                             \
+    __asm__ __volatile ("D16MAC xr%0,xr%1,xr%2,xr%3,SA,XW"      \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define D16MAC_SS_WW(xra,xrb,xrc,xrd)                           \
+ do {                                                             \
+    __asm__ __volatile ("D16MAC xr%0,xr%1,xr%2,xr%3,SS,WW"      \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define D16MAC_SS_LW(xra,xrb,xrc,xrd)                           \
+ do {                                                             \
+    __asm__ __volatile ("D16MAC xr%0,xr%1,xr%2,xr%3,SS,LW"      \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define D16MAC_SS_HW(xra,xrb,xrc,xrd)                           \
+ do {                                                             \
+    __asm__ __volatile ("D16MAC xr%0,xr%1,xr%2,xr%3,SS,HW"      \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define D16MAC_SS_XW(xra,xrb,xrc,xrd)                           \
+ do {                                                             \
+    __asm__ __volatile ("D16MAC xr%0,xr%1,xr%2,xr%3,SS,XW"      \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+/**********************************D16MACF*******************************/
+#define D16MACF_AA_WW(xra,xrb,xrc,xrd)                          \
+ do {                                                             \
+    __asm__ __volatile ("D16MACF xr%0,xr%1,xr%2,xr%3,AA,WW"     \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define D16MACF_AA_LW(xra,xrb,xrc,xrd)                          \
+ do {                                                             \
+    __asm__ __volatile ("D16MACF xr%0,xr%1,xr%2,xr%3,AA,LW"     \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define D16MACF_AA_HW(xra,xrb,xrc,xrd)                          \
+ do {                                                             \
+    __asm__ __volatile ("D16MACF xr%0,xr%1,xr%2,xr%3,AA,HW"     \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define D16MACF_AA_XW(xra,xrb,xrc,xrd)                          \
+ do {                                                             \
+    __asm__ __volatile ("D16MACF xr%0,xr%1,xr%2,xr%3,AA,XW"     \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define D16MACF_AS_WW(xra,xrb,xrc,xrd)                          \
+ do {                                                             \
+    __asm__ __volatile ("D16MACF xr%0,xr%1,xr%2,xr%3,AS,WW"     \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define D16MACF_AS_LW(xra,xrb,xrc,xrd)                          \
+ do {                                                             \
+    __asm__ __volatile ("D16MACF xr%0,xr%1,xr%2,xr%3,AS,LW"     \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define D16MACF_AS_HW(xra,xrb,xrc,xrd)                          \
+ do {                                                             \
+    __asm__ __volatile ("D16MACF xr%0,xr%1,xr%2,xr%3,AS,HW"     \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define D16MACF_AS_XW(xra,xrb,xrc,xrd)                          \
+ do {                                                             \
+    __asm__ __volatile ("D16MACF xr%0,xr%1,xr%2,xr%3,AS,XW"     \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define D16MACF_SA_WW(xra,xrb,xrc,xrd)                          \
+ do {                                                             \
+    __asm__ __volatile ("D16MACF xr%0,xr%1,xr%2,xr%3,SA,WW"     \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define D16MACF_SA_LW(xra,xrb,xrc,xrd)                          \
+ do {                                                             \
+    __asm__ __volatile ("D16MACF xr%0,xr%1,xr%2,xr%3,SA,LW"     \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define D16MACF_SA_HW(xra,xrb,xrc,xrd)                          \
+ do {                                                             \
+    __asm__ __volatile ("D16MACF xr%0,xr%1,xr%2,xr%3,SA,HW"     \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define D16MACF_SA_XW(xra,xrb,xrc,xrd)                          \
+ do {                                                             \
+    __asm__ __volatile ("D16MACF xr%0,xr%1,xr%2,xr%3,SA,XW"     \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define D16MACF_SS_WW(xra,xrb,xrc,xrd)                          \
+ do {                                                             \
+    __asm__ __volatile ("D16MACF xr%0,xr%1,xr%2,xr%3,SS,WW"     \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define D16MACF_SS_LW(xra,xrb,xrc,xrd)                          \
+ do {                                                             \
+    __asm__ __volatile ("D16MACF xr%0,xr%1,xr%2,xr%3,SS,LW"     \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define D16MACF_SS_HW(xra,xrb,xrc,xrd)                          \
+ do {                                                             \
+    __asm__ __volatile ("D16MACF xr%0,xr%1,xr%2,xr%3,SS,HW"     \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define D16MACF_SS_XW(xra,xrb,xrc,xrd)                          \
+ do {                                                             \
+    __asm__ __volatile ("D16MACF xr%0,xr%1,xr%2,xr%3,SS,XW"     \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+/**********************************D16MADL*******************************/
+#define D16MADL_AA_WW(xra,xrb,xrc,xrd)                          \
+ do {                                                             \
+    __asm__ __volatile ("D16MADL xr%0,xr%1,xr%2,xr%3,AA,WW"     \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define D16MADL_AA_LW(xra,xrb,xrc,xrd)                          \
+ do {                                                             \
+    __asm__ __volatile ("D16MADL xr%0,xr%1,xr%2,xr%3,AA,LW"     \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define D16MADL_AA_HW(xra,xrb,xrc,xrd)                          \
+ do {                                                             \
+    __asm__ __volatile ("D16MADL xr%0,xr%1,xr%2,xr%3,AA,HW"     \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define D16MADL_AA_XW(xra,xrb,xrc,xrd)                          \
+ do {                                                             \
+    __asm__ __volatile ("D16MADL xr%0,xr%1,xr%2,xr%3,AA,XW"     \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define D16MADL_AS_WW(xra,xrb,xrc,xrd)                          \
+ do {                                                             \
+    __asm__ __volatile ("D16MADL xr%0,xr%1,xr%2,xr%3,AS,WW"     \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define D16MADL_AS_LW(xra,xrb,xrc,xrd)                          \
+ do {                                                             \
+    __asm__ __volatile ("D16MADL xr%0,xr%1,xr%2,xr%3,AS,LW"     \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define D16MADL_AS_HW(xra,xrb,xrc,xrd)                          \
+ do {                                                             \
+    __asm__ __volatile ("D16MADL xr%0,xr%1,xr%2,xr%3,AS,HW"     \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define D16MADL_AS_XW(xra,xrb,xrc,xrd)                          \
+ do {                                                             \
+    __asm__ __volatile ("D16MADL xr%0,xr%1,xr%2,xr%3,AS,XW"     \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define D16MADL_SA_WW(xra,xrb,xrc,xrd)                          \
+ do {                                                             \
+    __asm__ __volatile ("D16MADL xr%0,xr%1,xr%2,xr%3,SA,WW"     \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define D16MADL_SA_LW(xra,xrb,xrc,xrd)                          \
+ do {                                                             \
+    __asm__ __volatile ("D16MADL xr%0,xr%1,xr%2,xr%3,SA,LW"     \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define D16MADL_SA_HW(xra,xrb,xrc,xrd)                          \
+ do {                                                             \
+    __asm__ __volatile ("D16MADL xr%0,xr%1,xr%2,xr%3,SA,HW"     \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define D16MADL_SA_XW(xra,xrb,xrc,xrd)                          \
+ do {                                                             \
+    __asm__ __volatile ("D16MADL xr%0,xr%1,xr%2,xr%3,SA,XW"     \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define D16MADL_SS_WW(xra,xrb,xrc,xrd)                          \
+ do {                                                             \
+    __asm__ __volatile ("D16MADL xr%0,xr%1,xr%2,xr%3,SS,WW"     \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define D16MADL_SS_LW(xra,xrb,xrc,xrd)                          \
+ do {                                                             \
+    __asm__ __volatile ("D16MADL xr%0,xr%1,xr%2,xr%3,SS,LW"     \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define D16MADL_SS_HW(xra,xrb,xrc,xrd)                          \
+ do {                                                             \
+    __asm__ __volatile ("D16MADL xr%0,xr%1,xr%2,xr%3,SS,HW"     \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define D16MADL_SS_XW(xra,xrb,xrc,xrd)                          \
+ do {                                                             \
+    __asm__ __volatile ("D16MADL xr%0,xr%1,xr%2,xr%3,SS,XW"     \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+/***********************************S16MAD*******************************/
+#define S16MAD_A_HH(xra,xrb,xrc,xrd)                             \
+ do {                                                              \
+    __asm__ __volatile ("S16MAD xr%0,xr%1,xr%2,xr%3,A,0"        \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));            \
+  } while (0)
+
+#define S16MAD_A_LL(xra,xrb,xrc,xrd)                            \
+ do {                                                              \
+    __asm__ __volatile ("S16MAD xr%0,xr%1,xr%2,xr%3,A,1"        \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));            \
+  } while (0)
+
+#define S16MAD_A_HL(xra,xrb,xrc,xrd)                             \
+ do {                                                              \
+    __asm__ __volatile ("S16MAD xr%0,xr%1,xr%2,xr%3,A,2"        \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));            \
+  } while (0)
+
+#define S16MAD_A_LH(xra,xrb,xrc,xrd)                             \
+ do {                                                              \
+    __asm__ __volatile ("S16MAD xr%0,xr%1,xr%2,xr%3,A,3"        \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));            \
+  } while (0)
+
+#define S16MAD_S_HH(xra,xrb,xrc,xrd)                            \
+ do {                                                              \
+    __asm__ __volatile ("S16MAD xr%0,xr%1,xr%2,xr%3,S,0"        \
+                 :                                                \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));            \
+  } while (0)
+
+#define S16MAD_S_LL(xra,xrb,xrc,xrd)                            \
+ do {                                                              \
+    __asm__ __volatile ("S16MAD xr%0,xr%1,xr%2,xr%3,S,1"        \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));            \
+  } while (0)
+
+#define S16MAD_S_HL(xra,xrb,xrc,xrd)                             \
+ do {                                                              \
+    __asm__ __volatile ("S16MAD xr%0,xr%1,xr%2,xr%3,S,2"        \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));            \
+  } while (0)
+
+#define S16MAD_S_LH(xra,xrb,xrc,xrd)                             \
+ do {                                                              \
+    __asm__ __volatile ("S16MAD xr%0,xr%1,xr%2,xr%3,S,3"        \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));            \
+  } while (0)
+
+/***********************************Q8MUL********************************/
+#define Q8MUL(xra,xrb,xrc,xrd)                                    \
+ do {                                                             \
+    __asm__ __volatile ("Q8MUL xr%0,xr%1,xr%2,xr%3"                \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+/***********************************Q8MAC********************************/
+#define Q8MAC_AA(xra,xrb,xrc,xrd)                                \
+ do {                                                             \
+    __asm__ __volatile ("Q8MAC xr%0,xr%1,xr%2,xr%3,AA"            \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define Q8MAC_AS(xra,xrb,xrc,xrd)                                \
+ do {                                                             \
+    __asm__ __volatile ("Q8MAC xr%0,xr%1,xr%2,xr%3,AS"            \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define Q8MAC_SA(xra,xrb,xrc,xrd)                                \
+ do {                                                             \
+    __asm__ __volatile ("Q8MAC xr%0,xr%1,xr%2,xr%3,SA"            \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define Q8MAC_SS(xra,xrb,xrc,xrd)                                \
+ do {                                                             \
+    __asm__ __volatile ("Q8MAC xr%0,xr%1,xr%2,xr%3,SS"            \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+/***********************************Q8MADL********************************/
+#define Q8MADL_AA(xra,xrb,xrc,xrd)                                \
+ do {                                                            \
+    __asm__ __volatile ("Q8MADL xr%0,xr%1,xr%2,xr%3,AA"            \
+                 :                                                \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));            \
+  } while (0)
+
+#define Q8MADL_AS(xra,xrb,xrc,xrd)                                \
+ do {                                                            \
+    __asm__ __volatile ("Q8MADL xr%0,xr%1,xr%2,xr%3,AS"            \
+                 :                                                \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));            \
+  } while (0)
+
+#define Q8MADL_SA(xra,xrb,xrc,xrd)                                \
+ do {                                                            \
+    __asm__ __volatile ("Q8MADL xr%0,xr%1,xr%2,xr%3,SA"            \
+                 :                                                \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));            \
+  } while (0)
+
+#define Q8MADL_SS(xra,xrb,xrc,xrd)                                \
+ do {                                                            \
+    __asm__ __volatile ("Q8MADL xr%0,xr%1,xr%2,xr%3,SS"            \
+                 :                                                \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));            \
+  } while (0)
+
+/***********************************D32ADD********************************/
+#define D32ADD_AA(xra,xrb,xrc,xrd)                                \
+ do {                                                            \
+    __asm__ __volatile ("D32ADD xr%0,xr%1,xr%2,xr%3,AA"            \
+                 :                                                \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));            \
+  } while (0)
+
+#define D32ADD_AS(xra,xrb,xrc,xrd)                                \
+ do {                                                            \
+    __asm__ __volatile ("D32ADD xr%0,xr%1,xr%2,xr%3,AS"            \
+                 :                                                \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));            \
+  } while (0)
+
+#define D32ADD_SA(xra,xrb,xrc,xrd)                                \
+ do {                                                            \
+    __asm__ __volatile ("D32ADD xr%0,xr%1,xr%2,xr%3,SA"            \
+                 :                                                \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));            \
+  } while (0)
+
+#define D32ADD_SS(xra,xrb,xrc,xrd)                                \
+ do {                                                            \
+    __asm__ __volatile ("D32ADD xr%0,xr%1,xr%2,xr%3,SS"            \
+                 :                                                \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));            \
+  } while (0)
+
+/***********************************D32ACC********************************/
+#define D32ACC_AA(xra,xrb,xrc,xrd)                                \
+ do {                                                            \
+    __asm__ __volatile ("D32ACC xr%0,xr%1,xr%2,xr%3,AA"            \
+                 :                                                \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));            \
+  } while (0)
+
+#define D32ACC_AS(xra,xrb,xrc,xrd)                                \
+ do {                                                            \
+    __asm__ __volatile ("D32ACC xr%0,xr%1,xr%2,xr%3,AS"            \
+                 :                                                \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));            \
+  } while (0)
+
+#define D32ACC_SA(xra,xrb,xrc,xrd)                                \
+ do {                                                            \
+    __asm__ __volatile ("D32ACC xr%0,xr%1,xr%2,xr%3,SA"            \
+                 :                                                \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));            \
+  } while (0)
+
+#define D32ACC_SS(xra,xrb,xrc,xrd)                                \
+ do {                                                            \
+    __asm__ __volatile ("D32ACC xr%0,xr%1,xr%2,xr%3,SS"            \
+                 :                                                \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));            \
+  } while (0)
+
+/***********************************S32CPS********************************/
+#define S32CPS(xra,xrb,xrc)                                        \
+ do {                                                            \
+    __asm__ __volatile ("S32CPS xr%0,xr%1,xr%2"                    \
+                 :                                                \
+                 :"K"(xra),"K"(xrb),"K"(xrc));                    \
+  } while (0)
+
+#define S32ABS(xra,xrb)                                            \
+ do {                                                            \
+    __asm__ __volatile ("S32CPS xr%0,xr%1,xr%2"                    \
+                 :                                                \
+                 :"K"(xra),"K"(xrb),"K"(xrb));                    \
+  } while (0)
+
+/***********************************Q16ADD********************************/
+#define Q16ADD_AA_WW(xra,xrb,xrc,xrd)                            \
+ do {                                                             \
+    __asm__ __volatile ("Q16ADD xr%0,xr%1,xr%2,xr%3,AA,WW"      \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define Q16ADD_AA_LW(xra,xrb,xrc,xrd)                           \
+ do {                                                             \
+    __asm__ __volatile ("Q16ADD xr%0,xr%1,xr%2,xr%3,AA,LW"      \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define Q16ADD_AA_HW(xra,xrb,xrc,xrd)                           \
+ do {                                                             \
+    __asm__ __volatile ("Q16ADD xr%0,xr%1,xr%2,xr%3,AA,HW"      \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define Q16ADD_AA_XW(xra,xrb,xrc,xrd)                           \
+ do {                                                             \
+    __asm__ __volatile ("Q16ADD xr%0,xr%1,xr%2,xr%3,AA,XW"      \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+#define Q16ADD_AS_WW(xra,xrb,xrc,xrd)                           \
+ do {                                                             \
+    __asm__ __volatile ("Q16ADD xr%0,xr%1,xr%2,xr%3,AS,WW"      \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define Q16ADD_AS_LW(xra,xrb,xrc,xrd)                           \
+ do {                                                             \
+    __asm__ __volatile ("Q16ADD xr%0,xr%1,xr%2,xr%3,AS,LW"      \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define Q16ADD_AS_HW(xra,xrb,xrc,xrd)                           \
+ do {                                                             \
+    __asm__ __volatile ("Q16ADD xr%0,xr%1,xr%2,xr%3,AS,HW"      \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define Q16ADD_AS_XW(xra,xrb,xrc,xrd)                           \
+ do {                                                             \
+    __asm__ __volatile ("Q16ADD xr%0,xr%1,xr%2,xr%3,AS,XW"      \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define Q16ADD_SA_WW(xra,xrb,xrc,xrd)                           \
+ do {                                                             \
+    __asm__ __volatile ("Q16ADD xr%0,xr%1,xr%2,xr%3,SA,WW"      \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define Q16ADD_SA_LW(xra,xrb,xrc,xrd)                           \
+ do {                                                             \
+    __asm__ __volatile ("Q16ADD xr%0,xr%1,xr%2,xr%3,SA,LW"      \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define Q16ADD_SA_HW(xra,xrb,xrc,xrd)                           \
+ do {                                                             \
+    __asm__ __volatile ("Q16ADD xr%0,xr%1,xr%2,xr%3,SA,HW"      \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define Q16ADD_SA_XW(xra,xrb,xrc,xrd)                           \
+ do {                                                             \
+    __asm__ __volatile ("Q16ADD xr%0,xr%1,xr%2,xr%3,SA,XW"      \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define Q16ADD_SS_WW(xra,xrb,xrc,xrd)                           \
+ do {                                                             \
+    __asm__ __volatile ("Q16ADD xr%0,xr%1,xr%2,xr%3,SS,WW"      \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define Q16ADD_SS_LW(xra,xrb,xrc,xrd)                           \
+ do {                                                             \
+    __asm__ __volatile ("Q16ADD xr%0,xr%1,xr%2,xr%3,SS,LW"      \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define Q16ADD_SS_HW(xra,xrb,xrc,xrd)                              \
+ do {                                                             \
+    __asm__ __volatile ("Q16ADD xr%0,xr%1,xr%2,xr%3,SS,HW"      \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define Q16ADD_SS_XW(xra,xrb,xrc,xrd)                           \
+ do {                                                             \
+    __asm__ __volatile ("Q16ADD xr%0,xr%1,xr%2,xr%3,SS,XW"      \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+/***********************************Q16ACC********************************/
+#define Q16ACC_AA(xra,xrb,xrc,xrd)                                \
+ do {                                                             \
+    __asm__ __volatile ("Q16ACC xr%0,xr%1,xr%2,xr%3,AA"            \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define Q16ACC_AS(xra,xrb,xrc,xrd)                                \
+ do {                                                             \
+    __asm__ __volatile ("Q16ACC xr%0,xr%1,xr%2,xr%3,AS"            \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define Q16ACC_SA(xra,xrb,xrc,xrd)                                \
+ do {                                                             \
+    __asm__ __volatile ("Q16ACC xr%0,xr%1,xr%2,xr%3,SA"            \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+#define Q16ACC_SS(xra,xrb,xrc,xrd)                              \
+ do {                                                             \
+    __asm__ __volatile ("Q16ACC xr%0,xr%1,xr%2,xr%3,SS"         \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));         \
+  } while (0)
+
+/***********************************D16CPS********************************/
+#define D16CPS(xra,xrb,xrc)                                        \
+ do {                                                             \
+    __asm__ __volatile ("D16CPS xr%0,xr%1,xr%2"                    \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc));                    \
+  } while (0)
+
+#define D16ABS(xra,xrb)                                            \
+ do {                                                             \
+    __asm__ __volatile ("D16CPS xr%0,xr%1,xr%2"                    \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrb));                    \
+  } while (0)
+
+/*******************************D16AVG/D16AVGR*****************************/
+#define D16AVG(xra,xrb,xrc)                                        \
+ do {                                                           \
+    __asm__ __volatile ("D16AVG xr%0,xr%1,xr%2"                 \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc));                  \
+  } while (0)
+#define D16AVGR(xra,xrb,xrc)                                    \
+ do {                                                           \
+    __asm__ __volatile ("D16AVGR xr%0,xr%1,xr%2"                \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc));                  \
+  } while (0)
+
+/************************************Q8ADD********************************/
+#define Q8ADD_AA(xra,xrb,xrc)                                    \
+    do {                                                        \
+    __asm__ __volatile ("Q8ADD xr%0,xr%1,xr%2,AA"                \
+                 :                                                \
+                 :"K"(xra),"K"(xrb),"K"(xrc));                    \
+  } while (0)
+
+#define Q8ADD_AS(xra,xrb,xrc)                                    \
+ do {                                                            \
+    __asm__ __volatile ("Q8ADD xr%0,xr%1,xr%2,AS"                \
+                 :                                                \
+                 :"K"(xra),"K"(xrb),"K"(xrc));                    \
+  } while (0)
+
+#define Q8ADD_SA(xra,xrb,xrc)                                    \
+ do {                                                            \
+    __asm__ __volatile ("Q8ADD xr%0,xr%1,xr%2,SA"                \
+                 :                                                \
+                 :"K"(xra),"K"(xrb),"K"(xrc));                    \
+  } while (0)
+
+#define Q8ADD_SS(xra,xrb,xrc)                                    \
+ do {                                                            \
+    __asm__ __volatile ("Q8ADD xr%0,xr%1,xr%2,SS"                \
+                 :                                                \
+                 :"K"(xra),"K"(xrb),"K"(xrc));                    \
+  } while (0)
+
+/************************************Q8ADDE********************************/
+#define Q8ADDE_AA(xra,xrb,xrc,xrd)                                \
+ do {                                                            \
+    __asm__ __volatile ("Q8ADDE xr%0,xr%1,xr%2,xr%3,AA"            \
+                 :                                                \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));            \
+  } while (0)
+
+#define Q8ADDE_AS(xra,xrb,xrc,xrd)                                \
+ do {                                                            \
+    __asm__ __volatile ("Q8ADDE xr%0,xr%1,xr%2,xr%3,AS"            \
+                 :                                                \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));            \
+  } while (0)
+
+#define Q8ADDE_SA(xra,xrb,xrc,xrd)                                \
+ do {                                                            \
+    __asm__ __volatile ("Q8ADDE xr%0,xr%1,xr%2,xr%3,SA"            \
+                 :                                                \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));            \
+  } while (0)
+
+#define Q8ADDE_SS(xra,xrb,xrc,xrd)                                \
+ do {                                                            \
+    __asm__ __volatile ("Q8ADDE xr%0,xr%1,xr%2,xr%3,SS"            \
+                 :                                                \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));            \
+  } while (0)
+
+/************************************Q8ACCE********************************/
+#define Q8ACCE_AA(xra,xrb,xrc,xrd)                                \
+ do {                                                            \
+    __asm__ __volatile ("Q8ACCE xr%0,xr%1,xr%2,xr%3,AA"            \
+                 :                                                \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));            \
+  } while (0)
+
+#define Q8ACCE_AS(xra,xrb,xrc,xrd)                                \
+ do {                                                            \
+    __asm__ __volatile ("Q8ACCE xr%0,xr%1,xr%2,xr%3,AS"            \
+                 :                                                \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));            \
+  } while (0)
+
+#define Q8ACCE_SA(xra,xrb,xrc,xrd)                                \
+ do {                                                            \
+    __asm__ __volatile ("Q8ACCE xr%0,xr%1,xr%2,xr%3,SA"            \
+                 :                                                \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));            \
+  } while (0)
+
+#define Q8ACCE_SS(xra,xrb,xrc,xrd)                                \
+ do {                                                            \
+    __asm__ __volatile ("Q8ACCE xr%0,xr%1,xr%2,xr%3,SS"            \
+                 :                                                \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));            \
+  } while (0)
+
+/************************************Q8ABD********************************/
+#define Q8ABD(xra,xrb,xrc)                                        \
+ do {                                                            \
+    __asm__ __volatile ("Q8ABD xr%0,xr%1,xr%2"                    \
+                 :                                                \
+                 :"K"(xra),"K"(xrb),"K"(xrc));                    \
+  } while (0)
+
+/************************************Q8SLT********************************/
+#define Q8SLT(xra,xrb,xrc)                                        \
+ do {                                                            \
+    __asm__ __volatile ("Q8SLT xr%0,xr%1,xr%2"                    \
+                 :                                                \
+                 :"K"(xra),"K"(xrb),"K"(xrc));                    \
+  } while (0)
+
+/************************************Q8SAD********************************/
+#define Q8SAD(xra,xrb,xrc,xrd)                                    \
+ do {                                                             \
+    __asm__ __volatile ("Q8SAD xr%0,xr%1,xr%2,xr%3"                \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd));            \
+  } while (0)
+
+/********************************Q8AVG/Q8AVGR*****************************/
+#define Q8AVG(xra,xrb,xrc)                                        \
+ do {                                                            \
+    __asm__ __volatile ("Q8AVG xr%0,xr%1,xr%2"                    \
+                 :                                                \
+                 :"K"(xra),"K"(xrb),"K"(xrc));                    \
+  } while (0)
+#define Q8AVGR(xra,xrb,xrc)                                       \
+ do {                                                           \
+    __asm__ __volatile ("Q8AVGR xr%0,xr%1,xr%2"                 \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc));                  \
+  } while (0)
+
+/**********************************D32SHIFT******************************/
+#define D32SLL(xra,xrb,xrc,xrd,SFT4)                                \
+    do {                                                             \
+    __asm__ __volatile ("D32SLL xr%0,xr%1,xr%2,xr%3,%4"                \
+                 :                                                    \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd),"K"(SFT4));   \
+  } while (0)
+
+#define D32SLR(xra,xrb,xrc,xrd,SFT4)                                \
+ do {                                                                 \
+    __asm__ __volatile ("D32SLR xr%0,xr%1,xr%2,xr%3,%4"                \
+                 :                                                    \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd),"K"(SFT4));   \
+  } while (0)
+
+#define D32SAR(xra,xrb,xrc,xrd,SFT4)                                \
+ do {                                                                 \
+    __asm__ __volatile ("D32SAR xr%0,xr%1,xr%2,xr%3,%4"                \
+                 :                                                    \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd),"K"(SFT4));   \
+  } while (0)
+
+#define D32SARL(xra,xrb,xrc,SFT4)                                    \
+ do {                                                                 \
+    __asm__ __volatile ("D32SARL xr%0,xr%1,xr%2,%3"                    \
+                 :                                                    \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(SFT4));            \
+  } while (0)
+
+#define D32SLLV(xra,xrd,rb)                                            \
+ do {                                                                 \
+    __asm__ __volatile ("D32SLLV xr%0,xr%1,%z2"                        \
+                 :                                                    \
+                 :"K"(xra),"K"(xrd),"d"(rb));                        \
+  } while (0)
+
+#define D32SLRV(xra,xrd,rb)                                            \
+ do {                                                                 \
+    __asm__ __volatile ("D32SLRV xr%0,xr%1,%z2"                        \
+                 :                                                    \
+                 :"K"(xra),"K"(xrd),"d"(rb));                        \
+  } while (0)
+
+#define D32SARV(xra,xrd,rb)                                            \
+ do {                                                                 \
+    __asm__ __volatile ("D32SARV xr%0,xr%1,%z2"                        \
+                 :                                                    \
+                 :"K"(xra),"K"(xrd),"d"(rb));                        \
+  } while (0)
+
+#define D32SARW(xra,xrb,xrc,rb)                                        \
+ do {                                                                 \
+    __asm__ __volatile ("D32SARW xr%0,xr%1,xr%2,%3"                    \
+                 :                                                    \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"d"(rb));                \
+  } while (0)
+
+/**********************************Q16SHIFT******************************/
+#define Q16SLL(xra,xrb,xrc,xrd,SFT4)                                \
+    do {                                                             \
+    __asm__ __volatile ("Q16SLL xr%0,xr%1,xr%2,xr%3,%4"                \
+                 :                                                    \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd),"K"(SFT4));    \
+  } while (0)
+
+#define Q16SLR(xra,xrb,xrc,xrd,SFT4)                                \
+    do {                                                             \
+    __asm__ __volatile ("Q16SLR xr%0,xr%1,xr%2,xr%3,%4"                \
+                 :                                                    \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd),"K"(SFT4));    \
+  } while (0)
+
+#define Q16SAR(xra,xrb,xrc,xrd,SFT4)                                \
+    do {                                                             \
+    __asm__ __volatile ("Q16SAR xr%0,xr%1,xr%2,xr%3,%4"                \
+                 :                                                    \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd),"K"(SFT4));    \
+  } while (0)
+
+#define Q16SLLV(xra,xrd,rb)                                            \
+    do {                                                             \
+    __asm__ __volatile ("Q16SLLV xr%0,xr%1,%z2"                        \
+                 :                                                    \
+                 :"K"(xra),"K"(xrd),"d"(rb));                        \
+  } while (0)
+
+#define Q16SLRV(xra,xrd,rb)                                            \
+    do {                                                             \
+    __asm__ __volatile ("Q16SLRV xr%0,xr%1,%z2"                        \
+                 :                                                    \
+                 :"K"(xra),"K"(xrd),"d"(rb));                        \
+  } while (0)
+
+#define Q16SARV(xra,xrd,rb)                                            \
+    do {                                                             \
+    __asm__ __volatile ("Q16SARV xr%0,xr%1,%z2"                        \
+                 :                                                    \
+                 :"K"(xra),"K"(xrd),"d"(rb));                        \
+  } while (0)
+
+/*********************************MAX/MIN*********************************/
+#define S32MAX(xra,xrb,xrc)                                        \
+ do {                                                             \
+    __asm__ __volatile ("S32MAX xr%0,xr%1,xr%2"                    \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc));                  \
+  } while (0)
+
+#define S32MIN(xra,xrb,xrc)                                        \
+ do {                                                             \
+    __asm__ __volatile ("S32MIN xr%0,xr%1,xr%2"                    \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc));                  \
+  } while (0)
+
+#define D16MAX(xra,xrb,xrc)                                        \
+ do {                                                             \
+    __asm__ __volatile ("D16MAX xr%0,xr%1,xr%2"                    \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc));                  \
+  } while (0)
+
+#define D16MIN(xra,xrb,xrc)                                        \
+ do {                                                             \
+    __asm__ __volatile ("D16MIN xr%0,xr%1,xr%2"                    \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc));                  \
+  } while (0)
+
+#define Q8MAX(xra,xrb,xrc)                                        \
+ do {                                                             \
+    __asm__ __volatile ("Q8MAX xr%0,xr%1,xr%2"                    \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc));                  \
+  } while (0)
+
+#define Q8MIN(xra,xrb,xrc)                                        \
+ do {                                                             \
+    __asm__ __volatile ("Q8MIN xr%0,xr%1,xr%2"                    \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc));                  \
+  } while (0)
+
+/*************************************MOVE********************************/
+#define S32I2M(xra,rb)                            \
+  do {                                             \
+    __asm__ __volatile ("S32I2M xr%0,%z1"        \
+           :                                    \
+           :"K"(xra),"d"(rb));                    \
+  } while (0)
+
+#define S32M2I(xra)                                \
+__extension__ ({                                \
+  int  __d;                                        \
+  __asm__ __volatile ("S32M2I xr%1, %0"            \
+       :"=d"(__d)                                \
+       :"K"(xra));                              \
+  __d;                                             \
+})
+
+/*********************************S32SFL**********************************/
+#define S32SFL(xra,xrb,xrc,xrd,optn2)                                \
+    do {                                                             \
+    __asm__ __volatile ("S32SFL xr%0,xr%1,xr%2,xr%3,ptn%4"            \
+                 :                                                    \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"K"(xrd),"K"(optn2));    \
+  } while (0)
+
+/*********************************S32ALN**********************************/
+#define S32ALN(xra,xrb,xrc,rs)                                    \
+ do {                                                             \
+    __asm__ __volatile ("S32ALN xr%0,xr%1,xr%2,%z3"                \
+                 :                                              \
+                 :"K"(xra),"K"(xrb),"K"(xrc),"d"(rs));            \
+  } while (0)
+
+/*********************************Q16SAT**********************************/
+#define Q16SAT(xra,xrb,xrc)                                    \
+ do {                                                         \
+    __asm__ __volatile ("Q16SAT xr%0,xr%1,xr%2"                \
+                 :                                          \
+                 :"K"(xra),"K"(xrb),"K"(xrc));                \
+  } while (0)
+
+// cache ops
+
+// cache
+#define Index_Invalidate_I      0x00
+#define Index_Writeback_Inv_D   0x01
+#define Index_Load_Tag_I        0x04
+#define Index_Load_Tag_D        0x05
+#define Index_Store_Tag_I       0x08
+#define Index_Store_Tag_D       0x09
+#define Hit_Invalidate_I        0x10
+#define Hit_Invalidate_D        0x11
+#define Hit_Writeback_Inv_D     0x15
+#define Hit_Writeback_I         0x18
+#define Hit_Writeback_D         0x19
+
+// pref
+#define PrefLoad                0
+#define PrefStore               1
+#define PrefLoadStreamed        4
+#define PrefStoreStreamed       5
+#define PrefLoadRetained        6
+#define PrefStoreRetained       7
+#define PrefWBInval             25
+#define PrefNudge               25
+#define PrefPreForStore         30
+
+#define mips_pref(base, offset, op)          \
+    __asm__ __volatile__(                    \
+    "    .set    noreorder        \n"        \
+    "    pref    %1, %2(%0)       \n"        \
+    "    .set    reorder"                    \
+    :                                        \
+    : "r" (base), "i" (op), "i" (offset))
+
+#define cache_op(op, addr)                   \
+    __asm__ __volatile__(                    \
+    "    .set    noreorder        \n"        \
+    "    cache    %0, %1          \n"        \
+    "    .set    reorder"                    \
+    :                                        \
+    : "i" (op), "m" (*(unsigned char *)(addr)))
+
+#define i_pref(hint,base,offset)    \
+    ({ __asm__ __volatile__("pref %0,%2(%1)"::"i"(hint),"r"(base),"i"(offset):"memory");})    
+
+struct unaligned_32 { unsigned int l; } __attribute__((packed));
+#define LD32(a) (((const struct unaligned_32 *) (a))-&gt;l)
+#define ST32(a, b) (((struct unaligned_32 *) (a))-&gt;l) = (b)
+
+#define REVERSE_LD32(xra, xrb, rb, s12)             \
+__extension__ ({                                    \
+  int  __d;                                         \
+    __asm__ __volatile ("S32LDD xr%1,%z3,%4\n\t"    \
+                        "S32SFL  xr%1,xr%1, xr%1, xr%2, ptn0\n\t"    \
+                        "S32SFL  xr%1,xr%2, xr%1, xr%2, ptn3\n\t"    \
+                        "S32SFL  xr%1,xr%2, xr%1, xr%2, ptn2\n\t"    \
+                        "S32M2I  xr%1,%0"                            \
+         :"=d"(__d)                                 \
+         :"K"(xra), "K"(xrb), "d"(rb), "I"(s12));   \
+  __d;                                              \
+})
+
+#define IU_CLZ(rb)                              \
+__extension__ ({                                \
+  int  __d;                                     \
+  __asm__ __volatile ("clz %0, %1"              \
+       :"=d"(__d)                               \
+       :"d"(rb));                               \
+  __d;                                          \
+})
+
+#endif /* C_VERSION */
+
+#endif /* JZ_MXU_H_ */
+</pre><br>
+
+<p>
+<br><a href="../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
