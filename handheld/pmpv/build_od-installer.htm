@@ -46,25 +46,27 @@
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
 <h3>PMP V</h3>
-<p><b>build ubiboot</b></p>
+<p><b>build od-installer.bin</b></p>
 <hr size="1">
 <p>
-步驟如下：<br>
+步驟如下：
 </p>
 <pre>
 $ cd
 $ wget https://github.com/steward-fu/pmp-v/releases/download/v1.0/rs90-toolchain-2019.04.30.tar
 $ tar xvf rs90-toolchain-2019.04.30.tar
 $ sudo mv rs90-toolchain /opt/
-$ export PATH=$PATH:/opt/rs90-toolchain/usr/bin/
 
-$ git clone https://github.com/pcercuei/UBIBoot
-$ cd UBIBoot
-$ make CONFIG=rs90 clean
-$ make CONFIG=rs90 STAGE1_ONLY=y
+$ git clone -b od-installer --single-branch https://github.com/OpenDingux/buildroot od-installer
+$ cd od-installer
+$ make od_flasher_defconfig
+$ make
+  Incorrect selection of kernel headers: expected 4.18.x, got 4.20.x
 
-$ make CONFIG=rs90 clean
-$ make CONFIG=rs90
+$ vim .config +297
+  BR2_TOOLCHAIN_HEADERS_AT_LEAST="4.20"
+
+$ make -j4
 </pre><br>
 
 <p>
