@@ -45,34 +45,96 @@
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
 <h3>STC15W104</h3>
-<p><b>開發板</b></p>
+<p><b>使用stcgal燒録程式(N900)</b></p>
 <hr size="1">
 <p>
-參考資訊：<br>
-1. <a href="http://dmitry.gr/?r=05.Projects&proj=07.%20Linux%20on%208bit">Linux on 8Bit MCU</a><br><br>
+開發板<br>
+<img src="flash_n900/5.jpg" class="maxSize"><br><br>
 
-司徒對於小東西比較感興趣，因此，像是DIP-8的IC都很吸引司徒的注意，最主要的原因是方便攜帶以及研究，剛好司徒最近想嘗試移植Linux系統到8051身上，因此，STC15W104便成為司徒的首選，國外已經有網友把Linux系統移植到ATmega1284p身上，不過該網友是把ARM模擬器搬到ATmega1284p身上，因此，算是使用模擬器跑Linux而不是真正的移植Linux，而司徒想做的則是移植Linux v0.01系統到8051身上，因此，司徒使用W25Q62作為RAM以及Flash的擴展，當然，如果失敗的話，司徒也就找好學學該網友，把ARM或者MIPS搬到8051身上，然後使用模擬器跑Linux，因此，大容量的儲存元件是必須的，這也就是司徒為何要使用W25Q64的原因，而為了可以輸出結果，司徒把STC15W104的UART拉出來，因此，剛剛好把腳位都用完了，也算是物盡其用，於是司徒畫了一下電路圖：<br>
-<img src="develop/8.jpg" class="maxSize"><br><br>
+Easy Debian環境<br>
+<img src="flash_n900/6.jpg" class="maxSize"><br><br>
 
-為了可以夠小，先裁切預期的PCB大小<br>
-<img src="develop/1.jpg" class="maxSize"><br><br>
+USB轉TTL RS-232(PL2303)<br>
+<img src="flash_n900/7.jpg" class="maxSize"><br><br>
 
-接著上W25Q64<br>
-<img src="develop/2.jpg" class="maxSize"><br><br>
+準備完成後，連接到N900並切換成USB Host Mode<br>
+<img src="flash_n900/8.jpg" class="maxSize"><br>
+<img src="flash_n900/9.jpg" class="maxSize"><br><br>
 
-標注接到PL2303的電源腳位<br>
-<img src="develop/3.jpg" class="maxSize"><br><br>
-
-開始亂跳線<br>
-<img src="develop/4.jpg" class="maxSize"><br><br>
-
-相較於STM32F103開發板<br>
-<img src="develop/5.jpg" class="maxSize"><br>
-<img src="develop/6.jpg" class="maxSize"><br><br>
-
-司徒相當滿意這個尺寸<br>
-<img src="develop/7.jpg" class="maxSize">
+由於司徒是使用stcgal程式，因此還需要安裝python3、python3-setuptools套件：
 </p>
+<pre>
+$ sudo apt-get install python3 python3-setuptools
+</pre><br>
+
+<p>
+接著下載stcgal程式並安裝
+</p>
+<pre>
+$ git clone https://github.com/grigorig/stcgal.git
+$ cd stcgal
+$ ./setup.py build
+$ sudo ./setup.py install
+</pre><br>
+
+<p>
+首先査看PL2303裝置使否可正常抓到<br>
+<img src="flash_n900/1.jpg" class="maxSize"><br><br>
+
+執行燒録指令：
+</p>
+<pre>
+$ sudo stcgal -P stc15 main.hex
+</pre>
+<p>
+<img src="flash_n900/2.jpg" class="maxSize"><br><br>
+
+執行到此命令時，重新Reset開發板<br>
+<img src="flash_n900/3.jpg" class="maxSize"><br><br>
+
+完成<br>
+<img src="flash_n900/4.jpg" class="maxSize"><br><br>
+
+Console Log：
+</p>
+<pre>
+$ sudo stcgal -P stc15 main.hex
+Waiting for MCU, please cycle power: done
+Target model:
+  Name: STC15W204S
+  Magic: F514
+  Code flash: 4.0 KB
+  EEPROM flash: 1.0 KB
+Target frequency: 11.068 MHz
+Target BSL version: 7.2.4T
+Target wakeup frequency: 36.317 KHz
+Target options:
+  reset_pin_enabled=False
+  clock_source=internal
+  clock_gain=high
+  watchdog_por_enabled=False
+  watchdog_stop_idle=True
+  watchdog_prescale=256
+  low_voltage_reset=True
+  low_voltage_threshold=2
+  eeprom_lvd_inhibit=True
+  eeprom_erase_enabled=False
+  bsl_pindetect_enabled=False
+  por_reset_delay=long
+  rstout_por_state=high
+  uart2_passthrough=False
+  uart2_pin_mode=normal
+  cpu_core_voltage=unknown
+Loading flash: 300 bytes (Intel HEX)
+Trimming frequency: 11.068 MHz
+Switching to 19200 baud: done
+Erasing flash: done
+Writing 512 bytes: ........ done
+Finishing write: done
+Setting options: done
+Target UID: F51401130582AB
+Disconnected!
+</pre><br>
 
 <p>
 <br><a href="../../mcu.htm">返回上一頁</a>

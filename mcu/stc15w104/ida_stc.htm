@@ -44,31 +44,31 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>STC15W204S</h3>
+<h3>STC15W104</h3>
 <p><b>逆向STC-ISP V6.85I(IDA Pro)</b></p>
 <hr size="1">
 <p>
 由於司徒想要在N900上開發STC15W204S程式，希望所有東西都在N900上完成，當然，包含也燒錄步驟，因此，首要步驟就是先取得Linux平台上的STC-ISP燒錄軟體，不過，原廠並沒有Linux平台上的相關資源，因此，也不可能提供Linux平台上的燒錄軟體，更不可能提供燒錄的Protocol，實在是相當遺憾的做法。雖然網路上，有一些熱心的開發者有提供自製的燒錄軟體，如：gSTC-ISP、stc-isp、stcflash、stcgal，不過支援的STC單晶片型號還是不及Windows STC-ISP多，因此，司徒打算使用逆向工程的方式去逆向Windows STC-ISP，而目前最新的版本是V6.85I，因此，司徒就鎖定這個版本，因為逆向的過程還蠻花費時間的，因此，司徒將利用空閒的時間，慢慢的逆向Windows STC-ISP，期望有多餘時間可以逆向移植到Linux平台上。<br><br>
 
 司徒使用IDA Pro逆向Windows STC-ISP，大致瞄一下後，猜測Windows STC-ISP是使用MFC Dialog介面設計的程式，因此，我們可以使用Resource Hacker反查Dialog的Item ID，藉由這ID逆向找出Command的處理副程式位址，目前司徒比較想知道<b>Open Code File</b>和<b>Download/Program</b>的副程式內容，因此，首先找出<b>Open Code File</b>的ID<br>
-<img src="reverse_stc-isp-v6.85i/5.jpg" class="maxSize"><br>
-<img src="reverse_stc-isp-v6.85i/1.jpg" class="maxSize"><br>
-<img src="reverse_stc-isp-v6.85i/2.jpg" class="maxSize"><br><br>
+<img src="ida_stc/5.jpg" class="maxSize"><br>
+<img src="ida_stc/1.jpg" class="maxSize"><br>
+<img src="ida_stc/2.jpg" class="maxSize"><br><br>
 
 接著是<b>Download/Program</b>的ID<br>
-<img src="reverse_stc-isp-v6.85i/3.jpg" class="maxSize"><br>
-<img src="reverse_stc-isp-v6.85i/4.jpg" class="maxSize"><br><br>
+<img src="ida_stc/3.jpg" class="maxSize"><br>
+<img src="ida_stc/4.jpg" class="maxSize"><br><br>
 
 <b>Open Code File</b>的ID是1087；而<b>Download/Program</b>則是1087，接著可以使用這兩個ID定位出這兩個副程式的位址，不過比較奇怪的是，<b>Open Code File</b>副程式似乎無法使用IDA Pro逆向成C語言，感覺有Anti-Debug的味道，不過應該不是固意設計的，不然應該沒這麼好逆，司徒使用如下方式修復：<br>
-<img src="reverse_stc-isp-v6.85i/6.jpg" class="maxSize"><br><br>
+<img src="ida_stc/6.jpg" class="maxSize"><br><br>
 
 在<b>align 10h</b>上按滑鼠右鍵並選擇<b>Undefine</b><br>
-<img src="reverse_stc-isp-v6.85i/7.jpg" class="maxSize"><br>
-<img src="reverse_stc-isp-v6.85i/8.jpg" class="maxSize"><br><br>
+<img src="ida_stc/7.jpg" class="maxSize"><br>
+<img src="ida_stc/8.jpg" class="maxSize"><br><br>
 
 接著在0x433CE0上按滑鼠右鍵並選擇<b>Create function...</b><br>
-<img src="reverse_stc-isp-v6.85i/9.jpg" class="maxSize"><br>
-<img src="reverse_stc-isp-v6.85i/10.jpg" class="maxSize"><br><br>
+<img src="ida_stc/9.jpg" class="maxSize"><br>
+<img src="ida_stc/10.jpg" class="maxSize"><br><br>
 
 目前找出的<b>Open Code File</b>副程式內容如下：
 </p>
