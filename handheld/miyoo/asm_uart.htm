@@ -110,7 +110,7 @@ _fiq:
   b .
 
 reset:
-  @init sys_clock_init
+  @sys clock init
   ldr r0, =CCU_BASE
   ldr r1, =0x1ff
   str r1, [r0, #PLL_STABLE_TIME_REG0]
@@ -167,7 +167,7 @@ reset:
   subs r2, #1
   bne 1b
  
-  @sys_uart_init
+  @sys uart init
   ldr r0, =GPIO_BASE
   ldr r1, [r0, #PA_CFG0]
   bic r1, #(0xf &lt;&lt; ((3 &amp; 0x7) &lt;&lt; 2))
@@ -207,16 +207,97 @@ reset:
   str r1, [r0, #UART_LCR_REG]
 
   ldr r0, =UART1_BASE
+  ldr r2, =hello
 1:
   ldr r1, [r0, #UART_USR_REG]
   tst r1, #(1 &lt;&lt; 1)
   beq 1b
-  ldrb r1, ='#'
+  ldrb r1, [r2]
   strb r1, [r0, #UART_RBR_REG]
+  add r2, #1
+  cmp r1, #0
+  bne 1b
 
 main:
   b main
+
+  .align
+hello: .asciz "Hello, world!"
   .end
+</pre><br>
+
+<p>
+main.ld
+</p>
+<pre>
+OUTPUT_FORMAT("elf32-littlearm", "elf32-bigarm", "elf32-littlearm")
+OUTPUT_ARCH(arm)
+ENTRY(_start)
+
+STACK_UND_SIZE = 0x10000;
+STACK_ABT_SIZE = 0x10000;
+STACK_IRQ_SIZE = 0x10000;
+STACK_FIQ_SIZE = 0x10000;
+STACK_SRV_SIZE = 0x40000;
+
+MEMORY
+{
+  ram : ORIGIN = 0x00000000, LENGTH = 32M
+}
+
+SECTIONS
+{
+  .text :
+  {
+    PROVIDE(__spl_start = .);
+    *(.text*)
+    PROVIDE(__spl_end = .);
+    *(.init.text)
+    *(.exit.text)
+    *(.glue*)
+    *(.note.gnu.build-id)
+  } &gt; ram
+  PROVIDE(__spl_size = __spl_end - __spl_start);
+
+  .rodata ALIGN(8) :
+  {
+    PROVIDE(__rodata_start = .);
+    *(SORT_BY_ALIGNMENT(SORT_BY_NAME(.rodata*)))
+    PROVIDE(__rodata_end = .);
+  } &gt; ram
+
+  .data ALIGN(8) :
+  {
+    PROVIDE(__data_start = .);  
+    *(.data*)
+    . = ALIGN(8);
+      PROVIDE(__data_end = .);
+    PROVIDE(__image_end = .);
+  } &gt; ram
+
+  .bss ALIGN(8) (NOLOAD) :
+  {
+    PROVIDE(__bss_start = .);
+    *(.bss*)
+    *(.sbss*)
+    *(COMMON)
+    . = ALIGN(8);
+    PROVIDE(__bss_end = .);
+  } &gt; ram
+
+  .stab 0 : { *(.stab) }
+  .stabstr 0 : { *(.stabstr) }
+  .stab.excl 0 : { *(.stab.excl) }
+  .stab.exclstr 0 : { *(.stab.exclstr) }
+  .stab.index 0 : { *(.stab.index) }
+  .stab.indexstr 0 : { *(.stab.indexstr) }
+  .comment 0 : { *(.comment) }
+  .debug_abbrev 0 : { *(.debug_abbrev) }
+  .debug_info 0 : { *(.debug_info) }
+  .debug_line 0 : { *(.debug_line) }
+  .debug_pubnames 0 : { *(.debug_pubnames) }
+  .debug_aranges 0 : { *(.debug_aranges) }
+}
 </pre><br>
 
 <p>
@@ -224,7 +305,7 @@ Makefile
 </p>
 <pre>
 all:
-  arm-linux-as -mcpu=arm7 -o main.o main.s
+  arm-linux-as -mcpu=arm9 -o main.o main.s
   arm-linux-ld -T main.ld -o main.elf main.o
   arm-linux-objcopy -O binary main.elf main.bin
   gcc mksunxi.c -o mksunxi
