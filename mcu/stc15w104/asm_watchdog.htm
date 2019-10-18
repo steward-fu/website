@@ -45,42 +45,26 @@
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
 <h3>STC15W104 &gt;&gt; Assembly</h3>
-<p><b>LED</b></p>
+<p><b>Watchdog</b></p>
 <hr size="1">
 <p>
-STC15W104的輸出驅動方式，如下表格：<br>
-<img src="asm_led/3.jpg" class="maxSize"><br>
-P.S. 預設是8051輸出模式，而LED是接到P3.5(低電位點亮)，因此，輸出驅動不需額外做設定。<br><br>
+Watchdog啟動後，如果沒有在規定的時間內清除，則MCU將會Reboot(Hardware)，因此，為了避免當機，Watchdog是一個很棒的輔助功能，司徒這次就是利用Watchdog當作LED閃爍的用途，因為STC15W104啟動後，Port 3是輸出高電位，因此，在主程式裡面設定P3.5成0(Low)後，啟動Watchdog，然後等待Watchdog觸發Reboot，藉此閃爍LED，而Watchdog的暫存器內容如下：<br>
+<img src="asm_watchdog/1.jpg" class="maxSize"><br><br>
+
+Prescale：<br>
+<img src="asm_watchdog/2.jpg" class="maxSize"><br><br>
 
 main.s
 </p>
 <pre class="brush:asm">
   .org 0h
   jmp _start
- 
+  
   .org 100h
 _start:
-  setb p3.5
-  call delay_1s
   clr p3.5
-  call delay_1s
-  jmp _start
-
-
-delay_20m: 
-  mov r6, #250
-  mov r7, #250
-d1: 
-  djnz r6, d1
-  djnz r7, d1
-  ret
- 
-delay_1s: 
-  mov r5, #50
-d2: 
-  call delay_20m
-  djnz r5, d2
-  ret
+  mov 0c1h, #0fbh
+  jmp $
   .end
 </pre><br>
 
