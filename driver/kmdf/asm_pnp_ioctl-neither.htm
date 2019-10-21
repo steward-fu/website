@@ -148,21 +148,21 @@ IrpIOCTL proc Queue:WDFQUEUE, Request:WDFREQUEST, OutputBufferLength:DWORD, Inpu
   
   .if IoControlCode == IOCTL_SET
     invoke DbgPrint, offset MSG_SET
-		invoke WdfRequestRetrieveUnsafeUserInputBuffer, Request, InputBufferLength, addr buf, addr len
-		invoke WdfRequestProbeAndLockUserBufferForRead, Request, buf, len, addr memory
-		invoke WdfMemoryGetBuffer, memory, NULL
-		invoke memcpy, offset szBuffer, eax, InputBufferLength
-	  invoke DbgPrint, $CTA0("Buffer: %s, Length:%d"), offset szBuffer, InputBufferLength
-	  invoke WdfRequestSetInformation, Request, InputBufferLength
+    invoke WdfRequestRetrieveUnsafeUserInputBuffer, Request, InputBufferLength, addr buf, addr len
+    invoke WdfRequestProbeAndLockUserBufferForRead, Request, buf, len, addr memory
+    invoke WdfMemoryGetBuffer, memory, NULL
+    invoke memcpy, offset szBuffer, eax, InputBufferLength
+    invoke DbgPrint, $CTA0("Buffer: %s, Length:%d"), offset szBuffer, InputBufferLength
+    invoke WdfRequestSetInformation, Request, InputBufferLength
   .elseif IoControlCode == IOCTL_GET
     invoke DbgPrint, offset MSG_GET
     invoke WdfRequestRetrieveUnsafeUserOutputBuffer, Request, OutputBufferLength, addr buf, addr len
-		invoke WdfRequestProbeAndLockUserBufferForWrite, Request, buf, len, addr memory
-		invoke WdfMemoryGetBuffer, memory, NULL
-		invoke memcpy, eax, offset szBuffer, OutputBufferLength
+    invoke WdfRequestProbeAndLockUserBufferForWrite, Request, buf, len, addr memory
+    invoke WdfMemoryGetBuffer, memory, NULL
+    invoke memcpy, eax, offset szBuffer, OutputBufferLength
     invoke strlen, offset szBuffer
     inc eax
-	  invoke WdfRequestSetInformation, Request, eax
+    invoke WdfRequestSetInformation, Request, eax
   .endif
   invoke WdfRequestComplete, Request, STATUS_SUCCESS
   ret
