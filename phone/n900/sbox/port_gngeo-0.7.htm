@@ -44,35 +44,24 @@
 <div id="content">
 <script type="text/javascript" src="../../../header.js"></script>
 <div id="page">
-<h3>Nokia N900 >> Sbox</h3>
-<p><b>移植GnGeo 0.7</b></p>
+<h3>Nokia N900 &gt;&gt; Sbox</h3>
+<p><b>移植gngeo 0.7</b></p>
 <hr size="1">
 <p>
-[Github] <a href="https://github.com/steward-fu/gh_n900_emulator.git">https://github.com/steward-fu/gh_n900_emulator.git</a>
+目前N900上的gngeo版本是0.7版，版本雖然比較舊，不過沒有支援全螢幕顯示，等於沒移植成功，因為這代表直接編譯使用，雖然司徒已經移植gngeo 0.8版到N900身上，不過司徒測試後發現，gngeo 0.7版可以玩的遊戲，在gngeo 0.8上不見得版本相容，這導致司徒必須重新下載遊戲，加上目前的gngeo-gui也不相容gngeo 0.8版(0.8版已經有自帶的GUI介面)，因此，司徒只好再度移植gngeo 0.7到N900身上，步驟如下說明。
 </p>
-
-<p>
-目前N900上的GnGeo版本是0.7版，版本雖然比較舊，不過沒有支援全螢幕顯示，等於沒移植成功，因為這代表直接編譯使用，雖然司徒已經移植GnGeo 0.8版到N900身上，不過司徒測試後發現，GnGeo 0.7版可以玩的遊戲，在GnGeo 0.8上不見得版本相容，這導致司徒必須重新下載遊戲，司徒很懶得重新下載遊戲，加上目前的gngeo-gui也不相容GnGeo 0.8版(0.8版已經有自帶的GUI介面)，因此，司徒只好再度移植GnGeo 0.7到N900身上，步驟如下說明。
-</p>
-
-<p>
-移植步驟：<br>
-+++ new_gngeo/src/blitter/soft.c<br>
---- old_gngeo/src/blitter/soft.c
-</p>
-
 <pre class="brush:cpp">
++++ new_gngeo/src/blitter/soft.c
+--- old_gngeo/src/blitter/soft.c
 +#define SCREEN_WIDTH 800
 +static unsigned int nbtable[SCREEN_WIDTH]={0};
  
 SDL_bool blitter_soft_init()
 {
-  // 司徒將補點方式改用查表方式，用以加快運算速度
 + int i=0;
 + for(i=0; i&lt;SCREEN_WIDTH; i++){
 +  nbtable[i] = ((unsigned long)i * visible_area.w) / SCREEN_WIDTH;
 + }
-  // 解析度為800x448
 + screen = SDL_SetVideoMode(SCREEN_WIDTH, height, 16, sdl_flags);
 - screen = SDL_SetVideoMode(width, height, 16, sdl_flags);
 }
@@ -88,9 +77,7 @@ SDL_bool blitter_soft_init()
 + dst = (Uint16*)screen-&gt;pixels;
 + for(h=0; h&lt;visible_area.h; h++){
 +  for(w=0; w&lt;SCREEN_WIDTH; w++){
-    // 補點
 +   dst[w] = src[nbtable[w]];
-    // 下一行
 +   dst[w + SCREEN_WIDTH] = src[nbtable[w]];
 +  }
 +  src+= visible_area.w;
@@ -99,75 +86,41 @@ SDL_bool blitter_soft_init()
 + }
 +}
 +#endif
-</pre>
 
-<p>
-+++ new_gngeo/src/emu.c<br>
++++ new_gngeo/src/emu.c
 --- old_gngeo/src/emu.c
-</p>
-
-<pre class="brush:cpp">
 void main_loop(void)
 {
-  // 避免Segmentation Fault
 + //screen_resize(event.resize.w, event.resize.h);
 - screen_resize(event.resize.w, event.resize.h);
 }
-</pre>
 
-<p>
-+++ new_gngeo/src/conf.c<br>
++++ new_gngeo/src/conf.c
 --- old_gngeo/src/conf.c
-</p>
-
-<pre class="brush:cpp">
 void cf_init(void)
 {
-  // 支援Quit鍵
 + cf_create_int_item("quit_key","Quit emulator",0,1);
 }
-</pre>
 
-<p>
-+++ new_gngeo/src/emu.c<br>
++++ new_gngeo/src/emu.c
 --- old_gngeo/src/emu.c
-</p>
-
-<pre class="brush:cpp">
 void main_loop(void)
 {
-  // 取得Quit鍵的值
 + int quit_key=CF_VAL(cf_get_item_by_name("quit_key"));
 
-  // Quit
 + if(scancode == quit_key){
 +  neo_emu_done = 1;
 +  break;
 + }
-</pre>
+</pre><br>
 
 <p>
-執行移植後的GnGeo-0.7：<br>
-1. 安裝gngeo和gngeo-gui<br>
-2. 使用如下指令更新
-</p>
+接著覆蓋編譯後的gngeo以及設定effect成none<br>
+<img src="port_gngeo-0.7/1.jpg" class="maxSize"><br><br>
 
-<pre>
-$ git clone https://github.com/steward-fu/gh_n900_emulator.git
-$ sudo cp gh_n900_emulator/gngeo-0.7_port_bin/gngeo /opt/gngep/bin/gngeo
-</pre>
-
-<p>
-3. gngeo-gui設定effect成none<br>
-<img src="port_gngeo-0.7/1.jpg" class="maxSize">
-</p>
-
-<p>
 原始畫面<br>
-<img src="port_gngeo-0.7/2.jpg" class="maxSize">
-</p>
+<img src="port_gngeo-0.7/2.jpg" class="maxSize"><br><br>
 
-<p>
 移植後的畫面<br>
 <img src="port_gngeo-0.7/3.jpg" class="maxSize">
 </p>

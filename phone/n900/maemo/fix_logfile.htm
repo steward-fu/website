@@ -45,39 +45,37 @@
 <div id="content">
 <script type="text/javascript" src="../../../header.js"></script>
 <div id="page">
-<h3>Nokia N900 >> Maemo</h3>
+<h3>Nokia N900 &gt;&gt; Maemo</h3>
 <p><b>解決CPU Usage過高問題(/usr/bin/Xorg -logfile)</b></p>
 <hr size="1">
 <p>
 使用者如果發現N900反應速度相當慢時，可以使用top指令查看，如發現是<b>/usr/bin/Xorg -logfile</b>所致時，可以使用如下方式解決：
 </p>
-
 <pre>
 # vim /etc/event.d/xomap
+  description "Xorg Server"
+  author "Oliver McFadden"
 
-description "Xorg Server"
-author "Oliver McFadden"
+  start on started sgx
+  stop on stopping sgx
 
-start on started sgx
-stop on stopping sgx
+  console output
 
-console output
+  pre-start script
+   echo "Starting Xorg Server" > /dev/console
+   XORG_OPTIONS="-logfile /tmp/Xorg.0.log -logverbose <b>0</b> -nolisten tcp -noreset -s 0 -core"
+   exec /usr/sbin/dsmetool -n -8 -r "/usr/bin/Xorg $XORG_OPTIONS"
+  end script
 
-pre-start script
- echo "Starting Xorg Server" > /dev/console
- XORG_OPTIONS="-logfile /tmp/Xorg.0.log -logverbose <b>0</b> -nolisten tcp -noreset -s 0 -core"
- exec /usr/sbin/dsmetool -n -8 -r "/usr/bin/Xorg $XORG_OPTIONS"
-end script
+  post-start script
+   DISPLAY=:0 /usr/sbin/waitx
+  end script
 
-post-start script
- DISPLAY=:0 /usr/sbin/waitx
-end script
+  <b>post-stop script
+  end script</b>
 
-<b>post-stop script
-end script</b>
-
-service
-</pre>
+  service
+</pre><br>
 
 <p>
 <br><a href="../../../phone.htm">返回上一頁</a>

@@ -44,55 +44,38 @@
 <div id="content">
 <script type="text/javascript" src="../../../header.js"></script>
 <div id="page">
-<h3>Nokia N900 >> Sbox</h3>
-<p><b>移植FCEU-GUI Ex</b></p>
+<h3>Nokia N900 &gt;&gt; Sbox</h3>
+<p><b>移植fceu-gui</b></p>
 <hr size="1">
 <p>
-[Github] <a href="https://github.com/steward-fu/gh_n900_emulator.git">https://github.com/steward-fu/gh_n900_emulator.git</a>
-</p>
+目前N900可以下載的NES(FC)模擬器有iNES和FCEU兩個，其中只有iNES有支援中文檔名選取，不過iNES使用系統預設的檔案選取對話盒，選取的效能相當差，檔案數量多時，效能真是差到無法想像；而FCEU的選取效能也沒有好到那哪去，因此，司徒打算尋找更好的解決方式，而在使用過gpsp-gui後，司徒已經有了一個目標，那就是移植gpsp-gui，最後，司徒花了一些的時間移植並重新編譯測試，最終完成移植，步驟如下說明。<br><br>
 
-<p>
-目前N900可以下載的NES(FC)模擬器有iNES和FCEU兩個，其中只有iNES有支援中文檔名選取，不過iNES使用系統預設的檔案選取對話盒，選取的效能相當差，檔案數量多時，效能真是差到無法想像；而FCEU的選取效能也沒有好到那哪去，因此，司徒打算尋找更好的解決方式，而在使用過gpSP-GUI後，司徒已經有了一個目標，那就是使用gpSP-GUI程式碼做修改移植，最後，司徒花了一些的時間移植並重新編譯測試，最終完成移植，步驟如下說明。
-</p>
-
-<p>
 iNES可以支援中文檔名，不過選取效能很差，加上預設視窗並非全螢幕，而且無法重新對應按鍵，整體的體驗相當差<br>
-<img src="port_fceu_gui-ex/1.jpg" class="maxSize">
-</p>
+<img src="port_fceu_gui-ex/1.jpg" class="maxSize"><br><br>
 
-<p>
 雖然FCEU-GUI不支援中文檔名，不過預設視窗是全螢幕視窗，爽度還是比較好一些<br>
-<img src="port_fceu_gui-ex/2.jpg" class="maxSize">
-</p>
+<img src="port_fceu_gui-ex/2.jpg" class="maxSize"><br><br>
 
-<p>
 司徒移植的FCEU-GUI Ex，支援中文檔名以及相當好的選取效能<br>
-<img src="port_fceu_gui-ex/3.jpg" class="maxSize">
-</p>
+<img src="port_fceu_gui-ex/3.jpg" class="maxSize"><br><br>
 
-<p>
-移植步驟：<br>
 為何司徒會使用gpspmgui呢？因為在N900上，gpspmgui算是司徒使用過的介面中，擁有最佳的檔案選取介面，字體夠大、圖示夠美、捲動速度夠快以及介面夠簡單等優點，其中以<b>捲動速度夠快</b>最讓司徒滿意，因此，成為司徒的移植首選，目前司徒移植的gpspmgui版本是3.1.6-1版，這個版本是司徒從Maemo Repository取得的最新版程式，使用者也可以使用如下指令編譯測試：
 </p>
-
 <pre>
-$ git clone https://github.com/steward-fu/gh_n900_emulator.git
+$ cd
+$ wget https://github.com/steward-fu/n900/releases/download/v1.1/gpspmgui-3.1.6.7z
+$ 7zr x gpspmgui-3.1.6.7z
 $ cd gpspmgui-3.1.6
 $ qmake
 $ make
 </pre>
-
 <p>
-基本上，編譯的結果必須是成功的，這樣才可以繼續做移植的工作。
-</p>
+基本上，編譯的結果必須是成功的，這樣才可以繼續做移植的工作。<br><br>
 
-<p>
-接著司徒就一一介紹需要修改的檔案：<br>
-+++ fceuguiex-0.0.1/src/coredialog.cpp<br>
---- gpspmgui-3.1.6/src/coredialog.cpp
-</p>
-
+修改的檔案：
 <pre class="brush:cpp">
++++ fceuguiex-0.0.1/src/coredialog.cpp
+--- gpspmgui-3.1.6/src/coredialog.cpp
 void CoreDialog::load()
 {
   // 隱藏Miscellaneous Label(Core configuration)
@@ -148,14 +131,9 @@ void CoreDialog::save()
 + //config-&gt;soundBuffer     = static_cast&lt;QMaemo5ListPickSelector*&gt;(ui-&gt;soundBufferButton-&gt;pickSelector())-&gt;currentIndex();
 - config-&gt;soundBuffer     = static_cast&lt;QMaemo5ListPickSelector*&gt;(ui-&gt;soundBufferButton-&gt;pickSelector())-&gt;currentIndex();
 }
-</pre>
 
-<p>
-+++ fceuguiex-0.0.1/src/coredialog.ui<br>
++++ fceuguiex-0.0.1/src/coredialog.ui
 --- gpspmgui-3.1.6/src/coredialog.ui
-</p>
-
-<pre class="brush:cpp">
   // 展開Disable sound Button(Core configuration)
 + &lt;item row="3" column="0" colspan="2"&gt;
 - &lt;item row="3" column="0"&gt;
@@ -171,25 +149,16 @@ void CoreDialog::save()
 - &lt;/property&gt;
 - &lt;property name="valueLayout"&gt;
 - &lt;enum&gt;QMaemo5ValueButton::ValueUnderTextCentered&lt;/enum&gt;
-</pre>
 
-<p>
 +++ fceuguiex-0.0.1/src/gpspmgui.pro<br>
 --- gpspmgui-3.1.6/src/gpspmgui.pro
-</p>
-
-<pre class="brush:cpp">
 // 修改輸出檔名
 + TARGET = fceuguiex
 - TARGET = gpspmgui
-</pre>
 
-<p>
 +++ fceuguiex-0.0.1/src/keysconfig.cpp<br>
 --- gpspmgui-3.1.6/src/keysconfig.cpp
-</p>
 
-<pre class="brush:cpp">
 // 修改按鍵配置
 const char* KeysConfig::name[] = {
 + "RapidA",
@@ -225,14 +194,9 @@ const char* KeysConfig::displayName[] = {
 - "Quit",
 - "Pause"
 };
-</pre>
 
-<p>
-+++ fceuguiex-0.0.1/src/keysconfig.h<br>
++++ fceuguiex-0.0.1/src/keysconfig.h
 --- gpspmgui-3.1.6/src/keysconfig.h
-</p>
-
-<pre class="brush:cpp">
 class KeysConfig : public AbstractConfig
 {
  // 修改按鍵數量
@@ -252,14 +216,9 @@ class KeysConfig : public AbstractConfig
 - Quit,
 - Pause,
 };
-</pre>
 
-<p>
-+++ fceuguiex-0.0.1/src/keysdialog.h<br>
++++ fceuguiex-0.0.1/src/keysdialog.h
 --- gpspmgui-3.1.6/src/keysdialog.h
-</p>
-
-<pre class="brush:cpp">
  // 新增需要的Widget Include File
 + #include &lt;QMessageBox&gt;
 + #include &lt;QString&gt;
@@ -267,14 +226,9 @@ class KeysConfig : public AbstractConfig
 + #include &lt;QDir&gt;
 + #include &lt;QFile&gt;
 + #include &lt;QTextStream&gt;
-</pre>
 
-<p>
-+++ fceuguiex-0.0.1/src/launchdialog.cpp<br>
++++ fceuguiex-0.0.1/src/launchdialog.cpp
 --- gpspmgui-3.1.6/src/launchdialog.cpp
-</p>
-
-<pre class="brush:cpp">
 LaunchDialog::LaunchDialog(QFileInfo romFile, QIcon cover, QWidget *parent) : QDialog(parent), ui(new Ui::LaunchDialog)
 {
  // 隱藏Core configuration和Keys configuration
@@ -292,14 +246,9 @@ void LaunchDialog::configureKeys()
 + //(new KeysDialog(&amp;keysConfig, this))-&gt;exec();
 - (new KeysDialog(&amp;keysConfig, this))-&gt;exec();
 }
-</pre>
 
-<p>
-+++ fceuguiex-0.0.1/src/launcher.cpp<br>
++++ fceuguiex-0.0.1/src/launcher.cpp
 --- gpspmgui-3.1.6/src/launcher.cpp
-</p>
-
-<pre class="brush:cpp">
 void Launcher::launch()
 {
   // /opt/fceu/fceu -fs x -efxfs x -gg 0 -sound x romFile
@@ -342,24 +291,14 @@ void Launcher::launch()
 - if (coreConfig-&gt;soundDisabled)      cmd &lt;&lt; "--no-sound";
 - cmd &lt;&lt; "--sound-buffer"    &lt;&lt; QString::number(coreConfig-&gt;soundBuffer);
 }
-</pre>
 
-<p>
-+++ fceuguiex-0.0.1/src/launcher.h<br>
++++ fceuguiex-0.0.1/src/launcher.h
 --- gpspmgui-3.1.6/src/launcher.h
-</p>
-
-<pre class="brush:cpp">
   // Debug用的MessageBox
 + #include &lt;QMessageBox&gt;
-</pre>
 
-<p>
-+++ fceuguiex-0.0.1/src/main.cpp<br>
++++ fceuguiex-0.0.1/src/main.cpp
 --- gpspmgui-3.1.6/src/main.cpp
-</p>
-
-<pre class="brush:cpp">
 int main(int argc, char  *argv[])
 {
   // 設定專案名稱
@@ -370,14 +309,9 @@ int main(int argc, char  *argv[])
 - QApplication::setApplicationName("gpspmgui");
 - QApplication::setApplicationVersion("3");
 }
-</pre>
 
-<p>
-+++ fceuguiex-0.0.1/src/mainwindow.cpp<br>
++++ fceuguiex-0.0.1/src/mainwindow.cpp
 --- gpspmgui-3.1.6/src/mainwindow.cpp
-</p>
-
-<pre class="brush:cpp">
 MainWindow::MainWindow() : ui(new Ui::MainWindow)
 {
   // 刪除Accelerometer相關資源
@@ -423,14 +357,9 @@ void MainWindow::openKeysDialog()
 - QDir().mkpath(Path::emuDir());
 - config.write(Path::emuDir() - "keys");
 }
-</pre> 
 
-<p>
-+++ fceuguiex-0.0.1/src/mainwindow.ui<br>
++++ fceuguiex-0.0.1/src/mainwindow.ui
 --- gpspmgui-3.1.6/src/mainwindow.ui
-</p>
-
-<pre class="brush:cpp">
   // 移除Accelerometer Button
 - &lt;addaction name="accelerometerAction"/&gt;
 
@@ -439,14 +368,9 @@ void MainWindow::openKeysDialog()
 - &lt;action name="accelerometerAction"&gt;
 - &lt;property name="text"&gt;
 - &lt;string&gt;Accelerometer&lt;/string&gt;
-</pre>
 
-<p>
-+++ fceuguiex-0.0.1/src/path.h<br>
++++ fceuguiex-0.0.1/src/path.h
 --- gpspmgui-3.1.6/src/path.h
-</p>
-
-<pre class="brush:cpp">
 static QString emuDir()
 {
   // 修改配置檔位置
@@ -467,91 +391,49 @@ static QString emuExe()
 + return emuRoot() - "fceu";
 - return emuRoot() - "gpspm";
 }
-</pre>
 
-<p>
-+++ fceuguiex-0.0.1/src/settingsdialog.cpp<br>
++++ fceuguiex-0.0.1/src/settingsdialog.cpp
 --- gpspmgui-3.1.6/src/settingsdialog.cpp
-</p>
-
-<pre class="brush:cpp">
 SettingsDialog::SettingsDialog(QWidget *parent) : QDialog(parent), ui(new Ui::SettingsDialog)
 {
   // 隱藏BIOS Button
 + ui-&gt;biosButton-&gt;hide();
 + ui-&gt;biosClearButton-&gt;hide();
 }
-</pre>
 
-<p>
-+++ fceuguiex-0.0.1/src/src.pro<br>
++++ fceuguiex-0.0.1/src/src.pro
 --- gpspmgui-3.1.6/src/src.pro
-</p>
-
-<pre class="brush:cpp">
  // 修改專案名稱
 + TARGET = fceuguiex
 - TARGET = gpspmgui
 </pre>
-
 <p>
-更新移植版FCEU-GUI Ex：<br>
-1. 請先行安裝FCEU和FCEU-GUI套件<br>
-2. 使用如下方式更新：
-</p>
+接著覆蓋掉fceu-gui.sh並執行fceu-gui程式即可<br><br>
 
-<pre>
-$ git clone https://github.com/steward-fu/gh_n900_emulator.git
-$ sudo cp fceu_gui-ex_port_bin/fceu_gui-ex /usr/bin/fceu-gui.sh
-$ sudo chmod 0777 /usr/bin/fceu-gui.sh
-</pre>
-
-<p>
-3. 接著執行fceu-gui程式即可(司徒目前是使用替換的方式更新)
-</p>
-
-<p>
-GUI介紹<br>
 執行後，直接列出遊戲列表<br>
-<img src="port_fceu_gui-ex/4.jpg" class="maxSize">
-</p>
+<img src="port_fceu_gui-ex/4.jpg" class="maxSize"><br><br>
 
-<p>
 四個主選單設定<br>
-<img src="port_fceu_gui-ex/5.jpg" class="maxSize">
-</p>
+<img src="port_fceu_gui-ex/5.jpg" class="maxSize"><br><br>
 
-<p>
 General settings的設定內容<br>
-<img src="port_fceu_gui-ex/6.jpg" class="maxSize">
-</p>
+<img src="port_fceu_gui-ex/6.jpg" class="maxSize"><br><br>
 
-<p>
 Core settings的設定內容<br>
-<img src="port_fceu_gui-ex/7.jpg" class="maxSize">
-</p>
+<img src="port_fceu_gui-ex/7.jpg" class="maxSize"><br><br>
 
-<p>
 支援原始解析度、等比放大和全螢幕<br>
-<img src="port_fceu_gui-ex/8.jpg" class="maxSize">
-</p>
+<img src="port_fceu_gui-ex/8.jpg" class="maxSize"><br><br>
 
-<p>
 支援的顯示效果<br>
-<img src="port_fceu_gui-ex/9.jpg" class="maxSize">
-</p>
+<img src="port_fceu_gui-ex/9.jpg" class="maxSize"><br><br>
 
-<p>
 原始解析度<br>
-<img src="port_fceu_gui-ex/10.jpg" class="maxSize">
-</p>
+<img src="port_fceu_gui-ex/10.jpg" class="maxSize"><br><br>
 
-<p>
 等比放大<br>
-<img src="port_fceu_gui-ex/11.jpg" class="maxSize">
-</p>
+<img src="port_fceu_gui-ex/11.jpg" class="maxSize"><br><br>
 
-<p>
 全螢幕<br>
 <img src="port_fceu_gui-ex/12.jpg" class="maxSize">
 </p>

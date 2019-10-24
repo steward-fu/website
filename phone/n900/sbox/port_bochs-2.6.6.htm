@@ -44,34 +44,11 @@
 <div id="content">
 <script type="text/javascript" src="../../../header.js"></script>
 <div id="page">
-<h3>Nokia N900 >> Sbox</h3>
-<p><b>移植Bochs 2.6.6</b></p>
+<h3>Nokia N900 &gt;&gt; Sbox</h3>
+<p><b>移植bochs 2.6.6</b></p>
 <hr size="1">
 <p>
-[Github] <a href="https://github.com/steward-fu/gh_n900_emulator.git">https://github.com/steward-fu/gh_n900_emulator.git</a>
-</p>
-
-<p>
 雖然Maemo系統上已經有移植的Bochs模擬器，不過那個版本也只是基本編譯而已，並沒有針對N900的鍵盤進行有效的移植，因此有跟沒有是一樣的意思，而為了將全鍵盤映射到N900鍵盤上，司徒找了一版比Maemo版本更新的2.6.6版進行移植，不過，司徒後來發現，Bochs 2.6.6版會有CPU Usage過高的問題，而且會有很多Exception的狀況發生，導致Bochs跑得很慢，最後司徒還是改回Bochs 2.3.7版，不過司徒還是整理移植過程，因為該移植步驟也可以適用於Bochs 2.3.7版。
-</p>
-
-<p>
-編譯移植版Bochs 2.6.6：
-</p>
-
-<pre>
-$ git clone https://github.com/steward-fu/gh_n900_emulator.git
-$ cp bochs-2.6.6_port_src/keyboard.cc bochs-2.6.6/iodev/keyboard.cc 
-$ cp bochs-2.6.6_port_src/sdl.cc bochs-2.6.6/gui/sdl.cc
-$ cd bochs-2.6.6
-$ ./.conf.n900
-$ make
-</pre>
-
-<p>
-移植步驟如下：<br>
-+++ new/bochs-2.6.6/keyboard.cc<br>
---- old/bochs-2.6.6/keyboard.cc
 </p>
 
 <pre class="brush:cpp">
@@ -170,14 +147,9 @@ void bx_keyb_c::gen_scancode(Bit32u key)
 - kbd_enQ(translation8042[scancode[i]] | escaped);
 - escaped=0x00;
 }
-</pre>
 
-<p>
-+++ new/bochs-2.6.6/gui/sdl.cc<br>
++++ new/bochs-2.6.6/gui/sdl.cc
 --- old/bochs-2.6.6/gui/sdl.cc
-</p>
-
-<pre class="brush:cpp">
 static Bit32u sdl_sym_to_bx_key(SDLKey sym)
 {
   // 轉換成N900 ALT鍵
@@ -191,61 +163,52 @@ void bx_sdl_gui_c::specific_init(int argc, char **argv, unsigned header_bar_y)
  // 全螢幕
 + sdl_fullscreen_toggle = 1;
 }
-</pre>
+</pre><br>
 
 <p>
 特殊鍵
 </p>
-
 <table>
-  <thead>
-    <tr><th>特殊鍵</th><th>功能</th></tr>
-  </thead>
-  <tbody>
-    <tr><td>Shift + Ctrl</td><td>Poweroff</td></tr>
-  </tbody>
-</table>
+<tr><th>特殊鍵</th><th>功能</th></tr>
+<tr><td>Shift + Ctrl</td><td>Poweroff</td></tr>
+</table><br>
 
 <p>
 一般按鍵
 </p>
 <table>
-  <thead>
-    <tr><th>Key</th><th>Shift + Key</th><th>Alt + Key</th><th>Alt + Shift + Key</th></tr>
-  </thead>
-  <tbody>
-    <tr><td>q</td><td>Q</td><td>1</td><td>q</td></tr>
-    <tr><td>w</td><td>W</td><td>2</td><td>w</td></tr>
-    <tr><td>e</td><td>E</td><td>3</td><td>^</td></tr>
-    <tr><td>r</td><td>R</td><td>4</td><td>`</td></tr>
-    <tr><td>t</td><td>T</td><td>5</td><td>t</td></tr>
-    <tr><td>y</td><td>Y</td><td>6</td><td>y</td></tr>
-    <tr><td>u</td><td>U</td><td>7</td><td>[</td></tr>
-    <tr><td>i</td><td>I</td><td>8</td><td>]</td></tr>
-    <tr><td>o</td><td>O</td><td>9</td><td>o</td></tr>
-    <tr><td>p</td><td>P</td><td>0</td><td>p</td></tr>
-    <tr><td>,</td><td>;</td><td>=</td><td>,</td></tr>
-    <tr><td>backspace</td><td>escape</td><td>tab</td><td>backspace</td></tr>
-    <tr><td>a</td><td>A</td><td>*</td><td>a</td></tr>
-    <tr><td>s</td><td>S</td><td>+</td><td>s</td></tr>
-    <tr><td>d</td><td>D</td><td>#</td><td>d</td></tr>
-    <tr><td>f</td><td>F</td><td>-</td><td>~</td></tr>
-    <tr><td>g</td><td>G</td><td>_</td><td>g</td></tr>
-    <tr><td>h</td><td>H</td><td>(</td><td>&lt;</td></tr>
-    <tr><td>j</td><td>J</td><td>)</td><td>&gt;</td></tr>
-    <tr><td>k</td><td>K</td><td>&amp;</td><td>k</td></tr>
-    <tr><td>l</td><td>L</td><td>!</td><td>|</td></tr>
-    <tr><td>.</td><td>:</td><td>?</td><td>.</td></tr>
-    <tr><td>z</td><td>Z</td><td>z</td><td>z</td></tr>
-    <tr><td>x</td><td>X</td><td>$</td><td>x</td></tr>
-    <tr><td>c</td><td>C</td><td>c</td><td>c</td></tr>
-    <tr><td>v</td><td>V</td><td>/</td><td>%</td></tr>
-    <tr><td>b</td><td>B</td><td>\</td><td>b</td></tr>
-    <tr><td>h</td><td>N</td><td>"</td><td>{</td></tr>
-    <tr><td>m</td><td>M</td><td>'</td><td>}</td></tr>
-    <tr><td>space</td><td>space</td><td>@</td><td>space</td></tr>
-  </tbody>
-</table>
+<tr><th>Key</th><th>Shift + Key</th><th>Alt + Key</th><th>Alt + Shift + Key</th></tr>
+<tr><td>q</td><td>Q</td><td>1</td><td>q</td></tr>
+<tr><td>w</td><td>W</td><td>2</td><td>w</td></tr>
+<tr><td>e</td><td>E</td><td>3</td><td>^</td></tr>
+<tr><td>r</td><td>R</td><td>4</td><td>`</td></tr>
+<tr><td>t</td><td>T</td><td>5</td><td>t</td></tr>
+<tr><td>y</td><td>Y</td><td>6</td><td>y</td></tr>
+<tr><td>u</td><td>U</td><td>7</td><td>[</td></tr>
+<tr><td>i</td><td>I</td><td>8</td><td>]</td></tr>
+<tr><td>o</td><td>O</td><td>9</td><td>o</td></tr>
+<tr><td>p</td><td>P</td><td>0</td><td>p</td></tr>
+<tr><td>,</td><td>;</td><td>=</td><td>,</td></tr>
+<tr><td>backspace</td><td>escape</td><td>tab</td><td>backspace</td></tr>
+<tr><td>a</td><td>A</td><td>*</td><td>a</td></tr>
+<tr><td>s</td><td>S</td><td>+</td><td>s</td></tr>
+<tr><td>d</td><td>D</td><td>#</td><td>d</td></tr>
+<tr><td>f</td><td>F</td><td>-</td><td>~</td></tr>
+<tr><td>g</td><td>G</td><td>_</td><td>g</td></tr>
+<tr><td>h</td><td>H</td><td>(</td><td>&lt;</td></tr>
+<tr><td>j</td><td>J</td><td>)</td><td>&gt;</td></tr>
+<tr><td>k</td><td>K</td><td>&amp;</td><td>k</td></tr>
+<tr><td>l</td><td>L</td><td>!</td><td>|</td></tr>
+<tr><td>.</td><td>:</td><td>?</td><td>.</td></tr>
+<tr><td>z</td><td>Z</td><td>z</td><td>z</td></tr>
+<tr><td>x</td><td>X</td><td>$</td><td>x</td></tr>
+<tr><td>c</td><td>C</td><td>c</td><td>c</td></tr>
+<tr><td>v</td><td>V</td><td>/</td><td>%</td></tr>
+<tr><td>b</td><td>B</td><td>\</td><td>b</td></tr>
+<tr><td>h</td><td>N</td><td>"</td><td>{</td></tr>
+<tr><td>m</td><td>M</td><td>'</td><td>}</td></tr>
+<tr><td>space</td><td>space</td><td>@</td><td>space</td></tr>
+</table><br>
 
 <p>
 <br><a href="../../../phone.htm">返回上一頁</a>
