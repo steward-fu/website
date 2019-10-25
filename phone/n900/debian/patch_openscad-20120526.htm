@@ -44,41 +44,26 @@
 <div id="content">
 <script type="text/javascript" src="../../../header.js"></script>
 <div id="page">
-<h3>Nokia N900 >> Easy Debian</h3>
-<p><b>&gt;&gt; Patch OpenSCAD</b></p>
+<h3>Nokia N900 &gt;&gt; Easy Debian</h3>
+<p><b>Patch OpenSCAD</b></p>
 <hr size="1">
 <p>
-[Github] <a href="https://github.com/steward-fu/gh_n900_emulator.git">https://github.com/steward-fu/gh_n900_emulator.git</a>
-</p>
-
-<p>
 雖然OpenSCAD可以在Debian Wheezy(7)以上的系統安裝，不過司徒測試Easy Debian後，發現只有在Easy Debian(Jessie Image)才可以成功安裝和開啟，不過，當司徒程式寫好OpenSCAD程式並Compile後，卻發生無法顯示2D/3D圖形的問題；而在Easy Debian(Wheezy Image)上，OpenSCAD可以安裝成功，但是在執行的過程中，OpenSCAD會出現如下<b>CGAL ERROR</b>的錯誤訊息：<br>
-<img src="patch_openscad-20120526/5.jpg" class="maxSize">
-</p>
+<img src="patch_openscad-20120526/5.jpg" class="maxSize"><br><br>
 
-<p>
 司徒找了一些資料後，發現在Build OpenSCAD程式碼時，需要下<b>-frounding-math</b>參數或使用如下的方式解決：
-<img src="patch_openscad-20120526/3.jpg" class="maxSize">
-</p>
+<img src="patch_openscad-20120526/3.jpg" class="maxSize"><br>
+司徒嘗試使用安裝的方式解決，不過似乎還是無法解決這個問題，因此，司徒決定下載最新程版式碼並從頭編譯一次，盼能解決此問題，不過，遇到一些Debian 8才有的Library相依問題，因此，司徒最後不得已才使用Binary Patch的方式解決。<br><br>
 
-<p>
-司徒嘗試使用安裝的方式解決，不過似乎還是無法解決這個問題，因此，司徒決定下載最新程版式碼並從頭編譯一次，盼能解決此問題，不過，遇到一些Debian 8才有的Library相依問題，因此，司徒最後不得已才使用Binary Patch的方式解決。
-</p>
-
-<p>
 解決的方式也算簡單，在桌機電腦上，使用IDA Pro打開OpenSCAD(選擇ARM CPU)並搜尋"Wrong rounding"字串，可以定位到如下兩個位置：<br>
-<img src="patch_openscad-20120526/1.jpg" class="maxSize">
-</p>
+<img src="patch_openscad-20120526/1.jpg" class="maxSize"><br><br>
 
-<p>
 往上尋找Branch的位置<br>
 <img src="patch_openscad-20120526/2.jpg" class="maxSize"><br><br>
 
 將所有<b>BNE loc_83ECC</b>(0x1a)都Patch成<b>BEQ loc_83ECC</b>(0x0a)即可，總共有5個地方需要Patch，如下所示：<br>
-<img src="patch_openscad-20120526/6.jpg" class="maxSize"><br>
-</p>
+<img src="patch_openscad-20120526/6.jpg" class="maxSize"><br><br>
 
-<p>
 Patch過後的Binary可以直接替換<b>/usr/bin/openscad</b>檔案，執行後的畫面如下：<br>
 <img src="patch_openscad-20120526/4.jpg" class="maxSize"><br>
 P.S. 假如右邊Render區域無法正常顯示，請安裝<b>libgl1-mesa-swrast</b>套件

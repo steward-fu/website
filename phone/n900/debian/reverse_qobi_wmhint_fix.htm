@@ -44,18 +44,15 @@
 <div id="content">
 <script type="text/javascript" src="../../../header.js"></script>
 <div id="page">
-<h3>Nokia N900 >> Easy Debian</h3>
-<p><b>Reverse Qobi-wmhint-fix</b></p>
+<h3>Nokia N900 &gt;&gt; Easy Debian</h3>
+<p><b>reverse qobi-wmhint-fix</b></p>
 <hr size="1">
 <p>
-Easy Debian為了取得Keyboard控制權，藉由呼叫<b>/sbin/qobi-wmhint-fix</b>取得，不過由於<b>Qobi-wmhint-fix</b>的原始程式已經不可考，司徒只能從maemo.org的討論區取得片段程式，因怕資訊不夠完整，司徒決定Reverse Qobi-wmhint-fix，看看該程式的實際內容，到底這支程式的內容是如何取得鍵盤控制權。
-</p>
+Easy Debian為了取得Keyboard控制權，藉由呼叫<b>/sbin/qobi-wmhint-fix</b>取得，不過由於<b>Qobi-wmhint-fix</b>的原始程式已經不可考，司徒只能從maemo.org的討論區取得片段程式，因怕資訊不夠完整，司徒決定Reverse Qobi-wmhint-fix，看看該程式的實際內容，到底這支程式的內容是如何取得鍵盤控制權。<br><br>
 
-<p>
 首先，使用GDB載入Qobi-wmhint-fix並Disassemble main()副程式，司徒將Disassemble後的副程式加上註解，說明如下：
 </p>
-
-<pre class="brush:cpp">
+<pre>
 Dump of assembler code for function main:
 0x0000877c &lt;main+0&gt;:  mov  r12, sp
 0x00008780 &lt;main+4&gt;:  push  {r11, r12, lr, pc}
@@ -248,12 +245,11 @@ Dump of assembler code for function main:
 0x000089d0 &lt;main+596&gt;:  undefined instruction 0x00008ab8
 0x000089d4 &lt;main+600&gt;:  undefined instruction 0x00008abc
 End of assembler dump.
-</pre>
+</pre><br>
 
 <p>
 司徒發現上面這段程式跟maemo.org討論區的某段程式一樣，如下所示：
 </p>
-
 <pre class="brush:cpp">
 #include &lt;X11/Xlib.h&gt;
 #include &lt;X11/Xutil.h&gt;
@@ -262,40 +258,39 @@ End of assembler dump.
 
 int main(int argc, char** argv)
 {
- Display *display;
- Window window=0;
- XWMHints *input_hints;
- if(argc != 2){
-  fprintf(stderr, "usage: set-input-hint &lt;id&gt;\n");
-  exit(-1);
- }
+  Display *display;
+  Window window=0;
+  XWMHints *input_hints;
+  if(argc != 2){
+    fprintf(stderr, "usage: set-input-hint &lt;id&gt;\n");
+    exit(-1);
+  }
 
- if(sscanf(argv[1], "0x%lx", &amp;window) != 1){
-  fprintf(stderr, "id must be in parsable by 0x%%lx\n");
-  exit(-1);
- }
+  if(sscanf(argv[1], "0x%lx", &amp;window) != 1){
+    fprintf(stderr, "id must be in parsable by 0x%%lx\n");
+    exit(-1);
+  }
 
- display=XOpenDisplay();
- if(display == NULL){
-  fprintf(stderr, "can't open display\n");
-  exit(-1);
- }
+  display=XOpenDisplay();
+  if(display == NULL){
+    fprintf(stderr, "can't open display\n");
+    exit(-1);
+  }
 
- input_hints=XGetWMHints(display, window);
- if(input_hints == NULL){
-  XWMHints input_hints={.input=True, .flags=InputHint};
-  XSetWMHints(display, window, &amp;input_hints);
- }
- else{
-  input_hints->input = True;
-  input_hints->flags|= InputHint;
-  XSetWMHints(display, window, input_hints);
-  XFree(input_hints);
- }
- XFlush(dislay);
+  input_hints=XGetWMHints(display, window);
+  if(input_hints == NULL){
+    XWMHints input_hints={.input=True, .flags=InputHint};
+    XSetWMHints(display, window, &amp;input_hints);
+  }
+  else{
+    input_hints->input = True;
+    input_hints->flags|= InputHint;
+    XSetWMHints(display, window, input_hints);
+    XFree(input_hints);
+  }
+  XFlush(dislay);
 }
 </pre>
-
 <p>
 上面這段程式就是透過XSetWMHints取得Keyboard的控制權，透過XSetWMHints的設定，Xephyr Server就可以透過Window Manager(LXDE)取得鍵盤控制權。
 </p>

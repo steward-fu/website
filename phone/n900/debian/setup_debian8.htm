@@ -29,7 +29,7 @@
   <link rel="stylesheet" type="text/css" href="../../../css/print.css" media="print" />
   
   <script type="text/javascript" src="../../../scripts/shCore.js"></script>
-  <script type="text/javascript" src="../../../scripts/shBrushCpp.js"></script>
+  <script type="text/javascript" src="../../../scripts/shBrushBash.js"></script>
 
   <!-- Conditional comment to apply opacity fix for IE #content background.
        Invalid CSS, but can be removed without harming design -->
@@ -44,30 +44,23 @@
 <div id="content">
 <script type="text/javascript" src="../../../header.js"></script>
 <div id="page">
-<h3>Nokia N900 >> Easy Debian</h3>
+<h3>Nokia N900 &gt;&gt; Easy Debian</h3>
 <p><b>架設環境(Debian 8)</b></p>
 <hr size="1">
 <p>
-[Image] <a href="http://qole.org/files/debian_jessie1sulu_armhf.img.lzma">http://qole.org/files/debian_jessie1sulu_armhf.img.lzma</a>
-</p>
+參考資訊：<br>
+1. <a href="http://qole.org/files/debian_jessie1sulu_armhf.img.lzma">debian_jessie1sulu_armhf.img.lzma</a><br><br>
 
-<p>
-感謝Pali以及社群的協助下，讓N900可以chroot到Debian下，該chroot跟Android的最大差別在於，N900的chroot是使用Xephyr進行GUI操作；而Android的chroot則是使用vncserver的操作方式，加上N900的觸控螢幕是電阻觸控，因此，整體的體驗，N900還是比Android來的好，雖然Pali已經有幫使用者建立EasyDebian套件，不過該EasyDebian套件將本機<b>/home/user</b>也綁定到chroot下，加上目前使用的Desktop Environment是LXDE，使用者如要更改成XFCE4時，則需要到更改到EasyDebian腳本，但是EasyDebian的腳本寫的有點複雜，因此，司徒基於EasyDebian腳本，改寫一個比較適合、容易瞭解的腳本，並且列出一些常用的套件供使用者參考。
-</p>
+感謝Pali以及社群的協助下，讓N900可以chroot到Debian下，該chroot跟Android chroot的最大差別在於，N900的chroot是使用Xephyr進行GUI操作；而Android的chroot則是使用vncserver的操作方式，加上N900的觸控螢幕是電阻觸控，因此，整體的體驗，N900還是比Android來的好，雖然Pali已經有幫使用者建立EasyDebian套件，不過該EasyDebian套件將本機<b>/home/user</b>也綁定到chroot下，加上目前使用的Desktop Environment是LXDE，使用者如要更改成XFCE4時，則需要到更改到EasyDebian腳本，但是EasyDebian的腳本寫的有點複雜，因此，司徒基於EasyDebian腳本，改寫一個比較適合、容易瞭解的腳本，並且列出一些常用的套件供使用者參考。<br><br>
 
-<p>
-司徒習慣將Image放到內部Flash，用以加快存取速度，而且不是用單一檔案的方式(xxx.ext2.img)，因為單一檔案需要預留空間，除了浪費空間以外，遇到空間不足時，更是相當麻煩，因此建議使用者可以將<b>/home</b>分區加大，用來存放該Image資料。
-</p>
+司徒習慣將Image放到內部Flash，用以加快存取速度，而且不是用單一檔案的方式(xxx.ext2.img)，因為單一檔案需要預留空間，除了浪費空間以外，遇到空間不足時，更是相當麻煩，因此建議使用者可以將<b>/home</b>分區加大，用來存放該Image資料。<br><br>
 
-<p>
 接著到該Image資料夾下，建立chroot腳本
 </p>
-
 <pre>
 $ vim login
 </pre>
-
-<pre class="brush:cpp">
+<pre class="brush:bash">
 #!/bin/sh
 CHMODE=$1
 CHUSER=$2
@@ -176,42 +169,37 @@ sudo killall Xephyr
 export DISPLAY=:0
 _umount
 exit 0
-</pre>
+</pre><br>
 
 <p>
 鍵盤配置可以直接從Pali的Debian5 Image(假設位於<b>/xxx/Debian5/</b>)複製過來
 </p>
-
-<pre class="brush:cpp">
+<pre class="brush:bash">
 $ sudo cp -a /xxx/Debian5/usr/share/X11/xkb usr/share/X11/xkb
 $ sudo cp -a /xxx/Debian5/home/user/.config home/user/
 $ sudo cp /xxx/Debian5/home/user/.gtkrc-2.0 home/user/
-</pre>
+</pre><br>
 
 <p>
 接著修改repository清單
 </p>
-
 <pre>
 $ sudo vim etc/apt/sources.list
 </pre>
-
-<pre class="brush:cpp">
+<pre class="brush:bash">
 deb http://http.us.debian.org/debian wheezy main contrib non-free
 deb http://http.us.debian.org/debian jessie main contrib non-free
 deb-src http://http.us.debian.org/debian wheezy main contrib non-free
 deb-src http://http.us.debian.org/debian jessie main contrib non-free
-</pre>
+</pre><br>
 
 <p>
 由於N900的觸控只能模擬滑鼠左鍵，因此，司徒使用xbindkeys和xdotool套件，製作出可以模擬滑鼠移動(Ctrl + 鍵盤方向鍵)、滑鼠左鍵(Shift + 鍵盤左鍵)、滑鼠右鍵(Shift + 鍵盤右鍵)
 </p>
-
 <pre>
 $ vim home/user/.xbindkeysrc
 </pre>
-
-<pre class="brush:cpp">
+<pre class="brush:bash">
 "wmctrl -r :ACTIVE: -b toggle,fullscreen"
  m:0x81 + c:33
 
@@ -235,114 +223,78 @@ $ vim home/user/.xbindkeysrc
 # Control + Up
 #"xdotool mousemove_relative 0 50"
 # Control + Down
-</pre>
+</pre><br>
 
 <p>
 完成後，就可以開始使用chroot腳本，首先使用如下指令切到CLI介面：
 </p>
-
 <pre>
 $ sudo sh login cli user
 </pre>
-
 <p>
-<img src="setup_debian8/1.jpg" class="maxSize">
-</p>
+<img src="setup_debian8/1.jpg" class="maxSize"><br><br>
 
-<p>
 如要切到LXDE介面，可以使用如下指令：
 </p>
-
 <pre>
 $ sudo sh login lxde user
 </pre>
-
 <p>
-<img src="setup_debian8/16.jpg" class="maxSize">
-</p>
+<img src="setup_debian8/16.jpg" class="maxSize"><br><br>
 
-<p>
 由於LXDE是屬於另一個Display，一般情況下是無法取得鍵盤的控制權，因此可以透過zenity視窗，讓使用者點選按鈕，藉此方式取得鍵盤控制權<br>
-<img src="setup_debian8/2.jpg" class="maxSize">
-</p>
+<img src="setup_debian8/2.jpg" class="maxSize"><br><br>
 
-<p>
 Debian 8主畫面<br>
-<img src="setup_debian8/3.jpg" class="maxSize">
-</p>
+<img src="setup_debian8/3.jpg" class="maxSize"><br><br>
 
-<p>
 預設軟體<br>
-<img src="setup_debian8/4.jpg" class="maxSize">
-</p>
+<img src="setup_debian8/4.jpg" class="maxSize"><br><br>
 
-<p>
 LibreOffice：好用的Office軟體<br>
-<img src="setup_debian8/5.jpg" class="maxSize">
-</p>
+<img src="setup_debian8/5.jpg" class="maxSize"><br><br>
 
-<p>
 Blender：模型繪圖軟體<br>
 Wings3D：模型繪圖軟體<br>
 FreeCAD：模型繪圖軟體<br>
 OpenSCAD：模型繪圖軟體<br>
 GIMP：超好用的圖片編輯軟體<br>
-<img src="setup_debian8/6.jpg" class="maxSize">
-</p>
+<img src="setup_debian8/6.jpg" class="maxSize"><br><br>
 
-<p>
 LibreOffice：好用的Office軟體<br>
-<img src="setup_debian8/7.jpg" class="maxSize">
-</p>
+<img src="setup_debian8/7.jpg" class="maxSize"><br><br>
 
-<p>
 KiCAD：好用PCB繪圖軟體<br>
 MonoDevelop：C#開發環境<br>
 Bluefish：好用的網頁編輯軟體<br>
 Qt Creator：相當不錯的Qt開發環境<br>
 Anjuta IDE：相當不錯的IDE開發環境<br>
 CodeBlocks IDE：相當不錯的IDE開發環境<br>
-<img src="setup_debian8/8.jpg" class="maxSize">
-</p>
+<img src="setup_debian8/8.jpg" class="maxSize"><br><br>
 
-<p>
 不建議在chroot中播放音樂<br>
-<img src="setup_debian8/9.jpg" class="maxSize">
-</p>
+<img src="setup_debian8/9.jpg" class="maxSize"><br><br>
 
-<p>
 Terminator：司徒最愛使用的Terminal<br>
-<img src="setup_debian8/10.jpg" class="maxSize">
-</p>
+<img src="setup_debian8/10.jpg" class="maxSize"><br><br>
 
-<p>
 預設軟體<br>
-<img src="setup_debian8/11.jpg" class="maxSize">
-</p>
+<img src="setup_debian8/11.jpg" class="maxSize"><br><br>
 
-<p>
 登出畫面<br>
-<img src="setup_debian8/12.jpg" class="maxSize">
-</p>
+<img src="setup_debian8/12.jpg" class="maxSize"><br><br>
 
-<p>
 由於司徒同時安裝LXDE和XFCE4，而且腳本也有針對XFCE4改寫，因此，可以使用如下指令進入XFCE4
 </p>
-
 <pre>
 $ sudo sh login xfce4 user
 </pre>
-
 <p>
-<img src="setup_debian8/13.jpg" class="maxSize">
-</p>
+<img src="setup_debian8/13.jpg" class="maxSize"><br><br>
 
-<p>
-跟LXDE最大的差別在於，XFCE4的開始列是位於上面<br>
-<img src="setup_debian8/14.jpg" class="maxSize">
-</p>
+XFCE4的開始列是位於上面<br>
+<img src="setup_debian8/14.jpg" class="maxSize"><br><br>
 
-<p>
 登出畫面<br>
 <img src="setup_debian8/15.jpg" class="maxSize"><br>
 有了Debian 8(Jessie) armhf Image的加持，真的讓N900跟一般電腦沒什麼兩樣，不過比較可惜的是，N900的Kernel版本只有到2.6.28版，而更新Debian 8核心原件的最低需求則是需要Kernel 2.6.32版，因此，如果不是要拿這個Debian 8 Image做編譯環境時，該Image還是相當好用，畢竟Debian不像Arch Linux系統，可以在原版本上一直更新最新版的套件(Seamless Update)。

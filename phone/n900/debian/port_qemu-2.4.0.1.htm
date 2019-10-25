@@ -44,34 +44,15 @@
 <div id="content">
 <script type="text/javascript" src="../../../header.js"></script>
 <div id="page">
-<h3>Nokia N900 >> Easy Debian</h3>
-<p><b>移植Qemu 2.4.0.1</b></p>
+<h3>Nokia N900 &gt;&gt; Easy Debian</h3>
+<p><b>移植qemu 2.4.0.1</b></p>
 <hr size="1">
 <p>
-[Github] <a href="https://github.com/steward-fu/gh_n900_qemu.git">https://github.com/steward-fu/gh_n900_qemu.git</a>
+步驟如下：
 </p>
-
-<p>
-由於N900上的Qemu是司徒自行編譯，因此，為了讓該Qemu更趨完美且可以支援N900鍵盤，司徒決定再花一些時間移植，讓該Qemu可以變成是一個更完美的模擬器，移植步驟如下說明：
-</p>
-
-<pre>
-$ git clone https://github.com/steward-fu/gh_n900_qemu.git
-$ cp qemu-2.4.0.1_port_src/input.c qemu-2.4.0.1/ui/input.c
-$ cp qemu-2.4.0.1_port_src/gtk.c qemu-2.4.0.1/ui/gtk.c
-$ cp qemu-2.4.0.1_port_src/ps2.c qemu-2.4.0.1/hw/input/ps2.c
-$ cd qemu-2.4.0.1
-$ ./configure --disable-kvm --target-list=i386-softmmu
-$ make
-</pre>
-
-<p>
-移植步驟如下：<br>
-+++ new/qemu-2.4.0.1/ui/gtk.c<br>
---- old/qemu-2.4.0.1/ui/gtk.c
-</p>
-
 <pre class="brush:cpp">
++++ new/qemu-2.4.0.1/ui/gtk.c
+--- old/qemu-2.4.0.1/ui/gtk.c
 + static GtkDisplayState *gN900GtkDisplayState=NULL;
 void N900ReleaseGrab(void)
 {
@@ -86,14 +67,9 @@ static bool gd_is_grab_active(GtkDisplayState *s)
 + gN900GtkDisplayState = s;
   return gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(s-&gt;grab_item));
 }
-</pre>
 
-<p>
-+++ new/qemu-2.4.0.1/ui/input.c<br>
++++ new/qemu-2.4.0.1/ui/input.c
 --- old/qemu-2.4.0.1/ui/input.c
-</p>
-
-<pre class="brush:cpp">
 void qemu_input_event_send_key_number(QemuConsole *src, int num, bool down)
 {
   // 支援上、下、左、右鍵
@@ -102,14 +78,9 @@ void qemu_input_event_send_key_number(QemuConsole *src, int num, bool down)
 + else if(num == 203) num = 0x4b; // Left
 + else if(num == 205) num = 0x4d; // Right
 }
-</pre>
 
-<p>
-+++ new/qemu-2.4.0.1/hw/input/ps2.c<br>
++++ new/qemu-2.4.0.1/hw/input/ps2.c
 --- old/qemu-2.4.0.1/hw/input/ps2.c
-</p>
-
-<pre class="brush:cpp">
 + void N900ReleaseGrab(void);
 
 static void ps2_keyboard_event(DeviceState *dev, QemuConsole *src, InputEvent *evt)
@@ -378,63 +349,53 @@ static void ps2_keyboard_event(DeviceState *dev, QemuConsole *src, InputEvent *e
 +  }
 + }
 }
-</pre>
+</pre><br>
 
 <p>
 特殊按鍵
 </p>
-
 <table>
-  <thead>
-    <tr><th>特殊鍵</th><th>功能</th></tr>
-  </thead>
-  <tbody>
-    <tr><td>Ctrl + Shift</td><td>Poweroff</td></tr>
-    <tr><td>Ctrl + Alt + g</td><td>Release Grab</td></tr>
-  </tbody>
-</table>
+<tr><th>特殊鍵</th><th>功能</th></tr>
+<tr><td>Ctrl + Shift</td><td>Poweroff</td></tr>
+<tr><td>Ctrl + Alt + g</td><td>Release Grab</td></tr>
+</table><br>
 
 <p>
 一般按鍵
 </p>
-
 <table>
-  <thead>
-    <tr><th>Key</th><th>Shift + Key</th><th>Alt + Key</th><th>Alt + Shift + Key</th></tr>
-  </thead>
-  <tbody>
-    <tr><td>q</td><td>Q</td><td>1</td><td>q</td></tr>
-    <tr><td>w</td><td>W</td><td>2</td><td>w</td></tr>
-    <tr><td>e</td><td>E</td><td>3</td><td>^</td></tr>
-    <tr><td>r</td><td>R</td><td>4</td><td>`</td></tr>
-    <tr><td>t</td><td>T</td><td>5</td><td>t</td></tr>
-    <tr><td>y</td><td>Y</td><td>6</td><td>[</td></tr>
-    <tr><td>u</td><td>U</td><td>7</td><td>]</td></tr>
-    <tr><td>i</td><td>I</td><td>8</td><td>i</td></tr>
-    <tr><td>o</td><td>O</td><td>9</td><td>o</td></tr>
-    <tr><td>p</td><td>P</td><td>0</td><td>p</td></tr>
-    <tr><td>,</td><td>;</td><td>=</td><td>,</td></tr>
-    <tr><td>backspace</td><td>escape</td><td>tab</td><td>backspace</td></tr>
-    <tr><td>a</td><td>A</td><td>*</td><td>a</td></tr>
-    <tr><td>s</td><td>S</td><td>+</td><td>s</td></tr>
-    <tr><td>d</td><td>D</td><td>#</td><td>d</td></tr>
-    <tr><td>f</td><td>F</td><td>-</td><td>~</td></tr>
-    <tr><td>g</td><td>G</td><td>_</td><td>g</td></tr>
-    <tr><td>h</td><td>H</td><td>(</td><td>&lt;</td></tr>
-    <tr><td>j</td><td>J</td><td>)</td><td>&gt;</td></tr>
-    <tr><td>k</td><td>K</td><td>&amp;</td><td>k</td></tr>
-    <tr><td>l</td><td>L</td><td>!</td><td>|</td></tr>
-    <tr><td>.</td><td>:</td><td>?</td><td>.</td></tr>
-    <tr><td>z</td><td>Z</td><td>z</td><td>z</td></tr>
-    <tr><td>x</td><td>X</td><td>$</td><td>x</td></tr>
-    <tr><td>c</td><td>C</td><td>c</td><td>c</td></tr>
-    <tr><td>v</td><td>V</td><td>/</td><td>%</td></tr>
-    <tr><td>b</td><td>B</td><td>\</td><td>b</td></tr>
-    <tr><td>h</td><td>N</td><td>"</td><td>{</td></tr>
-    <tr><td>m</td><td>M</td><td>'</td><td>}</td></tr>
-    <tr><td>space</td><td>space</td><td>@</td><td>space</td></tr>
-  </tbody>
-</table>
+<tr><th>Key</th><th>Shift + Key</th><th>Alt + Key</th><th>Alt + Shift + Key</th></tr>
+<tr><td>q</td><td>Q</td><td>1</td><td>q</td></tr>
+<tr><td>w</td><td>W</td><td>2</td><td>w</td></tr>
+<tr><td>e</td><td>E</td><td>3</td><td>^</td></tr>
+<tr><td>r</td><td>R</td><td>4</td><td>`</td></tr>
+<tr><td>t</td><td>T</td><td>5</td><td>t</td></tr>
+<tr><td>y</td><td>Y</td><td>6</td><td>[</td></tr>
+<tr><td>u</td><td>U</td><td>7</td><td>]</td></tr>
+<tr><td>i</td><td>I</td><td>8</td><td>i</td></tr>
+<tr><td>o</td><td>O</td><td>9</td><td>o</td></tr>
+<tr><td>p</td><td>P</td><td>0</td><td>p</td></tr>
+<tr><td>,</td><td>;</td><td>=</td><td>,</td></tr>
+<tr><td>backspace</td><td>escape</td><td>tab</td><td>backspace</td></tr>
+<tr><td>a</td><td>A</td><td>*</td><td>a</td></tr>
+<tr><td>s</td><td>S</td><td>+</td><td>s</td></tr>
+<tr><td>d</td><td>D</td><td>#</td><td>d</td></tr>
+<tr><td>f</td><td>F</td><td>-</td><td>~</td></tr>
+<tr><td>g</td><td>G</td><td>_</td><td>g</td></tr>
+<tr><td>h</td><td>H</td><td>(</td><td>&lt;</td></tr>
+<tr><td>j</td><td>J</td><td>)</td><td>&gt;</td></tr>
+<tr><td>k</td><td>K</td><td>&amp;</td><td>k</td></tr>
+<tr><td>l</td><td>L</td><td>!</td><td>|</td></tr>
+<tr><td>.</td><td>:</td><td>?</td><td>.</td></tr>
+<tr><td>z</td><td>Z</td><td>z</td><td>z</td></tr>
+<tr><td>x</td><td>X</td><td>$</td><td>x</td></tr>
+<tr><td>c</td><td>C</td><td>c</td><td>c</td></tr>
+<tr><td>v</td><td>V</td><td>/</td><td>%</td></tr>
+<tr><td>b</td><td>B</td><td>\</td><td>b</td></tr>
+<tr><td>h</td><td>N</td><td>"</td><td>{</td></tr>
+<tr><td>m</td><td>M</td><td>'</td><td>}</td></tr>
+<tr><td>space</td><td>space</td><td>@</td><td>space</td></tr>
+</table><br>
 
 <p>
 <br><a href="../../../phone.htm">返回上一頁</a>
