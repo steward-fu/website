@@ -45,48 +45,41 @@
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
 <h3>GCC</h3>
-<p><b>Macro invoke (x64)</b></p>
+<p><b>(Makefile) .PHONY</b></p>
 <hr size="1">
-<pre class="brush:cpp">
-  .macro invoke func:req, args:vararg
-    .ifnb \args
-      argc = 0
-      .irp param, \args
-        .if argc == 0
-          mov \param, %rdi
-        .elseif argc == 1
-          mov \param, %rsi
-        .elseif argc == 2
-          mov \param, %rdx
-        .elseif argc == 3
-          mov \param, %rcx
-        .elseif argc == 4
-          mov \param, %r8
-        .elseif argc == 5
-          mov \param, %r9
-        .else
-          push \prarm
-        .endif
-        argc = argc + 1
-      .endr
-    .endif
-    call \func
-  .endm
-
-  .equ SDL_INIT_VIDEO,  0x20
-  .equ SDL_HWSURFACE,   0X01
-
-  .text
-  .global main
-main:
-  invoke SDL_Init, $SDL_INIT_VIDEO
-  invoke SDL_SetVideoMode, $320, $240, $32, $SDL_HWSURFACE
-  invoke SDL_Quit
-  ret
+<p>
+.PHONY的用法就是忽略與目標相同名稱的檔案，看看下面的例子：
+</p>
+<pre>
+all:
+  touch all
+</pre>
+<p>
+<b>make all</b>會產生all文件，但是卻與編譯目標相同名稱，所以只能編譯第一次，再也無法編譯目標all，如下：
+</p>
+<pre>
+$ make
+  touch all
+$ make
+  make: 'all' is up to date.
+$ make
+  make: 'all' is up to date.
 </pre><br>
+<p>
+解法就是加上<b>.PHONY</b>關鍵字，如下：
+</p>
+<pre>
+.PHONY: all 
+all:
+  touch all
+
+.PHONY: clean
+clean:
+  touch clean
+</pre>
 
 <p>
-<br><a href="../../system.htm">返回上一頁</a>
+<br><a href="../../program.htm">返回上一頁</a>
 </p>
 
 </div>

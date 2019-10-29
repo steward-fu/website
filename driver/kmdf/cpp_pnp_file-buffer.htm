@@ -1,4 +1,4 @@
-﻿<!--
+<!--
  ____________________________________________________________
 |                                                            |
 |    DESIGN + Pat Heard { http://fullahead.org }             |
@@ -45,60 +45,35 @@
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
 <h3>Kernel Mode Driver Framework &gt;&gt; C/C++ (PNP) &gt;&gt; File</h3>
-<p><b>IRP</b></p>
+<p><b>WdfDeviceIoBuffered</b></p>
 <hr size="1">
 <p>
 參考資訊：<br>
 1. <a href="https://github.com/steward-fu/kmdf">Source Code</a><br><br>
 
-基本上，驅動程式(韌體)的基本功能就是當作User Application(軟體)和硬體的溝通橋樑，軟體可以透過很多種方式和驅動程式溝通，而最常用的溝通方式就是把驅動程式當做是一個檔案在操作，軟體可以透過檔案讀寫的方式和驅動程式做資料傳遞的動作，驅動程式最後再把資料輸出到硬體裝置上，而在Windows系統上，可以使用CreateFile(檔案開啟)、ReadFile(讀取檔案)、WriteFile(寫入檔案)、CloseHandle(關閉檔案)等檔案操作的Win32 API，而驅動程式如何跟軟體串接起來呢？驅動程式必須設定這些對應的Event Callback，這樣I/O Manager才會知道如何串起這條溝通管道。<br><br>
+WdfDeviceIoBuffered的處理手法就是I/O Manager會在Kernel配置一塊跟User Buffer一樣大小的記憶體，Driver只能對該配置的記憶體做讀寫的操作，而讀寫的操作都會同步回User Buffer，也因為結果都需要整塊複製回User Buffer，因此，WdfDeviceIoBuffered的方式會消耗比較大的資源，速度也比較慢。<br><br>
 
-當然，使用者可能也很好奇，為何軟體不直接跟硬體溝通就好，還要透過一個這麼複雜的驅動程式當作溝通橋樑？當軟體可以直接溝通硬體時，會造成太多衝突，以及優先順序問題，而因為可以直接控制硬體，因此，寫出一個非惡意但具有破壞性的軟體時，是間接可以把一個系統搞壞掉，這也是為何要在Win98之後，架構出一個驅動程式的原因，至少有一個溝通和協調的機制，當然隨著系統的發展，規定就會變成越來嚴格，這也是Microsoft致力於保護系統的最好方式！<br><br>
-
-對應的溝通管道
+記憶體指標：
 </p>
 <table>
 <tr>
-  <th>Win32 API</th>
-  <th>Kernel Event</th>
+  <th>Event</th>
+  <th>Buffer</th>
+  <th>Length</th>
 </tr>
 <tr>
-  <td>CreateFile()</td>
-  <td>EvtDeviceFileCreate</td>
-</tr>
-<tr>
-  <td>ReadFile()</td>
   <td>EvtIoRead</td>
+  <td>Step 1. WdfRequestRetrieveOutputMemory()<br>Step 2. WdfMemoryGetBuffer()</td>
+  <td>傳入的第三個參數</td>
 </tr>
 <tr>
-  <td>WriteFile()</td>
   <td>EvtIoWrite</td>
-</tr>
-<tr>
-  <td>CloseHandle()</td>
-  <td>EvtFileClose</td>
+  <td>Step 1. WdfRequestRetrieveInputMemory()<br>Step 2. WdfMemoryGetBuffer()</td>
+  <td>傳入的第三個參數</td>
 </tr>
 </table><br>
-<p>
-驅動程式對應的CreateFile()和CloseHandle() Callback必須使用WDF_FILEOBJECT_CONFIG_INIT()設定，宣告如下：
-</p>
-<pre class="brush:cpp">
-void WDF_FILEOBJECT_CONFIG_INIT(
-  PWDF_FILEOBJECT_CONFIG     FileEventCallbacks,
-  PFN_WDF_DEVICE_FILE_CREATE EvtDeviceFileCreate,
-  PFN_WDF_FILE_CLOSE         EvtFileClose,
-  PFN_WDF_FILE_CLEANUP       EvtFileCleanup
-);
-</pre>
-<p>
-至於ReadFile()和WriteFile() Callback則位於WDF_IO_QUEUE_CONFIG(EvtIoRead和EvtIoWrite)<br><br>
 
-<b>基本的步驟如下：</b><br>
-1. 安裝驅動程式時，驅動程式註冊自己的名字、註冊檔案的Event Callback副程式<br>
-2. 軟體開啟檔案(使用驅動程式的名字(GUID或者Symbolic))，I/O Manager呼叫驅動程式的EvtDeviceFileCreate<br>
-3. 軟體讀寫檔案，I/O Manager呼叫驅動程式的EvtIoRead、EvtIoWrite<br>
-4. 軟體關閉檔案，I/O Manager呼叫驅動程式的EvtFileClose<br><br>
-
+<p>
 main.c
 </p>
 <pre class="brush:cpp">
@@ -107,6 +82,8 @@ main.c
 
 #define DEV_NAME L"\\Device\\MyDriver"
 #define SYM_NAME L"\\DosDevices\\MyDriver"
+
+char szBuffer[255]={0};
 
 void IrpFileCreate(WDFDEVICE Device, WDFREQUEST Request, WDFFILEOBJECT FileObject)
 {  
@@ -121,13 +98,24 @@ void IrpFileClose(WDFFILEOBJECT FileObject)
 
 void IrpRead(WDFQUEUE Queue, WDFREQUEST Request, size_t Length)
 {
+  ULONG len;
+  WDFMEMORY memory;
+  
   DbgPrint("IrpRead");
-  WdfRequestCompleteWithInformation(Request, STATUS_SUCCESS, Length);
+  len = strlen(szBuffer) + 1;
+  WdfRequestRetrieveOutputMemory(Request, &amp;memory);
+  WdfMemoryCopyFromBuffer(memory, 0, szBuffer, len);
+  WdfRequestCompleteWithInformation(Request, STATUS_SUCCESS, len);
 }
 
 void IrpWrite(WDFQUEUE Queue, WDFREQUEST Request, size_t Length)
 {
+  WDFMEMORY memory;
+  
   DbgPrint("IrpWrite");
+  WdfRequestRetrieveInputMemory(Request, &amp;memory);
+  WdfMemoryCopyToBuffer(memory, 0, szBuffer, Length);
+  DbgPrint("Buffer: %s, Length:%d", szBuffer, Length);
   WdfRequestCompleteWithInformation(Request, STATUS_SUCCESS, Length);
 }
 
@@ -164,13 +152,10 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT pOurDriver, PUNICODE_STRING pRegistry)
 }
 </pre>
 <p>
-<b>AddDevice()</b>設定檔案的Event Callback以及建立Symbolic Link<br>
-<b>IrpFileCreate()</b>僅列印資訊，其餘不處理，值得注意的是Complete Irp呼叫的是WdfRequestComplete()<br>
-<b>IrpFileClose()</b>僅列印資訊，其餘不處理，WDF簡化了FileClose的處理步驟<br>
-<b>IrpRead()</b>僅列印資訊，其餘不處理，透過呼叫WdfRequestCompleteWithInformation()完成Irp操作並且回傳Information<br>
-<b>IrpWrite()</b>僅列印資訊，其餘不處理，透過呼叫WdfRequestCompleteWithInformation()完成Irp操作並且回傳Information<br><br>
+<b>IrpWrite()</b>複製User Application的資料到szBuffer<br>
+<b>IrpRead()</b>回填資料給User Application<br><br>
 
-為了測試驅動程式的檔案讀寫IRP，我們需要一個User Application做測試(app.c)</b>
+app.c
 </p>
 <pre class="brush:cpp">
 #define INITGUID
@@ -182,42 +167,36 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT pOurDriver, PUNICODE_STRING pRegistry)
 
 int __cdecl main(int argc, char* argv[])
 {
-  DWORD dwRet=0;
-  char szBuffer[32]={0};
-  HANDLE hFile=INVALID_HANDLE_VALUE;
+  HANDLE hFile = NULL;
+  DWORD dwRet = 0;
+  char szBuffer[255]={0};
 
   hFile = CreateFile("\\\\.\\MyDriver", GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
   if(hFile == INVALID_HANDLE_VALUE){
     printf("failed to open mydriver");
-    return -1;
+    return 1;
   }
-  WriteFile(hFile, szBuffer, sizeof(szBuffer), &amp;dwRet, NULL);
+
+  strncpy(szBuffer, "I am error", sizeof(szBuffer));
+  WriteFile(hFile, szBuffer, strlen(szBuffer) + 1, &amp;dwRet, NULL);
+  printf("WR: %s, %d\n", szBuffer, dwRet);
+
+  memset(szBuffer, 0, sizeof(szBuffer));
   ReadFile(hFile, szBuffer, sizeof(szBuffer), &amp;dwRet, NULL);
+  printf("RD: %s, %d\n", szBuffer, dwRet);
   CloseHandle(hFile);
   return 0;
 }
 </pre><br>
 
 <p>
-sources
-</p>
-<pre class="brush:cpp">
-TARGETNAME=app
-TARGETTYPE=PROGRAM
-TARGETPATH=obj
-UMTYPE=console
-UMBASE=0x0400000
-SOURCES=app.c
-USE_MSVCRT=1
-</pre>
-<p>
-一樣使用WDK編譯，接著執行該User Application就可以看到結果<br>
-<img src="asm_pnp_file/2.jpg" class="maxSize"><br>
-<img src="asm_pnp_file/1.jpg" class="maxSize">
+結果<br>
+<img src="asm_pnp_file-buffer/2.jpg" class="maxSize"><br>
+<img src="asm_pnp_file-buffer/1.jpg" class="maxSize">
 </p>
 
 <p>
-<a href="../../driver.htm">返回上一頁</a>
+<br><a href="../../driver.htm">返回上一頁</a>
 </p>
 
 </div>
