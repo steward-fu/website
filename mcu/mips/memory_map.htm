@@ -1,0 +1,119 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>MIPS</h3>
+<p><b>Memory Map(kuseg、kseg0、kseg1、kseg2)</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://johnloomis.org/microchip/pic32/memory/memory.html">memory_map</a><br><br>
+
+MIPS Memory Map
+</p>
+<table>
+<tr><td>0xf0000000</td><td rowspan="4">(kseg2) mapped</td></tr>
+<tr><td>0xe0000000</td></tr>
+<tr><td>0xd0000000</td></tr>
+<tr><td>0xc0000000</td></tr>
+<tr><td>0xb0000000</td><td rowspan="2">(kseg1) unmapped uncached</td></tr>
+<tr><td>0xa0000000</td></tr>
+<tr><td>0x90000000</td><td rowspan="2">(kseg0) unmapped cached</td></tr>
+<tr><td>0x80000000</td></tr>
+<tr><td>0x70000000</td><td rowspan="7">(kuseg) user space</td></tr>
+<tr><td>0x60000000</td></tr>
+<tr><td>0x50000000</td></tr>
+<tr><td>0x40000000</td></tr>
+<tr><td>0x30000000</td></tr>
+<tr><td>0x20000000</td></tr>
+<tr><td>0x10000000</td></tr>
+</table><br>
+
+<p>
+Description
+</p>
+<table>
+<tr><td>kseg2</td><td>0xc0000000~0xffffffff</td><td>1GB</td>
+<td>
+This area is only accessible in kernel mode but is translated by through the MMU. Unless you are writing a serious operating system, you will probably never have to use kseg2
+</td>
+</tr>
+<tr><td>kseg1</td><td>0xa0000000~0xbfffffff</td><td>512MB</td>
+<td>
+These addresses are mapped into physical addresses by stripping off the leading 3 bits, giving a duplicate mapping of the low 512 MB of physical memory. Access to this area of memory does not use the MMU or the cache. This area is most often used for I/O addresses and boot ROM.
+</td>
+</tr>
+<tr><td>kseg0</td><td>0x80000000~0x9fffffff</td><td>512MB</td>
+<td>
+These addresses are translated into physical addresses by stripping off the top bit and mapping the remainder into the low 512 MB of physical memory. Addresses in this region are almost always accessed through the cache, so they may not be used until the caches are properly initialized.
+</td>
+</tr>
+<tr><td>kuseg</td><td>0x00000000~0x7fffffff</td><td>2GB</td>
+<td>
+These are addresses permitted in user mode. They are always mapped through an MMU if one is implemented.
+</td>
+</tr>
+</table><br>
+
+<p>
+如下例子，這個Ingenic JZ4725B的Physical Register<br>
+<img src="memory_map/1.jpg" class="maxSize"><br><br>
+
+透過程式存取CPCCR Register時，必須使用Memory Mapped位址0xb0000000(0xa0000000 + 0x10000000)，而不是Physical位址0x10000000，意思就是沒有透過MMU或Cache
+</p>
+<pre class="brush:asm">
+li $v0, 0x12341234
+sw $v0, 0xb0000000
+</pre><br>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
