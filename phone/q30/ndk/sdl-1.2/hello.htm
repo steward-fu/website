@@ -44,30 +44,17 @@
 <div id="content">
 <script type="text/javascript" src="../../../../header.js"></script>
 <div id="page">
-<h3>Blackberry Passport >> Core Native (C/C++) >> Advanced >> SDL 1.2</h3>
-<p><b>Hellon world!</b></p>
+<h3>Blackberry Passport &gt;&gt; Core Native (C/C++) &gt;&gt; SDL 1.2</h3>
+<p><b>Hello, world!</b></p>
 <hr size="1">
 <p>
 由於Blackberry官方提供的Toolchain本身並沒有包含SDL相關的Library，而大部份的懷舊游戲卻是使用SDL Library製作，如果司徒想要在Passport上面玩這些懷舊遊戲的話，只能移植SDL Library到Passport或者重新把這些懷舊游戲的程式碼，從原本的SDL API都改成使用Blackberry支援的OpenGL ES API以及screen API，就花費時間來看，移植SDL Library看似比較划算一點，畢竟一個一個遊戲移植，似乎有點傻，因此，這才讓司徒有了移植SDL Library到Passport的動機，不過，幸運的是，已經有熱心的網友移植SDL Library到Playbook身上，剛好這部分可以直接用在Passport身上，這也幫司徒節省許多寶貴的時間，而針對移植的部份，司徒猜想大家可能會很好奇，移植SDL Library不就是編譯SDL而已嗎？有什麼困難的嗎？其實沒那麼容易，因為Blackberry 10本身並沒有提供<b>/dev/fb*</b>這個裝置，取得代之的則是必須使用QNX的screen API繪製，因此存取<b>/dev/fb*</b>的部份必須改寫，這也比較麻煩的地方，不過，還是得感謝這位網友的移植，造福大家！<br><br>
 
 有了這個動機之後，司徒便開始在網路上找尋相關的SDL教學網站，一方面是可以比較有系統的建立SDL教學文章，另一方面則是可以知道Passport到底還缺多少SDL相關的Library，司徒剛好可以趁這個機會，移植這些缺少的Library到Passport上身，而找尋一段時間之後，司徒發現<a href="http://lazyfoo.net/SDL_tutorials/">lazyfoo</a>的網站算是一個相當不錯的SDL教學網站，可惜的是這個網站在FAQ頁面，很清楚的表示，不能基于它的網站資源建立另一個教學網站，加上該網站的相關資源，在未取得同意前，不可使用隨意使用，這些聲明最終讓司徒打了退堂鼓，於是司徒只好自己建立相關的SDL教學文章，但是，司徒參考的SDL相關文章，還是基于該網站，只是司徒的教導方向是建立在如何熟悉SDL API，而非是如何用SDL寫一個遊戲。<br><br>
 
-經典的<b>Hello, world!</b>還是最佳的程式範例，畢竟它可以呈現出最簡單的雛形架構，因此，司徒使用這個範例讓大家熟悉一下SDL的寫法。<br><br>
-
 main.cpp
 </p>
 <pre class="brush:cpp">
-/*========================================================================================================
-  Basically, all of files downloaded from my website can be modified or redistributed for any purpose.
-  It is my honor to share my interesting to everybody.
-  If you find any illeage content out from my website, please contact me firstly.
-  I will remove all of the illeage parts.
-  Thanks :)
-    
-  Steward Fu
-  steward.fu@gmail.com
-  https://steward-fu.github.io/website/index.htm
-========================================================================================================*/
 #include &lt;stdio.h&gt;
 #include &lt;stdlib.h&gt;
 #include &lt;SDL.h&gt;
@@ -103,13 +90,12 @@ int main(int argc, char* args[])
 </pre>
 
 <p>
-SDL程式的基本流程就是：初始化(SDL_Init)、設定解析度(SDL_SetVideoMode)、畫圖、刷新畫面(SDL_Flip)、結束並釋放資源(SDL_FreeSurface)。<br><br>
-
+SDL程式的基本流程就是：初始化(SDL_Init)、設定解析度(SDL_SetVideoMode)、畫圖、刷新畫面(SDL_Flip)、結束並釋放資源(SDL_FreeSurface)。<br>
 大方向掌握後就可以更深入了解SDL的運作方式，因此，如上面的範例，做完基本的初始化後，接著就是載入圖片，完成一個簡單的<b>Hello, world!</b>範例。<br><br>
 
 bar-descriptor.xml
 </p>
-<pre class="brush:cpp">
+<pre>
 &lt;?xml version="1.0" encoding="utf-8" standalone="no"?&gt;
 &lt;qnx xmlns="http://www.qnx.com/schemas/application/1.0"&gt;
   &lt;id&gt;com.steward.sdl.ch1&lt;/id&gt;
@@ -130,25 +116,23 @@ bar-descriptor.xml
   &lt;permission system="true"&gt;run_native&lt;/permission&gt;
   &lt;env var="LD_LIBRARY_PATH" value="app/native/lib"/&gt;
 &lt;/qnx&gt;
-</pre>
+</pre><br>
 
 <p>
 Makefile
 </p>
-<pre class="brush:cpp">
+<pre>
 main: main.cpp
   ntoarmv7-gcc main.cpp -g -o main libSDL-1.2.so.11 -Iinclude
   blackberry-nativepackager -package main.bar bar-descriptor.xml -devMode -debugToken ${HOME}/.rim/debugtoken_q30.bar
 clean:
   rm -rf main
   rm -rf main.bar
-</pre>
+</pre><br>
 
 <p>
-測試圖片<br>
-<img src="hello/1.jpg" class="maxSize"><br><br>
-
 完成<br>
+<img src="hello/1.jpg" class="maxSize"><br>
 <img src="hello/2.jpg" class="maxSize">
 </p>
 
