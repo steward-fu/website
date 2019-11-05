@@ -44,36 +44,85 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>Orange Pi 2G-IoT</h3>
-<p><b>flash image(nand)</b></p>
+<h3>GCC</h3>
+<p><b>顯示倚天中文字型</b></p>
 <hr size="1">
 <p>
-參考資訊：<br>
-1. <a href="https://www.aib42.net/article/hacking-orangepi-2g">hacking-orangepi-2g</a><br><br>
-
-燒錄步驟：<br>
-1. NAND Boot Jumper<br>
-2. DIP(1~4 ON, 5~8 OFF)<br>
-3. 按住Button並插入USB<br>
-4. 2秒後放開<br>
-5. 執行如下命令
+main.c
 </p>
-<pre>
-$ sudo apt-get install python3-serial -y
-$ sudo python3 opi2g_nand_write.py -p /dev/ttyACM0 --format-flash --pdl1 pdl1.bin --pdl2 pdl2.bin bootloader:u-boot.rda nandroot:ubi.img
-  Opening /dev/ttyACM0...
-  Sending partition pdl1 (len 33016) to 0x00100100
-  Sending partition pdl2 (len 451752) to 0x80008000
-  Partition table: mtdparts=rda_nand:2M@0(bootloader),2M(factorydata),2M(misc),4M(modem),8M(boot),10M(recovery),145M(system),180M(vendor),-(userdata)
-  Formatting flash memory...
-  Partition table: mtdparts=rda_nand:2M(bootloader),510M(nandroot)
-  Sending partition bootloader (len 525972) to 0x00000000
-  Sending partition nandroot (len 402128896) to 0x00000000
-  Done
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;sys/stat.h&gt;
+
+int is_big5(unsigned int val)
+{
+  if((val &gt;= 0xa140 &amp;&amp; val &lt;= 0xa3bf) ||
+    (val &gt;= 0xa440 &amp;&amp; val &lt;= 0xc67e) ||
+    (val &gt;= 0xc6a1 &amp;&amp; val &lt;= 0xc8d3) ||
+    (val &gt;= 0xc940 &amp;&amp; val &lt;= 0xf9fe))
+  {
+    return 1;
+  }
+  return 0;
+}
+
+int main(int argc, char** argv)
+{
+  FILE *f;
+  unsigned int high, low;
+  unsigned char top[30]={0};
+  unsigned int font = 0xae7b;
+
+  if((is_big5(font)) == 0){
+    printf("not big5 !\n");
+    return -1;
+  }
+
+  f = fopen("stdfont.15", "rb");
+  low = font &amp; 0xff;
+  high = 157 * (((font &gt;&gt; 8) &amp; 0xff) - 164);
+  if(low &lt; 127){
+    low-= 64;
+  }
+  else{
+    low-= 98;
+  }
+  fseek(f, (high + low) * 30, 0);
+  fread(top, 30, 1, f);
+  fclose(f);
+
+  int x, y, z, t, cnt=0;
+  for(y=0; y&lt;15;y++){
+    for(z=0; z&lt;2;z++){
+      t = top[cnt++];
+      for(x=0; x&lt;8;x++){
+        if(t &amp; 0x80){
+          printf("1");
+        }
+        else{
+          printf(" ");
+        }
+        t&lt;&lt;=1;
+      }
+    }
+    printf("\n");
+  }
+  return 0;
+}
 </pre><br>
 
 <p>
-<br><a href="../../mcu.htm">返回上一頁</a>
+完成<br>
+<img src="stdfont/1.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../program.htm">返回上一頁</a>
 </p>
 
 </div>
