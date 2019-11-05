@@ -45,13 +45,12 @@
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
 <h3>GCC</h3>
-<p><b>顯示倚天中文字型</b></p>
+<p><b>UTF8轉BIG5</b></p>
 <hr size="1">
 <p>
 參考資訊：<br>
-1. <a href="http://billor.chsh.chc.edu.tw/php/Tools/qBig5.php">qBig5</a><br>
-2. <a href="https://github.com/rofl0r/microwindows/blob/master/src/engine/font_hzk.c">font_hzk</a><br>
-3. <a href="http://programmer-club.com.tw/ShowSameTitleN/cb/5801.html">ShowSameTitleN</a><br><br>
+1. <a href="https://www.monster.com.tw/archives/811">utf8_big5</a><br>
+2. <a href="http://manpages.ubuntu.com/manpages/bionic/zh_TW/man3/iconv_open.3.html">iconv_open</a><br><br>
 
 main.c
 </p>
@@ -61,70 +60,66 @@ main.c
 #include &lt;stdlib.h&gt;
 #include &lt;unistd.h&gt;
 #include &lt;fcntl.h&gt;
+#include &lt;iconv.h&gt;
+#include &lt;string.h&gt;
 #include &lt;sys/types.h&gt;
 #include &lt;sys/stat.h&gt;
 
-int is_big5(unsigned int val)
-{
-  if((val &gt;= 0xa140 &amp;&amp; val &lt;= 0xa3bf) ||
-    (val &gt;= 0xa440 &amp;&amp; val &lt;= 0xc67e) ||
-    (val &gt;= 0xc6a1 &amp;&amp; val &lt;= 0xc8d3) ||
-    (val &gt;= 0xc940 &amp;&amp; val &lt;= 0xf9fe))
-  {
-    return 1;
-  }
-  return 0;
-}
-
 int main(int argc, char** argv)
 {
-  FILE *f;
-  unsigned int high, low;
-  unsigned char top[30]={0};
-  unsigned int font = 0xae7b;
+  int x;
+  iconv_t cd;
+  char in_buf[255]={0};
+  char out_buf[255]={0};
+  char *sin=in_buf;
+  char *sout=out_buf;
+  size_t in_len=0;
+  size_t out_len=sizeof(out_buf);
 
-  if((is_big5(font)) == 0){
-    printf("not big5 !\n");
+  cd = iconv_open("big5", "utf-8");
+  if(cd == 0){
+    printf("failed to open iconv !\n");
     return -1;
   }
 
-  f = fopen("stdfont.15", "rb");
-  low = font &amp; 0xff;
-  high = 157 * (((font &gt;&gt; 8) &amp; 0xff) - 164);
-  if(low &lt; 127){
-    low-= 64;
+  int fd = open("test.txt", O_RDONLY);
+  in_len = read(fd, in_buf, sizeof(in_buf));
+  close(fd);
+  
+  printf("utf8: ");
+  for(x=0; x&lt;in_len; x++){
+    printf("0x%x ", (unsigned char)in_buf[x]);
   }
-  else{
-    low-= 98;
-  }
-  fseek(f, (high + low) * 30, 0);
-  fread(top, 30, 1, f);
-  fclose(f);
+  printf("\n");
 
-  int x, y, z, t, cnt=0;
-  for(y=0; y&lt;15;y++){
-    for(z=0; z&lt;2;z++){
-      t = top[cnt++];
-      for(x=0; x&lt;8;x++){
-        if(t &amp; 0x80){
-          printf("1");
-        }
-        else{
-          printf(" ");
-        }
-        t&lt;&lt;=1;
-      }
-    }
-    printf("\n");
+  iconv(cd, &amp;sin, &amp;in_len, &amp;sout, &amp;out_len);
+  iconv_close(cd);
+
+  printf("big5: ");
+  out_len = strlen(out_buf);
+  for(x=0; x&lt;out_len; x++){
+    printf("0x%x ", (unsigned char)out_buf[x]);
   }
+  printf("\n");
   return 0;
 }
 </pre><br>
 
 <p>
-完成<br>
-<img src="stdfont/1.jpg" class="maxSize">
+test.txt
 </p>
+<pre>
+司徒
+</pre><br>
+
+<p>
+執行結果
+</p>
+<pre>
+$ ./test 
+  utf8: 0xe5 0x8f 0xb8 0xe5 0xbe 0x92 0xa 
+  big5: 0xa5 0x71 0xae 0x7b 0xa
+</pre><br>
 
 <p>
 <br><a href="../../program.htm">返回上一頁</a>
