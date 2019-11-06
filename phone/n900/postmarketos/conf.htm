@@ -1,0 +1,173 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../../header.js"></script>
+<div id="page">
+<h3>Nokia N900 &gt;&gt; PostMarketOS</h3>
+<p><b>i3wm conf</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://wiki.postmarketos.org/wiki/Nokia_N900">Nokia_N900</a><br><br>
+
+~/.i3/config
+</p>
+<pre>
+font pango:monospace 8
+
+new_window 1pixel
+
+workspace_layout tabbed
+
+mode "workspace" {
+        bindsym a workspace 1
+        bindsym s workspace 2
+        bindsym d workspace 3
+        bindsym f workspace 4
+        bindsym g workspace 5
+        bindsym Left workspace prev
+        bindsym Right workspace next
+        bindsym Shift+Left move container to workspace prev
+        bindsym Shift+Right move container to workspace next
+        bindsym q mode "command"
+}
+
+# Control the music player daemon. Keybindings are roughly the same as in
+# the ncmpcpp client.
+mode "mpd" {
+        bindsym p exec mpc toggle
+        bindsym s exec mpc stop
+
+        bindsym Left exec mpc prev
+        bindsym Right exec mpc next
+        bindsym Up exec mpc vol +2
+        bindsym Down exec mpc vol -2
+
+        bindsym n exec st -f "Liberation Mono-12" -e ncmpcpp; mode "default"
+        bindsym q mode "command"
+}
+
+mode "command" {
+        bindsym t exec st -f "Liberation Mono-12" -e ~/.protip_shell.sh; mode "default"
+        bindsym d exec dmenu_run; mode "default"
+        bindsym q mode "default"
+        bindsym k kill; mode "default"
+        bindsym b exec netsurf
+        bindsym r restart
+
+        bindsym Left focus left
+        bindsym Right focus right
+        bindsym Up focus up
+        bindsym Down focus down
+
+        bindsym Shift+Left move left
+        bindsym Shift+Right move right
+        bindsym Shift+Up move up
+        bindsym Shift+Down move down
+
+        bindsym h split h
+        bindsym v split v
+
+        bindsym w mode "workspace"
+        bindsym m mode "mpd"
+}
+
+# Enter command mode
+bindsym Shift+space mode "command"
+
+# This is the slidey button on the side
+bindsym XF86ScreenSaver exec --no-startup-id lock.sh
+
+# Pressing the power button suspends the device
+bindsym XF86PowerOff exec --no-startup-id sudo pm-suspend
+
+# Start i3bar to display a workspace bar (plus the system information i3status
+# finds out, if available)
+bar {
+        position top
+        status_command i3blocks
+        colors {
+                background #000000
+                statusline #ffffff
+                separator #009900
+                focused_workspace #009900 #009900 #ffffff
+                inactive_workspace #003300 #003300 #dddddd
+                urgent_workspace #990000 #990000 #fffff
+        }
+}
+
+# Wallpaper
+exec_always --no-startup-id feh --bg-fill /usr/share/wallpapers/postmarketos.jpg
+
+# Hide mouse cursor
+exec --no-startup-id unclutter-xfixes --fork
+
+# Display various information on desktop (see conky config)
+exec --no-startup-id conky --daemonize
+</pre><br>
+
+<p>
+快速鍵說明
+</p>
+<table>
+<tr><th>Mode</th><th>Key</th><th>Description</th></tr>
+<tr><td>default</td><td>shift + space</td><td>switch to "command mode"</td></tr>
+<tr><td rowspan="5">command</td><td>t</td><td>open terminal</td></tr>
+<tr><td>k</td><td>kill current program</td></tr>
+<tr><td>w</td><td>workspace mode</td></tr>
+<tr><td>r</td><td>restart i3wm (use after modifying the config)</td></tr>
+<tr><td>q</td><td>go back to "default mode"</td></tr>
+<tr><td rowspan="2">workspace</td><td>a/s/d/f/g</td><td>switch to workspace 1/2/3/4/5</td></tr>
+<tr><td>q</td><td>go back to "command mode"</td></tr>
+</table><br>
+
+<p>
+<br><a href="../../../phone.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
