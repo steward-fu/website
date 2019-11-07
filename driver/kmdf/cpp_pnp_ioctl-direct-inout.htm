@@ -1,0 +1,220 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Kernel Mode Driver Framework &gt;&gt; C/C++ (PNP) &gt;&gt; IOCTL</h3>
+<p><b>METHOD_IN_DIRECT、METHOD_OUT_DIRECT</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://github.com/steward-fu/kmdf">Source Code</a><br><br>
+
+METHOD_IN_DIRECT、METHOD_OUT_DIRECT的作法就是直接Mapping User Buffer，然後驅動程式使用該Mapped的MDL(Memory Description List)操作，相較於METHOD_BUFFERED，因為不須I/O Manager更新回User Buffer，因此，效率會比較好，而相比File的WdfDeviceIoDirect，IOCTL細分成IN和OUT兩種，這是因為IOCTL有區分Input和Output Buffer的緣故，因此，會有方向性的考量，Microsoft針對這部份的描述，僅說明MDL描述會有讀寫存取方向的區分，但是司徒實際測試，發現DeviceIoControl()的Input和Output Buffer是可以混用的，意思就是Input Buffer可以充當Input或Output Buffer使用，而Output Buffer也可以充當Input或Output Buffer使用，只要驅動程式跟User Application定義好即可，當然，METHOD_IN_DIRECT和METHOD_OUT_DIRECT也是可以混用的，關於這部份的細節，有興趣的使用者可以研讀WRK代碼，不過，深怕未知問題可能發生，建議還是依照Microsoft規定去撰寫驅動程式會比較保險。<br><br>
+
+Microsoft針對I/O部份的說明：<br>
+<a href="https://docs.microsoft.com/en-us/windows-hardware/drivers/kernel/buffer-descriptions-for-i-o-control-codes">buffer-descriptions-for-i-o-control-codes</a><br><br>
+
+記憶體指標：
+</p>
+<table>
+  <thead>
+    <tr>
+      <th></th>
+      <th>Buffer</th>
+      <th>Length</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Input</td>
+      <td>Step 1. WdfRequestRetrieveInputWdmMdl()<br>Step 2. MmGetSystemAddressForMdlSafe()</td>
+      <td>傳入的第四個參數</td>
+    </tr>
+    <tr>
+      <td>Output</td>
+      <td>Step 1. WdfRequestRetrieveOutputWdmMdl()<br>Step 2. MmGetSystemAddressForMdlSafe()</td>
+      <td>傳入的第三個參數</td>
+    </tr>
+  </tbody>
+</table><br>
+
+<p>
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;ntddk.h&gt;
+#include &lt;wdf.h&gt;
+
+#define DEV_NAME L"\\Device\\MyDriver"
+#define SYM_NAME L"\\DosDevices\\MyDriver"
+
+#define IOCTL_SET CTL_CODE(FILE_DEVICE_UNKNOWN, 0x800, METHOD_IN_DIRECT, FILE_ANY_ACCESS)
+#define IOCTL_GET CTL_CODE(FILE_DEVICE_UNKNOWN, 0x801, METHOD_OUT_DIRECT, FILE_ANY_ACCESS)
+
+char szBuffer[255]={0};
+
+void IrpFileCreate(WDFDEVICE Device, WDFREQUEST Request, WDFFILEOBJECT FileObject)
+{  
+  DbgPrint("IrpFieCreate");
+  WdfRequestComplete(Request, STATUS_SUCCESS);
+}
+
+void IrpFileClose(WDFFILEOBJECT FileObject)
+{
+  DbgPrint("IrpFieClose");
+}
+
+void IrpIOCTL(WDFQUEUE Queue, WDFREQUEST Request, size_t OutputBufferLength, size_t InputBufferLength, ULONG IoControlCode)
+{
+  PMDL mdl;
+  ULONG len;
+  UCHAR *buf;
+  WDFMEMORY memory;
+  
+  switch(IoControlCode){
+  case IOCTL_SET:
+    DbgPrint("IOCTL_SET");
+    WdfRequestRetrieveInputWdmMdl(Request, &amp;mdl);
+    buf = MmGetSystemAddressForMdlSafe(mdl, LowPagePriority);
+    memcpy(szBuffer, buf, InputBufferLength);
+    DbgPrint("Buffer: %s, Length:%d", szBuffer, InputBufferLength);
+    WdfRequestSetInformation(Request, InputBufferLength);
+    break;
+  case IOCTL_GET:
+    DbgPrint("IOCTL_GET");
+    WdfRequestRetrieveOutputWdmMdl(Request, &amp;mdl);
+    buf = MmGetSystemAddressForMdlSafe(mdl, LowPagePriority);
+    memcpy(buf, szBuffer, OutputBufferLength);
+    len = strlen(szBuffer) + 1;
+    WdfRequestSetInformation(Request, len);
+    break;
+  }
+  WdfRequestComplete(Request, STATUS_SUCCESS);
+}
+
+NTSTATUS AddDevice(WDFDRIVER Driver, PWDFDEVICE_INIT pDeviceInit)
+{
+  WDFDEVICE device;
+  UNICODE_STRING suDevName;
+  UNICODE_STRING szSymName;
+  WDF_FILEOBJECT_CONFIG file_cfg;
+  WDF_IO_QUEUE_CONFIG ioqueue_cfg;
+  
+  RtlInitUnicodeString(&amp;suDevName, DEV_NAME);
+  RtlInitUnicodeString(&amp;szSymName, SYM_NAME);
+  WdfDeviceInitAssignName(pDeviceInit, &amp;suDevName);
+  
+  WdfDeviceInitSetIoType(pDeviceInit, WdfDeviceIoBuffered);
+  WDF_FILEOBJECT_CONFIG_INIT(&amp;file_cfg, IrpFileCreate, IrpFileClose, NULL);
+  WdfDeviceInitSetFileObjectConfig(pDeviceInit, &amp;file_cfg, WDF_NO_OBJECT_ATTRIBUTES);
+  WdfDeviceCreate(&amp;pDeviceInit, WDF_NO_OBJECT_ATTRIBUTES, &amp;device);
+  WdfDeviceCreateSymbolicLink(device, &amp;szSymName);
+  
+  WDF_IO_QUEUE_CONFIG_INIT_DEFAULT_QUEUE(&amp;ioqueue_cfg, WdfIoQueueDispatchSequential);
+  ioqueue_cfg.EvtIoDeviceControl = IrpIOCTL;
+  return WdfIoQueueCreate(device, &amp;ioqueue_cfg, WDF_NO_OBJECT_ATTRIBUTES, WDF_NO_HANDLE);
+}
+
+NTSTATUS DriverEntry(PDRIVER_OBJECT pOurDriver, PUNICODE_STRING pRegistry)
+{
+  WDF_DRIVER_CONFIG config;
+
+  WDF_DRIVER_CONFIG_INIT(&amp;config, AddDevice);
+  return WdfDriverCreate(pOurDriver, pRegistry, WDF_NO_OBJECT_ATTRIBUTES, &amp;config, WDF_NO_HANDLE);
+}
+</pre>
+<p>
+<b>IrpIOCTL()</b>收到IOCTL_SET時，Driver複製User Buffer的內容到szBuffer，而收到IOCTL_GET時，將szBuffer內容又複製回User Buffer，完成暫存的功能，IoStatus.Information的數值就是OutBufferSize回傳的長度。<br><br>
+
+app.c
+</p>
+<pre class="brush:cpp">
+#define INITGUID
+#include &lt;windows.h&gt;
+#include &lt;winioctl.h&gt;
+#include &lt;strsafe.h&gt;
+#include &lt;setupapi.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+#define IOCTL_SET CTL_CODE(FILE_DEVICE_UNKNOWN, 0x800, METHOD_IN_DIRECT, FILE_ANY_ACCESS)
+#define IOCTL_GET CTL_CODE(FILE_DEVICE_UNKNOWN, 0x801, METHOD_OUT_DIRECT, FILE_ANY_ACCESS)
+
+int __cdecl main(int argc, char* argv[])
+{
+  DWORD dwRet = 0;
+  HANDLE hFile = NULL;
+  char szBuffer[255]={"I am error"};
+
+  hFile = CreateFile("\\\\.\\MyDriver", GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+  if (hFile == INVALID_HANDLE_VALUE) {
+    printf("failed to open mydriver");
+    return 1;
+  }
+  printf("SET: %s, %d\n", szBuffer, strlen(szBuffer)+1);
+  DeviceIoControl(hFile, IOCTL_SET, szBuffer, strlen(szBuffer)+1, NULL, 0, &amp;dwRet, NULL);
+  memset(szBuffer, 0, sizeof(szBuffer));
+  DeviceIoControl(hFile, IOCTL_GET, NULL, 0, szBuffer, sizeof(szBuffer), &amp;dwRet, NULL);
+  printf("GET: %s, %d\n", szBuffer, dwRet);
+  CloseHandle(hFile);
+  return 0;
+}
+</pre><br>
+
+<p>
+結果<br>
+<img src="asm_pnp_ioctl-buffer/2.jpg" class="maxSize"><br>
+<img src="asm_pnp_ioctl-buffer/1.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../driver.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
