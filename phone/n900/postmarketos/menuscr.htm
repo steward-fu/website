@@ -45,34 +45,23 @@
 <script type="text/javascript" src="../../../header.js"></script>
 <div id="page">
 <h3>Nokia N900 &gt;&gt; PostMarketOS</h3>
-<p><b>build kernel 5.3.2</b></p>
+<p><b>bootmenu.scr</b></p>
 <hr size="1">
 <p>
-步驟如下：
+bootmenu.cmd
 </p>
 <pre>
-$ cd
-$ wget https://github.com/steward-fu/n900/releases/download/v1.1/kernel_postmarketos.tar.gz
-$ tar xvf kernel_postmarketos.tar.gz
-$ cd kernel
-$ ARCH=arm make rx51_defconfig
-$ ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- make zImage
-$ ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- make modules_install INSTALL_MOD_PATH=out
-
-$ cat zImage omap3-n900.dtb >> new
-$ mkimage -A arm -O linux -T kernel -C none -a 80008000 -e 80008000 -n uImage -d new uImage
+setenv bootmenu_0 'PostmarketOS=setenv mmcnum 1;setenv mmcpart 1;setenv mmctype fat;setenv bootargs;setenv setup_omap_atag;setenv mmckernfile;setenv mmcinitrdfile;setenv mmcscriptfile boot.scr;run trymmcscriptboot;';
+setenv bootmenu_1 'Attached kernel=run attachboot';
+setenv bootmenu_2;
 </pre><br>
 
 <p>
-使用pmbootstrap命令：
+編譯
 </p>
 <pre>
-$ ./pmbootstrap.py build --arch=armv7 linux-postmarketos-stable --force
-</pre>
-<p>
-Kernel位於<b>~/.local/var/pmbootstrap/cache_distfiles/linux-5.3.tar.xz</b><br>
-zImage位於<b>~/.local/var/pmbootstrap/chroot_native/home/pmos/build/src/build/arch/arm/boot/zImage</b>
-</p>
+$ mkimage -A arm -O linux -T script -C none -a 0 -e 0 -n postmarketos -d bootmenu.cmd bootmenu.scr
+</pre><br>
 
 <p>
 <br><a href="../../../phone.htm">返回上一頁</a>
