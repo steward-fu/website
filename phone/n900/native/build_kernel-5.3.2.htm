@@ -45,7 +45,7 @@
 <script type="text/javascript" src="../../../header.js"></script>
 <div id="page">
 <h3>Nokia N900 &gt;&gt; Native Debian</h3>
-<p><b>build kernel 4.9.0</b></p>
+<p><b>build kernel 5.3.2</b></p>
 <hr size="1">
 <p>
 Debian x64
@@ -53,58 +53,19 @@ Debian x64
 <pre>
 $ sudo apt-get install gcc-arm*
 $ cd
-$ git clone https://github.com/pali/linux-n900
-$ cd linux-n900
-$ git checkout v4.9-n900
-$ ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- make rx51_defconfig
-$ ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- make menuconfig
+$ wget https://github.com/steward-fu/n900/releases/download/v1.0/omap3-n900.dtb
+$ wget https://github.com/steward-fu/n900/releases/download/v1.1/kernel_jessie.tar
+$ tar xvf kernel_jessie.tar
+$ cd kernel
+$ ARCH=arm make rx51_defconfig
+$ ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- make zImage modules
+$ ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- make modules_install INSTALL_MOD_PATH=out
+
+$ cat arch/arm/boot/zImage omap3-n900.dtb >> new
+$ mkimage -A arm -O linux -T kernel -C none -a 80008000 -e 80008000 -n uImage -d new uImage
 </pre>
 <p>
-<img src="build_kernel/1.jpg" class="maxSize"><br>
-<img src="build_kernel/2.jpg" class="maxSize"><br><br>
-
-編譯
-</p>
-
-<pre>
-$ ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- make zImage dtbs modules
-$ INSTALL_MOD_PATH=out ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- make modules_install
-</pre><br>
-
-<p>
-製作uImage
-</p>
-<pre>
-$ cat ./arch/arm/boot/dts/omap3-n900.dtb &gt;&gt; arch/arm/boot/zImage
-$ mkimage -A arm -O linux -T kernel -C none -a 80008000 -e 80008000 -n uImage -d arch/arm/boot/zImage uImage
-</pre><br>
-
-<p>
-製作initird.img (Kernel: lib/modules/4.9.0)
-</p>
-<pre>
-$ cd 
-$ wget https://github.com/steward-fu/n900/releases/download/v1.0/jessie-boot.tar.gz
-$ tar xvf jessie-boot.tar.gz
-$ cd boot
-$ mkdir unpack
-$ cd unpack
-$ zcat ../initrd.img-4.9.0 | cpio -idmv
-  lib/modules/4.9.0
-
-$ find . | cpio -o -c | gzip -9 &gt; ../new_initrd.img
-</pre><br>
-
-<p>
-製作uInitrd
-</p>
-<pre>
-$ mkimage -A arm -T ramdisk -C none -a 0 -e 0 -n uInitrd -d new_initrd.img uInitrd
-</pre><br>
-
-<p>
-完成<br>
-<img src="build_kernel/3.jpg" class="maxSize">
+P.S. 替換uImage並且把<b>out/lib/modules/5.3.2</b>複製到rootfs下的相對位置即可。
 </p>
 
 <p>
