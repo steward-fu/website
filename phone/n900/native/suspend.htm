@@ -44,68 +44,71 @@
 <div id="content">
 <script type="text/javascript" src="../../../header.js"></script>
 <div id="page">
-<h3>Nokia N900 &gt;&gt; Native Debian &gt;&gt; Kernel 4.9.0</h3>
-<p><b>build kernel 4.9.0</b></p>
+<h3>Nokia N900 &gt;&gt; Native Debian &gt;&gt; Kernel 5.3.0</h3>
+<p><b>解決Suspend被音量鍵喚醒的問題</b></p>
 <hr size="1">
 <p>
-Debian x64
+drivers/input/misc/twl4030-pwrbutton.c
 </p>
-<pre>
-$ sudo apt-get install gcc-arm*
-$ cd
-$ git clone https://github.com/pali/linux-n900
-$ cd linux-n900
-$ git checkout v4.9-n900
-$ ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- make rx51_defconfig
-$ ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- make menuconfig
-</pre>
-<p>
-<img src="build_kernel/1.jpg" class="maxSize"><br>
-<img src="build_kernel/2.jpg" class="maxSize"><br><br>
+<pre class="brush:cpp">
+int twl4030_pwrbutton_lock=0;
+EXPORT_SYMBOL(twl4030_pwrbutton_lock);
 
-編譯
-</p>
+static irqreturn_t powerbutton_irq(int irq, void *_pwr)
+{
+  struct input_dev *pwr = _pwr;
+  int err;
+  u8 value;
 
-<pre>
-$ ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- make zImage dtbs modules
-$ INSTALL_MOD_PATH=out ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- make modules_install
+  err = twl_i2c_read_u8(TWL_MODULE_PM_MASTER, &amp;value, STS_HW_CONDITIONS);
+  if (!err)  {
+    pm_wakeup_event(pwr-&gt;dev.parent, 0);
+    value&amp;= PWR_PWRON_IRQ;
+    if ((pre_value == 1) &amp;&amp; (value == 0)) {
+      twl4030_pwrbutton_lock = !twl4030_pwrbutton_lock;
+    }
+    pre_value = value;
+    input_report_key(pwr, KEY_POWER, value);
+    input_sync(pwr);
+  } 
+  else {
+    dev_err(pwr-&gt;dev.parent, "twl4030: i2c error %d while reading TWL4030 PM_MASTER STS_HW_CONDITIONS register\n", err);
+  }
+  return IRQ_HANDLED;
+}
 </pre><br>
 
 <p>
-製作uImage
+drivers/input/keyboard/twl4030_keypad.c
 </p>
-<pre>
-$ cat ./arch/arm/boot/dts/omap3-n900.dtb &gt;&gt; arch/arm/boot/zImage
-$ mkimage -A arm -O linux -T kernel -C none -a 80008000 -e 80008000 -n uImage -d arch/arm/boot/zImage uImage
+<pre class="brush:cpp">
+extern int twl4030_pwrbutton_lock;
+
+static irqreturn_t do_kp_irq(int irq, void *_kp)
+{
+  struct twl4030_keypad *kp = _kp;
+  u8 reg;
+  int ret;
+  
+  /* Read &amp; Clear TWL4030 pending interrupt */
+  ret = twl4030_kpread(kp, &amp;reg, KEYP_ISR1, 1);
+
+  if (twl4030_pwrbutton_lock) {
+    return IRQ_HANDLED;
+  }
+
+  /*
+   * Release all keys if I2C has gone bad or
+   * the KEYP has gone to idle state.
+   */
+  if (ret &gt;= 0 &amp;&amp; (reg &amp; KEYP_IMR1_KP))
+    twl4030_kp_scan(kp, false);
+  else
+    twl4030_kp_scan(kp, true);
+
+  return IRQ_HANDLED;
+}
 </pre><br>
-
-<p>
-製作initird.img (Kernel: lib/modules/4.9.0)
-</p>
-<pre>
-$ cd 
-$ wget https://github.com/steward-fu/n900/releases/download/v1.0/jessie-boot.tar.gz
-$ tar xvf jessie-boot.tar.gz
-$ cd boot
-$ mkdir unpack
-$ cd unpack
-$ zcat ../initrd.img-4.9.0 | cpio -idmv
-  lib/modules/4.9.0
-
-$ find . | cpio -o -c | gzip -9 &gt; ../new_initrd.img
-</pre><br>
-
-<p>
-製作uInitrd
-</p>
-<pre>
-$ mkimage -A arm -T ramdisk -C none -a 0 -e 0 -n uInitrd -d new_initrd.img uInitrd
-</pre><br>
-
-<p>
-完成<br>
-<img src="build_kernel/3.jpg" class="maxSize">
-</p>
 
 <p>
 <br><a href="../../../phone.htm">返回上一頁</a>
