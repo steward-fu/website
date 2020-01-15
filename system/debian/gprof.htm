@@ -45,7 +45,7 @@
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
 <h3>Debian</h3>
-<p><b>如何使用perf找出程式耗時的副程式</b></p>
+<p><b>如何使用gprof找出程式耗時的副程式</b></p>
 <hr size="1">
 <p>
 測試程式
@@ -72,7 +72,8 @@ void test3(void)
 
 int main(int argc, char** argv)
 {
-  while(1){
+  int cnt=10000;
+  while(cnt--){
     test1();
     test2();
     test3();
@@ -81,30 +82,17 @@ int main(int argc, char** argv)
 </pre><br>
 
 <p>
-編譯
+編譯並且執行
 </p>
 <pre>
-$ gcc -o test main.c
-</pre><br>
-
-<p>
-執行
-</p>
-<pre>
-$ ./test &amp;
-$ sudo perf record -p `pidof test`
-</pre><br>
-
-<p>
-3秒後，使用(Ctrl + C)停止perf
-</p>
-<pre>
-$ sudo perf report
+$ gcc -pg -g -no-pie main.c -o test
+$ ./test
+$ gprof -b test gmon.out
 </pre><br>
 
 <p>
 完成<br>
-<img src="perf/1.jpg" class="maxSize">
+<img src="gprof/1.jpg" class="maxSize">
 </p>
 
 <p>
