@@ -21,7 +21,7 @@
     var my_constant = 'test';
     var my_keyword =  'module center for';
     var my_type = 'int';
-    var my_function = 'difference translate rotate hull sphere cube cylinder';
+    var my_function = 'difference translate rotate hull sphere cube cylinder union';
 
     this.regexList = [
       {regex: /^ *#.*/gm, css: 'my_preprocessor'},
