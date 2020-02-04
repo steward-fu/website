@@ -51,24 +51,10 @@
 參考資訊：<br>
 1. <a href="http://talk.maemo.org/showpost.php?p=1053809&postcount=846">calibration</a><br><br>
 
-由於N900的BQ27200沒有連接燒錄腳位，因此，校準的資料並沒有辦法燒錄到EEPROM，只能暫存在RAM裡面，而經由如下圖可以得知，拔掉電池後，校準資料就會不見，因此，假如不是使用原廠電池，拔掉電池後，必須每次做校準的動作，不然就只能從Kernel做修改，但是比較麻煩的是，校準的放電電壓是3280mV，因此，必須確保購買的電池最低電壓可以達到這個放電電壓，否則無法校準電池<br>
+N900的BQ27200電路圖如下：<br>
 <img src="battery_calibration/1.jpg" class="maxSize"><br><br>
 
 步驟如下：<br>
-1. 電池充滿電<br>
-2. 執行如下命令：
-</p>
-<pre>
-$ sudo rmmod bq27xxx_battery_i2c
-$ sudo rmmod bq27xxx_battery
-$ sudo rmmod rx51_battery
-$ sudo dd if=/dev/zero of=/dev/null bs=1M
-</pre>
-<p>
-3. 拔掉充電器<br>
-4. 接著讓機器放電到0%，電源管理IC就會自動校準<br><br>
-
-假如還是無法校準時，使用如下步驟：<br>
 1. 電池充滿電<br>
 2. 執行如下命令：
 </p>
@@ -81,10 +67,8 @@ $ sudo dd if=/dev/zero of=/dev/null bs=1M &amp;
 $ sudo ./bq27200.sh 5
 </pre>
 <p>
-3. VDQ=1<br>
-4. 拔掉充電器<br>
-5. EDV1=1(電壓大約為3248mV)<br>
-6. 機器關機並且接上充電器充電<br><br>
+3. 拔掉充電器<br>
+4. 接著讓機器放電到0%，電源管理IC就會自動校準<br><br>
 
 bq27200.sh
 </p>
@@ -284,6 +268,11 @@ if [ $FLAGS_CHARGE -eq 0 ] ; then
   C="-"$C
 fi
 printf "$(date +%H:%M) %4d %-3d  %-3d  %-4d %-4d %-4d %-4d %-5d %-5d %-3d %d\n" $VOLT $RSOC $CSOC $C $NAC $CACD $CACT $TTF $TTE $(($TEMP * 250 /1000 - 273)) $FLAGS_EDV1 
+
+if [ $FLAGS_EDV1 -eq 1 ] ; then
+  poweroff
+fi
+
 sleep $LOOPMODE
 doit=1
 fi # if loopmode
