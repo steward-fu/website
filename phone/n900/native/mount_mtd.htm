@@ -45,28 +45,21 @@
 <script type="text/javascript" src="../../../header.js"></script>
 <div id="page">
 <h3>Nokia N900 &gt;&gt; Native Debian &gt;&gt; Kernel 5.3.0</h3>
-<p><b>build kernel 5.3.0</b></p>
+<p><b>如何掛載MTD根目錄</b></p>
 <hr size="1">
 <p>
-Debian x64
+步驟如下：
 </p>
 <pre>
-$ sudo apt-get install gcc-arm*
-$ cd
-$ wget https://github.com/steward-fu/n900/releases/download/v1.0/omap3-n900.dtb
-$ wget https://github.com/steward-fu/n900/releases/download/v1.1/kernel_jessie.tar
-$ tar xvf kernel_jessie.tar
-$ cd kernel
-$ ARCH=arm make rx51_defconfig
-$ ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- make zImage modules dtbs -j4
-$ ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- make modules_install INSTALL_MOD_PATH=out
+$ sudo apt install mtd-utils -y
+$ cat /proc/mtd
 
-$ cat arch/arm/boot/zImage ./arch/arm/boot/dts/omap3-n900.dtb &gt; new
-$ mkimage -A arm -O linux -T kernel -C none -a 80008000 -e 80008000 -n uImage -d new uImage
-</pre>
-<p>
-P.S. 替換uImage並且把<b>out/lib/modules/5.3.0</b>複製到rootfs下的相對位置即可。
-</p>
+$ mkdir -vp /mnt/fremantle
+$ ubiattach -p /dev/mtd5
+$ mount -t ubifs ubi:rootfs /mnt/fremantle
+
+$ ubidetach -p /dev/mtd5
+</pre><br>
 
 <p>
 <br><a href="../../../phone.htm">返回上一頁</a>
