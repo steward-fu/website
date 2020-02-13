@@ -21,8 +21,8 @@
   function Brush(){
     var my_constant = 'False True'
     var my_keyword =  'import from def while if default for range break in else elif __init__ class super'
-    var my_type = 'argparse path os serial threading time sys stdout args self'
-    var my_function = 'exists open ArgumentParser add_argument readchar input raw_input start parse_args close read write len sleep exit print geteuid Serial Thread'
+    var my_type = 'gtk glib commands subprocess argparse path os serial threading time sys stdout args self'
+    var my_function = 'exists open ArgumentParser add_argument readchar input raw_input start parse_args close read write len sleep exit print geteuid Serial Thread StatusIcon set_from_stock set_from_file format connect get_current_event get_current_event_time getoutput MenuItem ImageMenuItem Menu append Image set_image set_subimage SeparatorMenuItem set_submenu show_all popup system main_quit main'
 
     this.regexList = [
       {regex: /#.*/g, css: 'my_preprocessor'},

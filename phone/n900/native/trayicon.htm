@@ -1,0 +1,144 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../../scripts/shBrushPython.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../../header.js"></script>
+<div id="page">
+<h3>Nokia N900 &gt;&gt; Native Debian &gt;&gt; Kernel 5.3.0</h3>
+<p><b>自製設定Trayicon</b></p>
+<hr size="1">
+<p>
+由於目前的VBUS供電需要透過CommandLine設定，司徒也不想一直開啓VBUS供電功能，主要原因在於耗電過快，因此，司徒使用PyGtk寫了一個USB供電設定App，可以透過這個TrayIcon作切換，程式碼如下。<br><br>
+
+trayicon.py
+</p>
+<pre class="brush:python">
+#!/usr/bin/python
+import os
+import sys
+import gtk
+import glib
+import time
+import commands
+import subprocess
+
+base_path = '/usr/n900/trayicon/'
+usb_mode = '/sys/devices/platform/68000000.ocp/48072000.i2c/i2c-2/2-006b/power_supply/bq24150a-0/mode'
+
+class n900:
+  def __init__(self):
+    self.statusicon = gtk.StatusIcon()
+    self.statusicon.set_from_file('{}{}'.format(base_path, 'main.png'))
+    self.statusicon.connect("activate", self.left_click_event)
+
+  def left_click_event(self, event):
+    time = gtk.get_current_event_time()
+    button = gtk.get_current_event().button
+
+    cur_mode = commands.getoutput('cat {}'.format(usb_mode))
+
+    auto = None
+    menu = gtk.Menu()
+    submenu = gtk.Menu()
+    if 'auto' in cur_mode:
+      auto = gtk.MenuItem("Auto (used)")
+    else:
+      auto = gtk.MenuItem("Auto")
+    auto.connect("button-press-event", self.usb_auto) 
+    submenu.append(auto)
+
+    boost = None
+    if 'boost' in cur_mode:
+      boost = gtk.MenuItem("Boost (used)")
+    else:
+      boost = gtk.MenuItem("Boost")
+    submenu.append(boost)
+    boost.connect("button-press-event", self.usb_boost) 
+
+    img = gtk.Image()
+    img.set_from_file('{}{}'.format(base_path, 'usb.png'))
+    n1 = gtk.ImageMenuItem('USB')
+    n1.set_image(img)
+    n1.set_submenu(submenu) 
+    menu.append(n1)
+
+    menu.append(gtk.SeparatorMenuItem())
+    menuexit = gtk.ImageMenuItem("Exit")
+    img = gtk.Image()
+    img.set_from_file('{}{}'.format(base_path, 'exit.png'))
+    menuexit.set_image(img)
+    menuexit.connect("button-press-event", self.exit) 
+    menu.append(menuexit) 
+
+    menu.show_all() 
+    menu.popup(None, None, 
+      gtk.status_icon_position_menu, button, time, self.statusicon) 
+
+  def usb_auto(self, widget, event): 
+    os.system('echo auto > {}'.format(usb_mode))
+  
+  def usb_boost(self, widget, event): 
+    os.system('echo boost > {}'.format(usb_mode))
+  
+  def exit(self, widget, event): 
+    if event.button == 1:
+      gtk.main_quit() 
+  
+n900()
+gtk.main()
+</pre><br>
+
+<p>
+完成<br>
+<img src="trayicon/1.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../../phone.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
