@@ -29,7 +29,7 @@
   <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
   
   <script type="text/javascript" src="../../scripts/shCore.js"></script>
-  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushScad.js"></script>
 
   <!-- Conditional comment to apply opacity fix for IE #content background.
        Invalid CSS, but can be removed without harming design -->
@@ -66,7 +66,73 @@ Pin1~10: GND, RI, CTS, RTS, DSR, GND, DTR, TXD, RXD, CD<br>
 
 終於有3.3V UART可以使用了！<br>
 <img src="uart/11.jpg" class="maxSize"><br>
-P.S. Debian 10: /dev/ttyS1
+P.S. Debian 10: /dev/ttyS1<br><br>
+
+<img src="uart/12.jpg" class="maxSize">
+</p>
+
+<pre class="brush:scad">
+$fn = 100;
+ 
+module meniscus(h=10, r=1){
+  difference(){
+    translate([r/2+0.1, r/2+0.1, 0]){
+      cube([r+0.2, r+0.1, h+0.2], center=true);
+    }
+    cylinder(h=h+0.2, r=r, center=true);
+  }
+}
+ 
+module cube_round_corner(w=10, h=10, z=10, r=1){
+  difference(){
+    cube([w, h, z], center=true);
+    translate([(w/2)-r, (h/2)-r]){
+      rotate(0){  
+        meniscus(z, r);
+      }
+    }
+    translate([(-w/2)+r, (h/2)-r]){
+      rotate(90){
+        meniscus(z, r);
+      }
+    }
+    translate([(-w/2)+r, (-h/2)+r]){
+      rotate(180){
+        meniscus(z, r);
+      }
+    }
+    translate([(w/2)-r, (-h/2)+r]){
+      rotate(270){
+        meniscus(z, r);
+      }
+    }
+  }
+}
+
+
+difference(){
+  union(){
+    translate([0, 2.5, 0]){
+      cube_round_corner(w=16, h=7, z=2, r=2.5);
+    }
+    cube_round_corner(w=18, h=7, z=2, r=2.5);
+    translate([0, 1.25, 0]){
+      cube_round_corner(w=31, h=6, z=2, r=3);
+    }
+  }
+  
+  translate([-6.5, -1.5, -1]){
+    cube([14.5, 3, 2]);
+  }
+}
+</pre><br>
+
+<p>
+<img src="uart/17.jpg" class="maxSize"><br>
+<img src="uart/13.jpg" class="maxSize"><br>
+<img src="uart/14.jpg" class="maxSize"><br>
+<img src="uart/15.jpg" class="maxSize"><br>
+<img src="uart/16.jpg" class="maxSize">
 </p>
 
 <p>
