@@ -51,7 +51,7 @@
 參考資訊：<br>
 1. <a href="https://www.solitontech.com/uart-protocol-validation-service/">uart-protocol-validation-service</a><br><br>
 
-由於STC15W104沒有UART功能，因此，司徒只好先使用I/O Toggle的方式製作UART TX，TX比較簡單，只要把時間算好，基本上沒有太大問題，唯一要注意的是，最好不要超過3%的誤差，加上STC15W104的石英震盪器是使用內部RC元件，難免會有誤差，建議不要用太快的RC頻率，目前司徒使用RC 11.0592MHz，UART Baudrate則是57600bps，過程說明如下。<br><br>
+由於STC15W104沒有UART功能，因此，司徒只好先使用I/O Toggle的方式製作UART TX，TX比較簡單，只要把時間算好，基本上沒有太大問題，唯一要注意的是，最好不要超過3%的誤差，加上STC15W104的石英震盪器是使用內部RC元件，難免會有誤差，建議不要用太快的RC頻率，目前司徒使用RC 11.0592MHz，UART Baudrate則是57600bps，格式為N,8,1，過程說明如下。<br><br>
 
 UART傳輸協定<br>
 <img src="asm_uart_tx/1.jpg" class="maxSize"><br>
@@ -60,38 +60,39 @@ UART傳輸協定<br>
 main.s
 </p>
 <pre class="brush:asm">
+  uart_tx .equ p3.1
+
   .org 0h
   jmp _start
-   
+    
   .org 100h
 _start:
-  setb p3.1
+  setb uart_tx
 main:
   mov a, #55h
   call uart_send_byte
   call delay_1s
   jmp main
-
+ 
+  ; 57600,N,8,1
 uart_send_byte:
   mov r6, #8
-  clr p3.1
+  clr uart_tx
   call delay_16us
 u0:
   rrc a
   jc u1
-  clr p3.1
+  clr uart_tx
   sjmp u2
 u1:
-  setb p3.1
+  setb uart_tx
 u2:
   call delay_16us
   djnz r6, u0
-  setb p3.1
-  call delay_16us
-  setb p3.1
+  setb uart_tx
   call delay_16us
   ret
-
+ 
   ; 1t + ((1t + (4t * 250) + 4t) * 200t) + 4t = 201005t
   ; 11.0592MHz = 0.09042us
   ; 201005t * 0.09042us = 18175us
@@ -103,7 +104,7 @@ d1:
   djnz r6, d1
   djnz r7, d0
   ret
- 
+  
   ; 1t + ((4t + 201005t + 4t) * 55) + 4t = 11055720t
   ; 11055720t * 0.09042us = 999658us ~= 1s
 delay_1s: 
@@ -112,7 +113,7 @@ d2:
   call delay_18ms
   djnz r5, d2
   ret
-
+ 
   ; 1t + (4t * 44) = 177t
   ; 11.0592MHz = 0.09042us
   ; 177t * 0.09042 = 16.00434us
@@ -125,6 +126,7 @@ d3:
   djnz r5, d3
   ret
   .end
+
 </pre><br>
 
 <p>
