@@ -49,36 +49,41 @@
 <hr size="1">
 <p>
 STC15W104的輸出驅動方式，如下表格：<br>
-<img src="asm_led/3.jpg" class="maxSize"><br>
-P.S. 預設是8051輸出模式，而LED是接到P3.5(低電位點亮)，因此，輸出驅動不需額外做設定。<br><br>
+<img style="border:0px" src="asm_led/3.jpg" class="maxSize"><br>
+P.S. I/O預設是8051雙向模式。<br><br>
 
 main.s
 </p>
 <pre class="brush:asm">
   .org 0h
   jmp _start
- 
+  
   .org 100h
 _start:
-  setb p3.5
+  setb p3.2
   call delay_1s
-  clr p3.5
+  clr p3.2
   call delay_1s
   jmp _start
-
-
-delay_20m: 
+ 
+  ; 1t + ((1t + (4t * 250) + 4t) * 200t) + 4t = 201005t
+  ; 11.0592MHz = 0.09042us
+  ; 201005t * 0.09042us = 18175us
+delay_18ms: 
+  mov r7, #200
+d0:
   mov r6, #250
-  mov r7, #250
 d1: 
   djnz r6, d1
-  djnz r7, d1
+  djnz r7, d0
   ret
- 
+
+  ; 1t + ((4t + 201005t + 4t) * 55) + 4t = 11055720t
+  ; 11055720t * 0.09042us = 999658us ~= 1s
 delay_1s: 
-  mov r5, #50
+  mov r5, #55
 d2: 
-  call delay_20m
+  call delay_18ms
   djnz r5, d2
   ret
   .end
