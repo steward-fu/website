@@ -89,12 +89,29 @@ print '{}% ({}mV, {}mA)'.format(per, volt, curr)
 經過測試，bq27xxx_battery驅動無法準確偵測自製電池且會讓系統自動關機(大約在3500mV)，因此，司徒在rc.local啟動時，卸載bq27xxx_battery以及bq27xxx_battery_i2c，然後把上面的Python改成如下：
 </p>
 <pre class="brush:python">
+#!/usr/bin/python
+import os
+import sys
+import commands
+
+volt = commands.getoutput('/usr/sbin/i2cget -y 2 0x55 0x08 w')
+volt = volt.replace('\r', '').replace('\n', '')
+volt = int(volt, 16)
+
+ip = None
+try:
+  r = commands.getoutput('ip -o addr show up primary scope global')
+  ip = r.split('inet')[1].split('/')[0].replace(' ', '')
+except:
+  ip = 'ERR'
+
+print '({}, {}mV)'.format(ip, volt)
 </pre><br>
 
 <p>
 完成<br>
 <img src="show_battery/6.jpg" class="maxSize"><br>
-P.S. 記得安裝i2c-tools並且修改<v>i2cget</b>以及<b>/dev/i2c*</b>的權限。
+P.S. 記得安裝i2c-tools並且修改<b>i2cget</b>以及<b>/dev/i2c*</b>的權限。
 </p>
 
 <p>
