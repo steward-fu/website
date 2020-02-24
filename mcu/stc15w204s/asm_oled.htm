@@ -48,46 +48,64 @@
 <p><b>0.96" OLED 128x64 SSD1306</b></p>
 <hr size="1">
 <p>
+參考資訊：<br>
+1. <a href="https://cdn-shop.adafruit.com/datasheets/SSD1306.pdf">SSD1306.pdf</a><br>
+2. <a href="https://github.com/adafruit/Adafruit_SSD1306/blob/master/Adafruit_SSD1306.cpp">Adafruit_SSD1306</a><br>
+3. <a href="http://www.stcmicro.com/datasheet/STC15F2K60S2-en.pdf">STC15F2K60S2-en.pdf</a><br><br>
+
 main.s
 </p>
 <pre class="brush:asm">
-  i2c_sda set 0cch
-  i2c_scl set 0cdh
- 
-  ssd1306_address             equ 0x78
-  ssd1306_lcdwidth            equ 128
-  ssd1306_lcdheight           equ 64
-  ssd1306_setcontrast         equ 0x81
-  ssd1306_displayallow_resume equ 0xa4
-  ssd1306_displayallow        equ 0xa5
-  ssd1306_normaldisplay       equ 0xa6
-  ssd1306_invertdisplay       equ 0xa7
-  ssd1306_displayoff          equ 0xae
-  ssd1306_displayon           equ 0xaf
-  ssd1306_setdisplayoffset    equ 0xd3
-  ssd1306_setcompins          equ 0xda
-  ssd1306_setvcomdetect       equ 0xdb
-  ssd1306_setdisplayclockdiv  equ 0xd5
-  ssd1306_setprecharge        equ 0xd9
-  ssd1306_setmultiplex        equ 0xa8
-  ssd1306_setlowcolumn        equ 0x00
-  ssd1306_sethighcolumn       equ 0x10
-  ssd1306_setstartline        equ 0x40
-  ssd1306_memorymode          equ 0x20
-  ssd1306_columnaddr          equ 0x21
-  ssd1306_pageaddr            equ 0x22
-  ssd1306_comscaninc          equ 0xc0
-  ssd1306_comscandec          equ 0xc8
-  ssd1306_segremap            equ 0xa0
-  ssd1306_chargepump          equ 0x8d
-  ssd1306_externalvcc         equ 0x01
-  ssd1306_switchcapvcc        equ 0x02
+  i2c_sda         set 0xcc
+  i2c_scl         set 0xcd
+
+  i2c_addr        equ 0x78
+  lcd_width       equ 128
+  lcd_height      equ 64
+
+  cmd_contrast    equ 0x81
+  cmd_disp_resume equ 0xa4
+  cmd_normal_disp equ 0xa6
+  cmd_invert_disp equ 0xa7
+  cmd_disp_off    equ 0xae
+  cmd_disp_on     equ 0xaf
+  cmd_disp_offset equ 0xd3
+  cmd_com_pins    equ 0xda
+  cmd_vcom_detect equ 0xdb
+  cmd_clock_div   equ 0xd5
+  cmd_pre_charge  equ 0xd9
+  cmd_multiplex   equ 0xa8
+  cmd_start_line  equ 0x40
+  cmd_memory_mode equ 0x20
+  cmd_column_addr equ 0x21
+  cmd_page_addr   equ 0x22
+  cmd_scan_dec    equ 0xc8
+  cmd_seg_remap   equ 0xa0
+  cmd_charge_pump equ 0x8d
 
   .org 0h
   jmp _start
 
+  .org 100h
 _start:
   call ssd1306_init
+  call ssd1306_set_col_addr
+  call ssd1306_set_page_addr
+  call i2c_start
+  mov a, #i2c_addr
+  call i2c_write
+  mov a, #40h
+  call i2c_write
+
+  mov r0, #128
+m0:
+  mov r1, #8
+m1:
+  mov a, #55h
+  call i2c_write
+  djnz r1, m1
+  djnz r0, m0
+  call i2c_stop
   jmp $
 
 delay:
@@ -148,11 +166,11 @@ i2:
   mov r4, a
   ret
 
-ssd1306_cmd:
+send_cmd:
   push 4
   mov r4, a
   call i2c_start
-  mov a, #ssd1306_address
+  mov a, #i2c_addr
   call i2c_write
   mov a, #0
   call i2c_write
@@ -163,11 +181,11 @@ ssd1306_cmd:
   mov r4, a
   ret
 
- ssd1306_data:
+send_data:
   push 4
   mov r4, a
   call i2c_start
-  mov a, #ssd1306_address
+  mov a, #i2c_addr
   call i2c_write
   mov a, #40h
   call i2c_write
@@ -179,56 +197,74 @@ ssd1306_cmd:
   ret
 
 ssd1306_init:
-  mov a, #ssd1306_displayoff
-  call ssd1306_cmd
-  mov a, #ssd1306_setdisplayclockdiv
-  call ssd1306_cmd
+  mov a, #cmd_disp_off
+  call send_cmd
+  mov a, #cmd_clock_div
+  call send_cmd
   mov a, #80h
-  call ssd1306_cmd
-  mov a, #ssd1306_setmultiplex
-  call ssd1306_cmd
+  call send_cmd
+  mov a, #cmd_multiplex
+  call send_cmd
   mov a, #3fh
-  call ssd1306_cmd
-  mov a, #ssd1306_setdisplayoffset
-  call ssd1306_cmd
+  call send_cmd
+  mov a, #cmd_disp_offset
+  call send_cmd
   mov a, #0
-  call ssd1306_cmd
-  mov a, #ssd1306_setstartline
-  call ssd1306_cmd
-  mov a, #ssd1306_chargepump
-  call ssd1306_cmd
+  call send_cmd
+  mov a, #cmd_start_line
+  call send_cmd
+  mov a, #cmd_charge_pump
+  call send_cmd
   mov a, #14h
-  call ssd1306_cmd
-  mov a, #ssd1306_memorymode
-  call ssd1306_cmd
+  call send_cmd
+  mov a, #cmd_memory_mode
+  call send_cmd
   mov a, #0
-  call ssd1306_cmd
-  mov a, #ssd1306_segremap | 1
-  call ssd1306_cmd
-  mov a, #ssd1306_comscandec
-  call ssd1306_cmd
-  mov a, #ssd1306_setcompins
-  call ssd1306_cmd
+  call send_cmd
+  mov a, #cmd_seg_remap | 1
+  call send_cmd
+  mov a, #cmd_scan_dec
+  call send_cmd
+  mov a, #cmd_com_pins
+  call send_cmd
   mov a, #12h
-  call ssd1306_cmd
-  mov a, #ssd1306_setcontrast
-  call ssd1306_cmd
+  call send_cmd
+  mov a, #cmd_contrast
+  call send_cmd
   mov a, #0cfh
-  call ssd1306_cmd
-  mov a, #ssd1306_setprecharge
-  call ssd1306_cmd
+  call send_cmd
+  mov a, #cmd_pre_charge
+  call send_cmd
   mov a, #0f1h
-  call ssd1306_cmd
-  mov a, #ssd1306_setvcomdetect
-  call ssd1306_cmd
+  call send_cmd
+  mov a, #cmd_vcom_detect
+  call send_cmd
   mov a, #40h
-  call ssd1306_cmd
-  mov a, #ssd1306_displayallow_resume
-  call ssd1306_cmd
-  mov a, #ssd1306_normaldisplay
-  call ssd1306_cmd
-  mov a, #ssd1306_displayon
-  call ssd1306_cmd
+  call send_cmd
+  mov a, #cmd_disp_resume
+  call send_cmd
+  mov a, #cmd_normal_disp
+  call send_cmd
+  mov a, #cmd_disp_on
+  call send_cmd
+  ret
+
+ssd1306_set_col_addr:
+  mov a, #cmd_column_addr
+  call send_cmd
+  mov a, #0
+  call send_cmd
+  mov a, #lcd_width - 1
+  call send_cmd
+  ret
+ 
+ssd1306_set_page_addr:
+  mov a, #cmd_page_addr
+  call send_cmd
+  mov a, #0
+  call send_cmd
+  mov a, #lcd_height / 8 - 1
+  call send_cmd
   ret
   .end
 </pre><br>
@@ -241,8 +277,16 @@ $ mcu8051ide --compile main.s
 </pre><br>
 
 <p>
+燒錄程式：
+</p>
+<pre>
+$ sudo stcgal -P stc15 main.hex
+</pre><br>
+
+<p>
 完成<br>
-<img src="asm_oled/1.jpg" class="maxSize">
+<img src="asm_oled/1.jpg" class="maxSize"><br>
+<img src="asm_oled/2.jpg" class="maxSize">
 </p>
 
 
