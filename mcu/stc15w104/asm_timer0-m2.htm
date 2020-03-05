@@ -45,15 +45,15 @@
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
 <h3>STC15W104 &gt;&gt; Assembly</h3>
-<p><b>Timer0(Timer、Mode0)</b></p>
+<p><b>Timer0(Timer、Mode2)</b></p>
 <hr size="1">
 <p>
-Timer0 Mode0為自動載入的16Bit計數、計時模式，最大可以從0數到65536，當數到65536時，則觸發Timer0計時中斷<br>
-<img style="border:0px" src="asm_timer0-m0/1.jpg" class="maxSize"><br><br>
+Timer0 Mode2為自動載入的8Bit計數、計時模式，最大可以從0數到256，當數到256時，則觸發Timer0計時中斷<br>
+<img style="border:0px" src="asm_timer0-m1/1.jpg" class="maxSize"><br><br>
 
 設定步驟：<br>
 1. AUXR(0x8e)的Bit7(T0x12, 1T、12T)<br>
-2. TMOD的Timer0計時模式(CT=0, M1=0, M0=0)<br>
+2. TMOD的Timer0計時模式(CT=0, M1=1, M0=0)<br>
 3. 設定TL0、TH0(1T, 0.09us, 11.0592MHz)<br>
 4. 設定TR0<br>
 5. 設定ET0、EA<br><br>
@@ -72,7 +72,7 @@ main.s
   .org 0x100
 start:
   orl auxr, #80h
-  mov tmod, #00h
+  mov tmod, #02h
   mov tl0, #0h
   mov th0, #0h
   clr a
@@ -91,7 +91,7 @@ nothing:
   .end
 </pre>
 <p>
-P.S. 1T，(0.09us * 65536 * 255) ~= 1.5s<br><br>
+P.S. 1T，(0.09us * 255 * 255) ~= 5.85ms<br><br>
 
 編譯程式：
 </p>
