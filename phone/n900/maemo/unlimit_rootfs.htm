@@ -188,15 +188,33 @@ fi
 echo "Creating /bootmenu.sh..."
 
 cat &lt;&lt;EOF &gt;/bootmenu.sh
+rm -rf /bootmenu.log
+exec 3&gt;&amp;1 4&gt;&amp;2
+trap 'exec 2&gt;&amp;4 1&gt;&amp;3' 0 1 2 3
+exec 1&gt;/bootmenu.log 2&gt;&amp;1
+
+echo "start+++"
+cd /dev; /sbin/MAKEDEV input; cd /
+modprobe omap_hsmmc
+rm -f /dev/mmcblk*
+sleep 2
+for p in /sys/block/mmcblk*/ /sys/block/mmcblk*/mmcblk*p*/; do
+  n=`basename $p`
+  rm -f /dev/$n
+  mknod /dev/$n b `cat $p/dev | sed "s/:/ /g"`
+done
+
 modprobe mmc_block
 modprobe mmc_core
-modprobe omap_hsmmc
+
 modprobe mbcache
 modprobe jbd
 modprobe ext3
 sleep 1
 chmod 660 /dev/mmcblk*
-mount -t ext3 -o noatime,nodiratime,commit=1,data=writeback /dev/mmcblk1p2 /mnt/new_root
+mount -t ext3 -o noatime,nodiratime,commit=1,data=writeback /dev/mmcblk0p2 /mnt/new_root
+ls /dev/mmcblk*
+echo "end---"
 EOF
 
 echo "Done. Booting with open keyboard will use root FS on eMMC partition 2."
