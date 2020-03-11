@@ -1,0 +1,113 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../../../header.js"></script>
+<div id="page">
+<h3>Pandora Rebirth &gt;&gt; SuperZaxxon</h3>
+<p><b>解決"config/hal: couldn't initialise context: unknown error null"問題</b></p>
+<hr size="1">
+<p>
+卡在登入畫面，鍵盤以及觸控都失效<br>
+<img src="fix_hal/1.jpg" class="maxSize"><br><br>
+
+幸好司徒有開啟SSH登入功能，查看了下<b>/var/log/Xorg.0.log</b>
+</p>
+<pre>
+(II) Initializing built-in extension Generic Event Extension
+(II) Initializing built-in extension SHAPE
+(II) Initializing built-in extension MIT-SHM
+(II) Initializing built-in extension XInputExtension
+(II) Initializing built-in extension XTEST
+(II) Initializing built-in extension BIG-REQUESTS
+(II) Initializing built-in extension SYNC
+(II) Initializing built-in extension XKEYBOARD
+(II) Initializing built-in extension XC-MISC
+(II) Initializing built-in extension XFIXES
+(II) Initializing built-in extension RENDER
+(II) Initializing built-in extension RANDR
+(II) Initializing built-in extension COMPOSITE
+(II) Initializing built-in extension DAMAGE
+(EE) config/hal: couldn't initialise context: unknown error (null)
+</pre><br>
+
+<p>
+發現NUB無法初始化
+</p>
+<pre>
+$ /usr/pandora/scripts/op_nubmode.py 
+  Traceback (most recent call last):
+    File "/usr/pandora/scripts/op_nubmode.py", line 6, in <module>
+      import gtk
+    File "/usr/lib/python2.7/site-packages/gtk-2.0/gtk/__init__.py", line 30, in <module>
+      import gobject as _gobject
+    File "/usr/lib/python2.7/site-packages/gtk-2.0/gobject/__init__.py", line 26, in <module>
+      from glib import spawn_async, idle_add, timeout_add, timeout_add_seconds, \
+    File "/usr/lib/python2.7/site-packages/gtk-2.0/glib/__init__.py", line 22, in <module>
+      from glib._glib import *
+  ImportError: /usr/lib/libpyglib-2.0-python.so.0: undefined symbol: g_return_if_fail_warning
+</pre><br>
+
+<p>
+司徒這才發現升級Python3後，添加<b>/etc/ld.so.conf</b>
+</p>
+<pre>
+/usr/local/lib
+</pre>
+<p>
+P.S. 竟然忘記加入<b>/usr/lib</b>路徑，重新加入後並執行<b>ldconfig</b>即可
+</p>
+
+<p>
+</p>
+
+<p>
+<br><a href="../../../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
