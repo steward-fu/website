@@ -44,18 +44,58 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>Debian</h3>
-<p><b>artistic style推薦參數</b></p>
+<h3>Motorola XT894 &gt;&gt; Maemo Leste</h3>
+<p><b>安裝系統</b></p>
 <hr size="1">
 <p>
-參數如下：
+參考資訊：<br>
+1. <a href="https://leste.maemo.org/Motorola_Droid_4">wiki</a><br>
+2. <a href="https://maedevu.maemo.org/images/droid4/">maemo</a><br>
+3. <a href="https://github.com/tmlind/droid4-kexecboot.git">kexecboot</a><br><br>
+
+下載燒錄檔案：
 </p>
 <pre>
-$ astyle -rn --style=java --indent=spaces=2 "*.c" "*.cpp" "*.h"
+$ sudo apt-get install fastboot
+$ cd
+$ wget https://maedevu.maemo.org/images/droid4/VRZ_XT894_9.8.2O-72_VZW-18-8_CFC.xml.zip
+$ wget https://maedevu.maemo.org/images/droid4/flash-droid-4-fw.sh
+$ wget https://maedevu.maemo.org/images/droid4/20200323/maemo-leste-1.0-armhf-droid4-20200323.img.xz
+$ wget https://github.com/tmlind/droid4-kexecboot/blob/master/utags-mmcblk1p13.bin
+$ wget https://github.com/tmlind/droid4-kexecboot/blob/master/2019-03-08/droid4-kexecboot.img
+$ unzip VRZ_XT894_9.8.2O-72_VZW-18-8_CFC.xml.zip
 </pre><br>
 
 <p>
-<br><a href="../../system.htm">返回上一頁</a>
+燒錄kexecboot：<br>
+1. XT894關機<br>
+2. 按住電源、音量上、音量下，一秒後同時放開即可進入fastboot模式<br>
+3. 執行如下命令
+</p>
+<pre>
+$ pushd VRZ_XT894_9.8.2O-72_VZW-18-8_CFC.xml
+$ sudo bash ../flash-droid-4-fw.sh
+$ popd
+$ sudo fastboot flash mbm VRZ_XT894_9.8.2O-72_VZW-18-8_CFC.xml/allow-mbmloader-flashing-mbm.bin
+$ sudo fastboot reboot-bootloader
+$ sudo fastboot flash bpsw droid4-kexecboot.img
+$ sudo fastboot flash utags utags-mmcblk1p13.bin
+$ sudo fastboot reboot
+</pre><br>
+
+<p>
+製作開機系統：
+</p>
+<pre>
+$ xzcat maemo-leste-1.0-armhf-droid4-20200323.img.xz | sudo dd status=progress bs=1M of=/dev/xxx
+$ sync
+</pre>
+<p>
+P.S. 插入XT894後開機即可。
+</p>
+
+<p>
+<br><a href="../../phone.htm">返回上一頁</a>
 </p>
 
 </div>
