@@ -48,11 +48,7 @@
 <p><b>逆向MFC編譯的程式</b></p>
 <hr size="1">
 <p>
-基本上，逆向MFC編譯的程式會比一般Win32 API程式來的困難，原因在於MFC又把Win32 API包裝了一層，所以副程式是以訊息為單位命名，不過搭配OllyDbg和IDA Pro則是可以很容易定位出GUI元件對應的處理副程式位置。
-</p>
-
-<p>
-有鑑於Dingoo A320的Unbrick工具只有Windows版本，司徒剛好打算移植Linux版本，因此，剛好是拿來開刀的最好實驗品，首先確認一下版本<br>
+基本上，逆向MFC編譯的程式會比一般Win32 API程式來得困難，原因在於MFC封裝了Win32 API，而程式主體都是以訊息為溝通媒介，因此處理訊息的Callback副程式比較難找，因此，需要使用OllyDbg和IDA Pro一起定位，這樣就可以找出GUI元件對應的處理副程式位置，司徒使用Dingoo A320的Unbrick解說一下過程：<br>
 <img src="reverse_mfc/1.jpg" class="maxSize">
 </p>
 
@@ -137,13 +133,22 @@ Message Structure<br>
 </p>
 
 <p>
-原定義<br>
-<img src="reverse_mfc/18.jpg" class="maxSize">
+原定義
 </p>
+<pre class="brush:cpp">
+struct AFX_MSGMAP_ENTRY {
+  int nMessage;
+  int nCode;
+  int NID;
+  int nLastID;
+  int* NSIG;
+  void* PFN;
+};
+</pre><br>
 
 <p>
 PFN就是指到副程式位置<br>
-<img src="reverse_mfc/19.jpg" class="maxSize">
+<img src="reverse_mfc/18.jpg" class="maxSize">
 </p>
 
 <p>
@@ -375,7 +380,7 @@ enum WM_MESSAGES {
   WM_PENWINLAST = 0x038F,
   WM_APP = 0x8000,
   WM_USER = 0x0400};
-</pre>
+</pre><br>
 
 <p>
 <br><a href="../../reverse.htm">返回上一頁</a>
