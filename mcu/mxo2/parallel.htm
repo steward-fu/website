@@ -45,7 +45,7 @@
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
 <h3>Lattice MXO2-4000HC &gt;&gt; V2.2 &gt;&gt; Verilog</h3>
-<p><b>Button</b></p>
+<p><b>Parallel</b></p>
 <hr size="1">
 <p>
 參考資訊：<br>
@@ -54,30 +54,42 @@
 程式如下：
 </p>
 <pre class="brush: pas">
-module main(btn, led);
- 
-input btn;
-output reg [7:0] led;
+module main(clk, sw, rgb);
+  
+input clk;
+input [3:0] sw;
+output reg [2:0] rgb;
+reg [23:0] clk_cnt;
+reg [4:0] clk_div;
 
-initial
-  led = ~1;
-
-always @(posedge btn) begin
-  led = led &lt;&lt; 1;
-  if (led == 0)
-    led = ~1;
+initial begin
+  rgb = 0;
+  clk_cnt = 0;
+  clk_div = 1;
 end
+
+always @(posedge clk) begin
+  clk_cnt = clk_cnt + 1;
+  if (clk_cnt > (12000000 / clk_div)) begin
+    clk_cnt = 0;
+    rgb = rgb + 1;
+  end
+end
+
+always @(sw) begin
+  clk_div = sw + 1;
+end
+
 endmodule
 </pre>
 <p>
-觸發條件為btn的正緣訊號，接著依序點亮LED<br><br>
+當觸發條件成立，兩個各別的副程式可以同時執行，這也是FPGA平行處理的觀念，因為它的形式是硬體電路<br><br>
 
 腳位<br>
-<img src="button/1.jpg" class="maxSize"><br><br>
+<img src="parallel/1.jpg" class="maxSize"><br><br>
 
 完成<br>
-<img src="button/2.jpg" class="maxSize"><br>
-<img src="button/3.jpg" class="maxSize">
+<img src="parallel/2.jpg" class="maxSize">
 </p>
 
 <p>

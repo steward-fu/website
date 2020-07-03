@@ -45,7 +45,7 @@
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
 <h3>Lattice MXO2-4000HC &gt;&gt; V2.2 &gt;&gt; Verilog</h3>
-<p><b>Button</b></p>
+<p><b>Clock</b></p>
 <hr size="1">
 <p>
 參考資訊：<br>
@@ -54,30 +54,51 @@
 程式如下：
 </p>
 <pre class="brush: pas">
-module main(btn, led);
- 
-input btn;
-output reg [7:0] led;
+module main(clk, seg_out);
+  
+input clk;
+output [8:0] seg_out;
+reg [8:0] seg_def[9:0];
+reg [3:0] seg_cnt;
+reg [23:0] clk_cnt;
+assign seg_out = seg_def[seg_cnt];
 
-initial
-  led = ~1;
-
-always @(posedge btn) begin
-  led = led &lt;&lt; 1;
-  if (led == 0)
-    led = ~1;
+initial begin
+  clk_cnt = 0;
+  seg_cnt = 0;
+  seg_def[0] = 9'h3f;
+  seg_def[1] = 9'h06;
+  seg_def[2] = 9'h5b;
+  seg_def[3] = 9'h4f;
+  seg_def[4] = 9'h66;
+  seg_def[5] = 9'h6d;
+  seg_def[6] = 9'h7d;
+  seg_def[7] = 9'h07;
+  seg_def[8] = 9'h7f;
+  seg_def[9] = 9'h6f;
 end
+
+always @(posedge clk) begin
+  clk_cnt = clk_cnt + 1;
+  if (clk_cnt &gt; 12000000) begin
+    clk_cnt = 0;
+    seg_cnt = seg_cnt + 1;
+    if (seg_cnt &gt; 9)
+      seg_cnt = 0;
+  end
+end
+
 endmodule
 </pre>
 <p>
-觸發條件為btn的正緣訊號，接著依序點亮LED<br><br>
+開發板上連接的是12MHz振盪器，因此，每數到12000000時，就更新七段顯示器的數值<br><br>
 
 腳位<br>
-<img src="button/1.jpg" class="maxSize"><br><br>
+<img src="clock/1.jpg" class="maxSize"><br>
+P.S. 七段顯示器的輸出腳位記得上拉電阻<br><br>
 
 完成<br>
-<img src="button/2.jpg" class="maxSize"><br>
-<img src="button/3.jpg" class="maxSize">
+<img src="clock/2.jpg" class="maxSize">
 </p>
 
 <p>
