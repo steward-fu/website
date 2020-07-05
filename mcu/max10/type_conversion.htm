@@ -44,52 +44,30 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>Lattice MXO2-4000HC &gt;&gt; V2.2 &gt;&gt; Verilog</h3>
-<p><b>Parallel</b></p>
+<h3>Altera MAX10 10M02SCM &gt;&gt; VHDL</h3>
+<p><b>型態轉換</b></p>
 <hr size="1">
 <p>
 參考資訊：<br>
-1. <a href="https://www.stepfpga.com/doc/step-mxo2%E5%85%A5%E9%97%A8%E6%95%99%E7%A8%8B">basic</a><br><br>
+1. <a href="https://www.nandland.com/vhdl/tips/tip-convert-numeric-std-logic-vector-to-integer.html#Numeric-Integer-To-Signed">tip-convert-numeric-std-logic-vector-to-integer</a><br><br>
 
-程式如下：
+表格如下：
 </p>
-<pre class="brush: pas">
-module main(clk, sw, rgb);
-  
-input clk;
-input [3:0] sw;
-output reg [2:0] rgb;
-reg [23:0] clk_cnt;
-reg [4:0] clk_div;
-
-initial begin
-  rgb = 0;
-  clk_cnt = 0;
-  clk_div = 1;
-end
-
-always @(posedge clk) begin
-  clk_cnt = clk_cnt + 1;
-  if (clk_cnt > (12000000 / clk_div)) begin
-    clk_cnt = 0;
-    rgb = rgb + 1;
-  end
-end
-
-always @(sw) begin
-  clk_div = sw + 1;
-end
-endmodule
-</pre>
-<p>
-當觸發條件成立，兩個各別的副程式可以同時執行，這也是FPGA平行處理的觀念，因為它的形式是硬體電路<br><br>
-
-腳位<br>
-<img src="parallel/1.jpg" class="maxSize"><br><br>
-
-完成<br>
-<img src="parallel/2.jpg" class="maxSize">
-</p>
+<table>
+<tr><th>Conversion</th><th>Method</th></tr>
+<tr><td>Integer to Signed</td><td>to_signed(src, dst'length);</td></tr>
+<tr><td>Integer to Std_Logic_Vector</td><td>std_logic_vector(to_unsigned(src, dst'length));</td></tr>
+<tr><td>Integer to Unsigned</td><td>to_unsigned(src, dst'length);</td></tr>
+<tr><td>Std_Logic_Vector to Integer</td><td>to_integer(unsigned(src));</td></tr>
+<tr><td>Std_Logic_Vector to Signed</td><td>signed(src);</td></tr>
+<tr><td>Std_Logic_Vector to Unsigned</td><td>unsigned(src);</td></tr>
+<tr><td>Signed to Integer</td><td>to_integer(src);</td></tr>
+<tr><td>Signed to Std_Logic_Vector</td><td>std_logic_vector(src);</td></tr>
+<tr><td>Signed to Unsigned</td><td>unsigned(src);</td></tr>
+<tr><td>Unsigned to Integer</td><td>to_integer(src);</td></tr>
+<tr><td>Unsigned to Signed</td><td>signed(src);</td></tr>
+<tr><td>Unsigned to Std_Logic_Vector</td><td>std_logic_vector(src);</td></tr>
+</table><br>
 
 <p>
 <br><a href="../../mcu.htm">返回上一頁</a>

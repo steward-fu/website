@@ -44,51 +44,57 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>Lattice MXO2-4000HC &gt;&gt; V2.2 &gt;&gt; Verilog</h3>
-<p><b>Parallel</b></p>
+<h3>Altera MAX10 10M02SCM &gt;&gt; VHDL</h3>
+<p><b>Clock</b></p>
 <hr size="1">
 <p>
-參考資訊：<br>
-1. <a href="https://www.stepfpga.com/doc/step-mxo2%E5%85%A5%E9%97%A8%E6%95%99%E7%A8%8B">basic</a><br><br>
-
 程式如下：
 </p>
-<pre class="brush: pas">
-module main(clk, sw, rgb);
+<pre class="brush:pas">
+library ieee;
+use ieee.std_logic_1164.all;
   
-input clk;
-input [3:0] sw;
-output reg [2:0] rgb;
-reg [23:0] clk_cnt;
-reg [4:0] clk_div;
-
-initial begin
-  rgb = 0;
-  clk_cnt = 0;
-  clk_div = 1;
-end
-
-always @(posedge clk) begin
-  clk_cnt = clk_cnt + 1;
-  if (clk_cnt > (12000000 / clk_div)) begin
-    clk_cnt = 0;
-    rgb = rgb + 1;
-  end
-end
-
-always @(sw) begin
-  clk_div = sw + 1;
-end
-endmodule
+entity main is
+  port(
+    clk: in bit;
+    seg_out: out bit_vector(8 downto 0));
+end main;
+  
+architecture logic of main is
+signal seg_cnt:integer:=0;
+signal clk_cnt:integer:=0;
+type seg_type is array (0 to 9) of bit_vector(8 downto 0);
+constant seg_def:seg_type:=(
+  "000111111", "000000110", "001011011", "001001111", "001100110", 
+  "001101101", "001111101", "000000111", "001111111", "001101111");
+ 
+begin
+  process(clk) is
+  begin
+    if (clk'event and clk = '1') then
+      clk_cnt&lt;= clk_cnt + 1;
+    end if;
+    
+    if (clk_cnt &gt;= 12000000) then
+      clk_cnt&lt;= 0;
+      seg_out&lt;= seg_def(seg_cnt);
+      seg_cnt&lt;= seg_cnt + 1;
+    end if;
+    
+    if (seg_cnt &gt;= 10) then
+      seg_cnt&lt;= 0;
+    end if;
+  end process;
+end logic;
 </pre>
 <p>
-當觸發條件成立，兩個各別的副程式可以同時執行，這也是FPGA平行處理的觀念，因為它的形式是硬體電路<br><br>
+開發板上連接的是12MHz振盪器，因此，每數到12000000時，就更新七段顯示器的數值<br><br>
 
 腳位<br>
-<img src="parallel/1.jpg" class="maxSize"><br><br>
+<img src="clock/1.jpg" class="maxSize"><br><br>
 
 完成<br>
-<img src="parallel/2.jpg" class="maxSize">
+<img src="clock/2.jpg" class="maxSize">
 </p>
 
 <p>
