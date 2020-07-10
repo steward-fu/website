@@ -13,7 +13,6 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
   <title>司徒的教學網站</title>
-  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
   <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
   <meta name="author" content="fullahead.org" />
   <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
@@ -45,25 +44,84 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>RetroArcade</h3>
-<p><b>拆機</b></p>
+<h3>OpenCV &gt;&gt; C/C++</h3>
+<p><b>fast line detector</b></p>
 <hr size="1">
 <p>
-鬆開底部的螺絲<br>
-<img src="teardown/1.jpg" class="maxSize"><br><br>
+參考資訊：<br>
+1. <a href="https://docs.opencv.org/master/examples.html">example</a><br><br>
 
-主板正面、電池以及喇叭<br>
-<img src="teardown/2.jpg" class="maxSize"><br><br>
+main.cpp
+</p>
+<pre class="brush:cpp">
+#include &lt;iostream&gt;
+#include &lt;opencv2/imgproc.hpp&gt;
+#include &lt;opencv2/ximgproc.hpp&gt;
+#include &lt;opencv2/imgcodecs.hpp&gt;
+#include &lt;opencv2/highgui.hpp&gt;
+#include &lt;opencv2/imgproc/imgproc.hpp&gt;
 
-MicroSD、RAM以及CPU(JZ4760B)<br>
-<img src="teardown/3.jpg" class="maxSize"><br><br>
+using namespace std;
+using namespace cv;
+using namespace cv::ximgproc;
 
-屏<br>
-<img src="teardown/4.jpg" class="maxSize">
+int main(int argc, char** argv)
+{
+  Mat image = imread("main.jpg", IMREAD_GRAYSCALE);
+  if(image.empty()){
+    return -1;
+  }
+  int length_threshold = 10;
+  float distance_threshold = 1.41421356f;
+  double canny_th1 = 50.0;
+  double canny_th2 = 50.0;
+  int canny_aperture_size = 3;
+  bool do_merge = false;
+  Ptr&lt;FastLineDetector&gt; fld = createFastLineDetector(length_threshold, distance_threshold, canny_th1, canny_th2, canny_aperture_size, do_merge);
+  vector&lt;Vec4f&gt; lines_fld;
+  for(int run_count=0; run_count&lt;10; run_count++){
+    double freq = getTickFrequency();
+    lines_fld.clear();
+    int64 start = getTickCount();
+    fld-&gt;detect(image, lines_fld);
+    double duration_ms = double(getTickCount() - start) * 1000 / freq;
+  }
+  Mat line_image_fld(image);
+  fld-&gt;drawSegments(line_image_fld, lines_fld);
+  imshow("FLD result", line_image_fld);
+  waitKey();
+  return 0;
+}
+</pre><br>
+
+<p>
+CMakeLists.txt
+</p>
+<pre>
+cmake_minimum_required(VERSION 2.8)
+project(main)
+find_package(OpenCV REQUIRED)
+include_directories(${OpenCV_INCLUDE_DIRS})
+add_executable(main main.cpp)
+target_link_libraries(main ${OpenCV_LIBS})
+</pre><br>
+
+<p>
+編譯並且執行
+</p>
+<pre>
+$ cmake .
+$ make
+$ ./main
+</pre><br>
+
+<p>
+完成<br>
+<img src="cpp_fld/1.jpg" class="maxSize">
 </p>
 
 <p>
-<br><a href="../../handheld.htm">返回上一頁</a>
+<br><a href="../../program.htm">返回上一頁</a>
 </p>
 
 </div>
