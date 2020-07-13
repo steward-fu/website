@@ -48,7 +48,12 @@
 <p><b>LED</b></p>
 <hr size="1">
 <p>
-開啟TD<br>
+開啟TD
+</p>
+<pre>
+$ xxx/td -gui
+</pre>
+<p>
 <img src="ver_led/1.jpg" class="maxSize"><br><br>
 
 New Project...<br>
@@ -60,54 +65,15 @@ EG4 EG4S20B256<br>
 New Source<br>
 <img src="ver_led/4.jpg" class="maxSize"><br><br>
 
-led.v
+main.v
 </p>
 <pre class="brush:verilog">
-module led
-  (
-    input wire CLK_IN,
-    input wire RST_N,
-    output wire [2:0]RGB_LED
-  );
-
-  parameter time1 = 25'd24000000;
-
-  reg [2:0]rledout;
-  reg [24:0] count;
-  reg [1:0]shift_cnt;
-  
-  initial
-  begin
-    count=25'b0;
-    rledout=3'b1;
-    shift_cnt=2'b0;
-  end
-
-  always @(posedge CLK_IN)begin
-    if(RST_N==0)begin
-      count &lt;= 25'b0;
-      rledout &lt;= 3'b1;
-      shift_cnt &lt;=2'b0;
-    end
-  
-    if(count == time1)
-     begin 
-       count&lt;= 25'd0;
-       
-       if(shift_cnt==2'b10)begin
-        rledout &lt;= 3'b1;
-        shift_cnt &lt;=2'b0;
-       end
-       else begin
-         rledout &lt;= {rledout[1:0],1'b0};
-        shift_cnt &lt;= shift_cnt + 1'b1;
-      end
-     end
-     else
-       count &lt;= count + 1'b1;
-  end
-  
-  assign RGB_LED = rledout;
+module main(btn, led);
+ 
+input btn;
+output led;
+assign led = btn;
+ 
 endmodule
 </pre><br>
 
@@ -118,16 +84,11 @@ Ctrl+S<br>
 New<br>
 <img src="ver_led/6.jpg" class="maxSize"><br><br>
 
-io.adc<br>
+main.adc<br>
 </p>
 <pre class="brush:verilog">
-set_pin_assignment {CLK_IN} { LOCATION = K14; }   ##24MHZ
-set_pin_assignment {RST_N} { LOCATION = K16; }    ##USER_KEY
-
-## RGB LEDs, 3 pins
-set_pin_assignment {RGB_LED[0]} { LOCATION = R3;  } ##LED_R, R3
-set_pin_assignment {RGB_LED[1]} { LOCATION = J14;  }  ##LED_G, J14
-set_pin_assignment {RGB_LED[2]} { LOCATION = P13;  }  ##LED_B, P13
+set_pin_assignment {btn} {location=k16;}
+set_pin_assignment {led} {location=r3;}
 </pre><br>
 
 <p>
@@ -137,8 +98,8 @@ Ctrl+S<br>
 Add ADC File<br>
 <img src="ver_led/8.jpg" class="maxSize"><br><br>
 
-io.adc<br>
-<img src="ver_led/17.jpg" class="maxSize"><br><br>
+main.adc<br>
+<img src="ver_led/16.jpg" class="maxSize"><br><br>
 
 Run<br>
 <img src="ver_led/9.jpg" class="maxSize"><br><br>
@@ -149,20 +110,18 @@ led.bit<br>
 Download<br>
 <img src="ver_led/11.jpg" class="maxSize"><br><br>
 
-Add<br>
+燒錄頁面<br>
 <img src="ver_led/12.jpg" class="maxSize"><br><br>
 
-led.bit<br>
+接著滑鼠點一下main.bit，讓Run按鈕可以顯示<br>
 <img src="ver_led/13.jpg" class="maxSize"><br><br>
 
-Run(假如要燒錄到Flash，Mode選擇PROGRAM FLASH)<br>
+按下Run燒錄(假如要燒錄到Flash記憶體，請把Mode從JTAG改成<b>PROGRAM FLASH</b>)<br>
 <img src="ver_led/14.jpg" class="maxSize"><br><br>
 
-JTAG finished!<br>
-<img src="ver_led/15.jpg" class="maxSize"><br><br>
-
 完成<br>
-<img src="ver_led/16.jpg" class="maxSize">
+<img src="ver_led/15.jpg" class="maxSize"><br>
+<img src="ver_led/17.jpg" class="maxSize">
 </p>
 
 <p>

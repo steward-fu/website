@@ -29,7 +29,7 @@
   <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
   
   <script type="text/javascript" src="../../scripts/shCore.js"></script>
-  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushVerilog.js"></script>
 
   <!-- Conditional comment to apply opacity fix for IE #content background.
        Invalid CSS, but can be removed without harming design -->
@@ -44,15 +44,46 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>Lichee Tang</h3>
-<p><b>腳位</b></p>
+<h3>Lichee Tang &gt;&gt; Verilog</h3>
+<p><b>Clock</b></p>
 <hr size="1">
 <p>
-參考資訊：<br>
-1. <a href="https://tang.sipeed.com/en/hardware-overview/lichee-tang/">lichee-tang</a><br><br>
+main.v
+</p>
+<pre class="brush:verilog">
+module main(clk, led);
+   
+input clk;
+output reg led;
+reg [25:0] clk_cnt;
 
-如下圖：<br>
-<img src="pinout/1.jpg" class="maxSize">
+initial begin
+  led = 0;
+  clk_cnt = 0;
+end
+ 
+always @(posedge clk) begin
+  clk_cnt = clk_cnt + 1;
+  if (clk_cnt &gt; 24000000) begin
+  	clk_cnt = 0;
+    led = ~led;
+  end
+end
+endmodule
+</pre><br>
+
+<p>
+main.adc<br>
+</p>
+<pre class="brush:verilog">
+set_pin_assignment {clk} {location=k14;}
+set_pin_assignment {led} {location=r3;}
+</pre><br>
+
+<p>
+完成<br>
+<img src="ver_clock/1.jpg" class="maxSize"><br>
+<img src="ver_clock/2.jpg" class="maxSize">
 </p>
 
 <p>
