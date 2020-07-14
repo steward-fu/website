@@ -45,55 +45,65 @@
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
 <h3>OpenCV &gt;&gt; C/C++</h3>
-<p><b>fast line detector</b></p>
+<p><b>contours</b></p>
 <hr size="1">
 <p>
 參考資訊：<br>
-1. <a href="https://docs.opencv.org/master/examples.html">example</a><br>
-2. <a href="https://docs.opencv.org/master/df/ded/group__ximgproc__fast__line__detector.html#gaa9636e5033cd2939ec50810f2b2bd853">createFastLineDetector</a><br><br>
+1. <a href="https://docs.opencv.org/master/examples.html">examples</a><br>
+2. <a href="https://docs.opencv.org/2.4/modules/imgproc/doc/structural_analysis_and_shape_descriptors.html?highlight=findcontours#findcontours">findcontours</a><br>
+3. <a href=">https://docs.opencv.org/2.4/modules/imgproc/doc/structural_analysis_and_shape_descriptors.html?highlight=drawcontours#drawcontours">drawcontours</a><br><br>
 
 prototype
 </p>
+
 <pre class="brush:cpp">
-Ptr&lt;FastLineDetector&gt; cv::ximgproc::createFastLineDetector(
-  int _length_threshold = 10,
-  float _distance_threshold = 1.414213562f,
-  double _canny_th1 = 50.0,
-  double _canny_th2 = 50.0,
-  int _canny_aperture_size = 3,
-  bool _do_merge = false);
+void findContours(
+  InputOutputArray image, 
+  OutputArrayOfArrays contours, 
+  int mode, 
+  int method, 
+  Point offset=Point());
+
+void drawContours(
+  InputOutputArray image, 
+  InputArrayOfArrays contours, 
+  int contourIdx, 
+  const Scalar&amp; color, 
+  int thickness=1, 
+  int lineType=8, 
+  InputArray hierarchy=noArray(), 
+  int maxLevel=INT_MAX, Point offset=Point());
 </pre><br>
 <p>
 main.cpp
 </p>
 <pre class="brush:cpp">
-#include &lt;iostream&gt;
 #include &lt;opencv2/imgproc.hpp&gt;
-#include &lt;opencv2/ximgproc.hpp&gt;
-#include &lt;opencv2/imgcodecs.hpp&gt;
 #include &lt;opencv2/highgui.hpp&gt;
-#include &lt;opencv2/imgproc/imgproc.hpp&gt;
+#include &lt;math.h&gt;
+#include &lt;iostream&gt;
  
-using namespace std;
 using namespace cv;
-using namespace cv::ximgproc;
+using namespace std;
  
 int main(int argc, char** argv)
 {
-  Mat image = imread("main.jpg", IMREAD_GRAYSCALE);
-  if(image.empty()){
+  vector&lt;vector&lt;Point&gt;&gt; contours;
+
+  Mat img = imread("main.jpg", CV_8UC1);
+  if(img.empty()){
     printf("failed to load image\n");
     return -1;
   }
-  
-  Ptr&lt;FastLineDetector&gt; fld = createFastLineDetector();
-  vector&lt;Vec4f&gt; lines_fld;
-  lines_fld.clear();
-  fld-&gt;detect(image, lines_fld);
+  namedWindow("image", 1);
+  imshow("image", img);
 
-  Mat line_image_fld(image);
-  fld-&gt;drawSegments(line_image_fld, lines_fld);
-  imshow("FLD result", line_image_fld);
+  findContours(img, contours, RETR_TREE, CHAIN_APPROX_SIMPLE);
+
+  Mat cnt_img = Mat::zeros(250, 250, CV_8UC3);
+  drawContours(cnt_img, contours, -1, Scalar(128, 255, 255));
+  namedWindow("contours", 1);
+  imshow("contours", cnt_img);
   waitKey();
   return 0;
 }
@@ -122,7 +132,7 @@ $ ./main
 
 <p>
 完成<br>
-<img src="cpp_fld/1.jpg" class="maxSize">
+<img src="cpp_contours/1.jpg" class="maxSize">
 </p>
 
 <p>

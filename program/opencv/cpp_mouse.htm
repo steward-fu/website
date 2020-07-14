@@ -45,55 +45,68 @@
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
 <h3>OpenCV &gt;&gt; C/C++</h3>
-<p><b>fast line detector</b></p>
+<p><b>mouse</b></p>
 <hr size="1">
 <p>
 參考資訊：<br>
-1. <a href="https://docs.opencv.org/master/examples.html">example</a><br>
-2. <a href="https://docs.opencv.org/master/df/ded/group__ximgproc__fast__line__detector.html#gaa9636e5033cd2939ec50810f2b2bd853">createFastLineDetector</a><br><br>
+1. <a href="https://docs.opencv.org/master/d7/dfc/group__highgui.html#gga927593befdddc7e7013602bca9b079b0a1dd67e6d96873c36dd3a9670e8312a28">mouse</a><br>
+2. <a href="https://docs.opencv.org/2.4/modules/highgui/doc/user_interface.html?highlight=setmousecallback">setmousecallback</a><br><br>
 
 prototype
 </p>
 <pre class="brush:cpp">
-Ptr&lt;FastLineDetector&gt; cv::ximgproc::createFastLineDetector(
-  int _length_threshold = 10,
-  float _distance_threshold = 1.414213562f,
-  double _canny_th1 = 50.0,
-  double _canny_th2 = 50.0,
-  int _canny_aperture_size = 3,
-  bool _do_merge = false);
+void setMouseCallback(
+  const string&amp; winname, 
+  MouseCallback onMouse, 
+  void* userdata=0);
 </pre><br>
 <p>
 main.cpp
 </p>
 <pre class="brush:cpp">
-#include &lt;iostream&gt;
 #include &lt;opencv2/imgproc.hpp&gt;
-#include &lt;opencv2/ximgproc.hpp&gt;
 #include &lt;opencv2/imgcodecs.hpp&gt;
 #include &lt;opencv2/highgui.hpp&gt;
-#include &lt;opencv2/imgproc/imgproc.hpp&gt;
- 
+#include &lt;iostream&gt;
+
 using namespace std;
 using namespace cv;
-using namespace cv::ximgproc;
- 
-int main(int argc, char** argv)
-{
-  Mat image = imread("main.jpg", IMREAD_GRAYSCALE);
-  if(image.empty()){
-    printf("failed to load image\n");
-    return -1;
-  }
-  
-  Ptr&lt;FastLineDetector&gt; fld = createFastLineDetector();
-  vector&lt;Vec4f&gt; lines_fld;
-  lines_fld.clear();
-  fld-&gt;detect(image, lines_fld);
 
-  Mat line_image_fld(image);
-  fld-&gt;drawSegments(line_image_fld, lines_fld);
-  imshow("FLD result", line_image_fld);
+void mouseHandler(int event, int x, int y, int, void*)
+{
+  char buf[255]={0};
+
+  switch(event){
+  case EVENT_LBUTTONDOWN:
+    strcpy(buf, "EVENT_LBUTTONDOWN");
+    break;
+  case EVENT_LBUTTONUP:
+    strcpy(buf, "EVENT_LBUTTONUP");
+    break;
+  case EVENT_RBUTTONDOWN:
+    strcpy(buf, "EVENT_RBUTTONDOWN");
+    break;
+  case EVENT_RBUTTONUP:
+    strcpy(buf, "EVENT_RBUTTONUP");
+    break;
+  case EVENT_MBUTTONDOWN:
+    strcpy(buf, "EVENT_MBUTTONDOWN");
+    break;
+  case EVENT_MBUTTONUP:
+    strcpy(buf, "EVENT_MBUTTONUP");
+    break;
+  case EVENT_MOUSEMOVE:
+    strcpy(buf, "EVENT_MOUSEMOVE");
+    break;
+  }
+  Mat img(100, 400, CV_8UC3, Scalar(128, 255, 255));
+  putText(img, buf, Point(50, 50), FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 1, LINE_AA);
+  imshow("mouse", img);
+}
+int main(int argc, char **argv)
+{
+  namedWindow("mouse", WINDOW_AUTOSIZE);
+  setMouseCallback("mouse", mouseHandler, NULL);
   waitKey();
   return 0;
 }
@@ -122,7 +135,7 @@ $ ./main
 
 <p>
 完成<br>
-<img src="cpp_fld/1.jpg" class="maxSize">
+<img src="cpp_mouse/1.jpg" class="maxSize">
 </p>
 
 <p>
