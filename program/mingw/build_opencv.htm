@@ -44,26 +44,32 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>OpenCV &gt;&gt; C/C++</h3>
-<p><b>開發環境</b></p>
+<h3>MinGW</h3>
+<p><b>build opencv</b></p>
 <hr size="1">
 <p>
 參考資訊：<br>
-1. <a href="https://docs.opencv.org/master/d7/d9f/tutorial_linux_install.html">tutorial_linux_install</a><br><br>
+1. <a href="https://stackoverflow.com/questions/19754316/cross-compiling-opencv-with-mingw-using-cmakein-linux-for-windows">cross-compiling-opencv-with-mingw-using-cmakein-linux-for-windows</a><br><br>
 
-步驟如下：
+如下：
 </p>
 <pre>
-$ sudo apt-get install build-essential -y
-$ sudo apt-get install cmake git libgtk2.0-dev pkg-config libavcodec-dev libavformat-dev libswscale-dev -y
-$ sudo apt-get install python-dev python-numpy libtbb2 libtbb-dev libjpeg-dev libpng-dev libtiff5-dev libdc1394-22-dev -y
-
 $ cd
 $ wget https://github.com/opencv/opencv/archive/4.3.0.zip
 $ unzip 4.3.0.zip
 $ mkdir -p opencv-4.3.0/build
 $ cd opencv-4.3.0/build
-$ cmake ..
+$ vim ../platforms/linux/mingw.toolchain.cmake
+  SET(CMAKE_SYSTEM_NAME Windows)
+  SET(CMAKE_C_COMPILER x86_64-w64-mingw32-gcc)
+  SET(CMAKE_CXX_COMPILER x86_64-w64-mingw32-g++)
+  SET(CMAKE_RC_COMPILER x86_64-w64-mingw32-windres)
+  SET(CMAKE_FIND_ROOT_PATH  /usr/x86_64-w64-mingw32)
+  SET(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+  SET(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+  SET(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+
+$ cmake .. -DCMAKE_TOOLCHAIN_FILE=../platforms/linux/mingw.toolchain.cmake
 $ make -j4
 $ sudo make install
 
@@ -72,7 +78,17 @@ $ wget https://github.com/opencv/opencv_contrib/archive/4.3.0.tar.gz
 $ tar xvf 4.3.0.tar.gz
 $ mkdir opencv_contrib-4.3.0/build
 $ cd opencv_contrib-4.3.0/build
-$ cmake -DOPENCV_EXTRA_MODULES_PATH=../modules ../../opencv-4.3.0
+$ vim ../mingw.toolchain.cmake
+  SET(CMAKE_SYSTEM_NAME Windows)
+  SET(CMAKE_C_COMPILER x86_64-w64-mingw32-gcc)
+  SET(CMAKE_CXX_COMPILER x86_64-w64-mingw32-g++)
+  SET(CMAKE_RC_COMPILER x86_64-w64-mingw32-windres)
+  SET(CMAKE_FIND_ROOT_PATH  /usr/x86_64-w64-mingw32)
+  SET(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+  SET(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+  SET(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+
+$ cmake .. -DCMAKE_TOOLCHAIN_FILE=../mingw.toolchain.cmake -DOPENCV_EXTRA_MODULES_PATH=../modules ../../opencv-4.3.0
 $ make -j4
 $ sudo make install
 </pre><br>
