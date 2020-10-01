@@ -44,41 +44,67 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>AT89S51</h3>
-<p><b>LED測試程式</b></p>
+<h3>TI CC245x &gt;&gt; C/C++</h3>
+<p><b>Button</b></p>
 <hr size="1">
 <p>
+button位置<br>
+<img src="cpp_button/3.jpg" class="maxSize"><br><br>
+
 main.c
 </p>
 <pre class="brush:cpp">
-#include &lt;8052.h&gt;
- 
-void delay(unsigned long cnt)
+#include "../../../include/cc2540.h"
+
+#define BTN0 P0_0
+#define BTN1 P0_1
+#define BTN2 P0_4
+#define BTN3 P0_5
+
+#define LED0 P1_0
+#define LED1 P1_1
+#define LED2 P1_2
+#define LED3 P1_3
+
+void InitGPIO(void)
 {
-  while(cnt--);
+  P0DIR|= 0x33;
+  P0SEL&amp;= ~0x33;
+  P1DIR|= 0x0f;
+  P1SEL&amp;= ~0x0f;
 }
- 
+
 void main(void)
 {
+  InitGPIO();     
   while(1){
-    P3 = 0xff;
-    delay(10000);
-    P3 = 0x00;
-    delay(10000);
+    LED0 = BTN0;
+    LED1 = BTN1;
+    LED2 = BTN2;
+    LED3 = BTN3;
   }
 }
 </pre><br>
 
+<p>
+編譯
+</p>
 <pre>
 $ sdcc main.c
+$ packihx main.ihx &gt; main.hex
 </pre><br>
 
 <p>
-Pin 6: MOSI<br>
-Pin 7: MISO<br>
-Pin 8: SCK<br>
-Pin 9: RST<br>
-<img src="led/1.jpg" class="maxSize">
+燒錄
+</p>
+<pre>
+$ sudo cc-tool -v -e -w main.hex
+</pre><br>
+
+<p>
+完成<br>
+<img src="cpp_button/1.jpg" class="maxSize"><br>
+<img src="cpp_button/2.jpg" class="maxSize">
 </p>
 
 <p>

@@ -44,31 +44,78 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>AT89S51</h3>
-<p><b>開發環境</b></p>
+<h3>TI CC245x &gt;&gt; C/C++</h3>
+<p><b>LED</b></p>
 <hr size="1">
 <p>
-Ref. <a href="http://plit.de/asem-51/">http://plit.de/asem-51/</a>
+led位置<br>
+<img src="cpp_led/3.jpg" class="maxSize"><br><br>
+
+main.c
 </p>
-<pre>
-$ cd
-$ wget http://plit.de/asem-51/asem51_1.3-2_i386.deb
-$ sudo dpkg -i asem51_1.3-2_i386.deb
-$ asem
+<pre class="brush:cpp">
+#include "../../../include/cc2540.h"
 
-MCS-51 Family Macro Assembler ASEM-51 V1.3
+#define LED0 P1_0
+#define LED1 P1_1
+#define LED2 P1_2
+#define LED3 P1_3
 
-usage:     asem [options] &lt;source&gt; [&lt;object&gt; [&lt;listing&gt;]]
+void delay(unsigned int cnt)
+{ 
+  unsigned int ms=0;
+  while(cnt--){
+    for(ms=0; ms&lt;512; ms++);
+  } 
+}
 
-options:   -i   --includes=path1:path2:path3
-           -d   --define=symbol[:value[:type]]
-           -o   --omf-51
-           -c   --columns
-           -v   --verbose
+void SetLED(unsigned char mode)
+{   
+  LED0 = mode;
+  LED1 = mode;
+  LED2 = mode;
+  LED3 = mode;
+}
+
+void InitGPIO(void)
+{
+  P1DIR|= 0x0f;
+  P1SEL&amp;= ~0x0f;
+  SetLED(0);
+}
+
+void main(void)
+{
+  unsigned char idx=0;
+
+  InitGPIO();     
+  while(1){
+    idx^= 1;
+    SetLED(idx);
+    delay(1000);
+  }
+}
 </pre><br>
 
 <p>
-<img src="setup/1.jpg" class="maxSize">
+編譯
+</p>
+<pre>
+$ sdcc main.c
+$ packihx main.ihx &gt; main.hex
+</pre><br>
+
+<p>
+燒錄
+</p>
+<pre>
+$ sudo cc-tool -v -e -w main.hex
+</pre><br>
+
+<p>
+完成<br>
+<img src="cpp_led/1.jpg" class="maxSize"><br>
+<img src="cpp_led/2.jpg" class="maxSize">
 </p>
 
 <p>
