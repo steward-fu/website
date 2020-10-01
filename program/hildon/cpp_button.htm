@@ -45,18 +45,54 @@
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
 <h3>Hildon &gt;&gt; C/C++</h3>
-<p><b>開發環境</b></p>
+<p><b>button</b></p>
 <hr size="1">
 <p>
 參考資訊：<br>
-1. <a href="https://vcs.maemo.org/svn/maemoexamples/tags/maemo_5.0">examples</a><br>
-2. <a href="http://wiki.maemo.org/Documentation/Maemo_5_Developer_Guide">Maemo_5_Developer_Guide</a><br><br>
+1. <a href="http://wiki.maemo.org/Documentation/Maemo_5_Developer_Guide/Application_Development/Getting_started#Hello_World_in_Hildon">button</a><br><br>
 
-安裝如下套件：
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;hildon/hildon.h&gt;
+ 
+static void hello(GtkWidget *widget, gpointer data)
+{
+  g_print("hello, world!\n");
+}
+ 
+int main(int argc, char** argv)
+{
+  GtkWidget *window;
+  GtkWidget *button;
+  HildonProgram *program;
+ 
+  hildon_gtk_init(&amp;argc, &argv);
+  program = hildon_program_get_instance();
+  window = hildon_window_new();
+  hildon_program_add_window(program, HILDON_WINDOW(window));
+  g_signal_connect(G_OBJECT(window), "delete_event", G_CALLBACK(gtk_main_quit), NULL);
+  button = hildon_button_new_with_text(HILDON_SIZE_AUTO, HILDON_BUTTON_ARRANGEMENT_VERTICAL, "hello, world!", NULL); 
+  g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(hello), NULL);
+  gtk_container_add(GTK_CONTAINER(window), button);
+  gtk_widget_show_all(GTK_WIDGET(window));
+  gtk_main();
+  return 0;
+}
+</pre><br>
+
+<p>
+編譯
 </p>
 <pre>
-$ sudo apt-get install libhildon1-dev libgtk2.0-dev pkg-config
+$ gcc main.c `pkg-config hildon-1 --cflags --libs` -o main
 </pre><br>
+
+<p>
+完成<br>
+<img src="cpp_button/1.jpg" class="maxSize"><br>
+<img src="cpp_button/2.jpg" class="maxSize">
+</p>
 
 <p>
 <br><a href="../../program.htm">返回上一頁</a>
