@@ -29,7 +29,7 @@
   <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
   
   <script type="text/javascript" src="../../scripts/shCore.js"></script>
-  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
 
   <!-- Conditional comment to apply opacity fix for IE #content background.
        Invalid CSS, but can be removed without harming design -->
@@ -44,34 +44,70 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>PIC16F84A</h3>
-<p><b>燒錄程式(PIC K150)</b></p>
+<h3>PIC12F1822 &gt;&gt; Assembly</h3>
+<p><b>Oscillator</b></p>
 <hr size="1">
 <p>
-PIC16F84記得移到第二腳位<br>
-<img src="k150/1.jpg" class="maxSize"><br><br>
+Register<br>
+<img src="asm_osc/1.jpg" class="maxSize"><br><br>
 
-步驟如下：
+main.s
+</p>
+<pre class="brush:asm">
+  list p=12f1822, r=hex
+  #include &lt;p12f1822.inc&gt;
+  __config _CONFIG1, _FOSC_INTOSC &amp; _WDTE_OFF &amp; _MCLRE_OFF
+  __config _CONFIG2, _LVP_OFF
+ 
+  #define tmp1 0x20
+  #define tmp2 0x21
+ 
+  org 0x0000
+  goto start
+   
+  org 0x0100
+start:
+  banksel OSCCON
+  movlw b'01101010'
+  movwf OSCCON
+
+  banksel TRISA
+  clrf TRISA
+
+loop:
+  banksel PORTA
+  bcf PORTA, 0
+  call delay
+ 
+  banksel PORTA
+  bsf PORTA, 0
+  call delay
+  goto loop
+ 
+delay:
+  banksel tmp1
+  movlw 0xff
+  movwf tmp1
+  movwf tmp2
+  decfsz tmp1, f
+  goto $-1
+  decfsz tmp2, f
+  goto $-3
+  return
+  end
+</pre><br>
+
+<p>
+編譯
 </p>
 <pre>
-$ cd 
-$ wget https://github.com/steward-fu/pic16f84/releases/download/v1.0/k150.7z
-$ 7za x k150
-$ cd k150
-$ sudo ./picpro.py -i test.hex --pic_type=16f84 -p /dev/ttyUSB0
-  Waiting for user to insert chip into socket with pin 1 at socket pin 2
-  Chip detected.
-  Erasing Chip
-  Programming ROM
-  Programming EEPROM
-  Programming ID and fuses
-  Verifying ROM
-  ROM verified.
-  Verifying EEPROM
-  EEPROM verified.
-</pre>
+$ gpasm main.s
+</pre><br>
+
 <p>
-P.S. K150燒錄不穩定且支援IC不及PicKit3多，建議還是購買PicKit3使用。
+完成<br>
+<img src="asm_led/2.jpg" class="maxSize"><br>
+<img src="asm_led/3.jpg" class="maxSize">
 </p>
 
 <p>

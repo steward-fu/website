@@ -48,29 +48,40 @@
 <p><b>Button</b></p>
 <hr size="1">
 <p>
+Register<br>
+<img src="asm_led/4.jpg" class="maxSize"><br><br>
+
 main.s
 </p>
 <pre class="brush:asm">
   list p=12f1822, r=hex
   #include &lt;p12f1822.inc&gt;
-  __config _CONFIG1, _FOSC_INTOSC &amp; _WDTE_OFF
-
+  __config _CONFIG1, _FOSC_INTOSC &amp; _WDTE_OFF &amp; _MCLRE_OFF
+  __config _CONFIG2, _LVP_OFF
+ 
   org 0x0000
   goto start
-  
+   
   org 0x0100
 start:
   banksel TRISA
-  movlw b'00001000'
-  movwf TRISA
+  bcf TRISA, 0
+  bsf TRISA, 3
+
+  banksel OPTION_REG
+  bcf OPTION_REG, 7
+
   banksel WPUA
-  movlw b'00001000'
-  movwf WPUA
+  bsf WPUA, 3
+
+  banksel PORTA
+  bsf PORTA, 0
+
 loop:
   banksel PORTA
-  movf PORTA, w
-  btfss PORTA, 0
-  bsf PORTA, 0
+  btfss PORTA, 3
+  bcf PORTA, 0
+  btfsc PORTA, 3
   bsf PORTA, 0
   goto loop
   end
