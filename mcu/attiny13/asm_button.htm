@@ -29,7 +29,7 @@
   <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
   
   <script type="text/javascript" src="../../scripts/shCore.js"></script>
-  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
 
   <!-- Conditional comment to apply opacity fix for IE #content background.
        Invalid CSS, but can be removed without harming design -->
@@ -44,47 +44,60 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>Arduino UNO</h3>
-<p><b>更新Arduino Micro Bootloader</b></p>
+<h3>ATtiny13 &gt;&gt; Assembly</h3>
+<p><b>Button</b></p>
 <hr size="1">
 <p>
-先把Arduino Uno當成一台燒錄器，因此，先下載ArduinoISP<br>
-<img src="fix_usbisp/1.jpg" class="maxSize"><br><br>
+DDRB(I/O方向)、PORTB(I/O輸出)<br>
+<img src="asm_led/3.jpg" class="maxSize"><br>
+<img src="asm_led/4.jpg" class="maxSize"><br>
+P.S. I/O資料變更或者讀取，必須使用in、out指令或者sbi、cbi指令<br><br>
 
-選擇Port<br>
-<img src="fix_usbisp/2.jpg" class="maxSize"><br><br>
-
-下載<br>
-<img src="fix_usbisp/3.jpg" class="maxSize"><br><br>
-
-腳位如下：
+main.s
 </p>
-<table>
-<tr><th>Arduino UNO</th><th>Arduino Micro</th></tr>
-<tr><td>REST</td><td>10uF</td></tr>
-<tr><td>Pin10</td><td>RST</td></tr>
-<tr><td>ICSP1</td><td>ICSP1</td></tr>
-<tr><td>ICSP2</td><td>ICSP2</td></tr>
-<tr><td>ICSP4</td><td>ICSP4</td></tr>
-<tr><td>ICSP5</td><td>ICSP5</td></tr>
-<tr><td>ICSP6</td><td>ICSP6</td></tr>
-</table>
+<pre class="brush:asm">
+  .equ r0,      0x00
+  .equ pinb,    0x16
+  .equ ddrb,    0x17
+  .equ portb,   0x18
+
+  .equ led,     1
+  .equ btn,     0
+
+  .org 0x0000
+  rjmp main
+
+  .org 0x0010
+main:
+  sbi ddrb, led
+  cbi ddrb, btn
+  sbi portb, led
+  sbi portb, btn
+
+loop:
+  in r0, pinb
+  sbrs r0, btn
+  cbi portb, led
+  sbrc r0, btn
+  sbi portb, led
+  rjmp loop
+</pre><br>
+
 <p>
-<img src="micro_bootloader/4.jpg" class="maxSize"><br><br>
+編譯和燒錄
+</p>
+<pre>
+$ avr-as -mmcu=attiny13 -o main.o main.s
+$ avr-ld -o main.elf main.o
+$ avr-objcopy --output-target=ihex main.elf main.ihex
+$ avrdude -c usbasp -p t13 -B 1024 -U flash:w:main.ihex:i
+</pre><br>
 
-Board: Arduino Nano<br>
-Processor: ATmega328P (Old Bootloader)<br>
-<img src="micro_bootloader/1.jpg" class="maxSize"><br><br>
-
-Burn Bootloader<br>
-<img src="micro_bootloader/2.jpg" class="maxSize"><br><br>
-
-燒錄完成<br>
-<img src="micro_bootloader/3.jpg" class="maxSize"><br><br>
-
+<p>
 完成<br>
-<img src="micro_bootloader/5.jpg" class="maxSize"><br><br>
-<p/>
+<img src="asm_button/1.jpg" class="maxSize"><br>
+<img src="asm_button/2.jpg" class="maxSize">
+</p>
 
 <p>
 <br><a href="../../mcu.htm">返回上一頁</a>
