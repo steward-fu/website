@@ -1,0 +1,876 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>PIC12F1822 &gt;&gt; Assembly</h3>
+<p><b>0.91" OLED 128x32 SSD1306(顯示字串)</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://cdn-shop.adafruit.com/datasheets/SSD1306.pdf">SSD1306</a><br>
+2. <a href="https://github.com/adafruit/Adafruit_SSD1306">Adafruit_SSD1306</a><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+  list p=12f1822, r=hex
+  #include &lt;p12f1822.inc&gt;
+  __config _CONFIG1, _FOSC_INTOSC &amp; _WDTE_OFF &amp; _MCLRE_OFF
+  __config _CONFIG2, _LVP_OFF
+  
+  #define i2c_cnt           0x70
+  #define i2c_dat           0x71
+  #define i2c_var           0x72
+  #define lcd_t1            0x73
+  #define lcd_t2            0x74
+  #define delay_t1          0x75
+  #define delay_t2          0x76
+  #define ssd_page          0x77
+  #define ssd_col           0x78
+  #define get_ascii_v1      0x79
+  #define show_ascii_v1     0x7a
+
+  #define led               0x00
+  #define i2c_scl           0x01
+  #define i2c_sda           0x02
+  #define i2c_addr          0x78
+  #define lcd_width         0x80
+  #define lcd_height        0x20
+  
+  #define cmd_contrast      0x81
+  #define cmd_disp_resume   0xa4
+  #define cmd_normal_disp   0xa6
+  #define cmd_invert_disp   0xa7
+  #define cmd_disp_off      0xae
+  #define cmd_disp_on       0xaf
+  #define cmd_disp_offset   0xd3
+  #define cmd_com_pins      0xda
+  #define cmd_vcom_detect   0xdb
+  #define cmd_clock_div     0xd5
+  #define cmd_pre_charge    0xd9
+  #define cmd_multiplex     0xa8
+  #define cmd_start_line    0x40
+  #define cmd_memory_mode   0x20
+  #define cmd_column_addr   0x21
+  #define cmd_page_addr     0x22
+  #define cmd_scan_dec      0xc8
+  #define cmd_seg_remap     0xa1
+  #define cmd_charge_pump   0x8d
+
+  org 0x0000
+  goto start
+    
+  org 0x0100
+start:
+  banksel OSCCON
+  movlw b'11110010'
+  movwf OSCCON
+
+  banksel ANSELA
+  clrf ANSELA
+ 
+  banksel LATA
+  movlw 0xff
+  movwf LATA
+  
+  banksel TRISA
+  bcf TRISA, led
+  bcf TRISA, i2c_scl
+  bcf TRISA, i2c_sda
+  
+  banksel LATA
+  movlw 0xff
+  movwf LATA
+  
+loop:
+  call ssd1306_init
+  call ssd1306_clear
+
+  movlw d'30'
+  call ssd1306_set_col_addr
+  movlw 1
+  call ssd1306_set_page_addr
+
+  ;PIC12F1822
+  movlw d'26'
+  call ssd1306_show_ascii
+  movlw d'19'
+  call ssd1306_show_ascii
+  movlw d'13'
+  call ssd1306_show_ascii
+  movlw d'1'
+  call ssd1306_show_ascii
+  movlw d'2'
+  call ssd1306_show_ascii
+  movlw d'16'
+  call ssd1306_show_ascii
+  movlw d'1'
+  call ssd1306_show_ascii
+  movlw d'8'
+  call ssd1306_show_ascii
+  movlw d'2'
+  call ssd1306_show_ascii
+  movlw d'2'
+  call ssd1306_show_ascii
+
+  movlw d'38'
+  call ssd1306_set_col_addr
+  movlw 2
+  call ssd1306_set_page_addr
+
+  ;STEWARD
+  movlw d'29'
+  call ssd1306_show_ascii
+  movlw d'30'
+  call ssd1306_show_ascii
+  movlw d'15'
+  call ssd1306_show_ascii
+  movlw d'33'
+  call ssd1306_show_ascii
+  movlw d'11'
+  call ssd1306_show_ascii
+  movlw d'28'
+  call ssd1306_show_ascii
+  movlw d'14'
+  call ssd1306_show_ascii
+
+idle:
+  banksel LATA
+  bcf LATA, led
+  call delay1s
+  banksel LATA
+  bsf LATA, led
+  call delay1s
+  goto idle
+
+delay1s:
+  banksel delay_t1
+  movlw 0xff
+  movwf delay_t2
+  movwf delay_t1
+  decfsz delay_t1, f
+  goto $-1
+  decfsz delay_t2, f
+  goto $-3
+  return
+ 
+delay:
+  banksel delay_t1
+  movlw 0x40
+  movwf delay_t1
+  decfsz delay_t1, f
+  goto $-1
+  return
+
+i2c_start:
+  banksel LATA
+  bsf LATA, i2c_sda
+  bsf LATA, i2c_scl
+  call delay
+  banksel LATA
+  bcf LATA, i2c_sda
+  call delay
+  banksel LATA
+  bcf LATA, i2c_scl
+  return
+
+i2c_stop:
+  call delay
+  banksel LATA
+  bcf LATA, i2c_sda
+  call delay
+  banksel LATA
+  bsf LATA, i2c_scl
+  call delay
+  banksel LATA
+  bsf LATA, i2c_sda
+  return
+
+i2c_write:
+  banksel i2c_dat
+  movwf i2c_dat
+  movlw 0x08
+  movwf i2c_cnt
+i0:
+  banksel i2c_dat
+  rlf i2c_dat, f
+  banksel LATA
+  btfss STATUS, C
+  bcf LATA, i2c_sda
+  btfsc STATUS, C
+  bsf LATA, i2c_sda
+  call delay
+  banksel LATA
+  bsf LATA, i2c_scl
+  call delay
+  banksel LATA
+  bcf LATA, i2c_scl
+  decfsz i2c_cnt, f
+  goto i0
+
+  call delay
+  banksel LATA
+  bsf LATA, i2c_sda
+  call delay
+  banksel LATA
+  bsf LATA, i2c_scl
+  call delay
+  banksel LATA
+  bcf LATA, i2c_scl
+  return
+
+send_cmd:
+  banksel i2c_var
+  movwf i2c_var
+  call i2c_start
+  movlw i2c_addr
+  call i2c_write
+  movlw 0x00
+  call i2c_write
+  banksel i2c_var
+  movf i2c_var, w
+  call i2c_write
+  call i2c_stop
+  return
+
+send_dat:
+  banksel i2c_var
+  movwf i2c_var
+  call i2c_start
+  movlw i2c_addr
+  call i2c_write
+  movlw 0x40
+  call i2c_write
+  banksel i2c_var
+  movf i2c_var, w
+  call i2c_write
+  call i2c_stop
+  return
+
+ssd1306_init:
+  movlw cmd_disp_off
+  call send_cmd
+
+  movlw cmd_clock_div
+  call send_cmd
+  movlw 0x80
+  call send_cmd
+
+  movlw cmd_multiplex
+  call send_cmd
+  movlw 0x1f
+  call send_cmd
+
+  movlw cmd_disp_offset
+  call send_cmd
+  movlw 0x00
+  call send_cmd
+
+  movlw cmd_start_line
+  call send_cmd
+
+  movlw cmd_charge_pump
+  call send_cmd
+  movlw 0x14
+  call send_cmd
+
+  movlw cmd_memory_mode
+  call send_cmd
+  movlw 0x00
+  call send_cmd
+
+  movlw cmd_seg_remap
+  call send_cmd
+
+  movlw cmd_scan_dec
+  call send_cmd
+
+  movlw cmd_com_pins
+  call send_cmd
+  movlw 0x02
+  call send_cmd
+
+  movlw cmd_contrast
+  call send_cmd
+  movlw 0x8f
+  call send_cmd
+
+  movlw cmd_pre_charge
+  call send_cmd
+  movlw 0xf1
+  call send_cmd
+
+  movlw cmd_vcom_detect
+  call send_cmd
+  movlw 0x40
+  call send_cmd
+
+  movlw cmd_disp_resume
+  call send_cmd
+
+  movlw cmd_normal_disp
+  call send_cmd
+
+  movlw cmd_disp_on
+  call send_cmd
+  return
+
+ssd1306_set_col_addr:
+  banksel ssd_col
+  movwf ssd_col
+  movlw cmd_column_addr
+  call send_cmd
+  banksel ssd_col
+  movf ssd_col, w
+  call send_cmd
+  movlw (lcd_width-1)
+  call send_cmd
+  return
+
+ssd1306_set_page_addr:
+  banksel ssd_page
+  movwf ssd_page
+  movlw cmd_page_addr
+  call send_cmd
+  banksel ssd_page
+  movf ssd_page, w
+  call send_cmd
+  movlw ((lcd_height/8)-1)
+  call send_cmd
+  return
+
+ssd1306_clear:
+  clrw
+  call ssd1306_set_col_addr
+  clrw
+  call ssd1306_set_page_addr
+
+  call i2c_start
+  movlw i2c_addr
+  call i2c_write
+  movlw 0x40
+  call i2c_write 
+ 
+  banksel lcd_t1
+  movlw 0x08
+  movwf lcd_t1
+s0:
+  movlw 0x40
+  movwf lcd_t2
+s1:
+  clrw
+  call i2c_write
+  banksel lcd_t2
+  decfsz lcd_t2, f
+  goto s1
+  decfsz lcd_t1, f
+  goto s0
+  call i2c_stop
+  return
+
+ssd1306_show_ascii:
+  banksel show_ascii_v1
+  movwf show_ascii_v1
+
+  clrw
+mul0:
+  addlw 5
+  decfsz show_ascii_v1, f
+  goto mul0
+  movwf show_ascii_v1
+
+  call i2c_start
+  movlw i2c_addr
+  call i2c_write
+  movlw 0x40
+  call i2c_write 
+
+  banksel show_ascii_v1
+  movf show_ascii_v1, w
+  call get_ascii
+  call i2c_write
+
+  banksel show_ascii_v1
+  movf show_ascii_v1, w
+  addlw 1
+  call get_ascii
+  call i2c_write
+
+  banksel show_ascii_v1
+  movf show_ascii_v1, w
+  addlw 2
+  call get_ascii
+  call i2c_write
+
+  banksel show_ascii_v1
+  movf show_ascii_v1, w
+  addlw 3
+  call get_ascii
+  call i2c_write
+
+  banksel show_ascii_v1
+  movf show_ascii_v1, w
+  addlw 4
+  call get_ascii
+  call i2c_write
+
+  clrw
+  call i2c_write
+
+  call i2c_stop
+  return
+
+get_ascii:
+  addlw LOW(ascii_5x8)
+  movwf get_ascii_v1
+  movlw HIGH(ascii_5x8)
+  btfsc STATUS, C
+  addlw 1
+  movwf PCLATH
+  movfw get_ascii_v1
+  movwf PCL
+
+ascii_5x8:
+  retlw b'00111110' ; 30 ..*****.
+  retlw b'01010001' ; 30 .*.*...*
+  retlw b'01001001' ; 30 .*..*..*
+  retlw b'01000101' ; 30 .*...*.*
+  retlw b'00111110' ; 30 ..*****.
+
+  retlw b'00000000' ; 31 ........
+  retlw b'01000010' ; 31 .*....*.
+  retlw b'01111111' ; 31 .*******
+  retlw b'01000000' ; 31 .*......
+  retlw b'00000000' ; 31 ........
+
+  retlw b'01000010' ; 32 .*....*.
+  retlw b'01100001' ; 32 .**....*
+  retlw b'01010001' ; 32 .*.*...*
+  retlw b'01001001' ; 32 .*..*..*
+  retlw b'01000110' ; 32 .*...**.
+
+  retlw b'00100001' ; 33 ..*....*
+  retlw b'01000001' ; 33 .*.....*
+  retlw b'01000101' ; 33 .*...*.*
+  retlw b'01001011' ; 33 .*..*.**
+  retlw b'00110001' ; 33 ..**...*
+
+  retlw b'00011000' ; 34 ...**...
+  retlw b'00010100' ; 34 ...*.*..
+  retlw b'00010010' ; 34 ...*..*.
+  retlw b'01111111' ; 34 .*******
+  retlw b'00010000' ; 34 ...*....
+
+  retlw b'00100111' ; 35 ..*..***
+  retlw b'01000101' ; 35 .*...*.*
+  retlw b'01000101' ; 35 .*...*.*
+  retlw b'01000101' ; 35 .*...*.*
+  retlw b'00111001' ; 35 ..***..*
+
+  retlw b'00111100' ; 36 ..****..
+  retlw b'01001010' ; 36 .*..*.*.
+  retlw b'01001001' ; 36 .*..*..*
+  retlw b'01001001' ; 36 .*..*..*
+  retlw b'00110000' ; 36 ..**....
+
+  retlw b'00000001' ; 37 .......*
+  retlw b'01110001' ; 37 .***...*
+  retlw b'00001001' ; 37 ....*..*
+  retlw b'00000101' ; 37 .....*.*
+  retlw b'00000011' ; 37 ......**
+
+  retlw b'00110110' ; 38 ..**.**.
+  retlw b'01001001' ; 38 .*..*..*
+  retlw b'01001001' ; 38 .*..*..*
+  retlw b'01001001' ; 38 .*..*..*
+  retlw b'00110110' ; 38 ..**.**.
+
+  retlw b'00000110' ; 39 .....**.
+  retlw b'01001001' ; 39 .*..*..*
+  retlw b'01001001' ; 39 .*..*..*
+  retlw b'00101001' ; 39 ..*.*..*
+  retlw b'00011110' ; 39 ...****.
+
+  retlw b'00000000' ; 20 ........
+  retlw b'00000000' ; 20 ........
+  retlw b'00000000' ; 20 ........
+  retlw b'00000000' ; 20 ........
+  retlw b'00000000' ; 20 ........
+
+  retlw b'01111110' ; 41 .******.
+  retlw b'00010001' ; 41 ...*...*
+  retlw b'00010001' ; 41 ...*...*
+  retlw b'00010001' ; 41 ...*...*
+  retlw b'01111110' ; 41 .******.
+ 
+  retlw b'01111111' ; 42 .*******
+  retlw b'01001001' ; 42 .*..*..*
+  retlw b'01001001' ; 42 .*..*..*
+  retlw b'01001001' ; 42 .*..*..*
+  retlw b'00110110' ; 42 ..**.**.
+ 
+  retlw b'00111110' ; 43 ..*****.
+  retlw b'01000001' ; 43 .*.....*
+  retlw b'01000001' ; 43 .*.....*
+  retlw b'01000001' ; 43 .*.....*
+  retlw b'00100010' ; 43 ..*...*.
+ 
+  retlw b'01111111' ; 44 .*******
+  retlw b'01000001' ; 44 .*.....*
+  retlw b'01000001' ; 44 .*.....*
+  retlw b'00100010' ; 44 ..*...*.
+  retlw b'00011100' ; 44 ...***..
+ 
+  retlw b'01111111' ; 45 .*******
+  retlw b'01001001' ; 45 .*..*..*
+  retlw b'01001001' ; 45 .*..*..*
+  retlw b'01001001' ; 45 .*..*..*
+  retlw b'01000001' ; 45 .*.....*
+ 
+  retlw b'01111111' ; 46 .*******
+  retlw b'00001001' ; 46 ....*..*
+  retlw b'00001001' ; 46 ....*..*
+  retlw b'00000001' ; 46 .......*
+  retlw b'00000001' ; 46 .......*
+ 
+  retlw b'00111110' ; 47 ..*****.
+  retlw b'01000001' ; 47 .*.....*
+  retlw b'01000001' ; 47 .*.....*
+  retlw b'01010001' ; 47 .*.*...*
+  retlw b'00110010' ; 47 ..**..*.
+ 
+  retlw b'01111111' ; 48 .*******
+  retlw b'00001000' ; 48 ....*...
+  retlw b'00001000' ; 48 ....*...
+  retlw b'00001000' ; 48 ....*...
+  retlw b'01111111' ; 48 .*******
+ 
+  retlw b'00000000' ; 49 ........
+  retlw b'01000001' ; 49 .*.....*
+  retlw b'01111111' ; 49 .*******
+  retlw b'01000001' ; 49 .*.....*
+  retlw b'00000000' ; 49 ........
+ 
+  retlw b'00100000' ; 4a ..*.....
+  retlw b'01000000' ; 4a .*......
+  retlw b'01000001' ; 4a .*.....*
+  retlw b'00111111' ; 4a ..******
+  retlw b'00000001' ; 4a .......*
+ 
+  retlw b'01111111' ; 4b .*******
+  retlw b'00001000' ; 4b ....*...
+  retlw b'00010100' ; 4b ...*.*..
+  retlw b'00100010' ; 4b ..*...*.
+  retlw b'01000001' ; 4b .*.....*
+ 
+  retlw b'01111111' ; 4c .*******
+  retlw b'01000000' ; 4c .*......
+  retlw b'01000000' ; 4c .*......
+  retlw b'01000000' ; 4c .*......
+  retlw b'01000000' ; 4c .*......
+ 
+  retlw b'01111111' ; 4d .*******
+  retlw b'00000010' ; 4d ......*.
+  retlw b'00000100' ; 4d .....*..
+  retlw b'00000010' ; 4d ......*.
+  retlw b'01111111' ; 4d .*******
+ 
+  retlw b'01111111' ; 4e .*******
+  retlw b'00000100' ; 4e .....*..
+  retlw b'00001000' ; 4e ....*...
+  retlw b'00010000' ; 4e ...*....
+  retlw b'01111111' ; 4e .*******
+ 
+  retlw b'00111110' ; 4f ..*****.
+  retlw b'01000001' ; 4f .*.....*
+  retlw b'01000001' ; 4f .*.....*
+  retlw b'01000001' ; 4f .*.....*
+  retlw b'00111110' ; 4f ..*****.
+ 
+  retlw b'01111111' ; 50 .*******
+  retlw b'00001001' ; 50 ....*..*
+  retlw b'00001001' ; 50 ....*..*
+  retlw b'00001001' ; 50 ....*..*
+  retlw b'00000110' ; 50 .....**.
+ 
+  retlw b'00111110' ; 51 ..*****.
+  retlw b'01000001' ; 51 .*.....*
+  retlw b'01010001' ; 51 .*.*...*
+  retlw b'00100001' ; 51 ..*....*
+  retlw b'01011110' ; 51 .*.****.
+ 
+  retlw b'01111111' ; 52 .*******
+  retlw b'00001001' ; 52 ....*..*
+  retlw b'00011001' ; 52 ...**..*
+  retlw b'00101001' ; 52 ..*.*..*
+  retlw b'01000110' ; 52 .*...**.
+ 
+  retlw b'01000110' ; 53 .*...**.
+  retlw b'01001001' ; 53 .*..*..*
+  retlw b'01001001' ; 53 .*..*..*
+  retlw b'01001001' ; 53 .*..*..*
+  retlw b'00110001' ; 53 ..**...*
+ 
+  retlw b'00000001' ; 54 .......*
+  retlw b'00000001' ; 54 .......*
+  retlw b'01111111' ; 54 .*******
+  retlw b'00000001' ; 54 .......*
+  retlw b'00000001' ; 54 .......*
+
+  retlw b'00111111' ; 55 ..******
+  retlw b'01000000' ; 55 .*......
+  retlw b'01000000' ; 55 .*......
+  retlw b'01000000' ; 55 .*......
+  retlw b'00111111' ; 55 ..******
+
+  retlw b'00011111' ; 56 ...*****
+  retlw b'00100000' ; 56 ..*.....
+  retlw b'01000000' ; 56 .*......
+  retlw b'00100000' ; 56 ..*.....
+  retlw b'00011111' ; 56 ...*****
+
+  retlw b'01111111' ; 57 .*******
+  retlw b'00100000' ; 57 ..*.....
+  retlw b'00011000' ; 57 ...**...
+  retlw b'00100000' ; 57 ..*.....
+  retlw b'01111111' ; 57 .*******
+
+  retlw b'01100011' ; 58 .**...**
+  retlw b'00010100' ; 58 ...*.*..
+  retlw b'00001000' ; 58 ....*...
+  retlw b'00010100' ; 58 ...*.*..
+  retlw b'01100011' ; 58 .**...**
+
+  retlw b'00000011' ; 59 ......**
+  retlw b'00000100' ; 59 .....*..
+  retlw b'01111000' ; 59 .****...
+  retlw b'00000100' ; 59 .....*..
+  retlw b'00000011' ; 59 ......**
+
+  retlw b'01100001' ; 5a .**....*
+  retlw b'01010001' ; 5a .*.*...*
+  retlw b'01001001' ; 5a .*..*..*
+  retlw b'01000101' ; 5a .*...*.*
+  retlw b'01000011' ; 5a .*....**
+  
+  retlw b'00100000' ; 61 ..*.....
+  retlw b'01010100' ; 61 .*.*.*..
+  retlw b'01010100' ; 61 .*.*.*..
+  retlw b'01010100' ; 61 .*.*.*..
+  retlw b'01111000' ; 61 .****...
+ 
+  retlw b'01111111' ; 62 .*******
+  retlw b'01001000' ; 62 .*..*...
+  retlw b'01000100' ; 62 .*...*..
+  retlw b'01000100' ; 62 .*...*..
+  retlw b'00111000' ; 62 ..***...
+ 
+  retlw b'00111000' ; 63 ..***...
+  retlw b'01000100' ; 63 .*...*..
+  retlw b'01000100' ; 63 .*...*..
+  retlw b'01000100' ; 63 .*...*..
+  retlw b'00100000' ; 63 ..*.....
+ 
+  retlw b'00111000' ; 64 ..***...
+  retlw b'01000100' ; 64 .*...*..
+  retlw b'01000100' ; 64 .*...*..
+  retlw b'01001000' ; 64 .*..*...
+  retlw b'01111111' ; 64 .*******
+ 
+  retlw b'00111000' ; 65 ..***...
+  retlw b'01010100' ; 65 .*.*.*..
+  retlw b'01010100' ; 65 .*.*.*..
+  retlw b'01010100' ; 65 .*.*.*..
+  retlw b'00011000' ; 65 ...**...
+ 
+  retlw b'00001000' ; 66 ....*...
+  retlw b'01111110' ; 66 .******.
+  retlw b'00001001' ; 66 ....*..*
+  retlw b'00000001' ; 66 .......*
+  retlw b'00000010' ; 66 ......*.
+ 
+  retlw b'00001000' ; 67 ....*...
+  retlw b'00010100' ; 67 ...*.*..
+  retlw b'01010100' ; 67 .*.*.*..
+  retlw b'01010100' ; 67 .*.*.*..
+  retlw b'00111100' ; 67 ..****..
+ 
+  retlw b'01111111' ; 68 .*******
+  retlw b'00001000' ; 68 ....*...
+  retlw b'00000100' ; 68 .....*..
+  retlw b'00000100' ; 68 .....*..
+  retlw b'01111000' ; 68 .****...
+ 
+  retlw b'00000000' ; 69 ........
+  retlw b'01000100' ; 69 .*...*..
+  retlw b'01111101' ; 69 .*****.*
+  retlw b'01000000' ; 69 .*......
+  retlw b'00000000' ; 69 ........
+ 
+  retlw b'00100000' ; 6a ..*.....
+  retlw b'01000000' ; 6a .*......
+  retlw b'01000100' ; 6a .*...*..
+  retlw b'00111101' ; 6a ..****.*
+  retlw b'00000000' ; 6a ........
+ 
+  retlw b'00000000' ; 6b ........
+  retlw b'01111111' ; 6b .*******
+  retlw b'00010000' ; 6b ...*....
+  retlw b'00101000' ; 6b ..*.*...
+  retlw b'01000100' ; 6b .*...*..
+ 
+  retlw b'00000000' ; 6c ........
+  retlw b'01000001' ; 6c .*.....*
+  retlw b'01111111' ; 6c .*******
+  retlw b'01000000' ; 6c .*......
+  retlw b'00000000' ; 6c ........
+ 
+  retlw b'01111100' ; 6d .*****..
+  retlw b'00000100' ; 6d .....*..
+  retlw b'00011000' ; 6d ...**...
+  retlw b'00000100' ; 6d .....*..
+  retlw b'01111000' ; 6d .****...
+ 
+  retlw b'01111100' ; 6e .*****..
+  retlw b'00001000' ; 6e ....*...
+  retlw b'00000100' ; 6e .....*..
+  retlw b'00000100' ; 6e .....*..
+  retlw b'01111000' ; 6e .****...
+ 
+  retlw b'00111000' ; 6f ..***...
+  retlw b'01000100' ; 6f .*...*..
+  retlw b'01000100' ; 6f .*...*..
+  retlw b'01000100' ; 6f .*...*..
+  retlw b'00111000' ; 6f ..***...
+
+  retlw b'01111100' ; 70 .*****..
+  retlw b'00010100' ; 70 ...*.*..
+  retlw b'00010100' ; 70 ...*.*..
+  retlw b'00010100' ; 70 ...*.*..
+  retlw b'00001000' ; 70 ....*...
+ 
+  retlw b'00001000' ; 71 ....*...
+  retlw b'00010100' ; 71 ...*.*..
+  retlw b'00010100' ; 71 ...*.*..
+  retlw b'00011000' ; 71 ...**...
+  retlw b'01111100' ; 71 .*****..
+ 
+  retlw b'01111100' ; 72 .*****..
+  retlw b'00001000' ; 72 ....*...
+  retlw b'00000100' ; 72 .....*..
+  retlw b'00000100' ; 72 .....*..
+  retlw b'00001000' ; 72 ....*...
+ 
+  retlw b'01001000' ; 73 .*..*...
+  retlw b'01010100' ; 73 .*.*.*..
+  retlw b'01010100' ; 73 .*.*.*..
+  retlw b'01010100' ; 73 .*.*.*..
+  retlw b'00100000' ; 73 ..*.....
+ 
+  retlw b'00000100' ; 74 .....*..
+  retlw b'00111111' ; 74 ..******
+  retlw b'01000100' ; 74 .*...*..
+  retlw b'01000000' ; 74 .*......
+  retlw b'00100000' ; 74 ..*.....
+ 
+  retlw b'00111100' ; 75 ..****..
+  retlw b'01000000' ; 75 .*......
+  retlw b'01000000' ; 75 .*......
+  retlw b'00100000' ; 75 ..*.....
+  retlw b'01111100' ; 75 .*****..
+ 
+  retlw b'00011100' ; 76 ...***..
+  retlw b'00100000' ; 76 ..*.....
+  retlw b'01000000' ; 76 .*......
+  retlw b'00100000' ; 76 ..*.....
+  retlw b'00011100' ; 76 ...***..
+ 
+  retlw b'00111100' ; 77 ..****..
+  retlw b'01000000' ; 77 .*......
+  retlw b'00110000' ; 77 ..**....
+  retlw b'01000000' ; 77 .*......
+  retlw b'00111100' ; 77 ..****..
+ 
+  retlw b'01000100' ; 78 .*...*..
+  retlw b'00101000' ; 78 ..*.*...
+  retlw b'00010000' ; 78 ...*....
+  retlw b'00101000' ; 78 ..*.*...
+  retlw b'01000100' ; 78 .*...*..
+ 
+  retlw b'00001100' ; 79 ....**..
+  retlw b'01010000' ; 79 .*.*....
+  retlw b'01010000' ; 79 .*.*....
+  retlw b'01010000' ; 79 .*.*....
+  retlw b'00111100' ; 79 ..****..
+ 
+  retlw b'01000100' ; 7a .*...*..
+  retlw b'01100100' ; 7a .**..*..
+  retlw b'01010100' ; 7a .*.*.*..
+  retlw b'01001100' ; 7a .*..**..
+  retlw b'01000100' ; 7a .*...*..
+  end
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ gpasm main.s
+</pre><br>
+
+<p>
+完成<br>
+<img src="asm_ssd1306_ascii/1.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
