@@ -29,7 +29,7 @@
   <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
   
   <script type="text/javascript" src="../../scripts/shCore.js"></script>
-  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
 
   <!-- Conditional comment to apply opacity fix for IE #content background.
        Invalid CSS, but can be removed without harming design -->
@@ -44,30 +44,65 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>PIC10F200</h3>
-<p><b>開發板</b></p>
+<h3>PIC10F200 &gt;&gt; Assembly</h3>
+<p><b>LED</b></p>
 <hr size="1">
 <p>
-參考資訊：<br>
-1. <a href="https://en.wikipedia.org/wiki/Charlieplexing">Charlieplexing</a><br>
-2. <a href="http://dmitry.gr/?r=05.Projects&proj=03.%20Single-chip%2011x10%20LED%20matrix">One-chip 11x10 LED matrix</a><br><br>
+TRISGPIO和OPTION必須透過指令修改<br>
+<img src="asm_led/1.jpg" class="maxSize"><br><br>
 
-Charlieplexing的概念是使用少量的I/O控制多顆LED，當GPIO數量為N時，可控制的LED數量為(N * (N - 1))，如：3根GPIO就可以控制6顆LED，雖然看似不錯，不過存在許多限制，如：GPIO驅動電壓對於LED驅動電壓的計算以及GPIO除了高低電位之外，還需要有輸入高阻抗的支援，另外，當其中一顆LED壞掉時，會有連帶崩壞效應，不過這樣的實驗還是激起司徒的興趣，因此，司徒使用迷你PIC10F200(6隻腳位)來完成這樣的電路，電路圖如下。<br><br>
+main.s
+</p>
+<pre class="brush:asm">
+  list p=10f200, r=hex
+  #include &lt;p10f200.inc&gt;
+  __config _CONFIG, _IntRC_OSC &amp; _WDTE_OFF &amp; _MCLRE_OFF
 
-電路圖<br>
-<img src="pcb/1.jpg" class="maxSize"><br><br>
+  #define tmp1  0x10
+  #define tmp2  0x11
+ 
+  org 0x00
+start:
+  movlw b'11000000'
+  option
 
-材料<br>
-<img src="pcb/2.jpg" class="maxSize"><br><br>
+  movlw b'00001100'
+  tris GPIO
 
-焊接<br>
-<img src="pcb/3.jpg" class="maxSize"><br><br>
+loop:
+  bsf GPIO, 0
+  bcf GPIO, 1
+  call delay
 
-背面<br>
-<img src="pcb/4.jpg" class="maxSize"><br><br>
+  bsf GPIO, 0
+  bsf GPIO, 1
+  call delay
+  goto loop
 
-大小<br>
-<img src="pcb/5.jpg" class="maxSize">
+delay:
+  movlw 0xff
+  movwf tmp2
+  movlw 0xff
+  movwf tmp1
+  decfsz tmp1, f
+  goto $-1
+  decfsz tmp2, f
+  goto $-3
+  return
+  end 
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ gpasm main.s
+</pre><br>
+
+<p>
+完成<br>
+<img src="asm_led/2.jpg" class="maxSize"><br>
+<img src="asm_led/3.jpg" class="maxSize">
 </p>
 
 <p>
