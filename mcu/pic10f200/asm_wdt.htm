@@ -29,7 +29,7 @@
   <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
   
   <script type="text/javascript" src="../../scripts/shCore.js"></script>
-  <script type="text/javascript" src="../../scripts/shBrushScad.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
 
   <!-- Conditional comment to apply opacity fix for IE #content background.
        Invalid CSS, but can be removed without harming design -->
@@ -44,87 +44,52 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>S3C44B0X</h3>
-<p><b>開發板</b></p>
+<h3>PIC10F200 &gt;&gt; Assembly</h3>
+<p><b>Watchdog</b></p>
 <hr size="1">
 <p>
-雖然司徒在學生時期就已經接觸過S3C44B0X晶片，不過，最近突然又想來玩玩這顆經典的ARM7晶片，而司徒這次想來點不一樣的嘗試，那就是使用8051當作RAM以及FLASH元件的模擬，這樣不僅可以省去JTAG的操作，也可以更加熟悉相關晶片的操作，畢竟司徒的重點是了解S3C44B0X晶片的運作，而非是要將重點放在系統製作上，不過，司徒少算了幾根8051 GPIO，加上目前手上也沒有多餘的小板子，因此，位址線只有18條(A0~A17)，而資料線則只有8條(D0~D7)，由於8051屬於比較慢的單晶片，因此，S3C44B0X的EXTCLK也是由8051提供，由8051主導速度，雖然司徒不確定這樣的電路是否可以運作，不過，可以確定的是，一定可以發覺S3C44B0X不為人知的一面，由於8051的FLASH以及RAM不足，因此，司徒外掛一顆W25Q128充當RAM以及FLASH的儲存地方，電路圖整理如下。<br><br>
+PIC10F200的Watchdog觸發時，會直接Reset PIC10F200，不過比較神奇的是GPIO設定值還是之前那份，因此，為了可以達到閃爍LED，在程式一開始就判斷是否從Watchdog Reset回復<br>
+<img src="asm_wdt/1.jpg" class="maxSize"><br><br>
 
-電路圖<br>
-<img src="pcb/1.jpg" class="maxSize"><br><br>
+Prescaler<br>
+<img src="asm_wdt/2.jpg" class="maxSize"><br><br>
 
-材料<br>
-<img src="pcb/2.jpg" class="maxSize"><br><br>
-
-焊接<br>
-<img src="pcb/3.jpg" class="maxSize"><br><br>
-
-背面<br>
-<img src="pcb/4.jpg" class="maxSize"><br><br>
-
-大小<br>
-<img src="pcb/5.jpg" class="maxSize"><br><br>
-
-OpenSCAD(底面)
+main.s
 </p>
-<pre class="brush:scad">
-$fn = 50;
+<pre class="brush:asm">
+  list p=10f200, r=hex
+  #include &lt;p10f200.inc&gt;
+  __config _CONFIG, _IntRC_OSC &amp; _WDTE_ON &amp; _MCLRE_OFF
 
-difference(){
-  cube([80, 80, 8]);
-  translate([2, 2, 2]){
-    cube([76, 76, 8]);
-  }
-}
+  org 0x00
+start:
+  movlw b'11001111'
+  option
 
-translate([1, 1, 0]){
-  difference(){
-    cube([10, 10, 5]);
-    translate([5, 5, 0]){
-      cylinder(10, r1=1, r2=1);
-    }
-  }
-}
+  movlw b'00001100'
+  tris GPIO
+  bcf GPIO, 1
 
-translate([68, 68, 0]){
-  difference(){
-    cube([10, 10, 5]);
-    translate([5, 5, 0]){
-      cylinder(10, r1=1, r2=1);
-    }
-  }
-}
+  movlw 0x01
+  btfss STATUS, 4
+  xorwf GPIO, f
+
+  sleep
+  end
 </pre><br>
 
 <p>
-預覽圖<br>
-<img src="pcb/6.jpg" class="maxSize"><br><br>
-
-3D列印<br>
-<img src="pcb/7.jpg" class="maxSize"><br>
-<img src="pcb/8.jpg" class="maxSize"><br><br>
-
-OpenSCAD(外蓋保護殼)
+編譯
 </p>
-<pre class="brush:scad">
-difference(){
-  cube([83, 83, 15]);
-  translate([1, 1, 1]){
-    cube([81, 81, 15]);
-  }
-}
+<pre>
+$ gpasm main.s
 </pre><br>
 
 <p>
-預覽圖<br>
-<img src="pcb/9.jpg" class="maxSize"><br><br>
-
-3D列印<br>
-<img src="pcb/10.jpg" class="maxSize"><br><br>
-
-完美的保護外殼<br>
-<img src="pcb/11.jpg" class="maxSize">
-<p>
+完成<br>
+<img src="asm_led/2.jpg" class="maxSize"><br>
+<img src="asm_led/3.jpg" class="maxSize">
+</p>
 
 <p>
 <br><a href="../../mcu.htm">返回上一頁</a>
