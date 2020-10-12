@@ -45,35 +45,31 @@
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
 <h3>PIC10F200 &gt;&gt; Assembly</h3>
-<p><b>Watchdog</b></p>
+<p><b>Wake-up on Pin Change</b></p>
 <hr size="1">
 <p>
-相較於一般Watchdog對於Sleep的處理方式，PIC10F200是直接Reset Device，而非從Sleep喚醒並且繼續往下執行，因此，在STATUS暫存器有一個旗標用來標示是否Watchdog Reset，如下：<br>
-<img src="asm_wdt/1.jpg" class="maxSize"><br><br>
-
-Prescaler<br>
-<img src="asm_wdt/2.jpg" class="maxSize"><br>
-Prescaler最大的預除是128，時間大約是2.3秒<br><br>
+GPWU用來設定是否開啟<b>Wake-up from Sleep on Pin Change</b>功能，特性跟Watchdog一樣，Wake-up後是直接Reset Device，而非繼續往下執行<br>
+<img src="asm_wdt/2.jpg" class="maxSize"><br><br>
 
 main.s
 </p>
 <pre class="brush:asm">
   list p=10f200, r=hex
   #include &lt;p10f200.inc&gt;
-  __config _CONFIG, _IntRC_OSC &amp; _WDTE_ON &amp; _MCLRE_OFF
-
+  __config _CONFIG, _IntRC_OSC &amp; _WDTE_OFF &amp; _MCLRE_OFF
+ 
   org 0x00
 start:
-  movlw b'11001111'
+  movlw b'00000000'
   option
-
+ 
   movlw b'00001100'
   tris GPIO
   bcf GPIO, 1
-
+ 
   movlw 0x01
   xorwf GPIO, f
-
+ 
   sleep
   goto $
   end
@@ -88,8 +84,8 @@ $ gpasm main.s
 
 <p>
 完成<br>
-<img src="asm_led/2.jpg" class="maxSize"><br>
-<img src="asm_led/3.jpg" class="maxSize">
+<img src="asm_button/2.jpg" class="maxSize"><br>
+<img src="asm_button/3.jpg" class="maxSize">
 </p>
 
 <p>

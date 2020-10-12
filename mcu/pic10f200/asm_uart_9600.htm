@@ -45,37 +45,92 @@
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
 <h3>PIC10F200 &gt;&gt; Assembly</h3>
-<p><b>Watchdog</b></p>
+<p><b>UART TX(9600bps)</b></p>
 <hr size="1">
 <p>
-相較於一般Watchdog對於Sleep的處理方式，PIC10F200是直接Reset Device，而非從Sleep喚醒並且繼續往下執行，因此，在STATUS暫存器有一個旗標用來標示是否Watchdog Reset，如下：<br>
-<img src="asm_wdt/1.jpg" class="maxSize"><br><br>
+由於PIC10F200沒有UART功能，因此，司徒只好先使用I/O Toggle的方式製作UART TX，TX比較簡單，只要把時間算好，基本上沒有太大問題，唯一要注意的是，最好不要超過3%的誤差，加上PIC10F200的石英震盪器是使用內部震盪器，難免會有誤差，建議不要使用太快的UART Baudrate，目前司徒使用的UART Baudrate是9600bps，格式為N,8,1，過程說明如下。<br><br>
 
-Prescaler<br>
-<img src="asm_wdt/2.jpg" class="maxSize"><br>
-Prescaler最大的預除是128，時間大約是2.3秒<br><br>
+UART傳輸協定<br>
+<img src="../stc15w104/asm_uart_tx/1.jpg" class="maxSize"><br>
+9600bps每個bit時間為：1/9600 = 104.167us<br><br>
 
 main.s
 </p>
 <pre class="brush:asm">
   list p=10f200, r=hex
   #include &lt;p10f200.inc&gt;
-  __config _CONFIG, _IntRC_OSC &amp; _WDTE_ON &amp; _MCLRE_OFF
+  __config _CONFIG, _IntRC_OSC &amp; _WDTE_OFF &amp; _MCLRE_OFF
 
+  #define tmp1        0x10
+  #define tmp2        0x11
+  #define tmp3        0x12
+  #define tmp4        0x13
+  #define UART_DELAY  d'28'
+  #define UART_PIN    0x02
+ 
   org 0x00
 start:
-  movlw b'11001111'
+  movlw b'11000000'
   option
 
-  movlw b'00001100'
+  movlw b'00000000'
+  movwf OSCCAL
+
+  movlw b'00001011'
   tris GPIO
-  bcf GPIO, 1
+  bsf GPIO, UART_PIN
 
-  movlw 0x01
-  xorwf GPIO, f
+  clrf tmp4
+loop:
+  movf tmp4, w
+  incf tmp4, f
+  call uart_send_byte
+  call delay
+  goto loop
 
-  sleep
-  goto $
+uart_send_byte:
+  movwf tmp1
+  movlw 0x08
+  movwf tmp2
+
+  bcf GPIO, UART_PIN
+  movlw UART_DELAY
+  movwf tmp3
+  decfsz tmp3, f
+  goto $-1
+u0:
+  rrf tmp1, f
+  btfss STATUS, C
+  bcf GPIO, UART_PIN
+  btfsc STATUS, C
+  bsf GPIO, UART_PIN
+  
+  movlw UART_DELAY
+  movwf tmp3
+  decfsz tmp3, f
+  goto $-1
+
+  decfsz tmp2, f
+  goto u0
+  
+  bsf GPIO, UART_PIN
+  movlw UART_DELAY
+  movwf tmp3
+  nop
+  decfsz tmp3, f
+  goto $-1
+  return
+
+delay:
+  movlw 0xff
+  movwf tmp2
+  movlw 0xff
+  movwf tmp1
+  decfsz tmp1, f
+  goto $-1
+  decfsz tmp2, f
+  goto $-3
+  return
   end
 </pre><br>
 
@@ -88,8 +143,7 @@ $ gpasm main.s
 
 <p>
 完成<br>
-<img src="asm_led/2.jpg" class="maxSize"><br>
-<img src="asm_led/3.jpg" class="maxSize">
+<img src="asm_uart_9600/1.jpg" class="maxSize">
 </p>
 
 <p>
