@@ -29,7 +29,7 @@
   <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
   
   <script type="text/javascript" src="../../scripts/shCore.js"></script>
-  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
 
   <!-- Conditional comment to apply opacity fix for IE #content background.
        Invalid CSS, but can be removed without harming design -->
@@ -44,18 +44,41 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>GCC</h3>
-<p><b>x64 Calling Convention</b></p>
+<h3>GNU &gt;&gt; Assembly (x64)</h3>
+<p><b>hello, world!</b></p>
 <hr size="1">
 <p>
-Ref. <a href="https://cs.lmu.edu/~ray/notes/gasexamples/">https://cs.lmu.edu/~ray/notes/gasexamples/</a><br><br>
-
-From left to right, pass as many parameters as will fit in registers. <br>
-The order in which registers are allocated, are:<br>
-&emsp;&emsp; For integers and pointers, rdi, rsi, rdx, rcx, r8, r9.<br>
-&emsp;&emsp; For floating-point (float, double), xmm0, xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7<br><br>
-Additional parameters are pushed on the stack, right to left, and are removed by the caller after the call.
+main.s
 </p>
+<pre class="brush:asm">
+  .global _start
+
+  .text
+_start:
+  mov $1, %rax
+  mov $1, %rdi
+  mov $msg, %rsi
+  mov $msg_len, %rdx
+  syscall
+
+  mov $60, %rax
+  xor %rdi, %rdi
+  syscall
+
+  .data
+msg: .ascii "hello, world!\n"
+msg_len = . - msg
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ as main.s -o main.o
+$ ld main.o -o main
+$ ./main
+  hello, world!
+</pre><br>
 
 <p>
 <br><a href="../../program.htm">返回上一頁</a>

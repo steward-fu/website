@@ -44,56 +44,78 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>GCC</h3>
-<p><b>Macro invoke (ARM)</b></p>
+<h3>GNU &gt;&gt; C/C++</h3>
+<p><b>write framebuffer</b></p>
 <hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://stackoverflow.com/questions/32082248/how-to-display-something-on-screen-through-linux-framebuffer">how-to-display-something-on-screen-through-linux-framebuffer</a><br><br>
+
+main.c
+</p>
 <pre class="brush:cpp">
-  .macro invoke func:req, args:vararg
-    .ifnb \args
-      argc = 0
-      .irp param, \args
-        argc = argc + 1
-      .endr
-      argrc = argc
-      .rept argc
-        argrc = argrc - 1
-        argc = 0
-        .irp param, \args
-          .if argrc == argc
-            .if argrc == 0
-              mov r0, \param
-            .elseif argrc == 1
-              mov r1, \param
-            .elseif argrc == 2
-              mov r2, \param
-            .elseif argrc == 3
-              mov r3, \param
-            .else
-              mov r4, \param
-              push {r4}
-            .endif
-          .endif
-          argc = argc + 1
-        .endr
-      .endr
-    .endif
-    bl \func
-  .endm
+#include &lt;stdint.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;linux/fb.h&gt;
+#include &lt;sys/mman.h&gt;
+#include &lt;sys/ioctl.h&gt;
 
-  .equ SDL_INIT_VIDEO,  0x20
-  .equ SDL_HWSURFACE,   0X01
+#define DBG printf
 
-  .text
-  .global main
-main:
-  invoke SDL_Init, $SDL_INIT_VIDEO
-  invoke SDL_SetVideoMode, $320, $240, $32, $SDL_HWSURFACE
-  invoke SDL_Quit
-  ret
+int flip_screen(void)
+{
+  int fbfd=0;
+  int x=0, y=0;
+  uint16_t* fbp=0;
+  uint32_t size=0;
+  struct fb_var_screeninfo vinfo={0};
+  struct fb_fix_screeninfo finfo={0};
+
+  fbfd = open("/dev/fb0", O_RDWR);
+  if(fbfd == -1){
+    DBG("failed to open framebuffer\n");
+    return -1;
+  }
+
+  if(ioctl(fbfd, FBIOGET_FSCREENINFO, &amp;finfo) == -1){
+    DBG("failed to read fb fscreen information\n");
+    return -1;
+  }
+
+  if(ioctl(fbfd, FBIOGET_VSCREENINFO, &amp;vinfo) == -1) {
+    DBG("failed to read fb vscreen information\n");
+    return -1;
+  }
+
+  size = vinfo.xres * vinfo.yres * vinfo.bits_per_pixel / 8;
+  fbp = (uint16_t*)mmap(0, size, PROT_READ | PROT_WRITE, MAP_SHARED, fbfd, 0);
+  if(fbp == NULL){
+    DBG("failed map framebuffer memory\n");
+    return -1;
+  }
+  DBG("%dx%d %dbpp\n", vinfo.xres, vinfo.yres, vinfo.bits_per_pixel);
+
+  for(y=0; y&lt;240; y++){
+    for(x=0; x&lt;320; x++){
+      *fbp++ = 0xf800;
+    }
+  }
+  munmap(fbp, size);
+  close(fbfd);
+  return 0;
+}
+
+int main(int argc, char** argv)
+{
+  return flip_screen();
+}
 </pre><br>
 
 <p>
-<br><a href="../../system.htm">返回上一頁</a>
+<br><a href="../../program.htm">返回上一頁</a>
 </p>
 
 </div>

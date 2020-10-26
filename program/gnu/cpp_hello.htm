@@ -44,112 +44,29 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>GCC &gt;&gt; C/C++</h3>
-<p><b>lz77 compress/decompress</b></p>
+<h3>GNU &gt;&gt; C/C++</h3>
+<p><b>Hello, world!</b></p>
 <hr size="1">
+<p>
+main.c
+</p>
 <pre class="brush:cpp">
 #include &lt;stdio.h&gt;
-#include &lt;stdlib.h&gt;
-#include &lt;stdint.h&gt;
-#include &lt;zlib.h&gt;
-#include &lt;fcntl.h&gt;
-#include &lt;unistd.h&gt;
-
-static char file[32*1024*1024]={0};
-static char lz[32*1024*1024]={0};
-static char unlz[32*1024*1024]={0};
-
-uint32_t lz77_compress(uint8_t* src, uint32_t slen, uint8_t* dst)
-{
-  uint8_t plen, tlen;
-  uint16_t ppos, tpos, optr;
-  uint32_t cptr, osize, cpos, oref, lkb, lka;
-
-  *((uint32_t*)dst) = slen;
-  cptr = osize = 4;
-
-  for(cpos=0; cpos&lt;slen; ++cpos){
-    ppos = 0;
-    plen = 0;
-    for(tpos=1; (tpos&lt;4096) &amp;&amp; (tpos&lt;=cpos); ++tpos){
-      lkb = cpos - tpos;
-      lka = cpos;
-      for(tlen=0; src[lka++]==src[lkb++]; tlen++){
-        if(tlen == 15){
-          break;
-        }
-      }
-      if(tlen &gt; plen){
-        ppos = tpos;
-        plen = tlen;
-        if(plen == 15){
-          break;
-        }
-      }
-    }
-    cpos+= plen;
-    if(plen &amp;&amp; (cpos == slen)){
-      optr = (ppos &lt;&lt; 4) | (plen - 1);
-      oref = cpos - 1;
-    } 
-    else{
-      optr = (ppos &lt;&lt; 4) | plen;
-      oref = cpos;
-    }
-    *((uint32_t*)(dst + cptr)) = optr;
-    cptr+= 2;
-    *(dst + cptr++) = *(src + oref);
-    osize+= 3;
-  }
-  return osize;
-}
-
-uint32_t lz77_decompress(uint8_t *src, uint8_t *dst)
-{
-  uint8_t plen;
-  uint16_t iptr, ppos;
-  uint32_t cptr, cpos, poff, usize;
-
-  usize = *((uint32_t*)src);
-  cptr = 4;
-
-  for(cpos=0; cpos&lt;usize; cpos++){
-    iptr = *((uint32_t*)(src + cptr));
-    cptr+= 2;
-    ppos = iptr &gt;&gt; 4;
-    plen = iptr &amp; 15;
-    if(ppos){
-      for(poff=cpos-ppos; plen&gt;0; plen--){
-        dst[cpos++] = dst[poff++];
-      }
-    }
-    *(dst + cpos) = *(src + cptr++);
-  }
-  return cpos;
-}
 
 int main(int argc, char** argv)
 {
-  int r, fd;
-  
-  fd = open("xxx.bin", O_RDONLY);
-  r = read(fd, file, sizeof(file));
-  close(fd);
-  printf("file length: %d\n", r);
-
-  r = lz77_compress(file, r, lz);
-  fd = open("xxx.lz77", O_CREAT | O_WRONLY);
-  write(fd, lz, r);
-  close(fd);
-  printf("compress length: %d\n", r);
-
-  r = lz77_decompress(lz, unlz);
-  fd = open("xxx.unlz77", O_CREAT | O_WRONLY);
-  write(fd, unlz, r);
-  close(fd);
-  printf("decompress length: %d\n", r);
+  printf("hello, world!\n");
   return 0;
 }
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ gcc main.c -o main
+$ ./main
+  hello, world!
 </pre><br>
 
 <p>

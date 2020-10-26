@@ -44,21 +44,86 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>GCC</h3>
-<p><b>HOME目錄</b></p>
+<h3>GNU &gt;&gt; C/C++</h3>
+<p><b>zip compress</b></p>
 <hr size="1">
 <p>
-參考資訊：
-1. <a href="https://stackoverflow.com/questions/2910377/get-home-directory-in-linux">get-home-directory-in-linux</a><br><br>
-
-如下：
+main.c
 </p>
 <pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;zlib.h&gt;
+#include &lt;fcntl.h&gt;
 #include &lt;unistd.h&gt;
-#include &lt;sys/types.h&gt;
-#include &lt;pwd.h&gt;
 
-const char *homedir = getenv("HOME");
+static char file[32*1024*1024]={0};
+static char zip[32*1024*1024]={0};
+static char unzip[32*1024*1024]={0};
+
+int zip_compress(uint8_t* src, int slen, uint8_t* dst, int dlen)
+{
+  int err, ret=-1;
+  z_stream stream={0};
+
+  stream.total_in = stream.avail_in = slen;
+  stream.total_out = stream.avail_out = dlen;
+  stream.next_in = src;
+  stream.next_out = dst;
+  err = deflateInit(&amp;stream, Z_DEFAULT_COMPRESSION);
+  if(err == Z_OK){
+    err = deflate(&amp;stream, Z_FINISH);
+    if(err == Z_STREAM_END){
+      ret = stream.total_out;
+    }
+  }
+  deflateEnd(&amp;stream);
+  return ret;
+}
+
+int zip_decompress(uint8_t* src, int slen, uint8_t* dst, int dlen)
+{
+  int err, ret=-1;
+  z_stream stream={0};
+  
+  stream.total_in = stream.avail_in = slen;
+  stream.total_out = stream.avail_out = dlen;
+  stream.next_in = src;
+  stream.next_out = dst;
+  err = inflateInit(&amp;stream);
+  if(err == Z_OK){
+    err = inflate(&amp;stream, Z_FINISH);
+    if(err == Z_STREAM_END){
+      ret = stream.total_out;
+    }
+  }
+  inflateEnd(&amp;stream);
+  return ret;
+}
+
+int main(int argc, char** argv)
+{
+  int r, fd;
+  
+  fd = open("xxx.bin", O_RDONLY);
+  r = read(fd, file, sizeof(file));
+  close(fd);
+  printf("file length: %d\n", r);
+
+  r = zip_compress(file, r, zip, sizeof(zip));
+  fd = open("xxx.zip", O_CREAT | O_WRONLY);
+  write(fd, zip, r);
+  close(fd);
+  printf("zip length: %d\n", r);
+
+  r = zip_decompress(zip, r, unzip, sizeof(unzip));
+  fd = open("xxx.unzip", O_CREAT | O_WRONLY);
+  write(fd, unzip, r);
+  close(fd);
+  printf("unzip length: %d\n", r);
+  return 0;
+}
 </pre><br>
 
 <p>

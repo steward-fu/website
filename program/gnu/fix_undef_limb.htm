@@ -44,38 +44,11 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>GCC</h3>
-<p><b>解決"...not support ARM mode 'umaal..."問題</b></p>
+<h3>GNU</h3>
+<p><b>解決"undefined reference to __gmpn_invert_limb"問題</b></p>
 <hr size="1">
 <p>
-由於司徒的N900(EasyDebian裡面的Compiler Prefix)是<b>armv7l-unknown-linux-gnueabi</b>，所以取得的<b>host_cpu</b>會變成<b>armv7l</b>，導致host-gmp產生的mul_1.asm(MPN_PATH)會無法在司徒的N900上編譯，錯誤如下：
-</p>
-
-<pre>
-mp-mul_1.s: Assembler messages:
-tmp-mul_1.s:105: Error: selected processor does not support ARM mode `umaal r6,r12,r4,r3'
-tmp-mul_1.s:109: Error: selected processor does not support ARM mode `umaal r7,r12,r5,r3'
-tmp-mul_1.s:113: Error: selected processor does not support ARM mode `umaal r6,r12,r4,r3'
-tmp-mul_1.s:117: Error: selected processor does not support ARM mode `umaal r7,r12,r5,r3'
-tmp-mul_1.s:123: Error: selected processor does not support ARM mode `umaal r6,r12,r4,r3'
-make: *** [mul_1.lo] Error 1
-</pre><br>
-
-<p>
-修復方式如下(只要將configure裡面的host_cpu改成N900可以支援的就可以)：
-</p>
-
-<pre class="brush:cpp">
-$ cd output/build/host-gmp-6.1.1/
-$ vim configure
- host_cpu=arm9te
-run configure command again
-$ cd ../../../
-$ make
-</pre>
-
-<p>
-configure的部份，請從Command Line找出原本的參數，接著退回原目錄並執行make(不要make clean，否則host-gmp會被重新解壓縮)
+使用如果在編譯gmp時，遇到<b>undefined reference to __gmpn_invert_limb</b>錯誤時，代表host_cpu被設成none，解決方式很簡單，只要在gmp的Makefile裡，將<b>host_cpu=none</b>改成當下編譯的host即可，如(N900)：host_cpu=armv7l，改完後記得<b>make clean &amp;&amp; make</b>
 </p>
 
 <p>
