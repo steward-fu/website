@@ -44,38 +44,55 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>GNU &gt;&gt; Assembly (x64)</h3>
-<p><b>hello, world!</b></p>
+<h3>GNU &gt;&gt; Assembly (x86)</h3>
+<p><b>hello, world! (sysenter)</b></p>
 <hr size="1">
 <p>
+參考資訊：<br>
+1. <a href="https://reverseengineering.stackexchange.com/questions/2869/how-to-use-sysenter-under-linux">how-to-use-sysenter-under-linux</a><br><br>
+
 main.s
 </p>
 <pre class="brush:asm">
-  .global _start
-
+  .globl _start
+  
   .text
 _start:
-  mov $1, %rax
-  mov $1, %rdi
-  mov $msg, %rsi
-  mov $msg_len, %rdx
-  syscall
+  pushl %ebp
+  movl %esp, %ebp
+  movl $msg_len, %edx
+  movl $msg, %ecx
+  movl $1, %ebx
+  movl $4, %eax
+  pushl $ret
+  pushl %ecx
+  pushl %edx
+  pushl %ebp
+  movl %esp, %ebp
+  sysenter
 
-  mov $60, %rax
-  xor %rdi, %rdi
-  syscall
-
+ret:
+  movl $0, %ebx
+  movl $1, %eax
+  pushl $ret
+  pushl %ecx
+  pushl %edx
+  pushl %ebp
+  movl %esp, %ebp
+  sysenter
+  
   .data
 msg: .ascii "hello, world!\n"
 msg_len = . - msg
+
 </pre><br>
 
 <p>
 編譯、執行
 </p>
 <pre>
-$ as main.s -o main.o
-$ ld main.o -o main
+$ as --32 main.s -o main.o
+$ ld -m elf_i386 main.o -o main
 $ ./main
   hello, world!
 </pre><br>
