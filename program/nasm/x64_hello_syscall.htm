@@ -44,42 +44,39 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>GNU &gt;&gt; Assembly (x86)</h3>
-<p><b>hello, world! (int 0x80)</b></p>
+<h3>NASM &gt;&gt; Assembly (x64)</h3>
+<p><b>hello, world! (syscall)</b></p>
 <hr size="1">
 <p>
-參考資訊：<br>
-1. <a href="https://tldp.org/HOWTO/Assembly-HOWTO/hello.html">Assembly-HOWTO</a><br><br>
-
 main.s
 </p>
 <pre class="brush:asm">
-  .global _start
-
-  .text
+  global _start
+ 
+  section .text
 _start:
-  mov $msg_len, %edx
-  mov $msg, %ecx
-  mov $1, %ebx
-  mov $4, %eax
-  int $0x80
-  
-  mov $0, %ebx
-  mov $1, %eax
-  int $0x80
-
-  .data
-msg: .ascii "hello, world!\n"
-msg_len = . - msg
+  mov rax, 1
+  mov rdi, 1
+  mov rsi, msg
+  mov rdx, msg_len
+  syscall
+ 
+  mov rax, 60
+  xor rdi, rdi
+  syscall
+ 
+  section .data
+msg: db "hello, world!", 10
+msg_len equ $ - msg
 </pre><br>
 
 <p>
 編譯、執行
 </p>
 <pre>
-$ as --32 main.s -o main.o
-$ ld -m elf_i386 main.o -o main
-$ ./main
+$ nasm -felf64 main.s
+$ ld main.o -o main
+$ ./main 
   hello, world!
 </pre><br>
 
