@@ -44,15 +44,12 @@
 <div id="content">
 <script type="text/javascript" src="../../../header.js"></script>
 <div id="page">
-<h3>SDL 1.2 &gt;&gt; C/C++ &gt;&gt; Basic</h3>
-<p><b>Hello, world!</b></p>
+<h3>SDL 1.2 &gt;&gt; C/C++</h3>
+<p><b>Get Ticks</b></p>
 <hr size="1">
 <p>
-Github <a href="https://github.com/steward-fu/program">https://github.com/steward-fu/program</a><br>
-Ref. <a href="https://wiki.libsdl.org/SDL_Event">https://wiki.libsdl.org/SDL_Event</a><br>
-Ref. <a href="http://lazyfoo.net/tutorials/SDL/index.php">http://lazyfoo.net/tutorials/SDL/index.php</a><br><br>
-
-輸入事件(滑鼠、鍵盤、搖桿)都可以透過SDL_PollEvent()取得，因此，多數模擬器都是使用一個無窮迴圈(while)在處理輸入事件，然後依據輸入動作決定下一步如何走，做法相當簡單，只要使用Polling方式做輪詢即可，然後判斷是哪種輸入事件被觸發，最後則是判斷屬性和數值，例如：鍵盤被觸發(SDL_KEY)，屬性是SDL_KEYDOWN，鍵值是SDLK_UP。因此，在今天的教學，目標設定單純一點，只要測試有無按鍵被按下即可，其餘細節先不做處理，之後司徒再使用其它教學文章說明，程式碼相當簡單，如下範例。<br><br>
+參考資訊：<br>
+1. <a href="https://www.libsdl.org/release/SDL-1.2.15/docs/html/index.html">docs</a><br><br>
 
 main.c
 </p>
@@ -60,60 +57,40 @@ main.c
 #include &lt;stdio.h&gt;
 #include &lt;stdlib.h&gt;
 #include &lt;SDL.h&gt;
-  
-int main(int argc, char* args[])
-{
-  if(SDL_Init(SDL_INIT_VIDEO) != 0){
-    printf("%s, failed to SDL_Init\n", __func__);
-    return -1;
-  }
-  
-  SDL_Surface* screen;
-  screen = SDL_SetVideoMode(320, 240, 32, SDL_HWSURFACE);
-  if(screen == NULL){
-    printf("%s, failed to SDL_SetVideMode\n", __func__);
-    return -1;
-  }
-  
-  SDL_Surface* bmp = SDL_LoadBMP("hello.bmp");
-  if(bmp == NULL){
-    printf("%s, failed to SDL_LoadBMP\n", __func__);
-    return -1;
-  }
-  
-  SDL_ShowCursor(0);
-  SDL_BlitSurface(bmp, NULL, screen, NULL);
-  SDL_Flip(screen);
+#include &lt;SDL_gfxPrimitives.h&gt;
 
-  int loop=1;
-  SDL_Event event;
-  while(loop){
-    if(SDL_PollEvent(&amp;event) == 0){
-      SDL_Delay(100);
-      continue;
-    }
-    if(event.type == SDL_KEYDOWN){
-      loop = 0;
-    }
-  }
-  SDL_FreeSurface(bmp);
+int main(int argc, char** argv)
+{
+  SDL_Surface* screen;
+ 
+  SDL_Init(SDL_INIT_VIDEO);
+  screen = SDL_SetVideoMode(320, 240, 16, SDL_HWSURFACE);
+ 
+  Uint32 start = SDL_GetTicks();
+  SDL_Delay(1000);
+  Uint32 end = SDL_GetTicks();
+
+  char buf[255]={0};
+  sprintf(buf, "strat:%d, end:%d", start, end);
+  stringRGBA(screen, 100, 100, buf, 0xff, 0xff, 0xff, 0xff);
+  SDL_Flip(screen);
+  SDL_Delay(3000);
+ 
   SDL_Quit();
-  return 0;    
+  return 0;
 }
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ gcc main.c -o main -lSDL -lSDL_gfx -I/usr/include/SDL
+$ ./main
 </pre>
 <p>
-<b>Line 32</b> 取得目前還未處理的Event。<br>
-<b>Line 36</b> 如有任何按鍵按下，則結束主程式。<br><br>
-
-Makefile
+<img src="cpp_ticks/1.jpg" class="maxSize">
 </p>
-<pre class="brush:cpp">
-all:
-  gcc -o main main.c -lSDL -I/usr/include/SDL
-
-clean:
-  rm -rf main
-</pre><br>
 
 <p>
 <br><a href="../../../program.htm">返回上一頁</a>

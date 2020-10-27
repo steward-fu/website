@@ -44,11 +44,62 @@
 <div id="content">
 <script type="text/javascript" src="../../../header.js"></script>
 <div id="page">
-<h3>SDL 1.2 &gt;&gt; Assembly (ARM) &gt;&gt; Basic</h3>
-<p><b>安装環境</b></p>
+<h3>SDL 1.2 &gt;&gt; C/C++</h3>
+<p><b>Keyboard Event</b></p>
 <hr size="1">
-既然介紹如何使用Assembly撰寫SDL程式，那ARM算是目前主流的使用平台，這部份的教學文章，當然不能缺席，因此，司徒也將一併介紹如何使用ARM Assembly撰寫SDL程式，剛好可以把塵封已久的N900再度好好利用，因此，如果使用者身邊也剛好有N900手機，可以好好利用這支強大的手機，學學如何用ARM Assembly寫SDL程式。司徒目前使用N900 Sbox(於手機上)方式編譯以及測試SDL程式，關於這部份的環境架設，請參考司徒的相關教學文章，而安裝的套件則是GCC以及SDL相關套件即可。
 <p>
+參考資訊：<br>
+1. <a href="https://www.libsdl.org/release/SDL-1.2.15/docs/html/index.html">docs</a><br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;SDL.h&gt;
+#include &lt;SDL_gfxPrimitives.h&gt;
+
+int main(int argc, char* args[])
+{
+  char buf[255]={0};
+  SDL_Surface* screen;
+  
+  SDL_Init(SDL_INIT_VIDEO);
+  screen = SDL_SetVideoMode(320, 240, 16, SDL_HWSURFACE);
+  SDL_FillRect(screen, &amp;screen->clip_rect, SDL_MapRGB(screen->format, 0x00, 0x00, 0x00));
+  SDL_Flip(screen);
+ 
+  SDL_Event event;
+  while(1){
+    if(SDL_PollEvent(&amp;event)){
+      if(event.type == SDL_KEYDOWN){
+        sprintf(buf, "key: 0x%x", event.key.keysym.sym);
+        SDL_FillRect(screen, &amp;screen->clip_rect, SDL_MapRGB(screen->format, 0x00, 0x00, 0x00));
+        stringRGBA(screen, 100, 100, buf, 0xff, 0xff, 0xff, 0xff);
+        SDL_Flip(screen);
+
+        if(event.key.keysym.sym == SDLK_a){
+          break;
+        }
+      }
+    }
+    SDL_Delay(100);
+  }
+  SDL_Quit();
+  return 0;    
+}
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ gcc main.c -o main -lSDL -lSDL_gfx -I/usr/include/SDL
+$ ./main
+</pre>
+<p>
+<img src="cpp_keyboard/1.jpg" class="maxSize">
+</p>
 
 <p>
 <br><a href="../../../program.htm">返回上一頁</a>

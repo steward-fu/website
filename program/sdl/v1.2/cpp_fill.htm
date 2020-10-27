@@ -29,7 +29,7 @@
   <link rel="stylesheet" type="text/css" href="../../../css/print.css" media="print" />
   
   <script type="text/javascript" src="../../../scripts/shCore.js"></script>
-  <script type="text/javascript" src="../../../scripts/shBrushAsm.js"></script>
+  <script type="text/javascript" src="../../../scripts/shBrushCpp.js"></script>
 
   <!-- Conditional comment to apply opacity fix for IE #content background.
        Invalid CSS, but can be removed without harming design -->
@@ -44,88 +44,61 @@
 <div id="content">
 <script type="text/javascript" src="../../../header.js"></script>
 <div id="page">
-<h3>SDL 1.2 &gt;&gt; Assembly (x64)</h3>
-<p><b>Hello, world!</b></p>
+<h3>SDL 1.2 &gt;&gt; C/C++</h3>
+<p><b>Fill Color</b></p>
 <hr size="1">
 <p>
 參考資訊：<br>
-1. <a href="https://www.libsdl.org/release/SDL-1.2.15/docs/html/index.html">docs</a><br>
-2. <a href="https://github.com/Gogsi/SDL-Assembly">SDL-Assembly</a><br><br>
+1. <a href="https://www.libsdl.org/release/SDL-1.2.15/docs/html/index.html">docs</a><br><br>
 
-main.s
+main.c
 </p>
-<pre class="brush:asm">
-  .macro invoke func:req, args:vararg
-    .ifnb \args
-      argc = 0
-      .irp param, \args
-        .if argc == 0
-          mov \param, %rdi
-        .elseif argc == 1
-          mov \param, %rsi
-        .elseif argc == 2
-          mov \param, %rdx
-        .elseif argc == 3
-          mov \param, %rcx
-        .elseif argc == 4
-          mov \param, %rcx
-        .elseif argc == 5
-          mov \param, %rcx
-        .endif
-        argc = argc + 1
-      .endr
-    .endif
-    call \func
-  .endm
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;SDL.h&gt;
 
-  .equ SDL_INIT_VIDEO,  0x20
-  .equ SDL_HWSURFACE,   0X01
+int main(int argc, char** argv)
+{
+  SDL_Rect rt={0};
+  SDL_Surface* screen;
 
-  .text
-  .global main
-main:
-  invoke SDL_Init, $SDL_INIT_VIDEO
-  invoke SDL_SetVideoMode, $320, $240, $16, $SDL_HWSURFACE
-  mov %rax, screen
+  SDL_Init(SDL_INIT_VIDEO);
+  screen = SDL_SetVideoMode(320, 240, 16, SDL_HWSURFACE);
 
-  invoke SDL_RWFromFile, $bmp_path, $bmp_mode
-  invoke SDL_LoadBMP_RW, %rax, $1
-  mov %rax, bmp
+  SDL_FillRect(screen, &amp;screen->clip_rect, SDL_MapRGB(screen->format, 0xff, 0x00, 0x00));
+
+  rt.x = 50;
+  rt.y = 50;
+  rt.w = 30;
+  rt.h = 30;
+  SDL_FillRect(screen, &amp;rt, SDL_MapRGB(screen->format, 0x00, 0xff, 0x00));
+
+  rt.x = 100;
+  rt.y = 100;
+  rt.w = 50;
+  rt.h = 100;
+  SDL_FillRect(screen, &amp;rt, SDL_MapRGB(screen->format, 0x00, 0x00, 0xff));
   
-  invoke SDL_UpperBlit, bmp, $0, screen, $0
-  invoke SDL_Flip, screen
-  invoke SDL_Delay, $3000
-  invoke SDL_FreeSurface, bmp
-  invoke SDL_Quit
-
-  mov $0, %rax
-  ret
-
-  .align
-  .text
-bmp_path: .asciz "main.bmp"
-bmp_mode: .asciz "rw"
-
-  .align
-  .data
-screen: .quad 0
-bmp: .quad 0
-  .end
+  SDL_Flip(screen);
+  SDL_Delay(3000);
+  SDL_Quit();
+  return 0;
+}
 </pre><br>
 
 <p>
 編譯、執行
 </p>
 <pre>
-$ gcc main.s -o main -lSDL -no-pie
+$ gcc main.c -o main -lSDL -I/usr/include/SDL
 $ ./main
 </pre>
 <p>
-<img src="x64_hello/1.jpg" class="maxSize">
+<img src="cpp_fill/1.jpg" class="maxSize">
 </p>
 
 <p>
-<br>
 <br><a href="../../../program.htm">返回上一頁</a>
 </p>
 
