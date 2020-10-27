@@ -19,13 +19,15 @@
   typeof(require) != 'undefined' ? SyntaxHighlighter = require('shCore').SyntaxHighlighter : null;
 
   function Brush(){
-    var my_constant = 'False True'
+    var my_constant = 'subprocess gtk glib MySQLdb os False True sys commands argparse gridfs pymongo MongoClient win32com.client win32 easywebadv password username protocol port verify_ssl googletrans Translator psutil __future__ print_function httplib2 io googleapiclient discovery oauth2client client tools Storage MediaFileUpload MediaIoBaseDownload acknowledgeAbuse fileId pageSize fields PyApp Window'
     var my_keyword =  'import from def while if default for range break in else elif __init__ class super replace int split try except None'
-    var my_type = 'gtk glib commands subprocess argparse path os serial threading time sys stdout args self'
-    var my_function = 'exists open ArgumentParser add_argument readchar input raw_input start parse_args close read write len sleep exit print geteuid Serial Thread StatusIcon set_from_stock set_from_file format connect get_current_event get_current_event_time getoutput MenuItem ImageMenuItem Menu append Image set_image set_subimage SeparatorMenuItem set_submenu show_all popup system main_quit main'
+    var my_type = 'path serial threading time stdout args self'
+    var my_function = 'exists open ArgumentParser add_argument readchar input raw_input start parse_args close read write len sleep exit print geteuid Serial Thread StatusIcon set_from_stock set_from_file format connect get_current_event get_current_event_time getoutput MenuItem ImageMenuItem Menu append Image set_image set_subimage SeparatorMenuItem set_submenu show_all popup system main_quit main cursor execute fetchall commit authenticate GridFS put get_version logout Dispatch CreateItem Add Send ls upload walk translate Process getpit memory_info get authorize Http build files list get_media FileIO next_chunk create set_default_size set_title Label add'
 
     this.regexList = [
       {regex: /#.*/g, css: 'my_preprocessor'},
+      {regex: SyntaxHighlighter.regexLib.doubleQuotedString, css:'string'},
+      {regex: SyntaxHighlighter.regexLib.singleQuotedString, css:'string'},
       {regex: new RegExp(this.getKeywords(my_type),'gm'), css:'my_type bold'},
       {regex: new RegExp(this.getKeywords(my_keyword),'gm'), css:'my_keyword bold'},
       {regex: new RegExp(this.getKeywords(my_constant),'gm'), css:'my_constant bold'},
