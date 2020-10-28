@@ -44,22 +44,17 @@
 <div id="content">
 <script type="text/javascript" src="../../../header.js"></script>
 <div id="page">
-<h3>Visual C++ &rArr; GUI &rArr; Win32 API</h3>
+<h3>Visual C++ &gt;&gt; GUI &gt;&gt; Win32 API</h3>
 <p><b>分析USBView</b></p>
 <hr size="1">
 <p>
-USBView程式是開發、Debug USB裝置必用的好用工具，該工具是Microsoft DDK的範常式式，該程式範例教導使用者如何寫一個搜尋、列舉USB裝置的程式，但是這個程式是使用Win32 API方式撰寫，沒有一定的底子的使用者確實不容易看懂，加上沒有驅動程式相關經驗的使用者來說，更是不容易瞭解它的運作流程，司徒剛好有看過並且修改過此程式，所以趁著還有些許記憶時，整理這一篇文章並分享給有需要的人。
-</p>
+USBView程式是開發、Debug USB裝置必用的好用工具，該工具是Microsoft DDK的範常式式，該程式範例教導使用者如何寫一個搜尋、列舉USB裝置的程式，但是這個程式是使用Win32 API方式撰寫，沒有一定的底子的使用者確實不容易看懂，加上沒有驅動程式相關經驗的使用者來說，更是不容易瞭解它的運作流程，司徒剛好有看過並且修改過此程式，所以趁著還有些許記憶時，整理這一篇文章並分享給有需要的人<br><br>
 
-<p>
-USBView範常式式位於<b>$DDK_ROOT\src\usb\usbview</b>資料夾<br>
-<img src="usbview/1.jpg" class="maxSize">
-</p>
+USBView位於<b>$DDK_ROOT\src\usb\usbview</b>資料夾<br>
+<img src="usbview/1.jpg" class="maxSize"><br><br>
 
-<p>
 Win32 API程式的進入點位於WinMain副程式(usbview.c)
 </p>
-
 <pre class="brush:cpp">
 int WINAPI WinMain (
   HINSTANCE hInstance,
@@ -109,15 +104,11 @@ int WINAPI WinMain (
   return 1;
 }
 </pre>
-
 <p>
-WinMain副程式需要撰寫的程式內容就是一般Win32 API的處理流程，首先載入Cursor、Accelerator資源檔，接著呼叫CreateTextBuffer副程式配置記憶體，再來就是呼叫CreateMainWindow副程式產生主視窗，目前USBView是使用Dialog作為視窗基礎，所以視窗產生完畢後就是開始做訊息取得、分發的動作，也就是接下來的while迴圈內容，這些處理流程都是很制式的，因為視窗程式都是使用訊息作為傳遞的橋樑，而系統若要傳遞訊息給視窗程式，系統就會將訊息放在視窗的訊息緩衝區，所以主程式必須透過GetMessage函式取得訊息並分發給自己的主程式，那自己的主程式要如何收到訊息呢？在CreateMainWindow副程式會呼叫CreateDialog函式並且註冊一個Callback副程式，而該Callback副程式就是負責接收訊息的副程式。
-</p>
+WinMain副程式需要撰寫的程式內容就是一般Win32 API的處理流程，首先載入Cursor、Accelerator資源檔，接著呼叫CreateTextBuffer副程式配置記憶體，再來就是呼叫CreateMainWindow副程式產生主視窗，目前USBView是使用Dialog作為視窗基礎，所以視窗產生完畢後就是開始做訊息取得、分發的動作，也就是接下來的while迴圈內容，這些處理流程都是很制式的，因為視窗程式都是使用訊息作為傳遞的橋樑，而系統若要傳遞訊息給視窗程式，系統就會將訊息放在視窗的訊息緩衝區，所以主程式必須透過GetMessage函式取得訊息並分發給自己的主程式，那自己的主程式要如何收到訊息呢？在CreateMainWindow副程式會呼叫CreateDialog函式並且註冊一個Callback副程式，而該Callback副程式就是負責接收訊息的副程式<br><br>
 
-<p>
 司徒把CreateMainWindow(usbview.c)列出來給大家看一下
 </p>
-
 <pre class="brush:cpp">
 BOOL CreateMainWindow(int nCmdShow)
 {
@@ -141,10 +132,9 @@ BOOL CreateMainWindow(int nCmdShow)
   return TRUE;
 }
 </pre>
-
 <p>
-接著如何繼續追蹤程式呢？總不可能每個副程式慢慢看，更不可能使用WinDbg追蹤，因為這樣也太累了，仔細想想，由於USBView是視窗程式，所以全部的訊息一定會透過Callback副程式做後續處理，所以直接看Callback副程式絕對錯不了</p>
-
+接著如何繼續追蹤程式呢？總不可能每個副程式慢慢看，更不可能使用WinDbg追蹤，因為這樣也太累了，仔細想想，由於USBView是視窗程式，所以，全部的訊息一定會透過Callback副程式做後續處理，所以直接看Callback副程式絕對錯不了
+</p>
 <pre class="brush:cpp">
 LRESULT CALLBACK MainDlgProc (
   HWND   hWnd,
@@ -166,78 +156,41 @@ LRESULT CALLBACK MainDlgProc (
   return 0;
 }
 </pre>
-
 <p>
 HANDLE_MSG是一個巨集，該巨集如下
 </p>
-
 <pre class="brush:cpp">
 #define HANDLE_MSG(hwnd, message, fn) /  
   case (message): return HANDLE_##message((hwnd), (wParam), (lParam), (fn))
 </pre>
-
 <p>
 該巨集的意思就是將HANDLE_MSG轉換成<b>HANDLE_ + Message</b>，如：WM_CREATE將會轉換成HANDLE_WM_CREATE，而HANDLE_WM_CREATE也是一個巨集，如下定義
 </p>
-
 <pre class="brush:cpp">
 #define HANDLE_WM_CREATE(hwnd, wParam, lParam, fn) \
   ((fn)((hwnd), (LPCREATESTRUCT)(lParam)) ? 0L : (LRESULT)-1L)
 </pre>
-
 <p>
-使用者看到這裡應該就可以知道，它其實只是做switch指令的判斷，並且執行fn副程式，然後return執行後的結果，如果使用者不想用這麼難懂的巨集，只要自己寫一個switch指令判斷就可以。
+使用者看到這裡應該就可以知道，它其實只是做switch指令的判斷，並且執行fn副程式，然後return執行後的結果，如果使用者不想用這麼難懂的巨集，只要自己寫一個switch指令判斷就可以<br><br>
+
+司徒將目前USBView的訊息整理如下
 </p>
-
-<p>
-司徒將目前USBView的訊息整理如下</p>
 <table>
-  <tr>
-    <th>訊息</th>
-    <th>功能</th>
-  </tr>
-  <tr>
-    <td>WM_INITDIALOG</td>
-    <td>視窗初始化訊息</td>
-  </tr>
-  <tr>
-    <td>WM_CLOSE</td>
-    <td>視窗結束訊息</td>
-  </tr>
-  <tr>
-    <td>WM_COMMAND</td>
-    <td>接收按鈕的訊息</td>
-  </tr>
-  <tr>
-    <td>WM_LBUTTONDOWN</td>
-    <td>滑鼠左鍵按下的訊息</td>
-  </tr>
-  <tr>
-    <td>WM_LBUTTONUP</td>
-    <td>滑鼠左鍵放開的訊息</td>
-  </tr>
-  <tr>
-    <td>WM_MOUSEMOVE</td>
-    <td>滑鼠移動的訊息</td>
-  </tr>
-  <tr>
-    <td>WM_SIZE</td>
-    <td>視窗縮放的訊息</td>
-  </tr>
-  <tr>
-    <td>WM_NOTIFY</td>
-    <td>系統通知的訊息</td>
-  </tr>
-  <tr>
-    <td>WM_DEVICECHANGE</td>
-    <td>註冊的裝置訊息</td>
-  </tr>
+  <tr><th>訊息</th><th>功能</th></tr>
+  <tr><td>WM_INITDIALOG</td><td>視窗初始化訊息</td></tr>
+  <tr><td>WM_CLOSE</td><td>視窗結束訊息</td></tr>
+  <tr><td>WM_COMMAND</td><td>接收按鈕的訊息</td></tr>
+  <tr><td>WM_LBUTTONDOWN</td><td>滑鼠左鍵按下的訊息</td></tr>
+  <tr><td>WM_LBUTTONUP</td><td>滑鼠左鍵放開的訊息</td></tr>
+  <tr><td>WM_MOUSEMOVE</td><td>滑鼠移動的訊息</td></tr>
+  <tr><td>WM_SIZE</td><td>視窗縮放的訊息</td></tr>
+  <tr><td>WM_NOTIFY</td><td>系統通知的訊息</td></tr>
+  <tr><td>WM_DEVICECHANGE</td><td>註冊的裝置訊息</td></tr>
 </table>
 
 <p>
-整理完所以訊息之後，我們只需要看WM_INITDIALOG、WM_NOTIFY、WM_DEVICECHANGE這三個訊息就可以，因為其它訊息都是制式的處理手法，不會是我們分析的重點，接著我們先看WM_INITDIALOG(usbview.c)在做什麼
+整理完訊息之後，我們只需要看WM_INITDIALOG、WM_NOTIFY、WM_DEVICECHANGE這三個訊息就可以，因為其它訊息都是制式的處理手法，不會是我們分析的重點，接著我們先看WM_INITDIALOG(usbview.c)在做什麼
 </p>
-
 <pre class="brush:cpp">
 BOOL USBView_OnInitDialog (
   HWND    hWnd,
@@ -315,11 +268,9 @@ BOOL USBView_OnInitDialog (
   return FALSE;
 }
 </pre>
-
 <p>
 該副程式也很簡單，只是註冊USB Hub通知(透過RegisterDeviceNotification函式)並且產生TreeView視窗，而每個TreeView的Node也都有特定的圖示表示(透過LoadIcon和ImageList_AddIcon)，需要注意的是，透過RegisterDeviceNotification函式註冊的訊息，系統會使用WM_DEVICECHANGE訊息作回調，也就是當註冊的裝置插入或者拔除時，系統都會透過WM_DEVICECHANGE訊息通知主程式，那比較有問題的是GUID部份，使用者怎麼會知道有哪些GUID可以使用呢？其實這一些都是微軟定義的裝置GUID，它們位於USBIODef.h中
 </p>
-
 <pre class="brush:cpp">
 /* f18a0e88-c30c-11d0-8815-00a0c906bed8 */
 DEFINE_GUID(GUID_DEVINTERFACE_USB_HUB,    0xf18a0e88, 0xc30c, 0x11d0, 0x88, 0x15, 0x00, \
@@ -345,15 +296,11 @@ DEFINE_GUID(GUID_USB_WMI_STD_NOTIFICATION, 0x4E623B20L, 0xCB14, 0x11D1, 0xB3, 0x
 #define GUID_CLASS_USB_DEVICE           GUID_DEVINTERFACE_USB_DEVICE
 #define GUID_CLASS_USB_HOST_CONTROLLER  GUID_DEVINTERFACE_USB_HOST_CONTROLLER
 </pre>
-
 <p>
-如果是自己開發的USB裝置以及驅動程式，使用者也可以使用這種註冊方式。
-</p>
+如果是自己開發的USB裝置以及驅動程式，使用者也可以使用這種註冊方式<br><br>
 
-<p>
 我們已經知道WM_DEVICECHANGE是一個重要的副程式，所以它的程式碼可能會很大也很複雜，所以我們把它保留到最後再分析，我們先分析另一個WM_NOTIFY(usbview.c)副程式
 </p>
-
 <pre class="brush:cpp">
 LRESULT USBView_OnNotify (
   HWND    hWnd,
@@ -373,15 +320,11 @@ LRESULT USBView_OnNotify (
   return 0;
 }
 </pre>
-
 <p>
-使用者看到應該會嚇一跳，程式碼怎麼這麼簡單，因為該副程式只做TreeView的顯示處理，也就是當使用者點選某個裝置時，在右邊的EDIT視窗顯示相關訊息，所以顯示裝置訊息的程式就寫在UpdateEditControl副程式裡面，這一部份都只是附加文字到EDIT視窗而已，使用者自己看一下就可以知道了。
-</p>
+使用者看到應該會嚇一跳，程式碼怎麼這麼簡單，因為該副程式只做TreeView的顯示處理，也就是當使用者點選某個裝置時，在右邊的EDIT視窗顯示相關訊息，所以顯示裝置訊息的程式就寫在UpdateEditControl副程式裡面，這一部份都只是附加文字到EDIT視窗而已，使用者自己看一下就可以知道了<br><br>
 
-<p>
 接著我們看一下USBView最重要的副程式WM_DEVICECHANGE(usbview.c)
 </p>
-
 <pre class="brush:cpp">
 BOOL USBView_OnDeviceChange (
   HWND  hwnd,
@@ -399,15 +342,11 @@ BOOL USBView_OnDeviceChange (
   return TRUE;
 }
 </pre>
-
 <p>
-該副程式判斷DBT_DEVICEARRIVAL、DBT_DEVICEREMOVECOMPLETE訊息並做列舉的動作，所以繼續往RefreshTree看下去。
-</p>
+該副程式判斷DBT_DEVICEARRIVAL、DBT_DEVICEREMOVECOMPLETE訊息並做列舉的動作，所以繼續往RefreshTree看下去<br><br>
 
-<p>
 RefreshTree副程式(usbview.c)如下
 </p>
-
 <pre class="brush:cpp">
 VOID RefreshTree (VOID)
 {
@@ -457,12 +396,9 @@ VOID RefreshTree (VOID)
   }
 }
 </pre>
-
 <p>
-該副程式把TreeView刪除重建並且呼叫EnumerateHostControllers副程式做USB Hub列舉的動作，所以繼續往EnumerateHostControllers副程式看下去。
-</p>
+該副程式把TreeView刪除重建並且呼叫EnumerateHostControllers副程式做USB Hub列舉的動作，所以繼續往EnumerateHostControllers副程式看下去<br><br>
 
-<p>
 EnumerateHostControllers副程式(enum.c)如下
 </p>
 
@@ -574,27 +510,17 @@ VOID EnumerateHostControllers (
   *DevicesConnected = TotalDevicesConnected;
 }
 </pre>
-
 <p>
-該副程式要分成兩部份來看，第一部份是使用CreateFile函式去開啟HCD(Host Control Device)並且列舉USB裝置，而第二部份則是使用SetupAPI函式開啟HCD並且列舉USB裝置。
-</p>
+該副程式要分成兩部份來看，第一部份是使用CreateFile函式去開啟HCD(Host Control Device)並且列舉USB裝置，而第二部份則是使用SetupAPI函式開啟HCD並且列舉USB裝置<br><br>
 
-<p>
-為什麼會有這樣的區分呢？因為驅動程式載入時，驅動程式會使用SymbolLink或GUID註冊名稱給User Mode的應用程式開啟，如果是使用SymbolLink則必須使用第一種方式開啟，反之，若驅動程式使用GUID註冊，則User Mode的應用程式就必須使用SetupAPI函式去取得實際路徑。
-</p>
+為什麼會有這樣的區分呢？因為驅動程式載入時，驅動程式會使用SymbolLink或GUID註冊名稱給User Mode的應用程式開啟，如果是使用SymbolLink則必須使用第一種方式開啟，反之，若驅動程式使用GUID註冊，則User Mode的應用程式就必須使用SetupAPI函式去取得實際路徑<br><br>
 
-<p>
-如果是使用SymbolLink則直接使用CreateFile函式開啟就可以了，如果是使用SetupAPI函式的方式開啟，則需要先取得GUID並且使用此GUID去搜尋是否有該裝置，如果有發現裝置則取得該裝置名稱，然後一樣使用CreateFile函式開啟即可。
-</p>
+如果是使用SymbolLink則直接使用CreateFile函式開啟就可以了，如果是使用SetupAPI函式的方式開啟，則需要先取得GUID並且使用此GUID去搜尋是否有該裝置，如果有發現裝置則取得該裝置名稱，然後一樣使用CreateFile函式開啟即可<br><br>
 
-<p>
-開啟HCD後就呼叫EnumerateHostController(目前分析的副程式是EnumerateHostControllers，最後多一個s)做列舉裝置的動作，雖然分成兩種方式開啟HCD，但是緊接著都是一樣呼叫EnumerateHostController副程式處理，所以繼續往EnumerateHostController副程式分析。
-</p>
+開啟HCD後，就呼叫EnumerateHostController(目前分析的副程式是EnumerateHostControllers，最後多一個s)做列舉裝置的動作，雖然分成兩種方式開啟HCD，但是緊接著都是一樣呼叫EnumerateHostController副程式處理，所以繼續往EnumerateHostController副程式分析<br><br>
 
-<p>
 EnumerateHostController副程式(enum.c)如下
 </p>
-
 <pre class="brush:cpp">
 VOID EnumerateHostController (
   HTREEITEM  hTreeParent,
@@ -721,15 +647,11 @@ VOID EnumerateHostController (
   }
 }
 </pre>
-
 <p>
-該副程式首先取得HCD的DriverKey名稱(透過GetHCDDriverKeyName副程式)，使用的是IOCTL_GET_HCD_DRIVERKEY_NAME，該IOCTL是微軟定義的，所有HCD都會支援此IOCTL(因為它是預設支援的IOCTL)，而取得的名稱就是HCD註冊在Registry的名稱，那為何要去取得Registry名稱呢？因為有此名稱才能存取Registry裡面的相關資訊，而一般Registry都會紀錄驅動程式的詳細資訊，如果使用者已經知道絕對路徑，那麼使用RegOpenKey函式開啟也可以達到相同的目的。
-</p>
+該副程式首先取得HCD的DriverKey名稱(透過GetHCDDriverKeyName副程式)，使用的是IOCTL_GET_HCD_DRIVERKEY_NAME，該IOCTL是微軟定義的，所有HCD都會支援此IOCTL(因為它是預設支援的IOCTL)，而取得的名稱就是HCD註冊在Registry的名稱，那為何要去取得Registry名稱呢？因為有此名稱才能存取Registry裡面的相關資訊，而一般Registry都會紀錄驅動程式的詳細資訊，如果使用者已經知道絕對路徑，那麼使用RegOpenKey函式開啟也可以達到相同的目的<br><br>
 
-<p>
 接著呼叫DriverNameToDeviceDesc副程式(透過Registry方式)去取得晶片的名稱，該名稱就是顯示在TreeView上面的名稱，而GetHCDDriverKeyName副程式比較簡單，它使用IOCTL的方式去取得HCD的DriverKey名稱，至於DriverNameToDeviceDesc副程式(devnode.c)的部份，因為它比較特別，所以司徒需要好好解析它一下
 </p>
-
 <pre class="brush:cpp">
 PCHAR DriverNameToDeviceDesc (PCHAR DriverName, BOOLEAN DeviceId)
 {
@@ -834,13 +756,10 @@ PCHAR DriverNameToDeviceDesc (PCHAR DriverName, BOOLEAN DeviceId)
 </pre>
 
 <p>
-CM_xxx函數是關於Registry的相關操作，而某些CM_xxx函數是可以使用SetupAPI函式替代的。
-</p>
+CM_xxx函數是關於Registry的相關操作，而某些CM_xxx函數是可以使用SetupAPI函式替代的<br><br>
 
-<p>
 該副程式首先取得Node Handle(CM_Locate_DevNode)，接著取得Registry Property(CM_Get_DevNode_Registry_Property)，而Property可以有如下選項
 </p>
-
 <table>
   <tr>
     <th>旗標</th>
@@ -891,7 +810,6 @@ CM_xxx函數是關於Registry的相關操作，而某些CM_xxx函數是可以使
 <p>
 這一些旗標是可以取得相關資訊的旗標，司徒要比較特別提到的是CM_Get_Parent這個函數，因為當我們取得的資料是HID裝置資料時，其實可以再使用一次CM_Get_Parent取得USB裝置資料，然後再使用一次CM_Get_Parent時，就可以取得Hub的裝置資料，CM_Get_Parent這個函數非常好用，因為一般我們寫User Mode的HID裝置列舉時，都會使用SetupDiEnumDeviceInfo函式去取得裝置資訊，但是，卻不知道如何取得USB裝置資料，所以這個時候只要呼叫CM_Get_Parent函式就可以取得USB裝置的資料，由於HID協定是USB最底層協定，它的上一層協定就是USB協定，所以才會有這樣的順序關係，範常式式如下
 </p>
-
 <pre class="brush:cpp">
 DWORD devInstParent;
 BOOLEAN bRet
@@ -904,17 +822,12 @@ CM_Get_Device_ID(devInstParent, pDeviceID, sizeof(pDeviceID) * 255, 0);
 </pre>
 
 <p>
-此段程式可以使用在User Mode的HID列舉階段，透過該段程式就可以取得USB裝置的絕對路徑，因為HID裝置的操作和USB裝置的操作是不一樣的，所以一旦擁有USB裝置的Handle就可以非常方便使用其它相關函式。
-</p>
+此段程式可以使用在User Mode的HID列舉階段，透過該段程式就可以取得USB裝置的絕對路徑，因為HID裝置的操作和USB裝置的操作是不一樣的，所以一旦擁有USB裝置的Handle就可以非常方便使用其它相關函式<br><br>
 
-<p>
-接著繼續往下分析，DriverNameToDeviceDesc副程式是取得裝置的描述名稱，如：人性化介面裝置，內部使用的方式也是透過CM_xxx函數，接著就是將取得的名稱顯示在TreeView上面，最重要的EnumerateHub副程式，因為它會繼續列舉每個Port的裝置。
-</p>
+接著繼續往下分析，DriverNameToDeviceDesc副程式是取得裝置的描述名稱，如：人性化介面裝置，內部使用的方式也是透過CM_xxx函數，接著就是將取得的名稱顯示在TreeView上面，最重要的EnumerateHub副程式，因為它會繼續列舉每個Port的裝置<br><br>
 
-<p>
 EnumerateHub副程式(enum.c)如下
 </p>
-
 <pre class="brush:cpp">
 VOID EnumerateHub (
   HTREEITEM                           hTreeParent,
@@ -1113,15 +1026,11 @@ EnumerateHubError:
   }
 }
 </pre>
-
 <p>
-該副程式開啟Hub(不要跟之前的HCD搞混)並且取得Port的狀況(透過IOCTL_USB_GET_NODE_INFORMATION)，而這個Port資訊就是代表有幾個實際Port數，有了這個資訊後，就可以更進一步的取得每個Port的裝置資訊(透過EnumerateHubPorts副程式)，因此繼續往EnumerateHubPorts副程式分析，而EnumerateHubPorts副程式應該就是最後結尾的副程式了。
-</p>
+該副程式開啟Hub(不要跟之前的HCD搞混)並且取得Port的狀況(透過IOCTL_USB_GET_NODE_INFORMATION)，而這個Port資訊就是代表有幾個實際Port數，有了這個資訊後，就可以更進一步的取得每個Port的裝置資訊(透過EnumerateHubPorts副程式)，因此繼續往EnumerateHubPorts副程式分析，而EnumerateHubPorts副程式應該就是最後結尾的副程式了<br><br>
 
-<p>
 EnumerateHubPorts副程式(enum.c)如下
 </p>
-
 <pre class="brush:cpp">
 VOID EnumerateHubPorts (
   HTREEITEM   hTreeParent,
@@ -1351,12 +1260,9 @@ VOID EnumerateHubPorts (
   }
 }
 </pre>
-
 <p>
-該副程式取得每個Port的裝置資訊(透過IOCTL_USB_GET_NODE_CONNECTION_INFORMATION_EX或IOCTL_USB_GET_NODE_CONNECTION_INFORMATION)，將每個取得的裝置資訊(GetConfigDescriptor和GetAllStringDescriptors)加入TreeView中，這個副程式比較詭異的地方是再度呼叫EnumerateHub副程式，這樣會導致遞迴呼叫，司徒想了一下才知道，這是因為每個USB Hub可以繼續往下串接USB Hub(USB最多能支援127個裝置、USB Hub最大串接層數是6層)，所以使用遞迴反而可以讓程式更簡潔，不失為一個好的寫法，所以這一個部份應該是USBView的精髓所在。
-</p>
+該副程式取得每個Port的裝置資訊(透過IOCTL_USB_GET_NODE_CONNECTION_INFORMATION_EX或IOCTL_USB_GET_NODE_CONNECTION_INFORMATION)，將每個取得的裝置資訊(GetConfigDescriptor和GetAllStringDescriptors)加入TreeView中，這個副程式比較詭異的地方是再度呼叫EnumerateHub副程式，這樣會導致遞迴呼叫，司徒想了一下才知道，這是因為每個USB Hub可以繼續往下串接USB Hub(USB最多能支援127個裝置、USB Hub最大串接層數是6層)，所以使用遞迴反而可以讓程式更簡潔，不失為一個好的寫法，所以這一個部份應該是USBView的精髓所在<br><br>
 
-<p>
 司徒認為分析到此應該有很多人還是搞不清楚，所以司徒就畫一個流程圖幫助大家構思它的整體運作<br>
 <img src="usbview/2.jpg" class="maxSize">
 </p>

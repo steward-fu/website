@@ -44,32 +44,22 @@
 <div id="content">
 <script type="text/javascript" src="../../../header.js"></script>
 <div id="page">
-<h3>Visual C++ &rArr; Console</h3>
+<h3>Visual C++ &gt;&gt; Console</h3>
 <p><b>&amp;&amp;、&amp;、||、|</b></p>
 <hr size="1">
+<p>
+表格
+</p>
 <table>
-  <tr>
-    <th>&amp;</th>
-    <td>位元AND運算(如：1 &amp; 3 = 1)</td>
-  </tr>
-  <tr>
-    <th>|</th>
-    <td>位元OR運算(如：1 | 3 = 3)</td>
-  </tr>
-  <tr>
-    <th>&amp;&amp;</th>
-    <td>邏輯AND判斷(如：1 &amp;&amp; 3 = TRUE)</td>
-  </tr>
-  <tr>
-    <th>||</th>
-    <td>邏輯OR判斷(如：1 || 3 = TRUE)</td>
-  </tr>
+  <tr><th>&amp;</th><td>位元AND運算(如：1 &amp; 3 = 1)</td></tr>
+  <tr><th>|</th><td>位元OR運算(如：1 | 3 = 3)</td></tr>
+  <tr><th>&amp;&amp;</th><td>邏輯AND判斷(如：1 &amp;&amp; 3 = TRUE)</td></tr>
+  <tr><th>||</th><td>邏輯OR判斷(如：1 || 3 = TRUE)</td></tr>
 </table><br>
 
 <p>
 上面這個四種符號是最基本的理解，但是，看看下面的程式，你可以知道差別在哪裡嗎？
 </p>
-
 <pre class="brush:cpp">
 volatile unsigned char x=0xff, y=0xff;
 
@@ -87,13 +77,10 @@ int _tmain(int argc, _TCHAR* argv[])
 </pre>
 
 <p>
-雖然從結果來看，這兩種寫法是接近的，但是，不能說哪一種寫法有問題，因為這兩種寫法要看使用者的應用動機是什麼，<b>(x &amp;&amp; y)</b>可能有使用者要確定<b>((x != 0) &amp;&amp; (y != 0))</b>條件成立才做，而<b>(x &amp; y)</b>可能有使用者要確定<b>((x &amp; y) != 0)</b>條件成立才做，一個是確定個別不等於0，另一個是要確定一起AND後不等於0，使用者對於這些基本邏輯、位元運算應該沒問題的。
-</p>
+雖然從結果來看，這兩種寫法是接近的，但是，不能說哪一種寫法有問題，因為這兩種寫法要看使用者的應用動機是什麼，<b>(x &amp;&amp; y)</b>可能有使用者要確定<b>((x != 0) &amp;&amp; (y != 0))</b>條件成立才做，而<b>(x &amp; y)</b>可能有使用者要確定<b>((x &amp; y) != 0)</b>條件成立才做，一個是確定個別不等於0，另一個是要確定一起AND後不等於0，使用者對於這些基本邏輯、位元運算應該沒問題的。<br><br>
 
-<p>
 司徒今天要針對這兩種寫法做比較深一點探討，因為C語言用久了，一般可能只會從結果看事情，看不到比較細膩一點的東西，所以只要翻譯成組合語言就可以一窺究竟
 </p>
-
 <pre class="brush:cpp">
 volatile unsigned char x=0xff, y=0xff;
 
@@ -134,17 +121,12 @@ int _tmain(int argc, _TCHAR* argv[])
 </pre>
 
 <p>
-<b>(x &amp;&amp; y)</b>會先判斷x是否為0，若x=0，則不做後續判斷，而針對<b>||</b>來說，它也是一樣的效果，只要第一個成立就直接當作條件成立不做後續判斷，而<b>(x &amp; y)</b>則是<b>x AND y</b>後，才判斷是否為0，若為0則成立，反之則不成立。
-</p>
+<b>(x &amp;&amp; y)</b>會先判斷x是否為0，若x=0，則不做後續判斷，而針對<b>||</b>來說，它也是一樣的效果，只要第一個成立就直接當作條件成立不做後續判斷，而<b>(x &amp; y)</b>則是<b>x AND y</b>後，才判斷是否為0，若為0則成立，反之則不成立。<br><br>
 
-<p>
-司徒這樣說就跟沒說是一樣的，說穿了，其實<b>&amp;&amp;</b>的效能比<b>&amp;</b>來得好(只要將運算元作適當安排)，因為<b>&amp;&amp;</b>每次都會做測試判斷，一旦等於0(針對AND運算)就馬上跳出，而反觀<b>&amp;</b>運算，則是需要從頭做一遍，最後才去判斷結果，所以邏輯判斷還是使用邏輯運算比較好，不要搞混亂用。
-</p>
+司徒這樣說，就跟沒說是一樣的，說穿了，其實<b>&amp;&amp;</b>的效能比<b>&amp;</b>來得好(只要將運算元作適當安排)，因為<b>&amp;&amp;</b>每次都會做測試判斷，一旦等於0(針對AND運算)就馬上跳出，而反觀<b>&amp;</b>運算，則是需要從頭做一遍，最後才去判斷結果，所以邏輯判斷還是使用邏輯運算比較好，不要搞混亂用。<br><br>
 
-<p>
 下面的程式使用者可以知道它的意思嗎？它並沒有寫錯，只是它是另有用途。
 </p>
-
 <pre class="brush:cpp">
 volatile unsigned char x=0xff, y=0xff;
 
@@ -160,7 +142,6 @@ int _tmain(int argc, _TCHAR* argv[])
 <p>
 它的實際意思如下
 </p>
-
 <pre class="brush:cpp">
 volatile unsigned char x=0xff, y=0xff;
 
@@ -177,7 +158,7 @@ int _tmain(int argc, _TCHAR* argv[])
 </pre>
 
 <p>
-它的意思就是<b>(x &amp;&amp; y)</b>成立後，則設定<b>x = 10</b>，若<b>x</b>還是大於0，則設定<b>y = 20</b>，算是相當複雜，司徒不建議把程式寫得如此藝術化，司徒建議寫程式以保守安全不出錯為第一考量，畢竟多年後，自己再回頭看程式，搞不好自己也看不懂，更何況要交接給其他人，若交接給其他人，而他誤以為寫錯而改成<b>((x &amp;&amp; y) &amp;&amp; (x =<font color="#80ff80">=</font> 10)</b>，那就真的是很難抓的Bug了。
+它的意思就是<b>(x &amp;&amp; y)</b>成立後，則設定<b>x = 10</b>，若<b>x</b>還是大於0，則設定<b>y = 20</b>，算是相當複雜，司徒不建議把程式寫得如此藝術化，司徒建議寫程式以保守安全不出錯為第一考量，畢竟多年後，自己再回頭看程式，搞不好自己也看不懂，更何況要交接給其他人，若交接給其他人，而他誤以為寫錯而改成<b>((x &amp;&amp; y) &amp;&amp; (x =<font color="#00ff00">=</font> 10)</b>，那就真的是很難抓的Bug了。
 </p>
 
 <p>
