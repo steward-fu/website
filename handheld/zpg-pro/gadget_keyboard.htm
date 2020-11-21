@@ -45,11 +45,11 @@
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
 <h3>Z-Pocket Game Pro(ZPG Pro)</h3>
-<p><b>config gadget ethernet (configfs)</b></p>
+<p><b>config gadget keyboard (configfs)</b></p>
 <hr size="1">
 <p>
 參考資訊：<br>
-1. <a href="https://www.collabora.com/news-and-blog/blog/2019/02/18/modern-usb-gadget-on-linux-and-how-to-integrate-it-with-systemd-part-1/">modern-usb-gadget-on-linux-and-how-to-integrate-it-with-systemd-part-1</a><br><br>
+1. <a href="https://www.raspberrypi.org/forums/viewtopic.php?t=163774">raspberrypi_163774</a><br><br>
 
 ZPG Pro
 </p>
@@ -57,47 +57,43 @@ ZPG Pro
 $ su
 # insmod libcomposite.ko
 # insmod usb_f_fs.ko
-# insmod u_ether.ko
-# insmod usb_f_ecm.ko
+# insmod usb_f_hid.ko
 
-# cd /sys/kernel/config/usb_gadget
-# mkdir g1
-# cd g1
+# cd /sys/kernel/config/usb_gadget/
+# mkdir -p isticktoit
+# cd isticktoit
 # echo 0x1d6b > idVendor
-# echo 0x104 > idProduct
-# mkdir strings/0x409
-# echo "Collabora" > strings/0x409/manufacturer
-# echo "ECM" > strings/0x409/product
-# mkdir configs/c.1
-# mkdir functions/ecm.usb0
-# ln -s functions/ecm.usb0/ configs/c.1/
-# echo ff300000.usb > UDC
-
-# ifconfig usb0 10.0.1.3 netmask 255.255.255.0
-# ifconfig usb0
-    usb0: flags=4163&lt;UP,BROADCAST,RUNNING,MULTICAST&gt;  mtu 1500
-        inet 10.0.1.3  netmask 255.255.255.0  broadcast 10.0.1.255
-        inet6 fe80::4093:adff:fed9:e41d  prefixlen 64  scopeid 0x20&lt;link&gt;
-        ether 42:93:ad:d9:e4:1d  txqueuelen 1000  (Ethernet)
-        RX packets 12  bytes 1562 (1.5 KB)
-        RX errors 0  dropped 0  overruns 0  frame 0
-        TX packets 6  bytes 508 (508.0 B)
-        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+# echo 0x0104 > idProduct
+# echo 0x0100 > bcdDevice
+# echo 0x0200 > bcdUSB
+# mkdir -p strings/0x409
+# echo "fedcba9876543210" > strings/0x409/serialnumber
+# echo "Tobias Girstmair" > strings/0x409/manufacturer
+# echo "iSticktoit.net USB Device" > strings/0x409/product
+# mkdir -p configs/c.1/strings/0x409
+# echo "Config 1: ECM network" > configs/c.1/strings/0x409/configuration
+# echo 250 > configs/c.1/MaxPower
+# mkdir -p functions/hid.xyz
+# echo 1 > functions/hid.xyz/protocol
+# echo 1 > functions/hid.xyz/subclass
+# echo 8 > functions/hid.xyz/report_length
+# echo -ne \\x05\\x01\\x09\\x06\\xa1\\x01\\x05\\x07\\x19\\xe0\\x29\\xe7\\x15\\x00\\x25\\x01\\x75\\x01\\x95\\x08\\x81\\x02\\x95\\x01\\x75\\x08\\x81\\x03\\x95\\x05\\x75\\x01\\x05\\x08\\x19\\x01\\x29\\x05\\x91\\x02\\x95\\x01\\x75\\x03\\x91\\x03\\x95\\x06\\x75\\x08\\x15\\x00\\x25\\x65\\x05\\x07\\x19\\x00\\x29\\x65\\x81\\x00\\xc0 > functions/hid.xyz/report_desc
+# ln -s functions/hid.xyz configs/c.1/
+# ls /sys/class/udc > UDC
 </pre><br>
 
 <p>
 PC
 </p>
 <pre>
-[ 3865.309695] usb 2-2: new high-speed USB device number 8 using xhci_hcd
-[ 3865.458504] usb 2-2: New USB device found, idVendor=1d6b, idProduct=0104, bcdDevice= 4.04
-[ 3865.458507] usb 2-2: New USB device strings: Mfr=1, Product=2, SerialNumber=3
-[ 3865.458509] usb 2-2: Product: ECM
-[ 3865.458510] usb 2-2: Manufacturer: Collabora
-[ 3865.491238] cdc_ether 2-2:1.0 usb0: register 'cdc_ether' at usb-0000:00:14.0-2, CDC Ethernet Device, 5a:07:74:09:01:f4
-[ 3865.492703] usbcore: registered new interface driver cdc_ether
-[ 3865.500673] cdc_ether 2-2:1.0 enp0s20u2: renamed from usb0
-[ 3865.532488] IPv6: ADDRCONF(NETDEV_UP): enp0s20u2: link is not ready
+[ 4122.455723] usb 2-2: new high-speed USB device number 17 using xhci_hcd
+[ 4122.604735] usb 2-2: New USB device found, idVendor=1d6b, idProduct=0104, bcdDevice= 1.00
+[ 4122.604738] usb 2-2: New USB device strings: Mfr=1, Product=2, SerialNumber=3
+[ 4122.604740] usb 2-2: Product: iSticktoit.net USB Device
+[ 4122.604741] usb 2-2: Manufacturer: Tobias Girstmair
+[ 4122.604743] usb 2-2: SerialNumber: fedcba9876543210
+[ 4122.606101] input: Tobias Girstmair iSticktoit.net USB Device as /devices/pci0000:00/0000:00:14.0/usb2/2-2/2-2:1.0/0003:1D6B:0104.0005/input/input19
+[ 4122.664109] hid-generic 0003:1D6B:0104.0005: input,hidraw3: USB HID v1.01 Keyboard [Tobias Girstmair iSticktoit.net USB Device] on usb-0000:00:14.0-2/input0
 </pre><br>
 
 <p>
