@@ -1,0 +1,137 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Z-Pocket Game Pro(ZPG Pro)</h3>
+<p><b>sdltest</b></p>
+<hr size="1">
+<p>
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;sys/ioctl.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;sys/mman.h&gt;
+#include &lt;string.h&gt;
+#include &lt;linux/fb.h&gt;
+#include &lt;SDL.h&gt;
+#include &lt;SDL_image.h&gt;
+#include &lt;SDL_ttf.h&gt;
+
+int main(int argc, char* args[])
+{
+  SDL_Window *sdlWindow;
+  SDL_Renderer *sdlRenderer;
+  
+  SDL_Init(SDL_INIT_VIDEO);
+  SDL_CreateWindowAndRenderer(480, 320, SDL_WINDOW_SHOWN, &amp;sdlWindow, &amp;sdlRenderer);
+  SDL_Surface *screen = SDL_CreateRGBSurface(SDL_SWSURFACE, 480, 320, 16, 0, 0, 0, 0);
+  SDL_Texture *sdlTexture = SDL_CreateTexture(sdlRenderer, SDL_PIXELFORMAT_RGB565, SDL_TEXTUREACCESS_STREAMING, 480, 320);
+
+  int col=0xf800;
+  int x, y, z=600;
+  while(z--){
+    uint16_t *s = screen-&gt;pixels;
+    for(y=0; y&lt;320; y++){
+      for(x=0; x&lt;480; x++){
+        *s++ = col;
+      }
+    }
+    SDL_UpdateTexture(sdlTexture, NULL, screen-&gt;pixels, screen-&gt;pitch);
+    SDL_RenderClear(sdlRenderer);
+    SDL_RenderCopy(sdlRenderer, sdlTexture, NULL, NULL);
+    SDL_RenderPresent(sdlRenderer);
+
+    switch(col){
+    case 0xf800:
+      col = 0x7e0;
+      break;
+    case 0x7e0:
+      col = 0x1f;
+      break;
+    case 0x1f:
+      col = 0xf800;
+      break;
+    }
+    SDL_Delay(1000/60);
+  }
+  SDL_FreeSurface(screen);
+  SDL_DestroyTexture(sdlTexture);
+  SDL_DestroyRenderer(sdlRenderer);
+  SDL_DestroyWindow(sdlWindow);
+  SDL_Quit();
+  return 0;
+}
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ cd
+$ wget https://github.com/steward-fu/zpg-pro/releases/download/v1.0/toolchain-x64.tar.gz
+$ tar xvf toolchain-x64.tar.gz
+$ sudo mv gcc-arm-9.2-2019.12-x86_64-aarch64-none-linux-gnu /opt/zpg-sdk
+$ export PATH=$PATH:/opt/zpg-sdk/bin
+
+$ /opt/zpg-sdk/bin/aarch64-none-linux-gnu-gcc main.c -o sdltest -lSDL2 -I/opt/zpg-sdk/aarch64-none-linux-gnu/include/SDL2 -Wl,-rpath-link=/opt/zpg-sdk/aarch64-none-linux-gnu/lib -Wl,-rpath-link=/opt/zpg-sdk/aarch64-none-linux-gnu/lib/pulseaudio
+</pre><br>
+
+<p>
+<br><a href="../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
