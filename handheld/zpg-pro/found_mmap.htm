@@ -248,7 +248,21 @@
  584                     PROT_READ|PROT_WRITE, MAP_SHARED, console_fd, 0);
 </pre>
 <p>
-P.S. 問題點在於顯示驅動已經使用DRM方式製作，已經不在支援舊版FrameBuffer方式，因此，finfo.smem_start拿到的指標是NULL，導致crash，解法就是使用SDL v2.0方式改寫或者製作一個傳統FrameBuffer顯示驅動，當然，使用比較風險的解法，就是混用SDL v1.2和SDL v2.0，初始化部份由SDL v2.0代替，而主體演算部份仍然照用SDL v1.2，SDL v2.0部份可以包成<b>share library(*.so)</b>方式並連結SDL v1.2程式。
+問題點在於RK3326顯示驅動沒有填寫smem_start位址，所以SDL v1.2拿到的指標是NULL，導致crash
+</p>
+<pre>
+static int rockchip_drm_fbdev_create(struct drm_fb_helper *helper, struct drm_fb_helper_surface_size *sizes)
+{
+   ...
+   dev->mode_config.fb_base = 0;
+   fbi->screen_base = rk_obj->kvaddr + offset;
+   fbi->screen_size = rk_obj->base.size;
+   fbi->fix.smem_len = rk_obj->base.size;
+   fbi->skip_vt_switch = true;
+   ...
+}
+</pre>
+最快的解法就是依照SDL v2.0方式撰寫，或者使用比較高風險的解法，混用SDL v1.2和SDL v2.0，初始化部份由SDL v2.0代替，而主體演算部份仍然照用SDL v1.2，SDL v2.0部份可以包成<b>share library(*.so)</b>方式並連結SDL v1.2程式，不過需要注意struct不同大小的問題，這部份必須手動轉換。
 </p>
 
 <p>
