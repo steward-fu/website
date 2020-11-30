@@ -45,42 +45,44 @@
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
 <h3>RGB10</h3>
-<p><b>partition layout</b></p>
+<p><b>build recovery</b></p>
 <hr size="1">
 <p>
 參考資訊：<br>
-1. <a href="https://wiki.odroid.com/odroid_go_advance/build_uboot">build_uboot</a><br><br>
+1. <a href="https://wiki.odroid.com/odroid_go_advance/recovery_spirom">build_spirom</a><br><br>
 
-MicroSD
+步驟如下：
 </p>
-<table>
-<tr><th>partition</th><th>start</th><th>size</th><th>requirement</th></tr>
-<tr><td>mbr</td><td>0</td><td>0</td><td></td></tr>
-<tr><td>idbloader</td><td>1</td><td>512</td><td>idbloader.img</td></tr>
-<tr><td>uboot</td><td>116384</td><td>8M</td><td>uboot.mg</td></tr>
-<tr><td>trust</td><td>24576</td><td>12M</td><td>trust.img</td></tr>
-<tr><td>vfat</td><td>32768</td><td>16M</td><td>/dev/mmcblk1p1</td></tr>
-<tr><td>rootfs</td><td>262144</td><td>128M</td><td>/dev/mmcblk1p2</td></tr>
-</table><br>
+<pre>
+$ sudo apt-get update
+$ sudo apt-get install -y git lzop build-essential gcc bc libncurses5-dev libc6-i386 lib32stdc++6 zlib1g:i386 -y
+
+$ cd
+$ wget https://releases.linaro.org/components/toolchain/binaries/6.3-2017.05/aarch64-linux-gnu/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu.tar.xz
+$ tar xvf gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu.tar.xz
+$ sudo mv gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu /opt/rgb10
+
+$ export ARCH=arm64
+$ export CROSS_COMPILE=aarch64-linux-gnu-
+$ export PATH=/opt/rgb10/bin/:$PATH
+
+$ git clone https://github.com/hardkernel/u-boot.git -b odroidgoA-v2017.09
+$ cd u-boot
+$ make distclean
+$ ./make.sh odroidgo2-spi
+$ ./build_recovery.sh
+</pre><br>
 
 <p>
-SPI
+燒錄到SDCard
 </p>
-<table>
-<tr><th>partition</th><th>sector</th><th>end</th><th>requirement</th></tr>
-<tr><td>mbr</td><td>0</td><td>512B</td><td>rk3326_header_miniloader_spiboot.img</td></tr>
-<tr><td>gpt</td><td>1</td><td>16.5KB</td><td>rk3326_header_miniloader_spiboot.img</td></tr>
-<tr><td>env</td><td>64</td><td>32KB</td><td>rk3326_header_miniloader_spiboot.img</td></tr>
-<tr><td>miniloader</td><td>128</td><td>960KB</td><td>rk3326_header_miniloader_spiboot.img</td></tr>
-<tr><td>uboot</td><td>2048</td><td>1MB</td><td>uboot_spi.img</td></tr>
-<tr><td>trust</td><td>4096</td><td>2MB</td><td>trust_spi.img</td></tr>
-<tr><td>dtb</td><td>8192</td><td>100KB</td><td>odroidgo2-kernel.dtb</td></tr>
-<tr><td>logo1</td><td>8392</td><td>200KB</td><td>logo_hardkernel.bmp.gz</td></tr>
-<tr><td>logo2</td><td>8792</td><td>200KB</td><td>low_battery.bmp.gz</td></tr>
-<tr><td>logo3</td><td>9192</td><td>200KB</td><td>recovery.bmp.gz</td></tr>
-<tr><td>logo4</td><td>9592</td><td>200KB</td><td>system_error.bmp.gz</td></tr>
-<tr><td>logo5</td><td>9952</td><td>200KB</td><td>no_sdcard.bmp.gz</td></tr>
-</table><br>
+<pre>
+$ cd sd_fuse
+$ sudo dd if=sd_fuse/sdcard_recovery.img of=sdx conv=fsync
+</pre>
+<p>
+P.S. 接著使用這張MicroSD開機就可以刷入Recovery
+</p>
 
 <p>
 <br><a href="../../handheld.htm">返回上一頁</a>
