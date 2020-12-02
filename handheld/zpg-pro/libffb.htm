@@ -1,0 +1,243 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Z-Pocket Game Pro(ZPG Pro)</h3>
+<p><b>libffb</b></p>
+<hr size="1">
+<p>
+libffb.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;sys/ioctl.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;sys/mman.h&gt;
+#include &lt;string.h&gt;
+#include &lt;linux/fb.h&gt;
+#include &lt;SDL.h&gt;
+#include &lt;SDL_image.h&gt;
+#include &lt;SDL_ttf.h&gt;
+
+#include "libffb.h"
+
+static uint32_t sdl_w=0;
+static uint32_t sdl_h=0;
+static uint32_t sdl_bpp=0;
+static SDL_Joystick *joy=NULL;
+static SDL_Window *window=NULL;
+static SDL_Surface *screen=NULL;
+static SDL_Texture *texture=NULL;
+static SDL_Renderer *renderer=NULL;
+
+int MYSDL_Init(uint32_t v)
+{
+  int r=0;
+
+  r = SDL_Init(v | SDL_INIT_JOYSTICK);
+  joy = SDL_JoystickOpen(0);
+  printf("%s, r=%d, joy=%p\n", __func__, r, joy);
+  return r;
+}
+
+int MYSDL_WasInit(uint32_t v)
+{
+  return SDL_WasInit(v);
+}
+
+int MYSDL_InitSubSystem(uint32_t v)
+{
+  int r=0;
+  
+  r = SDL_InitSubSystem(v);
+  printf("%s, r=%d\n", __func__, r);
+  return r;
+}
+
+void MYSDL_QuitSubSystem(uint32_t v)
+{
+  SDL_QuitSubSystem(v);
+}
+
+SDL_Surface* MYSDL_SetVideoMode(uint32_t w, uint32_t h, uint32_t bpp, uint32_t flags)
+{
+  sdl_w = w;
+  sdl_h = h;
+  sdl_bpp = bpp;
+  window = SDL_CreateWindow("libffb", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, w, h, SDL_WINDOW_SHOWN);
+  renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+  screen = SDL_CreateRGBSurface(0, w, h, bpp, 0, 0, 0, 0);
+  texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB565, SDL_TEXTUREACCESS_STREAMING, w, h);
+  printf("%s, w=%d, h=%d, bpp=%d\n", __func__, w, h, bpp);
+  return screen;
+}
+
+void MYSDL_Flip(SDL_Surface *s)
+{
+  SDL_UpdateTexture(texture, NULL, s-&gt;pixels, s-&gt;pitch);
+  SDL_RenderClear(renderer);
+  SDL_RenderCopy(renderer, texture, NULL, NULL);
+  SDL_RenderPresent(renderer);
+}
+
+void MYSDL_Quit(void)
+{
+  SDL_FreeSurface(screen);
+  SDL_DestroyTexture(texture);
+  SDL_DestroyRenderer(renderer);
+  SDL_DestroyWindow(window);
+  if(joy){
+    SDL_JoystickClose(joy);
+  }
+  SDL_Quit();
+}
+
+int MYSDL_PollEvent(uint32_t *type, uint32_t *btn)
+{
+  int r=0;
+  SDL_Event e={0};
+
+  r = SDL_PollEvent(&amp;e);
+  *type = e.type &amp; 0xff;
+  *btn = e.jbutton.button;
+  return r;
+}
+</pre><br>
+
+<p>
+libffb.h
+</p>
+<pre class="brush:cpp">
+#ifndef __FFB_H__
+#define __FFB_H__
+
+#ifdef ZPG
+  #define MYSDL_KEYDOWN     3
+  #define MYSDL_KEYUP       4
+
+  #define MYSDLK_LALT       0
+  #define MYSDLK_LCTRL      1
+  #define MYSDLK_SPACE      2
+  #define MYSDLK_LSHIFT     3
+  #define MYSDLK_TAB        4
+  #define MYSDLK_BACKSPACE  5
+  #define MYSDLK_PAGEUP     6
+  #define MYSDLK_PAGEDOWN   7
+  #define MYSDLK_UP         8
+  #define MYSDLK_DOWN       9
+  #define MYSDLK_LEFT       10
+  #define MYSDLK_RIGHT      11
+  #define MYSDLK_HOME       12
+  #define MYSDLK_END        13
+  #define MYSDLK_ESCAPE     14
+  #define MYSDLK_RETURN     15
+  #define MYSDLK_VOLUP      16
+  #define MYSDLK_VOLDOWN    17
+
+  int MYSDL_Init(uint32_t);
+  int MYSDL_WasInit(uint32_t);
+  int MYSDL_InitSubSystem(uint32_t);
+  void MYSDL_QuitSubSystem(uint32_t);
+  SDL_Surface* MYSDL_SetVideoMode(uint32_t, uint32_t, uint32_t, uint32_t);
+  void MYSDL_Quit(void);
+  void MYSDL_Flip(SDL_Surface*);
+  int MYSDL_PollEvent(uint32_t*, uint32_t*);
+#else
+  #define MYSDL_KEYDOWN       SDL_KEYDOWN
+  #define MYSDL_KEYUP         SDL_KEYUP
+
+  #define MYSDLK_LALT         SDLK_LALT
+  #define MYSDLK_LCTRL        SDLK_LCTRL
+  #define MYSDLK_SPACE        SDLK_SPACE
+  #define MYSDLK_LSHIFT       SDLK_LSHIFT
+  #define MYSDLK_TAB          SDLK_TAB
+  #define MYSDLK_BACKSPACE    SDLK_BACKSPACE
+  #define MYSDLK_PAGEUP       SDLK_PAGEUP
+  #define MYSDLK_PAGEDOWN     SDLK_PAGEDOWN
+  #define MYSDLK_UP           SDLK_UP
+  #define MYSDLK_DOWN         SDLK_DOWN
+  #define MYSDLK_LEFT         SDLK_LEFT
+  #define MYSDLK_RIGHT        SDLK_RIGHT
+  #define MYSDLK_HOME         SDLK_HOME
+  #define MYSDLK_END          SDLK_END
+  #define MYSDLK_ESCAPE       SDLK_ESCAPE
+  #define MYSDLK_RETURN       SDLK_RETURN
+  #define MYSDLK_VOLUP        SDLK_VOLUP
+  #define MYSDLK_VOLDOWN      SDLK_VOLDOWN
+
+  #define MYSDL_Init          SDL_Init
+  #define MYSDL_InitSubSystem SDL_InitSubSystem
+  #define MYSDL_SetVideoMode  SDL_SetVideoMode
+  #define MYSDL_Quit          SDL_Quit
+  #define MYSDL_Flip          SDL_Flip
+  #define MYSDL_PollEvent     SDL_PollEvent
+#endif
+
+#endif
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ gcc libffb.c -DZPG -fPIC -shared -o libffbcc.so -ggdb -lSDL2 -I/usr/include/SDL2
+$ g++ libffb.c -DZPG -fPIC -shared -o libffbcxx.so -ggdb -lSDL2 -I/usr/include/SDL2 -fpermissive
+</pre><br>
+
+<p>
+<br><a href="../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
