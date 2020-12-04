@@ -51,34 +51,9 @@
 參考資訊：<br>
 1. <a href="https://stackoverflow.com/questions/1741415/linux-kernel-modules-when-to-use-try-module-get-module-put">linux-kernel-modules-when-to-use-try-module-get-module-put</a><br><br>
 
-司徒遇到的問題如下：
+問題如下：
 </p>
 <pre class="brush:cpp">
-[   24.413618] ------------[ cut here ]------------
-[   24.418647] WARNING: CPU: 0 PID: 84 at kernel/module.c:967 module_put+0xa0/0xb4()
-[   24.426567] Modules linked in: main(PO)
-[   24.430654] CPU: 0 PID: 84 Comm: app Tainted: P           O    4.1.18 #1
-[   24.437760] Hardware name: Generic AM33XX (Flattened Device Tree)
-[   24.444149] Backtrace: 
-[   24.446828] [&lt;c0012b18&gt;] (dump_backtrace) from [&lt;c0012d38&gt;] (show_stack+0x18/0x1c)
-[   24.454776]  r7:c0854fd8 r6:000003c7 r5:00000009 r4:00000000
-[   24.460855] [&lt;c0012d20&gt;] (show_stack) from [&lt;c06b9e28&gt;] (dump_stack+0x20/0x28)
-[   24.468505] [&lt;c06b9e08&gt;] (dump_stack) from [&lt;c0035d40&gt;] (warn_slowpath_common+0x7c/0xb4)
-[   24.477060] [&lt;c0035cc4&gt;] (warn_slowpath_common) from [&lt;c0035e1c&gt;] (warn_slowpath_null+0x24/0x2c)
-[   24.486326]  r8:ddc42d40 r7:00000000 r6:ddc33790 r5:dd082440 r4:bf000000
-[   24.493457] [&lt;c0035df8&gt;] (warn_slowpath_null) from [&lt;c008add0&gt;] (module_put+0xa0/0xb4)
-[   24.501834] [&lt;c008ad30&gt;] (module_put) from [&lt;c0108028&gt;] (cdev_put+0x24/0x28)
-[   24.509307] [&lt;c0108004&gt;] (cdev_put) from [&lt;c01051fc&gt;] (__fput+0x200/0x20c)
-[   24.516563]  r5:dd082440 r4:ddc36900
-[   24.520363] [&lt;c0104ffc&gt;] (__fput) from [&lt;c0105260&gt;] (____fput+0x10/0x14)
-[   24.527434]  r10:00000000 r9:ddc64000 r8:c000fa24 r7:ddc74828 r6:c099f30c r5:ddc74480
-[   24.535761]  r4:00000000
-[   24.538474] [&lt;c0105250&gt;] (____fput) from [&lt;c004e004&gt;] (task_work_run+0x94/0xc4)
-[   24.546201] [&lt;c004df70&gt;] (task_work_run) from [&lt;c00127bc&gt;] (do_work_pending+0x8c/0xb4)
-[   24.554508]  r7:00000006 r6:ddc65fb0 r5:c000fa24 r4:ddc64000
-[   24.560570] [&lt;c0012730&gt;] (do_work_pending) from [&lt;c000f8cc&gt;] (work_pending+0xc/0x20)
-[   24.568722]  r7:00000006 r6:00000000 r5:00000000 r4:bebd0d18
-[   24.574723] ---[ end trace c4d06157b8bb6694 ]---
 [   24.586438] ------------[ cut here ]------------
 [   24.591363] WARNING: CPU: 0 PID: 84 at kernel/module.c:967 module_put+0xa0/0xb4()
 [   24.599345] Modules linked in: main(PO)
@@ -102,15 +77,15 @@
 [   24.722148] [&lt;c0012730&gt;] (do_work_pending) from [&lt;c000f8cc&gt;] (work_pending+0xc/0x20)
 [   24.730300]  r7:00000006 r6:00000000 r5:00000000 r4:bebd0d18
 [   24.736341] ---[ end trace c4d06157b8bb6695 ]---
-</pre><br>
-
+</pre>
 <p>
 解法就是把<b>.owner = THIS_MODULE</b>拿掉
 </p>
 <pre>
 struct file_operations fops = {
-  .owner = THIS_MODULE,
-  //...
+  ...
+  //.owner = THIS_MODULE,
+  ...
 };
 </pre><br>
 

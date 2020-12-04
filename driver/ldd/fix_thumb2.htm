@@ -48,7 +48,7 @@
 <p><b>解決"unknown relocation: 10"問題</b></p>
 <hr size="1">
 <p>
-司徒遇到的問題如下：
+問題如下：
 </p>
 <pre class="brush:cpp">
 # insmod test.ko 
@@ -58,33 +58,33 @@ insmod: can't insert 'test.ko': invalid module format
 </pre><br>
 
 <p>
-定位到位置在：arch/arm/kernel/module.c
+定位到位置在<b>arch/arm/kernel/module.c</b>
 </p>
 <pre class="brush:cpp">
-263     default:
-264       pr_err("%s: unknown relocation: %u\n",
-265              module->name, ELF32_R_TYPE(rel->r_info));
-266       return -ENOEXEC;
-267     }
-268   }
-269   return 0;
-270 }
+    default:
+      pr_err("%s: unknown relocation: %u\n",
+             module->name, ELF32_R_TYPE(rel->r_info));
+      return -ENOEXEC;
+    }
+  }
+  return 0;
+}
 </pre><br>
 
 <p>
-發現10的定義值如下：
+定義值如下：
 </p>
-<pre>
+<pre class="brush:cpp">
 #define R_ARM_THM_CALL 10
 </pre><br>
 
 <p>
 往回找一下，發現在同一段
 </p>
-<pre>
-160 #ifdef CONFIG_THUMB2_KERNEL
-161   case R_ARM_THM_CALL:
-162   case R_ARM_THM_JUMP24:
+<pre class="brush:cpp">
+#ifdef CONFIG_THUMB2_KERNEL
+  case R_ARM_THM_CALL:
+  case R_ARM_THM_JUMP24:
 </pre><br>
 
 <p>
@@ -92,7 +92,7 @@ THUMB2沒有被Enable<br>
 <img src="fix_thumb2/1.jpg" class="maxSize"><br>
 Enable後，再度編譯Kernel，出現很多編譯問題...<br><br>
 
-最後，司徒發現原來是export問題，原本的的export如下：
+最後，司徒發現原來是export造成的問題，原本的export如下：
 </p>
 <pre>
 export ARCH=arm
@@ -104,7 +104,7 @@ export CXX=${CROSS}g++
 </pre><br>
 
 <p>
-改成如下即可解決<b>unknown relocation: 10</b>的問題
+改成如下即可
 </p>
 <pre>
 export ARCH=arm

@@ -48,23 +48,13 @@
 <p><b>cdev_add()、register_chrdev()</b></p>
 <hr size="1">
 <p>
-Linux Kernerl v2.6以後，建議使用cdev()註冊char device driver，主要原因是舊式register_chrdev()會直接註冊256個minor ID，不管使用者有無使用到，如下Kernel程式碼(2.6.28)：
+Kernel v2.6以後，建議使用cdev()註冊char device driver，主要原因是舊式register_chrdev()會直接註冊256個minor ID，不管使用者有無使用到，如下程式碼(2.6.28)：
 </p>
 <pre class="brush:cpp">
 int register_chrdev(unsigned int major, const char *name, const struct file_operations *fops)
 {
   ...
   cd = __register_chrdev_region(major, 0, 256, name);
-  ...
-}
-
-
-/*
- * Register a single major with a specified minor range.
- * ...
- */
-static struct char_device_struct *__register_chrdev_region(unsigned int major, unsigned int baseminor, int minorct, const char *name)
-{
   ...
 }
 </pre><br>
