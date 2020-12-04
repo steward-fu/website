@@ -48,29 +48,68 @@
 <p><b>開發環境</b></p>
 <hr size="1">
 <p>
-如果使用者對嵌入式系統感興趣，則Linux就是一門必學的課程，畢竟現在的系統都是上Linux居多，站在Linux這個巨人的肩膀上，拓展自己需要的東西，才可以快速達到自己的目標，雖然Linux指的是Kernel部份，不過就目前大家習慣的稱呼，它已經變成是一個整體OS的概念，雖然Richard Stallman一直在跟我們闡述這個觀念，無奈大家還是這樣認為，司徒也是習慣把Linux當作是一個整理OS看待，哈！雖然目前Linux Kernel的走向已經走向配置DTS(Device Tree Source)的方向，只要Kernel夠具規模，一般使用者不須專注在Linux驅動程式上，只要知道如何修改DTS就可以，但是即便如此，遇到底層問題或者需要優化時，驅動程式還是佔據一個關鍵因素，因此，不是碰不到，只是時機未到，司徒建議走嵌入式的使用者，多少還是要了解一下驅動程式的東西，將來會有用到的一天。<br><br>
+參考資訊：<br>
+1. <a href="https://github.com/steward-fu/pocketbeagle/releases/tag/v1.0">pocketbeagle</a><br><br>
 
-相較於Windows驅動程式，Linux驅動程式會比較偏上I/O操作的應用，這部份的測試環境就比較不適合使用一般PC，雖然還是可以使用QEMU模擬器，但是，基本上還是存在一些落差，因此，司徒想了想決定使用ARM開發板當作測試環境，剛好也可以整理ARM Assembly和C++的相關教學，於在司徒心中浮現的就是Raspberry以及Beagle這兩大陣營，而司徒只對比較小的開發板有興趣，因此，針對Raspberry Pi Zero和PocektBeagle，司徒最終選擇PocketBeagle開發板，當然使用者也可以用Raspberry Pi Zero當作測試環境，而司徒知道多數人是不喜愛焊接，因此，教學的部份盡量以2.54mm排針為主，這樣只要使用杜邦線就可以連接，於是，司徒製作如下電路圖：<br>
-<img src="../../mcu/pb/develop/15.jpg" class="maxSize"><br><br>
+目前市面上，有許多ARM的開發板可以選擇使用，使用者可以選擇自己喜愛的款式，當然也可以使用QEMU測試，目前司徒選定的開發板如下：<br>
+<img src="arm_asm_setup/1.jpg" class="maxSize"><br>
+P.S. 因為很迷你小巧<br><br>
 
-完成後的板子如下<br>
-<img src="../../mcu/pb/develop/8.jpg" class="maxSize"><br><br>
+接著需要一條USB轉UART傳輸線，目前司徒使用PL2303傳輸線：<br>
+<img src="arm_asm_setup/2.jpg" class="maxSize"><br><br>
 
-接著還需要準備一條USB轉RS-232(3.3V PL2303或者FDTI都可以)用來輸入命令，接線只要連接PocketBeagle U0_TX、U0_RX和GND即可<br>
-<img src="arm_asm_setup/1.jpg" class="maxSize"><br><br>
+接著需要焊接排針，把GND、U0-TX、U0-RX三根腳位連接到PL2303<br>
+<img src="arm_asm_setup/3.jpg" class="maxSize"><br><br>
 
-接著下載司徒已經做好的<a href="https://github.com/steward-fu/pocketbeagle/releases/download/v1.0/ldd_sdcard_20190825.img.7z">SDCard燒錄檔案</a>(PocketBeagle)並且燒錄到SDCard，接上USB電源(Kernel需要等待5秒)就可以看到登入畫面(密碼：root)
+接線如下：
+</p>
+<table>
+<tr><th>PocketBeagle</th><th>PL2303</th></tr>
+<tr><td>GND</td><td>黑線</td></tr>
+<tr><td>U0-TX</td><td>白線</td></tr>
+<tr><td>U0-RX</td><td>綠線</td></tr>
+</table><br>
+
+<p>
+Linux環境對初學者來說，比較棘手的還是系統指令的操作，這部份，使用者只能多多參考其它網站說明，司徒只會將重點放在Linux驅動程式的撰寫上，而司徒目前使用的環境是Debian x64，使用者也可以使用更友好的Ubuntu系統，環境安裝好後，接著製作MicroSD開機系統
+</p>
+<pre>
+$ cd ~/Downloads
+$ wget https://github.com/steward-fu/pocketbeagle/releases/download/v1.0/sdcard.img
+$ sudo dd if=sdcard.img of=/dev/sdx bs=1M
+</pre><br>
+
+<p>
+接著將此MicroSD插入PocketBeagle，連結PL2303到電腦並且開啟minicom(115200 bps)，就可以看到如下等待進入系統的畫面
 </p>
 <pre>
 Welcome to PocketBeagle
-pocketbeagle login: root
-# 
+pocketbeagle login: 
 </pre>
 <p>
-這個燒錄檔案的第一個分區是FAT並且開機後會自動掛載在<b>/boot</b>底下，因此，使用者可以很方便把編譯好的驅動程式放到該磁區並做測試，如果使用者想要自己製作系統和編譯Kernel，可以參考司徒的PocektBeagle教學文章。
-</p>
+P.S. 輸入root就可以進入系統<br><br>
 
+接著為了避免發生驅動無法掛載的問題，需要自己編譯一次Kernel
+</p>
+<pre>
+$ cd ~/Downloads
+$ wget https://github.com/steward-fu/pocketbeagle/releases/download/v1.0/gcc-4.9.tar.gz
+$ tar xvf gcc-4.9.tar.gz
+$ sudo mv gcc-4.9 /opt
+$ export PATH=/opt/gcc-4.9/bin:$PATH
+$ arm-linux-gnueabihf-gcc -v
+  gcc version 4.9.4 (Linaro GCC 4.9-2017.01)
+
+$ wget https://github.com/steward-fu/pocketbeagle/releases/download/v1.0/kernel-4.14.108.tar.gz
+$ tar xvf kernel-4.14.108.tar.gz
+$ cd kernel
+$ ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- make pocketbeagle_defconfig
+$ ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- make zImage dtbs -j4
+</pre>
 <p>
+P.S. 將編譯後的<b>arch/arm/boot/zImage</b>、<b>arch/arm/boot/dts/am335x-pocketbeagle.dtb</b>覆蓋到MicroSD第一分區的檔案
+<p>
+
 <br><a href="../../driver.htm">返回上一頁</a>
 </p>
 
