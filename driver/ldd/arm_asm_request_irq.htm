@@ -45,28 +45,16 @@
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
 <h3>Linux Device Driver &gt;&gt; Assembly (ARM)</h3>
-<p><b>gpio input</b></p>
+<p><b>request_irq</b></p>
 <hr size="1">
 <p>
 參考資訊：<br>
 1. <a href="https://github.com/steward-fu/ldd">Source Code</a><br><br>
 
-由於PocketBeagle板上的Power按鍵是透過PMIC連接，因此，需要連接另一個按鍵作為此篇教學使用，司徒選定27腳位，如下圖：<br>
-<img src="arm_asm_setup/3.jpg" class="maxSize"><br><br>
-
-僅需要焊接一顆按鍵即可，連接27腳位到+3.3V<br>
-<img src="cpp_gpio_input/1.jpg" class="maxSize"><br><br>
-
-如果不方便焊接，也可以使用杜邦線測試<br>
-<img src="cpp_gpio_input/2.jpg" class="maxSize"><br><br>
-
-Linux Kernel提供一系列GPIO操作函數，使用步驟如下：<br>
-1. gpio_request()<br>
-2. gpiod_direction_input()<br>
-3. gpiod_get_raw_value()<br>
-4. gpio_free()<br><br>
-
-驅動程式位於硬體與軟體的中介層，因此，使用者也可以使用單晶片的寫法去驅動GPIO，而此種方式就需要針對Register操作，目前司徒使用Linux Kernel提供的GPIO函數操作<br><br>
+使用步驟：<br>
+1. gpiod_to_irq()<br>
+2. request_threaded_irq()<br>
+3. free_irq()<br><br>
 
 ldd.S
 </p>
@@ -74,39 +62,14 @@ ldd.S
 .global init_module
 .global cleanup_module
 
-.extern jiffies
-
 .extern printk
-.extern msleep
-.extern init_timer_key
-.extern mod_timer
-.extern gpio_free
-.extern gpio_request
+.extern free_irq
 .extern gpio_to_desc
-.extern gpiod_get_raw_value
-.extern gpiod_set_raw_value
-.extern gpiod_direction_input
-.extern gpiod_direction_output_raw
+.extern gpiod_to_irq
+.extern request_threaded_irq
 
-.equ BUTTON,   27
-.equ USR3_LED, ((32 * 1) + 24)
-.equ PERIOD,   (100 / 4)
-
-.equ timer_list.entry,    0
-.equ timer_list.expires,  8
-.equ timer_list.function, 12
-.equ timer_list.data,     16
-.equ timer_list.flags,    20
-
-.struct 0
-timer_list_s:
-  i0: .struct . + 8
-  i1: .struct . + 4
-  i2: .struct . + 4
-  i3: .struct . + 4
-  i4: .struct . + 4
-timer_list_e:
-timer_list_l = timer_list_e - timer_list_s
+.equ BUTTON, 27
+.equ IRQF_TRIGGER_RISING, 1
 
 .section .modinfo, "ae"
 __UNIQUE_ID_0: .asciz "license=GPL"
@@ -117,109 +80,61 @@ __UNIQUE_ID_2: .asciz "description=Linux Driver"
 .align
 
 .section .data
-led_name: .asciz "USR3"
+btn_irq:  .dcb 4
 .align
-btn_name: .asciz "BTN"
+irq_name: .asciz "gpio_irq"
 .align
-led_desc: .dcb 4
-.align
-btn_desc: .dcb 4
-.align
-timer:    .space timer_list_l
+irq_msg:  .asciz "irq_handler\n"
 .align
 
 .section .text
-timer_handler:
+irq_handler:
   push {lr}
-  ldr r0, =btn_desc
-  ldr r0, [r0]
-  bl gpiod_get_raw_value
-  mov r1, r0
-
-  ldr r0, =led_desc
-  ldr r0, [r0]
-  bl gpiod_set_raw_value
-  
-  ldr r0, =timer
-  ldr r1, =jiffies
-  ldr r1, [r1]
-  add r1, #PERIOD
-  bl mod_timer
+  ldr r0, =irq_msg
+  bl printk
+  mov r0, #1
   pop {pc}
 
 init_module:
-  push {r4, lr}
-
-  mov r0, #BUTTON
-  ldr r1, =btn_name
-  bl gpio_request
-
-  mov r0, #USR3_LED
-  ldr r1, =led_name
-  bl gpio_request
+  push {r4, r5, lr}
 
   mov r0, #BUTTON
   bl gpio_to_desc
-  mov r4, r0
-  ldr r1, =btn_desc
-  str r4, [r1]
+  bl gpiod_to_irq
+  ldr r1, =btn_irq
+  str r0, [r1]
 
-  mov r0, r4
-  bl gpiod_direction_input
-
-  mov r0, #USR3_LED
-  bl gpio_to_desc
-  mov r4, r0
-  ldr r1, =led_desc
-  str r4, [r1]
-
-  mov r0, r4
-  mov r1, #1
-  bl gpiod_direction_output_raw
-
-  ldr r0, =timer
-  mov r1, #0
+  sub sp, #8
+  ldr r1, =irq_handler
   mov r2, #0
-  mov r3, #0
-  bl init_timer_key
-
-  ldr r0, =timer
-  add r0, #timer_list.function
-  ldr r1, =timer_handler
-  str r1, [r0]
-
-  ldr r0, =timer
-  add r0, #timer_list.data
-  mov r1, #0
-  str r1, [r0]
-
-  ldr r0, =timer
-  ldr r2, =jiffies
-  ldr r1, [r2]
-  add r1, #PERIOD
-  ldr r3, =timer_handler
-  bl mod_timer
+  mov r3, #IRQF_TRIGGER_RISING
+  ldr r4, =irq_name
+  mov r5, #0
+  str r4, [sp, #0]
+  str r5, [sp, #4]
+  bl request_threaded_irq
+  add sp, #8
 
   mov r0, #0
-  pop {r4, pc}
+  pop {r4, r5, pc}
 
 cleanup_module:
   push {lr}
-  ldr r0, =timer
-  bl del_timer
-  mov r0, #BUTTON
-  bl gpio_free
-  mov r0, #USR3_LED
-  bl gpio_free
+  ldr r0, =btn_irq
+  ldr r0, [r0]
+  mov r1, #0
+  bl free_irq
   pop {pc}
 .end
 </pre><br>
 
 <p>
 完成<br>
-<img src="cpp_gpio_input/3.jpg" class="maxSize"><br>
 <img src="cpp_gpio_input/4.jpg" class="maxSize">
 </p>
+<pre>
+# irq_handler
+</pre><br>
 
 <p>
 <br><a href="../../driver.htm">返回上一頁</a>
