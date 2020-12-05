@@ -45,13 +45,36 @@
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
 <h3>Linux Device Driver &gt;&gt; Assembly (ARM)</h3>
-<p><b>hello, world!</b></p>
+<p><b>gpio output</b></p>
 <hr size="1">
 <p>
 參考資訊：<br>
 1. <a href="https://github.com/steward-fu/ldd">Source Code</a><br><br>
 
-<b>hello, world!</b>是一個相當經典的入門教學範例，從這個範例的框架，使用者可以一探Linux的精簡之美，當然<b>hello, world!</b>所要表達的目的，更多是對於環境的操作熟悉，接著司徒就介紹一下如何撰寫一個簡單<b>hello, world!</b>驅動程式。<br><br>
+PocketBeagle開發板上有四顆USR LED，位置如下：<br>
+<img src="cpp_gpio_output/1.jpg" class="maxSize"><br><br>
+
+Device Tree
+</p>
+<pre>
+led@5 {
+  label = "beaglebone:green:usr3";
+  gpios = &lt;&amp;gpio1 24 GPIO_ACTIVE_HIGH&gt;
+  linux,default-trigger = "mmc1";
+  default-state = "off";
+};
+</pre>
+<p>
+P.S. USR3位置是GPIO1-24<br><br>
+
+Linux Kernel提供一系列GPIO操作函數，使用步驟如下：<br>
+1. gpio_request()<br>
+2. gpio_to_desc()<br>
+3. gpiod_direction_output_raw()<br>
+4. gpiod_set_raw_value()<br>
+5. gpio_free()<br><br>
+
+驅動程式位於硬體與軟體的中介層，因此，使用者也可以使用單晶片的寫法去驅動GPIO，而此種方式就需要針對Register操作，目前司徒使用Linux Kernel提供的GPIO函數操作<br><br>
 
 ldd.S
 </p>
@@ -60,6 +83,14 @@ ldd.S
 .global cleanup_module
 
 .extern printk
+.extern msleep
+.extern gpio_free
+.extern gpio_request
+.extern gpio_to_desc
+.extern gpiod_set_raw_value
+.extern gpiod_direction_output_raw
+
+.equ USR3_LED, ((32 * 1) + 24)
 
 .section .modinfo, "ae"
 __UNIQUE_ID_0: .asciz "license=GPL"
@@ -70,80 +101,62 @@ __UNIQUE_ID_2: .asciz "description=Linux Driver"
 .align
 
 .section .text
-msg_load:   .asciz "hello, world!\n" 
-.align
-msg_unload: .asciz "unload it\n"
+led_name: .asciz "USR3"
 .align
 
 .section .text
 init_module:
-  push {lr}
-  ldr r0, =msg_load
-  bl printk
+  push {r4, r5, lr}
+
+  mov r0, #USR3_LED
+  ldr r1, =led_name
+  bl gpio_request
+
+  mov r0, #USR3_LED
+  bl gpio_to_desc
+  mov r5, r0
+
+  mov r0, r5
+  mov r1, #1
+  bl gpiod_direction_output_raw
+
+  mov r4, #3
+loop:
+  mov r0, r5
+  mov r1, #0
+  bl gpiod_set_raw_value
+
+  mov r0, #1000
+  bl msleep
+
+  mov r0, r5
+  mov r1, #1
+  bl gpiod_set_raw_value
+
+  mov r0, #1000
+  bl msleep
+
+  subs r4, #1
+  bne loop
+
+  mov r0, #USR3_LED
+  bl gpio_free
+
   mov r0, #0
-  pop {pc}
+  pop {r4, r5, pc}
 
 cleanup_module:
   push {lr}
-  ldr r0, =msg_unload
-  bl printk
   pop {pc}
 .end
 </pre>
 <p>
-<b>init_module</b>: 系統載入驅動程式時，第一時間呼叫使用<br>
-<b>cleanup_module</b>: 卸載驅動程式時，最後時間被系統呼叫使用<br><br>
+相較於C語言的封裝，從Assembly語言中就可以看出，主要的關鍵在於gpio_to_desc()取得的資料結構，每次的GPIO設定都是依據這個結構做設定<br><br>
 
-Makefile
+完成<br>
+<img src="cpp_gpio_output/2.jpg" class="maxSize"><br>
+<img src="cpp_gpio_output/3.jpg" class="maxSize">
 </p>
-<pre>
-export ARCH=arm
-export CROSS_COMPILE=arm-linux-gnueabihf-
-export AS=${CROSS_COMPILE}as
-KERNEL=$(HOME)/Downloads/kernel
-
-obj-m += main.o
-main-objs:= ldd.o
-all:
-  $(AS) -o ldd.o ldd.S
-  make -C $(KERNEL) M=$(PWD) modules
-
-clean:
-  make -C $(KERNEL) M=$(PWD) clean
-</pre>
-<p>
-P.S. make指令前面是一個Tab字元，而非空白字元<br><br>
-
-編譯
-</p>
-<pre>
-$ make
-  arm-linux-gnueabihf-as -o ldd.o ldd.S
-  make -C kernel M=hello modules
-  make[1]: Entering directory 'kernel'
-    AS [M]  hello/ldd.o
-    LD [M]  hello/main.o
-    Building modules, stage 2.
-    MODPOST 1 modules
-    CC      hello/main.mod.o
-    LD [M]  hello/main.ko
-  make[1]: Leaving directory 'kernel'
-</pre><br>
-<p>
-接著把<b>main.ko</b>放到第一分區，進入系統後，執行如下指令掛載驅動程式：
-</p>
-<pre>
-# insmod /boot/main.ko 
-  hello, world!
-</pre><br>
-
-<p>
-卸載驅動程式：
-</p>
-<pre>
-# rmmod main
-  unload it
-</pre><br>
 
 <p>
 <br><a href="../../driver.htm">返回上一頁</a>
