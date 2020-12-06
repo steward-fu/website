@@ -29,7 +29,7 @@
   <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
   
   <script type="text/javascript" src="../../scripts/shCore.js"></script>
-  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
 
   <!-- Conditional comment to apply opacity fix for IE #content background.
        Invalid CSS, but can be removed without harming design -->
@@ -44,137 +44,100 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>Linux Device Driver &gt;&gt; Assembly (ARM)</h3>
-<p><b>mod_timer</b></p>
+<h3>Linux Device Driver &gt;&gt; C/C++</h3>
+<p><b>chrdev</b></p>
 <hr size="1">
 <p>
 參考資訊：<br>
 1. <a href="https://github.com/steward-fu/ldd">Source Code</a><br><br>
 
-使用步驟如下：<br>
-1. init_timer_key()<br>
-2. mod_timer()<br>
-3. del_timer()<br><br>
+使用步驟：<br>
+1. alloc_chrdev_region()<br>
+2. cdev_init()<br>
+3. cdev_add()<br>
+4. cdev_del()<br>
+5. unregister_chrdev_region()<br><br>
 
-ldd.S
+main.c
 </p>
-<pre class="brush:asm">
-.global init_module
-.global cleanup_module
+<pre class="brush:cpp">
+#include &lt;linux/cdev.h&gt;
+#include &lt;linux/init.h&gt;
+#include &lt;linux/device.h&gt;
+#include &lt;linux/module.h&gt;
 
-.equ USR3_LED, ((32 * 1) + 24)
-.equ PERIOD,   (300 / 4)
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("Steward Fu");
+MODULE_DESCRIPTION("Linux Driver");
 
-.equ timer_list.entry,    0
-.equ timer_list.expires,  8
-.equ timer_list.function, 12
-.equ timer_list.data,     16
-.equ timer_list.flags,    20
+static int base=0;
+static struct cdev mycdev;
 
-.struct 0
-timer_list_s:
-  i0: .struct . + 8
-  i1: .struct . + 4
-  i2: .struct . + 4
-  i3: .struct . + 4
-  i4: .struct . + 4
-timer_list_e:
-timer_list_l = timer_list_e - timer_list_s
+static int myopen(struct inode *inode, struct file *file)
+{
+  printk("%s\n", __func__);
+  return 0;
+}
 
-.section .modinfo, "ae"
-__UNIQUE_ID_0: .asciz "license=GPL"
-.align
-__UNIQUE_ID_1: .asciz "author=Steward Fu"
-.align
-__UNIQUE_ID_2: .asciz "description=Linux Driver"
-.align
+static int myclose(struct inode *inode, struct file *file)
+{
+  printk("%s\n", __func__);
+  return 0;
+}
 
-.section .data
-led_name:  .asciz "USR3"
-.align
-led_state: .dcb 4
-.align
-gpio_desc: .dcb 4
-.align
-timer:     .space timer_list_l
-.align
+static const struct file_operations myfops = {
+  .owner = THIS_MODULE,
+  .open = myopen,
+  .release = myclose,
+};
 
-.section .text
-timer_handler:
-  push {lr}
-  ldr r0, =gpio_desc
-  ldr r0, [r0]
-  ldr r2, =led_state
-  ldr r1, [r2]
-  eor r1, #1
-  str r1, [r2]
-  bl gpiod_set_raw_value
-  
-  ldr r0, =timer
-  ldr r1, =jiffies
-  ldr r1, [r1]
-  add r1, #PERIOD
-  bl mod_timer
-  pop {pc}
-
-init_module:
-  push {r4, lr}
-
-  mov r0, #USR3_LED
-  ldr r1, =led_name
-  bl gpio_request
-
-  mov r0, #USR3_LED
-  bl gpio_to_desc
-  mov r4, r0
-  ldr r1, =gpio_desc
-  str r4, [r1]
-
-  mov r0, r4
-  mov r1, #1
-  bl gpiod_direction_output_raw
-
-  ldr r0, =timer
-  mov r1, #0
-  mov r2, #0
-  mov r3, #0
-  bl init_timer_key
-
-  ldr r0, =timer
-  add r0, #timer_list.function
-  ldr r1, =timer_handler
-  str r1, [r0]
-
-  ldr r0, =timer
-  add r0, #timer_list.data
-  mov r1, #0
-  str r1, [r0]
-
-  ldr r0, =timer
-  ldr r2, =jiffies
-  ldr r1, [r2]
-  add r1, #PERIOD
-  ldr r3, =timer_handler
-  bl mod_timer
-
-  mov r0, #0
-  pop {r4, pc}
-
-cleanup_module:
-  push {lr}
-  ldr r0, =timer
-  bl del_timer
-  mov r0, #USR3_LED
-  bl gpio_free
-  pop {pc}
-.end
-</pre><br>
-
+int ldd_init(void)
+{
+  alloc_chrdev_region(&amp;base, 0, 1, "myfile");
+  cdev_init(&amp;mycdev, &amp;myfops);
+  cdev_add(&amp;mycdev, base, 1);
+  printk("major:%d, minor:%d\n", MAJOR(base), MINOR(base));
+  return 0;
+}
+ 
+void ldd_exit(void)
+{
+  cdev_del(&amp;mycdev);
+  unregister_chrdev_region(base, 1);
+}
+ 
+module_init(ldd_init);
+module_exit(ldd_exit);
+</pre>
 <p>
-完成<br>
-<img src="cpp_gpio_output/2.jpg" class="maxSize"><br>
-<img src="cpp_gpio_output/3.jpg" class="maxSize">
+alloc_chrdev_region()可以取得空閒的裝置號碼，如果想要自訂Major號碼，可以使用register_chrdev_region()<br><br>
+
+安裝驅動
 </p>
+<pre>
+# insmod /boot/main.ko 
+  major:243, minor:0
+</pre>
+<p>
+P.S. Linux驅動程式使用Major、Minor號碼當作裝置索引<br><br>
+
+make node
+</p>
+<pre>
+# mknod /dev/myfile c 243 0
+# ls -al /dev/myfile
+  crw-r--r--    1 root     root      243,   0 Jan  1 00:00 /dev/myfile
+</pre>
+<p>
+P.S. 建立Symbolic符號，供User Application開啟使用<br><br>
+
+開啟裝置
+</p>
+<pre>
+# echo "" > /dev/myfile
+  myopen
+  sh: write error: Invalid argument myclose
+</pre><br>
 
 <p>
 <br><a href="../../driver.htm">返回上一頁</a>
