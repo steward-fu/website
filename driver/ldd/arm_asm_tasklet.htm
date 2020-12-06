@@ -29,7 +29,7 @@
   <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
   
   <script type="text/javascript" src="../../scripts/shCore.js"></script>
-  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
 
   <!-- Conditional comment to apply opacity fix for IE #content background.
        Invalid CSS, but can be removed without harming design -->
@@ -44,83 +44,131 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>Linux Device Driver &gt;&gt; C/C++</h3>
-<p><b>gpio input</b></p>
+<h3>Linux Device Driver &gt;&gt; Assembly (ARM)</h3>
+<p><b>tasklet</b></p>
 <hr size="1">
 <p>
 參考資訊：<br>
 1. <a href="https://github.com/steward-fu/ldd">Source Code</a><br><br>
 
-由於PocketBeagle板上的Power按鍵是透過PMIC連接，因此，需要連接另一個按鍵作為此篇教學使用，司徒選定27腳位，如下圖：<br>
-<img src="cpp_gpio_input/5.jpg" class="maxSize"><br><br>
+使用步驟：<br>
+1. tasklet_init()<br>
+2. _test_and_set_bit()<br>
+3. __tasklet_schedule()<br>
+4. tasklet_kill()<br><br>
 
-僅需要焊接一顆按鍵即可，連接27腳位到+3.3V<br>
-<img src="cpp_gpio_input/1.jpg" class="maxSize"><br><br>
-
-如果不方便焊接，也可以使用杜邦線測試<br>
-<img src="cpp_gpio_input/2.jpg" class="maxSize"><br><br>
-
-Linux Kernel提供一系列GPIO操作函數，使用步驟如下：<br>
-1. gpio_request()<br>
-2. gpio_direction_input()<br>
-3. gpio_get_value()<br>
-4. gpio_free()<br><br>
-
-驅動程式位於硬體與軟體的中介層，因此，使用者也可以使用單晶片的寫法去驅動GPIO，而此種方式就需要針對Register操作，目前司徒使用Linux Kernel提供的GPIO函數操作<br><br>
-
-main.c
+ldd.S
 </p>
-<pre class="brush:cpp">
-#include &lt;linux/init.h&gt;
-#include &lt;linux/device.h&gt;
-#include &lt;linux/module.h&gt;
-#include &lt;linux/delay.h&gt;
-#include &lt;linux/kernel.h&gt;
-#include &lt;linux/errno.h&gt;
-#include &lt;linux/mm.h&gt;
-#include &lt;linux/gpio.h&gt;
+<pre class="brush:asm">
+.global init_module
+.global cleanup_module
 
-MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Steward Fu");
-MODULE_DESCRIPTION("Linux Driver");
- 
-#define BUTTON   27
-#define USR3_LED ((32 * 1) + 24)
+.extern printk
+.extern free_irq
+.extern gpio_to_desc
+.extern gpiod_to_irq
+.extern tasklet_init
+.extern tasklet_kill
+.extern _test_and_set_bit
+.extern __tasklet_schedule
+.extern request_threaded_irq
 
-static int period=100;
-static struct timer_list timer={0};
+.equ BUTTON,              27
+.equ IRQF_TRIGGER_RISING, 1
+.equ TASKLET_STATE_SCHED, 0
+.equ TASKLET_STATE_RUN,   1
 
-void timer_handler(unsigned long unused)
-{
-  int state=0;
-     
-  state = gpio_get_value(BUTTON);
-  gpio_set_value(USR3_LED, state);
-  mod_timer(&amp;timer, jiffies + msecs_to_jiffies(period));
-}
- 
-int ldd_init(void)
-{
-  gpio_request(USR3_LED, "USR3");
-  gpio_direction_output(USR3_LED, 1);
+.section .modinfo, "ae"
+__UNIQUE_ID_0: .asciz "license=GPL"
+.align
+__UNIQUE_ID_1: .asciz "author=Steward Fu"
+.align
+__UNIQUE_ID_2: .asciz "description=Linux Driver"
+.align
 
-  gpio_request(BUTTON, "BTN");
-  gpio_direction_input(BUTTON);
-  
-  setup_timer(&amp;timer, timer_handler, 0);
-  mod_timer(&amp;timer, jiffies + msecs_to_jiffies(period));
-  return 0;
-}
- 
-void ldd_exit(void)
-{
-  del_timer(&amp;timer);
-  gpio_free(BUTTON);
-  gpio_free(USR3_LED);
-}
- 
-module_init(ldd_init);
-module_exit(ldd_exit);
+.equ tasklet.next,  0
+.equ tasklet.state, 4
+.equ tasklet.count, 8
+.equ tasklet.func,  12
+.equ tasklet.data,  16
+
+.struct 0
+tasklet_s:
+  i0: .struct . + 4
+  i1: .struct . + 4
+  i2: .struct . + 4
+  i3: .struct . + 4
+  i4: .struct . + 4
+tasklet_e:
+tasklet_l = tasklet_e - tasklet_s
+
+.section .data
+btn_irq:  .dcb 4
+.align
+irq_name: .asciz "gpio_irq"
+.align
+task_msg: .asciz "tasklet_handler\n"
+.align
+mytask:   .space tasklet_l
+.align
+
+.section .text
+tasklet_handler:
+  push {lr}
+  ldr r0, =task_msg
+  bl printk
+  pop {pc}
+
+irq_handler:
+  push {lr}
+  mov r0, #TASKLET_STATE_SCHED
+  ldr r1, =mytask
+  add r1, #tasklet.state
+  bl _test_and_set_bit
+  cmp r0, #0
+  bne irq_exit
+  ldr r0, =mytask
+  bl __tasklet_schedule
+irq_exit:
+  mov r0, #1
+  pop {pc}
+
+init_module:
+  push {r4, r5, lr}
+
+  ldr r0, =mytask
+  ldr r1, =tasklet_handler
+  mov r2, #0
+  bl tasklet_init
+
+  mov r0, #BUTTON
+  bl gpio_to_desc
+  bl gpiod_to_irq
+  ldr r1, =btn_irq
+  str r0, [r1]
+
+  ldr r1, =irq_handler
+  mov r2, #0
+  mov r3, #IRQF_TRIGGER_RISING
+  ldr r4, =irq_name
+  mov r5, #0
+  push {r4, r5}
+  bl request_threaded_irq
+  pop {r4, r5}
+
+  mov r0, #0
+  pop {r4, r5, pc}
+
+cleanup_module:
+  push {lr}
+  ldr r0, =btn_irq
+  ldr r0, [r0]
+  mov r1, #0
+  bl free_irq
+  ldr r0, =mytask
+  bl tasklet_kill
+  pop {pc}
+.end
 </pre><br>
 
 <p>
@@ -128,6 +176,9 @@ module_exit(ldd_exit);
 <img src="cpp_gpio_input/3.jpg" class="maxSize"><br>
 <img src="cpp_gpio_input/4.jpg" class="maxSize">
 </p>
+<pre>
+# tasklet_handler
+</pre><br>
 
 <p>
 <br><a href="../../driver.htm">返回上一頁</a>
