@@ -29,7 +29,7 @@
   <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
   
   <script type="text/javascript" src="../../scripts/shCore.js"></script>
-  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
 
   <!-- Conditional comment to apply opacity fix for IE #content background.
        Invalid CSS, but can be removed without harming design -->
@@ -48,23 +48,12 @@
 <p><b>如何使用N900透過ST-LINK V2除錯程式(OpenOCD + GDB)</b></p>
 <hr size="1">
 <p>
-透過N900開發STM32是一件相當有趣的事情，因為可以邊走邊開發，想到哪開發到哪，不需依賴傳統PC的束縛，假如是使用傳統PC開發，司徒一想到傳統PC的開機時間，心裡就已經打退堂鼓了！
+連接圖<br>
+<img src="n900_stlink-v2_debug/1.jpg" class="maxSize"><br><br>
+
+main.S
 </p>
-
-<p>
-司徒之前已經介紹過如何使用N900透過ST-Link V2燒錄STM32F103，而這篇教學文章將介紹如何使用N900透過ST-LINK V2除錯STM32F103，使用到的工具則是OpenOCD和GDB，至於硬體部份，司徒還是使用既有的開發板<br>
-<img src="n900_stlink-v2_debug/1.jpg" class="maxSize">
-</p>
-
-<p>
-司徒使用很簡單的程式來說明操作過程
-</p>
-
-<pre>
-$ vim main.S
-</pre>
-
-<pre class="brush:cpp">
+<pre class="brush:asm">
   .thumb
   .syntax unified
   .section .text
@@ -82,107 +71,74 @@ _start:
 halt:
   b halt
   .end
-</pre>
+</pre><br>
 
 <p>
-Makefile內容
+Makefile
 </p>
-
 <pre>
-$ vim Makefile
-</pre>
-
-<pre class="brush:cpp">
 all:
   as -g -mcpu=cortex-m3 -mthumb -mthumb-interwork -o main.o main.S
   ld -T main.ld -o main.elf main.o
   objcopy -O binary main.elf main.bin
+
 debug:
   sudo openocd -f /usr/local/share/openocd/scripts/interface/stlink-v2.cfg -f /usr/local/share/openocd/scripts/target/stm32f1x.cfg -c "program main.elf halt 0x8000000"
-clean:
-  rm main.o
-  rm main.elf
-  rm main.bin
-</pre>
 
-<p>
-為了方便GDB Debug，司徒使用-g參數編譯
-</p>
+clean:
+  rm -rf main.o main.elf main.bin
+</pre><br>
 
 <p>
 因為需透過openocd燒錄程式，而舊版openocd並沒有ST-LINK V2的配置檔，因此，司徒建議自己手動編譯openocd(目前是0.10.0)，步驟如下：
 </p>
-
 <pre>
+$ cd
 $ git clone git://repo.or.cz/openocd.git
 $ cd openocd
 $ ./bootstrap
 $ ./configure
 $ make
 $ sudo make install
-</pre>
+</pre><br>
 
 <p>
-接著編譯程式
-</p>
+編譯<br>
+<img src="n900_stlink-v2_debug/2.jpg" class="maxSize"><br><br>
 
-<pre>
-$ make
-</pre>
-
-<p>
-<img src="n900_stlink-v2_debug/2.jpg" class="maxSize">
-</p>
-
-<p>
 連接ST-LINK V2到N900和STM32F103開發板<br>
-<img src="n900_stlink-v2_debug/3.jpg" class="maxSize">
-</p>
+<img src="n900_stlink-v2_debug/3.jpg" class="maxSize"><br><br>
 
-<p>
 燒錄程式並進入Debug模式
 </p>
-
 <pre>
 $ make debug
 </pre>
-
 <p>
-<img src="n900_stlink-v2_debug/4.jpg" class="maxSize">
-</p>
+<img src="n900_stlink-v2_debug/4.jpg" class="maxSize"><br><br>
 
-<p>
 使用GDB載入要Debug的程式
 </p>
-
 <pre>
 $ gdb main.elf
 </pre>
-
 <p>
-<img src="n900_stlink-v2_debug/5.jpg" class="maxSize">
-</p>
+<img src="n900_stlink-v2_debug/5.jpg" class="maxSize"><br><br>
 
-<p>
 連接到OpenOCD
 </p>
-
 <pre>
 (gdb) target remote localhost:3333
 </pre>
-
 <p>
-<img src="n900_stlink-v2_debug/6.jpg" class="maxSize">
-</p>
+<img src="n900_stlink-v2_debug/6.jpg" class="maxSize"><br><br>
 
-<p>
 設定要顯示的Register
 </p>
-
 <pre>
 (gdb) display /x $r0
 (gdb) display /x $r1
-</pre>
+</pre><br>
 
 <p>
 <img src="n900_stlink-v2_debug/7.jpg" class="maxSize">

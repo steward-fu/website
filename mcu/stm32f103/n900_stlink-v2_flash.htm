@@ -29,7 +29,7 @@
   <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
   
   <script type="text/javascript" src="../../scripts/shCore.js"></script>
-  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
 
   <!-- Conditional comment to apply opacity fix for IE #content background.
        Invalid CSS, but can be removed without harming design -->
@@ -48,114 +48,73 @@
 <p><b>如何使用N900透過ST-LINK V2燒錄程式(OpenOCD)</b></p>
 <hr size="1">
 <p>
-司徒的N900自從拉出USB和UART介面後，司徒便打算使用N900當做開發環境，開發單晶片和ARM的一系列開源專案，而目前司徒將介紹如何使用N900透過ST-LINK V2燒錄STM32F103程式，所有步驟都在N900上完成，不需PC的協助，實現邊走邊開發的想法。
-</p>
+ST-LINK V2<br>
+<img src="n900_stlink-v2_flash/1.jpg" class="maxSize"><br><br>
 
-<p>
-目前司徒使用的ST-LINK V2如下圖所示：<br>
-<img src="n900_stlink-v2_flash/1.jpg" class="maxSize">
-</p>
+開發板<br>
+<img src="n900_stlink-v2_flash/2.jpg" class="maxSize"><br><br>
 
-<p>
-搭配的STM32F103開發板如下：<br>
-<img src="n900_stlink-v2_flash/2.jpg" class="maxSize">
-</p>
-
-<p>
 連接ST-LINK V2到N900和STM32F103開發板<br>
-<img src="n900_stlink-v2_flash/3.jpg" class="maxSize">
-</p>
+<img src="n900_stlink-v2_flash/3.jpg" class="maxSize"><br><br>
 
-<p>
 正面圖<br>
-<img src="n900_stlink-v2_flash/4.jpg" class="maxSize">
-</p>
+<img src="n900_stlink-v2_flash/4.jpg" class="maxSize"><br><br>
 
-<p>
 ST-LINK V2和STM32F103開發板的接線關係</p>
 <table>
-  <thead>
-    <tr>
-      <th>ST-LINK V2</th>
-      <th>STM32F103</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>3.3V</td>
-      <td>3.3V</td>
-    </tr>
-    <tr>
-      <td>GND</td>
-      <td>GND</td>
-    </tr>
-    <tr>
-      <td>SWDIO</td>
-      <td>PA13</td>
-    </tr>
-    <tr>
-      <td>SWCLK</td>
-      <td>PA14</td>
-    </tr>
-  </tbody>
-</table>
+  <tr><th>ST-LINK V2</th><th>STM32F103</th></tr>
+  <tr><td>3.3V</td><td>3.3V</td></tr>
+  <tr><td>GND</td><td>GND</td></tr>
+  <tr><td>SWDIO</td><td>PA13</td></tr>
+  <tr><td>SWCLK</td><td>PA14</td></tr>
+</table><br>
 
 <p>
 切換到USB Host Mode<br>
-<img src="n900_stlink-v2_flash/5.jpg" class="maxSize">
-</p>
+<img src="n900_stlink-v2_flash/5.jpg" class="maxSize"><br><br>
 
-<p>
 使用dmesg看一下USB訊息
 </p>
-
 <pre>
 $ dmesg
-[32247.539093] hub 1-0:1.0: debounce: port 1: total 100ms stable 100ms status 0x101
-[32247.664093] usb 1-1: new full speed USB device using musb_hdrc and address 4
-[32247.813781] usb 1-1: default language 0x0409
-[32247.814971] usb 1-1: uevent
-[32247.815093] usb 1-1: usb_probe_device
-[32247.815124] usb 1-1: configuration #1 chosen from 1 choice
-[32247.815887] usb 1-1: adding 1-1:1.0 (config #1, interface 0)
-[32247.816040] usb 1-1:1.0: uevent
-[32247.817413] drivers/usb/core/inode.c: creating file '004'
-[32247.817779] usb 1-1: New USB device found, idVendor=0483, idProduct=3748
-[32247.817810] usb 1-1: New USB device strings: Mfr=1, Product=2, SerialNumber=3
-[32247.817810] usb 1-1: Product: STM32 STLink
-[32247.817840] usb 1-1: Manufacturer: STMicroelectronics
-[32247.817840] usb 1-1: SerialNumber: WÿtH??VSV5??
-[32247.817871] hub 1-0:1.0: state 7 ports 1 chg 0000 evt 0002
-[32247.817932] hub 1-0:1.0: port 1 enable change, status 00000103
-</pre>
+  [32247.539093] hub 1-0:1.0: debounce: port 1: total 100ms stable 100ms status 0x101
+  [32247.664093] usb 1-1: new full speed USB device using musb_hdrc and address 4
+  [32247.813781] usb 1-1: default language 0x0409
+  [32247.814971] usb 1-1: uevent
+  [32247.815093] usb 1-1: usb_probe_device
+  [32247.815124] usb 1-1: configuration #1 chosen from 1 choice
+  [32247.815887] usb 1-1: adding 1-1:1.0 (config #1, interface 0)
+  [32247.816040] usb 1-1:1.0: uevent
+  [32247.817413] drivers/usb/core/inode.c: creating file '004'
+  [32247.817779] usb 1-1: New USB device found, idVendor=0483, idProduct=3748
+  [32247.817810] usb 1-1: New USB device strings: Mfr=1, Product=2, SerialNumber=3
+  [32247.817810] usb 1-1: Product: STM32 STLink
+  [32247.817840] usb 1-1: Manufacturer: STMicroelectronics
+  [32247.817840] usb 1-1: SerialNumber: WÿtH??VSV5??
+  [32247.817871] hub 1-0:1.0: state 7 ports 1 chg 0000 evt 0002
+  [32247.817932] hub 1-0:1.0: port 1 enable change, status 00000103
+</pre><br>
 
 <p>
 因為需透過openocd燒錄程式，而舊版openocd並沒有ST-LINK V2的配置檔，因此，司徒建議自己手動編譯openocd(目前是0.10.0)，步驟如下：
 </p>
-
 <pre>
+$ cd
 $ git clone git://repo.or.cz/openocd.git
 $ cd openocd
 $ ./bootstrap
 $ ./configure
 $ make
 $ sudo make install
-</pre>
+</pre><br>
 
 <p>
 接著看一下目前系統上的USB裝置<br>
-<img src="n900_stlink-v2_flash/6.jpg" class="maxSize">
+<img src="n900_stlink-v2_flash/6.jpg" class="maxSize"><br><br>
+
+接著寫一個LED閃爍的程式(led.S)<br>
 </p>
-
-<p>
-接著寫一個LED閃爍的程式
-</p>
-
-<pre>
-$ vim led.S
-</pre>
-
-<pre class="brush:cpp">
+<pre class="brush:asm">
   .thumb
   .syntax unified
   .equ GPIOC_CRH,   0x40011004
@@ -194,17 +153,12 @@ delay2:
   subs r1, 1
   bne delay2
   b loop
-</pre>
+</pre><br>
 
 <p>
-LD Script內容
+LD Script內容(led.ld)
 </p>
-
 <pre>
-$ vim led.ld
-</pre>
-
-<pre class="brush:cpp">
 SECTIONS
 {
   . = 0x0;
@@ -226,97 +180,65 @@ SECTIONS
     *(.ram)
   }
 }
-</pre>
+</pre><br>
 
 <p>
-Makefile內容
+Makefile
 </p>
-
 <pre>
-$ vim Makefile
-</pre>
-
-<pre class="brush:cpp">
 all:
   as -mcpu=cortex-m3 -mthumb -mthumb-interwork -o led.o led.S
   ld -T led.ld -o led.elf led.o
   objcopy -O binary led.elf led.bin
+
 clean:
-  rm led.o
-  rm led.elf
-  rm led.bin
-</pre>
+  rm -rf led.o led.elf led.bin
+</pre><br>
 
 <p>
-接著編譯程式
-</p>
+編譯程式<br>
+<img src="n900_stlink-v2_flash/7.jpg" class="maxSize"><br><br>
 
-<pre>
-$ make
-</pre>
-
-<p>
-<img src="n900_stlink-v2_flash/7.jpg" class="maxSize">
-</p>
-
-<p>
 使用openocd連接ST-LINK V2燒錄器並指定開發板型號
 </p>
-
 <pre>
 $ sudo openocd -f /usr/local/share/openocd/scripts/interface/stlink-v2.cfg -f /usr/local/share/openocd/scripts/target/stm32f1x.cfg
 </pre>
-
 <p>
-<img src="n900_stlink-v2_flash/8.jpg" class="maxSize">
-</p>
+<img src="n900_stlink-v2_flash/8.jpg" class="maxSize"><br><br>
 
-<p>
 連接到openocd燒錄介面並且燒錄led.bin程式
 </p>
-
 <pre>
 $ telnet localhost 4444
-&gt; halt
-&gt; flash erase_sector 0 0 0
-&gt; flash write_bank 0 led.bin 0
-&gt; reset init
-&gt; resume 
+  &gt; halt
+  &gt; flash erase_sector 0 0 0
+  &gt; flash write_bank 0 led.bin 0
+  &gt; reset init
+  &gt; resume 
 </pre>
-
 <p>
 <img src="n900_stlink-v2_flash/9.jpg" class="maxSize"><br>
-<img src="n900_stlink-v2_flash/10.jpg" class="maxSize">
-</p>
+<img src="n900_stlink-v2_flash/10.jpg" class="maxSize"><br><br>
 
-<p>
 完成<br>
 <img src="n900_stlink-v2_flash/11.jpg" class="maxSize"><br>
-<img src="n900_stlink-v2_flash/12.jpg" class="maxSize">
-</p>
+<img src="n900_stlink-v2_flash/12.jpg" class="maxSize"><br><br>
 
-<p>
 如果使用者不想透過telnet操作，可以將Makefile改成如下：
 </p>
-
 <pre>
-$ vim Makefile
-</pre>
-
-<pre class="brush:cpp">
 all:
   as -mcpu=cortex-m3 -mthumb -mthumb-interwork -o led.o led.S
   ld -T led.ld -o led.elf led.o
   objcopy -O binary led.elf led.bin
   sudo openocd -f /usr/local/share/openocd/scripts/interface/stlink-v2.cfg -f /usr/local/share/openocd/scripts/target/stm32f1x.cfg -c "program led.bin reset exit 0x8000000"
-clean:
-  rm led.o
-  rm led.elf
-  rm led.bin
-</pre>
 
+clean:
+  rm -rf led.o led.elf led.bin
+</pre>
 <p>
-透過修改Makefile，使用者現在只需執行make指令即可完成編譯和燒入的動作，當然，如果編譯有問題時，make會停止其餘動作。
+P.S. 透過修改Makefile，使用者現在只需執行make指令即可完成編譯和燒入的動作，當然，如果編譯有問題時，make會停止其餘動作。
 </p>
 
 <p>
