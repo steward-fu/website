@@ -44,17 +44,13 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>BeagleBone Green Wireless</h3>
+<h3>BeagleBone Green Wireless &gt;&gt; C/C++</h3>
 <p><b>移植Framebuffer顯示驅動程式(DMA)</b></p>
 <hr size="1">
 <p>
-[Github] <a href="https://github.com/steward-fu/gh_bbgw_kernel-3.8.git">https://github.com/steward-fu/gh_bbgw_kernel-3.8.git</a>
+arch/arm/boot/dts/am335x-bonegreen-wireless.dts
 </p>
-
-<p>
-$ vim arch/arm/boot/dts/am335x-bonegreen-wireless.dts
-</p>
-<pre class="brush:cpp">
+<pre>
   am33xx_pinmux: pinmux@44e10800 {
     pinctrl-names = "default";
     pinctrl-0 = &lt;&amp;gpio_keys_s0 &amp;lcd_pins_s0&gt;
@@ -87,31 +83,31 @@ $ vim arch/arm/boot/dts/am335x-bonegreen-wireless.dts
 </pre><br>
 
 <p>
-$ vim arch/arm/boot/dts/am33xx.dtsi
+arch/arm/boot/dts/am33xx.dtsi
 </p>
-<pre class="brush:cpp">
+<pre>
   ocp {
     ...
     rtc@44e3e000 {
       compatible = "ti,am335x-rtc";
-      reg = <0x44e3e000 0x1000>;
-      interrupts = <75 76>;
+      reg = &lt;0x44e3e000 0x1000&gt;;
+      interrupts = &lt;75 76&gt;;
       ti,hwmods = "rtc";
     };
 
     lcdc: lcdc@4830e000 {
       compatible = "ti,am3352-lcdc", "ti,am335x-lcdc";
-      reg = <0x4830e000 0x1000>;
-      interrupts = <36>;
+      reg = &lt;0x4830e000 0x1000&gt;;
+      interrupts = &lt;36&gt;;
       status = "disabled";
       ti,hwmods = "lcdc";
     };
 </pre><br>
 
 <p>
-$ vim drivers/video/Kconfig
+drivers/video/Kconfig
 </p>
-<pre class="brush:cpp">
+<pre>
 config FB_AM335X
   tristate "AM335x Framebuffer support"
   depends on FB &amp;&amp; SOC_AM33XX
@@ -126,14 +122,14 @@ config FB_AM335X
 </pre><br>
 
 <p>
-$ vim drivers/video/Makefile
+drivers/video/Makefile
 </p>
-<pre class="brush:cpp">
+<pre>
 obj-$(CONFIG_FB_AM335X) += am335x-fb.o
 </pre><br>
 
 <p>
-$ vim drivers/video/am335x-fb.c
+drivers/video/am335x-fb.c
 </p>
 <pre class="brush:cpp">
 /*
@@ -294,7 +290,6 @@ static void ili9335_send_register(unsigned int cmd, unsigned int data)
  
 static void ili9335_init(void)
 {
-  printk("%s, ++\n", __func__);
   gpio_set_value(ILI9335_SLCD_RST, 1);
   mdelay(100);
   gpio_set_value(ILI9335_SLCD_RST, 0);
@@ -345,7 +340,6 @@ static void ili9335_init(void)
   mdelay(10);
   ili9335_send_register(0x0007, 0x0133);  
   ili9335_send_command(0x22);
-  printk("%s, --\n", __func__);
 }
 
 #define CNVT_TOHW(val, width) ((((val) &lt;&lt; (width)) + 0x7FFF - (val)) &gt;&gt; 16)
@@ -418,7 +412,6 @@ static int fb_setcolreg(unsigned regno, unsigned red, unsigned green, unsigned b
     break;
   }
 
-  // Truecolor has hardware independent palette
   if(info-&gt;fix.visual == FB_VISUAL_TRUECOLOR){
     u32 v;
 
@@ -620,7 +613,6 @@ static int fb_probe(struct platform_device *device)
   struct clk *fb_clk = NULL;
   struct am335x_fb_par *par;
 
-  printk("%s, ++\n", __func__);
   if((fb_pdata == NULL) &amp;&amp; (!device-&gt;dev.of_node)){
     dev_err(&amp;device-&gt;dev, "can not get platform data\n");
     return -ENOENT;
@@ -676,7 +668,6 @@ static int fb_probe(struct platform_device *device)
   ili9335_init();
   printk("%s, xres: %d, yres:%d, bpp:%d\n", __func__, lcdc_info-&gt;xres, lcdc_info-&gt;yres, par-&gt;bpp);
 
-  // allocate frame buffer
   par-&gt;vram_size = lcdc_info-&gt;xres * lcdc_info-&gt;yres * par-&gt;bpp;
   ulcm = lcm((lcdc_info-&gt;xres * par-&gt;bpp)/8, PAGE_SIZE);
   par-&gt;vram_size = roundup(par-&gt;vram_size/8, ulcm);
@@ -704,7 +695,6 @@ static int fb_probe(struct platform_device *device)
   par-&gt;dma_start = par-&gt;vram_phys;
   par-&gt;dma_end = par-&gt;dma_start + par-&gt;vram_size - 1;
 
-  // allocate palette buffer
   par-&gt;v_palette_base = dma_alloc_coherent(NULL, PALETTE_SIZE, (resource_size_t*) &amp;par-&gt;p_palette_base, GFP_KERNEL | GFP_DMA);
   if(!par-&gt;v_palette_base){
     dev_err(&amp;device-&gt;dev, "GLCD: kmalloc for palette buffer failed\n");
@@ -722,7 +712,6 @@ static int fb_probe(struct platform_device *device)
   am335x_fb_var.grayscale = 0;
   am335x_fb_var.bits_per_pixel = par-&gt;bpp;
 
-  // Initialize fbinfo
   am335x_fb_info-&gt;flags = FBINFO_FLAG_DEFAULT;
   am335x_fb_info-&gt;fix = am335x_fb_fix;
   am335x_fb_info-&gt;var = am335x_fb_var;
@@ -736,12 +725,10 @@ static int fb_probe(struct platform_device *device)
   }
   am335x_fb_info-&gt;cmap.len = 32;
 
-  // initialize var_screeninfo
   am335x_fb_var.activate = FB_ACTIVATE_FORCE;
   fb_set_var(am335x_fb_info, &amp;am335x_fb_var);
   dev_set_drvdata(&amp;device-&gt;dev, am335x_fb_info);
 
-  // Register the Frame Buffer
   if(register_framebuffer(am335x_fb_info) &lt; 0){
     dev_err(&amp;device-&gt;dev, "GLCD: Frame Buffer Registration Failed!\n");
     ret = -EINVAL;
@@ -760,8 +747,6 @@ static int fb_probe(struct platform_device *device)
   
   fb_prepare_logo(am335x_fb_info, 0);
   fb_show_logo(am335x_fb_info, 0);
-
-  printk("%s, --\n", __func__);
   return 0;
 
 irq_freq:
@@ -853,13 +838,11 @@ MODULE_LICENSE("GPL");
 </pre><br>
 
 <p>
-Device Drivers &rArr; Graphics support &rArr; Support for frame buffer devices
-<img src="framebuffer_polling/3.jpg" class="maxSize">
-</p>
+Device Drivers &gt; Graphics support &gt; Support for frame buffer devices<br>
+<img src="framebuffer_polling/2.jpg" class="maxSize"><br><br>
 
-<p>
 完成<br>
-<img src="framebuffer_dma/1.jpg" class="maxSize"><br>
+<img src="framebuffer_dma/1.jpg" class="maxSize">
 </p>
 
 <p>

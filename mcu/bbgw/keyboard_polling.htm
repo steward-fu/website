@@ -44,17 +44,13 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>BeagleBone Green Wireless</h3>
-<p><b>簡單的Keyboard驅動程式(Polling)</b></p>
+<h3>BeagleBone Green Wireless &gt;&gt; C/C++</h3>
+<p><b>Keyboard(Polling)</b></p>
 <hr size="1">
 <p>
-[Github] <a href="https://github.com/steward-fu/gh_bbgw_kernel-3.8.git">https://github.com/steward-fu/gh_bbgw_kernel-3.8.git</a>
+arch/arm/boot/dts/am335x-bonegreen-wireless.dts
 </p>
-
-<p>
-$ vim arch/arm/boot/dts/am335x-bonegreen-wireless.dts
-</p>
-<pre class="brush:cpp">
+<pre>
   am33xx_pinmux: pinmux@44e10800 {
     pinctrl-names = "default";
     pinctrl-0 = &lt;&amp;gpio_keys_s0 &amp;lcd_pins_s0&gt;
@@ -79,20 +75,9 @@ $ vim arch/arm/boot/dts/am335x-bonegreen-wireless.dts
 </pre><br>
 
 <p>
-$ vim drivers/gpio/keyboard/main.c
+drivers/gpio/keyboard/main.c
 </p>
 <pre class="brush:cpp">
-/*========================================================================================================
-  Basically, all of files downloaded from my website can be modified or redistributed for any purpose.
-  It is my honor to share my interesting to everybody.
-  If you find any illeage content out from my website, please contact me firstly.
-  I will remove all of the illeage parts.
-  Thanks :)
-   
-  Steward Fu
-  steward.fu@gmail.com
-  https://steward-fu.github.io/website/index.htm
-========================================================================================================*/
 #include &lt;linux/init.h&gt;
 #include &lt;linux/device.h&gt;
 #include &lt;linux/module.h&gt;
@@ -119,9 +104,9 @@ MODULE_AUTHOR("Steward_Fu");
 MODULE_DESCRIPTION("AM335x Keyboard Driver");
 MODULE_LICENSE("GPL");
 
+static int g_blink_period=100;
 static struct input_dev *button_dev;
 static struct timer_list g_blink_timer;
-static int g_blink_period=100;
 
 static void report_key(unsigned long btn, unsigned long mask, unsigned char key)
 {
@@ -133,7 +118,6 @@ static void report_key(unsigned long btn, unsigned long mask, unsigned char key)
     if((btn_pressed &amp; mask) == 0){
       btn_pressed|= mask;
       input_report_key(button_dev, key, 1);
-      //printk("%s, %d pressed\n", __func__, key);
     }
   }
   else{
@@ -141,7 +125,6 @@ static void report_key(unsigned long btn, unsigned long mask, unsigned char key)
     if((btn_released &amp; mask) == 0){
       btn_released|= mask;
       input_report_key(button_dev, key, 0);
-      //printk("%s, %d released\n", __func__, key);
     }
   }
 }
@@ -167,16 +150,6 @@ static void blink_handler(unsigned long unused)
   if(pre != val){
     pre = val;
 
-    // 0x100 =&gt; up
-    // 0x800 =&gt; down
-    // 0x400 =&gt; left
-    // 0x200 =&gt; right
-    // 0x040 =&gt; start
-    // 0x020 =&gt; select
-    // 0x001 =&gt; a
-    // 0x008 =&gt; b
-    // 0x002 =&gt; x
-    // 0x004 =&gt; y
     report_key(pre, 0x100, KEY_UP);
     report_key(pre, 0x800, KEY_DOWN);
     report_key(pre, 0x400, KEY_LEFT);
@@ -196,8 +169,6 @@ static void blink_handler(unsigned long unused)
 
 static int __init main_init(void)
 {
-   printk("Steward Linux Driver Tutorial, AM335x Keyboard Driver\n");
-  
   do_request(66, "gpio-66");
   do_request(69, "gpio-69");
   do_request(45, "gpio-45");
@@ -231,7 +202,6 @@ static int __init main_init(void)
   
   setup_timer(&amp;g_blink_timer, blink_handler, 0);
   mod_timer(&amp;g_blink_timer, jiffies + msecs_to_jiffies(g_blink_period));
-
   return 0;
 }
  
@@ -239,17 +209,11 @@ static void __exit main_exit(void)
 {
   input_unregister_device(button_dev);
   del_timer(&amp;g_blink_timer);
-  printk("Unload it!\n");
 }
  
 module_init(main_init);
 module_exit(main_exit);
 </pre><br>
-
-<p>
-完成<br>
-<img src="keyboard_polling/1.jpg" class="maxSize"><br>
-</p>
 
 <p>
 <br><a href="../../mcu.htm">返回上一頁</a>

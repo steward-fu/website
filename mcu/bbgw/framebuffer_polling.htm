@@ -44,17 +44,13 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>BeagleBone Green Wireless</h3>
+<h3>BeagleBone Green Wireless &gt;&gt; C/C++</h3>
 <p><b>移植Framebuffer顯示驅動程式(Polling)</b></p>
 <hr size="1">
 <p>
-[Github] <a href="https://github.com/steward-fu/gh_bbgw_kernel-3.8.git">https://github.com/steward-fu/gh_bbgw_kernel-3.8.git</a>
+arch/arm/boot/dts/am335x-bonegreen-wireless.dts
 </p>
-
-<p>
-$ vim arch/arm/boot/dts/am335x-bonegreen-wireless.dts
-</p>
-<pre class="brush:cpp">
+<pre>
   am33xx_pinmux: pinmux@44e10800 {
     pinctrl-names = "default";
     pinctrl-0 = &lt;&amp;gpio_keys_s0 &amp;lcd_pins_s0&gt;
@@ -87,31 +83,31 @@ $ vim arch/arm/boot/dts/am335x-bonegreen-wireless.dts
 </pre><br>
 
 <p>
-$ vim arch/arm/boot/dts/am33xx.dtsi
+arch/arm/boot/dts/am33xx.dtsi
 </p>
-<pre class="brush:cpp">
+<pre>
   ocp {
     ...
     rtc@44e3e000 {
       compatible = "ti,am335x-rtc";
-      reg = <0x44e3e000 0x1000>;
-      interrupts = <75 76>;
+      reg = &lt;0x44e3e000 0x1000&gt;;
+      interrupts = &lt;75 76&gt;;
       ti,hwmods = "rtc";
     };
 
     lcdc: lcdc@4830e000 {
       compatible = "ti,am3352-lcdc", "ti,am335x-lcdc";
-      reg = <0x4830e000 0x1000>;
-      interrupts = <36>;
+      reg = &lt;0x4830e000 0x1000&gt;;
+      interrupts = &lt;36&gt;;
       status = "disabled";
       ti,hwmods = "lcdc";
     };
 </pre><br>
 
 <p>
-$ vim drivers/video/Kconfig
+drivers/video/Kconfig
 </p>
-<pre class="brush:cpp">
+<pre>
 config FB_AM335X
   tristate "AM335x Framebuffer support"
   depends on FB &amp;&amp; SOC_AM33XX
@@ -126,14 +122,14 @@ config FB_AM335X
 </pre><br>
 
 <p>
-$ vim drivers/video/Makefile
+drivers/video/Makefile
 </p>
-<pre class="brush:cpp">
+<pre>
 obj-$(CONFIG_FB_AM335X) += am335x-fb.o
 </pre><br>
 
 <p>
-$ vim drivers/video/am335x-fb.c
+drivers/video/am335x-fb.c
 </p>
 <pre class="brush:cpp">
 /*
@@ -256,13 +252,13 @@ struct amfb {
 };
 
 static struct fb_fix_screeninfo amfb_fix = {
-  .id         =  "AM335X SLCD FB",
-  .type       =  FB_TYPE_PACKED_PIXELS,
-  .visual      =  FB_VISUAL_TRUECOLOR,
-  .xpanstep   =  0,
-  .ypanstep    =  1,
-  .ywrapstep  =  0,
-  .accel       =FB_ACCEL_NONE,
+  .id        = "AM335X SLCD FB",
+  .type      = FB_TYPE_PACKED_PIXELS,
+  .visual    = FB_VISUAL_TRUECOLOR,
+  .xpanstep  = 0,
+  .ypanstep  = 1,
+  .ywrapstep = 0,
+  .accel     = FB_ACCEL_NONE,
 };
 
 static void ili9335_send_data(struct amfb *amfb, unsigned int val)
@@ -285,7 +281,6 @@ static void ili9335_send_register(struct amfb *amfb, unsigned int cmd, unsigned 
 
 static void ili9335_init(struct amfb *amfb)
 {
-  printk("%s, ++\n", __func__);
   gpio_set_value(ILI9335_SLCD_RST, 1);
   mdelay(100);
   gpio_set_value(ILI9335_SLCD_RST, 0);
@@ -336,7 +331,6 @@ static void ili9335_init(struct amfb *amfb)
   mdelay(10);
   ili9335_send_register(amfb, 0x0007, 0x0133);  
   ili9335_send_command(amfb, 0x22);
-  printk("%s, --\n", __func__);
 }
 
 static int amfb_setcolreg(unsigned regno, unsigned red, unsigned green, unsigned blue, unsigned transp, struct fb_info *fb)
@@ -404,14 +398,10 @@ static void amfb_upload_frame_cpu(struct amfb *amfb)
   const int num_pixels = amfb-&gt;mode.xres * amfb-&gt;mode.yres;
   uint16_t *p = amfb-&gt;vidmem;
   
-  //printk("++\n");
-  //print_time();
   ili9335_send_command(amfb, 0x22);
   for(i=0; i&lt;num_pixels; i++){
     ili9335_send_data(amfb, *p++);
   }
-  //print_time();
-  //printk("--\n");
 }
 
 static void amfb_refresh_work(struct work_struct *work)
@@ -502,10 +492,8 @@ static int amfb_alloc_devmem(struct amfb *amfb)
     return -ENOMEM;
   }
 
-  /* Set the black line to black... */
   memset(amfb-&gt;blackline, 0, amfb-&gt;blackline_size);
 
-  /* reserve memory for two frames to allow double buffering */
   amfb-&gt;vidmem_size = PAGE_ALIGN(max_framesize * 2);
   amfb-&gt;vidmem = dma_alloc_coherent(&amp;amfb-&gt;pdev-&gt;dev, amfb-&gt;vidmem_size, &amp;amfb-&gt;vidmem_phys, GFP_KERNEL);
   if(!amfb-&gt;vidmem){
@@ -548,7 +536,6 @@ static int amfb_probe(struct platform_device *pdev)
   void __iomem *fb_reg_base;
   struct resource *lcdc_regs;
 
-  printk("%s, ++\n", __func__);
   lcdc_regs = platform_get_resource(pdev, IORESOURCE_MEM, 0);
   fb_reg_base = devm_request_and_ioremap(&amp;pdev-&gt;dev, lcdc_regs);
   if (!fb_reg_base) {
@@ -636,7 +623,6 @@ static int amfb_probe(struct platform_device *pdev)
 
   INIT_DELAYED_WORK(&amp;amfb-&gt;refresh_work, amfb_refresh_work);
   schedule_delayed_work(&amp;amfb-&gt;refresh_work, 0);
-  printk("%s, --\n", __func__);
   return 0;
   
   cancel_delayed_work_sync(&amp;amfb-&gt;refresh_work);
@@ -745,14 +731,11 @@ MODULE_DESCRIPTION("AM335X SLCD framebuffer driver");
 </pre><br>
 
 <p>
-Device Drivers &rArr; Graphics support &rArr; Support for frame buffer devices
-<img src="framebuffer_polling/3.jpg" class="maxSize">
-</p>
+Device Drivers &gt; Graphics support &gt; Support for frame buffer devices<br>
+<img src="framebuffer_polling/2.jpg" class="maxSize"><br><br>
 
-<p>
 完成<br>
-<img src="framebuffer_polling/1.jpg" class="maxSize"><br>
-<img src="framebuffer_polling/2.jpg" class="maxSize"><br>
+<img src="framebuffer_polling/1.jpg" class="maxSize">
 </p>
 
 <p>

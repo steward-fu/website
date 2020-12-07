@@ -44,22 +44,13 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>BeagleBone Green Wireless</h3>
-<p><b>驅動2.0吋IPS 320x240顯示屏(ILI9335)(Register)</b></p>
+<h3>BeagleBone Green Wireless &gt;&gt; C/C++</h3>
+<p><b>2.0" IPS 320x240(ILI9335)(Register)</b></p>
 <hr size="1">
-
+<p>
+main.c
+</p>
 <pre class="brush:cpp">
-/*========================================================================================================
-  Basically, all of files downloaded from my website can be modified or redistributed for any purpose.
-  It is my honor to share my interesting to everybody.
-  If you find any illeage content out from my website, please contact me firstly.
-  I will remove all of the illeage parts.
-  Thanks :)
-    
-  Steward Fu
-  steward.fu@gmail.com
-  https://steward-fu.github.io/website/index.htm
-========================================================================================================*/
 #include &lt;linux/init.h&gt;
 #include &lt;linux/device.h&gt;
 #include &lt;linux/module.h&gt;
@@ -124,9 +115,9 @@
     gpio_direction_output(pin, 1); \
   }
  
+MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Steward_Fu");
 MODULE_DESCRIPTION("ILI9335 SLCD Driver for BBGW");
-MODULE_LICENSE("GPL");
  
 static int g_blink_period=1000;
 static struct timer_list g_blink_timer;
@@ -134,14 +125,12 @@ static volatile unsigned long *gpio2_dataout;
  
 static void ili9335_reset(void)
 {
-  printk("steward, %s++\n", __func__);
   gpio_set_value(ILI9335_SLCD_RST, 1);  
   mdelay(100);
   gpio_set_value(ILI9335_SLCD_RST, 0);
   mdelay(100);  
   gpio_set_value(ILI9335_SLCD_RST, 1);  
   mdelay(100);
-  printk("steward, %s--\n", __func__);
 }
  
 static void ili9335_send_command(unsigned int val)
@@ -214,7 +203,6 @@ static void ili9335_send_register(unsigned int cmd, unsigned int data)
  
 static void ili9335_init(void)
 {
-  printk("steward, %s++\n", __func__);
   ili9335_send_register(0x0001, 0x0100);
   ili9335_send_register(0x0002, 0x0200);
   ili9335_send_register(0x0003, 0x1018);
@@ -257,7 +245,6 @@ static void ili9335_init(void)
  
   mdelay(10);
   ili9335_send_register(0x0007, 0x0133);  
-  printk("steward, %s--\n", __func__);
 }
  
 static void show_color(unsigned int val)
@@ -292,7 +279,6 @@ void blink_handler(unsigned long unused)
 #else
   int i, j;
 
-  printk("++\n");
   print_time();
   ili9335_send_command(0x0022);
   for(i=0; i&lt;240; i++){
@@ -309,7 +295,6 @@ void blink_handler(unsigned long unused)
     }
   }
   print_time();
-  printk("--\n");
 #endif
  
   mod_timer(&amp;g_blink_timer, jiffies + msecs_to_jiffies(g_blink_period));
@@ -317,8 +302,6 @@ void blink_handler(unsigned long unused)
  
 static int __init main_init(void)
 {
-  printk("Steward Linux Driver Tutorial, ILI9335 SLCD Driver for BBGW\n");
- 
   do_request(ILI9335_SLCD_WR, "lcd_wr");
   do_request(ILI9335_SLCD_RD, "lcd_rd");
   do_request(ILI9335_SLCD_CS, "lcd_cs");
@@ -361,7 +344,6 @@ static void __exit main_exit(void)
   gpio_free(ILI9335_SLCD_D16);
   gpio_free(ILI9335_SLCD_D17);
   iounmap(gpio2_dataout);
-  printk("Unload it!\n");
 }
   
 module_init(main_init);
@@ -370,9 +352,7 @@ module_exit(main_exit);
 
 <p>
 完成<br>
-<img src="ili9335_reg/1.jpg" class="maxSize"><br>
-<img src="ili9335_reg/2.jpg" class="maxSize"><br>
-P.S. 更新一個畫面大約需要0.4秒。
+<img src="ili9335_reg/1.jpg" class="maxSize">
 </p>
 
 <p>
