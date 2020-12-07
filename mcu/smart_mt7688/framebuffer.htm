@@ -44,30 +44,23 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>LinkIt Smart MT7688</h3>
+<h3>LinkIt Smart MT7688 &gt;&gt; C/C++</h3>
 <p><b>移植Framebuffer顯示驅動程式</b></p>
 <hr size="1">
 <p>
-[Github] <a href="https://github.com/steward-fu/gh_mt7688_kernel-3.18.44.git">https://github.com/steward-fu/gh_mt7688_kernel-3.18.44.git</a><br>
-</p>
-
-<p>
 dts/LINKIT7688.dts
 </p>
-<pre class="brush:cpp">
+<pre>
 gpio-slcd {
   compatible = "mt7688-fb";
 };
 </pre>
 <p>
-P.S. <b>compatible = "mt7688-fb"</b>將會對應到驅動程式的<b>MODULE_ALIAS("platform:mt7688-fb")</b>
-</p>
-<br>
+P.S. <b>compatible = "mt7688-fb"</b>將會對應到驅動程式的<b>MODULE_ALIAS("platform:mt7688-fb")</b><br><br>
 
-<p>
 drivers/video/fbdev/Kconfig
 </p>
-<pre class="brush:cpp">
+<pre>
 config FB_MT7688
   tristate "MT7688 Smart LCD framebuffer support"
   depends on FB
@@ -82,7 +75,7 @@ config FB_MT7688
 <p>
 drivers/video/fbdev/Makefile
 </p>
-<pre class="brush:cpp">
+<pre>
 obj-$(CONFIG_FB_MT7688) += mt7688fb.o
 </pre><br>
 
@@ -170,13 +163,13 @@ struct mtfb {
 };
 
 static struct fb_fix_screeninfo mtfb_fix = {
-  .id         =  "MT7688 SLCD FB",
-  .type       =  FB_TYPE_PACKED_PIXELS,
-  .visual      =  FB_VISUAL_TRUECOLOR,
-  .xpanstep   =  0,
-  .ypanstep    =  1,
-  .ywrapstep  =  0,
-  .accel       =FB_ACCEL_NONE,
+  .id        = "MT7688 SLCD FB",
+  .type      = FB_TYPE_PACKED_PIXELS,
+  .visual    = FB_VISUAL_TRUECOLOR,
+  .xpanstep  = 0,
+  .ypanstep  = 1,
+  .ywrapstep = 0,
+  .accel     = FB_ACCEL_NONE,
 };
 
 static void mtfb_gpio_dir(struct mtfb *mtfb, int pin, int is_output)
@@ -228,12 +221,10 @@ static void mtfb_alloc_gpio(struct mtfb *mtfb)
     mtfb-&gt;gpio_reg[i] = (volatile unsigned long*)ioremap(reg_base[i], 4);
   }
   
-  // except SPI controller
   *mtfb-&gt;gpio_reg[GPIO1_MODE_INDEX]&amp;= 0xffff0fff;
   *mtfb-&gt;gpio_reg[GPIO1_MODE_INDEX]|= 0x51550555;
   *mtfb-&gt;gpio_reg[GPIO2_MODE_INDEX] = 0x55555555;
   
-  // lcd
   mtfb_gpio_dir(mtfb, 37, 1);
   mtfb_gpio_dir(mtfb, 44, 1);
   mtfb_gpio_dir(mtfb, 46, 1);
@@ -323,7 +314,6 @@ static void ili9335_send_register(struct mtfb *mtfb, unsigned int cmd, unsigned 
 
 static void ili9335_init(struct mtfb *mtfb)
 {
-  printk("%s++\n", __func__);
   mtfb_gpio_set(mtfb, ILI9335_SLCD_CS, 1);
   mtfb_gpio_set(mtfb, ILI9335_SLCD_RESET, 1);
   mdelay(100);
@@ -375,7 +365,6 @@ static void ili9335_init(struct mtfb *mtfb)
   mdelay(10);
   ili9335_send_register(mtfb, 0x0007, 0x0133);  
   ili9335_send_command(mtfb, 0x22);
-  printk("%s--\n", __func__);
 }
 
 static int mtfb_setcolreg(unsigned regno, unsigned red, unsigned green, unsigned blue, unsigned transp, struct fb_info *fb)
@@ -417,7 +406,6 @@ static int mtfb_check_var(struct fb_var_screeninfo *var, struct fb_info *fb)
 
   fb_videomode_to_var(var, mode);
 
-  /* Reserve space for double buffering. */
   var-&gt;yres_virtual = var-&gt;yres * 2;
   var-&gt;red.offset = 11;
   var-&gt;red.length = 5;
@@ -443,14 +431,10 @@ static void mtfb_upload_frame_cpu(struct mtfb *mtfb)
   const int num_pixels = mtfb-&gt;mode.xres * mtfb-&gt;mode.yres;
   uint16_t *p = mtfb-&gt;vidmem;
   
-  printk("++\n");
-  print_time();
-
   *mtfb-&gt;gpio_reg[GPIO1_MODE_INDEX]&amp;= 0xffff0fff;
   *mtfb-&gt;gpio_reg[GPIO1_MODE_INDEX]|= 0x51550555;
   *mtfb-&gt;gpio_reg[GPIO2_MODE_INDEX] = 0x55555555;
   
-  // lcd
   mtfb_gpio_dir(mtfb, 37, 1);
   mtfb_gpio_dir(mtfb, 44, 1);
   mtfb_gpio_dir(mtfb, 46, 1);
@@ -468,8 +452,6 @@ static void mtfb_upload_frame_cpu(struct mtfb *mtfb)
   for(i=0; i&lt;num_pixels; i++){
     ili9335_send_data(mtfb, *p++);
   }
-  print_time();
-  printk("--\n");
 }
 
 static void mtfb_refresh_work(struct work_struct *work)
@@ -576,10 +558,8 @@ static int mtfb_alloc_devmem(struct mtfb *mtfb)
     return -ENOMEM;
   }
 
-  /* Set the black line to black... */
   memset(mtfb-&gt;blackline, 0, mtfb-&gt;blackline_size);
 
-  /* reserve memory for two frames to allow double buffering */
   mtfb-&gt;vidmem_size = PAGE_ALIGN(max_framesize * 2);
   mtfb-&gt;vidmem = dma_alloc_coherent(&amp;mtfb-&gt;pdev-&gt;dev, mtfb-&gt;vidmem_size, &amp;mtfb-&gt;vidmem_phys, GFP_KERNEL);
   if(!mtfb-&gt;vidmem){
@@ -604,13 +584,13 @@ static void mtfb_free_devmem(struct mtfb *mtfb)
 }
 
 static struct fb_ops mtfb_ops = {
-  .owner           = THIS_MODULE,
-  .fb_check_var   = mtfb_check_var,
-  .fb_set_par     = mtfb_set_par,
-  .fb_setcolreg   = mtfb_setcolreg,
-  .fb_fillrect     = sys_fillrect,
-  .fb_copyarea     = sys_copyarea,
-  .fb_imageblit   = sys_imageblit,
+  .owner        = THIS_MODULE,
+  .fb_check_var = mtfb_check_var,
+  .fb_set_par   = mtfb_set_par,
+  .fb_setcolreg = mtfb_setcolreg,
+  .fb_fillrect  = sys_fillrect,
+  .fb_copyarea  = sys_copyarea,
+  .fb_imageblit = sys_imageblit,
 };
 
 static int mtfb_probe(struct platform_device *pdev)
@@ -619,7 +599,6 @@ static int mtfb_probe(struct platform_device *pdev)
   struct mtfb *mtfb;
   struct fb_info *fb;
 
-  printk("%s++\n", __func__);
   fb = framebuffer_alloc(sizeof(struct mtfb), &amp;pdev-&gt;dev);
   if(!fb){
     dev_err(&amp;pdev-&gt;dev, "Failed to allocate framebuffer device\n");
@@ -677,7 +656,6 @@ static int mtfb_probe(struct platform_device *pdev)
 
   INIT_DELAYED_WORK(&amp;mtfb-&gt;refresh_work, mtfb_refresh_work);
   schedule_delayed_work(&amp;mtfb-&gt;refresh_work, 0);
-  printk("%s--\n", __func__);
   return 0;
   
   cancel_delayed_work_sync(&amp;mtfb-&gt;refresh_work);
@@ -744,8 +722,8 @@ static int mtfb_resume(struct device *dev)
 
 static const struct dev_pm_ops mtfb_pm_ops = {
   .suspend  = mtfb_suspend,
-  .resume    = mtfb_resume,
-  .poweroff  = mtfb_suspend,
+  .resume   = mtfb_resume,
+  .poweroff = mtfb_suspend,
   .restore  = mtfb_resume,
 };
 
@@ -761,10 +739,10 @@ static const struct of_device_id of_mt7688_fb_match[] = {
 
 static struct platform_driver mtfb_driver = {
   .probe  = mtfb_probe,
-  .remove  = mtfb_remove,
+  .remove = mtfb_remove,
   .driver = {
-    .name  = "mt7688-fb",
-    .pm    = MTFB_PM_OPS,
+    .name = "mt7688-fb",
+    .pm   = MTFB_PM_OPS,
     .of_match_table = of_match_ptr(of_mt7688_fb_match),
   },
 };
@@ -791,11 +769,9 @@ MODULE_ALIAS("platform:mt7688-fb");
 $ make ARCH=mips menuconfig
 </pre>
 <p>
-<img src="framebuffer/1.jpg" class="maxSize">
-<img src="framebuffer/2.jpg" class="maxSize">
-</p><br>
+<img src="framebuffer/1.jpg" class="maxSize"><br>
+<img src="framebuffer/2.jpg" class="maxSize"><br><br>
 
-<p>
 完成<br>
 <img src="framebuffer/3.jpg" class="maxSize">
 </p><br>
@@ -805,9 +781,9 @@ $ ls -al /dev/f*
 </pre>
 <p>
 <img src="framebuffer/4.jpg" class="maxSize"><br>
-P.S. 刷一個320x240的畫面，大約需要0.06秒(Kernel時間)。<br><br>
+P.S. 刷一個320x240的畫面，大約需要0.06秒<br><br>
 
-使用山寨邏輯分析儀測試LCD_WR腳位後，發現其實畫面更新應該是有超過60fps才對，LCD_WR腳位Low的時間大約是80ns(Channel-0是AM335x LCD Clock 33MHz，而Channl-1則是MT7688 580MHz)。
+使用山寨邏輯分析儀測試LCD_WR腳位後，發現其實畫面更新應該是有超過60fps才對，LCD_WR腳位Low的時間大約是80ns(Channel-0是AM335x LCD Clock 33MHz，而Channl-1則是MT7688 580MHz)<br>
 <img src="framebuffer/5.jpg" class="maxSize"><br><br>
 
 計算一下:<br>

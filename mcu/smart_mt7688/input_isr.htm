@@ -44,29 +44,13 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>LinkIt Smart MT7688</h3>
-<p><b>簡單的GPIO Input驅動程式(ISR)</b></p>
+<h3>LinkIt Smart MT7688 &gt;&gt; C/C++</h3>
+<p><b>Button</b></p>
 <hr size="1">
-<p>
-[Github] <a href="https://github.com/steward-fu/gh_mt7688_kernel-3.18.44.git">https://github.com/steward-fu/gh_mt7688_kernel-3.18.44.git</a><br>
-</p>
-
 <p>
 drivers/gpio/button/main.c
 </p>
-
 <pre class="brush:cpp">
-/*========================================================================================================
-  Basically, all of files downloaded from my website can be modified or redistributed for any purpose.
-  It is my honor to share my interesting to everybody.
-  If you find any illeage content out from my website, please contact me firstly.
-  I will remove all of the illeage parts.
-  Thanks :)
-    
-  Steward Fu
-  steward.fu@gmail.com
-  https://steward-fu.github.io/website/index.htm
-========================================================================================================*/
 #include &lt;linux/init.h&gt;
 #include &lt;linux/device.h&gt;
 #include &lt;linux/module.h&gt;
@@ -77,9 +61,9 @@ drivers/gpio/button/main.c
 #include &lt;linux/irq.h&gt;
 #include &lt;asm/io.h&gt;
  
+MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Steward_Fu");
 MODULE_DESCRIPTION("MT7688 GPIO Driver");
-MODULE_LICENSE("GPL");
 
 #define GPIO2_MODE  0x10000064
 #define GPIO_CTRL_0 0x10000600
@@ -113,7 +97,6 @@ static int irq=0;
 
 static irqreturn_t isr_handler(int irq, void *data)
 {
-  printk("gpio interrupt !\n");
   return IRQ_HANDLED;
 }
 
@@ -123,15 +106,15 @@ unsigned int mt7688_get(int pin)
 
   if(pin &lt;= 31){
     tmp = *gpio_data_0;
-    tmp = (tmp &gt;> pin) &amp; 1u;
+    tmp = (tmp &gt;&gt; pin) &amp; 1u;
   }
   else if(pin &lt;= 63){
     tmp = *gpio_data_1;
-    tmp = (tmp &gt;> (pin-32)) &amp; 1u;
+    tmp = (tmp &gt;&gt; (pin-32)) &amp; 1u;
   } 
   else if(pin &lt;= 95){
     tmp = *gpio_data_2;
-    tmp = (tmp &gt;> (pin-64)) &amp; 1u;
+    tmp = (tmp &gt;&gt; (pin-64)) &amp; 1u;
   }
   return tmp;
 }
@@ -143,30 +126,30 @@ void mt7688_dir(int pin, int is_output)
   if(pin &lt;= 31){
     tmp = *gpio_ctrl_0;
     if(is_output){
-      tmp|= (1u &lt;< pin);
+      tmp|= (1u &lt;&lt; pin);
     }
     else{
-      tmp&amp;= ~(1u &lt;< pin);
+      tmp&amp;= ~(1u &lt;&lt; pin);
     }
     *gpio_ctrl_0 = tmp;
   } 
   else if(pin &lt;= 63){
     tmp = *gpio_ctrl_1;
     if(is_output){
-      tmp|= (1u &lt;< (pin-32));
+      tmp|= (1u &lt;&lt; (pin-32));
     }
     else{
-      tmp&amp;= ~(1u &lt;< (pin-32));
+      tmp&amp;= ~(1u &lt;&lt; (pin-32));
     }
     *gpio_ctrl_1 = tmp;
   }
   else if(pin &lt;= 95){
     tmp = *gpio_ctrl_2;
     if(is_output){
-      tmp|= (1u &lt;< (pin-64));
+      tmp|= (1u &lt;&lt; (pin-64));
     }
     else{
-      tmp&amp;= ~(1u &lt;< (pin-64));
+      tmp&amp;= ~(1u &lt;&lt; (pin-64));
     }
     *gpio_ctrl_2 = tmp;
   }
@@ -177,7 +160,7 @@ void mt7688_set(int pin, int value)
   uint32_t tmp;
 
   if(pin &lt;= 31){
-    tmp = (1u &lt;< pin);
+    tmp = (1u &lt;&lt; pin);
     if(value){
       *gpio_dset_0 = tmp;
     }
@@ -186,7 +169,7 @@ void mt7688_set(int pin, int value)
     }
   } 
   else if(pin &lt;= 63){
-    tmp = (1u &lt;< (pin-32));
+    tmp = (1u &lt;&lt; (pin-32));
     if(value){
       *gpio_dset_1 = tmp;
     }
@@ -195,7 +178,7 @@ void mt7688_set(int pin, int value)
     }
   } 
   else if(pin &lt;= 95){
-    tmp = (1u &lt;< (pin-64));
+    tmp = (1u &lt;&lt; (pin-64));
     if(value){
       *gpio_dset_2 = tmp;
     }
@@ -207,8 +190,6 @@ void mt7688_set(int pin, int value)
 
 static int __init main_init(void)
 {
-   printk("Steward Linux Driver Tutorial, MT7688 GPIO Driver\n");
-  
   gpio2_mode = (volatile unsigned long*)ioremap(GPIO2_MODE, 4);
   gpio_ctrl_0 = (volatile unsigned long*)ioremap(GPIO_CTRL_0, 4);
   gpio_ctrl_1 = (volatile unsigned long*)ioremap(GPIO_CTRL_1, 4);
@@ -263,16 +244,11 @@ static void __exit main_exit(void)
   iounmap(gpio_dclr_0);
   iounmap(gpio_dclr_1);
   iounmap(gpio_dclr_2);
-  printk("Unload it!\n");
 }
  
 module_init(main_init);
 module_exit(main_exit);
-</pre>
-
-<p>
-<img src="input_isr/1.jpg" class="maxSize"><br>
-</p>
+</pre><br>
 
 <p>
 <br><a href="../../mcu.htm">返回上一頁</a>
