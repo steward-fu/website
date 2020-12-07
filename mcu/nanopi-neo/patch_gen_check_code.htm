@@ -48,7 +48,7 @@
 <p><b>解決無法在x86編譯的問題</b></p>
 <hr size="1">
 <p>
-linux-82-fix-build-on-non-amd64-hosts.patch
+diff
 </p>
 <pre>
 diff -Nur arch/arm/mach-sunxi/power/brom/Makefile arch/arm/mach-sunxi/power/brom/Makefile
@@ -68,7 +68,7 @@ diff -Nur arch/arm/mach-sunxi/power/brom/Makefile arch/arm/mach-sunxi/power/brom
  resumes-y := $(addprefix $(obj)/,$(resumes-y))
  
 -$(obj)/resumes.code: $(src)/gen_check_code $(obj)/resumes.bin
--  $(Q)$< $(obj)/resumes.bin $(obj)/resumes.code
+-  $(Q)$&lt; $(obj)/resumes.bin $(obj)/resumes.code
 +$(obj)/resumes.code: $(obj)/resumes.bin $(obj)/mksunxichecksum
 +  $(obj)/mksunxichecksum $(obj)/resumes.bin $(obj)/resumes.code
  
@@ -85,15 +85,15 @@ diff -Nur arch/arm/mach-sunxi/power/brom/mksunxichecksum.c arch/arm/mach-sunxi/p
 + * Based on mksunxiboot
 + *
 + * (C) Copyright 2007-2011
-+ * Allwinner Technology Co., Ltd. <www.allwinnertech.com>
++ * Allwinner Technology Co., Ltd. &lt;www.allwinnertech.com&gt;
 + *
 + * SPDX-License-Identifier:  GPL-2.0+
 + */
-+#include <stdio.h>
-+#include <string.h>
-+#include <errno.h>
-+#include <stdint.h>
-+#include <stdlib.h>
++#include &lt;stdio.h&gt;
++#include &lt;string.h&gt;
++#include &lt;errno.h&gt;
++#include &lt;stdint.h&gt;
++#include &lt;stdlib.h&gt;
 +
 +/* boot head definition from sun4i boot code */
 +struct boot_file_head {
@@ -118,19 +118,19 @@ diff -Nur arch/arm/mach-sunxi/power/brom/mksunxichecksum.c arch/arm/mach-sunxi/p
 +  uint32_t i;
 +  uint32_t sum;
 +
-+  length = head_p->length;
-+//  if ((length & 0x3) != 0)  /* must 4-byte-aligned */
++  length = head_p-&gt;length;
++//  if ((length &amp; 0x3) != 0)  /* must 4-byte-aligned */
 +//    return -1;
 +  buf = (uint32_t *)head_p;
-+  head_p->check_sum = STAMP_VALUE;  /* fill stamp */
-+  loop = length >> 2;
++  head_p-&gt;check_sum = STAMP_VALUE;  /* fill stamp */
++  loop = length &gt;&gt; 2;
 +
 +  /* calculate the sum */
-+  for (i = 0, sum = 0; i < loop; i++)
++  for (i = 0, sum = 0; i &lt; loop; i++)
 +    sum += buf[i];
 +
 +  /* write back check sum */
-+  head_p->check_sum = sum;
++  head_p-&gt;check_sum = sum;
 +
 +  return 0;
 +}
@@ -154,7 +154,7 @@ diff -Nur arch/arm/mach-sunxi/power/brom/mksunxichecksum.c arch/arm/mach-sunxi/p
 +    exit(1);
 +  }
 +
-+  fread(&h, 1, sizeof h, f);
++  fread(&amp;h, 1, sizeof h, f);
 +  file_size = h.length;      // wanted length
 +
 +  buf = malloc(file_size);
@@ -177,11 +177,6 @@ diff -Nur arch/arm/mach-sunxi/power/brom/mksunxichecksum.c arch/arm/mach-sunxi/p
 +  return 0;
 +}
 </pre><br>
-
-<pre>
-$ cd linux-3.4
-$ patch -p0 &lt; linux-82-fix-build-on-non-amd64-hosts.patch
-</pre>
 
 <p>
 <br><a href="../../mcu.htm">返回上一頁</a>
