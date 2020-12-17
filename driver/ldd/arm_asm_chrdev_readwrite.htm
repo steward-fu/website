@@ -52,6 +52,8 @@
 1. <a href="https://www.aps-web.jp/en/ca-en/21578/#anchor2">anchor2</a><br>
 2. <a href="https://github.com/steward-fu/ldd">Source Code</a><br><br>
 
+User Application可以透過read()、write()傳遞資料給驅動程式，而需要注意的地方是，複製資料使用的方式是copy_to_user()、copy_from_user()，而不是一般的memcpy()<br><br>
+
 使用方式：<br>
 1. arm_copy_to_user()<br>
 2. arm_copy_from_user()<br><br>
@@ -300,12 +302,18 @@ cleanup_module:
 .end
 </pre>
 <p>
-P.S. 在做arm_copy_to_user()和arm_copy_from_user()之前，必須先設定Domain Access Control Register<br><br>
+<b>init_module</b>: 建立字元驅動程式<br>
+<b>myopen</b>: 僅列印字串<br>
+<b>mywrite</b>: 儲存並且列印User Application傳送的字串<br>
+<b>myread</b>: 複製儲存的字串給User Application並且列印出來<br>
+<b>myclose</b>: 僅列印字串<br>
+<b>cleanup_module</b>: 刪除字元驅動程式<br>
+在做arm_copy_to_user()和arm_copy_from_user()之前，必須先設定Domain Access Control Register<br><br>
 
 寫入字串
 </p>
 <pre>
-# echo "test" > /dev/myfile
+# echo "test" &gt; /dev/myfile
   mywrite, test
 
 </pre>

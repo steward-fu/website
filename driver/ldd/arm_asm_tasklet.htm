@@ -51,6 +51,8 @@
 參考資訊：<br>
 1. <a href="https://github.com/steward-fu/ldd">Source Code</a><br><br>
 
+Linux Kernel將中斷處理切成top-half和bottom-half兩部份，top-half指的就是中斷副程式處理，而bottom-half指的就是延遲中斷副程式處理，如果事情可以快速處理完畢，就直接在中斷副程式裡處理就可以，如果無法立即完成(如：需要等待或者傳遞大量資料)，則可以排一個延遲處理的副程式，tasklet就是一種延遲處理中斷的機制，雖然是延遲處理，不過，tasklet也是執行在高優先級別的等級，因此，不適合處理太耗時的東西，因為，高優先級別的副程式，如果太耗時，將延後Context Switch的發生(單核心)，導致系統效能出問題，不過，bottom-half機制確實解決中斷阻塞問題<br><br>
+
 使用步驟：<br>
 1. tasklet_init()<br>
 2. _test_and_set_bit()<br>
@@ -153,9 +155,13 @@ cleanup_module:
   bl tasklet_kill
   pop {pc}
 .end
-</pre><br>
-
+</pre>
 <p>
+<b>init_module</b>: 設定GPIO中斷以及tasklet延遲處理副程式<br>
+<b>irq_handler</b>: 安排一個tasklet延遲處理<br>
+<b>tasklet_handler</b>: 列印字串<br>
+<b>cleanup_module</b>: 釋放中斷資源以及刪除tasklet<br><br>
+
 完成<br>
 <img src="cpp_gpio_input/3.jpg" class="maxSize"><br>
 <img src="cpp_gpio_input/4.jpg" class="maxSize">

@@ -51,6 +51,8 @@
 參考資訊：<br>
 1. <a href="https://github.com/steward-fu/ldd">Source Code</a><br><br>
 
+Thread是執行的最小單位，在多核CPU上，產生的Thread可以同時的運作，這意謂著使用Thread技術可以用來改善效能，但是，每個Thread間的資料同步則是另一個課題<br><br>
+
 使用步驟：<br>
 1. kthread_create_on_node()<br>
 2. wake_up_process()<br>
@@ -116,17 +118,20 @@ cleanup_module:
   bl kthread_stop
   pop {pc}
 .end
-</pre><br>
-
+</pre>
 <p>
+<b>init_module</b>: 產生多個Thread並且執行<br>
+<b>kthread_handler</b>: 列印字串<br>
+<b>cleanup_module</b>: 停止Thread執行<br><br>
+
 測試
 </p>
 <pre>
 # insmod /boot/main.ko
-# kthread_handler++
+  kthread_handler++
 
 # rmmod main
-# kthread_handler--
+  kthread_handler--
 </pre><br>
 
 <p>

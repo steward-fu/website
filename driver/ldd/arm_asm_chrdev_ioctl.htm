@@ -51,6 +51,8 @@
 參考資訊：<br>
 1. <a href="https://github.com/steward-fu/ldd">Source Code</a><br><br>
 
+User Application除了使用read()、write()跟驅動程式傳遞資料之外，也可以使用以控制為主的ioctl()去跟驅動程式做交互設定的動作，作法只要添加unlocked_ioctl的Callback副程式即可<br><br>
+
 ldd.S
 </p>
 <pre class="brush:asm">
@@ -252,9 +254,14 @@ cleanup_module:
   bl unregister_chrdev_region
   pop {pc}
 .end
-</pre><br>
-
+</pre>
 <p>
+<b>init_module</b>: 建立字元驅動程式<br>
+<b>myopen</b>: 僅列印字串<br>
+<b>myioctl</b>: 僅列印字串<br>
+<b>myclose</b>: 僅列印字串<br>
+<b>cleanup_module</b>: 刪除字元驅動程式<br><br>
+
 app.S
 </p>
 <pre class="brush:asm">
@@ -262,8 +269,8 @@ app.S
 
 .section .data
 dev_name: .asciz "/dev/myfile"
-.align
 
+.align 2
 .section .text
 main:
   push {r4, lr}

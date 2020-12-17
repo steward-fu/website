@@ -51,7 +51,7 @@
 參考資訊：<br>
 1. <a href="https://github.com/steward-fu/ldd">Source Code</a><br><br>
 
-PocketBeagle開發板上有四顆USR LED，位置如下：<br>
+PocketBeagle開發板上有四顆USR LED，此次範例將使用USR3 LED，位置如下：<br>
 <img src="cpp_gpio_output/1.jpg" class="maxSize"><br><br>
 
 Device Tree
@@ -67,14 +67,14 @@ led@5 {
 <p>
 P.S. USR3位置是GPIO1-24<br><br>
 
-Linux Kernel提供一系列GPIO操作函數，使用步驟如下：<br>
+控制GPIO的輸出方式，基本上，就是操作CPU Register，設定GPIO方向，然後針對該GPIO設定Low、High電位，因此，使用者需要查閱CPU Register說明手冊，過程真是相當繁瑣，而除了控制Register方式之外，Linux Kernel提供一些更友好的GPIO操作函數，供使用者方便開發使用，也大大增加其移植性<br><br>
+
+使用步驟：<br>
 1. gpio_request()<br>
 2. gpio_to_desc()<br>
 3. gpiod_direction_output_raw()<br>
 4. gpiod_set_raw_value()<br>
 5. gpio_free()<br><br>
-
-驅動程式位於硬體與軟體的中介層，因此，使用者也可以使用單晶片的寫法去驅動GPIO，而此種方式就需要針對Register操作，目前司徒使用Linux Kernel提供的GPIO函數操作<br><br>
 
 ldd.S
 </p>
@@ -140,7 +140,8 @@ cleanup_module:
 .end
 </pre>
 <p>
-相較於C語言的封裝，從Assembly語言中就可以看出，主要的關鍵在於gpio_to_desc()取得的資料結構，每次的GPIO設定都是依據這個結構做設定<br><br>
+<b>init_module</b>: 首先請求GPIO資源，接著設定GPIO輸出方向，最後則是使用迴圈輸出LED閃爍動作<br>
+<b>cleanup_module</b>: 不做任何事情<br><br>
 
 完成<br>
 <img src="cpp_gpio_output/2.jpg" class="maxSize"><br>
