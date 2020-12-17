@@ -51,10 +51,13 @@
 參考資訊：<br>
 1. <a href="https://github.com/steward-fu/ldd">Source Code</a><br><br>
 
+中斷本身是一種高優先權處理的機制，一旦硬體中斷觸發後，系統會馬上跳到使用者設定的Callback副程式執行，在中斷副程式中，不應該執行太過耗時的程式，否則將拖垮系統效能，這是由於Context Switch優先級一般會比中斷來得低，在中斷副程式尚未將權限交回給系統時，系統無法做Context Switch(單核心系統)<br><br>
+
 使用步驟：<br>
 1. gpio_to_irq()<br>
 2. request_irq()<br>
-3. free_irq()<br><br>
+3. free_irq()<br>
+request_irq()其實就是呼叫request_threaded_irq()，只是bottom-half傳入NULL<br><br>
 
 main.c
 </p>
@@ -102,9 +105,12 @@ void ldd_exit(void)
  
 module_init(ldd_init);
 module_exit(ldd_exit);
-</pre><br>
-
+</pre>
 <p>
+<b>ldd_init</b>: 設定中斷並且使用上緣觸發方式(IRQF_TRIGGER_RISING)<br>
+<b>irq_handler</b>: 輸出中斷訊息<br>
+<b>ldd_exit</b>: 釋放中斷<br><br>
+
 完成<br>
 <img src="cpp_gpio_input/3.jpg" class="maxSize"><br>
 <img src="cpp_gpio_input/4.jpg" class="maxSize">

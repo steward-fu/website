@@ -51,6 +51,8 @@
 參考資訊：<br>
 1. <a href="https://github.com/steward-fu/ldd">Source Code</a><br><br>
 
+在延遲中斷處理機制上，workqueue是另一個可以使用的方式，workqueue是執行在低優先級別上，因此，可以讓Context Switch繼續執行，意味著使用者可以在workqueue裡面呼叫sleep()相關的函式，這也是跟tasklet最大的差別<br><br>
+
 使用步驟：<br>
 1. alloc_workqueue()<br>
 2. INIT_WORK()<br>
@@ -115,9 +117,13 @@ void ldd_exit(void)
  
 module_init(ldd_init);
 module_exit(ldd_exit);
-</pre><br>
-
+</pre>
 <p>
+<b>ldd_init</b>: 設定GPIO中斷以及workqueue延遲處理副程式<br>
+<b>irq_handler</b>: 安排一個workqueue延遲處理<br>
+<b>workqueue_handler</b>: 列印字串<br>
+<b>ldd_exit</b>: 釋放中斷資源以及刪除workqueue<br><br>
+
 完成<br>
 <img src="cpp_gpio_input/3.jpg" class="maxSize"><br>
 <img src="cpp_gpio_input/4.jpg" class="maxSize">
