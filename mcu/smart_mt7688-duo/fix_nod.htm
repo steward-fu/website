@@ -45,49 +45,18 @@
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
 <h3>LinkIt Smart MT7688 Duo</h3>
-<p><b>Build Kernel 5.4.83</b></p>
+<p><b>解決"can't open /dev/null /dev/console: No such file or directory"問題</b></p>
 <hr size="1">
 <p>
-編譯： 
+解法如下：
 </p>
 <pre>
-$ cd
-$ wget https://github.com/steward-fu/mt7688-duo/releases/download/v1.0/toolchain.tar.gz
-$ tar xvf toolchain.tar.gz
-$ sudo mv mt7688 /opt/
-
-$ wget https://github.com/steward-fu/mt7688-duo/releases/download/v1.0/kernel.tar.gz
-$ tar xvf kernel.tar.gz
-$ cd kernel
-
-$ export ARCH=mips
-$ export CROSS_COMPILE=mipsel-linux-
-$ export PATH=utils:/opt/mt7688/bin:$PATH
-
-$ make mt7688_defconfig
-$ make clean
-$ make all -j4
-
-$ mipsel-linux-objcopy -O binary -R .reginfo -R .notes -R .note -R .comment -R .mdebug -R .note.gnu.build-id -S vmlinux vmlinux.new
-$ mipsel-linux-cpp -nostdinc -x assembler-with-cpp -Iarch/mips/boot/dts -Iarch/mips/boot/dts/include -Iinclude -undef -D__DTS__ dts/mt7628an_mediatek_linkit-smart-7688.dts -o mt7688.tmp
-$ ./scripts/dtc/dtc -O dtb -idts mt7688.tmp -o mt7688.dtb
-$ cp vmlinux.new kernel.bin
-$ cat mt7688.dtb >> kernel.bin
-$ ./utils/lzma e kernel.bin -lc1 -lp2 -pb2 kernel.bin.new
-$ mkimage -A mips -O linux -T kernel -C lzma -a 0x80000000 -e 0x80000000 -n 'MIPS OpenWrt Linux-5.4.83' -d kernel.bin.new kernel.bin.lzma
-$ cp kernel.bin.lzma lks7688.img
-$ cat utils/rootfs.squashfs >> lks7688.img
-$ ./utils/padjffs2 lks7688.img 4 8 16 64 128 256
-$ rm -rf vmlinux.new mt7688.tmp mt7688.dtb kernel.bin*
+$ mksquashfs4 utils/root-ramips utils/root.squashfs -nopad -noappend -root-owned -comp xz -Xpreset 9 -Xe -Xlc 0 -Xlp 2 -Xpb 2  -b 256k -p '/dev d 755 0 0' -p '/dev/console c 600 0 0 5 1' -p '/dev/null c 600 0 0 5 1'  -processors 1
 </pre><br>
 
 <p>
-燒錄(請使用USB供電)：<br>
-1. 格式化USBDisk成FAT32<br>
-2. 複製lks7688.img到USBDisk<br>
-3. 插入USBDisk到MT7688 USB host port<br>
-4. 按住WiFi按鈕<br>
-5. 5秒後鬆開WiFi按鈕(第一次WiFi LED滅時)
+不過，這個問題的根本原因是，Kernel沒有支援devtmpfs，開啟如下選項即可：<br>
+<img src="fix_nod/1.jpg" class="maxSize">
 </p>
 
 <p>
