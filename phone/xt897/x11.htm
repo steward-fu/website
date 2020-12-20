@@ -44,87 +44,33 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>Linux Device Driver &gt;&gt; C/C++</h3>
-<p><b>workqueue</b></p>
+<h3>Motorola XT897 &gt;&gt; Sailfish</h3>
+<p><b>安裝x11</b></p>
 <hr size="1">
 <p>
-參考資訊：<br>
-1. <a href="https://github.com/steward-fu/ldd">Source Code</a><br><br>
+參考資訊： <br>
+1. <a href="https://together.jolla.com/question/36877/how-do-you-run-an-x-application-remotely-or-locally/">how-do-you-run-an-x-application-remotely-or-locally/</a><br><br>
 
-在延遲中斷處理機制上，workqueue是另一個可以使用的方式，workqueue是執行在低優先級別上，因此，可以讓Context Switch繼續執行，意味著使用者可以在workqueue裡面呼叫sleep()相關的函式，這也是跟softirq、tasklet最大的差別，因此，workqueue是相當適合應用在耗時處理的場合<br><br>
-
-使用步驟：<br>
-1. alloc_workqueue()<br>
-2. INIT_WORK()<br>
-3. queue_work()<br>
-4. destroy_workqueue()<br><br>
-
-main.c
-</p>
-<pre class="brush:cpp">
-#include &lt;linux/init.h&gt;
-#include &lt;linux/device.h&gt;
-#include &lt;linux/module.h&gt;
-#include &lt;linux/delay.h&gt;
-#include &lt;linux/kernel.h&gt;
-#include &lt;linux/errno.h&gt;
-#include &lt;linux/mm.h&gt;
-#include &lt;linux/gpio.h&gt;
-#include &lt;linux/interrupt.h&gt;
-
-MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Steward Fu");
-MODULE_DESCRIPTION("Linux Driver");
- 
-#define BUTTON 27
-
-struct work_struct mywork={0};
-struct workqueue_struct *myworkqueue=NULL;
-
-static void workqueue_handler(struct work_struct *work)
-{
-  printk("%s\n", __func__);
-}
-
-static irqreturn_t irq_handler(int irq, void *arg)
-{
-  queue_work(myworkqueue, &amp;mywork);
-  return IRQ_HANDLED;
-}
-
-int ldd_init(void)
-{
-  myworkqueue = alloc_workqueue("myworkqueue", 0, 0);
-  INIT_WORK(&amp;mywork, workqueue_handler);
-  request_irq(gpio_to_irq(BUTTON), irq_handler, IRQF_TRIGGER_RISING, "gpio_irq", NULL);
-  return 0;
-}
- 
-void ldd_exit(void)
-{
-  free_irq(gpio_to_irq(BUTTON), NULL);
-  destroy_workqueue(myworkqueue);
-}
- 
-module_init(ldd_init);
-module_exit(ldd_exit);
-</pre>
-<p>
-<b>ldd_init</b>: 設定GPIO中斷以及workqueue延遲處理副程式<br>
-<b>irq_handler</b>: 安排一個workqueue延遲處理<br>
-<b>workqueue_handler</b>: 列印字串<br>
-<b>ldd_exit</b>: 釋放中斷資源以及刪除workqueue<br><br>
-
-完成<br>
-<img src="cpp_gpio_input/3.jpg" class="maxSize"><br>
-<img src="cpp_gpio_input/4.jpg" class="maxSize">
+步驟如下：
 </p>
 <pre>
-# workqueue_handler
+$ devel-su
+# ssu addrepo home_javispedro_xwayland http://repo.merproject.org/obs/home:/javispedro:/xwayland/sailfish_latest_armv7hl/
+# ssu er home_javispedro_xwayland
+# pkcon refresh
+# pkcon install xorg-x11-server-xwayland
 </pre><br>
 
 <p>
-<br><a href="../../driver.htm">返回上一頁</a>
+啟動x11
+</p>
+<pre>
+# Xwayland -nolisten tcp :0 &amp;
+# export DISPLAY=:0.0 &amp;
+</pre><br>
+
+<p>
+<br><a href="../../phone.htm">返回上一頁</a>
 </p>
 
 </div>

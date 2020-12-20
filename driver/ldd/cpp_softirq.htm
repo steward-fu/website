@@ -45,19 +45,57 @@
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
 <h3>Linux Device Driver &gt;&gt; C/C++</h3>
-<p><b>workqueue</b></p>
+<p><b>softirq</b></p>
 <hr size="1">
 <p>
 參考資訊：<br>
-1. <a href="https://github.com/steward-fu/ldd">Source Code</a><br><br>
+1. <a href="https://www.cnblogs.com/wang_yb/archive/2013/04/23/3037268.html">wang_yb</a><br>
+2. <a href="https://github.com/steward-fu/ldd">Source Code</a><br>
+3. <a href="http://jimmychenhaha.blogspot.com/2016/09/softirq.html">jimmychenhaha</a><br><br>
 
-在延遲中斷處理機制上，workqueue是另一個可以使用的方式，workqueue是執行在低優先級別上，因此，可以讓Context Switch繼續執行，意味著使用者可以在workqueue裡面呼叫sleep()相關的函式，這也是跟softirq、tasklet最大的差別，因此，workqueue是相當適合應用在耗時處理的場合<br><br>
+Linux Kernel將中斷處理切成top-half和bottom-half兩部份，top-half指的就是中斷副程式本身，而bottom-half指的就是延遲處理的中斷副程式，如果事情可以快速處理完畢，就直接在中斷副程式裡處理就可以，如果無法立即完成(如：需要等待或者傳遞大量資料)，則可以安排一個延遲處理的副程式，softirq就是一種延遲處理的機制，雖然是延遲處理，不過，softirq也是執行在高優先級別的等級，因此，不適合處理太耗時的東西，因為，高優先級別的副程式，如果太耗時，將延後Context Switch的發生(單核心)，導致系統效能出問題，softirq本身是可重複進入的(reentrant)，因此，在撰寫softirq程式時，必須要考慮到這個問題，不過，bottom-half機制確實解決中斷阻塞問題<br><br>
 
 使用步驟：<br>
-1. alloc_workqueue()<br>
-2. INIT_WORK()<br>
-3. queue_work()<br>
-4. destroy_workqueue()<br><br>
+1. open_softirq()<br>
+2. raise_softirq()<br>
+3. raise_softirq_irqoff()<br><br>
+
+由於softirq需要修改Kernel，因此，請先修改檔案(kernel/softirq.c)
+</p>
+<pre>
+const char * const softirq_to_name[NR_SOFTIRQS] = { 
+  "HI", "TIMER", "NET_TX", "NET_RX", "BLOCK", "IRQ_POLL",
+  "TASKLET", "SCHED", "HRTIMER", "RCU", "PocketBeagle"
+};
+EXPORT_SYMBOL(open_softirq);
+EXPORT_SYMBOL(raise_softirq_irqoff);
+EXPORT_SYMBOL(raise_softirq);
+</pre><br>
+
+<p>
+include/linux/interrupt.h
+</p>
+<pre>
+enum
+{
+  HI_SOFTIRQ=0,
+  TIMER_SOFTIRQ,
+  NET_TX_SOFTIRQ,
+  NET_RX_SOFTIRQ,
+  BLOCK_SOFTIRQ,
+  IRQ_POLL_SOFTIRQ,
+  TASKLET_SOFTIRQ,
+  SCHED_SOFTIRQ,
+  HRTIMER_SOFTIRQ, /* Unused, but kept as tools rely on the
+          numbering. Sigh! */
+  RCU_SOFTIRQ,    /* Preferable RCU should always be the last softirq */
+
+  POCKETBEAGLE_SOFTIRQ,
+  NR_SOFTIRQS
+};
+</pre>
+<p>
+P.S. 接著重新編譯Kernel並且更新zImage<br><br>
 
 main.c
 </p>
@@ -78,49 +116,45 @@ MODULE_DESCRIPTION("Linux Driver");
  
 #define BUTTON 27
 
-struct work_struct mywork={0};
-struct workqueue_struct *myworkqueue=NULL;
-
-static void workqueue_handler(struct work_struct *work)
+void softirq_handler(struct softirq_action *action)
 {
   printk("%s\n", __func__);
 }
 
 static irqreturn_t irq_handler(int irq, void *arg)
 {
-  queue_work(myworkqueue, &amp;mywork);
+  raise_softirq(POCKETBEAGLE_SOFTIRQ);
   return IRQ_HANDLED;
 }
 
 int ldd_init(void)
 {
-  myworkqueue = alloc_workqueue("myworkqueue", 0, 0);
-  INIT_WORK(&amp;mywork, workqueue_handler);
   request_irq(gpio_to_irq(BUTTON), irq_handler, IRQF_TRIGGER_RISING, "gpio_irq", NULL);
+  open_softirq(POCKETBEAGLE_SOFTIRQ, softirq_handler);
   return 0;
 }
  
 void ldd_exit(void)
 {
+  raise_softirq_irqoff(POCKETBEAGLE_SOFTIRQ);
   free_irq(gpio_to_irq(BUTTON), NULL);
-  destroy_workqueue(myworkqueue);
 }
  
 module_init(ldd_init);
 module_exit(ldd_exit);
 </pre>
 <p>
-<b>ldd_init</b>: 設定GPIO中斷以及workqueue延遲處理副程式<br>
-<b>irq_handler</b>: 安排一個workqueue延遲處理<br>
-<b>workqueue_handler</b>: 列印字串<br>
-<b>ldd_exit</b>: 釋放中斷資源以及刪除workqueue<br><br>
+<b>ldd_init</b>: 設定GPIO中斷以及softirq延遲處理副程式<br>
+<b>irq_handler</b>: 安排一個softirq延遲處理<br>
+<b>softirq_handler</b>: 列印字串<br>
+<b>ldd_exit</b>: 釋放中斷資源以及關閉softirq<br><br>
 
 完成<br>
 <img src="cpp_gpio_input/3.jpg" class="maxSize"><br>
 <img src="cpp_gpio_input/4.jpg" class="maxSize">
 </p>
 <pre>
-# workqueue_handler
+# softirq_handler
 </pre><br>
 
 <p>

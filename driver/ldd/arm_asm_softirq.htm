@@ -45,18 +45,57 @@
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
 <h3>Linux Device Driver &gt;&gt; Assembly (ARM)</h3>
-<p><b>workqueue</b></p>
+<p><b>softirq</b></p>
 <hr size="1">
 <p>
 參考資訊：<br>
-1. <a href="https://github.com/steward-fu/ldd">Source Code</a><br><br>
+1. <a href="https://www.cnblogs.com/wang_yb/archive/2013/04/23/3037268.html">wang_yb</a><br>
+2. <a href="https://github.com/steward-fu/ldd">Source Code</a><br>
+3. <a href="http://jimmychenhaha.blogspot.com/2016/09/softirq.html">jimmychenhaha</a><br><br>
 
-在延遲中斷處理機制上，workqueue是另一個可以使用的方式，workqueue是執行在低優先級別上，因此，可以讓Context Switch繼續執行，意味著使用者可以在workqueue裡面呼叫sleep()相關的函式，這也是跟softirq、tasklet最大的差別，因此，workqueue是相當適合應用在耗時處理的場合<br><br>
+Linux Kernel將中斷處理切成top-half和bottom-half兩部份，top-half指的就是中斷副程式本身，而bottom-half指的就是延遲處理的中斷副程式，如果事情可以快速處理完畢，就直接在中斷副程式裡處理就可以，如果無法立即完成(如：需要等待或者傳遞大量資料)，則可以安排一個延遲處理的副程式，softirq就是一種延遲處理的機制，雖然是延遲處理，不過，softirq也是執行在高優先級別的等級，因此，不適合處理太耗時的東西，因為，高優先級別的副程式，如果太耗時，將延後Context Switch的發生(單核心)，導致系統效能出問題，softirq本身是可重複進入的(reentrant)，因此，在撰寫softirq程式時，必須要考慮到這個問題，不過，bottom-half機制確實解決中斷阻塞問題<br><br>
 
 使用步驟：<br>
-1. __alloc_workqueue_key()<br>
-2. queue_work_on()<br>
-3. destroy_workqueue()<br><br>
+1. open_softirq()<br>
+2. raise_softirq()<br>
+3. raise_softirq_irqoff()<br><br>
+
+由於softirq需要修改Kernel，因此，請先修改檔案(kernel/softirq.c)
+</p>
+<pre>
+const char * const softirq_to_name[NR_SOFTIRQS] = { 
+  "HI", "TIMER", "NET_TX", "NET_RX", "BLOCK", "IRQ_POLL",
+  "TASKLET", "SCHED", "HRTIMER", "RCU", "PocketBeagle"
+};
+EXPORT_SYMBOL(open_softirq);
+EXPORT_SYMBOL(raise_softirq_irqoff);
+EXPORT_SYMBOL(raise_softirq);
+</pre><br>
+
+<p>
+include/linux/interrupt.h
+</p>
+<pre>
+enum
+{
+  HI_SOFTIRQ=0,
+  TIMER_SOFTIRQ,
+  NET_TX_SOFTIRQ,
+  NET_RX_SOFTIRQ,
+  BLOCK_SOFTIRQ,
+  IRQ_POLL_SOFTIRQ,
+  TASKLET_SOFTIRQ,
+  SCHED_SOFTIRQ,
+  HRTIMER_SOFTIRQ, /* Unused, but kept as tools rely on the
+          numbering. Sigh! */
+  RCU_SOFTIRQ,    /* Preferable RCU should always be the last softirq */
+
+  POCKETBEAGLE_SOFTIRQ,
+  NR_SOFTIRQS
+};
+</pre>
+<p>
+P.S. 接著重新編譯Kernel並且更新zImage<br><br>
 
 ldd.S
 </p>
@@ -64,84 +103,37 @@ ldd.S
 .global init_module
 .global cleanup_module
 
-.equ BUTTON, 27
-.equ IRQF_TRIGGER_RISING, 1
+.equ BUTTON,               27
+.equ IRQF_TRIGGER_RISING,  1
+.equ POCKETBEAGLE_SOFTIRQ, 10
 
 .section .modinfo, "ae"
 __UNIQUE_ID_0: .asciz "license=GPL"
 __UNIQUE_ID_1: .asciz "author=Steward Fu"
 __UNIQUE_ID_2: .asciz "description=Linux Driver"
 
-.equ work_struct.data,       0
-.equ work_struct.entry,      4
-.equ work_struct.entry.next, 4
-.equ work_struct.entry.prev, 8
-.equ work_struct.func,       12
-
-.struct 0
-work_struct_s:
-  i0: .struct . + 4
-  i1: .struct . + 8
-  i2: .struct . + 4
-work_struct_e:
-work_struct_l = work_struct_e - work_struct_s
-
 .section .data
 btn_irq:     .dcb 4
 irq_name:    .asciz "gpio_irq"
-work_name:   .asciz "myworkqueue"
-work_msg:    .asciz "workqueue_handler\n"
-mywork:      .space work_struct_l
-myworkqueue: .dcb 4
+softirq_msg: .asciz "softirq_handler\n"
 
 .align 2
 .section .text
-workqueue_handler:
+softirq_handler:
   push {lr}
-  ldr r0, =work_msg
+  ldr r0, =softirq_msg
   bl printk
   pop {pc}
 
 irq_handler:
   push {lr}
-  mov r0, #2
-  ldr r1, =myworkqueue
-  ldr r1, [r1]
-  ldr r2, =mywork
-  bl queue_work_on
+  mov r0, #POCKETBEAGLE_SOFTIRQ
+  bl raise_softirq
   mov r0, #1
   pop {pc}
 
 init_module:
   push {r4, r5, lr}
-
-  ldr r0, =work_name
-  mov r1, #0
-  mov r2, #0
-  mov r3, #0
-  mov r4, #0
-  push {r4}
-  bl __alloc_workqueue_key
-  pop {r4}
-  ldr r1, =myworkqueue
-  str r0, [r1]
-
-  ldr r0, =mywork
-  add r0, #work_struct.data
-  ldr r1, =#0xffffffe0
-  str r1, [r0]
-  
-  ldr r0, =mywork
-  add r0, #work_struct.entry @next
-  mov r1, r0
-  str r1, [r0]
-  add r0, #work_struct.entry @prev
-  str r1, [r0]
-  
-  ldr r0, =mywork
-  add r0, #work_struct.func
-  ldr r1, =workqueue_handler
-  str r1, [r0]
 
   mov r0, #BUTTON
   bl gpio_to_desc
@@ -158,6 +150,10 @@ init_module:
   bl request_threaded_irq
   pop {r4, r5}
 
+  mov r0, #POCKETBEAGLE_SOFTIRQ
+  ldr r1, =softirq_handler
+  bl open_softirq
+
   mov r0, #0
   pop {r4, r5, pc}
 
@@ -167,24 +163,23 @@ cleanup_module:
   ldr r0, [r0]
   mov r1, #0
   bl free_irq
-  ldr r0, =myworkqueue
-  ldr r0, [r0]
-  bl destroy_workqueue
+  mov r0, #POCKETBEAGLE_SOFTIRQ
+  bl raise_softirq_irqoff
   pop {pc}
 .end
 </pre>
 <p>
-<b>init_module</b>: 設定GPIO中斷以及workqueue延遲處理副程式<br>
-<b>irq_handler</b>: 安排一個workqueue延遲處理<br>
-<b>workqueue_handler</b>: 列印字串<br>
-<b>cleanup_module</b>: 釋放中斷資源以及刪除workqueue<br><br>
+<b>ldd_init</b>: 設定GPIO中斷以及softirq延遲處理副程式<br>
+<b>irq_handler</b>: 安排一個softirq延遲處理<br>
+<b>softirq_handler</b>: 列印字串<br>
+<b>ldd_exit</b>: 釋放中斷資源以及關閉softirq<br><br>
 
 完成<br>
 <img src="cpp_gpio_input/3.jpg" class="maxSize"><br>
 <img src="cpp_gpio_input/4.jpg" class="maxSize">
 </p>
 <pre>
-# workqueue_handler
+# softirq_handler
 </pre><br>
 
 <p>
