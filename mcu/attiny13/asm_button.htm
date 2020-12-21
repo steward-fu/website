@@ -50,36 +50,35 @@
 <p>
 DDRB(I/O方向)、PORTB(I/O輸出)<br>
 <img src="asm_led/3.jpg" class="maxSize"><br>
-<img src="asm_led/4.jpg" class="maxSize"><br>
 P.S. I/O資料變更或者讀取，必須使用in、out指令或者sbi、cbi指令<br><br>
 
 main.s
 </p>
 <pre class="brush:asm">
-  .equ r0,      0x00
-  .equ pinb,    0x16
-  .equ ddrb,    0x17
-  .equ portb,   0x18
-
-  .equ led,     1
-  .equ btn,     0
-
+  .equ r0,    0x00
+  .equ PINB,  0x16
+  .equ DDRB,  0x17
+  .equ PORTB, 0x18
+ 
+  .equ LED,   1
+  .equ BTN,   0
+ 
   .org 0x0000
   rjmp main
-
+ 
   .org 0x0010
 main:
-  sbi ddrb, led
-  cbi ddrb, btn
-  sbi portb, led
-  sbi portb, btn
-
+  sbi DDRB, LED
+  cbi DDRB, BTN
+  sbi PORTB, LED
+  sbi PORTB, BTN
+ 
 loop:
-  in r0, pinb
-  sbrs r0, btn
-  cbi portb, led
-  sbrc r0, btn
-  sbi portb, led
+  in r0, PINB
+  sbrs r0, BTN
+  cbi PORTB, LED
+  sbrc r0, BTN
+  sbi PORTB, LED
   rjmp loop
 </pre><br>
 
@@ -90,7 +89,7 @@ loop:
 $ avr-as -mmcu=attiny13 -o main.o main.s
 $ avr-ld -o main.elf main.o
 $ avr-objcopy --output-target=ihex main.elf main.ihex
-$ avrdude -c usbasp -p t13 -B 1024 -U flash:w:main.ihex:i
+$ sudo avrdude -c usbasp -p t13 -B 1024 -U flash:w:main.ihex:i
 </pre><br>
 
 <p>

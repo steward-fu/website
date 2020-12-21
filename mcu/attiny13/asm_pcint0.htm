@@ -45,40 +45,57 @@
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
 <h3>ATtiny13 &gt;&gt; Assembly</h3>
-<p><b>LED</b></p>
+<p><b>Pin Change Interrupt</b></p>
 <hr size="1">
 <p>
-DDRB(I/O方向)、PORTB(I/O輸出)<br>
-<img src="asm_led/3.jpg" class="maxSize"><br><br>
+Pin Change Interrupt Enable<br>
+<img src="asm_pcint0/1.jpg" class="maxSize"><br><br>
+
+PCINT0<br>
+<img src="asm_pcint0/2.jpg" class="maxSize"><br><br>
 
 main.s
 </p>
 <pre class="brush:asm">
+  .equ r16,   0x10
+  .equ r17,   0x11
+  .equ PCMSK, 0x15
   .equ PINB,  0x16
   .equ DDRB,  0x17
   .equ PORTB, 0x18
- 
-  .org 0x0000
+  .equ GIMSK, 0x3b
+  
+  .equ BTN,   0
+  .equ LED,   1
+  
+  .org 0
   rjmp main
- 
+  rjmp .
+  rjmp pcint0_handler
+  
   .org 0x0010
 main:
-  sbi DDRB, 1
- 
+  sbi DDRB, LED
+  cbi DDRB, BTN
+  sbi PORTB, LED
+  sbi PORTB, BTN
+  ldi r16, 0x20
+  out GIMSK, r16
+  ldi r16, 0x01
+  out PCMSK, r16
+  ldi r17, 0
+  sei
+  
 loop:
-  sbi PORTB, 1
-  rcall delay
-  cbi PORTB, 1
-  rcall delay
   rjmp loop
- 
-delay:
-  ldi r24, 0xff
-  ldi r25, 0x80
-d0:
-  sbiw r24, 1
-  brne d0
-  ret
+
+pcint0_handler:
+  sbrs r17, 0
+  cbi PORTB, LED
+  sbrc r17, 0
+  sbi PORTB, LED
+  eor r17, r16
+  reti
 </pre><br>
 
 <p>
@@ -89,41 +106,12 @@ $ avr-as -mmcu=attiny13 -o main.o main.s
 $ avr-ld -o main.elf main.o
 $ avr-objcopy --output-target=ihex main.elf main.ihex
 $ sudo avrdude -c usbasp -p t13 -B 1024 -U flash:w:main.ihex:i
-  avrdude: set SCK frequency to 500 Hz
-  avrdude: AVR device initialized and ready to accept instructions
-
-  Reading | ################################################## | 100% 0.20s
-
-  avrdude: Device signature = 0x1e9007 (probably t13)
-  avrdude: NOTE: "flash" memory has been specified, an erase cycle will be performed
-           To disable this feature, specify the -D option.
-  avrdude: erasing chip
-  avrdude: set SCK frequency to 500 Hz
-  avrdude: reading input file "main.ihex"
-  avrdude: writing flash (38 bytes):
-
-  Writing | ################################################## | 100% 4.51s
-
-  avrdude: 38 bytes of flash written
-  avrdude: verifying flash memory against main.ihex:
-  avrdude: load data flash data from input file main.ihex:
-  avrdude: input file main.ihex contains 38 bytes
-  avrdude: reading on-chip flash data:
-
-  Reading | ################################################## | 100% 4.26s
-
-  avrdude: verifying ...
-  avrdude: 38 bytes of flash verified
-
-  avrdude: safemode: Fuses OK (E:FF, H:FF, L:6A)
-
-  avrdude done.  Thank you.
 </pre><br>
 
 <p>
 完成<br>
-<img src="asm_led/1.jpg" class="maxSize"><br>
-<img src="asm_led/2.jpg" class="maxSize">
+<img src="asm_button/1.jpg" class="maxSize"><br>
+<img src="asm_button/2.jpg" class="maxSize">
 </p>
 
 <p>
