@@ -45,51 +45,54 @@
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
 <h3>ATtiny13 &gt;&gt; Assembly</h3>
-<p><b>Sleep</b></p>
+<p><b>Timer</b></p>
 <hr size="1">
 <p>
-本練習使用Power-down模式<br>
-<img src="asm_sleep/1.jpg" class="maxSize"><br><br>
+本範例使用Prescaler 1024，當Timer Overflow時，觸發中斷，在中斷裡面Toggle LED<br>
+<img src="asm_timer/1.jpg" class="maxSize"><br><br>
 
 main.s
 </p>
 <pre class="brush:asm">
-  .equ r16,   0x10
-  .equ PCMSK, 0x15
-  .equ PINB,  0x16
-  .equ DDRB,  0x17
-  .equ PORTB, 0x18
-  .equ GIMSK, 0x3b
-  .equ MCUCR, 0x35
-  
-  .equ BTN,   0
-  .equ LED,   1
-  
+  .equ r16,    0x10
+  .equ r17,    0x11
+  .equ DDRB,   0x17
+  .equ PORTB,  0x18
+  .equ TIMSK0, 0x39 
+  .equ TCNT0,  0x32
+  .equ TCCR0B, 0x33
+   
+  .equ LED,    1
+   
   .org 0x0000
   rjmp main
   reti
-  rjmp pcint0_handler
-  
-  .org 0x0010
+  reti
+  rjmp timer_handler
+
+  .org 0x0020
 main:
   sbi DDRB, LED
-  cbi DDRB, BTN
   sbi PORTB, LED
-  sbi PORTB, BTN
-  ldi r16, 0x20
-  out GIMSK, r16
+  ldi r16, 0x00
+  out TCNT0, r16
+  ldi r16, 0x02
+  out TIMSK0, r16
+  ldi r16, 0x05
+  out TCCR0B, r16
   ldi r16, 0x01
-  out PCMSK, r16
-  ldi r16, 0x30
-  out MCUCR, r16
+  ldi r17, 0
   sei
-  sleep
-  cbi PORTB, 1
-
+ 
 loop:
   rjmp loop
 
-pcint0_handler:
+timer_handler:
+  sbrs r17, 0
+  cbi PORTB, LED
+  sbrc r17, 0
+  sbi PORTB, LED
+  eor r17, r16
   reti
 </pre><br>
 
@@ -105,8 +108,8 @@ $ sudo avrdude -c usbasp -p t13 -B 1024 -U flash:w:main.ihex:i
 
 <p>
 完成<br>
-<img src="asm_button/1.jpg" class="maxSize"><br>
-<img src="asm_button/2.jpg" class="maxSize">
+<img src="asm_led/1.jpg" class="maxSize"><br>
+<img src="asm_led/2.jpg" class="maxSize">
 </p>
 
 <p>
