@@ -45,43 +45,74 @@
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
 <h3>ATtiny13 &gt;&gt; Assembly</h3>
-<p><b>Button</b></p>
+<p><b>UART TX(9600bps)</b></p>
 <hr size="1">
 <p>
-DDRB(I/O方向)、PORTB(I/O輸出)<br>
-<img src="asm_led/3.jpg" class="maxSize"><br>
-P.S. I/O資料變更或者讀取，必須使用in、out指令或者sbi、cbi指令<br><br>
+UART傳輸協定<br>
+<img src="../stc15w104/asm_uart_tx/1.jpg" class="maxSize"><br>
+9600bps每個bit時間為：1/9600 = 104.167us<br><br>
 
 main.s
 </p>
 <pre class="brush:asm">
-  .equ PINB,  0x16
-  .equ DDRB,  0x17
-  .equ PORTB, 0x18
- 
-  .equ LED,   1
-  .equ BTN,   0
- 
+  .equ PINB,    0x16
+  .equ DDRB,    0x17
+  .equ PORTB,   0x18
+  .equ UART_TX, 2
+  
   .org 0x0000
   rjmp main
- 
-  .org 0x0010
+  
+  .org 0x0020
 main:
-  sbi DDRB, LED
-  cbi DDRB, BTN
-  sbi PORTB, LED
-  sbi PORTB, BTN
- 
+  sbi DDRB, UART_TX
+  sbi PORTB, UART_TX
+  ldi r16, 0
+  
 loop:
-  in r0, PINB
-  sbrs r0, BTN
-  cbi PORTB, LED
-  sbrc r0, BTN
-  sbi PORTB, LED
+  inc r16
+  rcall uart_send
+  rcall delay
   rjmp loop
-</pre><br>
+ 
+uart_send:
+  mov r18, r16
+  cbi PORTB, UART_TX
+  rcall delay_97us
+  ldi r17, 8
+0:
+  sbrs r18, 0
+  cbi PORTB, UART_TX
+  sbrc r18, 0
+  sbi PORTB, UART_TX
+  rcall delay_97us
+  lsr r18
+  dec r17
+  brne 0b
+  sbi PORTB, UART_TX
+  rcall delay_97us
+  ret
 
+  ; 1 + (1 + 2) * 37) + 4 = 116
+  ; 116 * (1 / 1200000) = 97us
+delay_97us:
+  ldi r24, 37
+0:
+  dec r24
+  brne 0b
+  ret
+
+delay:
+  ldi r24, 0xff
+  ldi r25, 0xff
+0:
+  sbiw r24, 1
+  brne 0b
+  ret
+</pre>
 <p>
+P.S. 使用出廠預設的FUSE(High=0xff, Low=0x6a)，CPU=9.6MHz, Div=8<br><br>
+
 編譯和燒錄
 </p>
 <pre>
@@ -93,8 +124,7 @@ $ sudo avrdude -c usbasp -p t13 -B 1024 -U flash:w:main.ihex:i
 
 <p>
 完成<br>
-<img src="asm_button/1.jpg" class="maxSize"><br>
-<img src="asm_button/2.jpg" class="maxSize">
+<img src="../pic10f200/asm_uart_9600/1.jpg" class="maxSize">
 </p>
 
 <p>
