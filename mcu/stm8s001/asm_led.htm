@@ -49,8 +49,9 @@
 <hr size="1">
 <p>
 參考資訊：<br>
-1. <a href="https://github.com/lujji/stm8-bootloader">stm8-bootlaoder</a><br>
-2. <a href="https://github.com/TG9541/stm8ef/wiki/STM8S-Programming">STM8S-Programming</a><br><br>
+1. <a href="https://www.st.com/resource/en/reference_manual/cd00190271-stm8s-series-and-stm8af-series-8bit-microcontrollers-stmicroelectronics.pdf">pdf</a><br>
+2. <a href="https://github.com/lujji/stm8-bootloader">stm8-bootlaoder</a><br>
+3. <a href="https://github.com/TG9541/stm8ef/wiki/STM8S-Programming">STM8S-Programming</a><br><br>
 
 STM8S001是一顆I/O相當複雜的MCU，如下表：
 </p>
@@ -66,48 +67,39 @@ STM8S001是一顆I/O相當複雜的MCU，如下表：
 例如：PD6和PA1同時綁到第一隻腳，因此，操作一般GPIO時，PD6和PA1是一樣的結果，但是切換到其它功能時，則不同運作，如設定AIN6或者OSCIN<br><br>
 
 官方說明如下<br>
-<img src="asm_led/1.jpg" class="maxSize"><br>
-P.S. 官方文件真的需要加強，單單找一個Multiple GPIO的說明就需要參考多份文件，每次研究STM MCU最頭痛就是GPIO的部份<br><br>
+<img src="asm_led/1.jpg" class="maxSize"><br><br>
 
 表格<br>
-<img src="asm_led/3.jpg" class="maxSize"><br>
 <img src="asm_led/2.jpg" class="maxSize"><br><br>
-
-步驟：<br>
-1. PX_DDR設定方向<br>
-2. PX_CR1設定輸出模式<br>
-3. PX_ODR輸出資料<br><br>
 
 main.s
 </p>
 <pre class="brush:asm">
-.equ pc_odr, 0x500a
-.equ pc_idr, 0x500b
-.equ pc_ddr, 0x500c
-.equ pc_cr1, 0x500d
-.equ pc_cr2, 0x500e
-
-.area data
-.area sseg
-.area home
+  .equ PC_ODR, 0x500a
+  .equ PC_IDR, 0x500b
+  .equ PC_DDR, 0x500c
+  .equ PC_CR1, 0x500d
+  .equ PC_CR2, 0x500e
+   
+  .area data
+  .area sseg
+  .area home
   int main
-
-.area cseg
+ 
+  .area cseg
 main:
-  mov pc_ddr, #0x20
-  mov pc_cr1, #0x20
-
+  mov PC_DDR, #0x20
+  mov PC_CR1, #0x20
+ 
 loop:
-  ld a, pc_odr
+  ld a, PC_ODR
   xor a, #0x20
-  ld pc_odr, a
-  ldw x, #30000
-
+  ld PC_ODR, a
+  ldw x, #30000 
 d0:
   decw x
   tnzw x
   jrne d0
-
   jp loop
 </pre><br>
 
@@ -128,12 +120,13 @@ $ sudo stm8flash -c stlinkv2 -p stm8s001j3 -w main.ihx
   Due to its file extension (or lack thereof), "main.ihx" is considered as INTEL HEX format!
   153 bytes at 0x8000... OK
   Bytes written: 153
-</pre><br>
-
+</pre>
 <p>
+P.S. 如果燒錄失敗，實屬正常，再次執行燒錄命令即可，如果無法unlock(-u)，請更換其它IC<br><br>
+
 完成<br>
-<img src="asm_led/4.jpg" class="maxSize"><br>
-<img src="asm_led/5.jpg" class="maxSize">
+<img src="asm_led/3.jpg" class="maxSize"><br>
+<img src="asm_led/4.jpg" class="maxSize">
 </p>
 
 <p>
