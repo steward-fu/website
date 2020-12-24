@@ -22,7 +22,7 @@
 	function Brush()
 	{
 		var keywords =	'EOF chroot DISPLAY wmctrl zenity killall deb deb-src if fi then elif else for do done until while break continue case function return in eq ne ge le';
-		var commands =  'pidof start stop modprobe alias apropos awk basename bash bc bg builtin bzip2 cal cat cd cfdisk chgrp chmod chown chroot' +
+		var commands =  'updateConfigs sshd mersdk pidof start stop modprobe alias apropos awk basename bash bc bg builtin bzip2 cal cat cd cfdisk chgrp chmod chown chroot' +
 						'cksum clear cmp comm command cp cron crontab csplit cut date dc dd ddrescue declare df ' +
 						'diff diff3 dig dir dircolors dirname dirs du echo egrep eject enable env ethtool eval ' +
 						'exec exit expand export expr false fdformat fdisk fg fgrep file find fmt fold format ' +
