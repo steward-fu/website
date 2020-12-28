@@ -45,38 +45,56 @@
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
 <h3>STM8S103 &gt;&gt; Assembly</h3>
-<p><b>LED</b></p>
+<p><b>Independent watchdog(IWDG)</b></p>
 <hr size="1">
 <p>
-表格<br>
-<img src="asm_led/3.jpg" class="maxSize"><br><br>
+暫存器<br>
+<img src="asm_iwdg/1.jpg" class="maxSize"><br><br>
+
+Prescaler<br>
+<img src="asm_iwdg/2.jpg" class="maxSize"><br><br>
+
+步驟：<br>
+1. IWDG_KR(0xcc) &gt; Enable<br>
+2. IWDG_KR(0x55) &gt; Unlock IWDG_PR and IWDG_RLR<br>
+3. IWDG_KR(0xaa) &gt; Reload IWDG_PR and IWDG_RLR<br><br>
 
 main.s
 </p>
 <pre class="brush:asm">
-  .equ PB_ODR, 0x5005
-  .equ PB_IDR, 0x5006
-  .equ PB_DDR, 0x5007
-  .equ PB_CR1, 0x5008
-  .equ PB_CR2, 0x5009
-    
+  .equ PB_ODR,   0x5005
+  .equ PB_IDR,   0x5006
+  .equ PB_DDR,   0x5007
+  .equ PB_CR1,   0x5008
+  .equ PB_CR2,   0x5009
+  .equ IWDG_KR,  0x50e0
+  .equ IWDG_PR,  0x50e1
+  .equ IWDG_RLR, 0x50e2
+     
   .area data
   .area sseg
   .area home
   int main
-  
+   
   .area cseg
 main:
   mov PB_DDR, #0x20
   mov PB_CR1, #0x20
-  
+
+  mov IWDG_KR, #0xcc 
+  mov IWDG_KR, #0x55 
+  mov IWDG_RLR, #0xff
+  mov IWDG_PR, #0x06
+  mov IWDG_KR, #0xaa 
+
 loop:
   ld a, PB_ODR
   xor a, #0x20
   ld PB_ODR, a
-  ldw x, #30000 
+  ldw x, #5000 
 d0:
   decw x
+  tnzw x
   jrne d0
   jp loop
 </pre><br>
@@ -88,21 +106,11 @@ d0:
 $ sdasstm8 -o main.s
 $ sdldstm8 -ni -b home=0x8000 -b cseg=0x8080 -b data=0x0001 -b sseg=0xffff main.rel
 $ sudo stm8flash -c stlinkv2 -p stm8s103f3 -u
-  Determine OPT area
-  Due to its file extension (or lack thereof), "Workaround" is considered as RAW BINARY format!
-  Unlocked device. Option bytes reset to default state.
-  Bytes written: 11
-
 $ sudo stm8flash -c stlinkv2 -p stm8s103f3 -s flash -w main.ihx
-  Determine FLASH area
-  Due to its file extension (or lack thereof), "main.ihx" is considered as INTEL HEX format!
-  154 bytes at 0x8000... OK
-  Bytes written: 154
 </pre><br>
 
 <p>
-完成<br>
-<img src="asm_led/1.jpg" class="maxSize"><br>
+觀察LED的變化，即可發現每秒會有一次閃動變化<br>
 <img src="asm_led/2.jpg" class="maxSize">
 </p>
 

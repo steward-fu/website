@@ -45,36 +45,62 @@
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
 <h3>STM8S103 &gt;&gt; Assembly</h3>
-<p><b>LED</b></p>
+<p><b>Flash</b></p>
 <hr size="1">
 <p>
-表格<br>
-<img src="asm_led/3.jpg" class="maxSize"><br><br>
+參考資訊：<br>
+1. <a href="https://community.st.com/s/question/0D50X00009XkYDFSA3/eeprom-readwrite">eeprom-readwrite</a><br><br>
+
+暫存器<br>
+<img src="asm_flash/1.jpg" class="maxSize"><br><br>
+
+Flash<br>
+<img src="asm_eeprom/2.jpg" class="maxSize"><br><br>
 
 main.s
 </p>
 <pre class="brush:asm">
-  .equ PB_ODR, 0x5005
-  .equ PB_IDR, 0x5006
-  .equ PB_DDR, 0x5007
-  .equ PB_CR1, 0x5008
-  .equ PB_CR2, 0x5009
-    
+  .equ PD_ODR,      0x500f
+  .equ PD_IDR,      0x5010
+  .equ PD_DDR,      0x5011
+  .equ PD_CR1,      0x5012
+  .equ PD_CR2,      0x5013
+  .equ UART1_DR,    0x5231
+  .equ UART1_BRR1,  0x5232
+  .equ UART1_BRR2,  0x5233
+  .equ UART1_CR2,   0x5235
+  .equ FLASH_IAPSR, 0x505f
+  .equ FLASH_PUKR,  0x5062
+
   .area data
   .area sseg
   .area home
   int main
-  
+    
   .area cseg
 main:
-  mov PB_DDR, #0x20
-  mov PB_CR1, #0x20
+  mov PD_DDR, #0x20
+  mov PD_CR1, #0x20
+  mov PD_CR2, #0x20
+
+  ; 9600bps
+  mov UART1_BRR2, #0x00
+  mov UART1_BRR1, #0x0d
+  mov UART1_CR2, #0x08
   
+  mov FLASH_PUKR, #0x56
+  mov FLASH_PUKR, #0xae
+
+  ; flash write
+  ld a, #0x55
+  ld 0x9000, a
+
 loop:
-  ld a, PB_ODR
-  xor a, #0x20
-  ld PB_ODR, a
-  ldw x, #30000 
+  ; flash read
+  ld a, 0x9000
+  ld UART1_DR, a
+
+  ldw x, #30000
 d0:
   decw x
   jrne d0
@@ -88,22 +114,12 @@ d0:
 $ sdasstm8 -o main.s
 $ sdldstm8 -ni -b home=0x8000 -b cseg=0x8080 -b data=0x0001 -b sseg=0xffff main.rel
 $ sudo stm8flash -c stlinkv2 -p stm8s103f3 -u
-  Determine OPT area
-  Due to its file extension (or lack thereof), "Workaround" is considered as RAW BINARY format!
-  Unlocked device. Option bytes reset to default state.
-  Bytes written: 11
-
 $ sudo stm8flash -c stlinkv2 -p stm8s103f3 -s flash -w main.ihx
-  Determine FLASH area
-  Due to its file extension (or lack thereof), "main.ihx" is considered as INTEL HEX format!
-  154 bytes at 0x8000... OK
-  Bytes written: 154
 </pre><br>
 
 <p>
 完成<br>
-<img src="asm_led/1.jpg" class="maxSize"><br>
-<img src="asm_led/2.jpg" class="maxSize">
+<img src="asm_uart/2.jpg" class="maxSize">
 </p>
 
 <p>

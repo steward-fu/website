@@ -29,7 +29,7 @@
   <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
   
   <script type="text/javascript" src="../../scripts/shCore.js"></script>
-  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
 
   <!-- Conditional comment to apply opacity fix for IE #content background.
        Invalid CSS, but can be removed without harming design -->
@@ -44,66 +44,22 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>STM8S103 &gt;&gt; Assembly</h3>
-<p><b>LED</b></p>
+<h3>STM32F103</h3>
+<p><b>解決"section .plt LMA overlaps section .dynamic LMA"問題</b></p>
 <hr size="1">
 <p>
-表格<br>
-<img src="asm_led/3.jpg" class="maxSize"><br><br>
+參考資訊：<br>
+1. <a href="https://www.freertos.org/FreeRTOS_Support_Forum_Archive/January_2006/freertos_Linking_problems_with_gcc_3.4.5_1414228.html">freertos_Linking_problems_with_gcc_3.4.5_1414228</a><br><br>
 
-main.s
-</p>
-<pre class="brush:asm">
-  .equ PB_ODR, 0x5005
-  .equ PB_IDR, 0x5006
-  .equ PB_DDR, 0x5007
-  .equ PB_CR1, 0x5008
-  .equ PB_CR2, 0x5009
-    
-  .area data
-  .area sseg
-  .area home
-  int main
-  
-  .area cseg
-main:
-  mov PB_DDR, #0x20
-  mov PB_CR1, #0x20
-  
-loop:
-  ld a, PB_ODR
-  xor a, #0x20
-  ld PB_ODR, a
-  ldw x, #30000 
-d0:
-  decw x
-  jrne d0
-  jp loop
-</pre><br>
-
-<p>
-編譯、燒錄
+問題如下：
 </p>
 <pre>
-$ sdasstm8 -o main.s
-$ sdldstm8 -ni -b home=0x8000 -b cseg=0x8080 -b data=0x0001 -b sseg=0xffff main.rel
-$ sudo stm8flash -c stlinkv2 -p stm8s103f3 -u
-  Determine OPT area
-  Due to its file extension (or lack thereof), "Workaround" is considered as RAW BINARY format!
-  Unlocked device. Option bytes reset to default state.
-  Bytes written: 11
-
-$ sudo stm8flash -c stlinkv2 -p stm8s103f3 -s flash -w main.ihx
-  Determine FLASH area
-  Due to its file extension (or lack thereof), "main.ihx" is considered as INTEL HEX format!
-  154 bytes at 0x8000... OK
-  Bytes written: 154
-</pre><br>
-
+/opt/gcc-4.8/lib/gcc/armv7l-unknown-linux-gnueabihf/4.8.2/../../../../armv7l-unknown-linux-gnueabihf/bin/ld: section .plt LMA [08001c94,08001cb3] overlaps section .dynamic LMA [08001c94,08001d4b]
+collect2: error: ld returned 1 exit status
+make: *** [Makefile:39: main] Error 1
+</pre>
 <p>
-完成<br>
-<img src="asm_led/1.jpg" class="maxSize"><br>
-<img src="asm_led/2.jpg" class="maxSize">
+解法：<b>-static</b>
 </p>
 
 <p>
