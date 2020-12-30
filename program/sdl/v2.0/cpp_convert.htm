@@ -44,12 +44,12 @@
 <div id="content">
 <script type="text/javascript" src="../../../header.js"></script>
 <div id="page">
-<h3>SDL v1.2 &gt;&gt; C/C++</h3>
-<p><b>Open Font from Memory</b></p>
+<h3>SDL v2.0 &gt;&gt; C/C++</h3>
+<p><b>Convert Surface</b></p>
 <hr size="1">
 <p>
 參考資訊：<br>
-1. <a href="https://www.libsdl.org/release/SDL-1.2.15/docs/html/index.html">docs</a><br><br>
+1. <a href="https://wiki.libsdl.org/FrontPage">docs</a><br><br>
 
 main.c
 </p>
@@ -57,45 +57,54 @@ main.c
 #include &lt;stdio.h&gt;
 #include &lt;stdlib.h&gt;
 #include &lt;SDL.h&gt;
-#include &lt;SDL_ttf.h&gt;
-
-#include "hex_font.h"
-
-int main(int argc, char* args[])
+  
+int main(int argc, char** argv)
 {
-  char buf[255]={0};
-  SDL_Surface* screen;
-    
-  SDL_Init(SDL_INIT_VIDEO);
-  screen = SDL_SetVideoMode(320, 240, 16, SDL_HWSURFACE);
-  TTF_Init();
-  SDL_RWops *rw = SDL_RWFromMem(hex_font, sizeof(hex_font));
-  TTF_Font *font = TTF_OpenFontRW(rw, 1, 30);
-  SDL_FillRect(screen, &amp;screen-&gt;clip_rect, SDL_MapRGB(screen-&gt;format, 0x00, 0x00, 0x00));
+  const int w=320;
+  const int h=240;
+  const int bpp=16;
+  SDL_Window *window=NULL;
+  SDL_Surface *screen=NULL;
+  SDL_Texture *texture=NULL;
+  SDL_Renderer *renderer=NULL;
  
-  SDL_Color col={0, 255, 0};
-  SDL_Rect rt={50, 100, 0, 0};
-  SDL_Surface *msg = TTF_RenderUTF8_Solid(font, "司徒的教學網站", col);
-  SDL_BlitSurface(msg, NULL, screen, &amp;rt);
-  SDL_Flip(screen);
-  SDL_FreeSurface(msg);
+  window = SDL_CreateWindow("main", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, w, h, SDL_WINDOW_SHOWN);
+  renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+  screen = SDL_CreateRGBSurface(0, w, h, bpp, 0, 0, 0, 0);
+  texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB565, SDL_TEXTUREACCESS_STREAMING, w, h);
+  
+  SDL_Surface* bmp = SDL_LoadBMP("main.bmp");
+  SDL_Surface *t = SDL_ConvertSurface(bmp, screen-&gt;format, 0);
+  SDL_BlitSurface(t, NULL, screen, NULL);
+  SDL_FreeSurface(t);
+ 
+  SDL_UpdateTexture(texture, NULL, screen-&gt;pixels, screen-&gt;pitch);
+  SDL_RenderClear(renderer);
+  SDL_RenderCopy(renderer, texture, NULL, NULL);
+  SDL_RenderPresent(renderer);
+ 
   SDL_Delay(3000);
-   
-  TTF_CloseFont(font);
-  TTF_Quit();
+ 
+  SDL_FreeSurface(bmp);
+  SDL_FreeSurface(screen);
+  SDL_DestroyTexture(texture);
+  SDL_DestroyRenderer(renderer);
+  SDL_DestroyWindow(window);
   SDL_Quit();
-  return 0;    
+  return 0;
 }
-</pre><br>
+</pre>
 <p>
+P.S. 用來轉換Pixels像素格式，如：main.bmp是32Bits，則可以轉換成16Bits，方便處理<br><br>
+
 編譯、執行
 </p>
 <pre>
-$ gcc main.c -o main -lSDL -lSDL_ttf -I/usr/include/SDL
+$ gcc main.c -o main -lSDL2 -I/usr/include/SDL2
 $ ./main
 </pre>
 <p>
-<img src="cpp_font/1.jpg" class="maxSize">
+<img src="cpp_convert/1.jpg" class="maxSize">
 </p>
 
 <p>
