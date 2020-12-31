@@ -68,7 +68,8 @@ int main(int argc, char **argv)
   SDL_Surface *screen=NULL;
   SDL_Texture *texture=NULL;
   SDL_Renderer *renderer=NULL;
- 
+
+  SDL_Init(SDL_INIT_VIDEO);
   window = SDL_CreateWindow("main", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, w, h, SDL_WINDOW_SHOWN);
   renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
   screen = SDL_CreateRGBSurface(0, w, h, bpp, 0, 0, 0, 0);
@@ -77,10 +78,15 @@ int main(int argc, char **argv)
   TTF_Init();
   TTF_Font *font = TTF_OpenFont("font.ttf", 30);
   SDL_FillRect(screen, &amp;screen-&gt;clip_rect, SDL_MapRGB(screen-&gt;format, 0x00, 0x00, 0x00));
- 
+
+  int ww=0, hh=0;
   SDL_Color col={0, 255, 0};
-  SDL_Rect rt={50, 100, 0, 0};
-  SDL_Surface *msg = TTF_RenderUTF8_Solid(font, "司徒的教學網站", col);
+  SDL_Rect rt={0, 100, 0, 0};
+  const char* cc="司徒的教學網站";
+
+  TTF_SizeUTF8(font, cc, &amp;ww, &amp;hh);
+  rt.x = (w - ww) / 2;
+  SDL_Surface *msg = TTF_RenderUTF8_Solid(font, cc, col);
   SDL_BlitSurface(msg, NULL, screen, &amp;rt);
   SDL_FreeSurface(msg);
  
