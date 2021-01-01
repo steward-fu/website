@@ -29,7 +29,7 @@
   <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
   
   <script type="text/javascript" src="../../scripts/shCore.js"></script>
-  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
 
   <!-- Conditional comment to apply opacity fix for IE #content background.
        Invalid CSS, but can be removed without harming design -->
@@ -44,128 +44,12 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>LPC2103 &gt;&gt; Assembly</h3>
-<p><b>Button</b></p>
+<h3>LPC2103</h3>
+<p><b>腳位</b></p>
 <hr size="1">
 <p>
-參考資料：<br>
-1. <a href="https://www.keil.com/dd/docs/datashts/philips/user_manual_lpc2101_2102_2103.pdf">pdf</a><br><br>
-
-暫存器<br>
-<img src="asm_led/3.jpg" class="maxSize"><br><br>
-
-main.s
-</p>
-<pre class="brush:asm">
-  .equ IOPIN, 0xe0028000
-  .equ IOSET, 0xe0028004
-  .equ IODIR, 0xe0028008
-  .equ IOCLR, 0xe002800c
-
-  .text
-  .align 2
-  .global _start
-_start:
-  bal reset
-_undef:
-  bal .
-_swi:
-  bal .
-_prefetch_abort:
-  bal .
-_data_abort:
-  bal .
-_reserved:
-  bal .
-_irq:
-  bal .
-  bal .
-
-reset:
-  ldr r1, =IODIR
-  ldr r2, =(1 &lt;&lt; 22)
-  str r2, [r1]
- 
-loop:
-  ldr r0, =IOPIN
-  ldr r0, [r0]
-  and r0, #(1 &lt;&lt; 14)
-  cmp r0, #(1 &lt;&lt; 14)
-  bne 1f
-0:
-  ldr r0, =IOCLR
-  ldr r1, =(1 &lt;&lt; 22)
-  str r1, [r0,#0x00]
-  ldr r4, =100000
-  b loop
-1:
-  ldr r0, =IOSET
-  ldr r1, =(1 &lt;&lt; 22)
-  str r1, [r0, #0x00]
-  ldr r4, =100000
-  b loop
-  .end 
-</pre><br>
-
-<p>
-main.ld
-</p>
-<pre>
-MEMORY {
-  flash : ORIGIN = 0, LENGTH = 32K
-  ram : ORIGIN = 0x40000000, LENGTH = 8K
-}
-
-__stack_end__ = 0x40000000 + 8K - 4;
-SECTIONS {
-  . = 0;
-  startup : { *(.startup)} &gt;flash
-  prog : {
-    *(.text)
-    *(.rodata)
-    *(.rodata*)
-    *(.glue_7)
-    *(.glue_7t)
-  } &gt;flash
-  __end_of_text__ = .;
-  .data : {
-    __data_beg__ = .;
-    __data_beg_src__ = __end_of_text__;
-    *(.data)
-    __data_end__ = .;
-  } &gt;ram AT&gt;flash
-  .bss : {
-    __bss_beg__ = .;
-    *(.bss)
-  } &gt;ram
-  . = ALIGN(32 / 8);
-}
-. = ALIGN(32 / 8);
-_end = .;
-_bss_end__ = . ; __bss_end__ = . ; __end__ = . ;
-</pre><br>
-
-<p>
-Makefile
-</p>
-<pre>
-all:
-  arm-none-eabi-as -ggdb -mcpu=arm7 -o main.o main.s
-  arm-none-eabi-ld -T main.ld -o main.elf main.o
-  arm-none-eabi-objcopy -O ihex main.elf main.ihx
-  packihx main.ihx > main.hex
-
-flash:
-  sudo lpc21isp -wipe -control  -verify -debug2 ./main.hex /dev/ttyUSB0 9600 12000
-
-clean:
-  rm -rf main.ihx main.hex main.o main.elf
-</pre><br>
-
-<p>
-完成<br>
-<img src="asm_button/1.jpg" class="maxSize"><br>
-<img src="asm_button/2.jpg" class="maxSize">
+如下：<br>
+<img src="pinout/1.jpg" class="maxSize">
 </p>
 
 <p>
