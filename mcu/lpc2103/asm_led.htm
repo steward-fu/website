@@ -48,12 +48,20 @@
 <p><b>LED</b></p>
 <hr size="1">
 <p>
+參考資料：<br>
+1. <a href="https://www.keil.com/dd/docs/datashts/philips/user_manual_lpc2101_2102_2103.pdf">pdf</a><br><br>
+
 main.s
 </p>
 <pre class="brush:asm">
-.text
-.align 2
-.global _start
+  .equ IODIR,   0xe0028008
+  .equ IOCLR,   0xe002800c
+  .equ IOSET,   0xe0028004
+  .equ PINSEL0, 0xe002c000
+
+  .text
+  .align 2
+  .global _start
 _start:
   bal reset
 _undef:
@@ -69,28 +77,28 @@ _reserved:
 _irq:
   bal .
   bal .
-
+ 
 reset:
   ldr r1, =PINSEL0
   ldr r2, =0x00000000
   str r2, [r1]
   ldr r1, =IODIR
-  ldr r2, =0x00008000
+  ldr r2, =(1 &lt;&lt; 22)
   str r2, [r1]
-
+ 
 loop:
   ldr r0, =IOCLR
-  ldr r1, =0x00008000
+  ldr r1, =(1 &lt;&lt; 22)
   str r1, [r0, #0x00]
-  ldr r4, =100000
+  ldr r4, =50000
 1:
   nop
   subs r4, r4, #1
   bne 1b
   ldr r0, =IOSET
-  ldr r1, =0x00008000
+  ldr r1, =(1 &lt;&lt; 22)
   str r1, [r0, #0x00]
-  ldr r4, =100000
+  ldr r4, =50000
 1:
   nop
   subs r4, r4, #1
@@ -135,52 +143,6 @@ SECTIONS {
 . = ALIGN(32 / 8);
 _end = .;
 _bss_end__ = . ; __bss_end__ = . ; __end__ = . ;
-PROVIDE(end = .);
-PROVIDE(undefined_instruction_exception = endless_loop);
-PROVIDE(software_interrupt_exception = endless_loop);
-PROVIDE(prefetch_abort_exception = endless_loop);
-PROVIDE(data_abort_exception = endless_loop);
-PROVIDE(reserved_exception = endless_loop);
-PROVIDE(interrupt_exception = endless_loop);
-PROVIDE(fast_interrupt_exception = endless_loop);
-PROVIDE(IOPIN = 0xE0028000);
-PROVIDE(IODIR = 0xE0028008);
-PROVIDE(IOCLR = 0xE002800C);
-PROVIDE(IOSET = 0xE0028004);
-PROVIDE(U0RBR = 0xE000C000);
-PROVIDE(U0THR = 0xE000C000);
-PROVIDE(U0IER = 0xE000C004);
-PROVIDE(U0IIR = 0xE000C008);
-PROVIDE(U0FCR = 0xE000C008);
-PROVIDE(U0LCR = 0xE000C00C);
-PROVIDE(U0LSR = 0xE000C014);
-PROVIDE(U0SCR = 0xE000C01C);
-PROVIDE(U0DLL = 0xE000C000);
-PROVIDE(U0DLM = 0xE000C004);
-PROVIDE(PLLCON = 0xE01FC080);
-PROVIDE(PLLCFG = 0xE01FC084);
-PROVIDE(PLLSTAT = 0xE01FC088);
-PROVIDE(PLLFEED = 0xE01FC08C);
-PROVIDE(MAMCR = 0xE01FC000);
-PROVIDE(MAMTIM = 0xE01FC004);
-PROVIDE(VPBDIV = 0xE01FC100);
-PROVIDE(T0IR = 0xE0004000);
-PROVIDE(T0TCR = 0xE0004004);
-PROVIDE(T0TC = 0xE0004008);
-PROVIDE(T0PR = 0xE000400C);
-PROVIDE(T0PC = 0xE0004010);
-PROVIDE(T0MCR = 0xE0004014);
-PROVIDE(T0MR0 = 0xE0004018);
-PROVIDE(T0MR1 = 0xE000401C);
-PROVIDE(T0MR2 = 0xE0004020);
-PROVIDE(T0MR3 = 0xE0004024);
-PROVIDE(T0CCR = 0xE0004028);
-PROVIDE(T0CR0 = 0xE000402C);
-PROVIDE(T0CR1 = 0xE0004030);
-PROVIDE(T0CR2 = 0xE0004034);
-PROVIDE(T0EMR = 0xE000403C);
-PROVIDE(PINSEL0 = 0xE002C000);
-PROVIDE(PINSEL1 = 0xE002C004);
 </pre><br>
 
 <p>
@@ -201,15 +163,40 @@ clean:
 </pre><br>
 
 <p>
-使用Flash Magic燒錄，步驟如下：<br>
-1. Power off<br>
-2. 按住ISP按鈕<br>
-3. Flash Magic按下Start<br>
-4. Power on<br>
-<img src="led/1.jpg" class="maxSize"><br><br>
+編譯、燒錄
+</p>
+<pre>
+$ make
+  arm-none-eabi-as -ggdb -mcpu=arm7 -o main.o main.s
+  arm-none-eabi-ld -T main.ld -o main.elf main.o
+  arm-none-eabi-objcopy -O ihex main.elf main.ihx
+  packihx main.ihx > main.hex
+  packihx: read 10 lines, wrote 10: OK.
 
+$ make flash
+  sudo lpc21isp -wipe -control  -verify -debug2 ./main.hex /dev/ttyUSB0 9600 12000
+  Verify after copy RAM to Flash.
+  lpc21isp version 1.97
+  File ./main.hex:
+    loaded...
+    converted to binary format...
+    image size : 136
+  Image size : 136
+  Synchronizing (ESC to abort). OK
+  Read bootcode version: 21
+  2
+  Read part ID: LPC2103, 32 kiB FLASH / 8 kiB SRAM (0x0004FF11)
+  Will start programming at Sector 1 if possible, and conclude with Sector 0 to ensure that checksum is written last.
+  Wiping Device. OK
+  Sector 0: ......
+  Download Finished and Verified correct... taking 1 seconds
+  Now launching the brand new code
+</pre><br>
+
+<p>
 完成<br>
-<img src="led/2.jpg" class="maxSize">
+<img src="asm_led/1.jpg" class="maxSize"><br>
+<img src="asm_led/2.jpg" class="maxSize">
 </p>
 
 <p>
