@@ -45,22 +45,27 @@
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
 <h3>LPC2103 &gt;&gt; Assembly</h3>
-<p><b>LED</b></p>
+<p><b>Power-down</b></p>
 <hr size="1">
 <p>
 參考資料：<br>
 1. <a href="https://www.keil.com/dd/docs/datashts/philips/user_manual_lpc2101_2102_2103.pdf">pdf</a><br><br>
 
 暫存器<br>
-<img src="asm_led/3.jpg" class="maxSize"><br><br>
+<img src="asm_power-down/1.jpg" class="maxSize"><br>
+<img src="asm_power-down/2.jpg" class="maxSize"><br><br>
 
 main.s
 </p>
 <pre class="brush:asm">
-  .equ IODIR, 0xe0028008
-  .equ IOCLR, 0xe002800c
-  .equ IOSET, 0xe0028004
-
+  .equ IODIR,        0xe0028008
+  .equ IOCLR,        0xe002800c
+  .equ IOSET,        0xe0028004
+  .equ PINSEL0,      0xe002c000
+  .equ EXTWAKE,      0xe01fc144
+  .equ PCON,         0xe01fc0c0
+  .equ VICIntEnable, 0xfffff010
+ 
   .text
   .align 2
   .global _start
@@ -72,122 +77,43 @@ _dabort:   b .
 _reserved: b .
 _irq:      b .
 _fiq:      b .
- 
+  
 reset:
+  ldr r0, =PINSEL0
+  ldr r1, =(1 &lt;&lt; 28)
+  str r1, [r0]
+
+  ldr r0, =EXTWAKE
+  ldr r1, =0x02
+  str r1, [r0]
+
+  ldr r0, =VICIntEnable
+  ldr r1, =(1 &lt;&lt; 15)
+  str r1, [r0]
+
   ldr r0, =IODIR
   ldr r1, =(1 &lt;&lt; 22)
   str r1, [r0]
-loop:
+  
   ldr r0, =IOCLR
   ldr r1, =(1 &lt;&lt; 22)
   str r1, [r0]
-  ldr r4, =50000
-1:
-  nop
-  subs r4, r4, #1
-  bne 1b
+
+  ldr r0, =PCON
+  ldr r1, =0x02
+  str r1, [r0]
+
   ldr r0, =IOSET
   ldr r1, =(1 &lt;&lt; 22)
   str r1, [r0]
-  ldr r4, =50000
-1:
-  nop
-  subs r4, r4, #1
-  bne 1b
-  b loop
+  b .
   .end
 </pre><br>
 
 <p>
-main.ld
-</p>
-<pre>
-MEMORY {
-  flash : ORIGIN = 0, LENGTH = 32K
-  ram : ORIGIN = 0x40000000, LENGTH = 8K
-}
-
-__stack_end__ = 0x40000000 + 8K - 4;
-SECTIONS {
-  . = 0;
-  startup : { *(.startup)} &gt;flash
-  prog : {
-    *(.text)
-    *(.rodata)
-    *(.rodata*)
-    *(.glue_7)
-    *(.glue_7t)
-  } &gt;flash
-  __end_of_text__ = .;
-  .data : {
-    __data_beg__ = .;
-    __data_beg_src__ = __end_of_text__;
-    *(.data)
-    __data_end__ = .;
-  } &gt;ram AT&gt;flash
-  .bss : {
-    __bss_beg__ = .;
-    *(.bss)
-  } &gt;ram
-  . = ALIGN(32 / 8);
-}
-. = ALIGN(32 / 8);
-_end = .;
-_bss_end__ = . ; __bss_end__ = . ; __end__ = . ;
-</pre><br>
-
-<p>
-Makefile
-</p>
-<pre>
-all:
-  arm-none-eabi-as -ggdb -mcpu=arm7 -o main.o main.s
-  arm-none-eabi-ld -T main.ld -o main.elf main.o
-  arm-none-eabi-objcopy -O ihex main.elf main.ihx
-  packihx main.ihx > main.hex
-
-flash:
-  sudo lpc21isp -wipe -control  -verify -debug2 ./main.hex /dev/ttyUSB0 9600 12000
-
-clean:
-  rm -rf main.ihx main.hex main.o main.elf
-</pre><br>
-
-<p>
-編譯、燒錄
-</p>
-<pre>
-$ make
-  arm-none-eabi-as -ggdb -mcpu=arm7 -o main.o main.s
-  arm-none-eabi-ld -T main.ld -o main.elf main.o
-  arm-none-eabi-objcopy -O ihex main.elf main.ihx
-  packihx main.ihx > main.hex
-  packihx: read 10 lines, wrote 10: OK.
-
-$ make flash
-  sudo lpc21isp -wipe -control  -verify -debug2 ./main.hex /dev/ttyUSB0 9600 12000
-  Verify after copy RAM to Flash.
-  lpc21isp version 1.97
-  File ./main.hex:
-    loaded...
-    converted to binary format...
-    image size : 136
-  Image size : 136
-  Synchronizing (ESC to abort). OK
-  Read bootcode version: 21
-  2
-  Read part ID: LPC2103, 32 kiB FLASH / 8 kiB SRAM (0x0004FF11)
-  Will start programming at Sector 1 if possible, and conclude with Sector 0 to ensure that checksum is written last.
-  Wiping Device. OK
-  Sector 0: ......
-  Download Finished and Verified correct... taking 1 seconds
-  Now launching the brand new code
-</pre><br>
-
-<p>
 完成<br>
-<img src="asm_led/1.jpg" class="maxSize"><br>
-<img src="asm_led/2.jpg" class="maxSize">
+<img src="asm_button/1.jpg" class="maxSize"><br>
+<img src="asm_button/2.jpg" class="maxSize">
 </p>
 
 <p>
