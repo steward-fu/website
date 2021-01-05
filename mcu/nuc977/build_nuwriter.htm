@@ -44,51 +44,60 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>NUC972</h3>
-<p><b>flash spi</b></p>
+<h3>NUC977</h3>
+<p><b>build nuwriter</b></p>
 <hr size="1">
 <p>
-1. 設定PA0、PA1成USB啟動<br>
-2. 開啟CONFIG_ENV_IS_IN_SPI_FLASH並編譯UBoot程式
+編譯步驟
 </p>
 <pre>
-$ vim include/configs/nuc970_evb.h
-  48 #define CONFIG_SYS_USE_SPIFLASH
-  49 #define CONFIG_SYS_USE_NANDFLASH
-  50 #define CONFIG_SYS_NO_FLASH    // that is, no *NOR* flash 
-  51 //#define CONFIG_ENV_IS_IN_NAND 
-  52 #define CONFIG_ENV_IS_IN_SPI_FLASH 
-  53 //#define CONFIG_ENV_IS_IN_MMC
+$ cd
+$ git clone https://github.com/OpenNuvoton/NUC970_NuWriter_CMD nuwriter
+$ cd nuwriter
+$ ./configure
+$ make
+$ sudo make install
 </pre><br>
 
 <p>
-3. 編輯env.txt
+測試
 </p>
 <pre>
-$ vim spi_env.txt
-  bootcmd=sf probe 0 18000000; sf read 0x7fc0 0x200000 0x1bc3d8; bootm 0x7fc0
-  baudrate=115200
-  bootdelay=3
-  ethact=emac
-  ethaddr=00:00:00:11:66:88
-  stderr=serial
-  stdin=serial
-  stdout=serial
+$ nuwriter -help
+  ============================================
+  ==   Nuvoton NuWriter Command Tool V1.0   ==
+  ============================================
+  NuWriter [Options] [File/Value]
+
+  -d [File]      Set DDR initial file
+  -d show        Print supported DDR model
+
+  -m sdram       Set SDRAM Mode
+  -m emmc        Set eMMC Mode
+  -m nand        Set NAND Mode
+  -m spi         Set SPI Mode
+
+  -t data        Set DATA Type
+  -t env         Set Environemnt Type
+  -t uboot       Set uBoot Type
+  -t pack        Set PACK Type
+  SDRAM parameters:
+  -a [value]     Set execute address
+  -w [File]      Write image file to SDRAM
+  -i [value]     device tree address
+  -n             Download &amp; Run
+
+  NAND/SPI/eMMC parameters:
+  -a [value]     Set start offset/execute address
+                 if erase, unit of block
+  -w [File]      Write image file to NAND
+  -r [File]      Read image file from NAND
+  -e [value]     Read/Erase length(unit of block)
+  -e 0xFFFFFFFF  Chip erase
+  -v             Verify image file after Write image 
+
+  ============================================
 </pre><br>
-
-<p>
-4. 燒錄至SPI
-</p>
-<pre>
-$ sudo nuwriter -m spi -d NUC972DF62Y.ini -e 0xffffffff
-$ sudo nuwriter -m spi -d NUC972DF62Y.ini -t env -a 0x80000 -w spi_env.txt -v
-$ sudo nuwriter -m spi -d NUC972DF62Y.ini -t uboot -a 0xE00000 -w u-boot.bin -v
-$ sudo nuwriter -m spi -d NUC972DF62Y.ini -t data -a 0x200000 -w arch/arm/boot/uImage -v
-</pre>
-
-<p>
-5. 設定PA0、PA1成SPI啟動
-</p>
 
 <p>
 <br><a href="../../mcu.htm">返回上一頁</a>
