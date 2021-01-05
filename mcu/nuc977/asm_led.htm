@@ -29,7 +29,7 @@
   <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
   
   <script type="text/javascript" src="../../scripts/shCore.js"></script>
-  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
 
   <!-- Conditional comment to apply opacity fix for IE #content background.
        Invalid CSS, but can be removed without harming design -->
@@ -44,12 +44,128 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>NUC977</h3>
-<p><b>開發板</b></p>
+<h3>NUC977 &gt;&gt; Assembly</h3>
+<p><b>LED</b></p>
 <hr size="1">
 <p>
-拉出UART(TXD、RXD)、LED(SD-CD = PD.6)以及按鍵(EXT1 04 = PB.3)<br>
-<img src="pcb/1.jpg" class="maxSize">
+參考資訊：<br>
+1. <a href="https://github.com/steward-fu/mcu-pdf/blob/master/nuc970/pm.pdf">pdf</a><br>
+2. <a href="https://github.com/OpenNuvoton/NUC970_NonOS_BSP">NUC970_NonOS_BSP</a><br><br>
+
+Enable GPIO Clock<br>
+<img src="asm_led/3.jpg" class="maxSize"><br><br>
+
+GPIO Direction<br>
+<img src="asm_led/4.jpg" class="maxSize"><br><br>
+
+Output Data<br>
+<img src="asm_led/5.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+  .equ GPIOD_DIR,     (0xb8003000 + 0xc0)
+  .equ GPIOD_DATAOUT, (0xb8003000 + 0xc4)
+  .equ CLK_PCLKEN0,   (0xb0000200 + 0x18)
+
+  .text
+  .align 2
+  .global _start
+_start:    b reset
+_undef:    b .
+_swi:      b .
+_pabort:   b .
+_dabort:   b .
+_reserved: b .
+_irq:      b .
+_fiq:      b .
+
+reset:
+  ldr r0, =CLK_PCLKEN0
+  ldr r1, [r0]
+  orr r1, #(1 &lt;&lt; 3)
+  str r1, [r0]
+
+  ldr r0, =GPIOD_DIR
+  ldr r1, =(1 &lt;&lt; 6)
+  str r1, [r0]
+loop:
+  ldr r0, =GPIOD_DATAOUT
+  ldr r1, =(1 &lt;&lt; 6)
+  str r1, [r0]
+  ldr r4, =500000
+1:
+  nop
+  subs r4, r4, #1
+  bne 1b
+  ldr r0, =GPIOD_DATAOUT
+  ldr r1, =~(1 &lt;&lt; 6)
+  str r1, [r0]
+  ldr r4, =500000
+1:
+  nop
+  subs r4, r4, #1
+  bne 1b
+  b loop
+  .end
+</pre><br>
+
+<p>
+main.ld
+</p>
+<pre>
+MEMORY
+{
+  RAM(rwx) : ORIGIN = 0x000000, LENGTH = 0x08000000
+}
+
+SECTIONS
+{
+  .text :
+  {
+    *(.text);
+    . = ALIGN(4);
+    *(.rodata);
+    . = ALIGN(4);
+    *(.rodata*);
+    . = ALIGN(4);
+  } &gt; RAM
+}
+</pre><br>
+
+<p>
+Makefile
+</p>
+<pre>
+all:
+  arm-none-eabi-as -mcpu=arm9 -o main.o main.s
+  arm-none-eabi-ld -T main.ld -o main.elf main.o
+  arm-none-eabi-objcopy -O binary main.elf main.bin
+
+flash:
+  sudo nuwriter -m sdram -d NUC977DK62Y.ini -a 0 -w main.bin -n
+
+clean:
+  rm -rf main.o main.elf main.bin
+</pre><br>
+
+<p>
+編譯、燒錄
+</p>
+<pre>
+$ make
+  arm-none-eabi-as -mcpu=arm9 -o main.o main.s
+  arm-none-eabi-ld -T main.ld -o main.elf main.o
+  arm-none-eabi-objcopy -O binary main.elf main.bin
+
+$ make flash
+  sudo nuwriter -m sdram -d NUC977DK62Y.ini -a 0 -w main.bin -n
+</pre><br>
+
+<p>
+完成<br>
+<img src="asm_led/1.jpg" class="maxSize"><br>
+<img src="asm_led/2.jpg" class="maxSize">
 </p>
 
 <p>
