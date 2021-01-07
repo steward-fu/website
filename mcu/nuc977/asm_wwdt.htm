@@ -45,23 +45,15 @@
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
 <h3>NUC977 &gt;&gt; Assembly</h3>
-<p><b>Watchdog Timer(WDT)</b></p>
+<p><b>Windowed Watchdog Timer(WWDT)</b></p>
 <hr size="1">
 <p>
 參考資訊：<br>
 1. <a href="https://github.com/steward-fu/mcu-pdf/blob/master/nuc970/pm.pdf">pdf</a><br>
-2. <a href="https://github.com/OpenNuvoton/NUC970_NonOS_BSP">NUC970_NonOS_BSP</a><br>
-3. <a href="https://blog.csdn.net/code_style/article/details/72616904">NUC972 ARM MPU资料不是足够完善</a><br>
-4. <a href="https://blog.csdn.net/shw03201/article/details/103821680?utm_medium=distribute.pc_relevant.none-task-blog-BlogCommendFromMachineLearnPai2-2.control&depth_1-utm_source=distribute.pc_relevant.none-task-blog-BlogCommendFromMachineLearnPai2-2.control">要通过硬件power on setting打开WDT，否则WDT不可用</a><br><br>
+2. <a href="https://github.com/OpenNuvoton/NUC970_NonOS_BSP">NUC970_NonOS_BSP</a><br><br>
 
-WDT_S<br>
-<img src="asm_wdt/1.jpg" class="maxSize"><br><br>
-
-解鎖順序：0x59、0x16、0x88<br>
-<img src="asm_wdt/2.jpg" class="maxSize"><br><br>
-
-WDTEN、RSTEN不是<b>Read Only</b><br>
-<img src="asm_wdt/3.jpg" class="maxSize"><br><br>
+WWDTEN、PSCSEL<br>
+<img src="asm_wwdt/1.jpg" class="maxSize"><br><br>
 
 main.s
 </p>
@@ -69,10 +61,9 @@ main.s
   .equ GPIOD_DIR,     (0xb8003000 + 0xc0)
   .equ GPIOD_DATAOUT, (0xb8003000 + 0xc4)
   .equ CLK_PCLKEN0,   (0xb0000200 + 0x18)
-  .equ WDT_CTL,       (0xb8001800 + 0x00)
-  .equ WDT_ALTCTL,    (0xb8001800 + 0x04)
-  .equ SYS_REGWPCTL,  (0xb0000000 + 0x1fc)
-  .equ CLK_DIVCTL8,   (0xb0000200 + 0x40)
+  .equ WWDT_RLDCNT,   (0xb8001900 + 0x00)
+  .equ WWDT_CTL,      (0xb8001900 + 0x04)
+  .equ WWDT_STATUS,   (0xb8001900 + 0x08)
  
   .text
   .align 2
@@ -89,56 +80,34 @@ _fiq:      b .
 reset:
   ldr r0, =CLK_PCLKEN0
   ldr r1, [r0]
-  orr r1, #((1 &lt;&lt; 3 ) | ( 1 &lt;&lt; 0))
+  orr r1, #((1 &lt;&lt; 3) | (1 &lt;&lt; 1))
   str r1, [r0]
  
-  ldr r0, =CLK_DIVCTL8
-  ldr r1, [r0]
-  and r1, #0xffffffcf
-  orr r1, #0x00000020
-  str r1, [r0]
-
-  ldr r0, =SYS_REGWPCTL
-  ldr r1, =0x59
-  ldr r2, =0x16
-  ldr r3, =0x88
-  str r1, [r0]
-  str r2, [r0]
-  str r3, [r0]
-
-  ldr r0, =WDT_CTL
-  ldr r1, =0x78f
-  str r1, [r0]
-  
   ldr r0, =GPIOD_DIR
   ldr r1, =(1 &lt;&lt; 6)
   str r1, [r0]
-loop:
-  ldr r0, =GPIOD_DATAOUT
-  ldr r1, =(1 &lt;&lt; 6)
-  str r1, [r0]
-  ldr r4, =100000
-1:
-  nop
-  subs r4, r4, #1
-  bne 1b
+  
   ldr r0, =GPIOD_DATAOUT
   ldr r1, =~(1 &lt;&lt; 6)
   str r1, [r0]
-  ldr r4, =100000
+
+  ldr r4, =1000000
 1:
   nop
   subs r4, r4, #1
   bne 1b
-  b loop
-  .end
-</pre>
-<p>
-P.S. 除了詭異的SYS_PWRON，還需要注意PA.3(1 = WDT is ON after power-on)腳位的設定，司徒目前PA.3是懸空，建議接到VCC，正確使用WDT<br><br>
 
-Watchdog Reset後，SDRAM資料消失，LED不再閃爍<br>
-<img src="asm_led/1.jpg" class="maxSize"><br>
-<img src="asm_led/2.jpg" class="maxSize">
+  ldr r0, =WWDT_CTL
+  ldr r1, =0xf01
+  str r1, [r0]
+  b .
+  .end
+</pre><br>
+
+<p>
+若沒有在限定的Window期間Reset Watchdog，則觸發系統Reset，SDRAM資料消失，LED熄滅<br>
+<img src="asm_led/2.jpg" class="maxSize"><br>
+<img src="asm_led/1.jpg" class="maxSize">
 </p>
 
 <p>
