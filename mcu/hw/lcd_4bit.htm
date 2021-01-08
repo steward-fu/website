@@ -48,6 +48,9 @@
 <p><b>LCD 4Bit</b></p>
 <hr size="1">
 <p>
+參考資料：<br>
+1. <a href="https://www.8051projects.net/lcd-interfacing/lcd-4-bit.php">lcd-4-bit</a><br><br>
+
 腳位：
 </p>
 <table>
@@ -73,7 +76,6 @@
 <p>
 RS和RW的組合配對，可以產生四種不同的控制方式
 </p>
-
 <table>
   <tr><th>RS</th><th>RW</th><th>功能說明</th></tr>
   <tr><td>0</td><td>0</td><td>寫命令到LCD</td></tr>
@@ -85,7 +87,6 @@ RS和RW的組合配對，可以產生四種不同的控制方式
 <p>
 LCD命令
 </p>
-
 <table>
   <tr>
     <th>RS</th>
@@ -216,7 +217,6 @@ LCD命令
 <p>
 1行(1x20)LCD RAM的排列方式如下
 </p>
-
 <table>
   <tr>
     <th>第一行字元位址</th>
@@ -225,7 +225,8 @@ LCD命令
 </table><br>
 
 <p>
-2行(2x20)LCD RAM的排列方式如下</p>
+2行(2x20)LCD RAM的排列方式如下
+</p>
 <table>
   <tr>
     <th>第一行字元位址</th>
@@ -238,7 +239,8 @@ LCD命令
 </table><br>
 
 <p>
-4行(4x20)LCD RAM的排列方式如下</p>
+4行(4x20)LCD RAM的排列方式如下
+</p>
 <table>
   <tr>
     <th>第一行字元位址</th>
@@ -261,80 +263,85 @@ LCD命令
 <p>
 電路圖如下：<br>
 <img src="lcd_4bit/1.jpg" class="maxSize"><br>
-每次傳送的命令或資料必須分成兩次傳送，先送出高4Bit，然後再送出低4Bit。
-</p>
+每次傳送的命令或資料必須分成兩次傳送，先送出高4Bit，然後再送出低4Bit<br><br>
 
-<p>
 程式如下：
 </p>
-
 <pre class="brush:cpp">
-void DelayMS(unsigned int u16Delay)
+void delay(unsigned int v)
 {
-  unsigned long u32DelayMS = 10000 * u16Delay;
-  
-  while(u32DelayMS--);
+  unsigned long m=1000*v;
+  while(m--);
 }
-
-void LCD_Write_Command(unsigned char u8Command)
+ 
+void lcd_wr_cmd(unsigned char cmd)
 {
+  LCD_RW = 0;
   LCD_RS = 0;
-  LCD_Port = u8Command &amp; 0xf0;
-  LCD_Enable = 1;
-  DelayMS(1);
-  LCD_Enable = 0;
-
-  LCD_Port = (u8Command &lt;&lt; 4) &amp; 0xf0;
-  LCD_Enable = 1;
-  DelayMS(1);
-  LCD_Enable = 0;
+  LCD_PORT = cmd;
+  LCD_E = 1;
+  delay(1);
+  LCD_E = 0;
+  delay(1);
+ 
+  LCD_PORT = cmd &lt;&lt; 4;
+  LCD_E = 1;
+  delay(1);
+  LCD_E = 0;
+  delay(1);
 }
-
-void LCD_Write_Data(unsigned char u8Data)
+ 
+void lcd_wr_dat(unsigned char dat)
 {
+  LCD_RW = 0;
   LCD_RS = 1;
-  LCD_Port = u8Data &amp; 0xf0;
-  LCD_Enable = 1;
-  DelayMS(1);
-  LCD_Enable = 0;
-
-  LCD_Port = (u8Data 4) &amp; 0xf0;
-  LCD_Enable = 1;
-  DelayMS(1);
-  LCD_Enable = 0;
+  LCD_PORT = dat;
+  LCD_E = 1;
+  delay(1);
+  LCD_E = 0;
+  delay(1);
+ 
+  LCD_PORT = dat &lt;&lt; 4;
+  LCD_E = 1;
+  delay(1);
+  LCD_E = 0;
+  delay(1);
 }
-
-void Init_LCD(void)
+ 
+void lcd_init(void)
 {
-  LCD_Write_Command(0x2e);
-  DelayMS(2);
-  LCD_Write_Command(0x0e);
-  DelayMS(2);
-  LCD_Write_Command(0x06);
-  DelayMS(1);
-  LCD_Write_Command(0x01);
-  DelayMS(1);
-  LCD_Write_Command(0x80);
-  DelayMS(1);
+  lcd_wr_cmd(0x2e);
+  delay(10);
+  lcd_wr_cmd(0x0e);
+  delay(10);
+  lcd_wr_cmd(0x06);
+  delay(10);
+  lcd_wr_cmd(0x01);
+  delay(10);
+  lcd_wr_cmd(0x80);
+  delay(10);
 }
-
-void PutLCDString(char *pStr)
+ 
+void lcd_string(char *s)
 {
   unsigned char i=0;
-
-  while(pStr[i] != 0x00){
-   LCD_Write_Data(pStr[i]);
-   i+= 1;
+  while(s[i] != 0x00){
+    lcd_wr_dat(s[i++]);
   }
 }
 
 void main(void)
 {
-  Init_LCD();
-  PutLCDString("LCD 4-Bit Test !");
+  lcd_init();
+  lcd_string("lcd 4-bit test !");
   while(1);
 }
-</pre>
+</pre><br>
+
+<p>
+完成<br>
+<img src="lcd_4bit/2.jpg" class="maxSize">
+</p>
 
 <p>
 <br><a href="../../mcu.htm">返回上一頁</a>
