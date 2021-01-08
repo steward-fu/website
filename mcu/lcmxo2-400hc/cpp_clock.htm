@@ -29,7 +29,7 @@
   <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
   
   <script type="text/javascript" src="../../scripts/shCore.js"></script>
-  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushPas.js"></script>
 
   <!-- Conditional comment to apply opacity fix for IE #content background.
        Invalid CSS, but can be removed without harming design -->
@@ -44,12 +44,60 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>硬體 &gt;&gt; USB</h3>
-<p><b>Keyboard scancode</b></p>
+<h3>LCMXO2-400HC &gt;&gt; Verilog</h3>
+<p><b>Clock</b></p>
 <hr size="1">
 <p>
-如下：<br>
-<img src="usb_kbd_code/1.jpg" class="maxSize">
+參考資訊：<br>
+1. <a href="https://www.stepfpga.com/doc/step-mxo2%E5%85%A5%E9%97%A8%E6%95%99%E7%A8%8B">basic</a><br><br>
+
+程式如下：
+</p>
+<pre class="brush: pas">
+module main(clk, seg_out);
+  
+input clk;
+output [8:0] seg_out;
+reg [8:0] seg_def[9:0];
+reg [3:0] seg_cnt;
+reg [23:0] clk_cnt;
+assign seg_out = seg_def[seg_cnt];
+
+initial begin
+  clk_cnt = 0;
+  seg_cnt = 0;
+  seg_def[0] = 9'h3f;
+  seg_def[1] = 9'h06;
+  seg_def[2] = 9'h5b;
+  seg_def[3] = 9'h4f;
+  seg_def[4] = 9'h66;
+  seg_def[5] = 9'h6d;
+  seg_def[6] = 9'h7d;
+  seg_def[7] = 9'h07;
+  seg_def[8] = 9'h7f;
+  seg_def[9] = 9'h6f;
+end
+
+always @(posedge clk) begin
+  clk_cnt = clk_cnt + 1;
+  if (clk_cnt &gt; 12000000) begin
+    clk_cnt = 0;
+    seg_cnt = seg_cnt + 1;
+    if (seg_cnt &gt; 9)
+      seg_cnt = 0;
+  end
+end
+endmodule
+</pre>
+<p>
+開發板上連接的是12MHz振盪器，因此，每數到12000000時，就更新七段顯示器的數值<br><br>
+
+腳位<br>
+<img src="cpp_clock/1.jpg" class="maxSize"><br>
+P.S. 七段顯示器的輸出腳位記得上拉電阻<br><br>
+
+完成<br>
+<img src="cpp_clock/2.jpg" class="maxSize">
 </p>
 
 <p>

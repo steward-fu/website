@@ -21,7 +21,7 @@
     var my_constant = 'posedge LOCATION';
     var my_keyword =  'module begin end if assign endmodule';
     var my_type = 'reg input output wire parameter';
-    var my_function = 'always initial set_pin_assignment ';
+    var my_function = 'main always initial set_pin_assignment';
 
     this.regexList = [
       {regex: /^ *#.*/gm, css: 'my_preprocessor'},

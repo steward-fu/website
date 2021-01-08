@@ -44,13 +44,31 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>硬體 &gt;&gt; USB</h3>
-<p><b>Keyboard scancode</b></p>
+<h3>10M02SCM</h3>
+<p><b>解決USB-Blaster無法偵測到的問題</b></p>
 <hr size="1">
 <p>
-如下：<br>
-<img src="usb_kbd_code/1.jpg" class="maxSize">
+參考資訊：<br>
+1. <a href="https://rocketboards.org/foswiki/Documentation/UsingUSBBlasterUnderLinux">UsingUSBBlasterUnderLinux</a><br>
+2. <a href="https://unix.stackexchange.com/questions/39370/how-to-reload-udev-rules-without-reboot">how-to-reload-udev-rules-without-reboot</a><br><br>
+
+USB-Blaster在Debian下出現<b>Unable to scan device chain. Can't scan JTAG chain</b>時，可以透過添加udev rule解決，步驟如下：
 </p>
+<pre>
+$ sudo vim /etc/udev/rules.d/92-usbblaster.rules
+  # USB-Blaster
+  SUBSYSTEM=="usb", ATTRS{idVendor}=="09fb", ATTRS{idProduct}=="6001", MODE="0666"
+  SUBSYSTEM=="usb", ATTRS{idVendor}=="09fb", ATTRS{idProduct}=="6002", MODE="0666"
+
+  SUBSYSTEM=="usb", ATTRS{idVendor}=="09fb", ATTRS{idProduct}=="6003", MODE="0666"
+
+  # USB-Blaster II
+  SUBSYSTEM=="usb", ATTRS{idVendor}=="09fb", ATTRS{idProduct}=="6010", MODE="0666"
+  SUBSYSTEM=="usb", ATTRS{idVendor}=="09fb", ATTRS{idProduct}=="6810", MODE="0666"
+
+$ sudo udevadm control --reload-rules
+$ sudo udevadm trigger
+</pre><br>
 
 <p>
 <br><a href="../../mcu.htm">返回上一頁</a>

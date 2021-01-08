@@ -29,7 +29,7 @@
   <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
   
   <script type="text/javascript" src="../../scripts/shCore.js"></script>
-  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushPas.js"></script>
 
   <!-- Conditional comment to apply opacity fix for IE #content background.
        Invalid CSS, but can be removed without harming design -->
@@ -44,12 +44,51 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>硬體 &gt;&gt; USB</h3>
-<p><b>Keyboard scancode</b></p>
+<h3>LCMXO2-400HC &gt;&gt; Verilog</h3>
+<p><b>Parallel</b></p>
 <hr size="1">
 <p>
-如下：<br>
-<img src="usb_kbd_code/1.jpg" class="maxSize">
+參考資訊：<br>
+1. <a href="https://www.stepfpga.com/doc/step-mxo2%E5%85%A5%E9%97%A8%E6%95%99%E7%A8%8B">basic</a><br><br>
+
+程式如下：
+</p>
+<pre class="brush: pas">
+module main(clk, sw, rgb);
+  
+input clk;
+input [3:0] sw;
+output reg [2:0] rgb;
+reg [23:0] clk_cnt;
+reg [4:0] clk_div;
+
+initial begin
+  rgb = 0;
+  clk_cnt = 0;
+  clk_div = 1;
+end
+
+always @(posedge clk) begin
+  clk_cnt = clk_cnt + 1;
+  if (clk_cnt &gt; (12000000 / clk_div)) begin
+    clk_cnt = 0;
+    rgb = rgb + 1;
+  end
+end
+
+always @(sw) begin
+  clk_div = sw + 1;
+end
+endmodule
+</pre>
+<p>
+當觸發條件成立，兩個各別的副程式可以同時執行，這也是FPGA平行處理的觀念，因為它的形式是硬體電路<br><br>
+
+腳位<br>
+<img src="cpp_parallel/1.jpg" class="maxSize"><br><br>
+
+完成<br>
+<img src="cpp_parallel/2.jpg" class="maxSize">
 </p>
 
 <p>

@@ -29,7 +29,7 @@
   <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
   
   <script type="text/javascript" src="../../scripts/shCore.js"></script>
-  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushVerilog.js"></script>
 
   <!-- Conditional comment to apply opacity fix for IE #content background.
        Invalid CSS, but can be removed without harming design -->
@@ -44,12 +44,54 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>硬體 &gt;&gt; USB</h3>
-<p><b>Keyboard scancode</b></p>
+<h3>EG4S20 &gt;&gt; Verilog</h3>
+<p><b>Parallel</b></p>
 <hr size="1">
 <p>
-如下：<br>
-<img src="usb_kbd_code/1.jpg" class="maxSize">
+main.v
+</p>
+<pre class="brush:verilog">
+module main(clk, btn, led);
+   
+input clk;
+input btn;
+output reg led;
+reg [25:0] clk_cnt;
+reg [4:0] clk_div;
+ 
+initial begin
+  led = 0;
+  clk_cnt = 0;
+  clk_div = 1;
+end
+ 
+always @(posedge clk) begin
+  clk_cnt = clk_cnt + 1;
+  if (clk_cnt &gt; (24000000 / clk_div)) begin
+    clk_cnt = 0;
+    led = ~led;
+  end
+end
+ 
+always @(posedge btn) begin
+  clk_div = clk_div + 5;
+end
+endmodule
+</pre><br>
+
+<p>
+main.adc<br>
+</p>
+<pre class="brush:verilog">
+set_pin_assignment {clk} {location=k14;}
+set_pin_assignment {btn} {location=k16;}
+set_pin_assignment {led} {location=r3;}
+</pre><br>
+
+<p>
+完成<br>
+<img src="cpp_parallel/1.jpg" class="maxSize"><br>
+<img src="cpp_parallel/2.jpg" class="maxSize">
 </p>
 
 <p>
