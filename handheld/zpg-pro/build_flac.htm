@@ -51,11 +51,6 @@
 步驟如下：
 </p>
 <pre>
-$ cd 
-$ wget https://ftp.osuosl.org/pub/xiph/releases/flac/flac-1.2.1.tar.gz
-$ tar xvf flac-1.2.1.tar.gz
-$ cd flac-1.2.1
-
 $ export TARGETMACH=arm-linux
 $ export BUILDMACH=aarch64
 $ export CROSS=arm-linux-gnueabihf-
@@ -63,8 +58,33 @@ $ export CC=${CROSS}gcc
 $ export LD=${CROSS}ld
 $ export AS=${CROSS}as
 $ export CXX=${CROSS}g++
-$ ./configure --prefix=/usr --build=arm-linux-gnueabihf --host=arm-linux
-$ make -j4
+
+$ cd 
+$ wget https://ftp.osuosl.org/pub/xiph/releases/flac/flac-1.2.1.tar.gz
+$ tar xvf flac-1.2.1.tar.gz
+$ cd flac-1.2.1
+$ ./configure --prefix=/usr/arm-linux-gnueabihf --build=arm-linux-gnueabihf --host=arm-linux
+$ make
+  main.cpp:75:3: error: ‘memcmp’ was not declared in this scope
+     memcmp(buffer, "RIFF", 4) ||
+     ^~~~~~
+  main.cpp:75:3: note: ‘memcmp’ is defined in header ‘&lt;cstring&gt;’; did you forget to ‘#include &lt;cstring&gt;’?
+  main.cpp:35:1:
+  +#include &lt;cstring&gt;
+
+  main.cpp:75:3:
+     memcmp(buffer, "RIFF", 4) ||
+     ^~~~~~
+  make[5]: *** [Makefile:420: main.o] Error 1
+
+$ vim examples/cpp/encode/file/main.cpp +31
+  #include &lt;stdio.h&gt;
+  #include &lt;stdlib.h&gt;
+  #include &lt;string.h&gt;
+  #include "FLAC++/metadata.h"
+  #include "FLAC++/encoder.h"
+
+$ make
 </pre><br>
 
 <p>

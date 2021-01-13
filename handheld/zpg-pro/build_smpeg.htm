@@ -54,20 +54,42 @@
 步驟如下：
 </p>
 <pre>
-$ cd 
-$ wget https://sources.voidlinux.org/smpeg-0.4.5/smpeg-0.4.5.tar.gz
-$ tar xvf smpeg-0.4.5.tar.gz
-$ cd smpeg-0.4.5
-
 $ export TARGETMACH=arm-linux
-$ export BUILDMACH=aarch64
+$ export BUILDMACH=i686-pc-linux-gnu-
 $ export CROSS=arm-linux-gnueabihf-
 $ export CC=${CROSS}gcc
 $ export LD=${CROSS}ld
 $ export AS=${CROSS}as
 $ export CXX=${CROSS}g++
-$ ./configure --prefix=/usr --build=arm-linux-gnueabihf --host=arm-linux --disable-gtktest --disable-opengl-player
-$ make -j4
+
+$ cd 
+$ wget https://sources.voidlinux.org/smpeg-0.4.5/smpeg-0.4.5.tar.gz
+$ tar xvf smpeg-0.4.5.tar.gz
+$ cd smpeg-0.4.5
+$ ./autogen.sh
+$ ./configure --prefix=/usr/arm-linux-gnueabihf --host=arm-linux --disable-gtktest --disable-opengl-player
+$ make
+  audio/hufftable.cpp:587:1: error: narrowing conversion of ‘-1’ from ‘int’ to ‘unsigned int’ [-Wnarrowing]
+    587 | };
+        | ^
+  audio/hufftable.cpp:587:1: error: narrowing conversion of ‘-1’ from ‘int’ to ‘unsigned int’ [-Wnarrowing]
+  audio/hufftable.cpp:587:1: error: narrowing conversion of ‘-1’ from ‘int’ to ‘unsigned int’ [-Wnarrowing]
+  audio/hufftable.cpp:587:1: error: narrowing conversion of ‘-1’ from ‘int’ to ‘unsigned int’ [-Wnarrowing]
+  audio/hufftable.cpp:587:1: error: narrowing conversion of ‘-1’ from ‘int’ to ‘unsigned int’ [-Wnarrowing]
+  audio/hufftable.cpp:587:1: error: narrowing conversion of ‘-1’ from ‘int’ to ‘unsigned int’ [-Wnarrowing]
+
+$ vim Makefile
+  -Wall &gt; -Wno-narrowing
+
+$ make
+  /usr/bin/ld: gtv.o: undefined reference to symbol 'XMoveWindow'
+  /usr/bin/ld: //lib/x86_64-linux-gnu/libX11.so.6: error adding symbols: DSO missing from command line
+  collect2: error: ld returned 1 exit status
+
+$ vim Makefile +359
+  LIBS = -lSDL -lm -lX11
+
+$ make
 </pre><br>
 
 <p>
