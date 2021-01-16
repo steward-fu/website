@@ -45,35 +45,39 @@
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
 <h3>AT91SAM7S64 &gt;&gt; Assembly</h3>
-<p><b>LED</b></p>
+<p><b>Phase Locked Loop(PLL)</b></p>
 <hr size="1">
 <p>
 參考資訊：<br>
 1. <a href="https://ww1.microchip.com/downloads/en/DeviceDoc/doc6175.pdf">pdf</a><br>
 2. <a href="https://ww1.microchip.com/downloads/en/DeviceDoc/6175s.pdf">pid</a><br>
-3. <a href="https://github.com/dwelch67/sam7s_samples">sam7s_samples</a><br><br>
+3. <a href="https://www.keil.com/dd/vtr/3815/6673.htm">keil</a><br>
+4. <a href="https://github.com/dwelch67/sam7s_samples">sam7s_samples</a><br><br>
 
-Enable<br>
-<img src="asm_led/3.jpg" class="maxSize"><br><br>
+MOSCEN<br>
+<img src="asm_pll/1.jpg" class="maxSize"><br><br>
 
-Output<br>
-<img src="asm_led/4.jpg" class="maxSize"><br><br>
+MUL、DIV<br>
+<img src="asm_pll/2.jpg" class="maxSize"><br><br>
 
-Output High<br>
-<img src="asm_led/5.jpg" class="maxSize"><br><br>
+PLL<br>
+<img src="asm_pll/3.jpg" class="maxSize"><br><br>
 
-Output Low<br>
-<img src="asm_led/6.jpg" class="maxSize"><br><br>
+Example<br>
+<img src="asm_pll/4.jpg" class="maxSize"><br><br>
 
 main.s
 </p>
 <pre class="brush:asm">
-  .equ PMC_PCER, 0xfffffc10
-  .equ PIO_PER,  0xfffff400
-  .equ PIO_OER,  0xfffff410
-  .equ PIO_SODR, 0xfffff430
-  .equ PIO_CODR, 0xfffff434
- 
+  .equ PMC_PCER,  0xfffffc10
+  .equ CKGR_MOR,  0xfffffc20
+  .equ CKGR_PLLR, 0xfffffc2c
+  .equ PMC_MCKR,  0xfffffc30
+  .equ PIO_PER,   0xfffff400
+  .equ PIO_OER,   0xfffff410
+  .equ PIO_SODR,  0xfffff430
+  .equ PIO_CODR,  0xfffff434
+  
   .text
   .align 2
   .global _start
@@ -85,73 +89,50 @@ _dabort:   b .
 _reserved: b .
 _irq:      b .
 _fiq:      b .
-
+ 
 reset:
+  ldr r0, =CKGR_MOR
+  ldr r1, =0x601
+  str r1, [r0]
+
+  ldr r0, =CKGR_PLLR
+  ldr r1, =0x191c05
+  str r1, [r0]
+
+  ldr r0, =PMC_MCKR
+  ldr r1, =7
+  str r1, [r0]
+
   ldr r0, =PMC_PCER
   ldr r1, =4
   str r1, [r0]
- 
+  
   ldr r0, =PIO_PER
   ldr r1, =0x40000
   str r1, [r0]
-  
+   
   ldr r0, =PIO_OER
   ldr r1, =0x40000
   str r1, [r0]
- 
+  
 loop:
   ldr r0, =PIO_SODR
   ldr r1, =0x40000
   str r1, [r0]
-  mov r4, #0x300
+  ldr r4, =0x500000
 1:
   subs r4, #1
   bne 1b
- 
+  
   ldr r0, =PIO_CODR
   ldr r1, =0x40000
   str r1, [r0]
-  mov r4, #0x300
+  ldr r4, =0x500000
 1:
   subs r4, #1
   bne 1b
   b loop
   .end
-</pre><br>
-
-<p>
-main.ld
-</p>
-<pre>
-MEMORY
-{
-  ram : ORIGIN = 0x00200000, LENGTH = 16K
-  rom : ORIGIN = 0x00100000, LENGTH = 64K
-}
-
-SECTIONS
-{
-  .text : { *(.text*) } > rom
-  .bss : { *(.bss*) } > ram
-}
-</pre><br>
-
-<p>
-Makefile
-</p>
-<pre>
-all: main.bin
-
-main.o: main.s
-  arm-none-eabi-as main.s -o main.o
-
-main.bin: main.o main.ld
-  arm-none-eabi-ld main.o -T main.ld -o main.elf
-  arm-none-eabi-objdump -D main.elf > main.list
-  arm-none-eabi-objcopy main.elf main.bin -O binary
-
-clean:
-  rm -f *.bin *.o *.elf *.list
 </pre><br>
 
 <p>
