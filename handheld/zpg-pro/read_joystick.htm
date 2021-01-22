@@ -54,15 +54,15 @@ main.c
 #include &lt;stdio.h&gt;
 #include &lt;stdlib.h&gt;
 #include &lt;SDL.h&gt;
-
+ 
 int main(int argc, char **argv)
 {
   SDL_Event e;
   SDL_Joystick *joy=NULL;
-  
+   
   SDL_Init(SDL_INIT_JOYSTICK);
   joy = SDL_JoystickOpen(0);
-
+ 
   int stop=0;
   while(stop == 0) {
     if(SDL_PollEvent(&amp;e)){
@@ -74,6 +74,14 @@ int main(int argc, char **argv)
         printf("down %d\n", e.jbutton.button);
         if(e.jbutton.button == 14){
           stop = 1;
+        }
+        break;
+      case SDL_JOYAXISMOTION:
+        if(e.jaxis.value &lt; -16384){
+          printf("axis %s\n", e.jaxis.axis ? "UP" : "LEFT");
+        }
+        if(e.jaxis.value &gt; 16384){
+          printf("axis %s\n", e.jaxis.axis ? "DOWN" : "RIGHT");
         }
         break;
       }
@@ -95,7 +103,7 @@ $ tar xvf toolchain-x64.tar.gz
 $ sudo mv gcc-arm-9.2-2019.12-x86_64-aarch64-none-linux-gnu /opt/zpg-sdk
 $ export PATH=$PATH:/opt/zpg-sdk/bin
 
-$ aarch64-none-linux-gnu-gcc main.c -o joytest -lSDL2 -I/opt/zpg-sdk/aarch64-none-linux-gnu/include/SDL2
+$ aarch64-none-linux-gnu-gcc main.c -o main -lSDL2 -lSDL2_image -I/opt/zpg-sdk/aarch64-none-linux-gnu/include/SDL2 -Wl,-rpath-link=/opt/zpg-sdk/aarch64-none-linux-gnu/lib/pulseaudio -Wl,-rpath-link=/opt/zpg-sdk/aarch64-none-linux-gnu/lib
 </pre><br>
 
 <p>
