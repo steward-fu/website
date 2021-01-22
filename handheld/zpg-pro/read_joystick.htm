@@ -77,12 +77,27 @@ int main(int argc, char **argv)
         }
         break;
       case SDL_JOYAXISMOTION:
-        if(e.jaxis.value &lt; -16384){
-          printf("axis %s\n", e.jaxis.axis ? "UP" : "LEFT");
-        }
-        if(e.jaxis.value &gt; 16384){
-          printf("axis %s\n", e.jaxis.axis ? "DOWN" : "RIGHT");
-        }
+        // up-left
+        //   (SDL_JoystickGetAxis(joy, 1) &lt; -16384) &amp;&amp; (SDL_JoystickGetAxis(joy, 0) &lt; -16384);
+        // down-left
+        //   (SDL_JoystickGetAxis(joy, 1) &gt; 16384) &amp;&amp; (SDL_JoystickGetAxis(joy, 0) &lt; -16384);
+        // down-right
+        //   (SDL_JoystickGetAxis(joy, 1) &gt; 16384) &amp;&amp; (SDL_JoystickGetAxis(joy, 0) &gt; 16384);
+        // up-right
+        //   (SDL_JoystickGetAxis(joy, 1) &lt; -16384) &amp;&amp; (SDL_JoystickGetAxis(joy, 0) &gt; 16384);
+
+        // up
+        //   vax = SDL_JoystickGetAxis(joy, 0);
+        //   (SDL_JoystickGetAxis(joy, 1) &lt; -16384) &amp;&amp; (ABS(vax) &lt; 16384);
+        // down
+        //   vax = SDL_JoystickGetAxis(joy, 0);
+        //   (SDL_JoystickGetAxis(joy, 1) &gt; 16384) &amp;&amp; (ABS(vax) &lt; 16384);
+        // left
+        //   vax = SDL_JoystickGetAxis(joy, 1);
+        //   (SDL_JoystickGetAxis(joy, 0) &lt; -16384) &amp;&amp; (ABS(vax) &lt; 16384);
+        // right
+        //   vax = SDL_JoystickGetAxis(joy, 1);
+        //   (SDL_JoystickGetAxis(joy, 0) &gt; 16384) &amp;&amp; (ABS(vax) &lt; 16384);
         break;
       }
     }
