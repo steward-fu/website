@@ -46,7 +46,7 @@
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
 <h3>Game Boy &gt;&gt; Assembly</h3>
-<p><b>hello, world!</b></p>
+<p><b>VBLANK</b></p>
 <hr size="1">
 <p>
 參考資訊：<br>
@@ -54,28 +54,37 @@
 2. <a href="https://github.com/sinamas/gambatte">gambatte</a><br>
 3. <a href="https://github.com/lancekindle/DMGreport">DMGreport</a><br><br>
 
+暫存器<br>
+<img src="asm_vblank/3.jpg" class="maxSize"><br>
+<img src="asm_vblank/4.jpg" class="maxSize"><br><br>
+
 main.s
 </p>
 <pre class="brush:asm">
+SCX        equ $ff43
+LY         equ $ff44
+IE         equ $ffff
+IEF_VBLANK equ %00000001
+
 section "vblank", rom0[$0040]
   reti
-
+ 
 section "lcdc", rom0[$0048]
   reti
-
+ 
 section "timer", rom0[$0050]
   reti
-
+ 
 section "serial", rom0[$0058]
   reti
-
+ 
 section "joypad", rom0[$0060]
   reti
-
+ 
 section "entry", rom0[$0100]
   nop
   jp _start
-
+ 
 section "header", rom0[$0104]
   db $ce, $ed, $66, $66, $cc, $0d, $00, $0b, $03, $73, $00, $83, $00, $0c, $00, $0d
   db $00, $08, $11, $1f, $88, $89, $00, $0e, $dc, $cc, $6e, $e6, $dd, $dd, $d9, $99
@@ -92,28 +101,32 @@ section "header", rom0[$0104]
   db 0
   db 0
   dw 0
-
+ 
 _start:
- jp _start
-</pre>
-<p>
-一個精簡的程式框架<br><br>
+  di
+  ld sp, $ffff
+  ld a, IEF_VBLANK
+  ld [IE], a
+  ei
 
-編譯、執行
-</p>
-<pre>
-$ gbasm -o main.o main.s
-$ rgblink -o main.gb main.obj
-$ rgbfix -v -p0 main.gb
-$ gambatte_sdl main.gb
-  Gambatte SDL (r696)
-  0123456789abcde
-  GamePak type: NULL rambanks: 0 rombanks: 2
-  header checksum: ok
-  cgb: 0
+loop:
+  halt
+  nop
+  halt
+  nop
+
+  ld a, [SCX]
+  inc a
+  ld [SCX], a
+ 
+  jp loop
 </pre>
 <p>
-<img src="asm_hello/1.jpg" class="maxSize">
+每兩個frame，移動x捲軸一次<br><br>
+
+完成<br>
+<img src="asm_vblank/1.jpg" class="maxSize"><br>
+<img src="asm_vblank/2.jpg" class="maxSize">
 </p>
 
 <p>
