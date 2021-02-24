@@ -30,7 +30,7 @@
   <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
   
   <script type="text/javascript" src="../../scripts/shCore.js"></script>
-  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
 
   <!-- Conditional comment to apply opacity fix for IE #content background.
        Invalid CSS, but can be removed without harming design -->
@@ -45,139 +45,16 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>Game Boy &gt;&gt; Assembly</h3>
-<p><b>DMA</b></p>
+<h3>Game Boy</h3>
+<p><b>縮寫</b></p>
 <hr size="1">
 <p>
 參考資訊：<br>
-1. <a href="https://github.com/gbdev/rgbds">rgbds</a><br>
-2. <a href="https://github.com/sinamas/gambatte">gambatte</a><br>
-3. <a href="https://github.com/lancekindle/DMGreport">DMGreport</a><br><br>
+1. <a href="http://marc.rawer.de/Gameboy/Docs/GBCPUman.pdf">GBCPUman</a><br>
+2. <a href="https://ia801906.us.archive.org/19/items/GameBoyProgManVer1.1/GameBoyProgManVer1.1.pdf">GameBoyProgManVer1.1</a><br><br>
 
-暫存器<br>
-<img src="asm_dma/1.jpg" class="maxSize"><br><br>
-
-注意事項：<br>
-1. DMA程式位址：0xff80~0xfffe<br>
-2. DMA來源位址：0x8000~0xdfff<br>
-3. DMA執行時間：160us<br>
-4. DMA固定搬移資料到OAM 0xfe00(32bits x 40)<br><br>
-
-main.s
-</p>
-<pre class="brush:asm">
-DMA_CODE    equ $ff80
-RAM         equ $c000
-LCDC        equ $ff40
-DMA         equ $ff46
-IE          equ $ffff
-LCDCF_OBJ8  equ %00000000
-LCDCF_OBJON equ %00000010
-IEF_VBLANK  equ %00000001
- 
-section "vblank", rom0[$0040]
-  jp DMA_CODE
-  
-section "lcdc", rom0[$0048]
-  reti
-  
-section "timer", rom0[$0050]
-  reti
-  
-section "serial", rom0[$0058]
-  reti
-  
-section "joypad", rom0[$0060]
-  reti
-  
-section "entry", rom0[$0100]
-  nop
-  jp _start
-  
-section "header", rom0[$0104]
-  db $ce, $ed, $66, $66, $cc, $0d, $00, $0b, $03, $73, $00, $83, $00, $0c, $00, $0d
-  db $00, $08, $11, $1f, $88, $89, $00, $0e, $dc, $cc, $6e, $e6, $dd, $dd, $d9, $99
-  db $bb, $bb, $67, $63, $6e, $0e, $ec, $cc, $dd, $dc, $99, $9f, $bb, $b9, $33, $3e
-  db "0123456789abcde"
-  db 0
-  db 0, 0
-  db 0
-  db 0
-  db 0
-  db 0
-  db 1
-  db $33
-  db 0
-  db 0
-  dw 0
-  
-_start:
-  di
-  ld sp, $ffff
-  call copy_dma_code
-  ld a, IEF_VBLANK
-  ld [IE], a
-  ei
- 
-  ld a, [LCDC]
-  or LCDCF_OBJON
-  or LCDCF_OBJ8
-  ld [LCDC], a
- 
-  ld hl, RAM + 0
-  ld [hl], 100
-  ld hl, RAM + 1
-  ld [hl], 0
-  ld hl, RAM + 2
-  ld [hl], $19
-  ld hl, RAM + 3
-  ld [hl], 0
-  
-loop:
-  halt
-  nop
- 
-  ld hl, RAM + 1
-  inc [hl]
- 
-  jp loop
-
-dma_code_start:
-  push af
-  ld a, RAM / $100
-  ; ldh is a faster version of ld if in [0xffxx] range
-  ldh [DMA], a
-  ld a, $28
-wait:
-  dec a
-  jr nz, wait
-  pop af
-  reti
-dma_code_end:
-
-copy_dma_code:
-  ld de, DMA_CODE
-  ld hl, dma_code_start
-  ld bc, dma_code_end - dma_code_start
-copy:
-  inc b
-  inc c
-  jr skip
-cloop:
-  ld a, [hl+]
-  ld [de], a
-  inc de
-skip:
-  dec c
-  jr nz, cloop
-  dec b
-  jr nz, cloop
-  ret
-</pre><br>
-<p>
-完成<br>
-<img src="asm_dma/2.jpg" class="maxSize"><br>
-<img src="asm_dma/3.jpg" class="maxSize">
+如下：<br>
+<img src="model/1.jpg" class="maxSize">
 </p>
 
 <p>
