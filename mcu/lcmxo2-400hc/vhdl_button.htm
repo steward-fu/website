@@ -44,8 +44,8 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>LCMXO2-400HC &gt;&gt; Verilog</h3>
-<p><b>Clock</b></p>
+<h3>LCMXO2-400HC &gt;&gt; VHDL</h3>
+<p><b>Button</b></p>
 <hr size="1">
 <p>
 參考資訊：<br>
@@ -54,50 +54,38 @@
 程式如下：
 </p>
 <pre class="brush: pas">
-module main(clk, seg_out);
+library ieee;
+use ieee.std_logic_1164.all;
   
-input clk;
-output [8:0] seg_out;
-reg [8:0] seg_def[9:0];
-reg [3:0] seg_cnt;
-reg [23:0] clk_cnt;
-assign seg_out = seg_def[seg_cnt];
-
-initial begin
-  clk_cnt = 0;
-  seg_cnt = 0;
-  seg_def[0] = 9'h3f;
-  seg_def[1] = 9'h06;
-  seg_def[2] = 9'h5b;
-  seg_def[3] = 9'h4f;
-  seg_def[4] = 9'h66;
-  seg_def[5] = 9'h6d;
-  seg_def[6] = 9'h7d;
-  seg_def[7] = 9'h07;
-  seg_def[8] = 9'h7f;
-  seg_def[9] = 9'h6f;
-end
-
-always @(posedge clk) begin
-  clk_cnt = clk_cnt + 1;
-  if (clk_cnt &gt; 12000000) begin
-    clk_cnt = 0;
-    seg_cnt = seg_cnt + 1;
-    if (seg_cnt &gt; 9)
-      seg_cnt = 0;
-  end
-end
-endmodule
+entity main is
+  port(
+    btn: in bit;
+    led: out bit_vector(7 downto 0));
+end main;
+  
+architecture logic of main is
+signal cnt:bit_vector(7 downto 0):="11111110";
+ 
+begin
+  process(btn) is
+  begin
+    if (btn'event and btn = '0') then
+      cnt&lt;= cnt rol 1;
+    end if;
+  end process;
+   
+  led&lt;= cnt;
+end logic;
 </pre>
 <p>
-開發板上連接的是12MHz振盪器，因此，每數到12000000時，就更新七段顯示器的數值<br><br>
+觸發條件為btn的正緣訊號，接著依序點亮LED<br><br>
 
 腳位<br>
-<img src="cpp_clock/1.jpg" class="maxSize"><br>
-P.S. 七段顯示器的輸出腳位記得上拉電阻<br><br>
+<img src="vhdl_button/1.jpg" class="maxSize"><br><br>
 
 完成<br>
-<img src="cpp_clock/2.jpg" class="maxSize">
+<img src="vhdl_button/2.jpg" class="maxSize"><br>
+<img src="vhdl_button/3.jpg" class="maxSize">
 </p>
 
 <p>
