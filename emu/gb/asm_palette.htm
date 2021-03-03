@@ -54,15 +54,24 @@
 2. <a href="https://github.com/sinamas/gambatte">gambatte</a><br>
 3. <a href="https://github.com/lancekindle/DMGreport">DMGreport</a><br><br>
 
-暫存器<br>
+Game Boy支援4種色階並且有3個調色盤(1個Background、2個Object)可以使用，顏色的色階則是由CHR像素資料控制，色階對應的顏色則可以由調色盤控制<br>
 <img src="asm_palette/1.jpg" class="maxSize"><br><br>
 
 main.s
 </p>
 <pre class="brush:asm">
-BGP  equ $ff47
-OBP0 equ $ff48
-OBP1 equ $ff49
+BGP         equ $ff47
+OBP0        equ $ff48
+OBP1        equ $ff49
+LCDC        equ $ff40
+STAT        equ $ff41
+LY          equ $ff44
+IE          equ $ffff
+LCDCF_OBJ8  equ %00000000
+LCDCF_OBJON equ %00000010
+LCDCF_ON    equ %10000000
+IEF_VBLANK  equ %00000001
+STATF_BUSY  equ %00000010
  
 section "vblank", rom0[$0040]
   reti
@@ -102,17 +111,71 @@ section "header", rom0[$0104]
     
 _start:
   di
+  ld sp, $ffff
+  ld a, IEF_VBLANK
+  ld [IE], a
+  ei
  
-  ld a, %00000100
+  halt
+  ld a, [LCDC]
+  and ~LCDCF_ON
+  ld [LCDC], a
+ 
+  ld d, 16
+  ld bc, tile
+  ld hl, $8000
+copy_chr:
+  ld a, [bc]
+  ld [hl+], a
+  inc bc
+  dec d
+  jr nz, copy_chr
+ 
+  ld b, 3
+  ld hl, $9800
+copy_bg:
+  ldh a, [STAT]
+  and STATF_BUSY
+  jr nz, @-4
+  ld a, 1
+  ld [hl+], a
+  dec b
+  jr nz, copy_bg
+ 
+  ld a, %11100100
   ld [BGP], a
-  ld a, %00000000
+  ld a, %11100100
   ld [OBP0], a
   ld [OBP1], a
+
+  ld a, [LCDC]
+  or LCDCF_ON
+  ld [LCDC], a
  
 loop:
   jp loop
-</pre><br>
+ 
+tile:
+  db %11111111
+  db %11111111
+  db %11111111
+  db %11111111
+  db %11111111
+  db %00000000
+  db %11111111
+  db %00000000 
+  db %00000000
+  db %11111111
+  db %00000000
+  db %11111111
+  db %00000000
+  db %00000000
+  db %00000000
+  db %00000000
+</pre>
 <p>
+每個像素的色階由tile設定，因此，顯示一個8x8 Pixels，需要16 Bytes(1個Pixel由2個bits控制)，色階對應的顏色則由BGP(Background)、OBP0(Object)、OBP1(Object)設定<br><br>
+
 完成<br>
 <img src="asm_palette/2.jpg" class="maxSize">
 </p>
