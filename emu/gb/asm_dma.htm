@@ -50,9 +50,10 @@
 <hr size="1">
 <p>
 參考資訊：<br>
-1. <a href="https://github.com/gbdev/rgbds">rgbds</a><br>
-2. <a href="https://github.com/sinamas/gambatte">gambatte</a><br>
-3. <a href="https://github.com/lancekindle/DMGreport">DMGreport</a><br><br>
+1. <a href="https://bgb.bircd.org/">bgb</a><br>
+2. <a href="https://github.com/gbdev/rgbds">rgbds</a><br>
+3. <a href="https://github.com/sinamas/gambatte">gambatte</a><br>
+4. <a href="https://github.com/lancekindle/DMGreport">DMGreport</a><br><br>
 
 暫存器<br>
 <img src="asm_dma/1.jpg" class="maxSize"><br><br>
@@ -66,13 +67,13 @@
 main.s
 </p>
 <pre class="brush:asm">
-DMA_CODE    equ $ff80
 RAM         equ $c000
-LCDC        equ $ff40
 DMA         equ $ff46
-IE          equ $ffff
+DMA_CODE    equ $ff80
+LCDC        equ $ff40
 LCDCF_OBJ8  equ %00000000
 LCDCF_OBJON equ %00000010
+IE          equ $ffff
 IEF_VBLANK  equ %00000001
  
 section "vblank", rom0[$0040]
@@ -145,7 +146,6 @@ loop:
 dma_code_start:
   push af
   ld a, RAM / $100
-  ; ldh is a faster version of ld if in [0xffxx] range
   ldh [DMA], a
   ld a, $28
 wait:
@@ -177,7 +177,10 @@ skip:
 <p>
 完成<br>
 <img src="asm_dma/2.jpg" class="maxSize"><br>
-<img src="asm_dma/3.jpg" class="maxSize">
+<img src="asm_dma/3.jpg" class="maxSize"><br><br>
+
+由於OAMRAM並沒有全部初始化，開機後的內容是隨機，這也是為何有很多雜點的原因<br>
+<img src="asm_dma/4.jpg" class="maxSize">
 </p>
 
 <p>
