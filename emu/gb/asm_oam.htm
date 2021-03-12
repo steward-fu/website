@@ -55,8 +55,10 @@
 3. <a href="https://github.com/sinamas/gambatte">gambatte</a><br>
 4. <a href="https://github.com/lancekindle/DMGreport">DMGreport</a><br><br>
 
-暫存器<br>
-<img src="asm_oam/1.jpg" class="maxSize"><br>
+OBJ0~OBJ39，共40個OBJ可以使用<br>
+<img src="asm_oam/1.jpg" class="maxSize"><br><br>
+
+8x8、8x16<br>
 <img src="asm_oam/2.jpg" class="maxSize"><br><br>
 
 main.s
@@ -68,26 +70,26 @@ LCDCF_OBJ8  equ %00000000
 LCDCF_OBJON equ %00000010
 IE          equ $ffff
 IEF_VBLANK  equ %00000001
-
+ 
 section "vblank", rom0[$0040]
   reti
- 
+  
 section "lcdc", rom0[$0048]
   reti
- 
+  
 section "timer", rom0[$0050]
   reti
- 
+  
 section "serial", rom0[$0058]
   reti
- 
+  
 section "joypad", rom0[$0060]
   reti
- 
+  
 section "entry", rom0[$0100]
   nop
   jp _start
- 
+  
 section "header", rom0[$0104]
   db $ce, $ed, $66, $66, $cc, $0d, $00, $0b, $03, $73, $00, $83, $00, $0c, $00, $0d
   db $00, $08, $11, $1f, $88, $89, $00, $0e, $dc, $cc, $6e, $e6, $dd, $dd, $d9, $99
@@ -104,51 +106,41 @@ section "header", rom0[$0104]
   db 0
   db 0
   dw 0
- 
+  
 _start:
   di
   ld sp, $ffff
   ld a, IEF_VBLANK
   ld [IE], a
   ei
-
+ 
   halt
-  nop
   halt
-  nop
-
-  ld hl, OAMRAM + 0
-  ld [hl], 100
-  ld hl, OAMRAM + 1
-  ld [hl], 0
-  ld hl, OAMRAM + 2
-  ld [hl], $19
-  ld hl, OAMRAM + 3
-  ld [hl], 0
-
+  
   ld a, [LCDC]
   or LCDCF_OBJON
   or LCDCF_OBJ8
   ld [LCDC], a
 
-loop:
-  halt
-  nop
-
+  ld hl, OAMRAM + 0
+  ld [hl], 30
   ld hl, OAMRAM + 1
-  inc [hl]
-
-  jp loop
+  ld [hl], 30
+  ld hl, OAMRAM + 2
+  ld [hl], $19
+  ld hl, OAMRAM + 3
+  ld [hl], 0
+ 
+  jp @
 </pre>
 <p>
-OBJ初始狀態(y:100, x:0, chr:0x19, attr:0)，之後，每個frame，累加OBJ的x位置<br><br>
+設定OBJ0的位置(y:30, x:30)、CHR(0x19)、屬性(0)，CHR其實就是一般稱呼的Tile，而Sprite則是由Tile組合而成的圖形<br><br>
 
 完成<br>
-<img src="asm_oam/3.jpg" class="maxSize"><br>
-<img src="asm_oam/4.jpg" class="maxSize"><br><br>
+<img src="asm_oam/3.jpg" class="maxSize"><br><br>
 
-由於OAMRAM並沒有全部初始化，開機後的內容是隨機，這也是為何有很多雜點的原因<br>
-<img src="asm_oam/5.jpg" class="maxSize">
+由於OAM並沒有全部被初始化，開機後的內容是隨機，這也是為何有很多雜點的原因<br>
+<img src="asm_oam/4.jpg" class="maxSize">
 </p>
 
 <p>

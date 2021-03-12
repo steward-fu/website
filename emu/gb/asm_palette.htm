@@ -65,34 +65,33 @@ BGP         equ $ff47
 OBP0        equ $ff48
 OBP1        equ $ff49
 LCDC        equ $ff40
-STAT        equ $ff41
-LY          equ $ff44
-IE          equ $ffff
 LCDCF_OBJ8  equ %00000000
 LCDCF_OBJON equ %00000010
 LCDCF_ON    equ %10000000
+IE          equ $ffff
 IEF_VBLANK  equ %00000001
+STAT        equ $ff41
 STATF_BUSY  equ %00000010
- 
+  
 section "vblank", rom0[$0040]
   reti
-    
+     
 section "lcdc", rom0[$0048]
   reti
-    
+     
 section "timer", rom0[$0050]
   reti
-    
+     
 section "serial", rom0[$0058]
   reti
-    
+     
 section "joypad", rom0[$0060]
   reti
-    
+     
 section "entry", rom0[$0100]
   nop
   jp _start
-    
+     
 section "header", rom0[$0104]
   db $ce, $ed, $66, $66, $cc, $0d, $00, $0b, $03, $73, $00, $83, $00, $0c, $00, $0d
   db $00, $08, $11, $1f, $88, $89, $00, $0e, $dc, $cc, $6e, $e6, $dd, $dd, $d9, $99
@@ -109,20 +108,22 @@ section "header", rom0[$0104]
   db 0
   db 0
   dw 0
-    
+     
 _start:
   di
   ld sp, $ffff
   ld a, IEF_VBLANK
   ld [IE], a
   ei
- 
+  
   halt
+  halt
+
   ld a, [LCDC]
   and ~LCDCF_ON
   ld [LCDC], a
- 
-  ld d, 16
+  
+  ld d, 32
   ld bc, tile
   ld hl, $8000
 copy_chr:
@@ -131,36 +132,41 @@ copy_chr:
   inc bc
   dec d
   jr nz, copy_chr
- 
-  ld b, 3
+  
   ld hl, $9800
-copy_bg:
-  ldh a, [STAT]
-  and STATF_BUSY
-  jr nz, @-4
-  ld a, 1
-  ld [hl+], a
-  dec b
-  jr nz, copy_bg
- 
+  ld [hl], 1
+  
   ld a, %11100100
   ld [BGP], a
-  ld a, %11100100
-  ld [OBP0], a
-  ld [OBP1], a
-
+ 
   ld a, [LCDC]
   or LCDCF_ON
   ld [LCDC], a
- 
-loop:
-  jp loop
- 
+  
+  jp @
+  
 tile:
-  db %11111111
-  db %11111111
-  db %11111111
-  db %11111111
+  db %00000000
+  db %00000000
+  db %00000000
+  db %00000000
+  db %00000000
+  db %00000000
+  db %00000000
+  db %00000000
+  db %00000000
+  db %00000000
+  db %00000000
+  db %00000000
+  db %00000000
+  db %00000000
+  db %00000000
+  db %00000000
+
+  db %00000000
+  db %00000000
+  db %00000000
+  db %00000000
   db %11111111
   db %00000000
   db %11111111
@@ -169,16 +175,17 @@ tile:
   db %11111111
   db %00000000
   db %11111111
-  db %00000000
-  db %00000000
-  db %00000000
-  db %00000000
+  db %11111111
+  db %11111111
+  db %11111111
+  db %11111111
 </pre>
 <p>
 每個像素的色階由tile設定，因此，顯示一個8x8 Pixels，需要16 Bytes(1個Pixel由2個bits控制)，色階對應的顏色則由BGP(Background)、OBP0(Object)、OBP1(Object)設定<br><br>
 
 完成<br>
-<img src="asm_palette/2.jpg" class="maxSize">
+<img src="asm_palette/2.jpg" class="maxSize"><br>
+<img src="asm_palette/3.jpg" class="maxSize">
 </p>
 
 <p>

@@ -55,37 +55,37 @@
 3. <a href="https://github.com/sinamas/gambatte">gambatte</a><br>
 4. <a href="https://github.com/lancekindle/DMGreport">DMGreport</a><br><br>
 
-每個像素使用2bits表示(上下Bit)<br>
+每個像素使用2bits表示(上下bit)<br>
 <img src="asm_chr/1.jpg" class="maxSize"><br><br>
 
 main.s
 </p>
 <pre class="brush:asm">
 LCDC        equ $ff40
-IE          equ $ffff
 LCDCF_OBJ8  equ %00000000
 LCDCF_OBJON equ %00000010
+IE          equ $ffff
 IEF_VBLANK  equ %00000001
-
+ 
 section "vblank", rom0[$0040]
   reti
-  
+   
 section "lcdc", rom0[$0048]
   reti
-  
+   
 section "timer", rom0[$0050]
   reti
-  
+   
 section "serial", rom0[$0058]
   reti
-  
+   
 section "joypad", rom0[$0060]
   reti
-  
+   
 section "entry", rom0[$0100]
   nop
   jp _start
-  
+   
 section "header", rom0[$0104]
   db $ce, $ed, $66, $66, $cc, $0d, $00, $0b, $03, $73, $00, $83, $00, $0c, $00, $0d
   db $00, $08, $11, $1f, $88, $89, $00, $0e, $dc, $cc, $6e, $e6, $dd, $dd, $d9, $99
@@ -102,7 +102,7 @@ section "header", rom0[$0104]
   db 0
   db 0
   dw 0
-  
+   
 _start:
   di
   ld sp, $ffff
@@ -111,10 +111,13 @@ _start:
   ei
 
   halt
-  nop
   halt
-  nop
-
+  
+  ld a, [LCDC]
+  or LCDCF_OBJON
+  or LCDCF_OBJ8
+  ld [LCDC], a
+  
   ld d, 16
   ld bc, tile
   ld hl, $8000
@@ -124,14 +127,9 @@ cc:
   inc bc
   dec d
   jr nz, cc
-
-  ld a, [LCDC]
-  or LCDCF_OBJON
-  or LCDCF_OBJ8
-  ld [LCDC], a
  
   jp @
-
+ 
 tile:
   db %11111111
   db %11111111
@@ -151,7 +149,7 @@ tile:
   db %11111111
 </pre>
 <p>
-每個像素使用2bits表示(上下Bit)，因此，一個8x8的CHR需要複製16Bytes<br><br>
+每個像素使用2bits表示(上下bit)，因此，一個8x8的CHR需要複製16Bytes<br><br>
 
 完成<br>
 <img src="asm_chr/2.jpg" class="maxSize"><br>
