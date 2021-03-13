@@ -46,7 +46,7 @@
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
 <h3>Game Boy Color &gt;&gt; Assembly</h3>
-<p><b>Palette(BG)</b></p>
+<p><b>DMA Transfer</b></p>
 <hr size="1">
 <p>
 參考資訊：<br>
@@ -55,26 +55,29 @@
 3. <a href="https://github.com/sinamas/gambatte">gambatte</a><br>
 4. <a href="https://github.com/lancekindle/DMGreport">DMGreport</a><br><br>
 
-每個像素使用2bits表示(4個顏色)<br>
-<img src="../gb/asm_chr/1.jpg" class="maxSize"><br><br>
+暫存器<br>
+<img src="../gb/asm_dma/1.jpg" class="maxSize"><br><br>
 
-每一個Palette有4個顏色可以設定，共有8個Palette可以使用<br>
-<img src="asm_palette_bg/1.jpg" class="maxSize"><br><br>
-
-每個顏色由15bits組成<br>
-<img src="asm_palette_bg/2.jpg" class="maxSize"><br><br>
-
-設定的方式則是透過BCPS(設定位址)、BCPD(設定資料)<br>
-<img src="asm_palette_bg/3.jpg" class="maxSize"><br><br>
+注意事項：<br>
+1. DMA程式位址：0xff80~0xfffe<br>
+2. DMA來源位址：0x0000~0xdfff<br>
+3. DMA執行時間：76us(2x)、152us(1x)<br>
+4. DMA固定搬移資料到OAM 0xfe00(32bits x 40)<br><br>
 
 main.s
 </p>
 <pre class="brush:asm">
-LCDC     equ $ff40
-LCDCF_ON equ %10000000
-    
+RAM         equ $c000
+DMA         equ $ff46
+DMA_CODE    equ $ff80
+LCDC        equ $ff40
+LCDCF_OBJ8  equ %00000000
+LCDCF_OBJON equ %00000010
+IE          equ $ffff
+IEF_VBLANK  equ %00000001
+
 section "vblank", rom0[$0040]
-  reti
+  jp DMA_CODE
       
 section "lcdc", rom0[$0048]
   reti
@@ -111,21 +114,127 @@ section "header", rom0[$0104]
       
 _start:
   di
-  ld a, 0
-  ld [$ff68], a
-  ld a, $1f
-  ld [$ff69], a
-  ld a, 1
-  ld [$ff68], a
-  ld a, $00
-  ld [$ff69], a
-  jp @
-</pre>
-<p>
-設定Palette0的第1組(共4組)顏色為0x001f(紅色)，而預設開機的第1個Tile，內容都是0，因此，顯示為紅色<br><br>
+  ld sp, $ffff
+  call copy_dma_code
+  ld a, IEF_VBLANK
+  ld [IE], a
+  ei
 
+  ld a, [LCDC]
+  or LCDCF_OBJON
+  or LCDCF_OBJ8
+  ld [LCDC], a
+
+  ld d, 32
+  ld bc, tile
+  ld hl, $8000
+copy_tile:
+  ld a, [bc]
+  ld [hl+], a
+  inc bc
+  dec d
+  jr nz, copy_tile
+   
+  ld b, 0
+  ld hl, color
+copy_palette:
+  ld a, b
+  ld [$ff6a], a
+  ld a, [hl]
+  ld [$ff6b], a
+  inc hl
+  inc b
+  ld a, b
+  cp 8
+  jr nz, copy_palette
+
+  ld hl, RAM + 0
+  ld [hl], 30
+  ld hl, RAM + 1
+  ld [hl], 30
+  ld hl, RAM + 2
+  ld [hl], 1
+  ld hl, RAM + 3
+  ld [hl], 0
+
+  jp @
+
+dma_code_start:
+  push af
+  ld a, RAM / $100
+  ldh [DMA], a
+  ld a, $28
+wait:
+  dec a
+  jr nz, wait
+  pop af
+  reti
+dma_code_end:
+
+copy_dma_code:
+  ld de, DMA_CODE
+  ld hl, dma_code_start
+  ld bc, dma_code_end - dma_code_start
+copy:
+  inc b
+  inc c
+  jr skip
+cloop:
+  ld a, [hl+]
+  ld [de], a
+  inc de
+skip:
+  dec c
+  jr nz, cloop
+  dec b
+  jr nz, cloop
+  ret
+
+color:
+  dw $7fff
+  dw $001f
+  dw $03e0
+  dw $7c00
+   
+tile:
+  db %00000000
+  db %00000000
+  db %00000000
+  db %00000000
+  db %00000000
+  db %00000000
+  db %00000000
+  db %00000000
+  db %00000000
+  db %00000000
+  db %00000000
+  db %00000000
+  db %00000000
+  db %00000000
+  db %00000000
+  db %00000000
+
+  db %00000000
+  db %11111111
+  db %00000000
+  db %11111111
+  db %00000000
+  db %11111111
+  db %00000000
+  db %11111111
+  db %00000000
+  db %11111111
+  db %00000000
+  db %11111111
+  db %00000000
+  db %11111111
+  db %00000000
+  db %11111111
+</pre><br>
+
+<p>
 完成<br>
-<img src="asm_palette_bg/4.jpg" class="maxSize">
+<img src="asm_dma/1.jpg" class="maxSize">
 </p>
 
 <p>

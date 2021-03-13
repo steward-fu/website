@@ -46,45 +46,52 @@
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
 <h3>Game Boy Color &gt;&gt; Assembly</h3>
-<p><b>Background Tile</b></p>
+<p><b>Sound</b></p>
 <hr size="1">
 <p>
 參考資訊：<br>
-1. <a href="https://github.com/gbdev/rgbds">rgbds</a><br>
-2. <a href="https://github.com/sinamas/gambatte">gambatte</a><br>
-3. <a href="https://github.com/lancekindle/DMGreport">DMGreport</a><br><br>
+1. <a href="https://bgb.bircd.org/">bgb</a><br>
+2. <a href="https://github.com/gbdev/rgbds">rgbds</a><br>
+3. <a href="https://github.com/sinamas/gambatte">gambatte</a><br>
+4. <a href="https://github.com/lancekindle/DMGreport">DMGreport</a><br><br>
 
-每個像素使用2bits表示(4個顏色)<br>
-<img src="../gb/asm_chr/1.jpg" class="maxSize"><br><br>
-
-BG的內容就是第X個CHR<br>
-<img src="../gb/asm_bg/1.jpg" class="maxSize"><br><br>
+暫存器<br>
+<img src="../gb/asm_sound/1.jpg" class="maxSize"><br>
+<img src="../gb/asm_sound/2.jpg" class="maxSize"><br><br>
 
 main.s
 </p>
 <pre class="brush:asm">
-LCDC     equ $ff40
-LCDCF_ON equ %10000000
+NR50       equ $ff24
+NR51       equ $ff25
+NR52       equ $ff26
+NR10       equ $ff10
+NR11       equ $ff11
+NR12       equ $ff12
+NR13       equ $ff13
+NR14       equ $ff14
+IE         equ $ffff
+IEF_VBLANK equ %00000001
  
 section "vblank", rom0[$0040]
   reti
-   
+    
 section "lcdc", rom0[$0048]
   reti
-   
+    
 section "timer", rom0[$0050]
   reti
-   
+    
 section "serial", rom0[$0058]
   reti
-   
+    
 section "joypad", rom0[$0060]
   reti
-   
+    
 section "entry", rom0[$0100]
   nop
   jp _start
-   
+    
 section "header", rom0[$0104]
   db $ce, $ed, $66, $66, $cc, $0d, $00, $0b, $03, $73, $00, $83, $00, $0c, $00, $0d
   db $00, $08, $11, $1f, $88, $89, $00, $0e, $dc, $cc, $6e, $e6, $dd, $dd, $d9, $99
@@ -101,93 +108,38 @@ section "header", rom0[$0104]
   db 0
   db 0
   dw 0
-   
+    
 _start:
   di
-  ld a, [LCDC]
-  and ~LCDCF_ON
-  ld [LCDC], a
+  ld sp, $ffff
+  ld a, IEF_VBLANK
+  ld [IE], a
+  ei
+
+  ld a, $80
+  ld [NR52], a
+  ld a, $77
+  ld [NR50], a
+  ld a, $ff
+  ld [NR51], a
  
-  ld d, 32
-  ld bc, tile
-  ld hl, $8000
-c0:
-  ld a, [bc]
-  ld [hl+], a
-  inc bc
-  dec d
-  jr nz, c0
-
-  ld b, 0
-  ld hl, color
-c1:
-  ld a, b
-  ld [$ff68], a
-  ld a, [hl]
-  ld [$ff69], a
-  inc hl
-  inc b
-  ld a, b
-  cp 8
-  jr nz, c1
-
-  ld a, 1
-  ld [$9843], a
-
-  ld a, [LCDC]
-  or LCDCF_ON
-  ld [LCDC], a
-
 loop:
-  jp loop
-
-color:
-  dw $001f
-  dw $03e0
-  dw $7c00
-  dw $7fff
-
-tile:
-  db %11111111
-  db %11111111
-  db %11111111
-  db %11111111
-  db %11111111
-  db %11111111
-  db %11111111
-  db %11111111
-  db %11111111
-  db %11111111
-  db %11111111
-  db %11111111
-  db %11111111
-  db %11111111
-  db %11111111
-  db %11111111
-  
-  db %00000000
-  db %00000000
-  db %00000000
-  db %00000000
-  db %00000000
-  db %00000000
-  db %00000000
-  db %00000000
-  db %00000000
-  db %00000000
-  db %00000000
-  db %00000000
-  db %00000000
-  db %00000000
-  db %00000000
-  db %00000000
-</pre>
-<p>
-每個像素使用2bits表示(上下Bit)，因此，一個8x8的CHR需要複製16Bytes<br><br>
-
-完成<br>
-<img src="asm_chr_bg/1.jpg" class="maxSize">
-</p>
+  halt
+  halt
+  halt
+  halt
+  ld a, $16
+  ld [NR10], a
+  ld a, $40
+  ld [NR11], a
+  ld a, $73
+  ld [NR12], a
+  ld a, $00
+  ld [NR13], a
+  ld a, $c3
+  ld [NR14], a
+  jp loop 
+</pre><br>
 
 <p>
 <br><a href="../../emu.htm">返回上一頁</a>

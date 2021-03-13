@@ -46,7 +46,7 @@
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
 <h3>Game Boy Color &gt;&gt; Assembly</h3>
-<p><b>Palette(BG)</b></p>
+<p><b>Background Display</b></p>
 <hr size="1">
 <p>
 參考資訊：<br>
@@ -55,17 +55,8 @@
 3. <a href="https://github.com/sinamas/gambatte">gambatte</a><br>
 4. <a href="https://github.com/lancekindle/DMGreport">DMGreport</a><br><br>
 
-每個像素使用2bits表示(4個顏色)<br>
-<img src="../gb/asm_chr/1.jpg" class="maxSize"><br><br>
-
-每一個Palette有4個顏色可以設定，共有8個Palette可以使用<br>
-<img src="asm_palette_bg/1.jpg" class="maxSize"><br><br>
-
-每個顏色由15bits組成<br>
-<img src="asm_palette_bg/2.jpg" class="maxSize"><br><br>
-
-設定的方式則是透過BCPS(設定位址)、BCPD(設定資料)<br>
-<img src="asm_palette_bg/3.jpg" class="maxSize"><br><br>
+BG的內容就是第X個CHR<br>
+<img src="../gb/asm_bg/1.jpg" class="maxSize"><br><br>
 
 main.s
 </p>
@@ -111,21 +102,80 @@ section "header", rom0[$0104]
       
 _start:
   di
-  ld a, 0
+    
+  ld d, 32
+  ld bc, tile
+  ld hl, $8000
+copy_tile:
+  ld a, [bc]
+  ld [hl+], a
+  inc bc
+  dec d
+  jr nz, copy_tile
+   
+  ld b, 0
+  ld hl, color
+copy_palette:
+  ld a, b
   ld [$ff68], a
-  ld a, $1f
+  ld a, [hl]
   ld [$ff69], a
-  ld a, 1
-  ld [$ff68], a
-  ld a, $00
-  ld [$ff69], a
-  jp @
-</pre>
-<p>
-設定Palette0的第1組(共4組)顏色為0x001f(紅色)，而預設開機的第1個Tile，內容都是0，因此，顯示為紅色<br><br>
+  inc hl
+  inc b
+  ld a, b
+  cp 8
+  jr nz, copy_palette
 
+  ld a, 1
+  ld [$9800], a
+   
+  jp @
+   
+color:
+  dw $7fff
+  dw $001f
+  dw $03e0
+  dw $7c00
+   
+tile:
+  db %00000000
+  db %00000000
+  db %00000000
+  db %00000000
+  db %00000000
+  db %00000000
+  db %00000000
+  db %00000000
+  db %00000000
+  db %00000000
+  db %00000000
+  db %00000000
+  db %00000000
+  db %00000000
+  db %00000000
+  db %00000000
+
+  db %11111111
+  db %00000000
+  db %11111111
+  db %00000000
+  db %11111111
+  db %00000000
+  db %11111111
+  db %00000000
+  db %11111111
+  db %00000000
+  db %11111111
+  db %00000000
+  db %11111111
+  db %00000000
+  db %11111111
+  db %00000000
+</pre><br>
+
+<p>
 完成<br>
-<img src="asm_palette_bg/4.jpg" class="maxSize">
+<img src="asm_bg/1.jpg" class="maxSize">
 </p>
 
 <p>

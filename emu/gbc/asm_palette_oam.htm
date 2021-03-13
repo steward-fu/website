@@ -46,7 +46,7 @@
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
 <h3>Game Boy Color &gt;&gt; Assembly</h3>
-<p><b>Palette(BG)</b></p>
+<p><b>Palette(OAM)</b></p>
 <hr size="1">
 <p>
 參考資訊：<br>
@@ -55,7 +55,7 @@
 3. <a href="https://github.com/sinamas/gambatte">gambatte</a><br>
 4. <a href="https://github.com/lancekindle/DMGreport">DMGreport</a><br><br>
 
-每個像素使用2bits表示(4個顏色)<br>
+每個像素使用2bits表示(4個顏色)，相較於BG，OAM使用00代表透明顏色，因此，OAM只能顯示3個顏色<br>
 <img src="../gb/asm_chr/1.jpg" class="maxSize"><br><br>
 
 每一個Palette有4個顏色可以設定，共有8個Palette可以使用<br>
@@ -64,15 +64,17 @@
 每個顏色由15bits組成<br>
 <img src="asm_palette_bg/2.jpg" class="maxSize"><br><br>
 
-設定的方式則是透過BCPS(設定位址)、BCPD(設定資料)<br>
-<img src="asm_palette_bg/3.jpg" class="maxSize"><br><br>
+設定的方式則是透過OCPS(設定位址)、OCPD(設定資料)<br>
+<img src="asm_palette_oam/1.jpg" class="maxSize"><br><br>
 
 main.s
 </p>
 <pre class="brush:asm">
-LCDC     equ $ff40
-LCDCF_ON equ %10000000
-    
+OAMRAM      equ $fe00
+LCDC        equ $ff40
+LCDCF_OBJ8  equ %00000000
+LCDCF_OBJON equ %00000010
+
 section "vblank", rom0[$0040]
   reti
       
@@ -111,21 +113,92 @@ section "header", rom0[$0104]
       
 _start:
   di
-  ld a, 0
-  ld [$ff68], a
-  ld a, $1f
-  ld [$ff69], a
-  ld a, 1
-  ld [$ff68], a
-  ld a, $00
-  ld [$ff69], a
+
+  ld a, [LCDC]
+  or LCDCF_OBJON
+  or LCDCF_OBJ8
+  ld [LCDC], a
+
+  ld d, 32
+  ld bc, tile
+  ld hl, $8000
+copy_tile:
+  ld a, [bc]
+  ld [hl+], a
+  inc bc
+  dec d
+  jr nz, copy_tile
+   
+  ld b, 0
+  ld hl, color
+copy_palette:
+  ld a, b
+  ld [$ff6a], a
+  ld a, [hl]
+  ld [$ff6b], a
+  inc hl
+  inc b
+  ld a, b
+  cp 8
+  jr nz, copy_palette
+
+  ld hl, OAMRAM + 0
+  ld [hl], 30
+  ld hl, OAMRAM + 1
+  ld [hl], 30
+  ld hl, OAMRAM + 2
+  ld [hl], 1
+  ld hl, OAMRAM + 3
+  ld [hl], 0
+
   jp @
+   
+color:
+  dw $7fff
+  dw $001f
+  dw $03e0
+  dw $7c00
+   
+tile:
+  db %00000000
+  db %00000000
+  db %00000000
+  db %00000000
+  db %00000000
+  db %00000000
+  db %00000000
+  db %00000000
+  db %00000000
+  db %00000000
+  db %00000000
+  db %00000000
+  db %00000000
+  db %00000000
+  db %00000000
+  db %00000000
+
+  db %11111111
+  db %00000000
+  db %11111111
+  db %00000000
+  db %11111111
+  db %00000000
+  db %11111111
+  db %00000000
+  db %11111111
+  db %00000000
+  db %11111111
+  db %00000000
+  db %11111111
+  db %00000000
+  db %11111111
+  db %00000000
 </pre>
 <p>
-設定Palette0的第1組(共4組)顏色為0x001f(紅色)，而預設開機的第1個Tile，內容都是0，因此，顯示為紅色<br><br>
+設定OBJ0的位置(y:30, x:30)、CHR(1)、屬性(0)，CHR其實就是一般稱呼的Tile，而Sprite則是由Tile組合而成的圖形<br><br>
 
 完成<br>
-<img src="asm_palette_bg/4.jpg" class="maxSize">
+<img src="asm_palette_oam/2.jpg" class="maxSize">
 </p>
 
 <p>
