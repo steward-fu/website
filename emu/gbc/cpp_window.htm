@@ -1,0 +1,138 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Game Boy Color &gt;&gt; C/C++</h3>
+<p><b>Window</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://bgb.bircd.org/">bgb</a><br>
+2. <a href="http://gbdk.sourceforge.net/doc/html/book01.html">doc</a><br>
+3. <a href="https://github.com/mrombout/gbdk_playground">gbdk_playground</a><br><br>
+
+Tile設定
+</p>
+<pre class="brush:cpp">
+void set_win_data(UBYTE first_tile, UBYTE nb_tiles, unsigned char *data);
+</pre>
+<p>
+第一個參數是Tile位置(0~255)<br>
+第二個參數是需要複製多少個Tile像素(0代表256個)，每個Tile像素是8x8(16 Bytes)<br>
+第三個參數是Tile來源位置<br><br>
+
+Tile指定
+</p>
+<pre class="brush:cpp">
+void set_win_tiles(UBYTE x, UBYTE y, UBYTE w, UBYTE h, unsigned char *tiles);
+</pre>
+<p>
+第一個參數是x位置<br>
+第二個參數是y位置<br>
+第三個參數是Tile寬(W)的數量<br>
+第四個參數是Tile高(H)的數量<br>
+第五個參數是Tile Map，大小必須是WxH，Map描述Tile的索引<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;gb/gb.h&gt;
+#include &lt;gb/cgb.h&gt;
+ 
+unsigned char tile[]={
+  0x00, 0x00, 0x1f, 0x1f, 0x20, 0x20, 0x4f, 0x4f,
+  0x50, 0x50, 0x50, 0x50, 0x50, 0x50, 0x50, 0x50,
+  0x50, 0x50, 0x50, 0x50, 0x50, 0x50, 0x50, 0x50,
+  0x4f, 0x4f, 0x20, 0x20, 0x1f, 0x1f, 0x00, 0x00,
+  0x00, 0x00, 0xf8, 0xf8, 0x04, 0x04, 0xf2, 0xf2,
+  0x0a, 0x0a, 0x0a, 0x0a, 0x0a, 0x0a, 0x0a, 0x0a,
+  0x0a, 0x0a, 0x0a, 0x0a, 0x0a, 0x0a, 0x0a, 0x0a,
+  0xf2, 0xf2, 0x04, 0x04, 0xf8, 0xf8, 0x00, 0x00,
+  0x00, 0x00, 0xff, 0xff, 0x00, 0x00, 0xff, 0xff,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0xff, 0xff, 0x00, 0x00, 0xff, 0xff, 0x00, 0x00,
+  0x50, 0x50, 0x50, 0x50, 0x50, 0x50, 0x50, 0x50,
+  0x50, 0x50, 0x50, 0x50, 0x50, 0x50, 0x50, 0x50,
+  0x0a, 0x0a, 0x0a, 0x0a, 0x0a, 0x0a, 0x0a, 0x0a,
+  0x0a, 0x0a, 0x0a, 0x0a, 0x0a, 0x0a, 0x0a, 0x0a,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+ 
+unsigned char map[]={
+  1, 5, 5, 5, 5, 3,
+  7, 9, 9, 9, 9, 8,
+  7, 9, 9, 9, 9, 8,
+  2, 6, 6, 6, 6, 4,
+};
+
+unsigned short palette[] = {RGB_WHITE, RGB_RED, RGB_GREEN, RGB_BLUE};
+
+void main(void)
+{
+  SHOW_BKG;
+  set_win_data(1, 9, tile);
+  set_win_tiles(0, 0, 6, 4, map);
+  set_bkg_palette(0, 1, palette);
+  SHOW_WIN;
+}
+</pre><br>
+
+<p>
+完成<br>
+<img src="cpp_window/1.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../emu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
