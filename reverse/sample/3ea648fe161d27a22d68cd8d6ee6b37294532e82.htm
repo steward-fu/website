@@ -44,59 +44,63 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>Debian</h3>
-<p><b>掛載多組分割表的檔案</b></p>
+<h3>病毒樣本分析 &gt;&gt; DOC</h3>
+<p><b>3ea648fe161d27a22d68cd8d6ee6b37294532e82</b></p>
 <hr size="1">
 <p>
-一般遇到需要掛載(mount)的檔案都是屬於單一分割表，因此，只要使用簡單的mount指令即可搞定，但是遇到多組分割表的單一檔案時(DISK Image)，指令就會變得比較複雜，因為需要進行兩個操作步驟，第一就是分別映射到不同的loop裝置，然後再分別使用mount指令一一掛載到不同的資料夾即可。<br><br>
+參考資訊：<br>
+1. <a href="https://www.virustotal.com/gui/home/search">virustotal</a><br><br>
 
-<b>掛載方式</b><br>
-(假設sample.img具有rootfs、appfs、cfgfs、otherfs四個分割表)
+DOC
 </p>
-
 <pre>
-# losetup -v -f sample.img 
-Loop device is /dev/loop0
-
-# kpartx -v -a sample.img
-add map loop0p1 (252:2): 0 983040 linear /dev/loop0 24576
-add map loop0p2 (252:3): 0 266240 linear /dev/loop0 1007616
-add map loop0p3 (252:4): 0 40960 linear /dev/loop0 1273856
-add map loop0p4 (252:5): 0 2097152 linear /dev/loop0 1314816
-
-# mount /dev/mapper/loop0p1 rootfs
-# mount /dev/mapper/loop0p2 appfs
-# mount /dev/mapper/loop0p3 cfgfs
-# mount /dev/mapper/loop0p4 otherfs
+$ trid 130e85f5054ab2a51d42e11a909e43f358c8ea1fba63ccec3f3dd0ccaac3a4ea
+  Collecting data from file: 130e85f5054ab2a51d42e11a909e43f358c8ea1fba63ccec3f3dd0ccaac3a4ea
+   80.0% (.DOC) Microsoft Word document (32000/1/3)
+   20.0% (.) Generic OLE2 / Multistream Compound File (8000/1)
 </pre><br>
 
 <p>
-<b>卸載方式</b>
+Auto_Open
 </p>
-
 <pre>
-# kpartx -v -d /dev/loop0
-del devmap : loop0p4
-del devmap : loop0p3
-del devmap : loop0p2
-del devmap : loop0p1
-
-# losetup -d /dev/loop0
+$ python ./olevba.py ../../130e85f5054ab2a51d42e11a909e43f358c8ea1fba63ccec3f3dd0ccaac3a4ea
+  olevba 0.56.1.dev2 on Python 2.7.16 - http://decalage.info/python/oletools
+  ===============================================================================
+  FILE: ../../130e85f5054ab2a51d42e11a909e43f358c8ea1fba63ccec3f3dd0ccaac3a4ea
+  Type: OLE
+  -------------------------------------------------------------------------------
+  VBA MACRO ThisDocument.cls
+  in file: ../../130e85f5054ab2a51d42e11a909e43f358c8ea1fba63ccec3f3dd0ccaac3a4ea - OLE stream: u'Macros/VBA/ThisDocument'
+  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  Public Sub AutoOpen()
 </pre><br>
 
 <p>
-如果想要查看File Type，可以使用<b>file -s</b>查看(感謝Lucas的告知)
+關閉Macro，開啟檔案(1.dot)<br>
+<img src="3ea648fe161d27a22d68cd8d6ee6b37294532e82/1.jpg" class="maxSize"><br><br>
+
+View &gt; Macros<br>
+<img src="3ea648fe161d27a22d68cd8d6ee6b37294532e82/2.jpg" class="maxSize"><br><br>
+
+Auto_Open<br>
+<img src="3ea648fe161d27a22d68cd8d6ee6b37294532e82/3.jpg" class="maxSize"><br><br>
+
+Enable Macro後，開始F8單步<br>
+<img src="3ea648fe161d27a22d68cd8d6ee6b37294532e82/4.jpg" class="maxSize"><br><br>
+
+Anti-Python<br>
+<img src="3ea648fe161d27a22d68cd8d6ee6b37294532e82/5.jpg" class="maxSize"><br><br>
+
+Payload<br>
+<img src="3ea648fe161d27a22d68cd8d6ee6b37294532e82/6.jpg" class="maxSize"><br><br>
+
+Run<br>
+<img src="3ea648fe161d27a22d68cd8d6ee6b37294532e82/7.jpg" class="maxSize">
 </p>
-<pre>
-$ sudo file -s /dev/dm-*
-/dev/dm-0: DOS/MBR boot sector, code offset 0x3c+2, OEM-ID "mkfs.fat", sectors/cluster 4, reserved sectors 4, root entries 512, Media descriptor 0xf8, sectors/FAT 128, sectors/track 32, heads 64, sectors 131072 (volumes &gt; 32 MB), serial number 0x41f6aa55, unlabeled, FAT (16 bit)
-/dev/dm-1: Linux rev 1.0 ext2 filesystem data, UUID=8895657a-58c3-41b3-b7fa-2d023e87b05d (large files)
-/dev/dm-2: Linux rev 1.0 ext3 filesystem data, UUID=8cc4a911-c84a-405f-a866-ebd2be7ec56e (large files)
-/dev/dm-3: Linux/i386 swap file (new style), version 1 (4K pages), size 16127 pages, no label, UUID=83554e44-f124-44e2-8b01-7e4a07406f41
-</pre><br>
 
 <p>
-<br><a href="../../system.htm">返回上一頁</a>
+<br><a href="../../reverse.htm">返回上一頁</a>
 </p>
 
 </div>
