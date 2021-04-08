@@ -45,46 +45,25 @@
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
 <h3>Debian &gt;&gt; ARM</h3>
-<p><b>安裝系統(QEMU)</b></p>
+<p><b>使用qemu-system-arm安裝系統(armhf)</b></p>
 <hr size="1">
 <p>
+參考資料：<br>
+1. <a href="https://blog.ihomura.cn/2020/11/12/%E5%9C%A8qemu-system%E4%B8%8A%E8%B7%91arm-Debian/">arm-debian</a><br><br>
+
 步驟如下：
 </p>
 <pre>
-$ sudo apt-get install qemu -y
+$ sudo apt-get install qemu qemu-utils qemu-system-arm -y
 $ cd
-$ wget https://cdimage.debian.org/cdimage/archive/7.11.0/armel/iso-cd/debian-7.11.0-armel-netinst.iso
-$ wget http://ftp.us.debian.org/debian/dists/Debian8.11/main/installer-armel/current/images/versatile/netboot/initrd.gz
-$ wget http://ftp.us.debian.org/debian/dists/Debian8.11/main/installer-armel/current/images/versatile/netboot/vmlinuz-3.16.0-6-versatile
+$ wget https://cdimage.debian.org/cdimage/archive/10.8.0/armhf/iso-cd/debian-10.8.0-armhf-xfce-CD-1.iso
+$ sudo mount debian-10.8.0-armhf-xfce-CD-1.iso /mnt
+$ cp /mnt/install.ahf/vmlinuz .
+$ cp /mnt/install.ahf/initrd.gz .
+$ sudo umount /mnt
 $ qemu-img create disk.img 10G
-$ qemu-system-arm -M versatilepb -m 256M -kernel vmlinuz-3.16.0-6-versatile -initrd initrd.gz -cdrom debian-7.11.0-armel-netinst.iso -hda disk.img
-</pre>
-<p>
-<img src="arm_qemu/1.jpg" class="maxSize"><br>
-接著就一路安裝到底<br><br>
-
-安裝完成後，記得提取initrd和vmlinuz
-</p>
-<pre>
-$ sudo losetup -f disk.img
-$ sudo kpartx -a /dev/loop0
-$ sudo mount /dev/mapper/loop0p1 /mnt/
-$ cp /mnt/boot/initrd.img-3.16.0-6-versatile .
-$ cp /mnt/boot/vmlinuz-3.16.0-6-versatile .
-$ sudo umount /mnt 
-$ sudo kpartx -d /dev/loop0
-$ sudo losetup -d /dev/loop0
+$ qemu-system-arm -m 1024 -cpu cortex-a15 -smp 2 -M virt -kernel vmlinuz -initrd initrd.gz -nographic -drive if=none,file=disk.img,id=hd0,format=raw -device virtio-blk-device,drive=hd0 -drive if=none,file=debian-10.8.0-armhf-xfce-CD-1.iso,id=cdrom,media=cdrom -device virtio-scsi-device -device scsi-cd,drive=cdrom
 </pre><br>
-
-<p>
-接著就可以正常開機
-</p>
-<pre>
-$ qemu-system-arm -M versatilepb -m 256M -boot c -kernel vmlinuz-3.16.0-6-versatile -initrd initrd.img-3.16.0-6-versatile -hda disk.img -append "root=/dev/sda1"
-</pre>
-<p>
-<img src="arm_qemu/2.jpg" class="maxSize"><br>
-</p>
 
 <p>
 <br><a href="../../system.htm">返回上一頁</a>
