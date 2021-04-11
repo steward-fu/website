@@ -45,10 +45,41 @@
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
 <h3>STM32F103</h3>
-<p><b>如何在Keil ARM修改UART Baudrate(外部震盪器)</b></p>
+<p><b>如何透過ST-LINK V2燒錄程式(OpenOCD)</b></p>
 <hr size="1">
 <p>
-當使用者將外部石英震盪器改成非預設8MHZ(如：12MHZ)後，會覺得UART的輸出都是有問題，這是因為Keil預設的HSE_Value被定義成8MHZ，所以就算怎麼改其它地方都是沒有用的，正確修改的地方位於<b>stm32f10x_conf.h(147行)(C:\Keil\ARM\INC\ST\STM32F10x\)</b>，將HSE_Value改成實際HSE的頻率即可
+連接如下四條線：<br>
+<img src="stlink-v2_flash/1.jpg" class="maxSize"><br><br>
+
+燒錄命令如下：
+</p>
+<pre>
+$ sudo openocd -f /usr/local/share/openocd/scripts/interface/stlink.cfg -f /usr/local/share/openocd/scripts/target/stm32f1x.cfg -c "program main.bin reset exit 0x8000000"
+  Open On-Chip Debugger 0.11.0-rc1+dev-00010-gc69b4deae-dirty (2020-12-27-01:20)
+  Licensed under GNU GPL v2
+  For bug reports, read
+    http://openocd.org/doc/doxygen/bugs.html
+  Info : auto-selecting first available session transport "hla_swd". To override use 'transport select <transport>'.
+  Info : The selected transport took over low-level target control. The results might differ compared to plain JTAG/SWD
+  Info : clock speed 1000 kHz
+  Info : STLINK V2J17S4 (API v2) VID:PID 0483:3748
+  Info : Target voltage: 3.203137
+  Info : stm32f1x.cpu: hardware has 6 breakpoints, 4 watchpoints
+  Info : starting gdb server for stm32f1x.cpu on 3333
+  Info : Listening on port 3333 for gdb connections
+  target halted due to debug-request, current mode: Thread
+  xPSR: 0x01000000 pc: 0x08000100 msp: 0x20005000
+  ** Programming Started **
+  Info : device id = 0x20036410
+  Info : flash size = 128kbytes
+  ** Programming Finished **
+  ** Resetting Target **
+  shutdown command invoked
+</pre><br>
+
+<p>
+完成<br>
+<img src="stlink-v2_flash/2.jpg" class="maxSize">
 </p>
 
 <p>
