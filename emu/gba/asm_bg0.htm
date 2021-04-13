@@ -46,7 +46,7 @@
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
 <h3>Game Boy Advance &gt;&gt; Assembly</h3>
-<p><b>Background Display</b></p>
+<p><b>BG Mode 0</b></p>
 <hr size="1">
 <p>
 參考資訊：<br>
@@ -55,43 +55,109 @@
 3. <a href="https://patater.com/gbaguy/gbaasm.htm">gbaasm</a><br>
 3. <a href="https://wii.leseratte10.de/devkitPro/">devkitPro</a><br>
 4. <a href="https://github.com/devkitPro/devkitarm-crtls">devkitarm-crtls</a><br>
-5. <a href="https://devkitpro.org/index.php">devkitPro website</a><br>
-6. <a href="https://gist.github.com/JShorthouse/bfe49cdfad126e9163d9cb30fd3bf3c2">Compiling GBA programs on Linux with GCC</a><br><br>
+5. <a href="http://kylehalladay.com/blog/tutorial/gba/2017/04/11/GBA-By-Example-3.html">GBA-By-Example-3</a><br>
+6. <a href="https://devkitpro.org/index.php">devkitPro website</a><br>
+7. <a href="https://gist.github.com/JShorthouse/bfe49cdfad126e9163d9cb30fd3bf3c2">Compiling GBA programs on Linux with GCC</a><br><br>
 
-設定BG Mode、VRAM Mapping Format<br>
-<img src="asm_bg/1.jpg" class="maxSize"><br><br>
+BG Tile(BG Character Data)和BG Screen(BG Screen Data)共用同一份記憶體<br>
+BG Tile：Base Block 0~3共4塊(大小：0x4000)，使用哪一塊記憶體由BGxCNT的bit3~bit2決定<br>
+BG Screen：Base Block 0~31共32塊(大小：0x800)，使用哪一塊由BGxCNT的bit12~bit8決定<br>
+<img src="asm_bg0/3.jpg" class="maxSize"><br><br>
 
-Mode 3<br>
-<img src="asm_bg/2.jpg" class="maxSize"><br><br>
+BG Tile固定為8x8(64Bytes)，每個Byte用來指定Palette的顏色<br>
+<img src="asm_bg0/4.jpg" class="maxSize"><br><br>
 
-VRAM 0x06000000<br>
-<img src="asm_bg/3.jpg" class="maxSize"><br><br>
+BG Screen每一個點使用2Bytes表示，用來指定BG Tile的索引<br>
+<img src="asm_bg0/5.jpg" class="maxSize"><br><br>
+
+Palette有兩種方式可以選擇：<br>
+1. 16個Palette(每個Palette有16個顏色可以配置)<br>
+2. 1個Palette(有256個顏色可以配置)<br>
+<img src="asm_bg0/6.jpg" class="maxSize"><br><br>
+
+每個顏色由15bits組成(RGB各別使用5bits表示)<br>
+<img src="asm_bg0/7.jpg" class="maxSize"><br><br>
+
+設定BG Mode 0、BG0(BG0~3是代表要使用哪個BGxCNT暫存器，BG0CNT~BG3CNT)<br>
+<img src="asm_bg0/8.jpg" class="maxSize"><br><br>
+
+BG Mode 0<br>
+<img src="asm_bg0/9.jpg" class="maxSize"><br><br>
+
+BG Mode<br>
+<img src="asm_bg0/1.jpg" class="maxSize"><br><br>
+
+BG0CNT，Character Base Block(0)，Color Mode(256 colors x 1 palette)，Screen Base Block(1)<br>
+<img src="asm_bg0/2.jpg" class="maxSize"><br><br>
 
 main.s
 </p>
 <pre class="brush:asm">
   .global main
-   
+    
   .arm
   .text
 main:
   ldr r0, =0x4000000
-  ldr r1, =0x403
-  str r1, [r0]
-  ldr r0, =0x6000000
-  ldr r1, =0xff
-  ldr r2, =(240*160)
+  ldr r1, =0x100
+  strh r1, [r0]
+
+  ldr r0, =0x4000008
+  ldr r1, =0x180
+  strh r1, [r0]
+
+  ldr r0, =0x5000000
+  ldr r1, =palette
+  ldr r2, =4
 1:
-  strh r1, [r0], #2
+  ldrh r3, [r1], #2
+  strh r3, [r0], #2
   subs r2, r2, #1
   bne 1b
+  
+  ldr r0, =0x6000000
+  ldr r1, =tile
+  ldr r2, =(64*2)
+1:
+  ldrb r3, [r1], #1
+  strb r3, [r0], #1
+  subs r2, r2, #1
+  bne 1b
+  
+  ldr r0, =(0x6000000 + 2048)
+  ldr r1, =0x0001
+  strh r1, [r0]
+
 2:
   b 2b
+
+palette:
+  .2byte 0x0000, 0x001f, 0x03e0, 0x7c00
+
+tile:
+  .byte 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+  .byte 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+  .byte 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+  .byte 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+  .byte 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+  .byte 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+  .byte 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+  .byte 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+
+  .byte 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+  .byte 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01
+  .byte 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02
+  .byte 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03
+  .byte 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+  .byte 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01
+  .byte 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02
+  .byte 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03
 </pre><br>
 
 <p>
 完成<br>
-<img src="asm_bg/4.jpg" class="maxSize">
+<img src="asm_bg0/10.jpg" class="maxSize"><br>
+<img src="asm_bg0/11.jpg" class="maxSize">
 </p>
 
 <p>
