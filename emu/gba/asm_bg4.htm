@@ -46,7 +46,7 @@
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
 <h3>Game Boy Advance &gt;&gt; Assembly</h3>
-<p><b>BG Mode 3(bitmap)</b></p>
+<p><b>BG Mode 4(bitmap)</b></p>
 <hr size="1">
 <p>
 參考資訊：<br>
@@ -59,14 +59,14 @@
 6. <a href="https://devkitpro.org/index.php">devkitPro website</a><br>
 7. <a href="https://gist.github.com/JShorthouse/bfe49cdfad126e9163d9cb30fd3bf3c2">Compiling GBA programs on Linux with GCC</a><br><br>
 
-<b>BG Mode 3</b>支援bitmap(每一個像素點的顏色，由使用者指定)，固定使用<b>BG2CNT</b><br>
+<b>BG Mode 4</b>支援bitmap(每一個像素點的顏色，由使用者指定)，固定使用<b>BG2CNT</b><br>
 <img src="asm_bg3/1.jpg" class="maxSize"><br><br>
 
-每一個像素點的顏色由<b>2Bytes</b>表示<br>
-<img src="asm_bg3/2.jpg" class="maxSize"><br><br>
+每一個像素點的顏色由<b>1Byte</b>表示(256種顏色的索引)，像素填充的起始位址是<b>0x6000000</b><br>
+<img src="asm_bg4/1.jpg" class="maxSize"><br><br>
 
-像素填充的起始位址是<b>0x6000000</b><br>
-<img src="asm_bg3/3.jpg" class="maxSize"><br><br>
+2 frame buffers<br>
+<img src="asm_bg4/2.jpg" class="maxSize"><br><br>
 
 BG Mode對應的解析度<br>
 <img src="asm_bg0/9.jpg" class="maxSize"><br><br>
@@ -74,38 +74,48 @@ BG Mode對應的解析度<br>
 main.s
 </p>
 <pre class="brush:asm">
-  .equ DISPCNT, 0x4000000
-  .equ BG2CNT,  0x400000c
-  .equ VRAM,    0x6000000
-
+  .equ DISPCNT,     0x4000000
+  .equ BG2CNT,      0x400000c
+  .equ PALETTE_RAM, 0x5000000
+  .equ VRAM,        0x6000000
+ 
   .global main
-    
+       
   .arm
   .text
 main:
   ldr r0, =DISPCNT
-  ldr r1, =0x403
-  str r1, [r0]
- 
+  ldr r1, =0x404
+  strh r1, [r0]
+   
   ldr r0, =BG2CNT
   ldr r1, =0x0000
-  str r1, [r0]
- 
-  ldr r0, =VRAM
-  ldr r1, =0x001f
-  ldr r2, =(240*160)
+  strh r1, [r0]
+   
+  ldr r0, =PALETTE_RAM
+  ldr r1, =palette
+  ldr r2, =4
 1:
-  strh r1, [r0], #2
+  ldrh r3, [r1], #2
+  strh r3, [r0], #2
   subs r2, r2, #1
   bne 1b
- 
+     
+  ldr r0, =VRAM
+  ldr r1, =0x03020100
+  str r1, [r0]
+  
 2:
   b 2b
+   
+palette:
+  .2byte 0x0000, 0x001f, 0x03e0, 0x7c00
 </pre><br>
 
 <p>
 完成<br>
-<img src="asm_bg3/4.jpg" class="maxSize">
+<img src="asm_bg4/3.jpg" class="maxSize"><br>
+<img src="asm_bg4/4.jpg" class="maxSize">
 </p>
 
 <p>
