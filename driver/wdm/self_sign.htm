@@ -48,9 +48,9 @@
 <p><b>使用私人憑證加簽驅動程式</b></p>
 <hr size="1">
 <p>
-在Windows x64上，只能安裝有數位簽章的驅動程式，否則驅動程式是無法被成功掛載執行的，但是要取得數位簽章是需要付錢去取得憑證，然後再使用此憑證加簽驅動程式，最後再做WHQL測試並提交測試結果給Microsoft取得經過數位簽章的驅動程式，手續繁雜又花錢，這對一般公司來說是可以負擔的費用，但是對於一般個人來說，也是一大筆開銷，因此，一般會停止Windows數位簽章檢查，然後再進入系統測試Windows x64驅動程式，當然，使用者也可以自製測試簽章，讓驅動程式可以使用這個簽章測試，不過系統還是需要進入特殊測試模式才可以測試，過程還是有點複雜，因此，司徒剛好整理一下如何自製測試數位簽章，當作參考筆記。<br><br>
+目前在Windows新釋出的系統上，使用者只能安裝有Microsoft簽章的驅動程式，不然驅動程式將無法被成功掛載執行，但是，在取得Microsoft簽章之前，使用者需要先取得憑證(如：VeriSign)，再使用此憑證加簽驅動程式做WHQL測試，最後再把測試結果提交給Microsoft，才可以取得Microsoft簽章的驅動程式，手續是相當繁雜，為此，司徒特地整理一下，在未取得憑證之前，使用者如何自製測試用的數位簽章，也順便當作日後的參考筆記<br><br>
 
-首先開啟Command Line並且切換到$(DDKROOT)\bin\x86目錄，接著輸入如下命令(司徒使用Steward作為測試名字)產生私人憑證檔案
+首先開啟Command Line並且切換到<b>$(DDKROOT)\bin\x86</b>目錄，接著輸入如下命令(司徒使用Steward作為測試名字)產生私人憑證檔案
 </p>
 <pre>
 c:\WinDDK\7600.16385.1\bin\x86&gt; Makecert -r -pe -ss Steward Steward.cer
@@ -65,15 +65,15 @@ c:\WinDDK\7600.16385.1\bin\x86&gt; certmgr.exe -add Steward.cer -s -r localMachi
 </pre>
 
 <p>
-成功後會顯示CertMgr Succeeded訊息<br><br>
+成功後會顯示<b>CertMgr Succeeded</b>訊息<br><br>
 
 接著輸入certmgr.exe指令，開啟後點選<b>信任的根憑證授權</b>就可以看到<b>Joe's-Software-Emporium</b>這個簽章了，而開始的時間就是使用者剛剛產生CER檔案的時間<br>
 <img src="self_sign/1.jpg" class="maxSize"><br><br>
 
-因為數位簽章是針對CAT檔案、SYS檔案進行加簽，但是處於開發階段一定不會有CAT檔案，因為CAT檔案是必須經過Microsoft的WHQL認證後才會拿到的數位簽章檔案，為此，微軟也準備了一個INF2CAT的暫時轉換工具($(DDKROOT)\bin\selfsign)，可以提供暫時加簽測試用，因此可以輸入如下命令產生暫時的CAT檔案(支援批次處理INF檔案)(/os:參數可以只挑要測試的作業系統即可)
+因為數位簽章是針對CAT檔案、SYS檔案進行加簽，但是處於開發階段一定不會有CAT檔案，因為CAT檔案是必須經過Microsoft的WHQL認證後才會拿到的數位簽章檔案，為此，微軟也準備了一個INF2CAT的暫時轉換工具(<b>$(DDKROOT)\bin\selfsign</b>)，可以提供暫時加簽測試用，因此可以輸入如下命令產生暫時的CAT檔案(支援批次處理INF檔案)(/os:參數可以只挑要測試的作業系統即可)
 </p>
 <pre>
-c:\WinDDK\7600.16385.1\bin\selfsign&gt; INF2CAT /driver:c:\Test /os:XP_X86,XP_X64,Server2003_X86,Server2003_X64,Vista_x86,Vista_X64,Server2008_x86,Server2008_x64, Server2008_IA64
+c:\WinDDK\7600.16385.1\bin\selfsign&gt; INF2CAT /driver:c:\Test /os:XP_X86,XP_X64,Server2003_X86,Server2003_X64,Vista_x86,Vista_X64,Server2008_x86,Server2008_x64,Server2008_IA64
 </pre><br>
 
 <p>
@@ -137,7 +137,7 @@ Expires:   2040/1/1     SHA1 hash: 06D5BC9EF616FF46C909F5ABDDF34EAF8652A6EB
 Number of errors: 1
 </pre>
 <p>
-如是這樣的話，使用者可以使用Regedit把[HKEY_CURRENT_USER\Software\Microsoft\SystemCertificates\]底下的使用者機碼刪除，如：Steward，然後再重新製作一次憑證並重新匯入即可做驅動程式簽章。<br><br>
+如是這樣的話，使用者可以使用Regedit把<b>[HKEY_CURRENT_USER\Software\Microsoft\SystemCertificates\]</b>底下的使用者機碼刪除，如：Steward，然後再重新製作一次憑證並重新匯入即可做驅動程式簽章<br><br>
 
 若成功則會顯示如下訊息
 </p>
@@ -157,26 +157,15 @@ c:\&gt; signtool verify Test.sys
 或者使用滑鼠查看驅動程式檔案內容也可以看到簽章資訊<br>
 <img src="self_sign/2.jpg" class="maxSize"><br><br>
 
-最後，為了要讓64位元作業系統接受測試的數位簽章，還需要使用bcdedit.exe做系統更改，使用者需要輸入如下指令
+最後，為了要讓Windows系統接受測試的數位簽章，還需要使用<b>bcdedit.exe</b>做系統更改，使用者需要輸入如下指令
 </p>
 <pre>
-c:\&gt; Bcdedit.exe -set TESTSIGNING ON
-c:\&gt; Bcdedit.exe /debug on
+c:\&gt; Bcdedit.exe /set TESTSIGNING ON
+c:\&gt; Bcdedit.exe /set bootstatuspolicy ignoreallfailures
+c:\&gt; Bcdedit.exe /set bootmenupolicy legacy
 </pre>
 <p>
-指令完成後須要重新開機再安裝驅動程式<br><br>
-
-那要如何知道使用者輸入的指令已經生效呢？重新開機後，在桌面右下角會顯示測試模式(如下圖)，出現這樣的顯示字串時，代表目前已經運行在Debug模式<br>
-<img src="self_sign/3.jpg" class="maxSize"><br><br>
-
-若要關閉該功能，則輸入如下指令並重新開機即可
-</p>
-<pre>
-c:\&gt; Bcdedit.exe -set TESTSIGNING OFF
-c:\&gt; Bcdedit.exe /debug off
-</pre>
-<p>
-當然，如果使用者不想搞得這麼麻煩，直接關掉系統的數位簽章檢查(開機按F8)就可以。
+指令完成後，重新開機就可以開始做測試
 </p>
 
 <p>
