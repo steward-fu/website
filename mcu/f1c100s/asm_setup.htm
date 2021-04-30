@@ -29,7 +29,7 @@
   <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
   
   <script type="text/javascript" src="../../scripts/shCore.js"></script>
-  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
 
   <!-- Conditional comment to apply opacity fix for IE #content background.
        Invalid CSS, but can be removed without harming design -->
@@ -44,91 +44,36 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>Lichee Pi Nano &gt;&gt; C/C++</h3>
-<p><b>LED</b></p>
+<h3>F1C100S &gt;&gt; Assembly</h3>
+<p><b>開發環境</b></p>
 <hr size="1">
 <p>
-電路圖：<br>
-<img src="led_gpio/1.jpg" class="maxSize"><br><br>
-
-main.c
+司徒使用GNU GCC編譯環境，安裝方式如下：
 </p>
-<pre class="brush:cpp">
-#include &lt;linux/init.h&gt;
-#include &lt;linux/device.h&gt;
-#include &lt;linux/module.h&gt;
-#include &lt;linux/delay.h&gt;
-#include &lt;linux/timer.h&gt;
-#include &lt;linux/gpio.h&gt;
-
-#define TITLE "LED driver for Lichee Pi Nano"
-MODULE_AUTHOR("Steward_Fu");
-MODULE_DESCRIPTION(TITLE);
-MODULE_LICENSE("GPL");
-
-// PE4, PE5, PE6
-#define LED_G ((32 * 4) + 4)
-#define LED_B ((32 * 4) + 5)
-#define LED_R ((32 * 4) + 6)
- 
-static int g_blink_period=300;
-static struct timer_list g_blink_timer;
- 
-void blink_handler(unsigned long unused)
-{
-  static int index=0;
-
-  gpio_set_value(LED_R, 1);
-  gpio_set_value(LED_G, 1);
-  gpio_set_value(LED_B, 1);
-  switch(index){
-  case 0:
-    gpio_set_value(LED_R, 0);
-    break;
-  case 1:
-    gpio_set_value(LED_G, 0);
-    break;
-  case 2:
-    gpio_set_value(LED_B, 0);
-    break;
-  default:
-    break;
-  }
-  index+= 1;
-  if(index &gt; 3){
-    index = 0;
-  }
-  mod_timer(&amp;g_blink_timer, jiffies + msecs_to_jiffies(g_blink_period));
-}
- 
-static int __init main_init(void)
-{
-  printk(TITLE);
-  gpio_request(LED_R, "led_r"); gpio_direction_output(LED_R, 1); gpio_set_value(LED_R, 1);
-  gpio_request(LED_G, "led_g"); gpio_direction_output(LED_G, 1); gpio_set_value(LED_G, 1);
-  gpio_request(LED_B, "led_b"); gpio_direction_output(LED_B, 1); gpio_set_value(LED_B, 1);
-  setup_timer(&amp;g_blink_timer, blink_handler, 0);
-  mod_timer(&amp;g_blink_timer, jiffies + msecs_to_jiffies(g_blink_period));
-  return 0;
-}
-  
-static void __exit main_exit(void)
-{
-  del_timer(&amp;g_blink_timer);
-  gpio_free(LED_R);
-  gpio_free(LED_G);
-  gpio_free(LED_B);
-  printk("Unload it!\n");
-}
-  
-module_init(main_init);
-module_exit(main_exit);
+<pre>
+$ sudo apt-get install gcc-arm-none-eabi-*
 </pre><br>
 
 <p>
-完成<br>
-<img src="led_gpio/2.jpg" class="maxSize">
+燒錄軟體則是sunxi-tools
 </p>
+<pre>
+$ cd
+$ wget https://github.com/steward-fu/lichee-nano/releases/download/v1.0/sunxi-tools.7z
+$ 7zr x sunxi-tools.7z
+$ cd sunxi-tools
+$ make clean
+$ make
+</pre><br>
+
+<p>
+由於Allwinner韌體有Checksum檢查欄位，因此，需要編譯mksunxi工具，該工具可以針對韌體計算更新Checksum欄位
+</p>
+<pre>
+$ cd
+$ wget https://github.com/steward-fu/lichee-nano/releases/download/v1.0/mksunxi.c
+$ gcc mksunxi.c -o mksunxi
+</pre><br>
 
 <p>
 <br><a href="../../mcu.htm">返回上一頁</a>
