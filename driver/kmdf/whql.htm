@@ -51,7 +51,8 @@
 參考資訊：<br>
 1. <a href="https://docs.microsoft.com/zh-tw/windows-hardware/test/hlk/getstarted/windows-hlk-getting-started">windows-hlk-getting-started</a><br>
 2. <a href="https://www.microsoft.com/en-us/evalcenter/evaluate-hyper-v-server-2012">evaluate-hyper-v-server-2012</a><br>
-3. <a href="https://www.microsoft.com/en-us/evalcenter/evaluate-hyper-v-server-2016">evaluate-hyper-v-server-2016</a><br><br>
+3. <a href="https://www.microsoft.com/en-us/evalcenter/evaluate-hyper-v-server-2016">evaluate-hyper-v-server-2016</a><br>
+4. <a href="https://blog.miniasp.com/post/2017/12/24/How-to-use-Hyper-V-under-Windows-10-Wi-Fi-and-DHCP">How-to-use-Hyper-V-under-Windows-10-Wi-Fi-and-DHCP</a><br><br>
 
 司徒依稀記得第一次測試WHQL大約是在2003年左右，當初使用的測試方式是，準備兩台雙核CPU的電腦，然後使用網路連接測試，一台是Controller主機，另一台則是Client主機，每測試完一個系統後，就會使用Ghost開機光碟，將Client主機倒回其它測試系統，就這樣把需要測試的系統全部測完，測試的時間也很長，一個系統大約需要一天的測試時間，過程遇到錯誤，一般都是使用Rerun或者上Patch解決，印象最深刻的，還是費用高昂這件事情，難怪MS一般都會被縮寫成M$，也不是沒有道理的！<br><br>
 
@@ -94,7 +95,59 @@ Windows Server 2012 R2</td>
 <p>
 P.S. <b>Windows XP</b>、<b>Windows 2000</b>、<b>Windows Vista</b>這三個系統，目前不需要跑WHQL測試，在Submission時，就可以勾選<br><br>
 
-接著透過Hyper-V安裝需要測試的Controller和Client(RAM 2GB，DISK 30GB)<br>
+接著需要先設定Hyper-V NAT網卡，只要新增一張<b>connection type</b>是<b>Internal network</b>網卡，名稱可以隨意取名<br>
+<img src="whql/1.jpg" class="maxSize"><br><br>
+
+接著就可以看到新增的網卡<br>
+<img src="whql/2.jpg" class="maxSize"><br><br>
+
+接著將原本的主要網卡(如：NIC1)，設定成可以分享<br>
+<img src="whql/3.jpg" class="maxSize"><br><br>
+
+Hyper-V NAT網卡自動配置的IP<br>
+<img src="whql/4.jpg" class="maxSize"><br><br>
+
+接著透過Hyper-V先安裝Controller系統：<br>
+1. 建議<b>RAM 2GB</b>、<b>DISK 60GB</b><br>
+2. 關閉<b>Windows Firewall</b><br>
+3. 關閉<b>Windows AntiVirus</b><br>
+4. 關閉<b>Windows Defender</b><br>
+5. 開啟網路芳鄰(<b>SMB Service</b>)<br>
+<img src="whql/5.jpg" class="maxSize"><br>
+P.S. 如果遇到Hyper-V NAT網卡無法連網，可以交互Enable、Disable原本網卡(NIC1)以及Hyper-V NAT網卡，如果還是不行，可以重新建立Hyper-V NAT網卡，多測試幾次即可，因為Hyper-V的網路真是不敢領教...<br><br>
+
+接著安裝HLK或者HCK(依照測試選項)<br>
+<img src="whql/6.jpg" class="maxSize"><br>
+<img src="whql/7.jpg" class="maxSize"><br>
+<img src="whql/8.jpg" class="maxSize"><br>
+<img src="whql/9.jpg" class="maxSize"><br><br>
+
+接著安裝Client系統：<br>
+1. 建議<b>RAM 2GB</b>、<b>DISK 60GB</b><br>
+2. 關閉<b>Windows Firewall</b><br>
+3. 關閉<b>Windows AntiVirus</b><br>
+4. 關閉<b>Windows Defender</b><br>
+5. 開啟網路芳鄰(<b>SMB Service</b>)<br>
+6. 開啟遠端連線功能(<b>Remote Desktop Connection</b>)<br>
+7. 關閉UAC(<b>User Account Control Settings</b> &gt; <b>Never notify</b>)<br>
+8. 開啟BCD設定並且重新開機<br>
+</p>
+<pre>
+c:\&gt; bcdedit.exe /set TESTSIGNING ON
+c:\&gt; bcdedit.exe /set bootstatuspolicy ignoreallfailures
+c:\&gt; bcdedit.exe /set bootmenupolicy legacy
+</pre>
+<p>
+9. 掛載需要的檔案系統(<b>FSFilter Driver</b>測試需要，可以使用<b>fltmc</b>指令查看是否為<b>FSFilter Driver</b>)<br>
+<img src="whql/12.jpg" class="maxSize"><br>
+10. 安裝測試的驅動程式，啟動TYPE設定成SERVICE_AUTO_START，由於BCD已經開啟TESTSIGNING，因此，驅動程式只需要有一個簡單的測試簽章即可安裝使用，如何製作個人測試簽章，請參考<a href="../wdm/self_sign.htm">這裡</a><br><br>
+
+接著在Client安裝HLK或者HCK，安裝的方式則是透過Controller的網路芳鄰資料夾(HLKInstall &gt; Client &gt; Setup.cmd)<br>
+<img src="whql/10.jpg" class="maxSize"><br>
+<img src="whql/11.jpg" class="maxSize"><br>
+<img src="whql/13.jpg" class="maxSize"><br>
+<img src="whql/14.jpg" class="maxSize"><br>
+<img src="whql/15.jpg" class="maxSize"><br>
 </p>
 
 
