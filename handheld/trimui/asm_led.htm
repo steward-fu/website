@@ -13,7 +13,6 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
   <title>司徒的教學網站</title>
-  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
   <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
   <meta name="author" content="fullahead.org" />
   <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
@@ -45,45 +44,34 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>Miyoo &gt;&gt; Assembly</h3>
+<h3>TRIMUI &gt;&gt; Assembly</h3>
 <p><b>LED</b></p>
 <hr size="1">
 <p>
-綠色LED連接到PA1<br>
-<img src="asm_led/3.jpg" class="maxSize"><br><br>
+參考資料：<br>
+1. <a href="https://github.com/steward-fu/mcu-pdf/tree/master/f1c100s">pdf</a><br>
+2. <a href="http://nano.lichee.pro/">lichee</a><br>
+3. <a href="https://mangopi.org/mangopi_r">mangopi_r</a><br>
+4. <a href="https://www.allwinnertech.com/index.php?c=product&a=index&pid=4">allwinner</a><br><br>
+
+暫存器<br>
+<img src="../../mcu/f1c100s/asm_led/2.jpg" class="maxSize"><br><br>
+
+配置功能<br>
+<img src="../../mcu/f1c100s/asm_led/3.jpg" class="maxSize"><br><br>
+
+輸出控制<br>
+<img src="../../mcu/f1c100s/asm_led/4.jpg" class="maxSize"><br><br>
 
 main.s
 </p>
 <pre class="brush:asm">
   .global _start
-
-  .equiv PLL_CPU_CTRL_REG,      0x0000
-  .equiv PLL_VIDEO_CTRL_REG,    0x0010
-  .equiv PLL_PERIPH_CTRL_REG,   0x0028
-  .equiv CPU_CLK_SRC_REG,       0x0050
-  .equiv AHB_APB_HCLKC_CFG_REG, 0x0054
-  .equiv BUS_CLK_GATING_REG2,   0x0068
-  .equiv DRAM_GATING_REG,       0x0100
-  .equiv PLL_STABLE_TIME_REG0,  0x0200
-  .equiv PLL_STABLE_TIME_REG1,  0x0204
-  .equiv BUS_SOFT_RST_REG2,     0x02d0
-
-  .equiv PA_CFG0,               0x0000
-  .equiv PA_DATA,               0x0010
-
-  .equiv CCU_BASE,              0x01c20000
-  .equiv GPIO_BASE,             0x01c20800
-  .equiv UART1_BASE,            0x01c25400
-
-  .equiv UART_RBR_REG,          0x0000
-  .equiv UART_DLL_REG,          0x0000
-  .equiv UART_DLH_REG,          0x0004
-  .equiv UART_IER_REG,          0x0004
-  .equiv UART_IIR_REG,          0x0008
-  .equiv UART_LCR_REG,          0x000c
-  .equiv UART_MCR_REG,          0x0010
-  .equiv UART_USR_REG,          0x007c
-
+  
+  .equ GPIO_BASE, 0x01c20800 
+  .equ PE_CFG0,   (GPIO_BASE + (4 * 0x24) + 0x00)
+  .equ PE_DATA,   (GPIO_BASE + (4 * 0x24) + 0x10)
+   
   .arm
   .text
 _start:
@@ -94,106 +82,42 @@ _start:
   .long 0, 0
   .long 0, 0, 0, 0, 0, 0, 0, 0
   .long 0, 0, 0, 0, 0, 0, 0, 0
-
+   
 _vector:
   b reset
-_undefined:
   b .
-_software:
   b .
-prefetch:
   b .
-_abort:
   b .
-_reserved:
   b .
-_irq:
   b .
-_fiq:
   b .
-
+   
 reset:
-  @sys clock init
-  ldr r0, =CCU_BASE
-  ldr r1, =0x1ff
-  str r1, [r0, #PLL_STABLE_TIME_REG0]
-  str r1, [r0, #PLL_STABLE_TIME_REG1]
-  ldr r1, [r0, #CPU_CLK_SRC_REG]
-  bic r1, #(3 &lt;&lt; 16)
-  orr r1, #(1 &lt;&lt; 16)
-  str r1, [r0, #CPU_CLK_SRC_REG]
-  ldr r2, =100
-1:
-  subs r2, #1
-  bne 1b
-  ldr r1, =0x81004107
-  str r1, [r0, #PLL_VIDEO_CTRL_REG]
-  ldr r2, =100
-1:
-  subs r2, #1
-  bne 1b
-  ldr r1, =0x80041800
-  str r1, [r0, #PLL_PERIPH_CTRL_REG]
-  ldr r2, =100
-1:
-  subs r2, #1
-  bne 1b
-  ldr r1, =0x00003180
-  str r1, [r0, #AHB_APB_HCLKC_CFG_REG]
-  ldr r2, =100
-1:
-  subs r2, #1
-  bne 1b
-  ldr r1, [r0, #DRAM_GATING_REG]
-  orr r1, #(1 &lt;&lt; 26) | (1 &lt;&lt; 24)
-  str r1, [r0, #DRAM_GATING_REG]
-  ldr r2, =100
-1:
-  subs r2, #1
-  bne 1b
-  ldr r1, [r0, #PLL_CPU_CTRL_REG]
-  ldr r2, =(0x3 &lt;&lt; 16) | (0x1f &lt;&lt; 8) | (0x3 &lt;&lt; 4) | (0x3 &lt;&lt; 0)
-  bic r1, r2
-  ldr r2, =(1 &lt;&lt; 31) | (0 &lt;&lt; 16) | (16 &lt;&lt; 8) | (0 &lt;&lt; 4) | 0
-  orr r1, r2
-  str r1, [r0, #PLL_CPU_CTRL_REG]
-1:
-  ldr r1, [r0, #PLL_CPU_CTRL_REG]
-  tst r1, #(1 &lt;&lt; 28)
-  beq 1b
-  ldr r1, [r0, #CPU_CLK_SRC_REG]
-  bic r1, #(3 &lt;&lt; 16)
-  orr r1, #(2 &lt;&lt; 16)
-  str r1, [r0, #CPU_CLK_SRC_REG]
-  ldr r2, =100
-1:
-  subs r2, #1
-  bne 1b
-
-  @blink led
-  ldr r0, =GPIO_BASE
-  ldr r1, [r0, #PA_CFG0]
-  bic r1, #0xf0
-  orr r1, #0x10
-  str r1, [r0, #PA_CFG0]
+  ldr r0, =PE_CFG0
+  ldr r1, =0x00100000
+  str r1, [r0]
+ 
+  ldr r0, =PE_DATA
 0:
-  ldr r1, =2
-  str r1, [r0, #PA_DATA]
-  ldr r2, =1000000
+  ldr r1, =0x20
+  str r1, [r0]
+  ldr r2, =50000
 1:
   subs r2, #1
   bne 1b
-  ldr r1, =0
-  str r1, [r0, #PA_DATA]
-  ldr r2, =1000000
-1:
+  ldr r1, =0x00
+  str r1, [r0]
+  ldr r2, =50000
+2:
   subs r2, #1
-  bne 1b
+  bne 2b
   b 0b
   .end
-</pre><br>
-
+</pre>
 <p>
+P.S. 紅色LED陰極連接到PE5，陽極則是連接到USB-TYPE-C，因此，必須插上USB-TYPE-C才可以測試<br><br>
+
 main.ld
 </p>
 <pre>
@@ -201,19 +125,11 @@ OUTPUT_FORMAT("elf32-littlearm", "elf32-bigarm", "elf32-littlearm")
 OUTPUT_ARCH(arm)
 ENTRY(_start)
 
-STACK_UND_SIZE = 0x10000;
-STACK_ABT_SIZE = 0x10000;
-STACK_IRQ_SIZE = 0x10000;
-STACK_FIQ_SIZE = 0x10000;
-STACK_SRV_SIZE = 0x40000;
-
-MEMORY
-{
+MEMORY {
   ram : ORIGIN = 0x00000000, LENGTH = 32M
 }
 
-SECTIONS
-{
+SECTIONS {
   .text :
   {
     PROVIDE(__spl_start = .);
@@ -272,9 +188,9 @@ Makefile
 </p>
 <pre>
 all:
-  arm-linux-as -mcpu=arm9 -o main.o main.s
-  arm-linux-ld -T main.ld -o main.elf main.o
-  arm-linux-objcopy -O binary main.elf main.bin
+  arm-none-eabi-as -mcpu=arm9 -o main.o main.s
+  arm-none-eabi-ld -T main.ld -o main.elf main.o
+  arm-none-eabi-objcopy -O binary main.elf main.bin
   gcc mksunxi.c -o mksunxi
   ./mksunxi main.bin
 
@@ -286,13 +202,38 @@ clean:
 </pre><br>
 
 <p>
-完成<br>
+進入燒錄模式後，然後插入USB至電腦，可以找到如下裝置
+</p>
+<pre>
+$ lsusb
+  Bus 002 Device 081: ID 1f3a:efe8 Onda (unverified) V972 tablet in flashing mode
+</pre><br>
+
+<p>
+編譯、燒錄
+</p>
+<pre>
+$ make
+  arm-none-eabi-as -mcpu=arm9 -o main.o main.s
+  arm-none-eabi-ld -T main.ld -o main.elf main.o
+  arm-none-eabi-objcopy -O binary main.elf main.bin
+  gcc mksunxi.c -o mksunxi
+  ./mksunxi main.bin
+  The bootloader head has been fixed, spl size is 512 bytes.
+
+$ make flash
+  sunxi-fel -p spiflash-write 0 main.bin
+  100% [================================================]     1 kB,   55.9 kB/s
+</pre><br>
+
+<p>
+重新上電後，即可執行SPI Flash裡面的程式<br>
 <img src="asm_led/1.jpg" class="maxSize"><br>
 <img src="asm_led/2.jpg" class="maxSize">
 </p>
 
 <p>
-<br><a href="../../handheld.htm">返回上一頁</a>
+<br><a href="../../mcu.htm">返回上一頁</a>
 </p>
 
 </div>
