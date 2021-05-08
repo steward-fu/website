@@ -29,7 +29,7 @@
   <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
   
   <script type="text/javascript" src="../../scripts/shCore.js"></script>
-  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
 
   <!-- Conditional comment to apply opacity fix for IE #content background.
        Invalid CSS, but can be removed without harming design -->
@@ -44,21 +44,102 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>TRIMUI</h3>
-<p><b>Dump SPI Flash</b></p>
+<h3>F1C100S &gt;&gt; Assembly</h3>
+<p><b>TWI(I2C)</b></p>
 <hr size="1">
 <p>
-進入燒錄模式後，執行如下命令：
-</p>
-<pre>
-$ lsusb
-  Bus 001 Device 008: ID 1f3a:efe8 Onda (unverified) V972 tablet in flashing mode
+參考資料：<br>
+1. <a href="https://github.com/steward-fu/mcu-pdf/tree/master/f1c100s">pdf</a><br>
+2. <a href="http://nano.lichee.pro/">lichee</a><br>
+3. <a href="https://mangopi.org/mangopi_r">mangopi_r</a><br>
+4. <a href="https://www.allwinnertech.com/index.php?c=product&a=index&pid=4">allwinner</a><br><br>
 
-$ sudo sunxi-fel -p spiflash-read 0 134217728 spi.img
+I2C0腳位
+</p>
+<table>
+<tr><th>I2C0_SCK</th><td>PE11</td></tr>
+<tr><th>I2C0_SDA</th><td>PE12</td></tr>
+</table>
+<p>
+<img src="asm_twi/1.jpg" class="maxSize"><br><br>
+
+暫存器<br>
+<img src="asm_twi/2.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+  .global _start
+   
+  .equ CCU_BASE,   0x01c20000
+  .equ GPIO_BASE,  0x01c20800
+  .equ TWI0,       0x01c27000
+  
+  .equ PLL_PERIPH_CTRL_REG,   0x0028
+  .equ AHB_APB_HCLKC_CFG_REG, 0x0054
+  .equ BUS_CLK_GATING_REG2,   0x0068
+  .equ BUS_SOFT_RST_REG2,     0x02d0
+ 
+  .equ PE,    (0x24 * 4)
+  .equ CFG0,  0x00
+  .equ DATA,  0x10
+  .equ ADDR,  0x00
+  .equ XADDR, 0x04
+  .equ DATA,  0x08
+  .equ CNTR,  0x0c
+  .equ STAT,  0x10
+  .equ CCR,   0x14
+  .equ SRST,  0x18
+  .equ EFR,   0x1c
+  .equ LCR,   0x20
+  
+  .arm
+  .text
+_start:
+  .long 0xea000016
+  .byte 'e', 'G', 'O', 'N', '.', 'B', 'T', '0'
+  .long 0, __spl_size
+  .byte 'S', 'P', 'L', 2
+  .long 0, 0
+  .long 0, 0, 0, 0, 0, 0, 0, 0
+  .long 0, 0, 0, 0, 0, 0, 0, 0
+  
+_vector:
+  b reset
+  b .
+  b .
+  b .
+  b .
+  b .
+  b .
+  b .
+  
+reset:
+  ldr r0, =CCU_BASE
+  ldr r1, =0x80041800
+  str r1, [r0, #PLL_PERIPH_CTRL_REG]
+  ldr r1, =0x00003180
+  str r1, [r0, #AHB_APB_HCLKC_CFG_REG]
+ 
+  ldr r0, =GPIO_BASE
+  ldr r1, =0x33000
+  str r1, [r0, #(PE + CFG0)]
+ 
+  ldr r0, =CCU_BASE
+  ldr r1, =(1 << 16)
+  str r1, [r0, #BUS_CLK_GATING_REG2]
+  str r1, [r0, #BUS_SOFT_RST_REG2]
+
+  ldr r0, =TWI0_BASE
+  ldr r1, =(0x78 << 1) | (1 << 0)
+  str r1, [r0, #ADDR]
+main:
+  b main
+  .end
 </pre>
 
 <p>
-<br><a href="../../handheld.htm">返回上一頁</a>
+<br><a href="../../mcu.htm">返回上一頁</a>
 </p>
 
 </div>
