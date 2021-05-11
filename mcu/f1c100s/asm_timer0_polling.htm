@@ -29,7 +29,7 @@
   <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
   
   <script type="text/javascript" src="../../scripts/shCore.js"></script>
-  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
 
   <!-- Conditional comment to apply opacity fix for IE #content background.
        Invalid CSS, but can be removed without harming design -->
@@ -44,49 +44,108 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>TRIMUI</h3>
-<p><b>更換SPI Flash</b></p>
+<h3>F1C100S &gt;&gt; Assembly</h3>
+<p><b>Timer0(Polling)</b></p>
 <hr size="1">
 <p>
-自從司徒可以透過UART使用root帳號登入機器後，便開心地研究起NAND分區資料，但是悲劇發生了！在幾次操作NAND分區後，竟然再也無法透過燒錄模式更新SPI Flash，天阿！這IC也太秀氣了吧，真是讓司徒大開眼界...，後來，司徒終於領悟了，原來是用錯燒錄指令(spiflash-write)，所以從頭到尾，根本沒有燒錄資料進去，哈，只能說，啊～多麼痛得領悟～，就當作是一篇紀錄文章吧！<br><br>
+參考資料：<br>
+1. <a href="https://github.com/steward-fu/mcu-pdf/tree/master/f1c100s">pdf</a><br>
+2. <a href="http://nano.lichee.pro/">lichee</a><br>
+3. <a href="https://mangopi.org/mangopi_r">mangopi_r</a><br>
+4. <a href="https://www.allwinnertech.com/index.php?c=product&a=index&pid=4">allwinner</a><br><br>
 
-原廠IC<br>
-<img src="spiflash/1.jpg" class="maxSize"><br><br>
+Work Flow<br>
+<img src="asm_wdt/1.jpg" class="maxSize"><br><br>
 
-但是，司徒目前手上並沒有這麼大的SPI Flash，於是勇敢的料雞出現了！<br>
-<img src="spiflash/2.jpg" class="maxSize"><br><br>
+暫存器<br>
+<img src="asm_wdt/2.jpg" class="maxSize"><br><br>
 
-目標鎖定...<br>
-<img src="spiflash/3.jpg" class="maxSize"><br><br>
+Timer0時間
+</p>
+<pre>
+Ticks = LOSC/(TMR0_CLK_PRES*TMR0_INTV_VALUE_REG) = 32KHz/(128*256) = 1Hz
+</pre><br>
 
-就是這顆SPI Flash<br>
-<img src="spiflash/4.jpg" class="maxSize"><br><br>
+<p>
+main.s
+</p>
+<pre class="brush:asm">
+  .global _start
 
-但是，悲劇再度發生，竟然無法提起？這顆SPI Flash似乎黏的超級牢靠...，難道這是老天的旨意？<br>
-<img src="spiflash/6.jpg" class="maxSize"><br><br>
+  .equiv GPIO_BASE,  0x01c20800 
+  .equiv TIMER_BASE, 0x01c20c00
 
-於是司徒只好使用目前既有的材料W25Q128<br>
-<img src="spiflash/7.jpg" class="maxSize"><br><br>
+  .equiv PE,        (0x24 * 4)
+  .equiv PORT_CFG0, 0x00
+  .equiv PORT_DATA, 0x10
 
-解焊<br>
-<img src="spiflash/5.jpg" class="maxSize"><br><br>
+  .equiv TMR_IRQ_EN_REG,      0x00
+  .equiv TMR_IRQ_STA_REG,     0x04
+  .equiv TMR0_CTRL_REG,       0x10
+  .equiv TMR0_INTV_VALUE_REG, 0x14
+  .equiv TMR0_CUR_VALUE_REG,  0x18
 
+  .arm
+  .text
+_start:
+  .long 0xea000016
+  .byte 'e', 'G', 'O', 'N', '.', 'B', 'T', '0'
+  .long 0, __spl_size
+  .byte 'S', 'P', 'L', 2
+  .long 0, 0
+  .long 0, 0, 0, 0, 0, 0, 0, 0
+  .long 0, 0, 0, 0, 0, 0, 0, 0
+   
+_vector:
+  b reset
+  b .
+  b .
+  b .
+  b .
+  b .
+  b .
+  b .
+
+reset:
+  ldr r0, =GPIO_BASE
+  ldr r1, =0x00010000
+  str r1, [r0, #(PE + PORT_CFG0)]
+  ldr r1, =0x10
+  str r1, [r0, #(PE + PORT_DATA)]
+
+  ldr r0, =TIMER_BASE
+  ldr r1, =256
+  str r1, [r0, #TMR0_INTV_VALUE_REG]
+  ldr r1, =(7 &lt;&lt; 4) | (1 &lt;&lt; 1) | 1
+  str r1, [r0, #TMR0_CTRL_REG]
+  ldr r1, =1
+  str r1, [r0, #TMR_IRQ_EN_REG]
+  str r1, [r0, #TMR_IRQ_STA_REG]
+
+  ldr r2, =0x10
+0:
+  ldr r0, =TIMER_BASE
+  ldr r1, [r0, #TMR_IRQ_STA_REG]
+  tst r1, #1
+  beq 0b
+  
+  ldr r1, =1
+  str r1, [r0, #TMR_IRQ_STA_REG]
+
+  ldr r0, =GPIO_BASE
+  eor r2, #0x10
+  str r2, [r0, #(PE + PORT_DATA)]
+  b 0b
+  .end
+</pre><br>
+<p>
 完成<br>
-<img src="spiflash/8.jpg" class="maxSize"><br><br>
-
-雖然司徒已經購買原本的NAND Flash元件，但是，目前尚未到貨，而司徒無意間發現了芒果派<br>
-<img src="spiflash/9.jpg" class="maxSize"><br><br>
-
-勇敢的料雞再度站了出來<br>
-<img src="spiflash/10.jpg" class="maxSize"><br><br>
-
-完成<br>
-<img src="spiflash/11.jpg" class="maxSize"><br>
-接著司徒便開始使用spiflash-write指令燒寫，這才發現，sunxi-fel的spiflash-write指令是無法用來燒錄NAND Flash，而嘗試過PhoenixSuit、dfu-util還是無法成功燒錄，看來這是天意...<br>
+<img src="asm_led/5.jpg" class="maxSize"><br>
+<img src="asm_led/6.jpg" class="maxSize">
 </p>
 
 <p>
-<br><a href="../../handheld.htm">返回上一頁</a>
+<br><a href="../../mcu.htm">返回上一頁</a>
 </p>
 
 </div>
