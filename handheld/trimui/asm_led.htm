@@ -57,7 +57,7 @@
 暫存器<br>
 <img src="../../mcu/f1c100s/asm_led/2.jpg" class="maxSize"><br><br>
 
-配置功能<br>
+紅色LED是接到PE5<br>
 <img src="../../mcu/f1c100s/asm_led/3.jpg" class="maxSize"><br><br>
 
 輸出控制<br>
@@ -67,11 +67,12 @@ main.s
 </p>
 <pre class="brush:asm">
   .global _start
-  
-  .equ GPIO_BASE, 0x01c20800 
-  .equ PE_CFG0,   (GPIO_BASE + (4 * 0x24) + 0x00)
-  .equ PE_DATA,   (GPIO_BASE + (4 * 0x24) + 0x10)
    
+  .equiv GPIO_BASE, 0x01c20800 
+  .equiv PE,        (4 * 0x24)
+  .equiv PORT_CFG0, 0x00
+  .equiv PORT_DATA, 0x10
+    
   .arm
   .text
 _start:
@@ -82,7 +83,7 @@ _start:
   .long 0, 0
   .long 0, 0, 0, 0, 0, 0, 0, 0
   .long 0, 0, 0, 0, 0, 0, 0, 0
-   
+    
 _vector:
   b reset
   b .
@@ -92,22 +93,21 @@ _vector:
   b .
   b .
   b .
-   
+    
 reset:
-  ldr r0, =PE_CFG0
+  ldr r0, =GPIO_BASE
   ldr r1, =0x100000
-  str r1, [r0]
- 
-  ldr r0, =PE_DATA
+  str r1, [r0, #(PE + PORT_CFG0)]
+  
 0:
   ldr r1, =0x20
-  str r1, [r0]
+  str r1, [r0, #(PE + PORT_DATA)]
   ldr r2, =500000
 1:
   subs r2, #1
   bne 1b
   ldr r1, =0x00
-  str r1, [r0]
+  str r1, [r0, #(PE + PORT_DATA)]
   ldr r2, =500000
 2:
   subs r2, #1
@@ -195,7 +195,7 @@ all:
   ./mksunxi main.bin
 
 flash:
-  sunxi-fel write 0 main.bin &amp;&amp; sunxi-fel exec 0
+  sunxi-fel -p write 0 main.bin &amp;&amp; sunxi-fel exec 0
 
 clean:
   rm -rf main.bin main.o main.elf
@@ -222,7 +222,8 @@ $ make
   The bootloader head has been fixed, spl size is 512 bytes.
 
 $ make flash
-  sunxi-fel write 0 main.bin &amp;&amp; sunxi-fel exec 0
+  sunxi-fel -p write 0 main.bin &amp;&amp; sunxi-fel exec 0
+  100% [================================================]     1 kB,  146.0 kB/s
 </pre><br>
 
 <p>
