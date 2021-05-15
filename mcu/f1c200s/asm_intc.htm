@@ -45,7 +45,7 @@
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
 <h3>F1C200S &gt;&gt; Assembly</h3>
-<p><b>LED</b></p>
+<p><b>INTC</b></p>
 <hr size="1">
 <p>
 參考資料：<br>
@@ -54,25 +54,39 @@
 3. <a href="https://mangopi.org/mangopi_r">mangopi_r</a><br>
 4. <a href="https://www.allwinnertech.com/index.php?c=product&a=index&pid=4">allwinner</a><br><br>
 
+F1C200S分成FIQ、IRQ兩種中斷，EXT_INT是FIQ中斷，其餘都是IRQ中斷，比較特別的地方是可以透過設定INT_FORCE(INTC_FF_REG)，強制觸發IRQ中斷<br>
+<img src="../f1c100s/asm_intc/1.jpg" class="maxSize"><br><br>
+
 暫存器<br>
-<img src="../f1c100s/asm_led/2.jpg" class="maxSize"><br><br>
+<img src="../f1c100s/asm_intc/3.jpg" class="maxSize"><br><br>
 
-配置功能<br>
-<img src="asm_led/3.jpg" class="maxSize"><br><br>
-
-輸出控制<br>
-<img src="asm_led/4.jpg" class="maxSize"><br><br>
+Number代表第幾個bit，如：UART2是3，因此，要Enable UART2中斷的話，則需要設定bit-3(<b>INTC_EN_REG0|= (1 &lt;&lt; 3)</b>)，Vector代表中斷觸發的來源，也就是儲存在INTC_VECTOR_REG的數值，如：UART2是0x000c，因此，UART2中斷觸發後，INTC_VECTOR_REG內容就是0x000c<br>
+<img src="../f1c100s/asm_intc/2.jpg" class="maxSize"><br><br>
 
 main.s
 </p>
 <pre class="brush:asm">
   .global _start
   
-  .equiv GPIO_BASE, 0x01c20800
-  .equiv PA,        (0 * 0x24)
-  .equiv PORT_CFG0, 0x00
-  .equiv PORT_DATA, 0x10
-   
+  .equiv GPIO_BASE,  0x01c20800 
+  .equiv INTC_BASE,  0x01c20400
+  
+  .equiv PA,         (0x24 * 0)
+  .equiv PORT_CFG0,  0x00
+  .equiv PORT_DATA,  0x10
+  
+  .equiv INTC_BASE_ADDR_REG, 0x04
+  .equiv INTC_PEND_REG0,     0x10
+  .equiv INTC_PEND_REG1,     0x14
+  .equiv INTC_EN_REG0,       0x20
+  .equiv INTC_EN_REG1,       0x24
+  .equiv INTC_MASK_REG0,     0x30
+  .equiv INTC_MASK_REG1,     0x34
+  .equiv INTC_RESP_REG0,     0x40
+  .equiv INTC_RESP_REG1,     0x44
+  .equiv INTC_FF_REG0,       0x50
+  .equiv INTC_FF_REG1,       0x54
+  
   .arm
   .text
 _start:
@@ -83,7 +97,7 @@ _start:
   .long 0, 0
   .long 0, 0, 0, 0, 0, 0, 0, 0
   .long 0, 0, 0, 0, 0, 0, 0, 0
-   
+     
 _vector:
   b reset
   b .
@@ -91,140 +105,74 @@ _vector:
   b .
   b .
   b .
+  ldr pc, _irq
   b .
-  b .
-   
+  
+_irq: .word irq_handler
+  
+irq_handler:
+  ldr r0, =GPIO_BASE
+  ldr r1, =0x00
+  str r1, [r0, #(PA + PORT_DATA)]
+ 
+  ldr r0, =INTC_BASE
+  ldr r1, =0x00000000
+  str r1, [r0, #INTC_FF_REG0]
+  ldr r1, =0xffffffff
+  str r1, [r0, #INTC_PEND_REG0]
+  subs pc, lr, #4
+  
 reset:
+  mrc p15, 0, r0, c1, c0, 0
+  bic r0, #(1 &lt;&lt; 13)
+  mcr p15, 0, r0, c1, c0, 0
+  
+  adr r0, _vector
+  mrc p15, 0, r2, c1, c0, 0
+  ands r2, r2, #(1 &lt;&lt; 13)
+  ldreq r1, =0x00000000
+  ldrne r1, =0xffff0000
+  ldmia r0!, {r2-r8, r10}
+  stmia r1!, {r2-r8, r10}
+  ldmia r0!, {r2-r8, r10}
+  stmia r1!, {r2-r8, r10}
+  
+  mrs r0, cpsr
+  bic r0, #0x80
+  msr cpsr_c, r0
+  
+  ldr r0, =INTC_BASE
+  ldr r1, =(1 &lt;&lt; 3)
+  str r1, [r0, #INTC_EN_REG0]
+  ldr r1, =0x00000000
+  str r1, [r0, #INTC_MASK_REG0]
+  
   ldr r0, =GPIO_BASE
   ldr r1, =0x1000
   str r1, [r0, #(PA + PORT_CFG0)]
+  ldr r1, =0x10
+  str r1, [r0, #(PA + PORT_DATA)]
  
 0:
+  ldr r0, =GPIO_BASE
   ldr r1, =0x08
-  str r1, [r0, #(PA + PORT_DATA)]
-  ldr r2, =500000
+  str r1, [r0, #(PA + PORT_DATA)] 
+  ldr r0, =50000
 1:
-  subs r2, #1
+  subs r0, #1
   bne 1b
-  ldr r1, =0x00
-  str r1, [r0, #(PA + PORT_DATA)]
-  ldr r2, =500000
-2:
-  subs r2, #1
-  bne 2b
+   
+  ldr r0, =INTC_BASE
+  ldr r1, =(1 &lt;&lt; 3)
+  str r1, [r0, #INTC_FF_REG0]
+  ldr r0, =50000
+1:
+  subs r0, #1
+  bne 1b
+ 
   b 0b
   .end
 </pre><br>
-
-<p>
-main.ld
-</p>
-<pre>
-OUTPUT_FORMAT("elf32-littlearm", "elf32-bigarm", "elf32-littlearm")
-OUTPUT_ARCH(arm)
-ENTRY(_start)
-
-MEMORY {
-  ram : ORIGIN = 0x00000000, LENGTH = 32M
-}
-
-SECTIONS {
-  .text :
-  {
-    PROVIDE(__spl_start = .);
-    *(.text*)
-    PROVIDE(__spl_end = .);
-    *(.init.text)
-    *(.exit.text)
-    *(.glue*)
-    *(.note.gnu.build-id)
-  } &gt; ram
-  PROVIDE(__spl_size = __spl_end - __spl_start);
-
-  .rodata ALIGN(8) :
-  {
-    PROVIDE(__rodata_start = .);
-    *(SORT_BY_ALIGNMENT(SORT_BY_NAME(.rodata*)))
-    PROVIDE(__rodata_end = .);
-  } &gt; ram
-
-  .data ALIGN(8) :
-  {
-    PROVIDE(__data_start = .);  
-    *(.data*)
-    . = ALIGN(8);
-      PROVIDE(__data_end = .);
-    PROVIDE(__image_end = .);
-  } &gt; ram
-
-  .bss ALIGN(8) (NOLOAD) :
-  {
-    PROVIDE(__bss_start = .);
-    *(.bss*)
-    *(.sbss*)
-    *(COMMON)
-    . = ALIGN(8);
-    PROVIDE(__bss_end = .);
-  } &gt; ram
-
-  .stab 0 : { *(.stab) }
-  .stabstr 0 : { *(.stabstr) }
-  .stab.excl 0 : { *(.stab.excl) }
-  .stab.exclstr 0 : { *(.stab.exclstr) }
-  .stab.index 0 : { *(.stab.index) }
-  .stab.indexstr 0 : { *(.stab.indexstr) }
-  .comment 0 : { *(.comment) }
-  .debug_abbrev 0 : { *(.debug_abbrev) }
-  .debug_info 0 : { *(.debug_info) }
-  .debug_line 0 : { *(.debug_line) }
-  .debug_pubnames 0 : { *(.debug_pubnames) }
-  .debug_aranges 0 : { *(.debug_aranges) }
-}
-</pre><br>
-
-<p>
-Makefile
-</p>
-<pre>
-all:
-  arm-none-eabi-as -mcpu=arm9 -o main.o main.s
-  arm-none-eabi-ld -T main.ld -o main.elf main.o
-  arm-none-eabi-objcopy -O binary main.elf main.bin
-  gcc mksunxi.c -o mksunxi
-  ./mksunxi main.bin
-
-run:
-  sunxi-fel -p write 0 main.bin &amp;&amp; sunxi-fel exec 0
-
-clean:
-  rm -rf main.bin main.o main.elf
-</pre><br>
-
-<p>
-接著插入USB至電腦，然後按住BOOT按鍵後，再按一下RESET按鍵(如果NAND Flash是空白的內容，直接插入USB即可進入燒錄模式)
-</p>
-<pre>
-$ lsusb
-  Bus 002 Device 081: ID 1f3a:efe8 Onda (unverified) V972 tablet in flashing mode
-</pre><br>
-
-<p>
-編譯、執行
-</p>
-<pre>
-$ make
-  arm-none-eabi-as -mcpu=arm9 -o main.o main.s
-  arm-none-eabi-ld -T main.ld -o main.elf main.o
-  arm-none-eabi-objcopy -O binary main.elf main.bin
-  gcc mksunxi.c -o mksunxi
-  ./mksunxi main.bin
-  The bootloader head has been fixed, spl size is 512 bytes.
-
-$ make run
-  sunxi-fel -p write 0 main.bin &amp;&amp; sunxi-fel exec 0
-  100% [================================================]     1 kB,  143.5 kB/s
-</pre><br>
-
 <p>
 完成<br>
 <img src="asm_led/1.jpg" class="maxSize"><br>
