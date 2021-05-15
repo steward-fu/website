@@ -95,20 +95,20 @@ _vector:
    
 reset:
   ldr r0, =PE_CFG0
-  ldr r1, =0x00100000
+  ldr r1, =0x100000
   str r1, [r0]
  
   ldr r0, =PE_DATA
 0:
   ldr r1, =0x20
   str r1, [r0]
-  ldr r2, =50000
+  ldr r2, =500000
 1:
   subs r2, #1
   bne 1b
   ldr r1, =0x00
   str r1, [r0]
-  ldr r2, =50000
+  ldr r2, =500000
 2:
   subs r2, #1
   bne 2b
@@ -195,7 +195,7 @@ all:
   ./mksunxi main.bin
 
 flash:
-  sunxi-fel -p spiflash-write 0 main.bin
+  sunxi-fel write 0 main.bin &amp;&amp; sunxi-fel exec 0
 
 clean:
   rm -rf main.bin main.o main.elf
@@ -210,7 +210,7 @@ $ lsusb
 </pre><br>
 
 <p>
-編譯、燒錄
+編譯、執行
 </p>
 <pre>
 $ make
@@ -222,12 +222,11 @@ $ make
   The bootloader head has been fixed, spl size is 512 bytes.
 
 $ make flash
-  sunxi-fel -p spiflash-write 0 main.bin
-  100% [================================================]     1 kB,   55.9 kB/s
+  sunxi-fel write 0 main.bin &amp;&amp; sunxi-fel exec 0
 </pre><br>
 
 <p>
-重新上電後，即可執行SPI Flash裡面的程式<br>
+完成<br>
 <img src="asm_led/1.jpg" class="maxSize"><br>
 <img src="asm_led/2.jpg" class="maxSize">
 </p>
