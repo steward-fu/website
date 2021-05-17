@@ -29,7 +29,7 @@
   <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
   
   <script type="text/javascript" src="../../scripts/shCore.js"></script>
-  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
 
   <!-- Conditional comment to apply opacity fix for IE #content background.
        Invalid CSS, but can be removed without harming design -->
@@ -44,19 +44,86 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>BCM2835</h3>
-<p><b>電路圖</b></p>
+<h3>SAMD21G18 &gt;&gt; Assembly</h3>
+<p><b>Button</b></p>
 <hr size="1">
 <p>
 參考資訊：<br>
-1. <a href="https://www.raspberrypi.org/app/uploads/2012/04/Raspberry-Pi-Schematics-R1.0.pdf">schematic</a><br><br>
+1. <a href="https://cdn.sparkfun.com/datasheets/Dev/Arduino/Boards/Atmel-42181-SAM-D21_Datasheet.pdf">pdf</a><br>
+2. <a href="https://github.com/dwelch67/atsamd_samples">sample</a><br><br>
 
-如下：<br>
-<img src="sch/1.jpg" class="maxSize"><br>
-<img src="sch/2.jpg" class="maxSize"><br>
-<img src="sch/3.jpg" class="maxSize"><br>
-<img src="sch/4.jpg" class="maxSize"><br>
-<img src="sch/5.jpg" class="maxSize">
+按鍵腳位(PA-6)<br>
+<img src="asm_btn/2.jpg" class="maxSize"><br><br>
+
+暫存器<br>
+<img src="asm_led/1.jpg" class="maxSize"><br>
+<img src="asm_btn/1.jpg" class="maxSize"><br><br>
+
+配置方式<br>
+<img src="asm_led/2.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+  .cpu cortex-m0
+  .thumb
+ 
+  .equiv PORT_BASE,    0x41004400
+  .equiv PORT_A,       0x00
+  .equiv PORT_DIR,     0x00
+  .equiv PORT_OUT,     0x10
+  .equiv PORT_IN,      0x20
+  .equiv PORT_PINCFG6, 0x46
+ 
+  .thumb_func
+  .global _start
+_start:
+  .word 0x20001000
+  .word reset
+  .word hang
+  .word hang
+  .word hang
+  .word hang
+  .word hang
+  .word hang
+  .word hang
+  .word hang
+  .word hang
+  .word hang
+  .word hang
+  .word hang
+  .word hang
+  .word hang
+ 
+  .thumb_func
+reset:
+  ldr r0, =PORT_BASE
+  ldr r1, =(1 &lt;&lt; 17)
+  str r1, [r0, #(PORT_A + PORT_DIR)]
+  ldr r1, =0xffffffff
+  str r1, [r0, #(PORT_A + PORT_OUT)]
+  ldr r1, =(1 &lt;&lt; 2) | (1 &lt;&lt; 1)
+  ldr r2, =PORT_BASE + PORT_A + PORT_PINCFG6
+  strb r1, [r2]
+
+0:
+  ldr r1, [r0, #(PORT_A + PORT_IN)]
+  lsl r1, #11
+  ldr r2, =(1 &lt;&lt; 6)
+  orr r1, r2
+  str r1, [r0, #(PORT_A + PORT_OUT)]
+  b 0b
+ 
+  .thumb_func
+hang:
+  b .
+  .end
+</pre><br>
+
+<p>
+完成<br>
+<img src="asm_btn/3.jpg" class="maxSize"><br>
+<img src="asm_btn/4.jpg" class="maxSize">
 </p>
 
 <p>
