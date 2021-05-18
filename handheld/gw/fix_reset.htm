@@ -83,13 +83,19 @@ P.S. 原因是錯誤配置SWD腳位<br><br>
 3. 顯示的錯誤，忽略即可<br>
 <img src="fix_reset/3.jpg" class="maxSize"><br><br>
 
-4. 把MCU Reset腳位接到GND，接著，按下Connect<br>
+4. 把MCU Reset腳位接到GND，接著按下Connect<br>
 <img src="fix_reset/4.jpg" class="maxSize"><br><br>
 
 5. 三秒後，斷開MCU Reset與GND的連接，ST-LINK V2即可連線成功<br>
 <img src="fix_reset/5.jpg" class="maxSize"><br><br>
 
-6. 接著，即可使用openocd燒錄
+6. Erase Chip<br>
+<img src="fix_reset/6.jpg" class="maxSize"><br><br>
+
+7. 顯示錯誤，忽略即可<br>
+<img src="fix_reset/7.jpg" class="maxSize"><br><br>
+
+8. 接著就可以使用openocd燒錄
 </p>
 <pre>
 openocd -f main.cfg -c "init; halt; program main.elf; reset; exit;"
@@ -114,6 +120,31 @@ Info : STM32H7 flash has dual banks
 Info : Bank (0) size is 1024 kb, base address is 0x08000000
 Warn : Adding extra erase range, 0x08000080 .. 0x08001fff
 ** Programming Finished **
+</pre><br>
+
+<p>
+假如沒有做Erase Chip的動作，則會顯示如下錯誤
+</p>
+<pre>
+openocd -f main.cfg -c "init; halt; program main.elf; reset; exit;"
+Open On-Chip Debugger 0.11.0-rc1+dev-00010-gc69b4deae-dirty (2020-12-27-01:20)
+Licensed under GNU GPL v2
+For bug reports, read
+	http://openocd.org/doc/doxygen/bugs.html
+Info : The selected transport took over low-level target control. The results might differ compared to plain JTAG/SWD
+none separate
+
+Info : clock speed 1800 kHz
+Info : STLINK V2J17S4 (API v2) VID:PID 0483:3748
+Info : Target voltage: 3.193725
+Info : stm32h7x.cpu0: hardware has 8 breakpoints, 4 watchpoints
+Info : starting gdb server for stm32h7x.cpu0 on 3333
+Info : Listening on port 3333 for gdb connections
+embedded:startup.tcl:530: Error: ** Unable to reset target **
+in procedure 'program'
+in procedure 'program_error' called at file "embedded:startup.tcl", line 567
+at file "embedded:startup.tcl", line 530
+make: *** [Makefile:6: flash] Error 1
 </pre><br>
 
 <p>
