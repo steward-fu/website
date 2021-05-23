@@ -1,0 +1,172 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Game &amp; Watch: Super Mario Bros.</h3>
+<p><b>gdb debug game-and-watch-retro-go</b></p>
+<hr size="1">
+<p>
+參考資料：<br>
+1. <a href="https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-rm/downloads">gnu-toolchains</a><br>
+2. <a href="https://github.com/kbeckmann/game-and-watch-retro-go">game-and-watch-retro-go</a><br>
+3. <a href="https://github.com/ghidraninja/game-and-watch-flashloader">game-and-watch-flashloader</a><br><br>
+
+步驟如下：<br>
+1. 連接ST-LINK V2燒錄器到SWD腳位<br>
+2. 執行如下命令
+</p>
+<pre>
+$ sudo apt-get install gdb-multiarch -y
+$ ln -s /usr/bin/gdb-multiarch /usr/bin/arm-none-eabi-gdb
+
+$ cd
+$ wget https://developer.arm.com/-/media/Files/downloads/gnu-rm/10-2020q4/gcc-arm-none-eabi-10-2020-q4-major-x86_64-linux.tar.bz2
+$ tar xvf gcc-arm-none-eabi-10-2020-q4-major-x86_64-linux.tar.bz2
+$ sudo mv gcc-arm-none-eabi-10-2020-q4-major /opt
+$ export PATH=/opt/gcc-arm-none-eabi-10-2020-q4-major/bin:$PATH
+
+$ cd
+$ git clone --recurse-submodules https://github.com/kbeckmann/game-and-watch-retro-go
+$ cd game-and-watch-retro-go
+$ make -j8 flash
+
+$ vim main.cfg
+  source [find interface/stlink.cfg]
+  adapter speed 500
+  transport select hla_swd
+  source [find target/stm32h7x.cfg]
+  reset_config none
+
+$ openocd -f main.cfg -c "init; program build/gw_retro_go.elf; halt;"
+  Open On-Chip Debugger 0.11.0-rc1+dev-00010-gc69b4deae-dirty (2020-12-27-01:20)
+  Licensed under GNU GPL v2
+  For bug reports, read
+    http://openocd.org/doc/doxygen/bugs.html
+  Info : The selected transport took over low-level target control. The results might differ compared to plain JTAG/SWD
+  none separate
+
+  Info : clock speed 1800 kHz
+  Info : STLINK V2J17S4 (API v2) VID:PID 0483:3748
+  Info : Target voltage: 3.198428
+  Info : stm32h7x.cpu0: hardware has 8 breakpoints, 4 watchpoints
+  Info : starting gdb server for stm32h7x.cpu0 on 3333
+  Info : Listening on port 3333 for gdb connections
+  target halted due to debug-request, current mode: Thread
+  xPSR: 0x01000000 pc: 0x0800c180 msp: 0x20020000
+  ** Programming Started **
+  Info : Device: STM32H7Ax/7Bx
+  Info : STM32H7 flash has dual banks
+  Info : Bank (0) size is 1024 kb, base address is 0x08000000
+  Info : Padding image section 1 at 0x0800faf4 with 12 bytes (bank write end alignment)
+  Warn : Adding extra erase range, 0x0800fb00 .. 0x0800ffff
+  Warn : no flash bank found for address 0x90000000
+  Warn : no flash bank found for address 0x90000278
+  Warn : no flash bank found for address 0x9008c000
+  ** Programming Finished **
+  Info : Listening on port 6666 for tcl connections
+  Info : Listening on port 4444 for telnet connections
+</pre><br>
+
+<p>
+接著開啟另一個視窗並且輸入如下指令
+</p>
+<pre>
+$ arm-none-eabi-gdb build/gw_retro_go.elf
+  GNU gdb (Debian 8.2.1-2+b3) 8.2.1
+  Copyright (C) 2018 Free Software Foundation, Inc.
+  License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+  This is free software: you are free to change and redistribute it.
+  There is NO WARRANTY, to the extent permitted by law.
+  Type "show copying" and "show warranty" for details.
+  This GDB was configured as "x86_64-linux-gnu".
+  Type "show configuration" for configuration details.
+  For bug reporting instructions, please see:
+  &lt;http://www.gnu.org/software/gdb/bugs/&gt;.
+  Find the GDB manual and other documentation resources online at:
+      &lt;http://www.gnu.org/software/gdb/documentation/&gt;.
+
+  For help, type "help".
+  Type "apropos word" to search for commands related to "word"...
+  Reading symbols from build/gw_retro_go.elf...done.
+
+(gdb) target remote :3333
+  Remote debugging using :3333
+  Reset_Handler () at startup_stm32h7b0xx.s:62
+  62	  ldr   sp, =_estack      /* set stack pointer */
+
+(gdb) b main
+  Breakpoint 1 at 0x800156c: file Core/Src/main.c, line 359.
+
+(gdb) c
+  Continuing.
+  Note: automatically using hardware breakpoints for read-only addresses.
+
+  Breakpoint 1, main () at Core/Src/main.c:359
+  359	  for(int i = 0; i &lt; 1000000; i++) {
+
+(gdb) list
+  354	int main(void)
+  355	{
+  356	  /* USER CODE BEGIN 1 */
+  357	  uint8_t trigger_wdt_bsod = 0;
+  358
+  359	  for(int i = 0; i &lt; 1000000; i++) {
+  360	    __NOP();
+  361	  }
+  362
+  363	  // Nullpointer redzone
+
+(gdb)
+</pre><br>
+
+<p>
+<br><a href="../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
