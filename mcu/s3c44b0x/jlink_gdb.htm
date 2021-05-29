@@ -29,7 +29,7 @@
   <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
   
   <script type="text/javascript" src="../../scripts/shCore.js"></script>
-  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
 
   <!-- Conditional comment to apply opacity fix for IE #content background.
        Invalid CSS, but can be removed without harming design -->
@@ -44,23 +44,100 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>Motorola XT897 &gt;&gt; CM 10.2</h3>
-<p><b>build kernel 3.0.101</b></p>
+<h3>S3C44B0X</h3>
+<p><b>如何使用J-Link GDB Server和IDA Pro除錯程式</b></p>
 <hr size="1">
 <p>
-步驟如下(使用Linux Deploy配置Debian Wheezy環境)：
+main.s
 </p>
-<pre>
-$ cd
-$ wget https://github.com/steward-fu/xt897/releases/download/v1.0/cm10.2_kernel.tar.gz
-$ tar xvf cm10.2_kernel.tar.gz
-$ cd kernel
-$ zcat /proc/config.gz > .config
-$ make
+<pre class="brush:asm">
+  .equiv PCONG, 0x1d20040
+  .equiv PDATG, 0x1d20044
+  .equiv PUPG,  0x1d20048
+  .equiv WTCON, 0x1d30000
+
+  .text
+  .global _start
+_start:
+  ldr r0, =WTCON
+  ldr r1, =0
+  str r1, [r0]
+
+  ldr r0, =PCONG
+  ldr r1, =(1 &lt;&lt; 10)
+  str r1, [r0]
+
+  ldr r0, =PDATG
+loop:
+  eor r1, #(1 &lt;&lt; 5)
+  str r1, [r0]
+  ldr r2, =50000
+1:
+  nop
+  subs r2, r2, #1
+  bne 1b
+  b loop
+  .end
 </pre><br>
 
 <p>
-<br><a href="../../phone.htm">返回上一頁</a>
+main.ld
+</p>
+<pre>
+MEMORY {
+  flash : ORIGIN = 0x10000, LENGTH = 1M
+}
+
+SECTIONS {
+  text : {
+    *(.text)
+  } &gt; flash
+}
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ arm-none-eabi-as -ggdb -mcpu=arm7 -o main.o main.s
+$ arm-none-eabi-ld -T main.ld -o main.elf main.o
+$ arm-none-eabi-objcopy -O binary main.elf main.bin
+</pre><br>
+
+<p>
+開啟J-Flash並且載入main.bin(位址0x10000)<br>
+<img src="jlink_gdb/1.jpg" class="maxsize"><br><br>
+
+F4(Erase Chip)<br>
+<img src="jlink_gdb/2.jpg" class="maxsize"><br><br>
+
+F5(Program)<br>
+<img src="jlink_gdb/3.jpg" class="maxsize"><br><br>
+
+開啟J-Link GDB Server(<b>Init registers</b>記得勾選)<br>
+<img src="jlink_gdb/4.jpg" class="maxsize"><br><br>
+
+選擇S3C44B0X<br>
+<img src="jlink_gdb/5.jpg" class="maxsize"><br><br>
+
+Listening on TCP/IP port 2331<br>
+<img src="jlink_gdb/6.jpg" class="maxsize"><br><br>
+
+IDA Pro載入main.bin<br>
+<img src="jlink_gdb/7.jpg" class="maxsize"><br><br>
+
+按下F9並且選擇<b>Remote GDB debugger</b><br>
+<img src="jlink_gdb/8.jpg" class="maxsize"><br><br>
+
+按下F9並且輸入<b>Listening Port 2331</b><br>
+<img src="jlink_gdb/9.jpg" class="maxsize"><br><br>
+
+接著就可以開始使用IDA Pro除錯程式<br>
+<img src="jlink_gdb/10.jpg" class="maxsize">
+</p>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
 </p>
 
 </div>
