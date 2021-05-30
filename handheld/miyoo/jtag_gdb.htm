@@ -1,0 +1,162 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Miyoo</h3>
+<p><b>如何使用J-Link GDB Server和IDA Pro除錯程式</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://whycan.com/files/members/3/TF_SDNAND_JTAG_V002.pdf">jtag_pdf</a><br>
+2. <a href="https://whycan.com/t_1003.html">whycan_jtag</a><br>
+3. <a href="https://whycan.com/t_2025.html">whycan_pinout</a><br>
+4. <a href="https://github.com/nminaylov/F1C100s_info/blob/master/JTAG/allwinner_f1c100s.cfg">jtag_allwinner_f1c100s.cfg</a><br><br>
+
+F1C100S JTAG腳位(和MicroSD共用腳位)
+</p>
+<table>
+<tr><th>TMS</th><td>PF0, SDC0_D1</td></tr>
+<tr><th>TDI</th><td>PF1, SDC0_D0</td></tr>
+<tr><th>TDO</th><td>PF3, SDC0_CMD</td></tr>
+<tr><th>TCK</th><td>PF5, SDC0_D2</th></tr>
+</table><br>
+
+<p>
+連接J-Link<br>
+<img src="jtag/1.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+  .global _start
+    
+  .equiv GPIO_BASE, 0x01c20800
+  .equiv PA,        (0 * 0x24)
+  .equiv PORT_CFG0, 0x00
+  .equiv PORT_DATA, 0x10
+     
+  .arm
+  .text
+_start:
+  b reset
+  b .
+  b .
+  b .
+  b .
+  b .
+  b .
+  b .
+     
+reset:
+  ldr r0, =GPIO_BASE
+  ldr r1, =0x10
+  str r1, [r0, #(PA + PORT_CFG0)]
+   
+0:
+  eor r1, #0x02
+  str r1, [r0, #(PA + PORT_DATA)]
+  b 0b
+  .end
+</pre><br>
+
+<p>
+main.ld
+</p>
+<pre>
+MEMORY {
+  ram : ORIGIN = 0, LENGTH = 32K
+}
+
+SECTIONS {
+  text : {
+    *(.text*)
+  } &gt; ram
+}
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ arm-none-eabi-as -mcpu=arm9 -o main.o main.s
+$ arm-none-eabi-ld -T main.ld -o main.elf main.o
+$ arm-none-eabi-objcopy -O binary main.elf main.bin
+</pre><br>
+
+<p>
+下載程式到RAM(<b>loadbin c:\main.bin 0</b>)<br>
+<img src="../../mcu/f1c100s/jtag_gdb/1.jpg" class="maxSize"><br><br>
+
+開啟J-Link GDB Server(<b>Init registers</b>記得勾選)<br>
+<img src="../../mcu/f1c100s/jtag_gdb/2.jpg" class="maxSize"><br><br>
+
+選擇ARM 9<br>
+<img src="../../mcu/f1c100s/jtag_gdb/3.jpg" class="maxSize"><br><br>
+
+Listening on TCP/IP port 2331<br>
+<img src="../../mcu/f1c100s/jtag_gdb/4.jpg" class="maxSize"><br><br>
+
+IDA Pro載入main.bin<br>
+<img src="jtag_gdb/1.jpg" class="maxSize"><br><br>
+
+按下F9，選擇<b>Remote GDB debugger</b><br>
+<img src="../../mcu/f1c100s/jtag_gdb/6.jpg" class="maxSize"><br><br>
+
+按下F9，輸入<b>localhost 2331</b><br>
+<img src="../../mcu/f1c100s/jtag_gdb/7.jpg" class="maxSize"><br><br>
+
+接著就可以開始除錯程式<br>
+<img src="jtag_gdb/2.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
