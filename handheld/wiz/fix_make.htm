@@ -45,13 +45,45 @@
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
 <h3>GP2X Wiz</h3>
-<p><b>GMenu2X支援中文檔名</b></p>
+<p><b>解決"lkc_defs.h: No such file or directory"問題</b></p>
 <hr size="1">
 <p>
-1. 將gmenu2x資料夾內容複製到SD卡根目錄<br>
-2. 如要Wiz啟動就自動載入GMenu2X介面時，將<b>Settings</b>裡的<b>Auto Run</b>設定成<b>ON</b>，然後重開Wiz，即可看到GMenu2X介面，如要手動開啟GMenu2X，則使用<b>LAUNCHER</b>，然後選擇SD卡的<b>autorun.gpu</b>即可。<br>
-<img src="gmenu2x/1.jpg" class="maxSize">
+參考資訊：<br>
+1. <a href="https://lists.kernelnewbies.org/pipermail/kernelnewbies/2011-July/002686.html">kernelnewbies_002686</a><br><br>
+
+問題如下
 </p>
+<pre>
+  HOSTCC  scripts/basic/fixdep
+  HOSTCC  scripts/basic/docproc
+  HOSTCC  scripts/kconfig/conf.o
+scripts/kconfig/conf.c: In function ‘conf_sym’:
+scripts/kconfig/conf.c:215:6: warning: variable ‘type’ set but not used [-Wunused-but-set-variable]
+  int type;
+      ^~~~
+scripts/kconfig/conf.c: In function ‘conf_choice’:
+scripts/kconfig/conf.c:287:6: warning: variable ‘type’ set but not used [-Wunused-but-set-variable]
+  int type;
+      ^~~~
+  HOSTCC  scripts/kconfig/kxgettext.o
+  SHIPPED scripts/kconfig/lex.zconf.c
+  SHIPPED scripts/kconfig/zconf.hash.c
+  HOSTCC  scripts/kconfig/zconf.tab.o
+In file included from scripts/kconfig/zconf.tab.c:87:
+scripts/kconfig/lkc.h:26:10: fatal error: lkc_defs.h: No such file or directory
+ #include "lkc_defs.h"
+          ^~~~~~~~~~~~
+compilation terminated.
+make[1]: *** [scripts/Makefile.host:134: scripts/kconfig/zconf.tab.o] Error 1
+make: *** [Makefile:442: pollux_wiz_defconfig] Error 2
+</pre><br>
+
+<p>
+解法如下
+</p>
+<pre>
+$ make mrproper
+</pre><br>
 
 <p>
 <br><a href="../../handheld.htm">返回上一頁</a>
