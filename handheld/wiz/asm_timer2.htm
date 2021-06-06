@@ -1,0 +1,185 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>GP2X Wiz &gt;&gt; Assembly</h3>
+<p><b>Timer2</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://github.com/steward-fu/mcu-pdf/blob/master/pollux/pollux-v0.91.pdf">pdf_pm</a><br><br>
+
+Timer架構<br>
+<img src="asm_timer0/1.jpg" class="maxSize"><br><br>
+
+暫存器<br>
+<img src="asm_timer0/2.jpg" class="maxSize"><br><br>
+
+Timer計數(使用UART開機模式時，Clock固定使用PLL1且速度為147.46MHz)
+</p>
+<pre>
+TCLK = (PLL1 / CLKDIV) / SELTCLK
+
+PLL1 = 147.46MHz
+CLKDIV = 40
+SELTCLK = 2
+
+TCLK = (147.46MHz / 40) / 2 = 1843250Hz
+</pre><br>
+
+<p>
+main.s
+</p>
+<pre class="brush:asm">
+  .global _start
+
+  .equiv GPIOC_OUT,    0xc000a080
+  .equiv GPIOC_OUTENB, 0xc000a084
+  .equiv INTMODEL,     0xc0000808
+  .equiv INTMASKL,     0xc0000810
+  .equiv INTPENDL,     0xc0000820
+  .equiv TMR2_COUNT,   0xc0001900
+  .equiv TMR2_MATCH,   0xc0001904
+  .equiv TMR2_CONTROL, 0xc0001908
+  .equiv TMR2_CLKENB,  0xc0001940
+  .equiv TMR2_CLKGEN,  0xc0001944
+    
+  .arm
+  .text
+_start:
+  b reset
+  b .
+  b .
+  b .
+  b .
+  b .
+  b irq_handler
+  b .
+
+irq_handler:
+  ldr r0, =TMR2_CONTROL
+  ldr r1, [r0]
+  orr r1, #(1 &lt;&lt; 5)
+  bic r1, #(1 &lt;&lt; 3)
+  str r1, [r0]
+
+  ldr r0, =GPIOC_OUT
+  eor r2, #(1 &lt;&lt; 16)
+  str r2, [r0]
+
+  ldr r0, =INTPENDL
+  ldr r1, =0xffffffff
+  str r1, [r0]
+  
+  ldr r0, =TMR2_CONTROL
+  ldr r1, [r0]
+  orr r1, #(1 &lt;&lt; 3)
+  str r1, [r0]
+  subs pc, lr, #4
+
+reset:
+  mrs r0, cpsr
+  bic r0, #0x80
+  msr cpsr_c, r0
+
+  ldr r0, =INTMODEL
+  ldr r1, =0
+  str r1, [r0]
+
+  ldr r0, =INTMASKL
+  ldr r1, =0
+  str r1, [r0]
+
+  ldr r0, =INTPENDL
+  ldr r1, =0xffffffff
+  str r1, [r0]
+
+  ldr r0, =GPIOC_OUTENB
+  ldr r1, =(1 &lt;&lt; 16)
+  str r1, [r0]
+  
+  ldr r0, =GPIOC_OUT
+  ldr r2, =(1 &lt;&lt; 16)
+  str r2, [r0]
+
+  ldr r0, =TMR2_CLKGEN
+  ldr r1, =(39 &lt;&lt; 4) | (1 &lt;&lt; 1)
+  str r1, [r0]
+
+  ldr r0, =TMR2_CLKENB
+  ldr r1, =0x0c
+  str r1, [r0]
+
+  ldr r0, =TMR2_COUNT
+  ldr r1, =0
+  str r1, [r0]
+  
+  ldr r0, =TMR2_MATCH
+  ldr r1, =1843250
+  str r1, [r0]
+
+  ldr r0, =TMR2_CONTROL
+  ldr r1, =0x38
+  str r1, [r0]
+
+  b .
+  .end
+</pre><br>
+
+<p>
+完成<br>
+<img src="asm_led/4.jpg" class="maxSize"><br>
+<img src="asm_led/5.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
