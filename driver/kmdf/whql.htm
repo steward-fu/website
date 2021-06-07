@@ -117,7 +117,7 @@ Hyper-V NAT網卡自動配置的IP<br>
 4. 關閉<b>Windows Defender</b><br>
 5. 開啟網路芳鄰(<b>SMB Service</b>)，記得<a href="../../system/windows/fix_nn.htm">開啟相關服務</a><br>
 <img src="whql/5.jpg" class="maxSize"><br>
-P.S. 如果遇到Hyper-V NAT網卡無法連網，可以交互Enable、Disable原本網卡(NIC1)以及Hyper-V NAT網卡，如果還是不行，可以重新建立Hyper-V NAT網卡，因為Hyper-V的網路真是不敢領教...，出錯的問題可能是<b>Microsoft NDIS Packet Capture Filter Driver</b>，目前建議可以把HCK/HLK先下載到資料夾，然後再透過網路芳鄰複製到Controller主機安裝<br><br>
+P.S. 如果遇到Hyper-V NAT網卡無法連網，可以交互Enable、Disable原本網卡(NIC1)以及Hyper-V NAT網卡，如果還是不行，可以重新建立Hyper-V NAT網卡，因為Hyper-V的網路真是不敢領教...，出錯的問題可能是<b>Microsoft NDIS Packet Capture Filter Driver</b>，目前建議可以把HCK/HLK先下載到資料夾，然後再透過網路芳鄰複製到Controller主機安裝，因為沒有連外網的情況下，也是可以測試WHQL<br><br>
 
 接著安裝HLK或者HCK(依照測試選項)<br>
 <img src="whql/6.jpg" class="maxSize"><br>
@@ -131,9 +131,7 @@ P.S. 如果遇到Hyper-V NAT網卡無法連網，可以交互Enable、Disable原
 3. 關閉<b>Windows AntiVirus</b><br>
 4. 關閉<b>Windows Defender</b><br>
 5. 開啟網路芳鄰(<b>SMB Service</b>)，記得<a href="../../system/windows/fix_nn.htm">開啟相關服務</a><br>
-6. 開啟遠端連線功能(<b>Remote Desktop Connection</b>)<br>
-7. 關閉UAC(<b>User Account Control Settings</b> &gt; <b>Never notify</b>)<br>
-8. 開啟BCD設定並且重新開機<br>
+6. 開啟BCD設定並且重新開機<br>
 </p>
 <pre>
 c:\&gt; bcdedit.exe /set testsigning on
@@ -141,17 +139,16 @@ c:\&gt; bcdedit.exe /set bootstatuspolicy ignoreallfailures
 c:\&gt; bcdedit.exe /set bootmenupolicy legacy
 </pre>
 <p>
-9. 掛載需要的檔案系統(<b>FSFilter Driver</b>測試需要，可以使用<b>fltmc</b>指令查看是否為<b>FSFilter Driver</b>)<br>
+7. 掛載需要的檔案系統(<b>FSFilter Driver</b>測試需要，可以使用<b>fltmc</b>指令查看是否為<b>FSFilter Driver</b>)<br>
 <img src="whql/12.jpg" class="maxSize"><br>
-10. 安裝測試的驅動程式，啟動TYPE設定成SERVICE_AUTO_START，由於BCD已經開啟TESTSIGNING，因此，驅動程式只需要有一個簡單的測試簽章即可安裝使用，如何製作個人測試簽章，請參考<a href="../wdm/self_sign.htm">這裡</a><br><br>
-
-接著在Client安裝HLK或者HCK，安裝的方式則是透過Controller的網路芳鄰資料夾(HLKInstall &gt; Client &gt; Setup.cmd/Setup.exe)<br>
+8. 安裝測試的驅動程式，由於BCD已經開啟TESTSIGNING，因此，驅動程式只需要有一個簡單的測試簽章即可安裝使用，如何製作個人測試簽章，請參考<a href="../wdm/self_sign.htm">這裡</a>，必須注意的是，INF必須先使用INF2CAT檢查，否則在打包WHQL結果時，會有錯誤訊息<br>
+9. 接著在Client安裝HLK或者HCK，安裝的方式則是透過Controller的網路芳鄰資料夾(HLKInstall &gt; Client &gt; Setup.cmd/Setup.exe)<br>
 <img src="whql/10.jpg" class="maxSize"><br>
 <img src="whql/11.jpg" class="maxSize"><br>
 <img src="whql/13.jpg" class="maxSize"><br>
 <img src="whql/14.jpg" class="maxSize"><br>
 <img src="whql/15.jpg" class="maxSize"><br>
-P.S. 完成後，重新開機即可<br><br>
+10. 接著，登出目前登出，因為WHQL會有一組測試的帳號登入使用<br><br>
 
 接著在Controller開啟HLK Studio<br>
 <img src="whql/16.jpg" class="maxSize"><br><br>
@@ -163,19 +160,67 @@ P.S. 完成後，重新開機即可<br><br>
 Create Machine Pool<br>
 <img src="whql/20.jpg" class="maxSize"><br><br>
 
-接著把Default Pool的測試機器拉到新增的Pool裡面<br>
+接著把Default Pool的測試機器拉到新增的Pool裡面，如果發生怎麼拖拉都會出現錯誤時，重新開啟HLK Studio即可<br>
 <img src="whql/21.jpg" class="maxSize"><br><br>
 
 接著按滑鼠右鍵，設定成Ready<br>
 <img src="whql/25.jpg" class="maxSize"><br><br>
+
+等待狀態變成READY<br>
+<img src="whql/26.jpg" class="maxSize"><br><br>
 
 接著返回主頁，然後Create Project<br>
 <img src="whql/22.jpg" class="maxSize"><br>
 <img src="whql/17.jpg" class="maxSize"><br>
 <img src="whql/23.jpg" class="maxSize"><br><br>
 
-切到Selection頁面，並且選擇剛剛新增的Pool<br>
+切到Selection頁面，並且選擇剛剛新增的Pool，接著點選左邊的<b>software device</b>，選擇要測試的驅動程式，如果沒有找到，請確定該驅動程式已經安裝完成且為<b>啟動狀態</b>，如果還是不行，可以重新啟動該台測試Client機器，接著記得重新配置成READY狀態，多測試幾次就可以<br>
 <img src="whql/24.jpg" class="maxSize"><br><br>
+
+勾選全部測試選項，如果沒有任何測試選項可以勾選，例如：Win7系統，則代表不需要測試，也就是Results代表已經PASS<br>
+<img src="whql/27.jpg" class="maxSize"><br><br>
+
+接著，按下<b>Run Selected</b><br>
+<img src="whql/28.jpg" class="maxSize"><br><br>
+
+測試中，請不要去操作Client機器，避免發生錯誤<br>
+<img src="whql/29.jpg" class="maxSize"><br><br>
+
+完成後，所有的選項都需要PASS，如果有選項錯誤，可以切到Results頁面查看問題，一般來說，SLEEP或者PNP問題，重新跑幾次就可以，如果都還是無法PASS，可以上網找尋解法<br>
+<img src="whql/30.jpg" class="maxSize"><br><br>
+
+Results頁面，可以查看細部測試項目<br>
+<img src="whql/31.jpg" class="maxSize"><br><br>
+
+接著準備打包測試結果<br>
+<img src="whql/32.jpg" class="maxSize"><br><br>
+
+由於不同的Windows作業系統，需要使用不同的HLK/HCK版本做測試，因此，通常會有多份測試結果需要做合併的動作，如果沒有合併，則每個各別Submit的驅動程式，將只能安裝在有測試的系統上，因此，點選<b>Merge Package</b>做合併的動作，如果目前這個HLK/HCK不是要做最後合併的動作，則只要點選右下方的<b>Create Package</b><br>
+<img src="whql/34.jpg" class="maxSize"><br>
+<img src="whql/33.jpg" class="maxSize"><br><br>
+
+選擇<b>Add</b>加入從其它HLK/HCK測試的結果<br>
+<img src="whql/35.jpg" class="maxSize"><br><br>
+
+接著選擇<b>Add Driver Folder</b><br>
+<img src="whql/37.jpg" class="maxSize"><br>
+<img src="whql/36.jpg" class="maxSize"><br><br>
+
+加入Driver Folder後，會顯示有測試的Windows作業系統，記得全部勾選<br>
+<img src="whql/38.jpg" class="maxSize"><br><br>
+
+Locales頁面也記得全部勾選<br>
+<img src="whql/39.jpg" class="maxSize"><br><br>
+
+接著，選擇<b>Create Package</b><br>
+<img src="whql/41.jpg" class="maxSize"><br>
+<img src="whql/40.jpg" class="maxSize"><br><br>
+
+<b>Do not sign</b><br>
+<img src="whql/42.jpg" class="maxSize"><br><br>
+
+完成後，就把這包結果Submit到Microsoft做簽章的動作<br>
+<img src="whql/43.jpg" class="maxSize"><br><br>
 </p>
 
 <p>
