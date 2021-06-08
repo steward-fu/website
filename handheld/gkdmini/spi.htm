@@ -45,7 +45,7 @@
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
 <h3>GKDmini</h3>
-<p><b>從SPI Flash提取UBoot、Kernel</b></p>
+<p><b>從SPI Flash提取uImage</b></p>
 <hr size="1">
 <p>
 X1830支援多種開機模式<br>
@@ -95,7 +95,7 @@ Starting kernel ...
 <p>
 P.S. 短路SPI後，開機並沒有任何訊息<br><br>
 
-因此，UBoot和Kernel程式都是位於SPI Flash，25Q128CS1G8容量為16MB，因此，剛好可以塞下UBoot和Kernel程式<br>
+因此，UBoot和uImage程式都是位於SPI Flash，25Q128CS1G8容量為16MB，因此，剛好可以塞下UBoot和uImage程式<br>
 <img src="spi/2.jpg" class="maxSize"><br>
 電阻值：R30(10K)、R116(7.2K)、R115(8K)<br><br>
 
@@ -108,7 +108,7 @@ P.S. 短路SPI後，開機並沒有任何訊息<br><br>
 使用如下命令讀取
 </p>
 <pre>
-$ sudo sunxi-fel -p spiflash-read 16777216 gkdmini_spiflash.bin
+$ sudo sunxi-fel -p spiflash-read 0 16777216 gkdmini_spiflash.bin
 </pre><br>
 
 <p>
@@ -125,7 +125,7 @@ $ strings gkdmini_spiflash.bin | grep -i u-boot
 </pre><br>
 
 <p>
-提取UBoot和Kernel
+提取uImage
 </p>
 <pre>
 $ file gkdmini_spiflash.bin
@@ -134,26 +134,16 @@ $ file gkdmini_spiflash.bin
 $ od -A d -t x1 gkdmini_spiflash.bin | grep '1f 8b 08'
   0262208 1f 8b 08 00 00 00 00 00 02 03 ec bd 0f 74 5c d5
 
-$ dd if=gkdmini_spiflash.bin of=head bs=1 count=262208
-  262208+0 records in
-  262208+0 records out
-  262208 bytes (262 kB, 256 KiB) copied, 0.558035 s, 470 kB/s
+$ dd if=gkdmini_spiflash.bin of=uImage bs=1 skip=262144
+$ file uImage
+  uImage: u-boot legacy uImage, Linux-3.10.14, Linux/MIPS, OS Kernel Image (gzip), 2505543 bytes, Tue Jan 26 02:39:41 2021, Load Address: 0x80010000, Entry Point: 0x803963B0, Header CRC: 0xDE68DED0, Data CRC: 0x0C174FB3
 
-$ dd if=gkdmini_spiflash.bin of=body bs=1 skip=262208
-  16515008+0 records in
-  16515008+0 records out
-  16515008 bytes (17 MB, 16 MiB) copied, 35.5629 s, 464 kB/s
+$ dd if=gkdmini_spiflash.bin of=uImage_no_header bs=1 skip=262208
+$ file uImage_no_header
+  uImage_no_header: gzip compressed data, max compression, from Unix, original size 4294967295
 
-$ file body
-  body: gzip compressed data, max compression, from Unix, original size 4294967295
-
-$ zcat body > body_ext
-  gzip: body: decompression OK, trailing garbage ignored
-
-$ file body_ext
-  body_ext: data
-  
-$ strings body_ext | grep Linux
+$ zcat uImage_no_header > kernel
+$ strings kernel | grep Linux
   Linux version 3.10.14 (root@avrman-virtual-machine) (gcc version 5.2.0 (Ingenic r3.2.0-gcc520 2017.08-24) ) #3 PREEMPT Mon Jan 25 21:39:37 EST 2021
   No init found.  Try passing init= option to kernel. See Linux Documentation/init.txt for guidance.
   Linux

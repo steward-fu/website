@@ -45,20 +45,38 @@
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
 <h3>GKDmini</h3>
-<p><b>從MicroSD提取UBoot、Kernel</b></p>
+<p><b>從MicroSD提取uImage</b></p>
 <hr size="1">
 <p>
-從原本MicroSD提取UBoot、Kernel
+步驟如下：
 </p>
 <pre>
-$ sudo dd if=/dev/sdx of=gkdmini_microsd.bin bs=1M count=20
-</pre><br>
+$ sudo dd if=/dev/sdX of=gkdmini_microsd.bin bs=1M count=20
 
-<p>
-燒錄到新的MicroSD(前置20MB)
-</p>
-<pre>
-$ sudo dd if=gkdmini_microsd.bin of=/dev/sdx bs=512 skip=1 seek=1
+$ od -A d -t x1 gkdmini_microsd.bin | grep '1f 8b 08'
+  3145792 1f 8b 08 00 00 00 00 00 02 03 ec bd 0f 78 5c 47
+  7340096 1f 8b 08 00 00 00 00 00 02 03 ec bd 0f 74 1c d5
+
+$ dd if=gkdmini_microsd.bin of=uImage bs=1 skip=3145728
+$ file uImage
+  uImage: u-boot legacy uImage, Linux-3.10.14, Linux/MIPS, OS Kernel Image (gzip), 4050288 bytes, Sat Jan 30 11:05:26 2021, Load Address: 0x80010000, Entry Point: 0x80444010, Header CRC: 0x3C36ED42, Data CRC: 0xE42C30E6
+
+$ dd if=gkdmini_microsd.bin of=uImage_no_header bs=1 skip=3145792
+$ file uImage_no_header
+  uImage_no_header: gzip compressed data, max compression, from Unix, original size 0
+
+$ zcat uImage_no_header > kernel
+$ strings kernel | grep Linux
+  Linux version 3.10.14 (root@avrman-virtual-machine) (gcc version 5.2.0 (Ingenic r3.2.0-gcc520 2017.08-24) ) #10 PREEMPT Sat Jan 30 06:05:22 EST 2021
+  No init found.  Try passing init= option to kernel. See Linux Documentation/init.txt for guidance.
+  Linux
+  [%s] Warning! Received an indication that the LUN assignments on this target have changed. The Linux SCSI layer does not automatically remap LUN assignments.
+  Warning! Received an indication that the LUN assignments on this target have changed. The Linux SCSI layer does not automatically remap LUN assignments.
+  [%s] Warning! Received an indication that the operating parameters on this target have changed. The Linux SCSI layer does not automatically adjust these parameters.
+  Warning! Received an indication that the operating parameters on this target have changed. The Linux SCSI layer does not automatically adjust these parameters.
+  6Advanced Linux Sound Architecture Driver Initialized.
+  Advanced Linux Sound Architecture Driver Version k%s.
+  Linux
 </pre><br>
 
 <p>
