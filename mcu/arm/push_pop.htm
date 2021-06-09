@@ -29,7 +29,7 @@
   <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
   
   <script type="text/javascript" src="../../scripts/shCore.js"></script>
-  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
 
   <!-- Conditional comment to apply opacity fix for IE #content background.
        Invalid CSS, but can be removed without harming design -->
@@ -44,45 +44,38 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>Windows Driver Model</h3>
-<p><b>如何移除已經簽章的驅動程式</b></p>
+<h3>ARM</h3>
+<p><b>push、pop、stmfd、ldmfd</b></p>
 <hr size="1">
 <p>
-下載<a href="https://github.com/steward-fu/wdm/blob/master/tools/remove_sign.zip">remove_sign</a>並執行如下命令：
+程式：
 </p>
+<pre class="brush:asm">
+  .global _start
 
-<pre>
-c:\&gt; delcert.exe hello.sys
+  .arm
+  .text
+_start:
+  bl t1
+  bl t2
 
-Target file(s): hello.sys
+t1:
+  stmfd sp!, {r0-r4, lr}
+  ldmfd sp!, {r0-r4, lr}
 
-Stripping file: c:\hello.sys.
-Succeeded.
+t2:
+  push {r0-r4, lr}
+  pop {r0-r4, lr}
 </pre><br>
 
 <p>
-main.cpp
+反組譯：<br>
+<img src="push_pop/1.jpg" class="maxSize"><br>
+結論：等價
 </p>
-<pre class="brush:cpp">
-#include &lt;stdafx.h&gt;
-#include &lt;windows.h&gt;
-#include &lt;imagehlp.h&gt;
-
-#pragma comment(lib, "Imagehlp.lib")
-
-int main(int argc, char** argv)
-{
-  HANDLE hFile;
-
-  hFile = CreateFile(argv[1], GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-  ImageRemoveCertificate(hFile, 0);
-  CloseHandle(hFile);
-  return 0;
-}
-</pre><br>
 
 <p>
-<br><a href="../../driver.htm">返回上一頁</a>
+<br><a href="../../mcu.htm">返回上一頁</a>
 </p>
 
 </div>
