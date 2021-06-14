@@ -45,7 +45,7 @@
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
 <h3>F1C200S &gt;&gt; Assembly</h3>
-<p><b>如何超頻到1.2GHz</b></p>
+<p><b>如何超頻到2.0GHz</b></p>
 <hr size="1">
 <p>
 參考資料：<br>
@@ -162,7 +162,142 @@ reset:
 <img src="overclock/7.jpg" class="maxSize"><br><br>
 
 I/O最高速度為2.8MHz，因為再怎麼超頻，I/O依舊維持在這個檔位，不過CPU速度已經可以跑到1.2GHz，如果電壓再繼續增加，司徒相信CPU還可以操到更高，因為官方說最高可以到2.6GHz<br>
-<img src="overclock/8.jpg" class="maxSize">
+<img src="overclock/8.jpg" class="maxSize"><br><br>
+
+既然官方說最高可以超頻到2.6GHz，那最高到底可以超到多少呢？基於這個好奇心，司徒決定研究一下超頻，因此，司徒找來芒果四兄弟<br>
+<img src="overclock/9.jpg" class="maxSize"><br><br>
+
+首先挺身而出的是芒果大哥，大哥深知，超頻可以會讓自己變成一隻燒雞，剛好今天是端午佳節，明年可能會是自己的清明節...<br>
+<img src="overclock/10.jpg" class="maxSize"><br><br>
+
+由於司徒並沒有太多精密電阻做分壓測試，因此，趕緊從隔壁找來老王協助<br>
+<img src="overclock/11.jpg" class="maxSize"><br><br>
+
+為了避免發生榨妻的嫌疑，司徒量測一下老王的電壓，果然，老王還是無法信任...<br>
+<img src="overclock/12.jpg" class="maxSize"><br><br>
+
+遺憾的是，司徒手上剛好沒有溫度測量器，因此，勇敢的五姊妹挺身而出，由二姐負責量測...<br>
+<img src="overclock/13.jpg" class="maxSize"><br><br>
+
+芒果派果然值得信任，固定輸出1.2V<br>
+<img src="overclock/14.jpg" class="maxSize"><br><br>
+
+接著，司徒開始從1.8V測試<br>
+<img src="overclock/15.jpg" class="maxSize"><br><br>
+
+啟動後，吃掉0.5V<br>
+<img src="overclock/16.jpg" class="maxSize"><br><br>
+
+確定LED可以閃爍<br>
+<img src="overclock/17.jpg" class="maxSize"><br><br>
+
+測試程式
+</p>
+<pre class="brush:asm">
+  .global _start
+    
+  .equiv CCU_BASE,              0x01c20000
+  .equiv GPIO_BASE,             0x01c20800
+ 
+  .equiv PLL_CPU_CTRL_REG,      0x0000
+  .equiv PLL_PERIPH_CTRL_REG,   0x0028
+  .equiv AHB_APB_HCLKC_CFG_REG, 0x0054
+  .equiv BUS_CLK_GATING_REG2,   0x0068
+  .equiv BUS_SOFT_RST_REG2,     0x02d0
+  
+  .equiv PA,                    (0x24 * 0)
+  .equiv PORT_CFG0,             0x00
+  .equiv PORT_DATA,             0x10
+
+  .arm
+  .text
+_start:
+  .long 0xea000016
+  .byte 'e', 'G', 'O', 'N', '.', 'B', 'T', '0'
+  .long 0, __spl_size
+  .byte 'S', 'P', 'L', 2
+  .long 0, 0
+  .long 0, 0, 0, 0, 0, 0, 0, 0
+  .long 0, 0, 0, 0, 0, 0, 0, 0
+   
+_vector:
+  b reset
+  b .
+  b .
+  b .
+  b .
+  b .
+  b .
+  b .
+
+reset:
+  ldr r4, =CCU_BASE
+  ldr r1, =(1 &lt;&lt; 31) | (20 &lt;&lt; 8) | (3 &lt;&lt; 4)
+  str r1, [r4, #PLL_CPU_CTRL_REG]
+0:
+  ldr r1, [r4, #PLL_CPU_CTRL_REG]
+  tst r1, #(1 &lt;&lt; 28)
+  beq 0b
+
+  ldr r0, =GPIO_BASE
+  ldr r1, =0x1000
+  str r1, [r0, #(PA + PORT_CFG0)]
+0:
+  eor r1, #8
+  str r1, [r0, #(PA + PORT_DATA)]
+  ldr r2, =1000000
+1:
+  subs r2, #1
+  bne 1b
+  b 0b
+  .end
+</pre>
+<p>
+P.S. 在最早的測試，司徒忘記N最大只有到31，因此，在此次測試，司徒先把K設定成3，然後依序調整N，上面的程式：<b>24MHz * N * K = 24MHz * 21 * 4 = 2016Hz</b><br><br>
+
+接著就開始慢慢調整電壓測試，找出該CPU頻率下，最低可以接受的電壓<br>
+<img src="overclock/18.jpg" class="maxSize"><br><br>
+
+二姐持續量測溫度...<br>
+<img src="overclock/19.jpg" class="maxSize"><br><br>
+
+最後，司徒測試發現，電壓2.4V時，CPU可以超頻到2016Hz，此時CPU還可以正常運作，不過已經呈現發燙的狀態(可憐的二姐)，可以加上散熱片使用，而電壓再往上增加時，CPU已經無法運作<br>
+<img src="overclock/20.jpg" class="maxSize"><br><br>
+
+因此，司徒整理一下F1C100S超頻表格
+</p>
+<table>
+<tr><th>CORE電壓</th><th>CPU頻率</th><th>人體溫度量測</th><th>CPU設定</th></tr>
+<tr><td>1.20v</td><td>480Hz</td><td>正常</td><td>PLL_CPU_CTRL_REG = (1 &lt;&lt; 31) | (4 &lt;&lt; 8) | (3 &lt;&lt; 4)</td></tr>
+<tr><td>1.20v</td><td>576Hz</td><td>正常</td><td>PLL_CPU_CTRL_REG = (1 &lt;&lt; 31) | (5 &lt;&lt; 8) | (3 &lt;&lt; 4)</td></tr>
+<tr><td>1.20v</td><td>672Hz</td><td>正常</td><td>PLL_CPU_CTRL_REG = (1 &lt;&lt; 31) | (6 &lt;&lt; 8) | (3 &lt;&lt; 4)</td></tr>
+<tr><td>1.20v</td><td>768Hz</td><td>正常</td><td>PLL_CPU_CTRL_REG = (1 &lt;&lt; 31) | (7 &lt;&lt; 8) | (3 &lt;&lt; 4)</td></tr>
+<tr><td>1.20v</td><td>864Hz</td><td>正常</td><td>PLL_CPU_CTRL_REG = (1 &lt;&lt; 31) | (8 &lt;&lt; 8) | (3 &lt;&lt; 4)</td></tr>
+<tr><td>1.20v</td><td>960Hz</td><td>正常</td><td>PLL_CPU_CTRL_REG = (1 &lt;&lt; 31) | (9 &lt;&lt; 8) | (3 &lt;&lt; 4)</td></tr>
+<tr><td>1.20v</td><td>1056Hz</td><td>正常</td><td>PLL_CPU_CTRL_REG = (1 &lt;&lt; 31) | (10 &lt;&lt; 8) | (3 &lt;&lt; 4)</td></tr>
+<tr><td>1.30v</td><td>1152Hz</td><td>正常</td><td>PLL_CPU_CTRL_REG = (1 &lt;&lt; 31) | (11 &lt;&lt; 8) | (3 &lt;&lt; 4)</td></tr>
+<tr><td>1.35v</td><td>1248Hz</td><td>微微溫</td><td>PLL_CPU_CTRL_REG = (1 &lt;&lt; 31) | (12 &lt;&lt; 8) | (3 &lt;&lt; 4)</td></tr>
+<tr><td>1.45v</td><td>1344Hz</td><td>微微溫</td><td>PLL_CPU_CTRL_REG = (1 &lt;&lt; 31) | (13 &lt;&lt; 8) | (3 &lt;&lt; 4)</td></tr>
+<tr><td>1.55v</td><td>1440Hz</td><td>微微溫</td><td>PLL_CPU_CTRL_REG = (1 &lt;&lt; 31) | (14 &lt;&lt; 8) | (3 &lt;&lt; 4)</td></tr>
+<tr><td>1.65v</td><td>1536Hz</td><td>微微溫</td><td>PLL_CPU_CTRL_REG = (1 &lt;&lt; 31) | (15 &lt;&lt; 8) | (3 &lt;&lt; 4)</td></tr>
+<tr><td>1.75v</td><td>1632Hz</td><td>微微溫</td><td>PLL_CPU_CTRL_REG = (1 &lt;&lt; 31) | (16 &lt;&lt; 8) | (3 &lt;&lt; 4)</td></tr>
+<tr><td>1.95v</td><td>1728Hz</td><td>微微溫</td><td>PLL_CPU_CTRL_REG = (1 &lt;&lt; 31) | (17 &lt;&lt; 8) | (3 &lt;&lt; 4)</td></tr>
+<tr><td>2.00v</td><td>1824Hz</td><td>微溫</td><td>PLL_CPU_CTRL_REG = (1 &lt;&lt; 31) | (18 &lt;&lt; 8) | (3 &lt;&lt; 4)</td></tr>
+<tr><td>2.20v</td><td>1920Hz</td><td>溫~燙</td><td>PLL_CPU_CTRL_REG = (1 &lt;&lt; 31) | (19 &lt;&lt; 8) | (3 &lt;&lt; 4)</td></tr>
+<tr><td>2.40v</td><td>2016Hz</td><td>發燙</td><td>PLL_CPU_CTRL_REG = (1 &lt;&lt; 31) | (20 &lt;&lt; 8) | (3 &lt;&lt; 4)</td></tr>
+</table><br>
+
+<p>
+最後，芒果四兄弟依然健在<br>
+<img src="overclock/21.jpg" class="maxSize"><br><br>
+
+幸好二姐也平安無事<br>
+<img src="overclock/22.jpg" class="maxSize"><br><br>
+
+<img src="overclock/23.jpg" class="maxSize"><br><br>
+
+F1C200S在2.0GHz下，I/O速度可以多快呢？答案是7MHz<br>
+<img src="overclock/24.jpg" class="maxSize">
 </p>
 
 <p>
