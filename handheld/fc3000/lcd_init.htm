@@ -340,7 +340,301 @@ F1C200S I/O速度只有2.8MHz<br>
 <img src="../../mcu/f1c200s/overclock/8.jpg" class="maxSize"><br><br>
 
 屏的LCD_WR速度則是4.7MHz，難怪取出來的資料每次都不一樣，因為，最低取樣頻率至少要是原生的兩倍...，不過，司徒突然對STM32的GPIO 50MHz相當感興趣，哈<br>
-<img src="lcd_init/7.jpg" class="maxSize">
+<img src="lcd_init/7.jpg" class="maxSize"><br><br>
+
+接著司徒打算使用STM32F103來做邏輯分析儀，因為官方文件說，I/O Toggle可以達到18MHz，如果再超頻，那應該是夠用，因此，司徒找來STM32F103開發板<br>
+<img src="lcd_init/9.jpg" class="maxSize"><br><br>
+
+PLL 72MHz，可以達到12MHz<br>
+<img src="../../mcu/stm32f103/asm_toggle/1.jpg" class="maxSize"><br><br>
+
+PLL 128MHz，可以達到21MHz<br>
+<img src="../../mcu/stm32f103/asm_toggle/2.jpg" class="maxSize"><br><br>
+
+值得注意的是，使用eor指令做I/O Toggle時，速度比str指令來的慢，只有12MHz(PLL 128MHz)<br>
+<img src="../../mcu/stm32f103/asm_toggle/3.jpg" class="maxSize"><br><br>
+
+重新跳線<br>
+<img src="lcd_init/8.jpg" class="maxSize"><br><br>
+
+接著開始測試，將LCD_WR接到PB1，經由負緣觸發中斷時，接著將PC的資料寫到RAM，讀取完64Bytes後，透過UART傳回電腦<br>
+<img src="lcd_init/10.jpg" class="maxSize"><br><br>
+
+STM32F103測試程式(PB0:LCD_RS, PB1:LCD_WR, PC:LCD_DB)
+</p>
+<pre class="brush:asm">
+  .thumb
+  .cpu cortex-m3
+  .syntax unified
+
+  .equiv NVIC_ISER0,   0xe000e100
+  .equiv AFIO_EXTICR1, 0x40010008
+
+  .equiv EXTI_IMR,     0x40010400
+  .equiv EXTI_EMR,     0x40010404
+  .equiv EXTI_RTSR,    0x40010408
+  .equiv EXTI_FTSR,    0x4001040c
+  .equiv EXTI_SWIER,   0x40010410
+  .equiv EXTI_PR,      0x40010414
+    
+  .equiv GPIOA_CRL,    0x40010800
+  .equiv GPIOA_CRH,    0x40010804
+  .equiv GPIOA_IDR,    0x40010808
+  .equiv GPIOA_ODR,    0x4001080c
+ 
+  .equiv GPIOB_CRL,    0x40010c00
+  .equiv GPIOB_CRH,    0x40010c04
+  .equiv GPIOB_IDR,    0x40010c08
+  .equiv GPIOB_ODR,    0x40010c0c
+ 
+  .equiv GPIOC_CRL,    0x40011000
+  .equiv GPIOC_CRH,    0x40011004
+  .equiv GPIOC_IDR,    0x40011008
+  .equiv GPIOC_ODR,    0x4001100c
+ 
+  .equiv RCC_CR,       0x40021000
+  .equiv RCC_CFGR,     0x40021004
+  .equiv RCC_APB2ENR,  0x40021018
+ 
+  .equiv FLASH_ACR,    0x40022000
+ 
+  .equiv UART1_SR,     0x40013800
+  .equiv UART1_DR,     0x40013804
+  .equiv UART1_BRR,    0x40013808
+  .equiv UART1_CR1,    0x4001380c
+  .equiv UART1_CR2,    0x40013810
+  .equiv UART1_CR3,    0x40013814
+ 
+  .equiv STACKINIT,    0x20005000
+     
+  .global _start
+  .section .text
+ 
+  .org 0x0000
+  .word STACKINIT
+  .word _start
+
+  .org 0x005c
+  .word _exti1
+  
+  .org 0x0200
+  .align 2
+  .thumb_func
+_exti1:
+  push {r4, lr}
+
+  ldrh r1, [r7]
+  strh r1, [r5, #2]!
+  ldrh r2, [r8]
+  strh r2, [r5, #2]!
+
+  ldrh r1, [r7]
+  strh r1, [r5, #2]!
+  ldrh r2, [r8]
+  strh r2, [r5, #2]!
+  
+  ldr r4, =EXTI_PR
+  mov r1, #(1 &lt;&lt; 1)
+  str r1, [r4]
+  pop {r4, pc}
+
+  .align 2
+  .thumb_func
+_start:
+  bl rcc_init
+  bl flash_init
+  bl uart_init
+  
+  ldr r4, =RCC_APB2ENR
+  ldr r1, [r4]
+  orr r1, #(1 &lt;&lt; 4) | (1 &lt;&lt; 3) | (1 &lt;&lt; 2)
+  str r1, [r4]
+  
+  ldr r4, =GPIOB_CRL
+  ldr r1, =0x88888888
+  str r1, [r4]
+ 
+  ldr r4, =GPIOB_CRH
+  ldr r1, =0x88888888
+  str r1, [r4]
+   
+  ldr r4, =GPIOC_CRL
+  ldr r1, =0x88888888
+  str r1, [r4]
+ 
+  ldr r4, =GPIOC_CRH
+  ldr r1, =0x88888888
+  str r1, [r4]
+
+  ldr r4, =EXTI_IMR
+  ldr r1, =(1 &lt;&lt; 1)
+  str r1, [r4]
+
+  ldr r4, =EXTI_EMR
+  ldr r1, =(1 &lt;&lt; 1)
+  str r1, [r4]
+
+  ldr r4, =EXTI_FTSR
+  ldr r1, =(1 &lt;&lt; 1)
+  str r1, [r4]
+
+  ldr r4, =AFIO_EXTICR1
+  ldr r1, =(1 &lt;&lt; 4)
+  str r1, [r4]
+
+  ldr r5, =buf
+  ldr r6, =buf
+  ldr r7, =GPIOB_IDR
+  ldr r8, =GPIOC_IDR
+  
+  ldr r4, =NVIC_ISER0
+  ldr r1, =(1 &lt;&lt; 7)
+  str r1, [r4]
+
+  add r6, #(64 * 2 * 2)
+0:
+  cmp r5, r6
+  bcc 0b
+  
+  ldr r4, =NVIC_ISER0
+  mov r1, #0
+  str r1, [r4]
+  
+  ldr r4, =AFIO_EXTICR1
+  mov r1, #0
+  str r1, [r4]
+
+  ldr r5, =buf
+  ldr r6, =64
+0:
+  ldrh r1, [r5, #2]!
+  lsl r1, #31
+
+  eor r0, r0
+  ldrh r0, [r5, #2]!
+  orr r0, r1
+  bl uart_4byte
+
+  subs r6, #1
+  bne 0b
+
+  ldr r0, =0x11223344
+  bl uart_4byte
+  b .
+
+  .align 2
+  .thumb_func
+uart_init:
+  push {r4, lr}
+  ldr r4, =RCC_APB2ENR
+  ldr r1, [r4]
+  ldr r2, =(1 &lt;&lt; 14) | (1 &lt;&lt; 2) | (1 &lt;&lt; 0)
+  orr r1, r2
+  str r1, [r4]
+ 
+  ldr r4, =GPIOA_CRH
+  ldr r1, [r4]
+  bic r1, #0xff0
+  orr r1, #0x4b0
+  str r1, [r4]
+ 
+  ldr r4, =UART1_BRR
+  @ldr r1, =(39 &lt;&lt; 4) | (1 &lt;&lt; 0) @ 115200bps 72MHz
+  ldr r1, =(69 &lt;&lt; 4) | (7 &lt;&lt; 0) @ 115200bps 128MHz
+  str r1, [r4]
+ 
+  ldr r4, =UART1_CR1
+  ldr r1, =(1 &lt;&lt; 13) | (1 &lt;&lt; 3)
+  str r1, [r4]
+  pop {r4, pc}
+ 
+  .align 2
+  .thumb_func
+uart_byte:
+  push {r4, lr}
+  ldr r4, =UART1_SR
+0:
+  ldr r1, [r4]
+  tst r1, #(1 &lt;&lt; 7)
+  beq 0b
+ 
+  ldr r4, =UART1_DR
+  str r0, [r4]
+  pop {r4, pc}
+  
+  .align 2
+  .thumb_func
+uart_4byte:
+  push {r4, lr}
+  mov r4, r0
+  lsr r0, #24
+  bl uart_byte
+
+  mov r0, r4
+  lsr r0, #16
+  bl uart_byte
+  
+  mov r0, r4
+  lsr r0, #8
+  bl uart_byte
+  
+  mov r0, r4
+  bl uart_byte
+  pop {r4, pc}
+   
+  .align 2
+  .thumb_func
+rcc_init:
+  push {r4, lr}
+  ldr r4, =RCC_CR
+  ldr r1, =(1 &lt;&lt; 26) | (1 &lt;&lt; 16)
+  str r1, [r4]
+0:
+  ldr r1, [r4]
+  tst r1, #(1 &lt;&lt; 17)
+  bne 0b
+ 
+  ldr r4, =RCC_CFGR
+  @mov r1, #(7 &lt;&lt; 18) @ 72MHz
+  mov r1, #(14 &lt;&lt; 18) @ 128MHz
+  orr r1, #(1 &lt;&lt; 16)
+  str r1, [r4]
+ 
+  ldr r4, =RCC_CR
+  ldr r1, [r4]
+  orr r1, #(1 &lt;&lt; 24)
+  str r1, [r4]
+0:
+  ldr r1, [r4]
+  tst r1, #(1 &lt;&lt; 25)
+  bne 0b
+ 
+  ldr r4, =RCC_CFGR
+  ldr r1, [r4]
+  orr r1, #2
+  str r1, [r4]
+0:
+  ldr r1, [r4]
+  tst r1, #(1 &lt;&lt; 3)
+  bne 0b
+  pop {r4, pc}
+ 
+  .align 2
+  .thumb_func
+flash_init:
+  push {r4, lr}
+  ldr r4, =FLASH_ACR
+  mov r1, #0x32
+  str r1, [r4]
+  pop {r4, pc}
+
+  .data
+  .align 2
+buf: .skip (64 * 2 * 2)
+  .end
+</pre>
+<p>
+測試後發現，資料還是會有不一致的狀況，因此，STM32F103目前無法勝任這個任務...<br><br>
 </p>
 
 <p>
