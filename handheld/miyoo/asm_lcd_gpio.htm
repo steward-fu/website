@@ -1,0 +1,526 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Miyoo &gt;&gt; Assembly</h3>
+<p><b>LCD(GPIO)</b></p>
+<hr size="1">
+<p>
+參考資料：<br>
+1. <a href="https://github.com/steward-fu/mcu-pdf/tree/master/f1c100s">pdf</a><br>
+2. <a href="http://nano.lichee.pro/">lichee</a><br>
+3. <a href="https://mangopi.org/mangopi_r">mangopi_r</a><br>
+4. <a href="https://www.allwinnertech.com/index.php?c=product&a=index&pid=4">allwinner</a><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+  .global _start
+  
+  .equiv PIO_BASE,  0x01c20800 
+  .equiv PD,        (0x24 * 3)
+  .equiv PE,        (0x24 * 4)
+  .equiv PIO_CFG0,  0x00
+  .equiv PIO_CFG1,  0x04
+  .equiv PIO_CFG2,  0x08
+  .equiv PIO_DATA,  0x10
+
+  .equiv LCD_CS,    (1 &lt;&lt; 21)
+  .equiv LCD_RD,    (1 &lt;&lt; 20)
+  .equiv LCD_RS,    (1 &lt;&lt; 19)
+  .equiv LCD_WR,    (1 &lt;&lt; 18)
+  .equiv LCD_RST,   (1 &lt;&lt; 11)
+  .equiv LCD_BL,    (1 &lt;&lt; 6)
+
+  .arm
+  .text
+_start:
+  .long 0xea000016
+  .byte 'e', 'G', 'O', 'N', '.', 'B', 'T', '0'
+  .long 0, __spl_size
+  .byte 'S', 'P', 'L', 2
+  .long 0, 0
+  .long 0, 0, 0, 0, 0, 0, 0, 0
+  .long 0, 0, 0, 0, 0, 0, 0, 0
+   
+_vector:
+  b reset
+  b .
+  b .
+  b .
+  b .
+  b .
+  b .
+  b .
+   
+reset:
+  ldr r4, =PIO_BASE + PD
+  ldr r1, =0x11111111
+  str r1, [r4, #PIO_CFG0]
+  str r1, [r4, #PIO_CFG1]
+  ldr r1, =0x00111111
+  str r1, [r4, #PIO_CFG2]
+
+  ldr r4, =PIO_BASE + PE
+  ldr r1, [r4, #PIO_CFG0]
+  bic r1, #0xf000000
+  orr r1, #0x1000000
+  str r1, [r4, #PIO_CFG0]
+
+  ldr r1, [r4, #PIO_CFG1]
+  bic r1, #0xf000
+  orr r1, #0x1000
+  str r1, [r4, #PIO_CFG1]
+
+  ldr r4, =PIO_BASE + PD
+  ldr r1, =0xffffffff
+  str r1, [r4, #PIO_DATA]
+
+  ldr r4, =PIO_BASE + PE
+  ldr r1, =0xffffffff
+  str r1, [r4, #PIO_DATA]
+
+  bl lcd_rst
+
+  ldr r0, =0xb0
+  bl lcd_cmd
+  ldr r0, =0x00
+  bl lcd_dat
+
+  ldr r0, =0xb1
+  bl lcd_cmd
+  ldr r0, =0x00
+  bl lcd_dat
+
+  ldr r0, =0xb3
+  bl lcd_cmd
+  ldr r0, =0x02
+  bl lcd_dat
+  ldr r0, =0x00
+  bl lcd_dat
+  ldr r0, =0x00
+  bl lcd_dat
+  ldr r0, =0x00
+  bl lcd_dat
+
+  ldr r0, =0xb4
+  bl lcd_cmd
+  ldr r0, =0x00
+  bl lcd_dat
+
+  ldr r0, =0xc0
+  bl lcd_cmd
+  ldr r0, =0x07
+  bl lcd_dat
+  ldr r0, =0x4f
+  bl lcd_dat
+  ldr r0, =0x00
+  bl lcd_dat
+  ldr r0, =0x00
+  bl lcd_dat
+  ldr r0, =0x00
+  bl lcd_dat
+  ldr r0, =0x00
+  bl lcd_dat
+  ldr r0, =0x01
+  bl lcd_dat
+  ldr r0, =0x33
+  bl lcd_dat
+
+  ldr r0, =0xc1
+  bl lcd_cmd
+  ldr r0, =0x01
+  bl lcd_dat
+  ldr r0, =0x01
+  bl lcd_dat
+  ldr r0, =0x11
+  bl lcd_dat
+  ldr r0, =0x08
+  bl lcd_dat
+  ldr r0, =0x08
+  bl lcd_dat
+
+  ldr r0, =0xc3
+  bl lcd_cmd
+  ldr r0, =0x01
+  bl lcd_dat
+  ldr r0, =0x01
+  bl lcd_dat
+  ldr r0, =0x11
+  bl lcd_dat
+  ldr r0, =0x08
+  bl lcd_dat
+  ldr r0, =0x08
+  bl lcd_dat
+
+  ldr r0, =0xc4
+  bl lcd_cmd
+  ldr r0, =0x11
+  bl lcd_dat
+  ldr r0, =0x01
+  bl lcd_dat
+  ldr r0, =0x43
+  bl lcd_dat
+  ldr r0, =0x01
+  bl lcd_dat
+
+  ldr r0, =0xc8
+  bl lcd_cmd
+  ldr r0, =0x00
+  bl lcd_dat
+  ldr r0, =0x0a
+  bl lcd_dat
+  ldr r0, =0x08
+  bl lcd_dat
+  ldr r0, =0x8a
+  bl lcd_dat
+  ldr r0, =0x08
+  bl lcd_dat
+  ldr r0, =0x09
+  bl lcd_dat
+  ldr r0, =0x05
+  bl lcd_dat
+  ldr r0, =0x10
+  bl lcd_dat
+  ldr r0, =0x00
+  bl lcd_dat
+  ldr r0, =0x23
+  bl lcd_dat
+  ldr r0, =0x10
+  bl lcd_dat
+  ldr r0, =0x05
+  bl lcd_dat
+  ldr r0, =0x05
+  bl lcd_dat
+  ldr r0, =0x60
+  bl lcd_dat
+  ldr r0, =0x0a
+  bl lcd_dat
+  ldr r0, =0x08
+  bl lcd_dat
+  ldr r0, =0x05
+  bl lcd_dat
+  ldr r0, =0x00
+  bl lcd_dat
+  ldr r0, =0x10
+  bl lcd_dat
+  ldr r0, =0x00
+  bl lcd_dat
+
+  ldr r0, =0xc9
+  bl lcd_cmd
+  ldr r0, =0x00
+  bl lcd_dat
+  ldr r0, =0x0a
+  bl lcd_dat
+  ldr r0, =0x08
+  bl lcd_dat
+  ldr r0, =0x8a
+  bl lcd_dat
+  ldr r0, =0x08
+  bl lcd_dat
+  ldr r0, =0x09
+  bl lcd_dat
+  ldr r0, =0x05
+  bl lcd_dat
+  ldr r0, =0x10
+  bl lcd_dat
+  ldr r0, =0x00
+  bl lcd_dat
+  ldr r0, =0x23
+  bl lcd_dat
+  ldr r0, =0x10
+  bl lcd_dat
+  ldr r0, =0x05
+  bl lcd_dat
+  ldr r0, =0x09
+  bl lcd_dat
+  ldr r0, =0x88
+  bl lcd_dat
+  ldr r0, =0x0a
+  bl lcd_dat
+  ldr r0, =0x08
+  bl lcd_dat
+  ldr r0, =0x0a
+  bl lcd_dat
+  ldr r0, =0x00
+  bl lcd_dat
+  ldr r0, =0x23
+  bl lcd_dat
+  ldr r0, =0x00
+  bl lcd_dat
+
+  ldr r0, =0xca
+  bl lcd_cmd
+  ldr r0, =0x00
+  bl lcd_dat
+  ldr r0, =0x0a
+  bl lcd_dat
+  ldr r0, =0x08
+  bl lcd_dat
+  ldr r0, =0x8a
+  bl lcd_dat
+  ldr r0, =0x08
+  bl lcd_dat
+  ldr r0, =0x09
+  bl lcd_dat
+  ldr r0, =0x05
+  bl lcd_dat
+  ldr r0, =0x10
+  bl lcd_dat
+  ldr r0, =0x00
+  bl lcd_dat
+  ldr r0, =0x23
+  bl lcd_dat
+  ldr r0, =0x10
+  bl lcd_dat
+  ldr r0, =0x05
+  bl lcd_dat
+  ldr r0, =0x09
+  bl lcd_dat
+  ldr r0, =0x88
+  bl lcd_dat
+  ldr r0, =0x0a
+  bl lcd_dat
+  ldr r0, =0x08
+  bl lcd_dat
+  ldr r0, =0x0a
+  bl lcd_dat
+  ldr r0, =0x00
+  bl lcd_dat
+  ldr r0, =0x23
+  bl lcd_dat
+  ldr r0, =0x00
+  bl lcd_dat
+
+  ldr r0, =0xd0
+  bl lcd_cmd
+  ldr r0, =0x07
+  bl lcd_dat
+  ldr r0, =0xc6
+  bl lcd_dat
+  ldr r0, =0xdc
+  bl lcd_dat
+
+  ldr r0, =0xd1
+  bl lcd_cmd
+  ldr r0, =0x54
+  bl lcd_dat
+  ldr r0, =0x0d
+  bl lcd_dat
+  ldr r0, =0x02
+  bl lcd_dat
+
+  ldr r0, =0xd2
+  bl lcd_cmd
+  ldr r0, =0x63
+  bl lcd_dat
+  ldr r0, =0x24
+  bl lcd_dat
+
+  ldr r0, =0xd4
+  bl lcd_cmd
+  ldr r0, =0x63
+  bl lcd_dat
+  ldr r0, =0x24
+  bl lcd_dat
+
+  ldr r0, =0xd8
+  bl lcd_cmd
+  ldr r0, =0x07
+  bl lcd_dat
+  ldr r0, =0x07
+  bl lcd_dat
+
+  ldr r0, =0xe0
+  bl lcd_cmd
+  ldr r0, =0x00
+  bl lcd_dat
+  ldr r0, =0x00
+  bl lcd_dat
+
+  ldr r0, =0x13
+  bl lcd_cmd
+
+  ldr r0, =0x20
+  bl lcd_cmd
+
+  ldr r0, =0x35
+  bl lcd_cmd
+  ldr r0, =0x00
+  bl lcd_dat
+
+  ldr r0, =0x44
+  bl lcd_cmd
+  ldr r0, =0x00
+  bl lcd_dat
+  ldr r0, =0x30
+  bl lcd_dat
+
+  ldr r0, =0x36
+  bl lcd_cmd
+  ldr r0, =0xe0
+  bl lcd_dat
+
+  ldr r0, =0x3a
+  bl lcd_cmd
+  ldr r0, =0x55
+  bl lcd_dat
+
+  ldr r0, =0x2a
+  bl lcd_cmd
+  ldr r0, =0x00
+  bl lcd_dat
+  ldr r0, =0x00
+  bl lcd_dat
+  ldr r0, =0x01
+  bl lcd_dat
+  ldr r0, =0x40-1
+  bl lcd_dat
+
+  ldr r0, =0x2b
+  bl lcd_cmd
+  ldr r0, =0x00
+  bl lcd_dat
+  ldr r0, =0x00
+  bl lcd_dat
+  ldr r0, =0x00
+  bl lcd_dat
+  ldr r0, =0xf0-1
+  bl lcd_dat
+
+  ldr r0, =1000
+  bl delay
+  ldr r0, =0x11
+  bl lcd_cmd
+  ldr r0, =1000
+  bl delay
+  ldr r0, =0x29
+  bl lcd_cmd
+  ldr r0, =1000
+  bl delay
+  ldr r0, =0x2c
+  bl lcd_cmd
+
+  ldr r4, =320*240
+  ldr r5, =0xf800
+0:
+  mov r0, r5
+  bl lcd_dat
+  subs r4, #1
+  bne 0b
+
+  b .
+
+delay:
+  push {lr}
+0:
+  subs r0, #1
+  bne 0b
+  pop {pc}
+
+lcd_rst:
+  push {r4, r5, lr}
+  ldr r4, =PIO_BASE + PE
+  ldr r5, =0xffffffff
+
+  bic r5, #LCD_RST
+  str r5, [r4, #PIO_DATA]
+  ldr r0, =10000
+  bl delay
+
+  orr r5, #LCD_RST
+  str r5, [r4, #PIO_DATA]
+  ldr r0, =10000
+  bl delay
+  pop {r4, r5, pc}
+
+lcd_wr:
+  push {r4, r5, lr}
+  ldr r4, =PIO_BASE + PD
+
+  and r2, r0, #0x00ff
+  and r3, r0, #0xff00
+  lsl r2, #1
+  lsl r3, #2
+
+  eor r5, r5
+  orr r5, r1
+  orr r5, r2
+  orr r5, r3
+  orr r5, #LCD_RD
+  str r5, [r4, #PIO_DATA]
+
+  orr r5, #LCD_WR
+  str r5, [r4, #PIO_DATA]
+  pop {r4, r5, pc}
+
+lcd_dat:
+  push {lr}
+  mov r1, #LCD_RS
+  bl lcd_wr
+  pop {pc}
+
+lcd_cmd:
+  push {lr}
+  mov r1, #0
+  bl lcd_wr
+  pop {pc}
+  .end
+</pre><br>
+<p>
+完成<br>
+<img src="asm_lcd_gpio/1.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
