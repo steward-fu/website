@@ -45,25 +45,72 @@
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
 <h3>TRIMUI</h3>
-<p><b>介紹</b></p>
+<p><b>Screen Tearing Test</b></p>
 <hr size="1">
 <p>
-簡要規格
+main.c
 </p>
-<table>
-  <tr><th>CPU</th><td>Allwinner F1C200S ARM9 408MHz</td></tr>
-  <tr><th>RAM</th><td>64MB</td></tr>
-  <tr><th>Screen</th><td>2.0" IPS 320x240(GC9308)</td></tr>
-  <tr><th>Slot</th><td>MicroSD</td></tr>
-  <tr><th>Gamepad</th><td>DPad、4 Buttons、Start、Select、Menu、L、R</td></tr>
-  <tr><th>USB</th><td>Client</td></tr>
-  <tr><th>Battery</th><td>3.7V 500mA</td></tr>
-  <tr><th>Dimension</th><td>106mm x 56mm x 10mm</td></tr>
-  <tr><th>Weight</th><td>80g</td></tr>
-</table><br>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;SDL.h&gt;
+
+int main(int argc, char** argv)
+{
+  uint32_t cnt=0;
+  SDL_Surface* screen=NULL;
+  uint32_t col[]={0xf800, 0x7e0, 0x001f};
+
+  SDL_Init(SDL_INIT_VIDEO);
+  screen = SDL_SetVideoMode(320, 240, 16, SDL_SWSURFACE | SDL_DOUBLEBUF);
+  while(cnt &lt; 600){
+    cnt+= 1;
+    SDL_FillRect(screen, &amp;screen-&gt;clip_rect, col[cnt % 3]);
+    SDL_Flip(screen);
+    SDL_Delay(1000 / 60);
+  }
+  SDL_Quit();
+  return 0;
+}
+</pre><br>
 
 <p>
-<br><a href="../../handheld.htm">返回上一頁</a>
+updater
+</p>
+<pre>
+#!/bin/sh
+dir=`dirname $0`
+cd $dir
+
+killall updateui
+killall keymon
+LD_LIBRARY_PATH=/usr/trimui/lib ./main
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ arm-linux-gnueabi-gcc main.c -o main -I/usr/include/SDL /xxx/usr/trimui/lib/libSDL-1.2.so.0
+</pre>
+<p>
+P.S. libSDL-1.2.so.0是從機器複製出來的<br><br>
+
+打包
+</p>
+<pre>
+$ zip TrimuiUpdateV9999_tearing.zip updater main
+</pre><br>
+
+<p>
+刷入TrimuiUpdateV9999_tearing.zip就可以測試閃屏問題，可以看出目前TRIMUI(trimui_model_S_dark_V0.105_en.img)還是存在閃屏問題<br>
+<img src="tearing/1.jpg" class="maxSize"><br>
+<img src="tearing/2.jpg" class="maxSize">
+</p>
+
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
 </p>
 
 </div>
