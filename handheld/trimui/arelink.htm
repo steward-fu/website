@@ -1,0 +1,202 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>TRIMUI</h3>
+<p><b>破解加密IC</b></p>
+<hr size="1">
+<p>
+XBOOT大佬說有一顆加密IC而且是透過I2C介面傳輸，於是搜尋一下I2C字眼
+</p>
+<pre>
+$ grep -i i2c usr/trimui/ -r
+  Binary file usr/trimui/bin/MainUI matches
+  Binary file usr/trimui/apps/cdogs/music/game/space_dimensions_8bit.ogg matches
+  Binary file usr/trimui/lib/libarelink.so matches
+</pre>
+<p>
+P.S. 原來是Arelink安瑞易连，哈<br><br>
+
+接著開啟libarelink.so，果真有I2C副程式<br>
+<img src="arelink/1.jpg" class="maxSize"><br><br>
+
+發現寶庫<br>
+<img src="arelink/2.jpg" class="maxSize"><br><br>
+
+開啟MainUI去找尋arelink_req_enc_dec就可以看到關鍵字<b>/tmp/.cmdenc</b><br>
+<img src="arelink/3.jpg" class="maxSize"><br><br>
+
+再度搜尋一下
+</p>
+<pre>
+$ grep cmdenc . -r
+  Binary file ./usr/trimui/bin/MainUI matches
+  Binary file ./root/gameloader matches
+  ./etc/init.d/main:      if [ -f /tmp/.cmdenc ] ; then
+  ./main:      if [ -f /tmp/.cmdenc ] ; then
+</pre>
+<p>
+P.S. <b>/etc/init.d/main</b><br><br>
+
+/etc/init.d/main
+</p>
+<pre>
+if [ -f /tmp/.cmdenc ] ; then
+    /root/gameloader
+elif [ -f /tmp/cmd_to_run.sh ] ; then
+   chmod a+x /tmp/cmd_to_run.sh
+   /tmp/cmd_to_run.sh
+   rm /tmp/cmd_to_run.sh
+fi
+</pre>
+<p>
+P.S. 原來是透過gameloader做後續的動作，哈<br><br>
+
+開啟gameloader就可以看到<b>/tmp/.cmdenc</b>相關資訊，而且長度是256，哈<br>
+<img src="arelink/4.jpg" class="maxSize"><br><br>
+
+於是，司徒修改測試
+</p>
+<pre>
+if [ -f /tmp/.cmdenc ] ; then
+    dd if=/dev/urandom of=/tmp/.cmdenc bs=1 count=256
+    /root/gameloader
+</pre><br>
+
+<p>
+接著，司徒使用FC 1942遊戲測試
+</p>
+<pre>
+trimui_sunxi_gpio_init: ver Aug  1 2020
+serial: 00000002ED
+file /tmp/.cmdenc len=256
+DEC1: N�z1��=v��.��N>�ZT������OZ��>F�੨������R�.�u�
+[   17.423914] write len=256
+[   17.820278] exec! there result of call_usermodehelper is 0
+[   17.826401] exec! the process is "gameloader", pid is 183.
+[   17.832694] BASE64:0wiSJBoxSQ/reYr9IPNlu0XPhZ3kv6xh0WwuWz36EDlzvzxTFL+JUQCWXtSWVLJQ1rwI+4Ul3yGYusGOe9GNvWf+X46ZmNg7J8xXuYcc1BNn/l+OmZjYOyfMV7mHHNQTZ/5fjpmY2DsnzFe5hxzUE2f+X46ZmNg7J8xXuYc=
+bye
+</pre><br>
+
+<p>
+拿掉測試那行，重新載入FC 1942遊戲，則顯示如下
+</p>
+<pre>
+trimui_sunxi_gpio_init: ver Aug  1 2020
+serial: 00000002ED
+file /tmp/.cmdenc len=256
+DEC1: cd /usr/trimui/bin/;HOME=/mnt/SDCARD/Roms/FC/  /usr/trimui/bin/fceux "/mnt/SDCARD/Roms/FC//1942[MS漢化](JU)[STG](0.31Mb).nes"
+[   25.267101] write len=256
+</pre><br>
+
+<p>
+/tmp/.cmdenc<br>
+<img src="arelink/6.jpg" class="maxSize"><br><br>
+
+原來那顆加密IC是負責字串的加解密，於是，司徒找了一下MainUI，再度發現了寶庫<br>
+<img src="arelink/5.jpg" class="maxSize"><br><br>
+
+接著把呼叫加解密Patch成NOP<br>
+<img src="arelink/7.jpg" class="maxSize"><br><br>
+
+接著測試一下
+</p>
+<pre>
+Load nes rom cd /usr/trimui/bin/;HOME=/mnt/SDCARD/Roms/FC/  /usr/trimui/bin/fceux "/mnt/SDCARD/Roms/FC//1942[MS漢化](JU)[STG](0.31Mb).nes"
+sth wrong, encoded != decoded !!!!
+</pre><br>
+
+<p>
+接著看一下MainUI寫出的檔案
+</p>
+<pre>
+# ls -al
+  drwxrwxrwt    3 root     root           120 Jan  1 00:00 .
+  drwxr-xr-x   19 root     root          4096 Jan  1 00:00 ..
+  -rw-r--r--    1 root     root           256 Jan  1 00:00 decode
+  -rw-r--r--    1 root     root           256 Jan  1 00:00 encode
+  -rw-r--r--    1 root     root           424 Jan  1 00:00 game_output.txt
+  drwxr-xr-x    2 root     root            60 Jan  1 00:00 log
+
+# cat /tmp/encode
+  g�_����;'�W���g�_����;'�W���g�_����;'�W���g�_����;'�W���g�_����;'�W���g�_����;'�W���g�_����;'�W���g�_����;'�W���g�_����;'�W���g�_����;'�W���g�_����;'�W���g�_����;'�W��
+
+# cat /tmp/decode 
+  /mnt/SDCARD/Roms/FC//1942[MS漢化](JU)[STG](0.31Mb).nes
+</pre><br>
+
+<p>
+接著修改一下
+</p>
+<pre>
+if [ -f /tmp/.cmdenc ] ; then
+    echo "#!/bin/sh" > /tmp/run.sh
+    echo "cd /usr/trimui/bin/;HOME=/mnt/SDCARD/Roms/FC/  /usr/trimui/bin/fceux \"" >> /tmp/run.sh
+    cat /tmp/decode >> /tmp/run.sh
+    echo "\"" >> /tmp/run.sh
+    chmod +x /tmp/run.sh
+    /tmp/run.sh
+
+    #/root/gameloader
+elif [ -f /tmp/cmd_to_run.sh ] ; then
+   chmod a+x /tmp/cmd_to_run.sh
+   /tmp/cmd_to_run.sh
+   rm /tmp/cmd_to_run.sh
+fi
+</pre><br>
+<p>
+接著，再度載入FC 1942遊戲，成功繞過加密IC<br>
+<img src="arelink/8.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
