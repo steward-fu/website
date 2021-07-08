@@ -45,7 +45,7 @@
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
 <h3>Q8 &gt;&gt; Assembly</h3>
-<p><b>LCD(GPIO)</b></p>
+<p><b>SELECT、START、VOL</b></p>
 <hr size="1">
 <p>
 參考資料：<br>
@@ -54,25 +54,44 @@
 3. <a href="https://mangopi.org/mangopi_r">mangopi_r</a><br>
 4. <a href="https://www.allwinnertech.com/index.php?c=product&a=index&pid=4">allwinner</a><br><br>
 
+暫存器<br>
+<img src="asm_tp/1.jpg" class="maxSize"><br><br>
+
 main.s
 </p>
 <pre class="brush:asm">
   .global _start
-   
-  .equiv PIO_BASE,  0x01c20800 
-  .equiv PD,        (0x24 * 3)
-  .equiv PE,        (0x24 * 4)
-  .equiv PIO_CFG0,  0x00
-  .equiv PIO_CFG1,  0x04
-  .equiv PIO_CFG2,  0x08
-  .equiv PIO_DATA,  0x10
+    
+  .equiv CCU_BASE,              0x01c20000
+  .equiv GPIO_BASE,             0x01c20800
+  .equiv UART1_BASE,            0x01c25400
+  .equiv TP_BASE,               0x01c24800
  
-  .equiv LCD_CS,    (1 &lt;&lt; 21)
-  .equiv LCD_RD,    (1 &lt;&lt; 20)
-  .equiv LCD_RS,    (1 &lt;&lt; 19)
-  .equiv LCD_WR,    (1 &lt;&lt; 18)
-  .equiv LCD_RST,   (1 &lt;&lt; 11)
-  .equiv LCD_BL,    (1 &lt;&lt; 6)
+  .equiv PLL_PERIPH_CTRL_REG,   0x0028
+  .equiv AHB_APB_HCLKC_CFG_REG, 0x0054
+  .equiv BUS_CLK_GATING_REG2,   0x0068
+  .equiv BUS_SOFT_RST_REG2,     0x02d0
+
+  .equiv TP_CTRL_REG0,         0x00
+  .equiv TP_CTRL_REG1,         0x04
+  .equiv TP_CTRL_REG2,         0x08
+  .equiv TP_CTRL_REG3,         0x0c
+  .equiv TP_INT_FIFO_CTRL_REG, 0x10
+  .equiv TP_INT_FIFO_STAT_REG, 0x14
+  .equiv TP_COM_DATA_REG,      0x1c
+  .equiv TP_DATA_REG,          0x24
+  
+  .equiv PA,        (0x24 * 0) 
+  .equiv PORT_CFG0, 0x00
+  .equiv PORT_DATA, 0x10
+  .equiv UART_RBR,  0x0000
+  .equiv UART_DLL,  0x0000
+  .equiv UART_DLH,  0x0004
+  .equiv UART_IER,  0x0004
+  .equiv UART_IIR,  0x0008
+  .equiv UART_LCR,  0x000c
+  .equiv UART_MCR,  0x0010
+  .equiv UART_USR,  0x007c
    
   .arm
   .text
@@ -84,7 +103,7 @@ _start:
   .long 0, 0
   .long 0, 0, 0, 0, 0, 0, 0, 0
   .long 0, 0, 0, 0, 0, 0, 0, 0
-    
+   
 _vector:
   b reset
   b .
@@ -94,189 +113,91 @@ _vector:
   b .
   b .
   b .
-    
+   
 reset:
-  ldr r4, =PIO_BASE + PD
-  ldr r1, =0x11111111
-  str r1, [r4, #PIO_CFG0]
-  str r1, [r4, #PIO_CFG1]
-  ldr r1, =0x00111111
-  str r1, [r4, #PIO_CFG2]
- 
-  ldr r4, =PIO_BASE + PE
-  ldr r1, [r4, #PIO_CFG0]
-  bic r1, #0xf000000
-  orr r1, #0x1000000
-  str r1, [r4, #PIO_CFG0]
- 
-  ldr r1, [r4, #PIO_CFG1]
-  bic r1, #0xf000
-  orr r1, #0x1000
-  str r1, [r4, #PIO_CFG1]
- 
-  ldr r4, =PIO_BASE + PD
-  ldr r1, =0xffffffff
-  str r1, [r4, #PIO_DATA]
- 
-  ldr r4, =PIO_BASE + PE
-  ldr r1, =0xffffffff
-  str r1, [r4, #PIO_DATA]
- 
-  bl lcd_rst
- 
-  ldr r0, =0xb9
-  bl lcd_cmd
-  ldr r0, =0xff
-  bl lcd_dat
-  ldr r0, =0x83
-  bl lcd_dat
-  ldr r0, =0x57
-  bl lcd_dat
-
-  ldr r0, =1000
-  bl delay
-
-  ldr r0, =0xb6
-  bl lcd_cmd
-  ldr r0, =0x2c
-  bl lcd_dat
- 
-  ldr r0, =0x11
-  bl lcd_cmd
-
-  ldr r0, =1000
-  bl delay
-
-  ldr r0, =0x35
-  bl lcd_cmd
- 
-  ldr r0, =0x3a
-  bl lcd_cmd
-  ldr r0, =0x05
-  bl lcd_dat
- 
-  ldr r0, =0x36
-  bl lcd_cmd
-  ldr r0, =0x38
-  bl lcd_dat
- 
-  ldr r0, =0xb0
-  bl lcd_cmd
-  ldr r0, =0x68
-  bl lcd_dat
+  ldr r4, =CCU_BASE
+  ldr r1, =0x80041800
+  str r1, [r4, #PLL_PERIPH_CTRL_REG]
+  ldr r1, =0x00003180
+  str r1, [r4, #AHB_APB_HCLKC_CFG_REG]
   
-  ldr r0, =0x2b
-  bl lcd_cmd
-  ldr r0, =0x00
-  bl lcd_dat
-  ldr r0, =0x00
-  bl lcd_dat
-  ldr r0, =0x01
-  bl lcd_dat
-  ldr r0, =0x3f
-  bl lcd_dat
- 
-  ldr r0, =0x2a
-  bl lcd_cmd
-  ldr r0, =0x00
-  bl lcd_dat
-  ldr r0, =0x00
-  bl lcd_dat
-  ldr r0, =0x01
-  bl lcd_dat
-  ldr r0, =0xdf
-  bl lcd_dat
- 
-  ldr r0, =0x29
-  bl lcd_cmd
-  ldr r0, =0x2c
-  bl lcd_cmd
- 
-  ldr r4, =320*80
-  ldr r5, =0xf800
-0:
-  mov r0, r5
-  bl lcd_dat
-  subs r4, #1
-  bne 0b
+  ldr r4, =GPIO_BASE
+  ldr r1, =0x5520
+  str r1, [r4, #(PA + PORT_CFG0)]
   
-  ldr r4, =320*80
-  ldr r5, =0x7e0
-0:
-  mov r0, r5
-  bl lcd_dat
-  subs r4, #1
-  bne 0b
+  ldr r4, =CCU_BASE
+  ldr r1, =(1 &lt;&lt; 21)
+  str r1, [r4, #BUS_CLK_GATING_REG2]
+  str r1, [r4, #BUS_SOFT_RST_REG2]
   
-  ldr r4, =320*80
-  ldr r5, =0x1f
+  ldr r4, =UART1_BASE
+  ldr r1, =0x00
+  str r1, [r4, #UART_IER]
+  ldr r1, =0xf7
+  str r1, [r4, #UART_IIR]
+  ldr r1, =0x00
+  str r1, [r4, #UART_MCR]
+  ldr r1, [r4, #UART_LCR]
+  orr r1, #(1 &lt;&lt; 7)
+  str r1, [r4, #UART_LCR]
+  ldr r1, =54
+  str r1, [r4, #UART_DLL]
+  ldr r1, =0x00
+  str r1, [r4, #UART_DLH]
+  ldr r1, [r4, #UART_LCR]
+  bic r1, #(1 &lt;&lt; 7)
+  str r1, [r4, #UART_LCR]
+  ldr r1, [r4, #UART_LCR]
+  bic r1, #0x1f
+  orr r1, #0x03
+  str r1, [r4, #UART_LCR]
+
+  ldr r4, =TP_BASE
+  ldr r1, =(3 &lt;&lt; 20) | (1 &lt;&lt; 16) | (1 &lt;&lt; 0)
+  str r1, [r4, #TP_CTRL_REG0]
+  ldr r1, =(1 &lt;&lt; 5) | (1 &lt;&lt; 4) | (1 &lt;&lt; 1)
+  str r1, [r4, #TP_CTRL_REG1]
 0:
-  mov r0, r5
-  bl lcd_dat
-  subs r4, #1
-  bne 0b
-  b .
- 
-delay:
-  push {lr}
+  ldr r0, [r4, #TP_DATA_REG]
+  lsr r0, #4
+  bl uart_print_byte
+
+  ldr r1, =10000
+1:
+  subs r1, #1
+  bne 1b
+  b 0b
+
+uart_print_byte:
+  push {r4, lr}
+  ldr r4, =UART1_BASE
 0:
-  subs r0, #1
-  bne 0b
-  pop {pc}
+  ldr r1, [r4, #UART_USR]
+  tst r1, #(1 &lt;&lt; 1)
+  beq 0b
+  strb r0, [r4, #UART_RBR]
+  pop {r4, pc}
+
+uart_print_4byte:
+  push {r4, lr}
+  mov r4, r0
+  lsr r0, #24
+  bl uart_print_byte
  
-lcd_rst:
-  push {r4, r5, lr}
-  ldr r4, =PIO_BASE + PE
-  ldr r5, =0xffffffff
- 
-  bic r5, #LCD_RST
-  str r5, [r4, #PIO_DATA]
-  ldr r0, =10000
-  bl delay
- 
-  orr r5, #LCD_RST
-  str r5, [r4, #PIO_DATA]
-  ldr r0, =10000
-  bl delay
-  pop {r4, r5, pc}
- 
-lcd_wr:
-  push {r4, r5, lr}
-  ldr r4, =PIO_BASE + PD
- 
-  and r2, r0, #0x00ff
-  and r3, r0, #0xff00
-  lsl r2, #1
-  lsl r3, #2
- 
-  eor r5, r5
-  orr r5, r1
-  orr r5, r2
-  orr r5, r3
-  orr r5, #LCD_RD
-  str r5, [r4, #PIO_DATA]
- 
-  orr r5, #LCD_WR
-  str r5, [r4, #PIO_DATA]
-  pop {r4, r5, pc}
- 
-lcd_dat:
-  push {lr}
-  mov r1, #LCD_RS
-  bl lcd_wr
-  pop {pc}
- 
-lcd_cmd:
-  push {lr}
-  mov r1, #0
-  bl lcd_wr
-  pop {pc}
+  mov r0, r4
+  lsr r0, #16
+  bl uart_print_byte
+   
+  mov r0, r4
+  lsr r0, #8
+  bl uart_print_byte
+   
+  mov r0, r4
+  bl uart_print_byte
+  pop {r4, pc}
+
   .end
 </pre><br>
-<p>
-完成<br>
-<img src="asm_lcd_gpio/2.jpg" class="maxSize">
-</p>
 
 <p>
 <br><a href="../../mcu.htm">返回上一頁</a>
