@@ -1,0 +1,261 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>LinkIt Smart MT7688 &gt;&gt; C/C++</h3>
+<p><b>Button</b></p>
+<hr size="1">
+<p>
+drivers/gpio/button/main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;linux/init.h&gt;
+#include &lt;linux/device.h&gt;
+#include &lt;linux/module.h&gt;
+#include &lt;linux/delay.h&gt;
+#include &lt;linux/timer.h&gt;
+#include &lt;linux/gpio.h&gt;
+#include &lt;linux/interrupt.h&gt;
+#include &lt;linux/irq.h&gt;
+#include &lt;asm/io.h&gt;
+ 
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("Steward_Fu");
+MODULE_DESCRIPTION("MT7688 GPIO Driver");
+
+#define GPIO2_MODE  0x10000064
+#define GPIO_CTRL_0 0x10000600
+#define GPIO_CTRL_1 0x10000604
+#define GPIO_CTRL_2 0x10000608
+#define GPIO_DATA_0 0x10000620
+#define GPIO_DATA_1 0x10000624
+#define GPIO_DATA_2 0x10000628
+#define GPIO_DSET_0 0x10000630
+#define GPIO_DSET_1 0x10000634
+#define GPIO_DSET_2 0x10000638
+#define GPIO_DCLR_0 0x10000640
+#define GPIO_DCLR_1 0x10000644
+#define GPIO_DCLR_2 0x10000648
+
+static volatile unsigned long *gpio2_mode;
+static volatile unsigned long *gpio_ctrl_0;
+static volatile unsigned long *gpio_ctrl_1;
+static volatile unsigned long *gpio_ctrl_2;
+static volatile unsigned long *gpio_data_0;
+static volatile unsigned long *gpio_data_1;
+static volatile unsigned long *gpio_data_2;
+static volatile unsigned long *gpio_dset_0;
+static volatile unsigned long *gpio_dset_1;
+static volatile unsigned long *gpio_dset_2;
+static volatile unsigned long *gpio_dclr_0;
+static volatile unsigned long *gpio_dclr_1;
+static volatile unsigned long *gpio_dclr_2;
+
+static int irq=0;
+
+static irqreturn_t isr_handler(int irq, void *data)
+{
+  return IRQ_HANDLED;
+}
+
+unsigned int mt7688_get(int pin)
+{
+  uint32_t tmp = 0;
+
+  if(pin &lt;= 31){
+    tmp = *gpio_data_0;
+    tmp = (tmp &gt;&gt; pin) &amp; 1u;
+  }
+  else if(pin &lt;= 63){
+    tmp = *gpio_data_1;
+    tmp = (tmp &gt;&gt; (pin-32)) &amp; 1u;
+  } 
+  else if(pin &lt;= 95){
+    tmp = *gpio_data_2;
+    tmp = (tmp &gt;&gt; (pin-64)) &amp; 1u;
+  }
+  return tmp;
+}
+
+void mt7688_dir(int pin, int is_output)
+{
+  uint32_t tmp;
+
+  if(pin &lt;= 31){
+    tmp = *gpio_ctrl_0;
+    if(is_output){
+      tmp|= (1u &lt;&lt; pin);
+    }
+    else{
+      tmp&amp;= ~(1u &lt;&lt; pin);
+    }
+    *gpio_ctrl_0 = tmp;
+  } 
+  else if(pin &lt;= 63){
+    tmp = *gpio_ctrl_1;
+    if(is_output){
+      tmp|= (1u &lt;&lt; (pin-32));
+    }
+    else{
+      tmp&amp;= ~(1u &lt;&lt; (pin-32));
+    }
+    *gpio_ctrl_1 = tmp;
+  }
+  else if(pin &lt;= 95){
+    tmp = *gpio_ctrl_2;
+    if(is_output){
+      tmp|= (1u &lt;&lt; (pin-64));
+    }
+    else{
+      tmp&amp;= ~(1u &lt;&lt; (pin-64));
+    }
+    *gpio_ctrl_2 = tmp;
+  }
+}
+
+void mt7688_set(int pin, int value)
+{
+  uint32_t tmp;
+
+  if(pin &lt;= 31){
+    tmp = (1u &lt;&lt; pin);
+    if(value){
+      *gpio_dset_0 = tmp;
+    }
+    else{
+      *gpio_dclr_0 = tmp;
+    }
+  } 
+  else if(pin &lt;= 63){
+    tmp = (1u &lt;&lt; (pin-32));
+    if(value){
+      *gpio_dset_1 = tmp;
+    }
+    else{
+      *gpio_dclr_1 = tmp;
+    }
+  } 
+  else if(pin &lt;= 95){
+    tmp = (1u &lt;&lt; (pin-64));
+    if(value){
+      *gpio_dset_2 = tmp;
+    }
+    else{
+      *gpio_dclr_2 = tmp;
+    }
+  }
+}
+
+static int __init main_init(void)
+{
+  gpio2_mode = (volatile unsigned long*)ioremap(GPIO2_MODE, 4);
+  gpio_ctrl_0 = (volatile unsigned long*)ioremap(GPIO_CTRL_0, 4);
+  gpio_ctrl_1 = (volatile unsigned long*)ioremap(GPIO_CTRL_1, 4);
+  gpio_ctrl_2 = (volatile unsigned long*)ioremap(GPIO_CTRL_2, 4);
+  gpio_data_0 = (volatile unsigned long*)ioremap(GPIO_DATA_0, 4);
+  gpio_data_1 = (volatile unsigned long*)ioremap(GPIO_DATA_1, 4);
+  gpio_data_2 = (volatile unsigned long*)ioremap(GPIO_DATA_2, 4);
+  gpio_dset_0 = (volatile unsigned long*)ioremap(GPIO_DSET_0, 4);
+  gpio_dset_1 = (volatile unsigned long*)ioremap(GPIO_DSET_1, 4);
+  gpio_dset_2 = (volatile unsigned long*)ioremap(GPIO_DSET_2, 4);
+  gpio_dclr_0 = (volatile unsigned long*)ioremap(GPIO_DCLR_0, 4);
+  gpio_dclr_1 = (volatile unsigned long*)ioremap(GPIO_DCLR_1, 4);
+  gpio_dclr_2 = (volatile unsigned long*)ioremap(GPIO_DCLR_2, 4);
+  
+  *gpio2_mode = *gpio2_mode | 0x55555555;
+  mt7688_dir(0, 0);
+  mt7688_dir(1, 0);
+  mt7688_dir(2, 0);
+  mt7688_dir(3, 0);
+
+  mt7688_dir(14, 1);
+  mt7688_dir(15, 1);
+  mt7688_dir(43, 1);
+
+  irq = gpio_to_irq(0);
+  if(irq &lt; 0){
+    printk("failed to gpio_to_irq\n");
+  }
+  else{
+    if(request_irq(irq, isr_handler, IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING | IRQF_DISABLED, "gpio-0", NULL) &lt; 0){
+      enable_irq(irq);
+      printk("failed to request_irq\n");
+    }
+  }
+  return 0;
+}
+ 
+static void __exit main_exit(void)
+{
+  disable_irq(irq);
+  free_irq(irq, NULL);
+  iounmap(gpio2_mode);
+  iounmap(gpio_ctrl_0);
+  iounmap(gpio_ctrl_1);
+  iounmap(gpio_ctrl_2);
+  iounmap(gpio_data_0);
+  iounmap(gpio_data_1);
+  iounmap(gpio_data_2);
+  iounmap(gpio_dset_0);
+  iounmap(gpio_dset_1);
+  iounmap(gpio_dset_2);
+  iounmap(gpio_dclr_0);
+  iounmap(gpio_dclr_1);
+  iounmap(gpio_dclr_2);
+}
+ 
+module_init(main_init);
+module_exit(main_exit);
+</pre><br>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

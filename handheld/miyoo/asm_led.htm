@@ -1,0 +1,241 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Miyoo &gt;&gt; Assembly</h3>
+<p><b>LED</b></p>
+<hr size="1">
+<p>
+參考資料：<br>
+1. <a href="https://github.com/steward-fu/mcu-pdf/tree/master/f1c100s">pdf</a><br>
+2. <a href="http://nano.lichee.pro/">lichee</a><br>
+3. <a href="https://mangopi.org/mangopi_r">mangopi_r</a><br>
+4. <a href="https://www.allwinnertech.com/index.php?c=product&a=index&pid=4">allwinner</a><br><br>
+
+暫存器<br>
+<img src="../../mcu/f1c100s/asm_led/2.jpg" class="maxSize"><br><br>
+
+綠色LED是接到PA1<br>
+<img src="../../mcu/f1c200s/asm_led/3.jpg" class="maxSize"><br><br>
+
+輸出控制<br>
+<img src="../../mcu/f1c200s/asm_led/4.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+  .global _start
+   
+  .equiv GPIO_BASE, 0x01c20800
+  .equiv PA,        (0 * 0x24)
+  .equiv PORT_CFG0, 0x00
+  .equiv PORT_DATA, 0x10
+    
+  .arm
+  .text
+_start:
+  .long 0xea000016
+  .byte 'e', 'G', 'O', 'N', '.', 'B', 'T', '0'
+  .long 0, __spl_size
+  .byte 'S', 'P', 'L', 2
+  .long 0, 0
+  .long 0, 0, 0, 0, 0, 0, 0, 0
+  .long 0, 0, 0, 0, 0, 0, 0, 0
+    
+_vector:
+  b reset
+  b .
+  b .
+  b .
+  b .
+  b .
+  b .
+  b .
+    
+reset:
+  ldr r0, =GPIO_BASE
+  ldr r1, =0x10
+  str r1, [r0, #(PA + PORT_CFG0)]
+  
+0:
+  ldr r1, =0x02
+  str r1, [r0, #(PA + PORT_DATA)]
+  ldr r2, =50000
+1:
+  subs r2, #1
+  bne 1b
+  ldr r1, =0x00
+  str r1, [r0, #(PA + PORT_DATA)]
+  ldr r2, =50000
+2:
+  subs r2, #1
+  bne 2b
+  b 0b
+  .end
+</pre><br>
+<p>
+main.ld
+</p>
+<pre>
+OUTPUT_FORMAT("elf32-littlearm", "elf32-bigarm", "elf32-littlearm")
+OUTPUT_ARCH(arm)
+ENTRY(_start)
+
+MEMORY {
+  ram : ORIGIN = 0x00000000, LENGTH = 32M
+}
+
+SECTIONS {
+  .text :
+  {
+    PROVIDE(__spl_start = .);
+    *(.text*)
+    PROVIDE(__spl_end = .);
+    *(.init.text)
+    *(.exit.text)
+    *(.glue*)
+    *(.note.gnu.build-id)
+  } &gt; ram
+  PROVIDE(__spl_size = __spl_end - __spl_start);
+
+  .rodata ALIGN(8) :
+  {
+    PROVIDE(__rodata_start = .);
+    *(SORT_BY_ALIGNMENT(SORT_BY_NAME(.rodata*)))
+    PROVIDE(__rodata_end = .);
+  } &gt; ram
+
+  .data ALIGN(8) :
+  {
+    PROVIDE(__data_start = .);  
+    *(.data*)
+    . = ALIGN(8);
+      PROVIDE(__data_end = .);
+    PROVIDE(__image_end = .);
+  } &gt; ram
+
+  .bss ALIGN(8) (NOLOAD) :
+  {
+    PROVIDE(__bss_start = .);
+    *(.bss*)
+    *(.sbss*)
+    *(COMMON)
+    . = ALIGN(8);
+    PROVIDE(__bss_end = .);
+  } &gt; ram
+
+  .stab 0 : { *(.stab) }
+  .stabstr 0 : { *(.stabstr) }
+  .stab.excl 0 : { *(.stab.excl) }
+  .stab.exclstr 0 : { *(.stab.exclstr) }
+  .stab.index 0 : { *(.stab.index) }
+  .stab.indexstr 0 : { *(.stab.indexstr) }
+  .comment 0 : { *(.comment) }
+  .debug_abbrev 0 : { *(.debug_abbrev) }
+  .debug_info 0 : { *(.debug_info) }
+  .debug_line 0 : { *(.debug_line) }
+  .debug_pubnames 0 : { *(.debug_pubnames) }
+  .debug_aranges 0 : { *(.debug_aranges) }
+}
+</pre><br>
+
+<p>
+Makefile
+</p>
+<pre>
+all:
+  arm-none-eabi-as -mcpu=arm9 -o main.o main.s
+  arm-none-eabi-ld -T main.ld -o main.elf main.o
+  arm-none-eabi-objcopy -O binary main.elf main.bin
+  gcc mksunxi.c -o mksunxi
+  ./mksunxi main.bin
+
+flash:
+  sunxi-fel -p spiflash-write 0 main.bin
+
+clean:
+  rm -rf main.bin main.o main.elf
+</pre><br>
+
+<p>
+進入燒錄模式後，然後插入USB至電腦，可以找到如下裝置
+</p>
+<pre>
+$ lsusb
+  Bus 002 Device 081: ID 1f3a:efe8 Onda (unverified) V972 tablet in flashing mode
+</pre><br>
+
+<p>
+編譯、燒錄
+</p>
+<pre>
+$ make
+  arm-none-eabi-as -mcpu=arm9 -o main.o main.s
+  arm-none-eabi-ld -T main.ld -o main.elf main.o
+  arm-none-eabi-objcopy -O binary main.elf main.bin
+  gcc mksunxi.c -o mksunxi
+  ./mksunxi main.bin
+  The bootloader head has been fixed, spl size is 512 bytes.
+
+$ make flash
+  sunxi-fel -p spiflash-write 0 main.bin
+  100% [================================================]     1 kB,   55.9 kB/s
+</pre><br>
+
+<p>
+接著重新上電即可<br>
+<img src="asm_led/1.jpg" class="maxSize"><br>
+<img src="asm_led/2.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,133 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>STM8S103 &gt;&gt; Assembly</h3>
+<p><b>EEPROM</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://community.st.com/s/question/0D50X00009XkYDFSA3/eeprom-readwrite">eeprom-readwrite</a><br><br>
+
+暫存器<br>
+<img src="asm_eeprom/1.jpg" class="maxSize"><br><br>
+
+EEPROM<br>
+<img src="asm_eeprom/2.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+  .equ PD_ODR,      0x500f
+  .equ PD_IDR,      0x5010
+  .equ PD_DDR,      0x5011
+  .equ PD_CR1,      0x5012
+  .equ PD_CR2,      0x5013
+  .equ UART1_DR,    0x5231
+  .equ UART1_BRR1,  0x5232
+  .equ UART1_BRR2,  0x5233
+  .equ UART1_CR2,   0x5235
+  .equ FLASH_IAPSR, 0x505f
+  .equ FLASH_DUKR,  0x5064
+
+  .area data
+  .area sseg
+  .area home
+  int main
+    
+  .area cseg
+main:
+  mov PD_DDR, #0x20
+  mov PD_CR1, #0x20
+  mov PD_CR2, #0x20
+
+  ; 9600bps
+  mov UART1_BRR2, #0x00
+  mov UART1_BRR1, #0x0d
+  mov UART1_CR2, #0x08
+  
+  mov FLASH_DUKR, #0xae
+  mov FLASH_DUKR, #0x56
+
+  ; eeprom write
+  ld a, #0x55
+  ld 0x4000, a
+
+loop:
+  ; eeprom read
+  ld a, 0x4000
+  ld UART1_DR, a
+
+  ldw x, #30000
+d0:
+  decw x
+  jrne d0
+  jp loop
+</pre><br>
+
+<p>
+編譯、燒錄
+</p>
+<pre>
+$ sdasstm8 -o main.s
+$ sdldstm8 -ni -b home=0x8000 -b cseg=0x8080 -b data=0x0001 -b sseg=0xffff main.rel
+$ sudo stm8flash -c stlinkv2 -p stm8s103f3 -u
+$ sudo stm8flash -c stlinkv2 -p stm8s103f3 -s flash -w main.ihx
+</pre><br>
+
+<p>
+完成<br>
+<img src="asm_uart/2.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

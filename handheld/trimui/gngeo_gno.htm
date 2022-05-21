@@ -1,0 +1,250 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>TRIMUI</h3>
+<p><b>如何讓GNGEO支援GNO檔案格式</b></p>
+<hr size="1">
+<p>
+其實GNGEO模擬器本身是支援GNO檔案格式，只是不知道為何在載入ROM的時候，要做剔除副檔名的動作(src/main.c)
+</p>
+<pre class="brush:cpp">
+  original_rom_name=cf_parse_cmd_line(argc,argv);
+  printf("original rom name=[%s]\n",original_rom_name);
+  rom_name = remove_path_and_extension(original_rom_name, '.', '/');
+  printf("rom name=[%s]\n",rom_name);
+</pre><br>
+
+<p>
+但是，後續處理ROM時卻又判斷是否有.GNO檔案
+</p>
+<pre class="brush:cpp">
+int load_game_config(char *rom_name) {
+  char *gpath;
+  char *drconf;
+#ifdef EMBEDDED_FS
+    gpath=ROOTPATH"conf/";
+#else
+    gpath=get_gngeo_dir();
+#endif
+  cf_reset_to_default();
+  cf_open_file(NULL); /* Reset possible previous setting */
+  if (rom_name) {
+    if (strstr(rom_name,".gno")!=NULL) {
+      char *name=dr_gno_romname(rom_name);
+      if (name) {
+        printf("Tring to load a gno file %s %s\n",rom_name,name);
+</pre><br>
+
+<p>
+因此，司徒在一開始先判斷是否為.GNO副檔名，如果不是，才做剔除的動作
+</p>
+<pre class="brush:cpp">
+  char *rom_name=NULL;
+  char *ext_name=NULL;
+
+  cf_init();
+  cf_init_cmd_line();
+  cf_open_file(NULL);
+  rom_name = cf_parse_cmd_line(argc, argv);
+  if(rom_name){
+    ext_name = strrchr(rom_name, '.');
+    printf("rom name: %s\n", rom_name);
+    if(strcasecmp(ext_name, ".gno")){
+      rom_name = remove_path_and_extension(rom_name, '.', '/');
+    }
+  }
+</pre><br>
+
+<p>
+那接下來的問題是，什麼是GNO檔案呢？(src/rom.c)
+</p>
+<pre class="brush:cpp">
+int dr_save_gno(GAME_ROMS *r, char *filename) {
+	FILE *gno;
+	char *fid = "gnodmpv1";
+	char fname[9];
+	Uint8 nb_sec = 0;
+	int i;
+
+	gno = fopen(filename, "wb");
+	if (!gno)
+		return GN_FALSE;
+
+	/* restore game vector */
+	memcpy(memory.rom.cpu_m68k.p, memory.game_vector, 0x80);
+	for (i = 0; i &lt; 0x80; i++)
+		printf("%02x ", memory.rom.cpu_m68k.p[i]);
+	printf("\n");
+
+	if (r-&gt;cpu_m68k.p)
+		nb_sec++;
+	if (r-&gt;cpu_z80.p)
+		nb_sec++;
+	if (r-&gt;adpcma.p)
+		nb_sec++;
+	if (r-&gt;adpcmb.p &amp;&amp; (r-&gt;adpcmb.p != r-&gt;adpcma.p))
+		nb_sec++;
+	if (r-&gt;game_sfix.p)
+		nb_sec++;
+	if (r-&gt;tiles.p)
+		nb_sec += 2; /* Sprite + Sprite usage */
+	if (r-&gt;gfix_usage.p)
+		nb_sec++;
+	/* Do we need Custom Bios? */
+	if ((r-&gt;info.flags &amp; HAS_CUSTOM_CPU_BIOS)) {
+		nb_sec++;
+	}
+	if ((r-&gt;info.flags &amp; HAS_CUSTOM_SFIX_BIOS)) {
+		nb_sec++;
+	}
+
+
+	/* Header information */
+	fwrite(fid, 8, 1, gno);
+	snprintf(fname, 9, "%-8s", r-&gt;info.name);
+	fwrite(fname, 8, 1, gno);
+	fwrite(&amp;r-&gt;info.flags, sizeof (Uint32), 1, gno);
+	fwrite(&amp;nb_sec, sizeof (Uint8), 1, gno);
+
+	/* Now each section */
+	dump_region(gno, &amp;r-&gt;cpu_m68k, REGION_MAIN_CPU_CARTRIDGE, 0, 0);
+	dump_region(gno, &amp;r-&gt;cpu_z80, REGION_AUDIO_CPU_CARTRIDGE, 0, 0);
+	dump_region(gno, &amp;r-&gt;adpcma, REGION_AUDIO_DATA_1, 0, 0);
+	if (r-&gt;adpcma.p != r-&gt;adpcmb.p)
+		dump_region(gno, &amp;r-&gt;adpcmb, REGION_AUDIO_DATA_2, 0, 0);
+	dump_region(gno, &amp;r-&gt;game_sfix, REGION_FIXED_LAYER_CARTRIDGE, 0, 0);
+	dump_region(gno, &amp;r-&gt;spr_usage, REGION_SPR_USAGE, 0, 0);
+	dump_region(gno, &amp;r-&gt;gfix_usage, REGION_GAME_FIX_USAGE, 0, 0);
+	if ((r-&gt;info.flags &amp; HAS_CUSTOM_CPU_BIOS)) {
+		dump_region(gno, &amp;r-&gt;bios_m68k, REGION_MAIN_CPU_BIOS, 0, 0);
+	}
+	if ((r-&gt;info.flags &amp; HAS_CUSTOM_SFIX_BIOS)) {
+		dump_region(gno, &amp;r-&gt;bios_sfix, REGION_FIXED_LAYER_BIOS, 0, 0);
+	}
+	/* TODO, there is a bug in the loading routine, only one compressed (type 1)
+	 * region can be present at the end of the file */
+	dump_region(gno, &amp;r-&gt;tiles, REGION_SPRITES, 1, 4096);
+
+
+	fclose(gno);
+	return GN_TRUE;
+}
+</pre>
+<p>
+P.S. 其實就是儲存已經解完密的每個REGION資料，所以小橫米、TRIMUI掌機應該要使用這種格式<br><br>
+
+那另外一個問題是，如何DUMP呢?(src/main.c)
+</p>
+<pre class="brush:cpp">
+  /* If asked, do a .gno dump and exit*/
+  if (CF_BOOL(cf_get_item_by_name("dump"))) {
+      char dump[8+4+1];
+      sprintf(dump,"%s.gno",rom_name);
+      dr_save_gno(&memory.rom,dump);
+      close_game();
+      return 0;
+  }
+</pre>
+<p>
+P.S. 只要在啟動gngeo時，使用<b>--dump</b>就可以做DUMP的動作<br><br>
+
+如下
+</p>
+<pre>
+$ ./gngeo --dump
+</pre>
+<p>
+<img src="gngeo_gno/1.jpg" class="maxSize"><br>
+P.S. 載入遊戲後，gngeo會自動離開並且產生<b>(null).gno</b>檔案，因為<b>char dump</b>並沒有被初始化<br><br>
+
+司徒使用小橫米、TRIMUI對比了一下ZIP和GNO的載入速度<br>
+<img src="gngeo_gno/2.jpg" class="maxSize"><br><br>
+
+司徒把沒有用到的選項都刪除了<br>
+<img src="gngeo_gno/3.jpg" class="maxSize"><br><br>
+
+FPS顯示還包含CPU使用率<br>
+<img src="gngeo_gno/4.jpg" class="maxSize"><br><br>
+
+
+CPU使用率計算方式
+</p>
+<pre class="brush:cpp">
+static int __attribute__((noinline)) get_cpu_ticks(void)
+{
+  static int fd=0;
+  static unsigned long last_utime=0;
+
+  char buf[128]={0};
+  unsigned long utime=0, ret=0;
+
+  if(fd == 0){
+    fd = open("/proc/self/stat", O_RDONLY);
+  }
+  lseek(fd, 0, SEEK_SET);
+  buf[0] = 0;
+  read(fd, buf, sizeof(buf));
+  buf[sizeof(buf) - 1] = 0;
+
+  sscanf(buf, "%*d %*s %*c %*d %*d %*d %*d %*d %*u %*u %*u %*u %*u %lu", &amp;utime);
+  ret = utime - last_utime;
+  if (ret &gt; 200){
+    ret = 0;
+  }
+  last_utime = utime;
+  return ret;
+}
+</pre><br>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

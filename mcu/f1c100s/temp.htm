@@ -1,0 +1,133 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>F1C100S</h3>
+<p><b>溫度量測</b></p>
+<hr size="1">
+<p>
+據說這個溫度感測是在TP模組內<br>
+<img src="temp/1.jpg" class="maxSize"><br><br>
+
+A20 TP_FIFOCS<br>
+<img src="temp/2.jpg" class="maxSize"><br><br>
+
+A20 TP_TPR<br>
+<img src="temp/3.jpg" class="maxSize"><br><br>
+
+A20 TEMP_DATA<br>
+<img src="temp/4.jpg" class="maxSize"><br><br>
+
+程式如下：
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;sys/mman.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;time.h&gt;
+
+uint32_t push_it(uint32_t v)
+{
+  int cc=0, r=0;
+  static uint32_t buf[32]={0};
+
+  for(cc=0; cc&lt;31; cc++){
+    buf[cc] = buf[cc + 1];
+  }
+  buf[31] = v;
+
+  r = 0;
+  for(cc=0; cc&lt;32; cc++){
+    r+= buf[cc];
+  }
+  return (r &gt;&gt; 5);
+}
+ 
+int main(int argc, char* argv[])
+{
+  int fd=-1;
+  uint8_t *mem=NULL;
+  uint32_t *TP_TPR=NULL;
+  uint32_t *TP_FIFOCS=NULL;
+  uint32_t *TEMP_DATA=NULL;
+  uint32_t *TP_CTRL_REG1=NULL;
+
+  fd = open("/dev/mem", O_RDWR);
+  mem = mmap(0, 4096, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0x1c24000);
+  printf("mmap addr: %p\n", mem); 
+
+  TP_TPR = (uint32_t*)&amp;mem[0x818];
+  TP_FIFOCS = (uint32_t*)&amp;mem[0x814];
+  TEMP_DATA = (uint32_t*)&amp;mem[0x820];
+  TP_CTRL_REG1 = (uint32_t*)&amp;mem[0x804];
+
+  *TP_CTRL_REG1 = (1 &lt;&lt; 5);
+  *TP_TPR = (1 &lt;&lt; 16);
+  while(1){
+    if(*TP_FIFOCS &amp; (1 &lt;&lt; 18)){
+      *TP_FIFOCS = 0xffffffff;
+      printf("temp: %d\n", push_it(*TEMP_DATA));
+    }
+    usleep(300000);
+  }
+  munmap(mem, 4096);
+  close(fd);
+  return 0;
+}
+</pre><br>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

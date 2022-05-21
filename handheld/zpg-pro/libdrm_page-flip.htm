@@ -1,0 +1,186 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Z-Pocket Game Pro(ZPG Pro)</h3>
+<p><b>libdrm page-flip</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://blog.csdn.net/hexiaolong2009/article/details/84674127">hexiaolong2009</a><br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#define _GNU_SOURCE
+#include &lt;errno.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;stdbool.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;sys/mman.h&gt;
+#include &lt;time.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;signal.h&gt;
+#include &lt;xf86drm.h&gt;
+#include &lt;xf86drmMode.h&gt;
+ 
+struct fb_obj {
+  uint32_t width;
+  uint32_t height;
+  uint32_t pitch;
+  uint32_t handle;
+  uint32_t size;
+  uint32_t *vaddr;
+  uint32_t fb_id;
+};
+ 
+static int terminate=0;
+struct fb_obj fb[2]={0};
+ 
+static int modeset_create_fb(int fd, struct fb_obj *bo, uint32_t color)
+{
+  uint32_t i=0;
+  struct drm_mode_map_dumb map={0};
+  struct drm_mode_create_dumb create={0};
+ 
+  create.width = bo-&gt;width;
+  create.height = bo-&gt;height;
+  create.bpp = 32;
+  drmIoctl(fd, DRM_IOCTL_MODE_CREATE_DUMB, &amp;create);
+  bo-&gt;pitch = create.pitch;
+  bo-&gt;size = create.size;
+  bo-&gt;handle = create.handle;
+  drmModeAddFB(fd, bo-&gt;width, bo-&gt;height, 24, 32, bo-&gt;pitch, bo-&gt;handle, &amp;bo-&gt;fb_id);
+  map.handle = create.handle;
+  drmIoctl(fd, DRM_IOCTL_MODE_MAP_DUMB, &amp;map);
+  bo-&gt;vaddr = mmap(0, create.size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, map.offset);
+  for(i=0; i&lt;(bo-&gt;size/4); i++){
+    bo-&gt;vaddr[i] = color;
+  }
+  return 0;
+}
+ 
+static void modeset_destroy_fb(int fd, struct fb_obj *bo)
+{
+  struct drm_mode_destroy_dumb destroy={0};
+ 
+  drmModeRmFB(fd, bo-&gt;fb_id);
+  munmap(bo-&gt;vaddr, bo-&gt;size);
+  destroy.handle = bo-&gt;handle;
+  drmIoctl(fd, DRM_IOCTL_MODE_DESTROY_DUMB, &amp;destroy);
+}
+ 
+static void modeset_page_flip_handler(int fd, uint32_t frame, uint32_t sec, uint32_t usec, void *data)
+{
+  static int i=0;
+  uint32_t crtc_id=*(uint32_t*)data;
+ 
+  i^= 1;
+  drmModePageFlip(fd, crtc_id, fb[i].fb_id, DRM_MODE_PAGE_FLIP_EVENT, data);
+  usleep(500000);
+}
+ 
+static void sigint_handler(int arg)
+{
+  terminate = 1;
+}
+ 
+int main(int argc, char **argv)
+{
+  int fd=-1;
+  uint32_t conn_id=-1;
+  uint32_t crtc_id=-1;
+  drmModeRes *res=NULL;
+  drmEventContext ev={0};
+  drmModeConnector *conn=NULL;
+ 
+  signal(SIGINT, sigint_handler);
+  ev.version = DRM_EVENT_CONTEXT_VERSION;
+  ev.page_flip_handler = modeset_page_flip_handler;
+  fd = open("/dev/dri/card0", O_RDWR | O_CLOEXEC);
+  res = drmModeGetResources(fd);
+  crtc_id = res-&gt;crtcs[0];
+  conn_id = res-&gt;connectors[0];
+  conn = drmModeGetConnector(fd, conn_id);
+  fb[0].width = conn-&gt;modes[0].hdisplay;
+  fb[0].height = conn-&gt;modes[0].vdisplay;
+  fb[1].width = conn-&gt;modes[0].hdisplay;
+  fb[1].height = conn-&gt;modes[0].vdisplay;
+  modeset_create_fb(fd, &amp;fb[0], 0xff0000);
+  modeset_create_fb(fd, &amp;fb[1], 0x0000ff);
+  drmModeSetCrtc(fd, crtc_id, fb[0].fb_id, 0, 0, &amp;conn_id, 1, &amp;conn-&gt;modes[0]);
+  drmModePageFlip(fd, crtc_id, fb[0].fb_id, DRM_MODE_PAGE_FLIP_EVENT, &amp;crtc_id);
+  while(!terminate){
+    drmHandleEvent(fd, &amp;ev);
+  }
+  modeset_destroy_fb(fd, &amp;fb[1]);
+  modeset_destroy_fb(fd, &amp;fb[0]);
+  drmModeFreeConnector(conn);
+  drmModeFreeResources(res);
+  close(fd);
+  return 0;
+}
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ sudo apt-get install libdrm-dev -y
+$ gcc main.c -o test -I/usr/include/libdrm -ldrm
+</pre><br>
+
+<p>
+<br><a href="../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,216 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Kernel Mode Driver Framework &gt;&gt; Assembly (PNP) &gt;&gt; IOCTL</h3>
+<p><b>IRP</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://github.com/steward-fu/kmdf">Source Code</a><br><br>
+
+Input Output Control(IOCTL)是另一種可以跟驅動程式溝通的方式，本身帶有命令參數，驅動程式可以依據不一樣的命令做不一樣的事情，而除了命令以外，IOCTL更把Buffer切成Input和Output兩塊，單一次命令的運作就可以完成讀寫的動作，Buffer的屬性也是需要做設定才可以使用，分為Buffered、Direct和Neither這三種設定方式，感覺是不是跟File的Buffer設定方式很相似呢？沒錯，基本上是一樣的，雖然司徒講得有點複雜，不過，只要把Buffer的設定方式搞懂後，使用者就可以發現，整個運作原理是相當容易理解的。<br><br>
+
+當然，使用者可能好奇，EvtIoRead和EvtIoWrite是否可以取代EvtIoDeviceControl的功能呢？答案：肯定是可以的，只要把資料做編碼，功能上是可以取代的，只是這樣的作法，把控制應用以及大量傳輸的概念都綁在一起，失去原有的設計本質，因此，如果以資料為傳輸目的，建議使用EvtIoRead和EvtIoWrite，而以控制應用為目的時，則建議使用EvtIoDeviceControl的方式。<br><br>
+
+至於IOCTL命令到底是什麼東西呢？其實就是一個編碼後的32Bit的數值，欄位如下所示：
+</p>
+<pre>
+#define CTL_CODE(DeviceType, Function, Transfer, Access) (((DeviceType) &lt;&lt; 16) | ((Access) &lt;&lt; 14) | ((Function) &lt;&lt; 2) | (Transfer))
+</pre><br>
+
+<p>
+表格如下：<br>
+<img src="../wdm/asm_ioctl/1.jpg" class="maxSize"><br>
+Ref. <a href="https://docs.microsoft.com/en-us/windows-hardware/drivers/kernel/defining-i-o-control-codes">defining-i-o-control-codes</a><br>
+透過Microsoft的Macro(CTL_CODE)定義該數值，說穿了，只要App跟驅動程式都可以互相知道對方的意思(IOCTL命令)就可以，當然有一些是Microsoft定義保留的Global IOCTL，在使用上，需要特別注意一下。<br><br>
+
+對應的溝通管道：
+</p>
+
+<table>
+<tr>
+  <th>Win32 API</th>
+  <th>Kernel Event</th>
+</tr>
+<tr>
+  <td>CreateFile()</td>
+  <td>EvtDeviceFileCreate</td>
+</tr>
+<tr>
+  <td>DeviceIoControl()</td>
+  <td>EvtIoDeviceControl</td>
+</tr>
+<tr>
+  <td>CloseFile()</td>
+  <td>EvtFileClose</td>
+</tr>
+</table><br>
+
+<p>
+取得方式：
+</p>
+<table>
+<tr>
+  <th>
+  IOCTL Code
+  </th>
+</tr>
+<tr>
+  <td>
+  傳入的第五個參數
+  </td>
+</tr>
+</table><br>
+
+<p>
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;ntddk.h&gt;
+#include &lt;wdf.h&gt;
+
+#define DEV_NAME L"\\Device\\MyDriver"
+#define SYM_NAME L"\\DosDevices\\MyDriver"
+
+#define IOCTL_TEST CTL_CODE(FILE_DEVICE_UNKNOWN, 0x800, METHOD_BUFFERED, FILE_ANY_ACCESS)
+
+void IrpFileCreate(WDFDEVICE Device, WDFREQUEST Request, WDFFILEOBJECT FileObject)
+{  
+  DbgPrint("IrpFieCreate");
+  WdfRequestComplete(Request, STATUS_SUCCESS);
+}
+
+void IrpFileClose(WDFFILEOBJECT FileObject)
+{
+  DbgPrint("IrpFieClose");
+}
+
+void IrpIOCTL(WDFQUEUE Queue, WDFREQUEST Request, size_t OutputBufferLength, size_t InputBufferLength, ULONG IoControlCode)
+{
+  if(IoControlCode = IOCTL_TEST){
+    DbgPrint("IOCTL_TEST");
+  }
+  WdfRequestComplete(Request, STATUS_SUCCESS);
+}
+
+NTSTATUS AddDevice(WDFDRIVER Driver, PWDFDEVICE_INIT pDeviceInit)
+{
+  WDFDEVICE device;
+  UNICODE_STRING suDevName;
+  UNICODE_STRING szSymName;
+  WDF_FILEOBJECT_CONFIG file_cfg;
+  WDF_IO_QUEUE_CONFIG ioqueue_cfg;
+  
+  RtlInitUnicodeString(&amp;suDevName, DEV_NAME);
+  RtlInitUnicodeString(&amp;szSymName, SYM_NAME);
+  WdfDeviceInitAssignName(pDeviceInit, &amp;suDevName);
+  
+  WdfDeviceInitSetIoType(pDeviceInit, WdfDeviceIoBuffered);
+  WDF_FILEOBJECT_CONFIG_INIT(&amp;file_cfg, IrpFileCreate, IrpFileClose, NULL);
+  WdfDeviceInitSetFileObjectConfig(pDeviceInit, &amp;file_cfg, WDF_NO_OBJECT_ATTRIBUTES);
+  WdfDeviceCreate(&amp;pDeviceInit, WDF_NO_OBJECT_ATTRIBUTES, &amp;device);
+  WdfDeviceCreateSymbolicLink(device, &amp;szSymName);
+  
+  WDF_IO_QUEUE_CONFIG_INIT_DEFAULT_QUEUE(&amp;ioqueue_cfg, WdfIoQueueDispatchSequential);
+  ioqueue_cfg.EvtIoDeviceControl = IrpIOCTL;
+  return WdfIoQueueCreate(device, &amp;ioqueue_cfg, WDF_NO_OBJECT_ATTRIBUTES, WDF_NO_HANDLE);
+}
+
+NTSTATUS DriverEntry(PDRIVER_OBJECT pOurDriver, PUNICODE_STRING pRegistry)
+{
+  WDF_DRIVER_CONFIG config;
+
+  WDF_DRIVER_CONFIG_INIT(&amp;config, AddDevice);
+  return WdfDriverCreate(pOurDriver, pRegistry, WDF_NO_OBJECT_ATTRIBUTES, &amp;config, WDF_NO_HANDLE);
+}
+</pre>
+<p>
+<b>IrpIOCTL()</b>僅列印IOCTL_TEST命令。<br><br>
+
+app.c
+</p>
+<pre class="brush:cpp">
+#define INITGUID
+#include &lt;windows.h&gt;
+#include &lt;winioctl.h&gt;
+#include &lt;strsafe.h&gt;
+#include &lt;setupapi.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+#define IOCTL_TEST CTL_CODE(FILE_DEVICE_UNKNOWN, 0x800, METHOD_BUFFERED, FILE_ANY_ACCESS)
+ 
+int __cdecl main(int argc, char* argv[])
+{
+  DWORD dwRet = 0;
+  HANDLE hFile = NULL;
+
+  hFile = CreateFile("\\\\.\\MyDriver", GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+  if (hFile == INVALID_HANDLE_VALUE) {
+    printf("failed to open mydriver");
+    return 1;
+  }
+  DeviceIoControl(hFile, IOCTL_TEST, NULL, 0, NULL, 0, &amp;dwRet, NULL);  
+  CloseHandle(hFile);
+  return 0;
+}
+</pre><br>
+
+<p>
+結果<br>
+<img src="asm_pnp_ioctl/2.jpg" class="maxSize"><br>
+<img src="asm_pnp_ioctl/1.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../driver.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

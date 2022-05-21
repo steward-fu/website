@@ -1,0 +1,502 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>F1C200S</h3>
+<p><b>ESP8089除錯紀錄</b></p>
+<hr size="1">
+<p>
+參考資料：<br>
+1. <a href="https://www.cnblogs.com/twzy/p/15160808.html">twzy</a><br>
+2. <a href="https://whycan.com/t_4326.html">whycan</a><br>
+3. <a href="https://github.com/notabucketofspam/ESP8089-SPI">esp8089-spi</a><br>
+4. <a href="https://github.com/Lichee-Pi/linux/tree/nano-5.2-tf">nano-5.2-tf</a><br><br>
+
+關於如下的esp8089 crash問題
+</p>
+<pre>
+# rmmod esp8089-spi.ko
+[   80.007618] esp8089_spi: esp_spi_exit
+[   80.011553] esp8089_spi: esp_spi_remove
+[   80.016011] esp8089_spi: normal byte write data no-busy wait byte 0xff no recv at the first time
+[   80.027305] sip_detach, cancel rx_process_work in SIP_RUN
+[   80.032885] sip_detach, cancel sendup_work in SIP_RUN
+[   80.037979] ------------[ cut here ]------------
+[   80.042737] WARNING: CPU: 0 PID: 101 at kernel/workqueue.c:3031 __flush_work+0x224/0x258
+[   80.050866] Modules linked in: esp8089_spi(O-)
+[   80.055428] CPU: 0 PID: 101 Comm: rmmod Tainted: G           O      5.2.0 #5
+[   80.062544] Hardware name: Allwinner suniv Family
+[   80.067360] [<c010dfa0>] (unwind_backtrace) from [<c010b210>] (show_stack+0x10/0x14)
+[   80.075249] [<c010b210>] (show_stack) from [<c0116c10>] (__warn+0xc4/0xf0)
+[   80.082238] [<c0116c10>] (__warn) from [<c0116c78>] (warn_slowpath_null+0x3c/0x48)
+[   80.089893] [<c0116c78>] (warn_slowpath_null) from [<c012dbe0>] (__flush_work+0x224/0x258)
+[   80.098295] [<c012dbe0>] (__flush_work) from [<c012dd78>] (__cancel_work_timer+0x108/0x1e4)
+[   80.106941] [<c012dd78>] (__cancel_work_timer) from [<bf001d94>] (sip_detach+0x100/0x200 [esp8089_spi])
+[   80.116717] [<bf001d94>] (sip_detach [esp8089_spi]) from [<bf006e0c>] (esp_spi_remove+0x5c/0x208 [esp8089_spi])
+[   80.127093] [<bf006e0c>] (esp_spi_remove [esp8089_spi]) from [<c03cd7a8>] (spi_drv_remove+0x1c/0x38)
+[   80.136394] [<c03cd7a8>] (spi_drv_remove) from [<c0382894>] (__device_release_driver+0x140/0x1f0)
+[   80.145416] [<c0382894>] (__device_release_driver) from [<c03835a8>] (driver_detach+0xac/0xd4)
+[   80.154162] [<c03835a8>] (driver_detach) from [<c0381efc>] (bus_remove_driver+0x4c/0xa0)
+[   80.162537] [<c0381efc>] (bus_remove_driver) from [<bf00b2a8>] (esp_spi_exit+0x30/0xd88 [esp8089_spi])
+[   80.172147] [<bf00b2a8>] (esp_spi_exit [esp8089_spi]) from [<c016f50c>] (sys_delete_module+0x170/0x1e4)
+[   80.181624] [<c016f50c>] (sys_delete_module) from [<c0101000>] (ret_fast_syscall+0x0/0x50)
+[   80.189995] Exception stack(0xc3241fa8 to 0xc3241ff0)
+[   80.195147] 1fa0:                   0002fc38 00000000 bea1dcf4 00000880 00000000 bea1de58
+[   80.203425] 1fc0: 0002fc38 00000000 00000002 00000081 000e79d0 00000000 00000000 00000000
+[   80.211644] 1fe0: bea1dcdc bea1dcc0 0002fad0 b6f4e6d8
+[   80.216769] ---[ end trace 2fa11815b209e97a ]---
+[   80.223550] sip_detach, cancel tx_work in SIP_RUN
+[   80.228354] esp8089_spi: esp_spi_remove sip detached
+[   80.233839] esp8089_spi: esp_spi_remove dealloc mac80211
+[   80.239305] esp8089_spi: esp_spi_remove free dma_buffer
+[   80.244754] esp8089_spi: eagle spi remove complete
+</pre><br>
+
+<p>
+定位了一下問題, 發現問題是在sendup_work並沒有初始化, 原因是在Makefile裡面定義了RX_SENDUP_SYNC, 所以解法如下
+</p>
+<pre>
+void sip_detach(struct esp_sip *sip)
+{
+  int po;
+
+  if(sip == NULL) {
+    return ;
+  }
+
+  sip_free_init_ctrl_buf(sip);
+  if(atomic_read(&sip->state) == SIP_RUN) {
+    sif_disable_target_interrupt(sip->epub);
+    atomic_set(&sip->state, SIP_STOP);
+    sif_disable_irq(sip->epub);
+
+    dbg("%s, cancel rx_process_work in SIP_RUN\n", __func__);
+    cancel_work_sync(&sip->rx_process_work);
+    skb_queue_purge(&sip->rxq);
+    mutex_destroy(&sip->rx_mtx);
+
+#ifndef RX_SENDUP_SYNC
+    dbg("%s, cancel sendup_work in SIP_RUN\n", __func__);
+    cancel_work_sync(&sip->epub->sendup_work);
+#endif
+</pre>
+<p>
+P.S. 通過RX_SENDUP_SYNC判斷是否需要cancel sendup_work<br><br>
+
+重新編譯後, 就可以正常rmmod esp8089-spi.ko
+</p>
+<pre>
+# rmmod esp8089-spi.ko
+[   59.506484] esp8089_spi: esp_spi_exit
+[   59.510416] esp8089_spi: esp_spi_remove
+[   59.514883] esp8089_spi: normal byte write data no-busy wait byte 0xff no recv at the first time
+[   59.526156] sip_detach, cancel rx_process_work in SIP_RUN
+[   59.533771] sip_detach, cancel tx_work in SIP_RUN
+[   59.538574] esp8089_spi: esp_spi_remove sip detached
+[   59.544062] esp8089_spi: esp_spi_remove dealloc mac80211
+[   59.549525] esp8089_spi: esp_spi_remove free dma_buffer
+[   59.554975] esp8089_spi: eagle spi remove complete
+</pre><br>
+
+<p>
+但是, 重新上esp8089-spi.ko, 就會發現之前的資源並沒有被成功釋放, 相較於原本crash, 這又是另一個問題
+</p>
+<pre>
+# insmod esp8089-spi.ko
+[   79.450589] esp8089_spi: esp_spi_init
+[   79.454554] esp8089_spi: EAGLE DRIVER VER bdf5087c3deb
+[   79.459743] request_init_conf: attr_name[crystal_26M_en]
+[   79.459762] request_init_conf: attr_name[test_xtal]
+[   79.465173] request_init_conf: attr_name[sdio_configure]
+[   79.470085] request_init_conf: attr_name[bt_configure]
+[   79.475478] request_init_conf: attr_name[bt_protocol]
+[   79.480649] request_init_conf: attr_name[dual_ant_configure]
+[   79.485780] request_init_conf: attr_name[test_uart_configure]
+[   79.491471] request_init_conf: attr_name[share_xtal]
+[   79.497288] request_init_conf: attr_name[gpio_wake]
+[   79.502327] request_init_conf: attr_name[no_auto_sleep]
+[   79.507237] request_init_conf: attr_name[ext_rst]
+[   79.512535] request_init_conf: attr_name[wakeup_gpio]
+[   79.517277] request_init_conf: attr_name[ate_test]
+[   79.522403] request_init_conf: attr_name[speed_suspend]
+[   79.527399] esp8089_spi: esp_spi_dummy_probe enter
+[   79.537874] sun6i-spi 1c06000.spi: chipselect 0 already in use
+[   79.543869] esp8089_spi: FAILED to create slave
+[   79.548475] Unable to handle kernel NULL pointer dereference at virtual address 000001a8
+[   79.556682] pgd = b46ba3ec
+[   79.559431] [000001a8] *pgd=832e2831, *pte=00000000, *ppte=00000000
+[   79.565808] Internal error: Oops: 17 [#1] ARM
+[   79.570194] Modules linked in: esp8089_spi(O+) [last unloaded: esp8089_spi]
+[   79.577206] CPU: 0 PID: 102 Comm: insmod Tainted: G           O      5.2.0 #5
+[   79.584353] Hardware name: Allwinner suniv Family
+[   79.589102] PC is at spi_setup+0x4/0x15c
+[   79.593330] LR is at sif_platform_new_device+0x38/0x88 [esp8089_spi]
+[   79.599729] pc : [<c03cdbe8>]    lr : [<bf004340>]    psr: 60000013
+[   79.606017] sp : c32dfe4c  ip : 00000000  fp : bf03b58c
+[   79.611255] r10: bf03b574  r9 : 00000003  r8 : bf03bbf8
+[   79.616497] r7 : c0a397c0  r6 : bf03b0e4  r5 : bf03b534  r4 : bf03bbf4
+[   79.623035] r3 : 00000000  r2 : 00000000  r1 : 60000093  r0 : 00000000
+[   79.629578] Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment none
+[   79.636730] Control: 0005317f  Table: 832d0000  DAC: 00000051
+[   79.642503] Process insmod (pid: 102, stack limit = 0xf70a1f18)
+[   79.648445] Stack: (0xc32dfe4c to 0xc32e0000)
+[   79.652832] fe40:                            bf03bbf4 bf03b534 bf004340 bf03bbf4 00000000
+[   79.661047] fe60: bf03b0e4 bf0410a8 bf03bb78 bf00e774 bf03c000 bf041000 ffffe000 00000000
+[   79.669260] fe80: c0a397c0 7fffffff 00000000 00000000 00000000 c0102c24 00000000 00044920
+[   79.677474] fea0: 00000000 00000000 00000000 00000000 6e72656b 00006c65 00000000 00000000
+[   79.685687] fec0: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+[   79.693904] fee0: 00000000 dc8cb5ab bf03b9e0 bf03b9e0 c322b200 b6fdfca0 0000017b c016f5d8
+[   79.702120] ff00: 0000017b 7fffffff 00000000 00000003 b6fdfca0 c0171d6c 7fffffff 00000000
+[   79.710335] ff20: 00000003 00000000 00000000 c4876000 00044920 00000000 c4883eba c48b0940
+[   79.718549] ff40: c4876000 00044920 c48ba2e0 c48ba138 c48b4714 0003c000 0003dde0 000062ec
+[   79.726764] ff60: 0003efeb 00000000 00000000 00000000 000062dc 00000025 00000026 0000001d
+[   79.734977] ff80: 00000000 00000011 00000000 dc8cb5ab d9dcb4f6 00000001 b6fdfca0 c0101208
+[   79.743193] ffa0: c32de000 c0101000 d9dcb4f6 00000001 00000003 b6fdfca0 00000000 bee6bf4d
+[   79.751408] ffc0: d9dcb4f6 00000001 b6fdfca0 0000017b 000e79d0 00000000 00000000 00000000
+[   79.759625] ffe0: bee6bdcc bee6bdb0 0002fa5c b6f586d8 20000010 00000003 00000000 00000000
+[   79.768122] [<c03cdbe8>] (spi_setup) from [<bf03b0e4>] (esp_msg_level+0x0/0xfffd0f1c [esp8089_spi])
+[   79.777241] Code: 00002af8 00002710 c07d5984 e92d4030 (e59031a8)
+[   79.783497] ---[ end trace 35e8692b41672902 ]---
+Segmentation fault
+</pre><br>
+
+<p>
+定位了一下問題, 是在esp_spi_exit()沒有做資源釋放的動作, 改成如下就可以解決
+</p>
+<pre>
+static void __exit esp_spi_exit(void)
+{
+  dbg("(%s) ++\n", __func__);
+  esp_debugfs_exit();
+  esp_unregister_early_suspend();
+  spi_unregister_device(spi);
+  spi_unregister_driver(&esp_spi_driver);
+  esp_wakelock_destroy();
+  dbg("(%s) --\n", __func__);
+}
+</pre>
+<p>
+P.S. spi_unregister_device(spi)<br><br>
+
+不過, 司徒的esp8089是早期的版本, 沒有reset腳位, 目前也沒有特地拉出來<br>
+<img src="fix_esp8089/1.jpg" class="maxSize"><br>
+<img src="fix_esp8089/2.jpg" class="maxSize"><br><br>
+
+修改後, 執行第2次insmod esp8089-spi.ko已經不會crash了, 不過似乎缺少reset的動作
+</p>
+<pre>
+# insmod esp8089-spi.ko
+[   56.044941] (esp_spi_init)++
+[   56.047925] (request_init_conf) crystal_26M_en=1
+[   56.047947] (request_init_conf) test_xtal=0
+[   56.052729] (request_init_conf) sdio_configure=1
+[   56.056957] (request_init_conf) bt_configure=0
+[   56.061600] (request_init_conf) bt_protocol=0
+[   56.066138] (request_init_conf) dual_ant_configure=0
+[   56.070534] (request_init_conf) test_uart_configure=2
+[   56.075581] (request_init_conf) share_xtal=0
+[   56.080666] (request_init_conf) gpio_wake=0
+[   56.085012] (request_init_conf) no_auto_sleep=0
+[   56.089230] (request_init_conf) ext_rst=0
+[   56.093831] (request_init_conf) wakeup_gpio=12
+[   56.097874] (request_init_conf) ate_test=0
+[   56.102388] (request_init_conf) speed_suspend=0
+[   56.107036] (sif_platform_new_device) added spi device 0xc3228c00
+[   56.331811] (esp_spi_init) power up complete
+[   56.336285] (esp_spi_probe)++
+[   56.339300] (esp_setup_spi)++
+[   56.342409] (esp_setup_spi)--
+[   56.345418] (sif_spi_protocol_init)++
+[   56.349105] (sif_spi_protocol_init) failed count 0
+[   56.555559] (sif_spi_protocol_init) failed count 1
+[   56.762018] (sif_spi_protocol_init) failed count 2
+[   56.968402] (sif_spi_protocol_init) failed count 3
+[   57.174802] (sif_spi_protocol_init) failed count 4
+[   57.381160] (sif_spi_protocol_init) failed count 5
+[   57.587539] (sif_spi_protocol_init) failed count 6
+[   57.794031] (sif_spi_protocol_init) failed count 7
+[   58.000408] (sif_spi_protocol_init) failed count 8
+[   58.206804] (sif_spi_protocol_init) failed count 9
+[   58.413143] (sif_spi_protocol_init) failed count 10
+[   58.619588] (esp_spi_probe) first error exit
+[   58.624038] eagle: probe of spi1.0 failed with error -110
+[   58.629640] (esp_spi_init) sem_timeout = 0
+[   58.633867] (esp_spi_init)-- (errno 0)
+</pre>
+<p>
+第2次insmod失敗的原因是沒有做RESET的動作, 雖然可能可以透過命令做RESET, 不過, ESP8089的使用手冊似乎抓不到, 因此, 司徒最後飛線解決第2次insmod失敗的問題<br><br>
+
+CHIP_EN腳位如下：<br>
+<img src="fix_esp8089/3.jpg" class="maxSize"><br><br>
+
+CHIP_EN連接到PE6<br>
+<img src="fix_esp8089/4.jpg" class="maxSize"><br><br>
+
+接著多次測試後, 驅動都可以正確執行, wlan0也可以正常運作
+</p>
+<pre>
+# rmmod esp8089-spi.ko
+[  235.627234] (esp_spi_exit) ++
+[  235.630644] (esp_spi_remove)++
+[  235.635838] sip_detach, cancel rx_process_work in SIP_RUN
+[  235.641465] esp_op_remove_interface enter, vif addr ac:d0:74:b8:2d:49, beacon enable 0
+[  235.649660] sip_txq_process skb_len 22 pkt_len 260 blknum 1
+[  235.655465] esp_op_stop
+[  235.660157] sip_detach, cancel tx_work in SIP_RUN
+[  235.665112] (esp_spi_remove) sip detached
+[  235.669563] (esp_spi_remove) dealloc mac80211
+[  235.674095] (esp_spi_remove) free dma_buffer
+[  235.678420] (esp_spi_remove)--
+[  235.681866] (esp_spi_exit) --
+
+# insmod esp8089-spi.ko
+[  238.117040] (esp_spi_init)++
+[  238.120026] (request_init_conf) crystal_26M_en=1
+[  238.120049] (request_init_conf) test_xtal=0
+[  238.124831] (request_init_conf) sdio_configure=1
+[  238.129059] (request_init_conf) bt_configure=0
+[  238.133765] (request_init_conf) bt_protocol=0
+[  238.138249] (request_init_conf) dual_ant_configure=0
+[  238.142681] (request_init_conf) test_uart_configure=2
+[  238.147680] (request_init_conf) share_xtal=0
+[  238.152802] (request_init_conf) gpio_wake=0
+[  238.157107] (request_init_conf) no_auto_sleep=0
+[  238.161318] (request_init_conf) ext_rst=0
+[  238.165917] (request_init_conf) wakeup_gpio=12
+[  238.169962] (request_init_conf) ate_test=0
+[  238.174479] (request_init_conf) speed_suspend=0
+[  238.442136] (sif_platform_new_device) added spi device 0xc3228c00
+[  238.671606] (esp_spi_init) power up complete
+[  238.676079] (esp_spi_probe)++
+[  238.679094] (esp_setup_spi)++
+[  238.682200] (esp_setup_spi)--
+[  238.685211] (sif_spi_protocol_init)++
+[  238.688901] (sif_spi_protocol_init) failed count 0
+[  238.895437] (sif_spi_protocol_init) failed count 1
+[  239.101828] (sif_spi_protocol_init) failed count 2
+[  239.308199] (sif_spi_protocol_init) rx: 0xff, 0xff, 0x01, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff
+[  239.816383] (sif_spi_protocol_init) rx: 0xff, 0xff, 0x01, 0x10, 0xff, 0xff, 0x00, 0xff, 0xff, 0xff
+[  240.324926] (sif_spi_protocol_init) rx: 0xff, 0xff, 0x00, 0x90, 0xff, 0xff, 0x00, 0xff, 0xff, 0xff
+[  240.833308] (sif_spi_protocol_init) rx: 0xff, 0x00, 0x02, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff
+[  241.341498] (sif_spi_protocol_init) rx: 0xff, 0x00, 0x03, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff
+[  241.850059] (sif_spi_protocol_init) rx: 0xff, 0x00, 0x02, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff
+[  242.358415] (sif_spi_protocol_init) rx: 0xff, 0x00, 0x03, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff
+[  242.866623] (sif_spi_protocol_init) rx: 0xff, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff
+[  243.375170] (sif_spi_protocol_init) rx: 0xff, 0x00, 0x25, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff
+[  243.883519] (sif_spi_protocol_init) rx: 0xff, 0x00, 0x10, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff
+[  244.391780] (sif_spi_protocol_init) rx: 0xff, 0x00, 0x12, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff
+[  244.900285] (sif_spi_protocol_init) rx: 0xff, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff
+[  245.408637] (sif_spi_protocol_init) rx: 0xff, 0x00, 0x06, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff
+[  245.916879] (sif_spi_protocol_init) rx: 0xff, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff
+[  246.425426] (sif_spi_protocol_init) rx: 0xff, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff
+[  246.934229] (sif_spi_protocol_init) rx: 0xff, 0x00, 0x01, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff
+[  247.442171] (sif_spi_protocol_init)--
+[  247.448635] (check_target_id) SLC data 0x12102500, ID 0x00000600
+</pre><br>
+
+<p>
+修改部份
+</p>
+<pre>
+static int __init esp_spi_init(void)
+{
+  int err=0;
+  int edf_ret=0;
+  bool powerup=false;
+  long long sem_timeout=0;
+
+  dbg("(%s)++\n", __func__);
+  edf_ret = esp_debugfs_init();
+  request_init_conf();
+  esp_wakelock_init();
+  esp_wake_lock();
+
+  if((err = gpio_request(ESP_RST_PIN, "esp_rst")) != 0) {
+    dbg("(%s) failed to request reset gpio\n", __func__);
+    return err;
+  }
+  gpio_direction_output(ESP_RST_PIN, 1);
+  gpio_set_value(ESP_RST_PIN, 0);
+  msleep(250);
+  gpio_set_value(ESP_RST_PIN, 1);
+
+  spi = sif_platform_new_device();
+  powerup = true;
+  if(!powerup) {
+    dbg("(%s) failed to power up\n", __func__);
+    err = -ENODEV;
+    goto _fail;
+  }
+
+  dbg("(%s) power up complete\n", __func__);
+  sif_sdio_state = ESP_SDIO_STATE_FIRST_INIT;
+  sema_init(&esp_powerup_sem, 0);
+  spi_register_driver(&esp_spi_driver);
+
+  sem_timeout = down_timeout(&esp_powerup_sem, msecs_to_jiffies(ESP_WAIT_UP_TIME_MS));
+  dbg("(%s) sem_timeout = %lld\n", __func__, sem_timeout);
+  if(sem_timeout == 0 && sif_get_ate_config() == 0) {
+    if(sif_sdio_state == ESP_SDIO_STATE_FIRST_NORMAL_EXIT) {
+      spi_unregister_driver(&esp_spi_driver);
+      msleep(100);
+      sif_sdio_state = ESP_SDIO_STATE_SECOND_INIT;
+      spi_register_driver(&esp_spi_driver);
+    }
+  }
+  esp_register_early_suspend();
+  esp_wake_unlock();
+  printk("(%s)-- (errno %d)\n", __func__, err);
+  return err;
+
+_fail:
+  esp_wake_unlock();
+  esp_wakelock_destroy();
+  printk("(%s)-- (errno %d)\n", __func__, err);
+  return err;
+}
+
+static void __exit esp_spi_exit(void)
+{
+  dbg("(%s) ++\n", __func__);
+  esp_debugfs_exit();
+  esp_unregister_early_suspend();
+  spi_unregister_device(spi);
+  spi_unregister_driver(&esp_spi_driver);
+  esp_wakelock_destroy();
+  gpio_free(ESP_RST_PIN);
+  dbg("(%s) --\n", __func__);
+}
+</pre><br>
+
+<p>
+不知為何ESP8089無法搜尋到家裡的AP，司徒陸續找個幾個裝置後，終於從倉庫找到可以連線的裝置<br>
+<img src="fix_esp8089/5.jpg" class="maxSize"><br><br>
+
+目前司徒測試了一下ping以及wget下載比較大量的檔案，沒有出線斷線問題
+</p>
+<pre>
+# wget ftp.gnu.org/gnu/gcc/gcc-3.0.3.tar.gz
+Connecting to ftp.gnu.org (209.51.188.20:80)
+saving to 'gcc-3.0.3.tar.gz'
+gcc-3.0.3.tar.gz     100% |********************************| 17.5M  0:00:00 ETA
+'gcc-3.0.3.tar.gz' saved
+
+# wget ftp.gnu.org/gnu/gcc/gcc-3.0.4.tar.gz
+Connecting to ftp.gnu.org (209.51.188.20:80)
+saving to 'gcc-3.0.4.tar.gz'
+gcc-3.0.4.tar.gz     100% |********************************| 17.5M  0:00:00 ETA
+'gcc-3.0.4.tar.gz' saved
+
+# ping 8.8.8.8
+ping: socket: Address family not supported by protocol
+PING 8.8.8.8 (8.8.8.8) 56(84) bytes of data.
+64 bytes from 8.8.8.8: icmp_seq=1 ttl=115 time=1034 ms
+64 bytes from 8.8.8.8: icmp_seq=2 ttl=115 time=1009 ms
+64 bytes from 8.8.8.8: icmp_seq=3 ttl=115 time=1009 ms
+64 bytes from 8.8.8.8: icmp_seq=4 ttl=115 time=1008 ms
+64 bytes from 8.8.8.8: icmp_seq=5 ttl=115 time=1000 ms
+64 bytes from 8.8.8.8: icmp_seq=6 ttl=115 time=1040 ms
+64 bytes from 8.8.8.8: icmp_seq=7 ttl=115 time=1009 ms
+64 bytes from 8.8.8.8: icmp_seq=8 ttl=115 time=1008 ms
+64 bytes from 8.8.8.8: icmp_seq=9 ttl=115 time=1008 ms
+64 bytes from 8.8.8.8: icmp_seq=10 ttl=115 time=1005 ms
+^C
+--- 8.8.8.8 ping statistics ---
+11 packets transmitted, 10 received, 9.09091% packet loss, time 0ms
+rtt min/avg/max/mdev = 1000.429/1013.056/1040.108/12.232 ms, pipe 2
+</pre><br>
+
+<p>
+司徒目前部屬Nginx後，還是無法重現斷線問題，因此，修復的部份主要是Crash的問題<br>
+<img src="fix_esp8089/6.jpg" class="maxSize">
+</p>
+<pre>
+Welcome to VeganOS
+vegan login: root
+# cd /boot/
+# insmod esp8089-spi.ko 
+[   13.652674] esp8089_spi: loading out-of-tree module taints kernel.
+[   22.848024] random: crng init done
+
+# ifconfig wlan0 up
+# wpa_supplicant -B -i wlan0 -c /etc/wpa_supplicant.conf
+Successfully initialized wpa_supplicant
+rfkill: Cannot open RFKILL control device
+[   60.611010] wlan0: authenticate with a4:e4:b8:70:01:7b
+[   60.616609] wlan0: send auth to a4:e4:b8:70:01:7b (try 1/3)
+[   60.831775] wlan0: send auth to a4:e4:b8:70:01:7b (try 2/3)
+[   60.841999] wlan0: authenticated
+[   60.851734] wlan0: associate with a4:e4:b8:70:01:7b (try 1/3)
+[   61.061740] wlan0: associate with a4:e4:b8:70:01:7b (try 2/3)
+[   61.072413] wlan0: RX AssocResp from a4:e4:b8:70:01:7b (capab=0x431 status=0 aid=1)
+[   61.080298] wlan0: AP has invalid WMM params (AIFSN=1 for ACI 2), will use 2
+[   61.087501] wlan0: AP has invalid WMM params (AIFSN=1 for ACI 3), will use 2
+[   61.094765] wlan0: associated
+
+# udhcpc -i wlan0
+udhcpc: started, v1.33.1
+udhcpc: sending discover
+udhcpc: sending select for 192.168.0.2
+udhcpc: lease of 192.168.0.2 obtained, lease time 7200
+deleting routers
+adding dns 192.168.176.251
+adding dns 192.168.176.252
+adding dns 192.168.176.253
+adding dns 192.168.176.254
+
+# mkdir /tmp/logs
+# /usr/nginx/sbin/nginx -c /usr/nginx/conf/nginx.conf -p /tmp
+#
+</pre><br>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,251 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Z-Pocket Game Pro(ZPG Pro)</h3>
+<p><b>powersave(workaround)</b></p>
+<hr size="1">
+<p>
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;sstdio.h&gt;s
+#include &lt;sstdlib.h&gt;s
+#include &lt;sunistd.h&gt;s
+#include &lt;stime.h&gt;s
+#include &lt;slinux/uinput.h&gt;s
+#include &lt;ssys/types.h&gt;s
+#include &lt;ssys/stat.h&gt;s
+#include &lt;sfcntl.h&gt;s
+#include &lt;sstring.h&gt;s
+#include &lt;ssys/epoll.h&gt;s
+
+#define dbg printf
+#define LCD "/sys/devices/platform/backlight/backlight/backlight/brightness"
+
+uint32_t get_ticks(void)
+{
+  struct timeval tv={0};
+  static struct timeval init_tv={0};
+
+  gettimeofday(&amp;stv, 0); 
+  if(init_tv.tv_sec == 0){
+    init_tv = tv;
+  }
+  return ((tv.tv_sec - init_tv.tv_sec) * 1000000) + tv.tv_usec - init_tv.tv_usec;
+}
+
+int read_brightness(void)
+{
+  char buf[32]={0};
+  int fd = open(LCD, O_RDONLY);
+
+  if(fd &lt;s 0){
+    return -1;
+  }
+  read(fd, buf, sizeof(buf));
+  close(fd);
+  return atoi(buf);
+}
+
+void write_brightness(int v)
+{
+  char buf[255]={0};
+
+  if(v &gt;s= 0){
+    sprintf(buf, "echo %d &gt;s %s", v, LCD);
+    system(buf);
+  }
+}
+
+char online[4][64]={0};
+char governor[4][64]={0};
+
+#define MAX_CPU        4
+#define CPUX_ONLINE    "/sys/devices/system/cpu/cpu*/online"
+#define CPUX_GOVERNOR  "/sys/devices/system/cpu/cpu*/cpufreq/scaling_governor"
+#define CPU0_ONLINE    "/sys/devices/system/cpu/cpu0/online"
+#define CPU0_GOVERNOR  "/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor"
+#define CPUF_ONLINE    "/sys/devices/system/cpu/cpu%d/online"
+#define CPUF_GOVERNOR  "/sys/devices/system/cpu/cpu%d/cpufreq/scaling_governor"
+
+void save_cpu_info(void)
+{
+  int c=0, fd=0, l=0;
+  char buf[255]={0};
+
+  for(c=0; c&lt;sMAX_CPU; c++){
+    memset(online[c], 0, sizeof(online[c]));
+    sprintf(buf, CPUF_ONLINE, c);
+    fd = open(buf, O_RDONLY);
+    if(fd &gt;s 0){
+      read(fd, online[c], sizeof(online[c]));
+      close(fd);
+
+      l = strlen(online[c]) - 1;
+      if((online[c][l] = 0x0d) || (online[c][l] = 0x0a)){
+        online[c][l] = 0;
+      }
+      dbg("cpu%d online: %s\n", c, online[c]);
+    }
+    else{
+      sprintf(online[c], "1");
+    }
+    
+    memset(governor[c], 0, sizeof(governor[c]));
+    sprintf(buf, CPUF_GOVERNOR, c);
+    fd = open(buf, O_RDONLY);
+    if(fd &gt;s 0){
+      read(fd, governor[c], sizeof(governor[c]));
+      close(fd);
+
+      l = strlen(governor[c]) - 1;
+      if((governor[c][l] = 0x0d) || (governor[c][l] = 0x0a)){
+        governor[c][l] = 0;
+      }
+      dbg("cpu%d governor: %s\n", c, governor[c]);
+    }
+    else{
+      sprintf(governor[c], "interactive");
+    }
+  }
+}
+
+void restore_cpu_info(void)
+{
+  int c=0, fd=0;
+  char buf[255]={0};
+
+  for(c=0; c&lt;sMAX_CPU; c++){
+    if(c &gt;s 0){
+      sprintf(buf, "echo %s &gt;s "CPUF_ONLINE, online[c], c);
+      dbg("restore: %s\n", buf);
+      system(buf);
+    }
+    
+    sprintf(buf, "echo %s &gt;s "CPUF_GOVERNOR, governor[c], c);
+    dbg("restore: %s\n", buf);
+    system(buf);
+  }
+}
+
+void min_cpu(void)
+{
+  int c=0;
+  char buf[255]={0};
+
+  for(c=0; c&lt;sMAX_CPU; c++){
+    if(c &gt;s 0){
+      sprintf(buf, "echo 0 &gt;s "CPUF_ONLINE, c);
+      dbg("shutdown: %s\n", buf);
+      system(buf);
+    }
+  }
+  sprintf(buf, "echo powersave &gt;s "CPUF_GOVERNOR, 0);
+  dbg("shutdown: %s\n", buf);
+  system(buf);
+}
+
+int main(int argc, char** argv)
+{
+  int pid=0;
+  uint32_t last=0, interval=0, bright=0, suspend=0;
+
+  dbg("freeze v1.1\n");
+  system("chmod 0777 "CPUX_ONLINE);
+  system("chmod 0777 "CPUX_GOVERNOR);
+  while(1){
+    struct input_event event={0};
+    int fd = open("/dev/input/event0", O_RDONLY);
+    if(fd &lt;s 0){
+      usleep(10000000);
+      continue;
+    }
+
+    while(1){
+      int eread = read(fd, &amp;sevent, sizeof(struct input_event));
+      //printf("%d %d\n", event.code, event.value);
+
+      if(eread){
+        if((event.code == 119) &amp;s&amp;s (event.value == 1)){
+          last = get_ticks();
+        }
+        if((event.code == 119) &amp;s&amp;s (event.value == 0)){
+          interval = get_ticks() - last;
+          if(interval &lt;s 500000){
+            if(suspend){
+              suspend = 0;
+              restore_cpu_info();
+              system("pkill -CONT -u marsboard");
+              write_brightness(bright);
+            }
+            else{
+              suspend = 1;
+              bright = read_brightness();
+              write_brightness(0);
+              system("pkill -STOP -u marsboard");
+              save_cpu_info();
+              min_cpu();
+            }
+          }
+        }
+      }
+      usleep(100000);
+    }
+    close(fd);
+  }
+  return 0;
+}
+</pre><br>
+
+<p>
+<br><a href="../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

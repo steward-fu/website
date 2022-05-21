@@ -1,0 +1,129 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>CM3354</h3>
+<p><b>製作SDCard開機片</b></p>
+<hr size="1">
+<p>
+Partition
+</p>
+<pre>
+$ sudo fdisk /dev/sdX
+Command (m for help): n
+  Partition type
+     p   primary (0 primary, 0 extended, 4 free)
+     e   extended (container for logical partitions)
+  Select (default p): p
+  Partition number (1-4, default 1): 1
+  First sector (2048-3862527, default 2048): 2048
+  Last sector, +sectors or +size{K,M,G,T,P} (2048-3862527, default 3862527): 216863
+  Created a new partition 1 of type 'Linux' and of size 104.9 MiB.
+  Partition #1 contains a vfat signature.
+  Do you want to remove the signature? [Y]es/[N]o: Y
+  The signature will be removed by a write command.
+
+Command (m for help): n
+  Partition type
+     p   primary (1 primary, 0 extended, 3 free)
+     e   extended (container for logical partitions)
+  Select (default p): p
+  Partition number (2-4, default 2): 
+  First sector (216864-3862527, default 217088): 216864
+  Last sector, +sectors or +size{K,M,G,T,P} (216864-3862527, default 3862527): 
+  Created a new partition 2 of type 'Linux' and of size 1.8 GiB.
+
+Command (m for help): t
+  Partition number (1,2, default 2): 1
+  Partition type (type L to list all types): b
+  Changed type of partition 'Linux' to 'W95 FAT32'.
+
+Command (m for help): a
+  Partition number (1,2, default 2): 1
+  The bootable flag on partition 1 is enabled now.
+
+Command (m for help): p
+  Disk /dev/sdf: 1.9 GiB, 1977614336 bytes, 3862528 sectors
+  Units: sectors of 1 * 512 = 512 bytes
+  Sector size (logical/physical): 512 bytes / 512 bytes
+  I/O size (minimum/optimal): 512 bytes / 512 bytes
+  Disklabel type: dos
+  Disk identifier: 0xf6cf3f7c
+  Device     Boot  Start     End Sectors   Size Id Type
+  /dev/sdf1  *      2048  216863  214816 104.9M  b W95 FAT32
+  /dev/sdf2       216864 3862527 3645664   1.8G 83 Linux
+
+Command (m for help): w
+</pre><br>
+
+<p>
+Format
+</p>
+<pre>
+$ sudo mkfs.vfat /dev/sdX1
+$ sudo mkfs.ext3 /dev/sdX2
+</pre><br>
+
+<p>
+Copy Files
+</p>
+<pre>
+MLO &gt; vfat
+zImage &gt; vfat
+uEnv.txt &gt; vfat
+u-boot.img &gt; vfat
+
+rootfs &gt; ext3
+</pre><br>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

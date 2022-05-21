@@ -1,0 +1,354 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>硬體</h3>
+<p><b>LCD 4Bit</b></p>
+<hr size="1">
+<p>
+參考資料：<br>
+1. <a href="https://www.8051projects.net/lcd-interfacing/lcd-4-bit.php">lcd-4-bit</a><br><br>
+
+腳位：
+</p>
+<table>
+  <tr><th>LCD腳位</th><th>功能說明</th></tr>
+  <tr><td>1</td><td>GND</td></tr>
+  <tr><td>2</td><td>VCC</td></tr>
+  <tr><td>3</td><td>VEE(對比控制, GND最大)</td></tr>
+  <tr><td>4</td><td>1: Data Register<br>0: Command Register</td></tr>
+  <tr><td>5</td><td>1: LCD Read<br>0: LCD Write</td></tr>
+  <tr><td>6</td><td>Enable</td></tr>
+  <tr><td>7</td><td>D0</td></tr>
+  <tr><td>8</td><td>D1</td></tr>
+  <tr><td>9</td><td>D2</td></tr>
+  <tr><td>10</td><td>D3</td></tr>
+  <tr><td>11</td><td>D4</td></tr>
+  <tr><td>12</td><td>D5</td></tr>
+  <tr><td>13</td><td>D6</td></tr>
+  <tr><td>14</td><td>D7</td></tr>
+  <tr><td>15</td><td>BVCC(背光VCC)</td></tr>
+  <tr><td>16</td><td>BGND(背光GND)</td></tr>
+</table><br>
+
+<p>
+RS和RW的組合配對，可以產生四種不同的控制方式
+</p>
+<table>
+  <tr><th>RS</th><th>RW</th><th>功能說明</th></tr>
+  <tr><td>0</td><td>0</td><td>寫命令到LCD</td></tr>
+  <tr><td>0</td><td>1</td><td>讀取忙碌旗號和目前游標位址</td></tr>
+  <tr><td>1</td><td>0</td><td>寫資料到DDRAM(顯示的文字)或CGRAM(造字的字形)</td></tr>
+  <tr><td>1</td><td>1</td><td>從DDRAM或CGRAM讀取資料</td></tr>
+</table><br>
+
+<p>
+LCD命令
+</p>
+<table>
+  <tr>
+    <th>RS</th>
+    <th>RW</th>
+    <th>D7</th>
+    <th>D6</th>
+    <th>D5</th>
+    <th>D4</th>
+    <th>D3</th>
+    <th>D2</th>
+    <th>D1</th>
+    <th>D0</th>
+    <th>需要執行時間</th>
+  </tr>
+  <tr>
+    <td>0</td>
+    <td>0</td>
+    <td>0</td>
+    <td>0</td>
+    <td>0</td>
+    <td>0</td>
+    <td>0</td>
+    <td>0</td>
+    <td>0</td>
+    <td>1: 清除LCD畫面</td>
+    <td>~2ms</td>
+  </tr>
+  <tr>
+    <td>0</td>
+    <td>0</td>
+    <td>0</td>
+    <td>0</td>
+    <td>0</td>
+    <td>0</td>
+    <td>0</td>
+    <td>0</td>
+    <td>1: 游標回到原點位置</td>
+    <td>X</td>
+    <td>~2ms</td>
+  </tr>
+  <tr>
+    <td>0</td>
+    <td>0</td>
+    <td>0</td>
+    <td>0</td>
+    <td>0</td>
+    <td>0</td>
+    <td>0</td>
+    <td>1</td>
+    <td>0: 游標固定不動<br>1: 游標自動加1</td>
+    <td>0: LCD不自動位移<br>1: LCD自動位移</td>
+    <td>~50us</td>
+  </tr>
+  <tr>
+    <td>0</td>
+    <td>0</td>
+    <td>0</td>
+    <td>0</td>
+    <td>0</td>
+    <td>0</td>
+    <td>1</td>
+    <td>0: 關閉LCD顯示<br>1: 開啟LCD顯示</td>
+    <td>0: 關閉游標顯示<br>1: 開啟游標顯示</td>
+    <td>0: 關閉游標閃爍<br>1: 開啟游標閃爍</td>
+    <td>~50us</td>
+  </tr>
+  <tr>
+    <td>0</td>
+    <td>0</td>
+    <td>0</td>
+    <td>0</td>
+    <td>0</td>
+    <td>1</td>
+    <td>0: 關閉LCD位移功能<br>1: 開啟LCD位移功能</td>
+    <td>0: 向左位移<br>1: 向右位移</td>
+    <td>X</td>
+    <td>X</td>
+    <td>~50us</td>
+  </tr>
+  <tr>
+    <td>0</td>
+    <td>0</td>
+    <td>0</td>
+    <td>0</td>
+    <td>1</td>
+    <td>0: 4位元模式<br>1: 8位元模式</td>
+    <td>0: 顯示1行<br>1: 顯示2行</td>
+    <td>0: 5x7字型<br>1: 5x10字型</td>
+    <td>X</td>
+    <td>X</td>
+    <td>~50us</td>
+  </tr>
+  <tr>
+    <td>0</td>
+    <td>0</td>
+    <td>0</td>
+    <td>1</td>
+    <td colspan="6">CGRAM Address</td>
+    <td>~50us</td>
+  </tr>
+  <tr>
+    <td>0</td>
+    <td>0</td>
+    <td>1</td>
+    <td colspan="7">DDRAM Address</td>
+    <td>~50us</td>
+  </tr>
+  <tr>
+    <td>0</td>
+    <td>1</td>
+    <td colspan="8">讀取忙碌旗標</td>
+    <td>~5us</td>
+  </tr>
+  <tr>
+    <td>1</td>
+    <td>0</td>
+    <td colspan="8">寫資料到DDRAM或CGRAM</td>
+    <td>~5us</td>
+  </tr>
+  <tr>
+    <td>1</td>
+    <td>1</td>
+    <td colspan="8">從DDRAM或CGRAM讀取資料</td>
+    <td>~5us</td>
+  </tr>
+</table><br>
+
+<p>
+1行(1x20)LCD RAM的排列方式如下
+</p>
+<table>
+  <tr>
+    <th>第一行字元位址</th>
+    <td>0x00</td><td>0x01</td><td>0x02</td><td>......</td><td>0x11</td><td>0x12</td><td>0x13</td>
+  </tr>
+</table><br>
+
+<p>
+2行(2x20)LCD RAM的排列方式如下
+</p>
+<table>
+  <tr>
+    <th>第一行字元位址</th>
+    <td>0x00</td><td>0x01</td><td>0x02</td><td>......</td><td>0x11</td><td>0x12</td><td>0x13</td>
+  </tr>
+  <tr>
+    <th>第二行字元位址</th>
+    <td>0x40</td><td>0x41</td><td>0x42</td><td>......</td><td>0x51</td><td>0x52</td><td>0x53</td>
+  </tr>
+</table><br>
+
+<p>
+4行(4x20)LCD RAM的排列方式如下
+</p>
+<table>
+  <tr>
+    <th>第一行字元位址</th>
+    <td>0x00</td><td>0x01</td><td>0x02</td><td>......</td><td>0x11</td><td>0x12</td><td>0x13</td>
+  </tr>
+  <tr>
+    <th>第二行字元位址</th>
+    <td>0x40</td><td>0x41</td><td>0x42</td><td>......</td><td>0x51</td><td>0x52</td><td>0x53</td>
+  </tr>
+  <tr>
+    <th>第三行字元位址</th>
+    <td>0x14</td><td>0x15</td><td>0x16</td><td>......</td><td>0x25</td><td>0x26</td><td>0x27</td>
+  </tr>
+  <tr>
+    <th>第四行字元位址</th>
+    <td>0x54</td><td>0x55</td><td>0x56</td><td>......</td><td>0x65</td><td>0x66</td><td>0x67</td>
+  </tr>
+</table><br>
+
+<p>
+電路圖如下：<br>
+<img src="lcd_4bit/1.jpg" class="maxSize"><br>
+每次傳送的命令或資料必須分成兩次傳送，先送出高4Bit，然後再送出低4Bit<br><br>
+
+程式如下：
+</p>
+<pre class="brush:cpp">
+void delay(unsigned int v)
+{
+  unsigned long m=1000*v;
+  while(m--);
+}
+ 
+void lcd_wr_cmd(unsigned char cmd)
+{
+  LCD_RW = 0;
+  LCD_RS = 0;
+  LCD_PORT = cmd;
+  LCD_E = 1;
+  delay(1);
+  LCD_E = 0;
+  delay(1);
+ 
+  LCD_PORT = cmd &lt;&lt; 4;
+  LCD_E = 1;
+  delay(1);
+  LCD_E = 0;
+  delay(1);
+}
+ 
+void lcd_wr_dat(unsigned char dat)
+{
+  LCD_RW = 0;
+  LCD_RS = 1;
+  LCD_PORT = dat;
+  LCD_E = 1;
+  delay(1);
+  LCD_E = 0;
+  delay(1);
+ 
+  LCD_PORT = dat &lt;&lt; 4;
+  LCD_E = 1;
+  delay(1);
+  LCD_E = 0;
+  delay(1);
+}
+ 
+void lcd_init(void)
+{
+  lcd_wr_cmd(0x2e);
+  delay(10);
+  lcd_wr_cmd(0x0e);
+  delay(10);
+  lcd_wr_cmd(0x06);
+  delay(10);
+  lcd_wr_cmd(0x01);
+  delay(10);
+  lcd_wr_cmd(0x80);
+  delay(10);
+}
+ 
+void lcd_string(char *s)
+{
+  unsigned char i=0;
+  while(s[i] != 0x00){
+    lcd_wr_dat(s[i++]);
+  }
+}
+
+void main(void)
+{
+  lcd_init();
+  lcd_string("lcd 4-bit test !");
+  while(1);
+}
+</pre><br>
+
+<p>
+完成<br>
+<img src="lcd_4bit/2.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

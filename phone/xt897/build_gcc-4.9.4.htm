@@ -1,0 +1,135 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Motorola XT897 &gt;&gt; Sailfish</h3>
+<p><b>build gcc 4.9.4</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://patchwork.ozlabs.org/project/gcc/patch/6824253.3U2boEivI2@devpool21/">signal</a><br>
+2. <a href="https://reviews.llvm.org/rG383fe5c8668f63ef21c646b43f48da9fa41aa100">struct ustat</a><br>
+3. <a href="https://gist.github.com/unity-car-tutorials/0ce692a5ecb06c656182">unity-car-tutorials</a><br><br>
+
+步驟如下：<br>
+1. 手動掛載SWAP 2GB<br>
+2. 編譯安裝coreutils(<b>/usr/bin/install</b>記得symlink到<b>/usr/local/bin/install</b>)<br>
+3. 執行如下命令
+</p>
+<pre>
+$ export GCC_VERSION="4.9.4"
+$ export WORKDIR="/home/nemo/Downloads/gcc-${GCC_VERSION}"
+$ export INSTALLDIR="/opt/gcc-${GCC_VERSION}"
+
+$ rm -rf ${WORKDIR}
+$ mkdir -p ${WORKDIR}
+
+$ cd $WORKDIR
+$ wget http://www.netgull.com/gcc/releases/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.bz2
+$ tar -xf gcc-${GCC_VERSION}.tar.bz2
+
+$ cd gcc-${GCC_VERSION}
+$ ./contrib/download_prerequisites
+ 
+$ cd ..
+$ mkdir gcc-build
+$ cd gcc-build
+
+$ ../gcc-${GCC_VERSION}/configure --prefix=${INSTALLDIR} --with-gnu-as --with-gnu-ld --disable-libmudflap --enable-lto --enable-objc-gc --enable-shared --without-included-gettext --enable-nls --disable-sjlj-exceptions --enable-gnu-unique-object --enable-linker-build-id --disable-libstdcxx-pch --enable-c99 --enable-clocale=gnu --enable-libstdcxx-debug --enable-long-long --with-cloog=no --with-ppl=no --with-isl=no --disable-multilib --with-float=hard --with-mode=thumb --with-tune=cortex-a9 --with-arch=armv7-a --with-fpu=vfpv3-d16 --enable-threads=posix --enable-multiarch --enable-libstdcxx-time=yes --enable-checking=release --disable-bootstrap --enable-languages=c,c++,fortran,lto
+
+$ make
+  ../../../../gcc-4.9.4/libsanitizer/sanitizer_common/sanitizer_platform_limits_posix.cc:84:23: fatal error: sys/ustat.h: No such file or directory
+  #include &lt;sys/ustat.h&gt;
+
+$ vim ../gcc-4.9.4/libsanitizer/sanitizer_common/sanitizer_platform_limits_posix.cc
+  84  //#include &lt;sys/ustat.h&gt;
+  153 #if SANITIZER_LINUX
+  154   unsigned struct_rlimit_sz = sizeof(struct rlimit);
+  155   unsigned struct_epoll_event_sz = sizeof(struct epoll_event);
+  156   unsigned struct_sysinfo_sz = sizeof(struct sysinfo);
+  157   unsigned struct_timespec_sz = sizeof(struct timespec);
+  158   unsigned __user_cap_header_struct_sz =
+  159       sizeof(struct __user_cap_header_struct);
+  160   unsigned __user_cap_data_struct_sz = sizeof(struct __user_cap_data_struct);
+  161   unsigned struct_utimbuf_sz = sizeof(struct utimbuf);
+  162   unsigned struct_new_utsname_sz = sizeof(struct new_utsname);
+  163   unsigned struct_old_utsname_sz = sizeof(struct old_utsname);
+  164   unsigned struct_oldold_utsname_sz = sizeof(struct oldold_utsname);
+  165   unsigned struct_itimerspec_sz = sizeof(struct itimerspec);
+  166   
+  167 #if defined(__aarch64__) || defined(__s390x__) || defined (__mips64) || defined(__powerpc64__) || defined(__arch64__) || defined(__sparcv9) || defined(__x86_64__)
+  168 #define SIZEOF_STRUCT_USTAT 32
+  169 #elif defined(__arm__) || defined(__i386__) || defined(__mips__) || defined(__powerpc__) || defined(__s390__)
+  170 #define SIZEOF_STRUCT_USTAT 20
+  171 #else
+  172 #error Unknown size of struct ustat
+  173 #endif
+  174 
+  175   unsigned struct_ustat_sz = SIZEOF_STRUCT_USTAT;
+  176 #endif // SANITIZER_LINUX
+
+$ make
+  ../../../../gcc-4.9.4/libsanitizer/asan/asan_linux.cc:107:20: error: 'SIGSEGV' was not declared in this scope
+    return signum == SIGSEGV &amp;&amp; flags()-&gt;handle_segv;
+                    ^
+  ../../../../gcc-4.9.4/libsanitizer/asan/asan_linux.cc:108:1: warning: control reaches end of non-void function [-Wreturn-type]
+    }
+
+$ vim ../gcc-4.9.4/libsanitizer/asan/asan_linux.cc 
+  29  #include &lt;signal.h&gt;
+
+$ make
+$ sudo make install
+</pre><br>
+
+<p>
+<br><a href="../../phone.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

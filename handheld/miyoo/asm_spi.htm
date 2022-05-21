@@ -1,0 +1,651 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Miyoo &gt;&gt; Assembly</h3>
+<p><b>SPI(NOR Flash)</b></p>
+<hr size="1">
+<p>
+參考資料：<br>
+1. <a href="https://github.com/steward-fu/mcu-pdf/tree/master/f1c100s">pdf</a><br>
+2. <a href="http://nano.lichee.pro/">lichee</a><br>
+3. <a href="https://mangopi.org/mangopi_r">mangopi_r</a><br>
+4. <a href="https://www.allwinnertech.com/index.php?c=product&a=index&pid=4">allwinner</a><br><br>
+
+SPI0腳位
+</p>
+<table>
+<tr><th>SPI0_CLK</th><td>PC0</td></tr>
+<tr><th>SPI0_CS</th><td>PC1</td></tr>
+<tr><th>SPI0_MISO</th><td>PC2</td></tr>
+<tr><th>SPI0_MOSI</th><td>PC3</td></tr>
+</table>
+<p>
+<img src="../../mcu/f1c100s/asm_spi/4.jpg" class="maxSize"><br><br>
+
+暫存器<br>
+<img src="../../mcu/f1c100s/asm_spi/1.jpg" class="maxSize"><br><br>
+
+初始步驟：<br>
+1. 設定SPI Mode為Master<br>
+2. 設定DHB模式(避免接收多餘資料)<br>
+3. 設定CS_Level為Low<br>
+4. 設定CS_Owner為SPI Controller<br>
+5. 設定SPI CDR1為50MHz<br><br>
+
+傳送、接收步驟：<br>
+1. 清除RX、TX FIFO(FCR_REG)<br>
+2. 設定TXRX全部數量(MBC_REG)<br>
+3. 設定TX數量(MTC_REG)<br>
+4. 設定TX數量(BCC_REG)<br>
+5. 開始傳送接收(TCR_REG.XCH)<br>
+6. 等待結束後，從RXD提取資料<br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+  .global _start
+ 
+  .equiv SPI0_BASE,             0x01c05000
+  .equiv CCU_BASE,              0x01c20000
+  .equiv PIO_BASE,              0x01c20800
+  .equiv UART1_BASE,            0x01c25400
+   
+  .equiv PLL_PERIPH_CTRL_REG,   0x0028
+  .equiv AHB_APB_HCLKC_CFG_REG, 0x0054
+  .equiv BUS_CLK_GATING_REG0,   0x0060
+  .equiv BUS_CLK_GATING_REG2,   0x0068
+  .equiv BUS_SOFT_RST_REG0,     0x02c0
+  .equiv BUS_SOFT_RST_REG2,     0x02d0
+  
+  .equiv PA,                    (0x24 * 0)
+  .equiv PC,                    (0x24 * 2)
+  .equiv PE,                    (0x24 * 4)
+  .equiv PIO_CFG0,              0x0000
+  .equiv PIO_DATA,              0x0010
+
+  .equiv UART_RBR,              0x0000
+  .equiv UART_DLL,              0x0000
+  .equiv UART_DLH,              0x0004
+  .equiv UART_IER,              0x0004
+  .equiv UART_IIR,              0x0008
+  .equiv UART_LCR,              0x000c
+  .equiv UART_MCR,              0x0010
+  .equiv UART_USR,              0x007c
+  
+  .equiv SPI_GCR,               0x0004
+  .equiv SPI_TCR,               0x0008
+  .equiv SPI_IER,               0x0010
+  .equiv SPI_ISR,               0x0014
+  .equiv SPI_FCR,               0x0018
+  .equiv SPI_FSR,               0x001c
+  .equiv SPI_WCR,               0x0020
+  .equiv SPI_CCR,               0x0024
+  .equiv SPI_MBC,               0x0030
+  .equiv SPI_MTC,               0x0034
+  .equiv SPI_BCC,               0x0038
+  .equiv SPI_TXD,               0x0200
+  .equiv SPI_RXD,               0x0300
+
+  .equiv CMD_PAGE_PROGRAM,      0x02
+  .equiv CMD_WRIRE_ENABLE,      0x06
+  .equiv CMD_WRITE_DISABLE,     0x04
+  .equiv CMD_READ_STATUS_R1,    0x05
+  .equiv CMD_READ_STATUS_R2,    0x35
+  .equiv CMD_READ_DATA,         0x03
+  .equiv CMD_FAST_READ,         0x0b
+  .equiv CMD_SECTOR_ERASE,      0x20
+  .equiv CMD_CHIP_ERASE,        0xc7
+  .equiv CMD_READ_UNIQUE_ID,    0x4b
+  .equiv CMD_JEDEC_ID,          0x9f
+ 
+  .arm
+  .text
+_start:
+  .long 0xea000016
+  .byte 'e', 'G', 'O', 'N', '.', 'B', 'T', '0'
+  .long 0, __spl_size
+  .byte 'S', 'P', 'L', 2
+  .long 0, 0
+  .long 0, 0, 0, 0, 0, 0, 0, 0
+  .long 0, 0, 0, 0, 0, 0, 0, 0
+   
+_vector:
+  b reset
+  b .
+  b .
+  b .
+  b .
+  b .
+  b .
+  b .
+   
+reset:
+  bl ccu_init
+  bl spi_init
+  bl uart_init
+
+  bl spi_read_jid
+  bl spi_read_uid
+
+  ldr r0, =0
+  ldr r1, =64
+  bl spi_read_data
+  bl uart_buf
+  
+  ldr r0, =0
+  bl spi_erase_sector
+
+  ldr r0, =0
+  ldr r1, =64
+  bl spi_read_data
+  bl uart_buf
+  
+  ldr r1, =64
+  ldr r2, =spi_buf
+  mov r3, #0
+0:
+  strb r3, [r2]
+  add r2, #1
+  add r3, #1
+  subs r1, #1
+  bne 0b
+
+  ldr r0, =0
+  ldr r1, =64
+  bl spi_write_data
+  
+  ldr r0, =0
+  ldr r1, =64
+  bl spi_read_data
+  bl uart_buf
+  b .
+   
+ccu_init:
+  push {r4, lr}
+  ldr r4, =CCU_BASE
+  ldr r1, =0x80041800
+  str r1, [r4, #PLL_PERIPH_CTRL_REG]
+  ldr r1, =0x00003180
+  str r1, [r4, #AHB_APB_HCLKC_CFG_REG]
+  pop {r4, pc}
+
+spi_init:
+  push {r4, lr}
+  ldr r4, =CCU_BASE
+  ldr r1, [r4, #BUS_CLK_GATING_REG0]
+  orr r1, #(1 &lt;&lt; 20)
+  str r1, [r4, #BUS_CLK_GATING_REG0]
+
+  ldr r1, [r4, #BUS_SOFT_RST_REG0]
+  orr r1, #(1 &lt;&lt; 20)
+  str r1, [r4, #BUS_SOFT_RST_REG0]
+  
+  ldr r0, =PIO_BASE
+  ldr r1, [r0, #(PC + PIO_CFG0)]
+  ldr r2, =0xffff
+  bic r1, r2
+  ldr r2, =0x2222
+  orr r1, r2
+  str r1, [r0, #(PC + PIO_CFG0)]
+
+  ldr r4, =SPI0_BASE
+  ldr r1, =(1 &lt;&lt; 1) | (1 &lt;&lt; 0)
+  str r1, [r4, #SPI_GCR]
+  ldr r1, =(1 &lt;&lt; 2) | (1 &lt;&lt; 8)
+  str r1, [r4, #SPI_TCR]
+  ldr r1, =(1 &lt;&lt; 8)
+  str r1, [r4, #SPI_CCR]
+  ldr r2, =(1 &lt;&lt; 31) | (1 &lt;&lt; 15)
+  str r2, [r4, #SPI_FCR]
+0:
+  ldr r1, [r4, #SPI_FCR]
+  tst r1, r2
+  bne 0b
+  pop {r4, pc}
+
+uart_init:
+  push {r4, lr}
+  ldr r4, =CCU_BASE
+  ldr r1, [r4, #BUS_CLK_GATING_REG2]
+  orr r1, #(1 &lt;&lt; 21)
+  str r1, [r4, #BUS_CLK_GATING_REG2]
+
+  ldr r1, [r4, #BUS_SOFT_RST_REG2]
+  orr r1, #(1 &lt;&lt; 21)
+  str r1, [r4, #BUS_SOFT_RST_REG2]
+  
+  ldr r4, =PIO_BASE
+  ldr r1, [r4, #(PA + PIO_CFG0)]
+  bic r1, #0xff00
+  orr r1, #0x5500
+  str r1, [r4, #(PA + PIO_CFG0)]
+
+  ldr r4, =UART1_BASE
+  ldr r1, =0x00
+  str r1, [r4, #UART_IER]
+  ldr r1, =0xf7
+  str r1, [r4, #UART_IIR]
+  ldr r1, =0x00
+  str r1, [r4, #UART_MCR]
+  ldr r1, [r4, #UART_LCR]
+  orr r1, #(1 &lt;&lt; 7)
+  str r1, [r4, #UART_LCR]
+  ldr r1, =54
+  str r1, [r4, #UART_DLL]
+  ldr r1, =0x00
+  str r1, [r4, #UART_DLH]
+  ldr r1, [r4, #UART_LCR]
+  bic r1, #(1 &lt;&lt; 7)
+  str r1, [r4, #UART_LCR]
+  ldr r1, [r4, #UART_LCR]
+  bic r1, #0x1f
+  orr r1, #0x03
+  str r1, [r4, #UART_LCR]
+  pop {r4, pc}
+ 
+uart_byte:
+  push {r4, lr}
+  ldr r4, =UART1_BASE
+0:
+  ldr r1, [r4, #UART_USR]
+  tst r1, #(1 &lt;&lt; 1)
+  beq 0b
+  strb r0, [r4, #UART_RBR]
+  pop {r4, pc}
+
+uart_4byte:
+  push {r4, lr}
+  mov r4, r0
+  lsr r0, #24
+  bl uart_byte
+ 
+  mov r0, r4
+  lsr r0, #16
+  bl uart_byte
+   
+  mov r0, r4
+  lsr r0, #8
+  bl uart_byte
+   
+  mov r0, r4
+  bl uart_byte
+  pop {r4, pc}
+
+uart_buf:
+  push {r4, r5, lr}
+  ldr r4, =64
+  ldr r5, =spi_buf
+0:
+  ldrb r0, [r5]
+  bl uart_byte
+  add r5, #1
+  subs r4, #1
+  bne 0b
+  pop {r4, r5, pc}
+
+spi_read_jid:
+  push {r4, lr}
+  ldr r4, =SPI0_BASE
+  ldr r1, =5
+  str r1, [r4, #SPI_MBC]
+  ldr r1, =1
+  str r1, [r4, #SPI_MTC]
+  ldr r1, =1
+  str r1, [r4, #SPI_BCC]
+
+  ldrb r1, =CMD_JEDEC_ID
+  strb r1, [r4, #SPI_TXD]
+
+  ldr r1, [r4, #SPI_TCR]
+  orr r1, #(1 &lt;&lt; 31)
+  str r1, [r4, #SPI_TCR]
+0:
+  ldr r1, [r4, #SPI_TCR]
+  tst r1, #(1 &lt;&lt; 31)
+  bne 0b
+ 
+  ldr r2, =spi_jid
+  ldr r3, =4
+0:
+  ldrb r1, [r4, #SPI_RXD]
+  strb r1, [r2]
+  add r2, #1
+  subs r3, #1
+  bne 0b
+  pop {r4, pc}
+
+spi_read_uid:
+  push {r4, lr}
+  ldr r4, =SPI0_BASE
+  ldr r1, =13
+  str r1, [r4, #SPI_MBC]
+  ldr r1, =1
+  str r1, [r4, #SPI_MTC]
+  ldr r1, =1
+  str r1, [r4, #SPI_BCC]
+
+  ldrb r1, =CMD_READ_UNIQUE_ID
+  strb r1, [r4, #SPI_TXD]
+
+  ldr r1, [r4, #SPI_TCR]
+  orr r1, #(1 &lt;&lt; 31)
+  str r1, [r4, #SPI_TCR]
+0:
+  ldr r1, [r4, #SPI_TCR]
+  tst r1, #(1 &lt;&lt; 31)
+  bne 0b
+ 
+  ldr r2, =spi_uid
+  ldr r3, =12
+0:
+  ldrb r1, [r4, #SPI_RXD]
+  strb r1, [r2]
+  add r2, #1
+  subs r3, #1
+  bne 0b
+  pop {r4, pc}
+
+spi_read_data:
+  push {r4, r5, lr}
+  ldr r4, =SPI0_BASE
+  mov r5, r1
+
+  add r1, #4
+  str r1, [r4, #SPI_MBC]
+  ldr r1, =4
+  str r1, [r4, #SPI_MTC]
+  ldr r1, =4
+  str r1, [r4, #SPI_BCC]
+
+  ldrb r1, =CMD_READ_DATA
+  strb r1, [r4, #SPI_TXD]
+
+  mov r1, r0
+  lsr r0, #16
+  strb r0, [r4, #SPI_TXD]
+
+  mov r0, r1
+  lsr r0, #8
+  strb r0, [r4, #SPI_TXD]
+
+  mov r0, r1
+  strb r0, [r4, #SPI_TXD]
+
+  ldr r1, [r4, #SPI_TCR]
+  orr r1, #(1 &lt;&lt; 31)
+  str r1, [r4, #SPI_TCR]
+0:
+  ldr r1, [r4, #SPI_TCR]
+  tst r1, #(1 &lt;&lt; 31)
+  bne 0b
+
+  ldr r2, =spi_buf
+  mov r3, r5
+0:
+  ldrb r1, [r4, #SPI_RXD]
+  strb r1, [r2]
+  add r2, #1
+  subs r3, #1
+  bne 0b
+  pop {r4, r5, pc}
+
+spi_write_enable:
+  push {r4, lr}
+  ldr r4, =SPI0_BASE
+  ldr r1, =1
+  str r1, [r4, #SPI_MBC]
+  ldr r1, =1
+  str r1, [r4, #SPI_MTC]
+  ldr r1, =1
+  str r1, [r4, #SPI_BCC]
+
+  ldrb r1, =CMD_WRIRE_ENABLE
+  strb r1, [r4, #SPI_TXD]
+
+  ldr r1, [r4, #SPI_TCR]
+  orr r1, #(1 &lt;&lt; 31)
+  str r1, [r4, #SPI_TCR]
+0:
+  ldr r1, [r4, #SPI_TCR]
+  tst r1, #(1 &lt;&lt; 31)
+  bne 0b
+  pop {r4, pc}
+
+spi_write_disable:
+  push {r4, lr}
+  ldr r4, =SPI0_BASE
+  ldr r1, =1
+  str r1, [r4, #SPI_MBC]
+  ldr r1, =1
+  str r1, [r4, #SPI_MTC]
+  ldr r1, =1
+  str r1, [r4, #SPI_BCC]
+
+  ldrb r1, =CMD_WRITE_DISABLE
+  strb r1, [r4, #SPI_TXD]
+
+  ldr r1, [r4, #SPI_TCR]
+  orr r1, #(1 &lt;&lt; 31)
+  str r1, [r4, #SPI_TCR]
+0:
+  ldr r1, [r4, #SPI_TCR]
+  tst r1, #(1 &lt;&lt; 31)
+  bne 0b
+  pop {r4, pc}
+
+spi_is_busy:
+  push {r4, lr}
+  ldr r4, =SPI0_BASE
+  ldr r1, =2
+  str r1, [r4, #SPI_MBC]
+  ldr r1, =1
+  str r1, [r4, #SPI_MTC]
+  ldr r1, =1
+  str r1, [r4, #SPI_BCC]
+
+  ldrb r1, =CMD_READ_STATUS_R1
+  strb r1, [r4, #SPI_TXD]
+
+  ldr r1, [r4, #SPI_TCR]
+  orr r1, #(1 &lt;&lt; 31)
+  str r1, [r4, #SPI_TCR]
+0:
+  ldr r1, [r4, #SPI_TCR]
+  tst r1, #(1 &lt;&lt; 31)
+  bne 0b
+ 
+  ldrb r0, [r4, #SPI_RXD]
+  and r0, #1
+  pop {r4, pc}
+
+spi_erase_sector:
+  push {r4, lr}
+  mov r4, r0
+  bl spi_write_enable
+  mov r0, r4
+
+  ldr r4, =SPI0_BASE
+  ldr r1, =4
+  str r1, [r4, #SPI_MBC]
+  ldr r1, =4
+  str r1, [r4, #SPI_MTC]
+  ldr r1, =4
+  str r1, [r4, #SPI_BCC]
+
+  ldrb r1, =CMD_SECTOR_ERASE
+  strb r1, [r4, #SPI_TXD]
+
+  mov r1, r0
+  lsr r0, #16
+  strb r0, [r4, #SPI_TXD]
+
+  mov r0, r1
+  lsr r0, #8
+  strb r0, [r4, #SPI_TXD]
+
+  mov r0, r1
+  strb r0, [r4, #SPI_TXD]
+
+  ldr r1, [r4, #SPI_TCR]
+  orr r1, #(1 &lt;&lt; 31)
+  str r1, [r4, #SPI_TCR]
+0:
+  ldr r1, [r4, #SPI_TCR]
+  tst r1, #(1 &lt;&lt; 31)
+  bne 0b
+
+0:
+  bl spi_is_busy
+  cmp r0, #0
+  bne 0b
+  pop {r4, pc}
+
+spi_erase_all:
+  push {r4, lr}
+  bl spi_write_enable
+
+  ldr r4, =SPI0_BASE
+  ldr r1, =1
+  str r1, [r4, #SPI_MBC]
+  ldr r1, =1
+  str r1, [r4, #SPI_MTC]
+  ldr r1, =1
+  str r1, [r4, #SPI_BCC]
+
+  ldrb r1, =CMD_CHIP_ERASE
+  strb r1, [r4, #SPI_TXD]
+
+  ldr r1, [r4, #SPI_TCR]
+  orr r1, #(1 &lt;&lt; 31)
+  str r1, [r4, #SPI_TCR]
+0:
+  ldr r1, [r4, #SPI_TCR]
+  tst r1, #(1 &lt;&lt; 31)
+  bne 0b
+
+0:
+  bl spi_is_busy
+  cmp r0, #0
+  bne 0b
+  pop {r4, pc}
+
+spi_write_data:
+  push {r4, r5, lr}
+  mov r4, r0
+  mov r5, r1
+  bl spi_write_enable
+
+0:
+  bl spi_is_busy
+  cmp r0, #0
+  bne 0b
+  
+  mov r0, r4
+  mov r1, r5
+
+  ldr r4, =SPI0_BASE
+  add r1, #4
+  str r1, [r4, #SPI_MBC]
+  str r1, [r4, #SPI_MTC]
+  str r1, [r4, #SPI_BCC]
+
+  ldrb r1, =CMD_PAGE_PROGRAM
+  strb r1, [r4, #SPI_TXD]
+
+  mov r1, r0
+  lsr r0, #16
+  strb r0, [r4, #SPI_TXD]
+
+  mov r0, r1
+  lsr r0, #8
+  strb r0, [r4, #SPI_TXD]
+
+  mov r0, r1
+  strb r0, [r4, #SPI_TXD]
+
+  ldr r2, =spi_buf
+  mov r3, r5
+0:
+  ldrb r1, [r2]
+  strb r1, [r4, #SPI_TXD]
+  add r2, #1
+  subs r3, #1
+  bne 0b
+
+  ldr r1, [r4, #SPI_TCR]
+  orr r1, #(1 &lt;&lt; 31)
+  str r1, [r4, #SPI_TCR]
+0:
+  ldr r1, [r4, #SPI_TCR]
+  tst r1, #(1 &lt;&lt; 31)
+  bne 0b
+
+0:
+  bl spi_is_busy
+  cmp r0, #0
+  bne 0b
+  pop {r4, r5, pc}
+
+  .data
+spi_jid: .skip 4
+spi_uid: .skip 12
+spi_buf: .skip 64
+  .end
+</pre><br>
+<p>
+完成<br>
+<img src="asm_spi/1.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

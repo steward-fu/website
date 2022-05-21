@@ -1,0 +1,170 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>BCM2835 &gt;&gt; Assembly</h3>
+<p><b>LED</b></p>
+<hr size="1">
+<p>
+參考資料：<br>
+1. <a href="https://github.com/dwelch67/raspberrypi">example</a><br>
+2. <a href="https://github.com/raspberrypi/firmware">firmware</a><br>
+3. <a href="https://www.raspberrypi.org/app/uploads/2012/02/BCM2835-ARM-Peripherals.pdf">datasheet</a><br>
+4. <a href="https://elinux.org/RPi_Software#ARM">rpi_software</a><br><br>
+
+LED連接到GPIO-29<br>
+<img src="p5header/2.jpg" class="maxSize"><br><br>
+
+暫存器<br>
+<img src="asm_led/1.jpg" class="maxSize"><br><br>
+
+Alternate Function<br>
+<img src="asm_led/2.jpg" class="maxSize"><br><br>
+
+GPIO SET<br>
+<img src="asm_led/3.jpg" class="maxSize"><br><br>
+
+GPIO CLR<br>
+<img src="asm_led/4.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+  .global _start
+ 
+  .equiv GPFSEL2, 0x20200008
+  .equiv GPSET0,  0x2020001c
+  .equiv GPCLR0,  0x20200028
+
+  .arm
+  .text
+_start:
+  b reset
+  b .
+  b .
+  b .
+  b .
+  b .
+  b .
+  b .
+     
+reset:
+  ldr r0, =GPFSEL2
+  ldr r1, =(1 &lt;&lt; 27)
+  str r1, [r0]
+
+0:
+  ldr r0, =GPSET0
+  ldr r1, =(1 &lt;&lt; 29)
+  str r1, [r0]
+  ldr r2, =0x100000
+1:
+  subs r2, #1
+  bne 1b
+  
+  ldr r0, =GPCLR0
+  ldr r1, =(1 &lt;&lt; 29)
+  str r1, [r0]
+  ldr r2, =0x100000
+1:
+  subs r2, #1
+  bne 1b
+  b 0b
+  .end
+</pre>
+<p>
+P.S. 實體位址是0x20000000，虛擬位址是0x7e000000<br><br>
+
+main.ld
+</p>
+<pre>
+MEMORY {
+    ram : ORIGIN = 0x8000, LENGTH = 0x10000
+}
+
+SECTIONS {
+    .text : { *(.text*) } > ram
+    .bss : { *(.bss*) } > ram
+}
+</pre><br>
+
+<p>
+Makefile
+</p>
+<pre>
+all:
+  arm-none-eabi-as -mcpu=arm1176jzf-s -o main.o main.s
+  arm-none-eabi-ld -T main.ld -o main.elf main.o
+  arm-none-eabi-objcopy -O binary main.elf kernel.img
+
+clean:
+  rm -rf kernel.img main.o main.elf
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ make
+  arm-none-eabi-as -mcpu=arm1176jzf-s -o main.o main.s
+  arm-none-eabi-ld -T main.ld -o main.elf main.o
+  arm-none-eabi-objcopy -O binary main.elf kernel.img
+</pre><br>
+
+<p>
+接著準備SDCard，並且格式化成FAT32，並且把<a href="https://github.com/steward-fu/raspberrypi-1/releases/download/v1.0/bootcode.bin">bootcode.bin</a>和<a href="https://github.com/steward-fu/raspberrypi-1/releases/download/v1.0/start.elf">start.elf</a>放到SDCard根目錄，這兩個檔案是必須存在的開機檔案，然後把剛剛編譯的kernel.img也放到SDCard根目錄，接著，插入SDCard到Raspberry Pi<br>
+<img src="asm_led/5.jpg" class="maxSize"><br>
+<img src="asm_led/6.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

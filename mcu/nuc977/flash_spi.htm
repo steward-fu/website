@@ -1,0 +1,99 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>NUC977</h3>
+<p><b>flash spi</b></p>
+<hr size="1">
+<p>
+1. 設定PA0、PA1成USB啟動<br>
+2. 開啟CONFIG_ENV_IS_IN_SPI_FLASH並編譯UBoot程式
+</p>
+<pre>
+$ vim include/configs/nuc970_evb.h
+  48 #define CONFIG_SYS_USE_SPIFLASH
+  49 #define CONFIG_SYS_USE_NANDFLASH
+  50 #define CONFIG_SYS_NO_FLASH    // that is, no *NOR* flash
+  51 //#define CONFIG_ENV_IS_IN_NAND
+  52 #define CONFIG_ENV_IS_IN_SPI_FLASH
+  53 //#define CONFIG_ENV_IS_IN_MMC
+</pre>
+<p>
+3. 編輯env.txt
+</p>
+<pre>
+$ vim spi_env.txt
+  bootcmd=sf probe 0 18000000; sf read 0x7fc0 0x200000 0x1bc3d8; bootm 0x7fc0
+  baudrate=115200
+  bootdelay=3
+  ethact=emac
+  ethaddr=00:00:00:11:66:88
+  stderr=serial
+  stdin=serial
+  stdout=serial
+</pre>
+<p>
+4. 燒錄至SPI
+</p>
+<pre>
+$ sudo nuwriter -m spi -d NUC977DK62Y.ini -e 0xffffffff
+$ sudo nuwriter -m spi -d NUC977DK62Y.ini -t env -a 0x80000 -w spi_env.txt -v
+$ sudo nuwriter -m spi -d NUC977DK62Y.ini -t uboot -a 0xE00000 -w u-boot.bin -v
+$ sudo nuwriter -m spi -d NUC977DK62Y.ini -t data -a 0x200000 -w arch/arm/boot/uImage -v
+</pre>
+
+<p>
+5. 設定PA0、PA1成SPI啟動
+</p>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

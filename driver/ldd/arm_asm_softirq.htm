@@ -1,0 +1,193 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Linux Device Driver &gt;&gt; Assembly (ARM)</h3>
+<p><b>softirq</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://www.cnblogs.com/wang_yb/archive/2013/04/23/3037268.html">wang_yb</a><br>
+2. <a href="https://github.com/steward-fu/ldd">Source Code</a><br>
+3. <a href="http://jimmychenhaha.blogspot.com/2016/09/softirq.html">jimmychenhaha</a><br><br>
+
+Linux Kernel將中斷處理切成top-half和bottom-half兩部份，top-half指的就是中斷副程式本身，而bottom-half指的就是延遲處理的中斷副程式，如果事情可以快速處理完畢，就直接在中斷副程式裡處理就可以，如果無法立即完成(如：需要等待或者傳遞大量資料)，則可以安排一個延遲處理的副程式，softirq就是一種延遲處理的機制，雖然是延遲處理，不過，softirq也是執行在高優先級別的等級，因此，不適合處理太耗時的東西，因為，高優先級別的副程式，如果太耗時，將延後Context Switch的發生(單核心)，導致系統效能出問題，softirq本身是可重複進入的(reentrant)，因此，在撰寫softirq程式時，必須要考慮到這個問題，不過，bottom-half機制確實解決中斷阻塞問題<br><br>
+
+使用步驟：<br>
+1. open_softirq()<br>
+2. raise_softirq()<br>
+3. raise_softirq_irqoff()<br><br>
+
+由於softirq需要修改Kernel，因此，請先修改檔案(kernel/softirq.c)
+</p>
+<pre>
+const char * const softirq_to_name[NR_SOFTIRQS] = { 
+  "HI", "TIMER", "NET_TX", "NET_RX", "BLOCK", "IRQ_POLL",
+  "TASKLET", "SCHED", "HRTIMER", "RCU", "PocketBeagle"
+};
+EXPORT_SYMBOL(open_softirq);
+EXPORT_SYMBOL(raise_softirq_irqoff);
+EXPORT_SYMBOL(raise_softirq);
+</pre><br>
+
+<p>
+include/linux/interrupt.h
+</p>
+<pre>
+enum
+{
+  HI_SOFTIRQ=0,
+  TIMER_SOFTIRQ,
+  NET_TX_SOFTIRQ,
+  NET_RX_SOFTIRQ,
+  BLOCK_SOFTIRQ,
+  IRQ_POLL_SOFTIRQ,
+  TASKLET_SOFTIRQ,
+  SCHED_SOFTIRQ,
+  HRTIMER_SOFTIRQ, /* Unused, but kept as tools rely on the
+          numbering. Sigh! */
+  RCU_SOFTIRQ,    /* Preferable RCU should always be the last softirq */
+
+  POCKETBEAGLE_SOFTIRQ,
+  NR_SOFTIRQS
+};
+</pre>
+<p>
+P.S. 接著重新編譯Kernel並且更新zImage<br><br>
+
+ldd.S
+</p>
+<pre class="brush:asm">
+.global init_module
+.global cleanup_module
+
+.equ BUTTON,               27
+.equ IRQF_TRIGGER_RISING,  1
+.equ POCKETBEAGLE_SOFTIRQ, 10
+
+.section .modinfo, "ae"
+__UNIQUE_ID_0: .asciz "license=GPL"
+__UNIQUE_ID_1: .asciz "author=Steward Fu"
+__UNIQUE_ID_2: .asciz "description=Linux Driver"
+
+.section .data
+btn_irq:     .dcb 4
+irq_name:    .asciz "gpio_irq"
+softirq_msg: .asciz "softirq_handler\n"
+
+.align 2
+.section .text
+softirq_handler:
+  push {lr}
+  ldr r0, =softirq_msg
+  bl printk
+  pop {pc}
+
+irq_handler:
+  push {lr}
+  mov r0, #POCKETBEAGLE_SOFTIRQ
+  bl raise_softirq
+  mov r0, #1
+  pop {pc}
+
+init_module:
+  push {r4, r5, lr}
+
+  mov r0, #BUTTON
+  bl gpio_to_desc
+  bl gpiod_to_irq
+  ldr r1, =btn_irq
+  str r0, [r1]
+
+  ldr r1, =irq_handler
+  mov r2, #0
+  mov r3, #IRQF_TRIGGER_RISING
+  ldr r4, =irq_name
+  mov r5, #0
+  push {r4, r5}
+  bl request_threaded_irq
+  pop {r4, r5}
+
+  mov r0, #POCKETBEAGLE_SOFTIRQ
+  ldr r1, =softirq_handler
+  bl open_softirq
+
+  mov r0, #0
+  pop {r4, r5, pc}
+
+cleanup_module:
+  push {lr}
+  ldr r0, =btn_irq
+  ldr r0, [r0]
+  mov r1, #0
+  bl free_irq
+  mov r0, #POCKETBEAGLE_SOFTIRQ
+  bl raise_softirq_irqoff
+  pop {pc}
+.end
+</pre>
+<p>
+<b>ldd_init</b>: 設定GPIO中斷以及softirq延遲處理副程式<br>
+<b>irq_handler</b>: 安排一個softirq延遲處理<br>
+<b>softirq_handler</b>: 列印字串<br>
+<b>ldd_exit</b>: 釋放中斷資源以及關閉softirq<br><br>
+
+完成<br>
+<img src="cpp_gpio_input/3.jpg" class="maxSize"><br>
+<img src="cpp_gpio_input/4.jpg" class="maxSize">
+</p>
+<pre>
+# softirq_handler
+</pre><br>
+
+<p>
+<br><a href="../../driver.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

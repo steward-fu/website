@@ -1,0 +1,241 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Windows NT Driver &gt;&gt; Assembly &gt;&gt; File</h3>
+<p><b>IRP</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="http://four-f.narod.ru/">Four-F</a><br>
+2. <a href="https://github.com/steward-fu/ntdriver">Source Code</a><br><br>
+
+基本上，驅動程式(韌體)的基本功能就是當作User Application(軟體)和硬體的溝通橋樑，軟體可以透過很多種方式和驅動程式溝通，而最常用的溝通方式就是把驅動程式當做是一個檔案在操作，軟體可以透過檔案讀寫的方式和驅動程式做資料傳遞的動作，驅動程式最後再把資料輸出到硬體裝置上，而在Windows系統上，可以使用CreateFile(檔案開啟)、ReadFile(讀取檔案)、WriteFile(寫入檔案)、CloseHandle(關閉檔案)等檔案操作的Win32 API，而驅動程式如何跟軟體串接起來呢？驅動程式必須在DriverEntry()設定IRP_MJ_CREATE(<b>CreateFile</b>)、IRP_MJ_READ(<b>ReadFile</b>)、IRP_MJ_WRITE(<b>WriteFile</b>)、IRP_MJ_CLOSE(<b>CloseHandle</b>)的Callback副程式，這樣I/O Manager才會知道如何串起這條溝通管道。<br><br>
+
+<b>基本的步驟如下：</b><br>
+1. 安裝驅動程式時，驅動程式註冊自己的名字、註冊檔案的Callback副程式<br>
+2. 軟體開啟檔案(使用驅動程式的名字(GUID或者Symbolic))，I/O Manager呼叫驅動程式的IRP_MJ_CREATE<br>
+3. 軟體讀寫檔案，I/O Manager呼叫驅動程式的IRP_MJ_READ、IRP_MJ_WRITE<br>
+4. 軟體關閉檔案，I/O Manager呼叫驅動程式的IRP_MJ_CLOSE<br><br>
+
+當然，使用者可能也很好奇，為何軟體不直接跟硬體溝通就好，還要透過一個這麼複雜的驅動程式當作溝通橋樑？當軟體可以直接溝通硬體時，會造成太多衝突，以及優先順序問題，而因為可以直接控制硬體，因此，寫出一個非惡意但具有破壞性的軟體時，是間接可以把一個系統搞壞掉，這也是為何要在Win98之後，架構出一個驅動程式的原因，至少有一個溝通和協調的機制，當然隨著系統的發展，規定就會變成越來嚴格，這也是Microsoft致力於保護系統的最好方式！<br><br>
+
+對應的溝通管道
+</p>
+<table>
+<tr>
+  <th>Win32 API</th>
+  <th>Kernel IRP</th>
+</tr>
+<tr>
+  <td>CreateFile()</td>
+  <td>IRP_MJ_CREATE</td>
+</tr>
+<tr>
+  <td>ReadFile()</td>
+  <td>IRP_MJ_READ</td>
+</tr>
+<tr>
+  <td>WriteFile()</td>
+  <td>IRP_MJ_WRITE</td>
+</tr>
+<tr>
+  <td>CloseHandle()</td>
+  <td>IRP_MJ_CLOSE</td>
+</tr>
+</table>
+<p>
+接著司徒將介紹如何在驅動程式做檔案的基本操作<br><br>
+
+main.asm
+</p>
+<pre class="brush:asm">
+.386p
+.model flat, stdcall
+option casemap:none
+ 
+include c:\masm32\include\w2k\ntstatus.inc
+include c:\masm32\include\w2k\ntddk.inc
+include c:\masm32\include\w2k\ntoskrnl.inc
+include c:\masm32\include\w2k\ntddkbd.inc
+include c:\masm32\Macros\Strings.mac
+includelib c:\masm32\lib\wxp\i386\ntoskrnl.lib
+ 
+public DriverEntry
+
+.const
+DEV_NAME word "\","D","e","v","i","c","e","\","M","y","D","r","i","v","e","r",0
+SYM_NAME word "\","D","o","s","D","e","v","i","c","e","s","\","M","y","D","r","i","v","e","r",0
+  
+.code
+IrpFile proc pOurDevice:PDEVICE_OBJECT, pIrp:PIRP
+  IoGetCurrentIrpStackLocation pIrp
+  movzx eax, (IO_STACK_LOCATION PTR [eax]).MajorFunction
+
+  .if eax == IRP_MJ_CREATE
+    invoke DbgPrint, $CTA0("IRP_MJ_CREATE")
+  .elseif eax == IRP_MJ_READ
+    invoke DbgPrint, $CTA0("IRP_MJ_READ")
+  .elseif eax == IRP_MJ_WRITE
+    invoke DbgPrint, $CTA0("IRP_MJ_WRITE")
+  .elseif eax == IRP_MJ_CLOSE
+    invoke DbgPrint, $CTA0("IRP_MJ_CLOSE")
+  .endif
+
+  mov eax, pIrp
+  and (_IRP PTR [eax]).IoStatus.Information, 0
+  mov (_IRP PTR [eax]).IoStatus.Status, STATUS_SUCCESS
+  fastcall IofCompleteRequest, pIrp, IO_NO_INCREMENT
+  mov eax, STATUS_SUCCESS
+  ret
+IrpFile endp
+
+Unload proc pOurDriver:PDRIVER_OBJECT
+  local szSymName:UNICODE_STRING
+  
+  invoke RtlInitUnicodeString, addr szSymName, offset SYM_NAME
+  invoke IoDeleteSymbolicLink, addr szSymName
+  
+  mov eax, pOurDriver
+  invoke IoDeleteDevice, (DRIVER_OBJECT PTR [eax]).DeviceObject
+  ret
+Unload endp
+
+DriverEntry proc pOurDriver:PDRIVER_OBJECT, pOurRegistry:PUNICODE_STRING
+  local pOurDevice:PDEVICE_OBJECT
+  local suDevName:UNICODE_STRING
+  local szSymName:UNICODE_STRING
+  
+  mov eax, pOurDriver
+  mov (DRIVER_OBJECT PTR [eax]).MajorFunction[IRP_MJ_CREATE * (sizeof PVOID)], offset IrpFile
+  mov (DRIVER_OBJECT PTR [eax]).MajorFunction[IRP_MJ_CLOSE  * (sizeof PVOID)], offset IrpFile
+  mov (DRIVER_OBJECT PTR [eax]).MajorFunction[IRP_MJ_WRITE  * (sizeof PVOID)], offset IrpFile
+  mov (DRIVER_OBJECT PTR [eax]).MajorFunction[IRP_MJ_READ   * (sizeof PVOID)], offset IrpFile
+  mov (DRIVER_OBJECT PTR [eax]).DriverUnload, offset Unload
+  
+  invoke RtlInitUnicodeString, addr suDevName, offset DEV_NAME
+  invoke RtlInitUnicodeString, addr szSymName, offset SYM_NAME
+  invoke IoCreateDevice, pOurDriver, NULL, addr suDevName, FILE_DEVICE_UNKNOWN, 0, FALSE, addr pOurDevice
+  .if eax == STATUS_SUCCESS
+    mov eax, pOurDevice
+    or (DEVICE_OBJECT PTR [eax]).Flags, DO_BUFFERED_IO
+    and (DEVICE_OBJECT PTR [eax]).Flags, not DO_DEVICE_INITIALIZING
+    invoke IoCreateSymbolicLink, addr szSymName, addr suDevName
+  .endif
+  ret
+DriverEntry endp
+end DriverEntry
+.end
+</pre>
+<p>
+<b>IrpFile()</b>處理檔案相關的IRP，目前只列印IRP資訊，其餘不處理。<br><br>
+
+為了測試驅動程式的檔案讀寫IRP，我們需要一個User Application做測試(app.asm)</b>
+</p>
+<pre class="brush:asm">
+.386p
+.model flat, stdcall
+option casemap:none
+
+include c:\masm32\include\windows.inc
+include c:\masm32\include\masm32.inc
+include c:\masm32\include\user32.inc
+include c:\masm32\include\msvcrt.inc
+include c:\masm32\include\kernel32.inc
+
+includelib c:\masm32\lib\user32.lib
+includelib c:\masm32\lib\masm32.lib
+includelib c:\masm32\lib\msvcrt.lib
+includelib c:\masm32\lib\kernel32.lib
+
+.const
+DEVNAME db "\\.\MyDriver",0
+ERR_MSG db "failed to open mydriver",0
+
+.data?
+hFile    dd ?
+dwRet    dd ?
+szBuffer db 255 dup(?)
+
+.code
+start:
+  invoke CreateFile, offset DEVNAME, GENERIC_READ or GENERIC_WRITE, FILE_SHARE_READ, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0
+  .if eax == INVALID_HANDLE_VALUE
+    invoke crt_printf, offset ERR_MSG
+    invoke ExitProcess, -1
+  .endif
+
+  mov hFile, eax
+  invoke WriteFile, hFile, offset szBuffer, 255, offset dwRet, 0
+  invoke ReadFile, hFile, offset szBuffer, 255, offset dwRet, 0
+  invoke CloseHandle, hFile
+  invoke ExitProcess, 0
+  
+end start
+</pre><br>
+
+<p>
+編譯App：<br>
+</p>
+<pre>
+c:\masm32\bin\ml /c /coff /Cp /Zi /Zd "app.asm"
+c:\masm32\bin\link /SUBSYSTEM:CONSOLE /DEBUG /VERSION:4.0 /OUT:"app.exe" "app.obj"
+</pre><br>
+
+<p>
+接著執行該User Application就可以看到結果<br>
+<img src="../wdm/asm_file/1.jpg" class="maxSize"><br>
+<img src="../wdm/asm_file/2.jpg" class="maxSize">
+</p>
+
+<p>
+<a href="../../driver.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

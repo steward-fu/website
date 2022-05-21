@@ -1,0 +1,111 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Miyoo</h3>
+<p><b>BROM Boot Header</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://linux-sunxi.org/EGON">eGON</a><br><br>
+
+格式如下：
+</p>
+<table>
+<tr><th>Bytes</th><th>Content</th></tr>
+<tr><td>4</td><td>Instruction</td></tr>
+<tr><td>8</td><td>Magic "eGON.BT0"</td></tr>
+<tr><td>4</td><td>Checksum</td></tr>
+<tr><td>4</td><td>Length</td></tr>
+<tr><td>4</td><td>SPL Signature</td></tr>
+<tr><td>4</td><td>FEL Script Address</td></tr>
+<tr><td>4</td><td>FEL uEnv Length</td></tr>
+<tr><td>4</td><td>DT Name Offset</td></tr>
+<tr><td>4</td><td>Reserved</td></tr>
+<tr><td>4</td><td>Boot Media</td></tr>
+<tr><td>4+</td><td>String Pool</td></tr>
+</table><br>
+
+<p>
+XBoot範例：
+</p>
+<pre class="brush:asm">
+  .global _start
+_start:
+  ; Boot head information for BROM
+  ; 0x40 - boot params
+  ; 0x58 - fel boot type
+  ; 0x5c - dram size
+  .long 0xea000016
+  .byte 'e', 'G', 'O', 'N', '.', 'B', 'T', '0' 
+  .long __spl_checksum
+  .long __spl_size
+  .byte 'S', 'P', 'L', 2
+  .long 0
+  .long 0
+  .long 0, 0, 0, 0, 0, 0, 0, 0
+  .long 0, 0, 0, 0, 0, 0, 0, 0
+
+_vector:
+  b reset
+  ldr pc, _undefined_instruction
+  ldr pc, _software_interrupt
+  ldr pc, _prefetch_abort
+  ldr pc, _data_abort
+  ldr pc, _not_used
+  ldr pc, _irq
+  ldr pc, _fiq
+</pre><br>
+
+<p>
+<br><a href="../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

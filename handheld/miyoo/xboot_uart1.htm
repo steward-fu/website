@@ -1,0 +1,243 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Miyoo</h3>
+<p><b>如何將XBoot的輸出訊息轉到UART1</b></p>
+<hr size="1">
+<p>
+由於司徒在移植UBoot時遇到一些問題，因此，上網找尋是否有替代的Tiny Bootloader時，意外發現另一套開源系統XBoot，這套系統很像Realtime OS且專門針對比較低階的CPU製作，果然人外有人，天外有天，高手在民間，最後因緣際會下，認識XBoot作者，經由該作者介紹，認識更多曾經參與F1C100S開發的高手，因此，當司徒遇到問題時，都是詢問這些高手，最終才讓司徒成功移植i80介面，司徒真心感謝他們，而當初為了驗證一些硬體，因此移植XBoot到Miyoo上，不過由於Miyoo的UART是接到UART1；而XBoot的輸出則是UART0，因此，司徒順便把當初移植的過程說明下，希望可以當作日後參考文件。
+</p>
+<pre class="brush:cpp">
+--- src/arch/arm32/mach-f1c100s/sys-uart_orig.c	2018-12-30 21:13:22.415507314 +0800
++++ src/arch/arm32/mach-f1c100s/sys-uart.c	2018-12-30 22:00:43.613937647 +0800
+@@ -29,32 +29,32 @@
+ 	virtual_addr_t addr;
+ 	u32_t val;
+ 
+-	/* Config GPIOF4 and GPIOF2 to txd0 and rxd0 */
+-	addr = 0x01c208b4 + 0x00;
++	/* Config GPIOA2 and GPIOA3 to txd0 and rxd0 */
++	addr = 0x01c20800 + 0x00;
+ 	val = read32(addr);
+-	val &amp;= ~(0xf &lt;&lt; ((4 &amp; 0x7) &lt;&lt; 2));
+-	val |= ((0x3 &amp; 0x7) &lt;&lt; ((4 &amp; 0x7) &lt;&lt; 2));
++	val &amp;= ~(0xf &lt;&lt; ((3 &amp; 0x7) &lt;&lt; 2));
++	val |= ((0x5 &amp; 0x7) &lt;&lt; ((3 &amp; 0x7) &lt;&lt; 2));
+ 	write32(addr, val);
+ 
+ 	val = read32(addr);
+ 	val &amp;= ~(0xf &lt;&lt; ((2 &amp; 0x7) &lt;&lt; 2));
+-	val |= ((0x3 &amp; 0x7) &lt;&lt; ((2 &amp; 0x7) &lt;&lt; 2));
++	val |= ((0x5 &amp; 0x7) &lt;&lt; ((2 &amp; 0x7) &lt;&lt; 2));
+ 	write32(addr, val);
+ 
+-	/* Open the clock gate for uart0 */
++	/* Open the clock gate for uart1 */
+ 	addr = 0x01c20068;
+ 	val = read32(addr);
+-	val |= 1 &lt;&lt; 20;
++	val |= 1 &lt;&lt; 21;
+ 	write32(addr, val);
+ 
+-	/* Deassert uart0 reset */
++	/* Deassert uart1 reset */
+ 	addr = 0x01c202d0;
+ 	val = read32(addr);
+-	val |= 1 &lt;&lt; 20;
++	val |= 1 &lt;&lt; 21;
+ 	write32(addr, val);
+ 
+-	/* Config uart0 to 115200-8-1-0 */
+-	addr = 0x01c25000;
++	/* Config uart1 to 115200-8-1-0 */
++	addr = 0x01c25400;
+ 	write32(addr + 0x04, 0x0);
+ 	write32(addr + 0x08, 0xf7);
+ 	write32(addr + 0x10, 0x0);
+@@ -74,8 +74,9 @@
+ 
+ void sys_uart_putc(char c)
+ {
+-	virtual_addr_t addr = 0x01c25000;
++	virtual_addr_t addr = 0x01c25400;
+ 
+ 	while((read32(addr + 0x7c) &amp; (0x1 &lt;&lt; 1)) == 0);
+ 	write32(addr + 0x00, c);
+ }
+
+--- src/arch/arm32/mach-f1c100s/sast-kk131_orig.c	2018-12-31 20:22:30.760634199 +0800
++++ src/arch/arm32/mach-f1c100s/sast-kk131.c	2018-12-30 21:35:58.190732433 +0800
+@@ -60,7 +60,7 @@
+ 
+ static void mach_logger(struct machine_t * mach, const char * buf, int count)
+ {
+-	virtual_addr_t virt = phys_to_virt(0x01c25000);
++	virtual_addr_t virt = phys_to_virt(0x01c25400);
+
+--- ./src/arch/arm32/mach-f1c100s/romdisk/boot/sast-kk131_orig.json	2018-12-31 20:24:32.134506413 +0800
++++ ./src/arch/arm32/mach-f1c100s/romdisk/boot/sast-kk131.json	2018-12-31 11:19:48.077490340 +0800
+@@ -377,7 +377,7 @@
+ 		"backlight": "led-pwm-bl.0"
+ 	},
+ 
+-	"console-uart@0": {
+-		"uart-bus": "uart-16550.0"
++	"console-uart@1": {
++		"uart-bus": "uart-16550.1"
+</pre><br>
+
+<p>
+開訊訊息(115200 bps)
+</p>
+<pre>
+       _                   _                     
+ _  _ | |___ _____ _____ _| |_                   
+\ \/ /|  _  |  _  |  _  |_   _|  (C) 2007-2018   
+ )  ( | |_| | |_| | |_| | | |____JIANJUN.JIANG__ 
+/_/\_\|_____|_____|_____| |_____________________|
+V2.0.2 (Dec 31 2018 - 19:42:20) - [sast-kk131][SAST KK131 Digital Player Based On Allwinner F1C100S]
+[    0.000000] Probe device 'romdisk.0' with romdisk
+[    0.000010] Probe device 'hosc' with clk-fixed
+[    0.000020] Probe device 'losc' with clk-fixed
+[    0.000030] Probe device 'pll-cpu' with clk-f1c100s-pll
+[    0.000040] Probe device 'pll-audio' with clk-f1c100s-pll
+[    0.000050] Probe device 'pll-video' with clk-f1c100s-pll
+[    0.000060] Probe device 'pll-ve' with clk-f1c100s-pll
+[    0.000070] Probe device 'pll-ddr' with clk-f1c100s-pll
+[    0.000080] Probe device 'pll-periph' with clk-f1c100s-pll
+[    0.000090] Probe device 'cpu' with clk-mux
+[    0.000100] Probe device 'hclk' with clk-divider
+[    0.000110] Probe device 'ahb1-pre-div' with clk-divider
+[    0.000120] Probe device 'mux-ahb1' with clk-mux
+[    0.000130] Probe device 'ahb1' with clk-ratio
+[    0.000140] Probe device 'apb1' with clk-ratio
+[    0.000150] Probe device 'gate-bus-uart0' with clk-gate
+[    0.000160] Probe device 'gate-bus-uart1' with clk-gate
+[    0.000170] Probe device 'gate-bus-uart2' with clk-gate
+[    0.000180] Probe device 'link-uart0' with clk-link
+[    0.000190] Probe device 'link-uart1' with clk-link
+[    0.000200] Probe device 'link-uart2' with clk-link
+[    0.000210] Probe device 'gate-bus-i2c0' with clk-gate
+[    0.000220] Probe device 'gate-bus-i2c1' with clk-gate
+[    0.000230] Probe device 'gate-bus-i2c2' with clk-gate
+[    0.000240] Probe device 'link-i2c0' with clk-link
+[    0.000250] Probe device 'link-i2c1' with clk-link
+[    0.000260] Probe device 'link-i2c2' with clk-link
+[    0.000270] Probe device 'gate-bus-spi0' with clk-gate
+[    0.000280] Probe device 'gate-bus-spi1' with clk-gate
+[    0.000290] Probe device 'link-spi0' with clk-link
+[    0.000300] Probe device 'link-spi1' with clk-link
+[    0.000310] Probe device 'mux-timer0' with clk-mux
+[    0.000320] Probe device 'ratio-timer0' with clk-ratio
+[    0.000330] Probe device 'link-timer0' with clk-link
+[    0.000340] Probe device 'mux-timer1' with clk-mux
+[    0.000350] Probe device 'ratio-timer1' with clk-ratio
+[    0.000360] Probe device 'link-timer1' with clk-link
+[    0.000370] Probe device 'mux-timer2' with clk-mux
+[    0.000380] Probe device 'ratio-timer2' with clk-ratio
+[    0.000390] Probe device 'link-timer2' with clk-link
+[    0.000400] Probe device 'link-pwm' with clk-link
+[    0.000410] Probe device 'link-wdt' with clk-link
+[    0.000420] Probe device 'mux-defe' with clk-mux
+[    0.000430] Probe device 'div-defe' with clk-divider
+[    0.000440] Probe device 'gate-defe' with clk-gate
+[    0.000450] Probe device 'gate-bus-defe' with clk-gate
+[    0.000460] Probe device 'link-defe' with clk-link
+[    0.000470] Probe device 'mux-debe' with clk-mux
+[    0.000480] Probe device 'div-debe' with clk-divider
+[    0.000490] Probe device 'gate-debe' with clk-gate
+[    0.000500] Probe device 'gate-bus-debe' with clk-gate
+[    0.000510] Probe device 'link-debe' with clk-link
+[    0.000520] Probe device 'mux-tcon' with clk-mux
+[    0.000530] Probe device 'gate-tcon' with clk-gate
+[    0.000540] Probe device 'gate-bus-tcon' with clk-gate
+[    0.000550] Probe device 'link-tcon' with clk-link
+[    0.000560] Probe device 'reset-f1c100s.0' with reset-f1c100s
+[    0.000570] Probe device 'reset-f1c100s.1' with reset-f1c100s
+[    0.000580] Probe device 'reset-f1c100s.2' with reset-f1c100s
+[    0.000590] Probe device 'irq-f1c100s.0' with irq-f1c100s
+[    0.000600] Probe device 'irq-f1c100s-gpio.0' with irq-f1c100s-gpio
+[    0.000610] Probe device 'irq-f1c100s-gpio.1' with irq-f1c100s-gpio
+[    0.000620] Probe device 'irq-f1c100s-gpio.2' with irq-f1c100s-gpio
+[    0.000630] Probe device 'gpio-f1c100s.0' with gpio-f1c100s
+[    0.000640] Probe device 'gpio-f1c100s.1' with gpio-f1c100s
+[    0.000650] Probe device 'gpio-f1c100s.2' with gpio-f1c100s
+[    0.000660] Probe device 'gpio-f1c100s.3' with gpio-f1c100s
+[    0.000670] Probe device 'gpio-f1c100s.4' with gpio-f1c100s
+[    0.000680] Probe device 'pwm-f1c100s.0' with pwm-f1c100s
+[    0.000690] Probe device 'pwm-f1c100s.1' with pwm-f1c100s
+[    0.000700] Probe device 'ce-f1c100s-timer.0' with ce-f1c100s-timer
+[    0.000050] Probe device 'cs-f1c100s-timer.0' with cs-f1c100s-timer
+[    0.006447] Probe device 'i2c-f1c100s.0' with i2c-f1c100s
+[    0.011954] Probe device 'i2c-f1c100s.1' with i2c-f1c100s
+[    0.017461] Probe device 'i2c-f1c100s.2' with i2c-f1c100s
+[    0.022858] Probe device 'uart-16550.0' with uart-16550
+[    0.028072] Probe device 'uart-16550.1' with uart-16550
+[    0.033346] Probe device 'uart-16550.2' with uart-16550
+[    0.038536] Probe device 'spi-f1c100s.0' with spi-f1c100s
+[    0.043891] Probe device 'spi-f1c100s.1' with spi-f1c100s
+[    0.049310] Probe device 'spi-flash.0' with spi-flash
+[    0.054308] Probe device 'wdog-f1c100s.0' with wdog-f1c100s
+[    0.059852] Probe device 'key-f1c100s-lradc.0' with key-f1c100s-lradc
+[    0.066237] Probe device 'led-gpio.0' with led-gpio
+[    0.071072] Probe device 'ledtrig-heartbeat.0' with ledtrig-heartbeat
+[    0.077473] Probe device 'led-pwm-bl.0' with led-pwm-bl
+[    0.302363] Probe device 'fb-f1c100s.0' with fb-f1c100s
+[    0.307560] Probe device 'console-uart.1' with console-uart
+Press any key to stop autoboot:  0.000
+xboot: /$ 
+</pre><br>
+
+<p>
+<br><a href="../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

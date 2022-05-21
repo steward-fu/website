@@ -1,0 +1,199 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>STM32F429 &gt;&gt; Assembly</h3>
+<p><b>LED</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://www.st.com/resource/en/datasheet/dm00071990.pdf">ds_pdf</a><br>
+2. <a href="https://www.st.com/resource/en/reference_manual/dm00031020-stm32f405-415-stm32f407-417-stm32f427-437-and-stm32f429-439-advanced-arm-based-32-bit-mcus-stmicroelectronics.pdf">pm_pdf</a><br>
+3. <a href="https://www.st.com/resource/en/user_manual/dm00093903-discovery-kit-with-stm32f429zi-mcu-stmicroelectronics.pdf">kit_pdf</a><br><br>
+
+LED測試使用PG-13<br>
+<img src="asm_led/1.jpg" class="maxSize"><br><br>
+
+GPIO-G Clock<br>
+<img src="asm_led/2.jpg" class="maxSize"><br><br>
+
+Mode<br>
+<img src="asm_led/3.jpg" class="maxSize"><br><br>
+
+Output<br>
+<img src="asm_led/4.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+  .equiv PORTG_BASE,  0x40021800
+  .equiv GPIO_MODER,  0x0000
+  .equiv GPIO_ODR,    0x0014
+ 
+  .equiv RCC_BASE,    0x40023800 
+  .equiv RCC_AHB1ENR, 0x0030
+ 
+  .thumb
+  .cpu cortex-m4
+  .syntax unified
+ 
+  .global _start
+ 
+  .text
+  .org 0x0000
+_start:
+  .word 0x20008000
+  .word reset
+ 
+  .org 0x0100
+  .thumb_func
+reset:
+  ldr r0, =RCC_BASE
+  ldr r1, [r0, #RCC_AHB1ENR]
+  orr r1, #(1 &lt;&lt; 6)
+  str r1, [r0, #RCC_AHB1ENR]
+ 
+  ldr r0, =PORTG_BASE
+  ldr r1, =(1 &lt;&lt; 26)
+  str r1, [r0, #GPIO_MODER]
+ 
+0:
+  eor r1, #(1 &lt;&lt; 13)
+  str r1, [r0, #GPIO_ODR]
+  ldr r2, =0x200000
+1:
+  subs r2, #1
+  bne 1b
+  b 0b
+  .end
+</pre><br>
+
+<p>
+main.ld
+</p>
+<pre>
+MEMORY {
+  RAM(xrw)   : ORIGIN = 0x20000000, LENGTH = 128K
+  FLASH(xr ) : ORIGIN = 0x08000000, LENGTH = 128K
+}
+
+SECTIONS {
+  .text   : { *(.text*) } &gt; FLASH
+  .rodata : { *(.rodata*) } &gt; FLASH
+  .bss    : { *(.bss*) } &gt; FLASH
+}
+</pre><br>
+
+<p>
+Makefile
+</p>
+<pre>
+all:
+  arm-none-eabi-as -mcpu=cortex-m4 main.s -o main.o
+  arm-none-eabi-ld -T main.ld -o main.elf main.o
+
+flash:
+  openocd -f /usr/local/share/openocd/scripts/interface/stlink.cfg -f /usr/local/share/openocd/scripts/target/stm32f4x.cfg -c "init; program main.elf; reset; exit;"
+
+clean:
+  rm -rf main.o main.elf
+</pre><br>
+
+<p>
+編譯、燒錄<br>
+1. 短路JP3<br>
+2. 短路CN4<br>
+3. 連接MiniUSB至PC<br>
+4. 執行如下命令
+</p>
+<pre>
+$ make
+  arm-none-eabi-as -mcpu=cortex-m4 main.s -o main.o
+  arm-none-eabi-ld -T main.ld -o main.elf main.o
+
+$ make flash
+  openocd -f /usr/local/share/openocd/scripts/interface/stlink.cfg -f /usr/local/share/openocd/scripts/target/stm32f4x.cfg -c "init; program main.elf; reset; exit;"
+  Open On-Chip Debugger 0.11.0-rc1+dev-00010-gc69b4deae-dirty (2020-12-27-01:20)
+  Licensed under GNU GPL v2
+  For bug reports, read
+    http://openocd.org/doc/doxygen/bugs.html
+  Info : auto-selecting first available session transport "hla_swd". To override use 'transport select <transport>'.
+  Info : The selected transport took over low-level target control. The results might differ compared to plain JTAG/SWD
+  Info : clock speed 2000 kHz
+  Info : STLINK V2J25M14 (API v2) VID:PID 0483:374B
+  Info : Target voltage: 2.885361
+  Info : stm32f4x.cpu: hardware has 6 breakpoints, 4 watchpoints
+  Info : starting gdb server for stm32f4x.cpu on 3333
+  Info : Listening on port 3333 for gdb connections
+  Info : Unable to match requested speed 2000 kHz, using 1800 kHz
+  Info : Unable to match requested speed 2000 kHz, using 1800 kHz
+  target halted due to debug-request, current mode: Thread
+  xPSR: 0x01000000 pc: 0x08000100 msp: 0x20008000
+  Info : Unable to match requested speed 8000 kHz, using 4000 kHz
+  Info : Unable to match requested speed 8000 kHz, using 4000 kHz
+  ** Programming Started **
+  Info : device id = 0x20016419
+  Info : flash size = 2048 kbytes
+  Info : Dual Bank 2048 kiB STM32F42x/43x/469/479 found
+  ** Programming Finished **
+  Info : Unable to match requested speed 2000 kHz, using 1800 kHz
+  Info : Unable to match requested speed 2000 kHz, using 1800 kHz
+</pre><br>
+
+<p>
+完成<br>
+<img src="asm_led/5.jpg" class="maxSize"><br>
+<img src="asm_led/6.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

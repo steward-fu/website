@@ -1,0 +1,120 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Linux Device Driver &gt;&gt; Assembly (ARM)</h3>
+<p><b>開發環境</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://github.com/steward-fu/pocketbeagle/releases/tag/v1.0">pocketbeagle</a><br><br>
+
+目前市面上，有許多ARM的開發板可以選擇使用，使用者可以選擇自己喜愛的款式，當然也可以使用QEMU測試，目前司徒選定的開發板如下：<br>
+<img src="arm_asm_setup/1.jpg" class="maxSize"><br>
+P.S. 因為很迷你小巧<br><br>
+
+接著需要一條USB轉UART傳輸線，目前司徒使用PL2303傳輸線：<br>
+<img src="arm_asm_setup/2.jpg" class="maxSize"><br><br>
+
+接著需要焊接排針，把GND、U0-TX、U0-RX三根腳位連接到PL2303<br>
+<img src="arm_asm_setup/3.jpg" class="maxSize"><br><br>
+
+接線如下：
+</p>
+<table>
+<tr><th>PocketBeagle</th><th>PL2303</th></tr>
+<tr><td>GND</td><td>黑線</td></tr>
+<tr><td>U0-TX</td><td>白線</td></tr>
+<tr><td>U0-RX</td><td>綠線</td></tr>
+</table><br>
+
+<p>
+Linux環境對初學者來說，比較棘手的還是系統指令的操作，這部份，使用者只能多多參考其它網站說明，司徒只會將重點放在Linux驅動程式的撰寫上，而司徒目前使用的環境是Debian x64，使用者也可以使用更友好的Ubuntu系統，環境安裝好後，接著製作MicroSD開機系統
+</p>
+<pre>
+$ cd ~/Downloads
+$ wget https://github.com/steward-fu/pocketbeagle/releases/download/v1.0/sdcard.img
+$ sudo dd if=sdcard.img of=/dev/sdx bs=1M
+</pre><br>
+
+<p>
+接著將此MicroSD插入PocketBeagle，連結PL2303到電腦並且開啟minicom(115200 bps)，就可以看到如下等待進入系統的畫面
+</p>
+<pre>
+Welcome to PocketBeagle
+pocketbeagle login: 
+</pre>
+<p>
+P.S. 輸入root就可以進入系統<br><br>
+
+接著為了避免發生驅動無法掛載的問題，需要自己編譯一次Kernel
+</p>
+<pre>
+$ cd ~/Downloads
+$ wget https://github.com/steward-fu/pocketbeagle/releases/download/v1.0/gcc-4.9.tar.gz
+$ tar xvf gcc-4.9.tar.gz
+$ sudo mv gcc-4.9 /opt
+$ export PATH=/opt/gcc-4.9/bin:$PATH
+$ arm-linux-gnueabihf-gcc -v
+  gcc version 4.9.4 (Linaro GCC 4.9-2017.01)
+
+$ wget https://github.com/steward-fu/pocketbeagle/releases/download/v1.0/kernel-4.14.108.tar.gz
+$ tar xvf kernel-4.14.108.tar.gz
+$ cd kernel
+$ ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- make pocketbeagle_defconfig
+$ ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- make zImage dtbs -j4
+</pre>
+<p>
+P.S. 將編譯後的<b>arch/arm/boot/zImage</b>、<b>arch/arm/boot/dts/am335x-pocketbeagle.dtb</b>覆蓋到MicroSD第一分區的檔案
+<p>
+
+<br><a href="../../driver.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

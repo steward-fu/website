@@ -1,0 +1,512 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../../header.js"></script>
+<div id="page">
+<h3>Blackberry Passport &gt;&gt; Core Native (C/C++)</h3>
+<p><b>移植NXEngine(Cave Story)</b></p>
+<hr size="1">
+<p>
+編譯：
+</p>
+<pre>
+$ source ~/bbndk/bbndk-env_10_3_1_995.sh
+$ cd
+$ cd clone https://github.com/EXL/NXEngine
+$ cd NXEngine/
+$ make clean
+$ make
+</pre><br>
+
+<p>
+程式：
+</p>
+<pre class="brush:cpp">
+diff -Nr old_nx/ai/ai.cpp new_nx/ai/ai.cpp
+41c41
+&lt; 	FILE *fp = fileopen("data/npc.tbl", "rb");
+---
+&gt; 	FILE *fp = fileopen(PREFIX"data/npc.tbl", "rb");
+Binary files old_nx/app.bar and new_nx/app.bar differ
+diff -Nr old_nx/bar-descriptor.xml new_nx/bar-descriptor.xml
+0a1,21
+&gt; &lt;?xml version="1.0" encoding="utf-8" standalone="no"?&gt;
+&gt; &lt;qnx xmlns="http://www.qnx.com/schemas/application/1.0"&gt;
+&gt;   &lt;id&gt;com.steward.app&lt;/id&gt;
+&gt;   &lt;name&gt;cavestory&lt;/name&gt;
+&gt;   &lt;filename&gt;cavestory&lt;/filename&gt;
+&gt;   &lt;versionNumber&gt;1.0.0&lt;/versionNumber&gt;
+&gt;   &lt;buildId&gt;1&lt;/buildId&gt;
+&gt;   &lt;description&gt;Cave Story TW&lt;/description&gt;
+&gt; 
+&gt;   &lt;author&gt;Steward&lt;/author&gt;
+&gt;   &lt;authorId&gt;gYAAgGE4qaHzBnzEAu8JKe4G1OI&lt;/authorId&gt;
+&gt; 
+&gt;   &lt;asset path="cavestory/nx" entry="true" type="Qnx/Elf"&gt;cavestory/nx&lt;/asset&gt;
+&gt;   &lt;asset path="cavestory" type="Qnx/Elf"&gt;&lt;/asset&gt;
+&gt;   &lt;asset path="lib" type="Qnx/Elf"&gt;lib&lt;/asset&gt;
+&gt; 
+&gt;   &lt;permission system="true"&gt;run_native&lt;/permission&gt;
+&gt;   &lt;env var="LD_LIBRARY_PATH" value="app/native/lib"/&gt;
+&gt;   &lt;env var="PWD" value="app/native/cavestory"/&gt;
+&gt;   &lt;env var="HOME" value="app/native/cavestory"/&gt;
+&gt; &lt;/qnx&gt;
+diff -Nr old_nx/debug.txt new_nx/debug.txt
+1,36d0
+&lt; Loading settings...
+&lt; Couldn't open file settings.dat.
+&lt; No saved settings; using defaults.
+&lt; videoinfo: desktop bpp 32
+&lt; Graphics::SetResolution(2)
+&lt; Setting scaling 2 and fullscreen=no
+&lt;  error &lt;&lt; NXSurface::SetScale: CONFIG_MUTABLE_SCALE not set &gt;&gt;
+&lt; SDL_SetVideoMode: 320x240 @ 16bpp
+&lt; Graphics::FlushAll()
+&lt; SIFLoader::LoadHeader: read index of 8 sections
+&lt; Loading SIF section 1 from address 004d
+&lt; Loading SIF section 2 from address 044c
+&lt; SIFSpritesSect: loading 490 sprites
+&lt; fonts: using bitmapped from smalfont.bmp
+&lt; safemode print: 'I need to extract some game data'
+&lt; safemode print: 'before I can start up for the first time.'
+&lt; safemode print: ''
+&lt; safemode print: 'Before beginning, you should have the Aeon Genesis'
+&lt; safemode print: 'English translation of version 1.0.0.6, and drop'
+&lt; safemode print: 'Doukutsu.exe and it's "data" directory into the same'
+&lt; safemode print: 'folder as the "nx" program you just ran.'
+&lt; safemode print: ''
+&lt; safemode print: 'If you haven't done that yet, please press ESCAPE now'
+&lt; safemode print: 'and come back in a moment. Otherwise, you can'
+&lt; safemode print: 'press any other key to start the extraction.'
+&lt; run_until_key()
+&lt; returning key 13
+&lt; safemode print: '= Extracting Files ='
+&lt; safemode print: 'cannot find executable Doukutsu.exe'
+&lt; safemode print: ''
+&lt; safemode print: ''
+&lt; safemode print: 'Please put it and it's "data" directory'
+&lt; safemode print: 'into the same folder as this program.'
+&lt; run_until_key()
+&lt; returning key 13
+&lt; Graphics::Close()
+diff -Nr old_nx/extract/extract.cpp new_nx/extract/extract.cpp
+8a9
+&gt; #include "../settings.h"
+16c17
+&lt; static const char *filename = "Doukutsu.exe";
+---
+&gt; static const char *filename = PREFIX"Doukutsu.exe";
+65c66
+&lt; 	if (result == SDLK_ESCAPE)
+---
+&gt; 	if (result == SDLK_q)
+135,194c136,195
+&lt; 	"endpic/credit01.bmp", 25,
+&lt; 	"endpic/credit02.bmp", 25,
+&lt; 	"endpic/credit03.bmp", 25,
+&lt; 	"endpic/credit04.bmp", 25,
+&lt; 	"endpic/credit05.bmp", 25,
+&lt; 	"endpic/credit06.bmp", 25,
+&lt; 	"endpic/credit07.bmp", 25,
+&lt; 	"endpic/credit08.bmp", 25,
+&lt; 	"endpic/credit09.bmp", 25,
+&lt; 	"endpic/credit10.bmp", 25,
+&lt; 	"endpic/credit11.bmp", 25,
+&lt; 	"endpic/credit12.bmp", 25,
+&lt; 	"endpic/credit14.bmp", 25,
+&lt; 	"endpic/credit15.bmp", 25,
+&lt; 	"endpic/credit16.bmp", 25,
+&lt; 	"endpic/credit17.bmp", 25,
+&lt; 	"endpic/credit18.bmp", 25,
+&lt; 	"endpic/pixel.bmp", 25,
+&lt; 	"wavetable.dat", 0,
+&lt; 	"org/access.org", 0,
+&lt; 	"org/balcony.org", 0,
+&lt; 	"org/balrog.org", 0,
+&lt; 	"org/breakdown.org", 0,
+&lt; 	"org/cemetary.org", 0,
+&lt; 	"org/charge.org", 0,
+&lt; 	"org/credits.org", 0,
+&lt; 	"org/egg.org", 0,
+&lt; 	"org/eyesofflame.org", 0,
+&lt; 	"org/fanfale1.org", 0,
+&lt; 	"org/fanfale2.org", 0,
+&lt; 	"org/fanfale3.org", 0,
+&lt; 	"org/gameover.org", 0,
+&lt; 	"org/geothermal.org", 0,
+&lt; 	"org/gestation.org", 0,
+&lt; 	"org/gravity.org", 0,
+&lt; 	"org/grasstown.org", 0,
+&lt; 	"org/hell.org", 0,
+&lt; 	"org/heroend.org", 0,
+&lt; 	"org/jenka1.org", 0,
+&lt; 	"org/jenka2.org", 0,
+&lt; 	"org/labyrinth.org", 0,
+&lt; 	"org/lastbattle.org", 0,
+&lt; 	"org/lastcave.org", 0,
+&lt; 	"org/meltdown2.org", 0,
+&lt; 	"org/oppression.org", 0,
+&lt; 	"org/oside.org", 0,
+&lt; 	"org/plant.org", 0,
+&lt; 	"org/pulse.org", 0,
+&lt; 	"org/quiet.org", 0,
+&lt; 	"org/run.org", 0,
+&lt; 	"org/safety.org", 0,
+&lt; 	"org/scorching.org", 0,
+&lt; 	"org/seal.org", 0,
+&lt; 	"org/theme.org", 0,
+&lt; 	"org/toroko.org", 0,
+&lt; 	"org/town.org", 0,
+&lt; 	"org/tyrant.org", 0,
+&lt; 	"org/waterway.org", 0,
+&lt; 	"org/white.org", 0,
+&lt; 	"org/zombie.org", 0,
+---
+&gt; 	PREFIX"endpic/credit01.bmp", 25,
+&gt; 	PREFIX"endpic/credit02.bmp", 25,
+&gt; 	PREFIX"endpic/credit03.bmp", 25,
+&gt; 	PREFIX"endpic/credit04.bmp", 25,
+&gt; 	PREFIX"endpic/credit05.bmp", 25,
+&gt; 	PREFIX"endpic/credit06.bmp", 25,
+&gt; 	PREFIX"endpic/credit07.bmp", 25,
+&gt; 	PREFIX"endpic/credit08.bmp", 25,
+&gt; 	PREFIX"endpic/credit09.bmp", 25,
+&gt; 	PREFIX"endpic/credit10.bmp", 25,
+&gt; 	PREFIX"endpic/credit11.bmp", 25,
+&gt; 	PREFIX"endpic/credit12.bmp", 25,
+&gt; 	PREFIX"endpic/credit14.bmp", 25,
+&gt; 	PREFIX"endpic/credit15.bmp", 25,
+&gt; 	PREFIX"endpic/credit16.bmp", 25,
+&gt; 	PREFIX"endpic/credit17.bmp", 25,
+&gt; 	PREFIX"endpic/credit18.bmp", 25,
+&gt; 	PREFIX"endpic/pixel.bmp", 25,
+&gt; 	PREFIX"wavetable.dat", 0,
+&gt; 	PREFIX"org/access.org", 0,
+&gt; 	PREFIX"org/balcony.org", 0,
+&gt; 	PREFIX"org/balrog.org", 0,
+&gt; 	PREFIX"org/breakdown.org", 0,
+&gt; 	PREFIX"org/cemetary.org", 0,
+&gt; 	PREFIX"org/charge.org", 0,
+&gt; 	PREFIX"org/credits.org", 0,
+&gt; 	PREFIX"org/egg.org", 0,
+&gt; 	PREFIX"org/eyesofflame.org", 0,
+&gt; 	PREFIX"org/fanfale1.org", 0,
+&gt; 	PREFIX"org/fanfale2.org", 0,
+&gt; 	PREFIX"org/fanfale3.org", 0,
+&gt; 	PREFIX"org/gameover.org", 0,
+&gt; 	PREFIX"org/geothermal.org", 0,
+&gt; 	PREFIX"org/gestation.org", 0,
+&gt; 	PREFIX"org/gravity.org", 0,
+&gt; 	PREFIX"org/grasstown.org", 0,
+&gt; 	PREFIX"org/hell.org", 0,
+&gt; 	PREFIX"org/heroend.org", 0,
+&gt; 	PREFIX"org/jenka1.org", 0,
+&gt; 	PREFIX"org/jenka2.org", 0,
+&gt; 	PREFIX"org/labyrinth.org", 0,
+&gt; 	PREFIX"org/lastbattle.org", 0,
+&gt; 	PREFIX"org/lastcave.org", 0,
+&gt; 	PREFIX"org/meltdown2.org", 0,
+&gt; 	PREFIX"org/oppression.org", 0,
+&gt; 	PREFIX"org/oside.org", 0,
+&gt; 	PREFIX"org/plant.org", 0,
+&gt; 	PREFIX"org/pulse.org", 0,
+&gt; 	PREFIX"org/quiet.org", 0,
+&gt; 	PREFIX"org/run.org", 0,
+&gt; 	PREFIX"org/safety.org", 0,
+&gt; 	PREFIX"org/scorching.org", 0,
+&gt; 	PREFIX"org/seal.org", 0,
+&gt; 	PREFIX"org/theme.org", 0,
+&gt; 	PREFIX"org/toroko.org", 0,
+&gt; 	PREFIX"org/town.org", 0,
+&gt; 	PREFIX"org/tyrant.org", 0,
+&gt; 	PREFIX"org/waterway.org", 0,
+&gt; 	PREFIX"org/white.org", 0,
+&gt; 	PREFIX"org/zombie.org", 0,
+205c206
+&lt; 	fpo = fileopen("/tmp/files.dat", "wb");
+---
+&gt; 	fpo = fileopen(PREFIX"/tmp/files.dat", "wb");
+diff -Nr old_nx/graphics/font.cpp new_nx/graphics/font.cpp
+28,29c28,29
+&lt; const char *bmpfontfile = "smalfont.bmp";
+&lt; const char *ttffontfile = "font.ttf";
+---
+&gt; const char *bmpfontfile = PREFIX"smalfont.bmp";
+&gt; const char *ttffontfile = PREFIX"font.ttf";
+48c48
+&lt; static unsigned short *sjis_2_utf16;
+---
+&gt; //static unsigned short *sjis_2_utf16;
+43581a43582
+&gt; unsigned short sjis_2_utf16[0xfefe - 0x8140 + 1];
+43586c43587
+&lt;     sjis_2_utf16 = new unsigned short[0xfefe - 0x8140 + 1];
+---
+&gt;     //sjis_2_utf16 = new unsigned short[0xfefe - 0x8140 + 1];
+44036c44037
+&lt;           chFont = TTF_OpenFont("chfont.ttf", 12);
+---
+&gt;           chFont = TTF_OpenFont(PREFIX"chfont.ttf", 12);
+diff -Nr old_nx/graphics/graphics.cpp new_nx/graphics/graphics.cpp
+21d20
+&lt; SDL_Surface *ScreenSurface;
+92,94c91
+&lt; 	//sdl_screen = SDL_SetVideoMode(SCREEN_WIDTH*SCALE, /*SCREEN_HEIGHT*SCALE*/480, screen_bpp, flags);
+&lt; 	ScreenSurface = SDL_SetVideoMode(320, 480, 16, SDL_HWSURFACE);
+&lt;   sdl_screen = SDL_CreateRGBSurface(SDL_SWSURFACE, SCREEN_WIDTH*SCALE, SCREEN_HEIGHT*SCALE, screen_bpp, 0, 0, 0, 0);
+---
+&gt; 	sdl_screen = SDL_SetVideoMode(SCREEN_WIDTH*SCALE, SCREEN_HEIGHT*SCALE, screen_bpp, flags);
+diff -Nr old_nx/graphics/nxsurface.cpp new_nx/graphics/nxsurface.cpp
+14,15d13
+&lt; extern SDL_Surface *ScreenSurface;
+&lt; 
+243,256c241
+&lt; 	//SDL_Flip(fSurface);
+&lt;   //SDL_SoftStretch(fSurface, NULL, ScreenSurface, NULL);
+&lt;   if(SDL_MUSTLOCK(ScreenSurface)) SDL_LockSurface(ScreenSurface);
+&lt;   int x, y;
+&lt;   uint32_t *s = (uint32_t*)fSurface-&gt;pixels;
+&lt;   uint32_t *d = (uint32_t*)ScreenSurface-&gt;pixels;
+&lt;   for(y=0; y&lt;240; y++){
+&lt;     for(x=0; x&lt;160; x++){
+&lt;       *d++ = *s++;
+&lt;     }
+&lt;     d+= 160;
+&lt;   }
+&lt;   if(SDL_MUSTLOCK(ScreenSurface)) SDL_UnlockSurface(ScreenSurface);
+&lt;   SDL_Flip(ScreenSurface);
+---
+&gt; 	SDL_Flip(fSurface);
+diff -Nr old_nx/graphics/sprites.cpp new_nx/graphics/sprites.cpp
+31c31
+&lt; 	if (load_sif("sprites.sif"))
+---
+&gt; 	if (load_sif(PREFIX"sprites.sif"))
+diff -Nr old_nx/input.cpp new_nx/input.cpp
+36,45c36,45
+&lt; 		mappings[SDLK_LEFT] = LEFTKEY;
+&lt; 		mappings[SDLK_RIGHT] = RIGHTKEY;
+&lt; 		mappings[SDLK_UP] = UPKEY;
+&lt; 		mappings[SDLK_DOWN] = DOWNKEY;
+&lt; 		mappings[SDLK_LCTRL] = JUMPKEY;
+&lt; 		mappings[SDLK_LALT] = FIREKEY;
+&lt; 		mappings[SDLK_SPACE] = PREVWPNKEY;
+&lt; 		mappings[SDLK_LSHIFT] = NEXTWPNKEY;
+&lt; 		mappings[SDLK_TAB] = INVENTORYKEY;
+&lt; 		mappings[SDLK_BACKSPACE] = MAPSYSTEMKEY;
+---
+&gt; 		mappings[SDLK_a] = LEFTKEY;
+&gt; 		mappings[SDLK_d] = RIGHTKEY;
+&gt; 		mappings[SDLK_w] = UPKEY;
+&gt; 		mappings[SDLK_s] = DOWNKEY;
+&gt; 		mappings[SDLK_l] = JUMPKEY;
+&gt; 		mappings[SDLK_BACKSPACE] = FIREKEY;
+&gt; 		mappings[SDLK_o] = PREVWPNKEY;
+&gt; 		mappings[SDLK_p] = NEXTWPNKEY;
+&gt; 		mappings[SDLK_v] = INVENTORYKEY;
+&gt; 		mappings[SDLK_b] = MAPSYSTEMKEY;
+47c47
+&lt; 		mappings[SDLK_ESCAPE] = ESCKEY;
+---
+&gt; 		mappings[SDLK_SPACE] = ESCKEY;
+62,64c62,64
+&lt; 		mappings[SDLK_a] = FREEZE_FRAME_KEY;
+&lt; 		mappings[SDLK_b] = FRAME_ADVANCE_KEY;
+&lt; 		mappings[SDLK_c] = DEBUG_FLY_KEY;
+---
+&gt; 		mappings[SDLK_f] = FREEZE_FRAME_KEY;
+&gt; 		mappings[SDLK_g] = FRAME_ADVANCE_KEY;
+&gt; 		mappings[SDLK_h] = DEBUG_FLY_KEY;
+Binary files old_nx/lib/libfreetype.a and new_nx/lib/libfreetype.a differ
+Binary files old_nx/lib/libfreetype.so.11 and new_nx/lib/libfreetype.so.11 differ
+Binary files old_nx/lib/libSDL-1.2.so.11 and new_nx/lib/libSDL-1.2.so.11 differ
+Binary files old_nx/lib/libSDL.a and new_nx/lib/libSDL.a differ
+Binary files old_nx/lib/libSDL_image-1.2.so.8 and new_nx/lib/libSDL_image-1.2.so.8 differ
+Binary files old_nx/lib/libSDLmain.a and new_nx/lib/libSDLmain.a differ
+Binary files old_nx/lib/libSDL_mixer.a and new_nx/lib/libSDL_mixer.a differ
+Binary files old_nx/lib/libSDL_ttf-2.0.so.10 and new_nx/lib/libSDL_ttf-2.0.so.10 differ
+Binary files old_nx/lib/libSDL_ttf.a and new_nx/lib/libSDL_ttf.a differ
+Binary files old_nx/lib/libstdc++.a and new_nx/lib/libstdc++.a differ
+Binary files old_nx/lib/libTouchControlOverlayS.a and new_nx/lib/libTouchControlOverlayS.a differ
+Binary files old_nx/lib/libTouchControlOverlay.so.1 and new_nx/lib/libTouchControlOverlay.so.1 differ
+diff -Nr old_nx/main.cpp new_nx/main.cpp
+8,11c8,11
+&lt; const char *data_dir = "data";
+&lt; const char *stage_dir = "data/Stage";
+&lt; const char *pic_dir = "endpic";
+&lt; const char *nxdata_dir = ".";
+---
+&gt; const char *data_dir = PREFIX"data";
+&gt; const char *stage_dir = PREFIX"data/Stage";
+&gt; const char *pic_dir = PREFIX"endpic";
+&gt; const char *nxdata_dir = PREFIX"";
+28,29c28,29
+&lt; 	
+&lt; 	SetLogFilename("debug.txt");
+---
+&gt; 
+&gt; 	SetLogFilename(PREFIX"debug.txt");
+456c456,460
+&lt; 	if (file_exists(fname)) return 0;
+---
+&gt; 	printf("steward, %s\n", fname);
+&gt; 	if(file_exists(fname)){
+&gt; 		printf("steward 1\n");
+&gt; 		return 0;
+&gt; 	}
+458,459c462,463
+&lt; 	if (!safemode::init())
+&lt; 	{
+---
+&gt; 	if(!safemode::init()){
+&gt; 		printf("steward 2\n");
+470c474
+&lt; 	
+---
+&gt; 		printf("steward 3\n");
+diff -Nr old_nx/Makefile new_nx/Makefile
+5,6c5,6
+&lt;   SDL_CONFIG = sdl-config
+&lt;   CFLAGS+= 
+---
+&gt;   CFLAGS = `sdl-config --cflags`
+&gt; 	SDL_LIBS = -lSDL -lSDL_ttf 
+8,10c8,10
+&lt;   CC = mipsel-linux-g++
+&lt;   SDL_CONFIG = /home/steward/Github/gh_retrogame_toolchain/mipsel-linux-gcc/usr/mipsel-buildroot-linux-uclibc/sysroot/usr/bin/sdl-config
+&lt;   CFLAGS+= -I/home/steward/Github/gh_retrogame_toolchain/mipsel-linux-gcc/usr/mipsel-buildroot-linux-uclibc/sysroot/usr/include -I/home/steward/Github/gh_retrogame_toolchain/mipsel-linux-gcc/usr/mipsel-buildroot-linux-uclibc/sysroot/usr/include/SDL
+---
+&gt;   CC = ntoarmv7-gcc
+&gt;   CFLAGS = -I/home/steward/Github/gh_q30_toolchain/target_10_3_1_995/qnx6/include/ -I/home/steward/Github/gh_q30_toolchain/target_10_3_1_995/qnx6/include/SDL
+&gt; 	SDL_LIBS = lib/libfreetype.so.11  lib/libSDL-1.2.so.11 lib/libstdc++.a -lm lib/libSDL_ttf-2.0.so.10
+13a14,15
+&gt; 	mv nx cavestory/
+&gt; 	blackberry-nativepackager -package app.bar bar-descriptor.xml -devMode -debugToken ${HOME}/.rim/debugtoken_q30.bar
+74,75c76
+&lt; 	 `$(SDL_CONFIG) --libs` -lSDL_ttf -lstdc++ -lm
+&lt; 
+2557a2559
+&gt; 	rm app.bar
+diff -Nr old_nx/map.cpp new_nx/map.cpp
+286c286
+&lt; 	fp = fileopen("stage.dat", "rb");
+---
+&gt; 	fp = fileopen(PREFIX"stage.dat", "rb");
+308c308
+&lt; 	if (!(fp = fileopen("tilekey.dat", "rb")))
+---
+&gt; 	if (!(fp = fileopen(PREFIX"tilekey.dat", "rb")))
+Binary files old_nx/nx.core and new_nx/nx.core differ
+diff -Nr old_nx/platform/Linux/vbesync.c new_nx/platform/Linux/vbesync.c
+4c4
+&lt; #include &lt;libdrm/drm.h&gt;
+---
+&gt; //#include &lt;libdrm/drm.h&gt;
+diff -Nr old_nx/settings.cpp new_nx/settings.cpp
+11c11
+&lt; const char *setfilename = "settings.dat";
+---
+&gt; const char *setfilename = PREFIX"settings.dat";
+diff -Nr old_nx/settings.h new_nx/settings.h
+5a6
+&gt; #define PREFIX "app/native/cavestory/"
+diff -Nr old_nx/sound/org.cpp new_nx/sound/org.cpp
+7c7
+&lt; #include &lt;endian.h&gt;
+---
+&gt; //#include &lt;endian.h&gt;
+8a9
+&gt; #include "../settings.h"
+113c114
+&lt; static const char *drum_cache = "drum.pcm";
+---
+&gt; static const char *drum_cache = PREFIX"drum.pcm";
+120c121
+&lt; 			sprintf(fname, "./drums/%s.wav", drum_names[d]);
+---
+&gt; 			sprintf(fname, PREFIX"/drums/%s.wav", drum_names[d]);
+157c158
+&lt; 				sprintf(fname, "%sfx%02x.pxt", pxt_path, drum_pxt[d]);
+---
+&gt; 				sprintf(fname, PREFIX"%sfx%02x.pxt", pxt_path, drum_pxt[d]);
+615c616
+&lt; 		final[cursample] = htole16(mixed_sample);
+---
+&gt; 		final[cursample] = mixed_sample;
+diff -Nr old_nx/sound/pxt.cpp new_nx/sound/pxt.cpp
+9c9
+&lt; #include &lt;endian.h&gt;
+---
+&gt; //#include &lt;endian.h&gt;
+700c700
+&lt; 		value = htole16(value);
+---
+&gt; 		value = value;
+diff -Nr old_nx/sound/sound.cpp new_nx/sound/sound.cpp
+37,40c37,40
+&lt; static const char *pxt_dir = "./pxt/";
+&lt; static const char *org_dir = "./org/";
+&lt; static const char *sndcache = "sndcache.pcm";
+&lt; static const char *org_wavetable = "wavetable.dat";
+---
+&gt; static const char *pxt_dir = PREFIX"pxt/";
+&gt; static const char *org_dir = PREFIX"org/";
+&gt; static const char *sndcache = PREFIX"sndcache.pcm";
+&gt; static const char *org_wavetable = PREFIX"wavetable.dat";
+</pre><br>
+
+<p>
+完成<br>
+<img src="port_nx/1.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../../phone.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

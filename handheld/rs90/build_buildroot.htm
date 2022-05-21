@@ -1,0 +1,116 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>RetroMini</h3>
+<p><b>build buildroot</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://www.claudiokuenzler.com/blog/611/installing-cmake-3.4.1-ubuntu-14.04-trusty-using-alternatives">installing-cmake-3.4.1-ubuntu-14.04-trusty-using-alternatives</a><br><br>
+
+安裝cmake 3.14(不然會有add_compile_definitions編譯問題)
+</p>
+<pre>
+$ cd
+$ wget https://github.com/Kitware/CMake/releases/download/v3.14.4/cmake-3.14.4.tar.gz
+$ tar -xvzf cmake-3.14.4.tar.gz
+$ cd cmake-3.14.4
+$ ./configure
+$ make
+$ sudo make install
+$ sudo update-alternatives --install /usr/bin/cmake cmake /usr/local/bin/cmake 1 --force
+</pre><br>
+
+<p>
+編譯Buildroot
+</p>
+<pre>
+$ cd
+$ git clone https://github.com/OpenDingux/buildroot
+$ cd buildroot
+$ make od_rs90_defconfig
+$ make menuconfig
+</pre><br>
+
+<p>
+支援swapon指令<br>
+<img src="build_buildroot/1.jpg" class="maxSize">
+</p>
+<pre>
+$ vim board/opendingux/rs90/busybox.config
+ 646 CONFIG_MKSWAP=y
+ 647 CONFIG_FEATURE_MKSWAP_UUID=y
+
+ 678 CONFIG_SWAPON=y
+ 679 CONFIG_FEATURE_SWAPON_DISCARD=y
+ 680 CONFIG_FEATURE_SWAPON_PRI=y
+ 681 CONFIG_SWAPOFF=y
+ 682 CONFIG_FEATURE_SWAPONOFF_LABEL=y
+
+ 715 CONFIG_FEATURE_VOLUMEID_LINUXSWAP=y
+
+$ wget https://gitlab.freedesktop.org/libevdev/evtest/-/archive/evtest-1.33/evtest-evtest-1.33.tar.gz
+$ mkdir -p dl/evtest/
+$ mv evtest-evtest-1.33.tar.gz dl/evtest/evtest-1.33.tar.gz
+$ vim package/evtest/evtest.hash
+  sha256  e8396717d0d2907d6927dd8ba479cea0178cf0d4cb740aa3072eecf777370741  evtest-1.33.tar.gz
+
+$ make
+</pre>
+<p>
+P.S. toolchain: /opt/rs90-toolchain, rootfs: output/images/rootfs.squashfs
+</p>
+
+<p>
+<br><a href="../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

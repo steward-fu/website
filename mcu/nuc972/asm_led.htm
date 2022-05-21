@@ -1,0 +1,179 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>NUC972 &gt;&gt; Assembly</h3>
+<p><b>LED</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://github.com/steward-fu/mcu-pdf/blob/master/nuc970/pm.pdf">pdf</a><br>
+2. <a href="https://github.com/OpenNuvoton/NUC970_NonOS_BSP">NUC970_NonOS_BSP</a><br><br>
+
+Enable GPIO Clock<br>
+<img src="../nuc977/asm_led/3.jpg" class="maxSize"><br><br>
+
+GPIO Direction<br>
+<img src="../nuc977/asm_led/4.jpg" class="maxSize"><br><br>
+
+Output Data<br>
+<img src="../nuc977/asm_led/5.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+  .equ GPIOB_DIR,     (0xb8003000 + 0x40)
+  .equ GPIOB_DATAOUT, (0xb8003000 + 0x44)
+  .equ CLK_PCLKEN0,   (0xb0000200 + 0x18)
+ 
+  .text
+  .align 2
+  .global _start
+_start:    b reset
+_undef:    b .
+_swi:      b .
+_pabort:   b .
+_dabort:   b .
+_reserved: b .
+_irq:      b .
+_fiq:      b .
+ 
+reset:
+  ldr r0, =CLK_PCLKEN0
+  ldr r1, [r0]
+  orr r1, #(1 &lt;&lt; 3)
+  str r1, [r0]
+ 
+  ldr r0, =GPIOB_DIR
+  ldr r1, =(1 &lt;&lt; 0)
+  str r1, [r0]
+loop:
+  ldr r0, =GPIOB_DATAOUT
+  ldr r1, =(1 &lt;&lt; 0)
+  str r1, [r0]
+  ldr r4, =500000
+1:
+  nop
+  subs r4, r4, #1
+  bne 1b
+  ldr r0, =GPIOB_DATAOUT
+  ldr r1, =~(1 &lt;&lt; 0)
+  str r1, [r0]
+  ldr r4, =500000
+1:
+  nop
+  subs r4, r4, #1
+  bne 1b
+  b loop
+  .end
+</pre><br>
+
+<p>
+main.ld
+</p>
+<pre>
+MEMORY
+{
+  RAM(rwx) : ORIGIN = 0x000000, LENGTH = 0x08000000
+}
+
+SECTIONS
+{
+  .text :
+  {
+    *(.text);
+    . = ALIGN(4);
+    *(.rodata);
+    . = ALIGN(4);
+    *(.rodata*);
+    . = ALIGN(4);
+  } &gt; RAM
+}
+</pre><br>
+
+<p>
+Makefile
+</p>
+<pre>
+all:
+  arm-none-eabi-as -mcpu=arm9 -o main.o main.s
+  arm-none-eabi-ld -T main.ld -o main.elf main.o
+  arm-none-eabi-objcopy -O binary main.elf main.bin
+
+flash:
+  sudo nuwriter -m sdram -d NUC972DF62Y.ini -a 0 -w main.bin -n
+
+clean:
+  rm -rf main.o main.elf main.bin
+</pre><br>
+
+<p>
+編譯、燒錄
+</p>
+<pre>
+$ make
+  arm-none-eabi-as -mcpu=arm9 -o main.o main.s
+  arm-none-eabi-ld -T main.ld -o main.elf main.o
+  arm-none-eabi-objcopy -O binary main.elf main.bin
+
+$ make flash
+  sudo nuwriter -m sdram -d NUC972DF62Y.ini -a 0 -w main.bin -n
+</pre><br>
+
+<p>
+完成<br>
+<img src="asm_led/1.jpg" class="maxSize"><br>
+<img src="asm_led/2.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

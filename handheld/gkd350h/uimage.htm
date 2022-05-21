@@ -1,0 +1,113 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>GKD350H</h3>
+<p><b>從MicroSD提取uImage</b></p>
+<hr size="1">
+<p>
+步驟如下：
+</p>
+<pre>
+$ cd
+$ sudo dd if=/dev/sdX of=20mb bs=1M count=20
+$ od -A d -t x1 20mb | grep '1f 8b 08'
+  3145792 1f 8b 08 00 00 00 00 00 02 03 ec bd 0f 74 5c d5
+  7340096 1f 8b 08 00 00 00 00 00 02 03 ec bd 0f 74 1c d5
+
+$ dd if=20mb of=uImage bs=1 skip=3145728
+$ file uImage
+  uImage: u-boot legacy uImage, Linux-3.10.14, Linux/MIPS, OS Kernel Image (gzip), 2652449 bytes, Sat Dec 21 07:09:18 2019, Load Address: 0x80010000, Entry Point: 0x803D8510, Header CRC: 0xF3AC741F, Data CRC: 0x68C1893B
+
+$ dd if=20mb of=uImage_no_header bs=1 skip=3145792
+$ file uImage_no_header
+  uImage_no_header: gzip compressed data, max compression, from Unix, original size 0
+
+$ zcat uImage_no_header > kernel
+$ strings kernel | grep Linux
+  Linux version 3.10.14 (root@avrman-virtual-machine) (gcc version 5.2.0 (Ingenic r3.2.0-gcc520 2017.08-24) ) #2 PREEMPT Sat Dec 21 02:09:15 EST 2019
+  No init found.  Try passing init= option to kernel. See Linux Documentation/init.txt for guidance.
+  Linux
+  [%s] Warning! Received an indication that the LUN assignments on this target have changed. The Linux SCSI layer does not automatically remap LUN assignments.
+  Warning! Received an indication that the LUN assignments on this target have changed. The Linux SCSI layer does not automatically remap LUN assignments.
+  [%s] Warning! Received an indication that the operating parameters on this target have changed. The Linux SCSI layer does not automatically adjust these parameters.
+  Warning! Received an indication that the operating parameters on this target have changed. The Linux SCSI layer does not automatically adjust these parameters.
+  6Advanced Linux Sound Architecture Driver Initialized.
+  Advanced Linux Sound Architecture Driver Version k%s.
+  Linux
+</pre><br>
+
+<p>
+啟動參數：
+</p>
+<pre>
+$ strings 20mb | grep bootargs
+  bootargs=console=ttyS1,115200n8 mem=128M@0x0 consoleblank=0 root=/dev/ram0 rw rdinit=/sbin/init
+  bootargs=console=ttyS1,115200n8 mem=128M@0x0 consoleblank=0 init=/linuxrc root=/dev/mmcblk0p1 rw rootfstype=ext4 rootwait
+  bootargs
+</pre><br>
+
+<p>
+U-Boot版號：
+</p>
+<pre>
+$ strings 20mb | grep U-Boot
+  U-Boot
+  U-Boot SPL 2013.07 (Nov 17 2019 - 21:50:26)
+  Now running in RAM - U-Boot at: %08lx
+  U-Boot
+  ** Invalid partition type "%.32s" (expect "U-Boot")
+  U-Boot 2013.07 (Nov 17 2019 - 21:50:26)
+</pre><br>
+
+<p>
+<br><a href="../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

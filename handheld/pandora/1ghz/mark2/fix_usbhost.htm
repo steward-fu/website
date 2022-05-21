@@ -1,0 +1,112 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../../../header.js"></script>
+<div id="page">
+<h3>Pandora 1GHz &gt;&gt; Debian Mark2</h3>
+<p><b>解決USBHostTrigger的問題</b></p>
+<hr size="1">
+<p>
+當使用者使用pdcmd開啓USBHost模式後，會發現無法再度使用pdcmd關閉USBHost，這是因為pdcmd script在判斷ehci-hcd時，誤將ehci_hcd寫成ehci-hcd，使用者可以使用如下方式修復：
+</p>
+
+<pre>
+$ sudo vim /usr/sbin/pdcmd
+</pre>
+
+<pre class="brush:cpp">
+USBHostTrigger(){
+  if [ -z "$(lsmod | grep ehci_hcd)" ]; then
+    msg "USB Host" "Start"
+    modprobe ehci-hcd
+  else
+    msg "USB Host" "Stop"
+    rmmod ehci-hcd
+  fi
+}
+</pre><br>
+
+<p>
+Enable USBHost
+</p>
+
+<pre>
+steward@pandian:~$ sudo pdcmd USBHostTrigger
+steward@pandian:~$ sudo dmesg -c
+[ 3706.670959] ehci_hcd: USB 2.0 'Enhanced' Host Controller (EHCI) Driver
+[ 3707.675842] ehci-omap ehci-omap.0: OMAP-EHCI Host Controller
+[ 3707.682373] ehci-omap ehci-omap.0: new USB bus registered, assigned bus number 1
+[ 3707.687225] ehci-omap ehci-omap.0: irq 77, io mem 0x48064800
+[ 3707.699645] ehci-omap ehci-omap.0: USB 2.0 started, EHCI 1.00
+[ 3707.699981] usb usb1: New USB device found, idVendor=1d6b, idProduct=0002
+[ 3707.700103] usb usb1: New USB device strings: Mfr=3, Product=2, SerialNumber=1
+[ 3707.700317] usb usb1: Product: OMAP-EHCI Host Controller
+[ 3707.700531] usb usb1: Manufacturer: Linux 3.2.45 ehci_hcd
+[ 3707.700653] usb usb1: SerialNumber: ehci-omap.0
+[ 3707.707794] hub 1-0:1.0: USB hub found
+[ 3707.708038] hub 1-0:1.0: 3 ports detected
+</pre><br>
+
+<p>
+Disable USBHost
+</p>
+
+<pre>
+steward@pandian:~$ sudo pdcmd USBHostTrigger
+steward@pandian:~$ sudo dmesg -c
+[ 3725.640502] ehci-omap ehci-omap.0: remove, state 4
+[ 3725.640747] usb usb1: USB disconnect, device number 1
+[ 3725.643341] ehci-omap ehci-omap.0: USB bus 1 deregistered
+</pre><br>
+
+<p>
+<br><a href="../../../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

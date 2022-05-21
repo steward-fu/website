@@ -1,0 +1,188 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>BeagleBone Green Wireless &gt;&gt; C/C++</h3>
+<p><b>LED(Register)</b></p>
+<hr size="1">
+<p>
+LED位置<br>
+D2: GPIO1-21<br>
+D3: GPIO1-22<br>
+D4: GPIO1-23<br>
+D5: GPIO1-24<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;linux/init.h&gt;
+#include &lt;linux/device.h&gt;
+#include &lt;linux/module.h&gt;
+#include &lt;linux/delay.h&gt;
+#include &lt;linux/timer.h&gt;
+#include &lt;linux/gpio.h&gt;
+#include &lt;asm/io.h&gt;
+
+#define GPIO0                 0x44E07000
+#define GPIO1                 0x4804C000
+#define GPIO2                 0x481AC000
+#define GPIO3                 0x481AE000 
+
+#define GPIO_REVISION         0x00
+#define GPIO_SYSCONFIG        0x10
+#define GPIO_EOI              0x20
+#define GPIO_IRQSTATUS_RAW_0  0x24
+#define GPIO_IRQSTATUS_RAW_1  0x28
+#define GPIO_IRQSTATUS_0      0x2c
+#define GPIO_IRQSTATUS_1      0x30
+#define GPIO_IRQSTATUS_SET_0  0x34
+#define GPIO_IRQSTATUS_SET_1  0x38
+#define GPIO_IRQSTATUS_CLR_0  0x3c
+#define GPIO_IRQSTATUS_CLR_1  0x40
+#define GPIO_IRQWAKEN_0       0x44
+#define GPIO_IRQWAKEN_1       0x48
+#define GPIO_SYSSTATUS        0x114
+#define GPIO_CTRL             0x130
+#define GPIO_OE               0x134
+#define GPIO_DATAIN           0x138
+#define GPIO_DATAOUT          0x13c
+#define GPIO_LEVELDETECT0     0x140
+#define GPIO_LEVELDETECT1     0x144
+#define GPIO_RISINGDETECT     0x148
+#define GPIO_FALLINGDETECT    0x14c
+#define GPIO_DEBOUNCENABLE    0x150
+#define GPIO_DEBOUNCINGTIME   0x154
+#define GPIO_CLEARDATAOUT     0x190
+#define GPIO_SETDATAOUT       0x194
+
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("Steward_Fu");
+MODULE_DESCRIPTION("BBGW LED Driver");
+ 
+static int g_blink_period=300;
+static struct timer_list g_blink_timer;
+static volatile unsigned long *gpio1_dataout;
+ 
+void blink_handler(unsigned long unused)
+{
+  static int on = 1;
+     
+  on = on ? 0 : 1;
+  *gpio1_dataout = (on &lt;&lt; 21) | (on &lt;&lt; 22) | (on &lt;&lt; 23) | (on &lt;&lt; 24);
+  mod_timer(&amp;g_blink_timer, jiffies + msecs_to_jiffies(g_blink_period));
+}
+ 
+static int __init main_init(void)
+{
+  if(gpio_request(21+32, "gpio1-21") &lt; 0){
+    printk("failed to request D2\n");
+  }
+  else{
+    printk("request successfully for D2\n");
+    gpio_direction_output(21+32, 1);
+  }
+ 
+  if(gpio_request(22+32, "gpio1-22") &lt; 0){
+    printk("failed to request D3\n");
+  }
+  else{
+    printk("request successfully for D3\n");
+    gpio_direction_output(22+32, 1);
+  }
+   
+  if(gpio_request(23+32, "gpio1-23") &lt; 0){
+    printk("failed to request D4\n");
+  }
+  else{
+    printk("request successfully for D4\n");
+    gpio_direction_output(23+32, 1);
+  }
+   
+  if(gpio_request(24+32, "gpio1-24") &lt; 0){
+    printk("failed to request D5\n");
+  }
+  else{
+    printk("request successfully for D5\n");
+    gpio_direction_output(24+32, 1);
+  }
+
+  gpio1_dataout = ioremap(GPIO1 + GPIO_DATAOUT, 4);
+  printk("gpio1_dataout: 0x%x\n", (unsigned int)gpio1_dataout);
+ 
+  setup_timer(&amp;g_blink_timer, blink_handler, 0);
+  mod_timer(&amp;g_blink_timer, jiffies + msecs_to_jiffies(g_blink_period));
+ 
+  return 0;
+}
+  
+static void __exit main_exit(void)
+{
+  del_timer(&amp;g_blink_timer);
+  gpio_free(21+32);
+  gpio_free(22+32);
+  gpio_free(23+32);
+  gpio_free(24+32);
+  iounmap(gpio1_dataout);
+}
+  
+module_init(main_init);
+module_exit(main_exit);
+</pre><br>
+
+<p>
+完成<br>
+<img src="led_gpio/1.jpg" class="maxSize"><br>
+<img src="led_gpio/2.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

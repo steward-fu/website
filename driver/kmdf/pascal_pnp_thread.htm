@@ -1,0 +1,230 @@
+<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushPas.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Kernel Mode Driver Framework &gt;&gt; Pascal (PNP)</h3>
+<p><b>Thread</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://github.com/steward-fu/kmdf">Source Code</a><br>
+2. <a href="https://mropengate.blogspot.com/2015/01/operating-system-ch4-multithread.html">operating-system-ch4-multithread</a><br>
+3. <a href="https://www.tutorialspoint.com/user-level-threads-and-kernel-level-threads">user-level-threads-and-kernel-level-threads</a><br><br>
+
+Thread是一個最小的執行單位，一個Process可以產生多個Thread，在多核CPU上，產生的Thread可以同時的運作，這意謂著使用Thread技術可以用來改善效能，但是，每個Thread間的資料同步則是另一個課題，在此練習，司徒著重在教導使用者如何撰寫一個最基本的Thread，了解其架構後，使用者可以再更深入了解Thread需要面對的其它問題，而值得注意的是，Thread有區分User Thread和System Thread兩種，各有優缺點，細節可以參考如上的參考資訊。<br><br>
+
+main.pas
+</p>
+<pre class="brush:pas">
+unit main;
+
+interface
+  uses
+    DDDK;
+    
+  const
+    DEV_NAME = '\Device\MyDriver';
+    SYM_NAME = '\DosDevices\MyDriver';
+    IOCTL_START = (FILE_DEVICE_UNKNOWN shl 16) or (FILE_ANY_ACCESS shl 14) or ($800 shl 2) or (METHOD_BUFFERED);
+    IOCTL_STOP = (FILE_DEVICE_UNKNOWN shl 16) or (FILE_ANY_ACCESS shl 14) or ($801 shl 2) or (METHOD_BUFFERED);
+
+  function __DriverEntry(pOurDriver:PDRIVER_OBJECT; pOurRegistry:PUNICODE_STRING):NTSTATUS; stdcall;
+
+implementation
+var
+  bExit: ULONG;
+  pThread: Handle;
+
+procedure MyThread(pParam:Pointer); stdcall;
+var
+  tt: LARGE_INTEGER;
+ 
+begin
+  tt.HighPart:= tt.HighPart or -1;
+  tt.LowPart:= ULONG(-10000000);
+  while Integer(bExit) = 0 do
+  begin
+    KeDelayExecutionThread(KernelMode, FALSE, @tt);
+    DbgPrint('Sleep 1s', []);
+  end;
+  DbgPrint('Exit MyThread', []);
+  PsTerminateSystemThread(STATUS_SUCCESS);
+end;
+
+procedure IrpFileCreate(Device:WDFDEVICE; Request:WDFREQUEST; FileObject:WDFFILEOBJECT); stdcall;
+begin
+  DbgPrint('IrpFileCreate', []);
+  WdfRequestComplete(Request, STATUS_SUCCESS);
+end;
+
+procedure IrpFileClose(FileObject:WDFFILEOBJECT); stdcall;
+begin
+  DbgPrint('IrpFileClose', []);
+end;
+
+procedure IrpIOCTL(Queue:WDFQUEUE; Request:WDFREQUEST; OutputBufferLength:ULONG; InputBufferLength:ULONG; IoControlCode:ULONG); stdcall;
+var
+  hThread: Handle;
+  status: NTSTATUS;
+
+begin
+  if IoControlCode = IOCTL_START then begin
+    DbgPrint('IOCTL_START', []);
+    bExit:= 0;
+    status:= PsCreateSystemThread(@hThread, THREAD_ALL_ACCESS, Nil, Handle(-1), Nil, MyThread, Nil);
+    if NT_SUCCESS(status) then begin
+      ObReferenceObjectByHandle(hThread, THREAD_ALL_ACCESS, Nil, KernelMode, @pThread, Nil);
+      ZwClose(hThread);
+    end;
+  end
+  else if IoControlCode = IOCTL_STOP then begin
+    DbgPrint('IOCTL_STOP', []);
+    bExit:= 1;
+    KeWaitForSingleObject(Pointer(pThread), Executive, KernelMode, False, Nil);
+    ObDereferenceObject(pThread);
+  end;
+  WdfRequestComplete(Request, STATUS_SUCCESS);
+end;
+
+function AddDevice(pOurDriver:WDFDRIVER; pDeviceInit:PWDFDEVICE_INIT):NTSTATUS; stdcall;
+var
+  device: WDFDEVICE;
+  suDevName: UNICODE_STRING;
+  szSymName: UNICODE_STRING;
+  file_cfg: WDF_FILEOBJECT_CONFIG;
+  ioqueue_cfg: WDF_IO_QUEUE_CONFIG;
+
+begin
+  WdfDeviceInitSetIoType(pDeviceInit, WdfDeviceIoBuffered);
+  WDF_FILEOBJECT_CONFIG_INIT(@file_cfg, @IrpFileCreate, @IrpFileClose, Nil);
+  WdfDeviceInitSetFileObjectConfig(pDeviceInit, @file_cfg, WDF_NO_OBJECT_ATTRIBUTES);
+  
+  RtlInitUnicodeString(@suDevName, DEV_NAME);
+  RtlInitUnicodeString(@szSymName, SYM_NAME);
+  WdfDeviceInitAssignName(pDeviceInit, @suDevName);
+  WdfDeviceCreate(@pDeviceInit, WDF_NO_OBJECT_ATTRIBUTES, @device);
+  WdfDeviceCreateSymbolicLink(device, @szSymName);
+  
+  WDF_IO_QUEUE_CONFIG_INIT_DEFAULT_QUEUE(@ioqueue_cfg, WdfIoQueueDispatchSequential);
+  ioqueue_cfg.EvtIoDeviceControl:= @IrpIOCTL;
+  Result:= WdfIoQueueCreate(device, @ioqueue_cfg, WDF_NO_OBJECT_ATTRIBUTES, WDF_NO_HANDLE);
+end;
+
+function __DriverEntry(pOurDriver:PDRIVER_OBJECT; pOurRegistry:PUNICODE_STRING):NTSTATUS; stdcall;
+var
+  config: WDF_DRIVER_CONFIG;
+  
+begin
+  WDF_DRIVER_CONFIG_INIT(@config, AddDevice);
+  WdfDriverCreate(pOurDriver, pOurRegistry, WDF_NO_OBJECT_ATTRIBUTES, @config, WDF_NO_HANDLE);
+  Result:= STATUS_SUCCESS;
+end;
+end.
+</pre>
+<p>
+<b>IrpIOCTL</b>收到IOCTL_START後，產生一個新的Thread(注意有User和System區分)，接著呼叫ZwClose()，值得注意的是，這個ZwClose()僅是釋放Handle的資源，實際Thread並不會被關閉，原因在於提前做ObReferenceObjectByHandle()，而當收到IOCTL_STOP，則設定bExit並等待Thread結束，最後呼叫ObDereferenceObject()釋放Object資源。<br><br>
+
+app.pas
+</p>
+<pre class="brush:pas">
+program main;
+
+{$APPTYPE CONSOLE}
+
+uses
+  Windows,
+  Messages,
+  SysUtils,
+  Variants,
+  Classes,
+  Graphics,
+  Controls,
+  Forms,
+  DIALOGS;
+
+const
+  METHOD_BUFFERED = 0;
+  METHOD_IN_DIRECT = 1;
+  METHOD_OUT_DIRECT = 2;
+  METHOD_NEITHER = 3;
+  FILE_ANY_ACCESS = 0;
+  FILE_DEVICE_UNKNOWN = $22;
+  IOCTL_START = (FILE_DEVICE_UNKNOWN shl 16) or (FILE_ANY_ACCESS shl 14) or ($800 shl 2) or (METHOD_BUFFERED);
+  IOCTL_STOP = (FILE_DEVICE_UNKNOWN shl 16) or (FILE_ANY_ACCESS shl 14) or ($801 shl 2) or (METHOD_BUFFERED);
+
+var
+  fd: DWORD;
+  ret: DWORD;
+
+begin
+  fd:= CreateFile('\\.\MyDriver', GENERIC_READ or GENERIC_WRITE, FILE_SHARE_READ, Nil, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
+  if (fd &lt;&gtl INVALID_HANDLE_VALUE) then
+  begin
+    DeviceIoControl(fd, IOCTL_START, Nil, 0, Nil, 0, ret, Nil);
+    Sleep(3000);
+    DeviceIoControl(fd, IOCTL_STOP, Nil, 0, Nil, 0, ret, Nil);
+    CloseHandle(fd);
+  end else
+  begin
+    WriteLn(Output, 'failed to open mydriver');
+  end;
+end.
+</pre><br>
+
+<p>
+結果<br>
+<img src="asm_pnp_thread/2.jpg" class="maxSize"><br>
+<img src="asm_pnp_thread/1.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../driver.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,112 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Kernel Mode Driver Framework</h3>
+<p><b>淺談WDFFunctions</b></p>
+<hr size="1">
+<p>
+在WDF驅動程式架構，系統載入驅動程式時，呼叫的進入點是FxDriverEntry()，而不是原本的DriverEntry()，只是FxDriverEntry()最終會呼叫DriverEntry()，這個DriverEntry()也就是原本使用者寫的進入點，在DriverEntry()裡面會呼叫WdfDriverCreate()用來產生WDF Driver Object，讓司徒好奇的是，WdfDriverCreate()裡面的WdfFunctions[]究竟是如何得到的呢？因為司徒在移植KMDF(從C/C++到MASM32)時，便找不到這個指標的內容，於是司徒逆向看下相關檔案，這才發現WdfFunctions[]是執行後填入的東西，過程分析如下。<br><br>
+
+司徒使用一個簡單的範例做測試：
+</p>
+<pre class="brush:asm">
+public DriverEntry
+
+.data
+config WDF_DRIVER_CONFIG <0>
+
+.code
+DriverEntry proc pOurDriver:PDRIVER_OBJECT, pOurRegistry:PUNICODE_STRING
+  invoke WDF_DRIVER_CONFIG_INIT, offset config, 0
+  invoke WdfDriverCreate, pOurDriver, pOurRegistry, WDF_NO_OBJECT_ATTRIBUTES, offset config, WDF_NO_HANDLE
+  mov eax, STATUS_UNSUCCESSFUL
+  ret
+DriverEntry endp
+end DriverEntry
+.end
+</pre><br>
+
+<p>
+接著逆向main.obj<br>
+<img src="wdffunctions/1.jpg" class="maxSize"><br><br>
+
+接著跟到_WdfDriverCreate@20<br>
+<img src="wdffunctions/2.jpg" class="maxSize"><br><br>
+
+extern WdfFunctions[]<br>
+<img src="wdffunctions/3.jpg" class="maxSize"><br><br>
+
+WdfFunctions[]定義如下：
+</p>
+<pre class="brush:asm">
+typedef void (*WDFFUNC) (void);
+extern WDFFUNC WdfFunctions [];
+</pre><br>
+
+<p>
+接著逆向WDFDriverEntry.lib<br>
+<img src="wdffunctions/4.jpg" class="maxSize"><br>
+看到這裡應該有個底了，這些指標並不在已經事先指定好，也就是不是在編譯時期產生，而是在執行時再填入<br><br>
+
+往回找參考的地方<br>
+<img src="wdffunctions/5.jpg" class="maxSize"><br><br>
+
+調用地方是_FxDriverEntryWorker@8<br>
+<img src="wdffunctions/6.jpg" class="maxSize"><br><br>
+
+而_FxDriverEntry@8就是調用_FxDriverEntryWorker@8的最原始地方<br>
+<img src="wdffunctions/7.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../driver.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

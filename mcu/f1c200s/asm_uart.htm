@@ -1,0 +1,207 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>F1C200S &gt;&gt; Assembly</h3>
+<p><b>UART</b></p>
+<hr size="1">
+<p>
+參考資料：<br>
+1. <a href="https://github.com/steward-fu/mcu-pdf/tree/master/f1c100s">pdf</a><br>
+2. <a href="http://nano.lichee.pro/">lichee</a><br>
+3. <a href="https://mangopi.org/mangopi_r">mangopi_r</a><br>
+4. <a href="https://www.allwinnertech.com/index.php?c=product&a=index&pid=4">allwinner</a><br><br>
+
+UART1腳位位於PA2、PA3<br>
+<img src="asm_uart/1.jpg" class="maxSize"><br><br>
+
+位址<br>
+<img src="../f1c100s/asm_uart/2.jpg" class="maxSize"><br><br>
+
+暫存器<br>
+<img src="../f1c100s/asm_uart/3.jpg" class="maxSize"><br><br>
+
+Baudrate計算方式
+</p>
+<pre>
+PLL = 24MHz*N*K/M
+
+0x80041800:
+  K = 1
+  M = 1
+  N = 24
+
+PLL_PERIPH = 24MHz*25 = 600MHz
+AHB_CLK = PLL_PERIPH/(AHB_PRE_DIV*AHB_CLK_DIV_RATIO) = 600MHz/(3*1) = 200MHz
+APB_CLK = AHB_CLK/APB_CLK_RATIO = 200MHz/2 = 100MHz
+
+0x00003180:
+  AHB_PRE_DIV = 3
+  APB_CLK_RATIO = 2
+  AHB_CLK_DIV_RATIO = 1
+
+Baudrate = APB_CLK/(16*divisor) = 100MHz/(16*54) = 115741 ~= 115200
+</pre><br>
+
+<p>
+main.s
+</p>
+<pre class="brush:asm">
+  .global _start
+   
+  .equiv CCU_BASE,              0x01c20000
+  .equiv GPIO_BASE,             0x01c20800
+  .equiv UART1_BASE,            0x01c25400
+
+  .equiv PLL_PERIPH_CTRL_REG,   0x0028
+  .equiv AHB_APB_HCLKC_CFG_REG, 0x0054
+  .equiv BUS_CLK_GATING_REG2,   0x0068
+  .equiv BUS_SOFT_RST_REG2,     0x02d0
+ 
+  .equiv PA,        (0x24 * 0) 
+  .equiv PORT_CFG0, 0x00
+  .equiv PORT_DATA, 0x10
+  .equiv UART_RBR,  0x0000
+  .equiv UART_DLL,  0x0000
+  .equiv UART_DLH,  0x0004
+  .equiv UART_IER,  0x0004
+  .equiv UART_IIR,  0x0008
+  .equiv UART_LCR,  0x000c
+  .equiv UART_MCR,  0x0010
+  .equiv UART_USR,  0x007c
+  
+  .arm
+  .text
+_start:
+  .long 0xea000016
+  .byte 'e', 'G', 'O', 'N', '.', 'B', 'T', '0'
+  .long 0, __spl_size
+  .byte 'S', 'P', 'L', 2
+  .long 0, 0
+  .long 0, 0, 0, 0, 0, 0, 0, 0
+  .long 0, 0, 0, 0, 0, 0, 0, 0
+  
+_vector:
+  b reset
+  b .
+  b .
+  b .
+  b .
+  b .
+  b .
+  b .
+  
+reset:
+  ldr r0, =CCU_BASE
+  ldr r1, =0x80041800
+  str r1, [r0, #PLL_PERIPH_CTRL_REG]
+  ldr r1, =0x00003180
+  str r1, [r0, #AHB_APB_HCLKC_CFG_REG]
+ 
+  ldr r0, =GPIO_BASE
+  ldr r1, =0x5500
+  str r1, [r0, #(PA + PORT_CFG0)]
+ 
+  ldr r0, =CCU_BASE
+  ldr r1, =(1 &lt;&lt; 21)
+  str r1, [r0, #BUS_CLK_GATING_REG2]
+  str r1, [r0, #BUS_SOFT_RST_REG2]
+ 
+  ldr r0, =UART1_BASE
+  ldr r1, =0x00
+  str r1, [r0, #UART_IER]
+  ldr r1, =0xf7
+  str r1, [r0, #UART_IIR]
+  ldr r1, =0x00
+  str r1, [r0, #UART_MCR]
+  ldr r1, [r0, #UART_LCR]
+  orr r1, #(1 &lt;&lt; 7)
+  str r1, [r0, #UART_LCR]
+  ldr r1, =54
+  str r1, [r0, #UART_DLL]
+  ldr r1, =0x00
+  str r1, [r0, #UART_DLH]
+  ldr r1, [r0, #UART_LCR]
+  bic r1, #(1 &lt;&lt; 7)
+  str r1, [r0, #UART_LCR]
+  ldr r1, [r0, #UART_LCR]
+  bic r1, #0x1f
+  orr r1, #0x03
+  str r1, [r0, #UART_LCR]
+  
+  ldr r0, =UART1_BASE
+  ldr r2, =hello
+1:
+  ldr r1, [r0, #UART_USR]
+  tst r1, #(1 &lt;&lt; 1)
+  beq 1b
+  ldrb r1, [r2]
+  strb r1, [r0, #UART_RBR]
+  add r2, #1
+  cmp r1, #0
+  bne 1b
+  
+main:
+  b main
+  
+  .align
+hello: .asciz "Hello, world!"
+  .end
+</pre><br>
+
+<p>
+Baudrate: 115200bps<br>
+<img src="../f1c100s/asm_uart/4.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

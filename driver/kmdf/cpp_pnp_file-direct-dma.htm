@@ -1,0 +1,210 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Kernel Mode Driver Framework&gt;&gt; C/C++ (PNP) &gt;&gt; File</h3>
+<p><b>WdfDeviceIoDirect(DMA)</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://github.com/steward-fu/kmdf">Source Code</a><br><br>
+
+由於我們練習的驅動程式位於上層，本身並沒有觸及過多DMA的細節操作，因此，WdfDeviceIoDirect的DMA作法會跟PIO一樣，唯一的區別就是取得DMA位址的方式，必須使用特殊的API取得，這篇練習在於說明有這樣的記憶體差別，當使用者實際觸及DMA驅動程式時，必須詳細閱讀DMA的操作方式。<br><br>
+
+記憶體指標：
+</p>
+<table>
+<tr>
+  <th>Event</th>
+  <th>Buffer</th>
+  <th>Length</th>
+</tr>
+<tr>
+  <td>EvtIoRead</td>
+  <td>Step 1. WdfRequestRetrieveOutputWdmMdl()<br>Step 2. MmGetMdlVirtualAddress()</td>
+  <td>傳入的第三個參數</td>
+</tr>
+<tr>
+  <td>EvtIoWrite</td>
+  <td>Step 1. WdfRequestRetrieveInputWdmMdl()<br>Step 2. MmGetMdlVirtualAddress()</td>
+  <td>傳入的第三個參數</td>
+</tr>
+</table><br>
+
+<p>
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;ntddk.h&gt;
+#include &lt;wdf.h&gt;
+
+#define DEV_NAME L"\\Device\\MyDriver"
+#define SYM_NAME L"\\DosDevices\\MyDriver"
+
+char szBuffer[255]={0};
+
+void IrpFileCreate(WDFDEVICE Device, WDFREQUEST Request, WDFFILEOBJECT FileObject)
+{  
+  DbgPrint("IrpFieCreate");
+  WdfRequestComplete(Request, STATUS_SUCCESS);
+}
+
+void IrpFileClose(WDFFILEOBJECT FileObject)
+{
+  DbgPrint("IrpFieClose");
+}
+
+void IrpRead(WDFQUEUE Queue, WDFREQUEST Request, size_t Length)
+{
+  PMDL mdl;
+  ULONG len;
+  UCHAR *dst;
+
+  DbgPrint("IrpRead");
+  len = strlen(szBuffer) + 1;
+  WdfRequestRetrieveOutputWdmMdl(Request, &amp;mdl);
+  dst = MmGetMdlVirtualAddress(mdl);
+  memcpy(dst, szBuffer, len);
+  WdfRequestCompleteWithInformation(Request, STATUS_SUCCESS, len);
+}
+
+void IrpWrite(WDFQUEUE Queue, WDFREQUEST Request, size_t Length)
+{
+  PMDL mdl;
+  UCHAR *src;
+
+  DbgPrint("IrpWrite");
+  WdfRequestRetrieveInputWdmMdl(Request, &amp;mdl);
+  src = MmGetMdlVirtualAddress(mdl);
+  memcpy(szBuffer, src, Length);
+  DbgPrint("Buffer: %s, Length:%d", szBuffer, Length);
+  WdfRequestCompleteWithInformation(Request, STATUS_SUCCESS, Length);
+}
+
+NTSTATUS AddDevice(WDFDRIVER Driver, PWDFDEVICE_INIT pDeviceInit)
+{
+  WDFDEVICE device;
+  UNICODE_STRING suDevName;
+  UNICODE_STRING szSymName;
+  WDF_FILEOBJECT_CONFIG file_cfg;
+  WDF_IO_QUEUE_CONFIG ioqueue_cfg;
+  
+  RtlInitUnicodeString(&amp;suDevName, DEV_NAME);
+  RtlInitUnicodeString(&amp;szSymName, SYM_NAME);
+  WdfDeviceInitAssignName(pDeviceInit, &amp;suDevName);
+  
+  WdfDeviceInitSetIoType(pDeviceInit, WdfDeviceIoDirect);
+  WDF_FILEOBJECT_CONFIG_INIT(&amp;file_cfg, IrpFileCreate, IrpFileClose, NULL);
+  WdfDeviceInitSetFileObjectConfig(pDeviceInit, &amp;file_cfg, WDF_NO_OBJECT_ATTRIBUTES);
+  WdfDeviceCreate(&amp;pDeviceInit, WDF_NO_OBJECT_ATTRIBUTES, &amp;device);
+  WdfDeviceCreateSymbolicLink(device, &amp;szSymName);
+  
+  WDF_IO_QUEUE_CONFIG_INIT_DEFAULT_QUEUE(&amp;ioqueue_cfg, WdfIoQueueDispatchSequential);
+  ioqueue_cfg.EvtIoRead = IrpRead;
+  ioqueue_cfg.EvtIoWrite = IrpWrite;
+  return WdfIoQueueCreate(device, &amp;ioqueue_cfg, WDF_NO_OBJECT_ATTRIBUTES, WDF_NO_HANDLE);
+}
+
+NTSTATUS DriverEntry(PDRIVER_OBJECT pOurDriver, PUNICODE_STRING pRegistry)
+{
+  WDF_DRIVER_CONFIG config;
+
+  WDF_DRIVER_CONFIG_INIT(&amp;config, AddDevice);
+  return WdfDriverCreate(pOurDriver, pRegistry, WDF_NO_OBJECT_ATTRIBUTES, &amp;config, WDF_NO_HANDLE);
+}
+</pre>
+<p>
+<b>IrpWrite()</b>複製User Application的資料到szBuffer<br>
+<b>IrpRead()</b>回填資料給User Application<br><br>
+
+app.c
+</p>
+<pre class="brush:cpp">
+#define INITGUID
+#include &lt;windows.h&gt;
+#include &lt;strsafe.h&gt;
+#include &lt;setupapi.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+int __cdecl main(int argc, char* argv[])
+{
+  HANDLE hFile = NULL;
+  DWORD dwRet = 0;
+  char szBuffer[255]={0};
+
+  hFile = CreateFile("\\\\.\\MyDriver", GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+  if(hFile == INVALID_HANDLE_VALUE){
+    printf("failed to open mydriver");
+    return 1;
+  }
+
+  strncpy(szBuffer, "I am error", sizeof(szBuffer));
+  WriteFile(hFile, szBuffer, strlen(szBuffer) + 1, &amp;dwRet, NULL);
+  printf("WR: %s, %d\n", szBuffer, dwRet);
+
+  memset(szBuffer, 0, sizeof(szBuffer));
+  ReadFile(hFile, szBuffer, sizeof(szBuffer), &amp;dwRet, NULL);
+  printf("RD: %s, %d\n", szBuffer, dwRet);
+  CloseHandle(hFile);
+  return 0;
+}
+</pre><br>
+
+<p>
+結果<br>
+<img src="asm_pnp_file-buffer/2.jpg" class="maxSize"><br>
+<img src="asm_pnp_file-buffer/1.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../driver.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

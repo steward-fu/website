@@ -1,0 +1,921 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>CM3354 &gt;&gt; C/C++</h3>
+<p><b>2.4" IPS 320x240(ST7789V)</b></p>
+<hr size="1">
+<p>
+arch/arm/boot/dts/am335x-evm/dts
+</p>
+<pre>
+&amp;am33xx_pinmux {
+  pinctrl-names = "default";
+  pinctrl-0 = &lt;&gpio_keys_s0&gt;;
+
+  ...
+  lcd_pins_default: lcd_pins_default {
+    pinctrl-single,pins = &gt;
+      0xa0 (PIN_OUTPUT | MUX_MODE0)    /* lcd_data0.lcd_data0 */
+      0xa4 (PIN_OUTPUT | MUX_MODE0)    /* lcd_data1.lcd_data1 */
+      0xa8 (PIN_OUTPUT | MUX_MODE0)    /* lcd_data2.lcd_data2 */
+      0xac (PIN_OUTPUT | MUX_MODE0)    /* lcd_data3.lcd_data3 */
+      0xb0 (PIN_OUTPUT | MUX_MODE0)    /* lcd_data4.lcd_data4 */
+      0xb4 (PIN_OUTPUT | MUX_MODE0)    /* lcd_data5.lcd_data5 */
+      0xb8 (PIN_OUTPUT | MUX_MODE0)    /* lcd_data6.lcd_data6 */
+      0xbc (PIN_OUTPUT | MUX_MODE0)    /* lcd_data7.lcd_data7 */
+      0xc0 (PIN_OUTPUT | MUX_MODE0)    /* lcd_data8.lcd_data8 */
+      0xc4 (PIN_OUTPUT | MUX_MODE0)    /* lcd_data9.lcd_data9 */
+      0xc8 (PIN_OUTPUT | MUX_MODE0)    /* lcd_data10.lcd_data10 */
+      0xcc (PIN_OUTPUT | MUX_MODE0)    /* lcd_data11.lcd_data11 */
+      0xd0 (PIN_OUTPUT | MUX_MODE0)    /* lcd_data12.lcd_data12 */
+      0xd4 (PIN_OUTPUT | MUX_MODE0)    /* lcd_data13.lcd_data13 */
+      0xd8 (PIN_OUTPUT | MUX_MODE0)    /* lcd_data14.lcd_data14 */
+      0xdc (PIN_OUTPUT | MUX_MODE0)    /* lcd_data15.lcd_data15 */
+      0xe0 (PIN_OUTPUT | MUX_MODE0)    /* lcd_vsync.lcd_vsync */
+      0xe4 (PIN_OUTPUT | MUX_MODE0)    /* lcd_hsync.lcd_hsync */
+      0xe8 (PIN_OUTPUT | MUX_MODE0)    /* lcd_pclk.lcd_pclk */
+      0xec (PIN_OUTPUT | MUX_MODE0)    /* lcd_ac_bias_en.lcd_ac_bias_en */
+    >;
+  };
+  ...
+
+&amp;lcdc {
+  status = "okay";
+  compatible = "ti,am335x-lcdc";
+  pinctrl-names = "default", "sleep";
+  pinctrl-0 = &lt;&lcd_pins_default&gt;;
+  pinctrl-1 = &lt;&lcd_pins_sleep&gt;;
+};
+</pre><br>
+
+<p>
+drivers/video/fbdev/Kconfig
+</p>
+<pre>
+config FB_ST7789V
+  tristate "ST7789V Framebuffer support"
+  depends on FB &amp;&amp; SOC_AM33XX
+  select FB_CFB_FILLRECT
+  select FB_CFB_COPYAREA
+  select FB_CFB_IMAGEBLIT
+  select FB_CFB_REV_PIXELS_IN_BYTE
+  ---help---
+    This is the frame buffer device driver for the TI LCD controller
+    found on AM335x SoCs.
+    If unsure, say N.
+</pre><br>
+
+<p>
+drivers/video/fbdev/Makefile
+</p>
+<pre>
+obj-$(CONFIG_FB_ST7789V) += st7789v-fb.o
+</pre><br>
+
+<p>
+drivers/video/fbdev/st7789v-fb.c
+</p>
+<pre class="brush:cpp">
+/*
+ * Copyright (C) 2008-2009 MontaVista Software Inc.
+ * Copyright (C) 2008-2009 Texas Instruments Inc
+ * Copyright (C) 2017 Steward Fu &lt;steward.fu@gmail.com&gt;
+ *
+ * AM335x framebuffer driver for ST7789V SLCD panel
+ *
+ * Based on the LCD driver for TI Avalanche processors written by
+ * Ajay Singh and Shalom Hai.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option)any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ */
+#include &lt;linux/module.h&gt;
+#include &lt;linux/kernel.h&gt;
+#include &lt;linux/fb.h&gt;
+#include &lt;linux/dma-mapping.h&gt;
+#include &lt;linux/device.h&gt;
+#include &lt;linux/platform_device.h&gt;
+#include &lt;linux/uaccess.h&gt;
+#include &lt;linux/pm_runtime.h&gt;
+#include &lt;linux/interrupt.h&gt;
+#include &lt;linux/wait.h&gt;
+#include &lt;linux/clk.h&gt;
+#include &lt;linux/cpufreq.h&gt;
+#include &lt;linux/console.h&gt;
+#include &lt;linux/spinlock.h&gt;
+#include &lt;linux/slab.h&gt;
+#include &lt;linux/delay.h&gt;
+#include &lt;linux/lcm.h&gt;
+#include &lt;linux/clk-provider.h&gt;
+#include &lt;video/of_display_timing.h&gt;
+#include &lt;linux/gpio.h&gt;
+#include &lt;linux/omapfb.h&gt;
+#include &lt;asm/div64.h&gt;
+
+#define DRIVER_NAME "st7789v_lcdc"
+
+#define do_request(pin, name) \
+  if(gpio_request(pin, name) &lt; 0){ \
+    printk("failed to request gpio: %s\n", name); \
+  } \
+  else{ \
+    printk("request successfully for gpio: %s\n", name); \
+    gpio_direction_output(pin, 1); \
+  }
+
+#define PALETTE_SIZE          256
+
+#define ST7789V_SLCD_RST    ((32 * 0) + 19)
+#define ST7789V_SLCD_SCS    ((32 * 0) +  0)
+#define ST7789V_SLCD_SCK    ((32 * 0) +  1)
+#define ST7789V_SLCD_SDI    ((32 * 2) + 18)
+#define ST7789V_SLCD_SDO    ((32 * 3) + 10)
+
+#define ST7789V_SLCD_D0     ((32 * 2) +  6)
+#define ST7789V_SLCD_D1     ((32 * 2) +  7)
+#define ST7789V_SLCD_D2     ((32 * 2) +  8)
+#define ST7789V_SLCD_D3     ((32 * 2) +  9)
+#define ST7789V_SLCD_D4     ((32 * 2) + 10)
+#define ST7789V_SLCD_D5     ((32 * 2) + 11)
+#define ST7789V_SLCD_D6     ((32 * 2) + 12)
+#define ST7789V_SLCD_D7     ((32 * 2) + 13)
+#define ST7789V_SLCD_D8     ((32 * 2) + 14)
+#define ST7789V_SLCD_D9     ((32 * 2) + 15)
+#define ST7789V_SLCD_D10    ((32 * 2) + 16)
+#define ST7789V_SLCD_D11    ((32 * 2) + 17)
+#define ST7789V_SLCD_D12    ((32 * 0) +  8)
+#define ST7789V_SLCD_D13    ((32 * 0) +  9)
+#define ST7789V_SLCD_D14    ((32 * 0) + 10)
+#define ST7789V_SLCD_D15    ((32 * 0) + 11)
+#define ST7789V_SLCD_HSYNC  ((32 * 2) + 23)
+#define ST7789V_SLCD_VSYNC  ((32 * 2) + 22)
+#define ST7789V_SLCD_PCLK   ((32 * 2) + 24)
+#define ST7789V_SLCD_EN     ((32 * 2) + 25)
+
+#define PID                   0x0
+#define CTRL                  0x4
+#define LIDD_CTRL             0xC
+#define LIDD_CS0_CONF         0x10
+#define LIDD_CS0_ADDR         0x14
+#define LIDD_CS0_DATA         0x18
+#define LIDD_CS1_CONF         0x1C
+#define LIDD_CS1_ADDR         0x20
+#define LIDD_CS1_DATA         0x24
+#define RASTER_CTRL           0x28
+#define RASTER_TIMING_0       0x2C
+#define RASTER_TIMING_1       0x30
+#define RASTER_TIMING_2       0x34
+#define RASTER_SUBPANEL       0x38
+#define RASTER_SUBPANEL2      0x3C
+#define LCDDMA_CTRL           0x40
+#define LCDDMA_FB0_BASE       0x44
+#define LCDDMA_FB0_CEILING    0x48
+#define LCDDMA_FB1_BASE       0x4C
+#define LCDDMA_FB1_CEILING    0x50
+#define SYSCONFIG             0x54
+#define IRQSTATUS_RAW         0x58
+#define IRQSTATUS             0x5C
+#define IRQENABLE_SET         0x60
+#define IRQENABLE_CLEAR       0x64
+#define CLKC_ENABLE           0x6C
+#define CLKC_RESET            0x70
+
+/* LCD Timing_0 Register */
+#define LCD_HBPLSB(x)            ((((x)-1) &amp; 0xFF) &lt;&lt; 24)
+#define LCD_HFPLSB(x)            ((((x)-1) &amp; 0xFF) &lt;&lt; 16)
+#define LCD_HSWLSB(x)            ((((x)-1) &amp; 0x3F) &lt;&lt; 10)
+#define LCD_HORLSB(x)            (((((x) &gt;&gt; 4)-1) &amp; 0x3F) &lt;&lt; 4)
+#define LCD_HORMSB(x)            (((((x) &gt;&gt; 4)-1) &amp; 0x40) &gt;&gt; 4)
+/* LCD Timing_1 Register */
+#define LCD_VBP(x)              ((x) &lt;&lt; 24)
+#define LCD_VFP(x)              ((x) &lt;&lt; 16)
+#define LCD_VSW(x)              (((x)-1) &lt;&lt; 10)
+#define LCD_VERLSB(x)            (((x)-1) &amp; 0x3FF)
+/* LCD Timing_2 Register */
+#define LCD_HSWMSB(x)            ((((x)-1) &amp; 0x3C0) &lt;&lt; 21)
+#define LCD_VERMSB(x)            ((((x)-1) &amp; 0x400) &lt;&lt; 16)
+#define LCD_HBPMSB(x)            ((((x)-1) &amp; 0x300) &gt;&gt; 4)
+#define LCD_HFPMSB(x)            ((((x)-1) &amp; 0x300) &gt;&gt; 8)
+#define LCD_INVMASK(x)          ((x) &amp; 0x3F00000)
+/* LCD Raster Ctrl Register */
+#define LCD_PALMODE_RAWDATA      0x200000
+#define LCD_TFT_MODE            0x000080
+#define LCD_RASTER_ENABLE        0x000001
+
+struct st7789v_fb_par {
+  struct device *dev;
+
+  resource_size_t p_palette_base;
+  unsigned short *v_palette_base;
+
+  dma_addr_t vram_phys;
+  unsigned long vram_size;
+  void *vram_virt;
+
+  dma_addr_t tram_phys;
+  void *tram_virt;
+
+  dma_addr_t lram_phys[2];
+  unsigned long lram_size;
+  void *lram_virt[2];
+
+  int irq;
+  u32 pseudo_palette[16];
+  struct fb_videomode mode;
+  unsigned int bpp;
+};
+
+static struct resource *lcdc_regs;
+static void __iomem *st7789v_fb_reg_base;
+static struct fb_var_screeninfo st7789v_fb_var;
+static struct fb_fix_screeninfo st7789v_fb_fix = {
+  .id = "AM335x FB",
+  .type = FB_TYPE_PACKED_PIXELS,
+  .type_aux = 0,
+  .visual = FB_VISUAL_TRUECOLOR,
+  .xpanstep = 0,
+  .ypanstep = 1,
+  .ywrapstep = 0,
+  .accel = FB_ACCEL_NONE
+};
+
+static void st7789v_send_spi(uint8_t type, uint8_t data)
+{
+  int bit;
+
+  gpio_set_value(ST7789V_SLCD_SCS, 0);
+  gpio_set_value(ST7789V_SLCD_SCK, 0); 
+  gpio_set_value(ST7789V_SLCD_SDI, type); 
+  udelay(10);
+  gpio_set_value(ST7789V_SLCD_SCK, 1); 
+  udelay(10);
+  for(bit=7; bit&gt;=0; bit--){
+    gpio_set_value(ST7789V_SLCD_SCK, 0); 
+    gpio_set_value(ST7789V_SLCD_SDI, (data &gt;&gt; bit) &amp; 1); 
+    udelay(10);
+    gpio_set_value(ST7789V_SLCD_SCK, 1); 
+    udelay(10);
+  }
+  gpio_set_value(ST7789V_SLCD_SCS, 1);
+}
+
+static void st7789v_send_cmd(uint8_t data)
+{
+  st7789v_send_spi(0, data);
+}
+
+static void st7789v_send_data(uint8_t data)
+{
+  st7789v_send_spi(1, data);
+}
+
+static void st7789v_init(void)
+{
+  printk("%s, ++\n", __func__);
+  gpio_set_value(ST7789V_SLCD_RST, 0);
+  mdelay(100);  
+  gpio_set_value(ST7789V_SLCD_RST, 1);
+  mdelay(150);
+
+  st7789v_send_cmd(0x36);
+  st7789v_send_data(0x80);
+
+  st7789v_send_cmd(0xb2); // porch
+  st7789v_send_data(0x03); // bpa
+  st7789v_send_data(0x03); // fpa
+  st7789v_send_data(0x00); // psen
+  st7789v_send_data(0x33); // bpb
+  st7789v_send_data(0x33); // bpc
+
+  st7789v_send_cmd(0xb7);
+  st7789v_send_data(0x35);
+
+  st7789v_send_cmd(0xb8);
+  st7789v_send_data(0x2f);
+  st7789v_send_data(0x2b);
+  st7789v_send_data(0x2f);
+
+  st7789v_send_cmd(0xbb);
+  st7789v_send_data(0x24);
+
+  st7789v_send_cmd(0xc0);
+  st7789v_send_data(0x2C);
+
+  st7789v_send_cmd(0xc3);
+  st7789v_send_data(0x10);
+
+  st7789v_send_cmd(0xc4);
+  st7789v_send_data(0x20);
+
+  st7789v_send_cmd(0xc6);
+  st7789v_send_data(0x11);
+
+  st7789v_send_cmd(0xd0);
+  st7789v_send_data(0xa4);
+  st7789v_send_data(0xa1);
+
+  st7789v_send_cmd(0xe8);
+  st7789v_send_data(0x03);
+
+  st7789v_send_cmd(0xe9);
+  st7789v_send_data(0x0d);
+  st7789v_send_data(0x12);
+  st7789v_send_data(0x00);
+
+  st7789v_send_cmd(0xe0);
+  st7789v_send_data(0xd0);
+  st7789v_send_data(0x00);
+  st7789v_send_data(0x00);
+  st7789v_send_data(0x08);
+  st7789v_send_data(0x11);
+  st7789v_send_data(0x1a);
+  st7789v_send_data(0x2b);
+  st7789v_send_data(0x33);
+  st7789v_send_data(0x42);
+  st7789v_send_data(0x26);
+  st7789v_send_data(0x12);
+  st7789v_send_data(0x21);
+  st7789v_send_data(0x2f);
+  st7789v_send_data(0x11);
+
+  st7789v_send_cmd(0xe1);
+  st7789v_send_data(0xd0);
+  st7789v_send_data(0x02);
+  st7789v_send_data(0x09);
+  st7789v_send_data(0x0d);
+  st7789v_send_data(0x0d);
+  st7789v_send_data(0x27);
+  st7789v_send_data(0x2b);
+  st7789v_send_data(0x33);
+  st7789v_send_data(0x42);
+  st7789v_send_data(0x17);
+  st7789v_send_data(0x12);
+  st7789v_send_data(0x11);
+  st7789v_send_data(0x2f);
+  st7789v_send_data(0x31);
+
+  st7789v_send_cmd(0x21);
+
+  st7789v_send_cmd(0xb0);
+  st7789v_send_data(0x11); // rgb interface
+  st7789v_send_data(0x00); 
+  st7789v_send_data(0x00); 
+
+  st7789v_send_cmd(0xb1);
+  st7789v_send_data(0x40); // de mode
+  st7789v_send_data(0x00); 
+  st7789v_send_data(0x00); // bpb, hpb 
+
+  st7789v_send_cmd(0x3a); 
+  st7789v_send_data(0x55);
+
+  st7789v_send_cmd(0x2a);
+  st7789v_send_data(0x00);
+  st7789v_send_data(0x00);
+  st7789v_send_data(0x00);
+  st7789v_send_data(0xef);
+
+  st7789v_send_cmd(0x2b);
+  st7789v_send_data(0x00);
+  st7789v_send_data(0x00);
+  st7789v_send_data(0x01);
+  st7789v_send_data(0x3f);
+
+  st7789v_send_cmd(0x11); 
+  mdelay(120);
+
+  st7789v_send_cmd(0x29);
+  st7789v_send_cmd(0x2c); 
+  printk("%s, --\n", __func__);
+}
+
+#define CNVT_TOHW(val, width) ((((val) &lt;&lt; (width)) + 0x7FFF - (val)) &gt;&gt; 16)
+static int fb_setcolreg(unsigned regno, unsigned red, unsigned green, unsigned blue, unsigned transp, struct fb_info *info)
+{
+  //printk("%s, visual:%d, bits_per_pixel:%d, regno:%d, r:0x%x, g:0x%x, b:0x%x\n", __func__, info-&gt;fix.visual, info-&gt;var.bits_per_pixel, regno, red, green, blue);
+  red = CNVT_TOHW(red, info-&gt;var.red.length);
+  blue = CNVT_TOHW(blue, info-&gt;var.blue.length);
+  green = CNVT_TOHW(green, info-&gt;var.green.length);
+  ((u32*)(info-&gt;pseudo_palette))[regno] = (red &lt;&lt; info-&gt;var.red.offset) | (green &lt;&lt; info-&gt;var.green.offset) | (blue &lt;&lt; info-&gt;var.blue.offset);
+  return 0;
+}
+#undef CNVT_TOHW
+
+static int fb_check_var(struct fb_var_screeninfo *var, struct fb_info *info)
+{
+  int err = 0;
+  int bpp = var-&gt;bits_per_pixel &gt;&gt; 3;
+  struct st7789v_fb_par *par = info-&gt;par;
+  unsigned long line_size = var-&gt;xres_virtual * bpp;
+
+  //if((var-&gt;xres != 320) || (var-&gt;yres != 240) || (var-&gt;bits_per_pixel != 16)){
+    //return -EINVAL;
+  //}
+
+  printk("%s, xres:%d, yres:%d, bpp:%d\n", __func__, var-&gt;xres, var-&gt;yres, var-&gt;bits_per_pixel);
+  var-&gt;transp.offset = 0;
+  var-&gt;transp.length = 0;
+  var-&gt;red.offset = 11;
+  var-&gt;red.length = 5;
+  var-&gt;green.offset = 5;
+  var-&gt;green.length = 6;
+  var-&gt;blue.offset = 0;
+  var-&gt;blue.length = 5;
+  var-&gt;red.msb_right = 0;
+  var-&gt;green.msb_right = 0;
+  var-&gt;blue.msb_right = 0;
+  var-&gt;transp.msb_right = 0;
+  if(line_size * var-&gt;yres_virtual &gt; par-&gt;vram_size){
+    var-&gt;yres_virtual = par-&gt;vram_size / line_size;
+  }
+  if(var-&gt;yres &gt; var-&gt;yres_virtual){
+    var-&gt;yres = var-&gt;yres_virtual;
+  }
+  if(var-&gt;xres &gt; var-&gt;xres_virtual){
+    var-&gt;xres = var-&gt;xres_virtual;
+  }
+  if(var-&gt;xres + var-&gt;xoffset &gt; var-&gt;xres_virtual){
+    var-&gt;xoffset = var-&gt;xres_virtual - var-&gt;xres;
+  }
+  if(var-&gt;yres + var-&gt;yoffset &gt; var-&gt;yres_virtual){
+    var-&gt;yoffset = var-&gt;yres_virtual - var-&gt;yres;
+  }
+  return err;
+}
+
+static int fb_remove(struct platform_device *dev)
+{
+  struct fb_info *info = dev_get_drvdata(&amp;dev-&gt;dev);
+
+  if(info){
+    struct st7789v_fb_par *par = info-&gt;par;
+    unregister_framebuffer(info);
+    fb_dealloc_cmap(&amp;info-&gt;cmap);
+    dma_free_coherent(NULL, PALETTE_SIZE, par-&gt;v_palette_base, par-&gt;p_palette_base);
+    dma_free_coherent(NULL, par-&gt;vram_size, par-&gt;vram_virt, par-&gt;vram_phys);
+    dma_free_coherent(NULL, par-&gt;lram_size, par-&gt;lram_virt[0], par-&gt;lram_phys[0]);
+    dma_free_coherent(NULL, par-&gt;lram_size, par-&gt;lram_virt[1], par-&gt;lram_phys[1]);
+    pm_runtime_put_sync(&amp;dev-&gt;dev);
+    pm_runtime_disable(&amp;dev-&gt;dev);
+    framebuffer_release(info);
+  }
+  return 0;
+}
+
+static int fb_set_par(struct fb_info *info)
+{
+  struct st7789v_fb_par *par = info-&gt;par;
+  
+  fb_var_to_videomode(&amp;par-&gt;mode, &amp;info-&gt;var);
+  printk("%s, xres:%d, yres:%d, bpp:%d, xoffset:%d, yoffset:%d\n", __func__, 
+    info-&gt;var.xres, info-&gt;var.yres, info-&gt;var.bits_per_pixel, info-&gt;var.xoffset, info-&gt;var.yoffset);
+  par-&gt;bpp = info-&gt;var.bits_per_pixel;
+  info-&gt;fix.visual = FB_VISUAL_TRUECOLOR;
+  info-&gt;fix.line_length = (par-&gt;mode.xres * par-&gt;bpp) / 8; 
+  return 0;
+}
+
+static int fb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg)
+{
+  printk("%s(cmd: 0x%x)++\n", __func__, cmd);
+  switch(cmd){
+  case OMAPFB_QUERY_PLANE:
+    printk("OMAPFB_QUERY_PLANE\n");
+    break;
+  case OMAPFB_QUERY_MEM:
+    printk("OMAPFB_QUERY_MEM\n");
+    break;
+  case OMAPFB_SETUP_PLANE:
+    printk("OMAPFB_SETUP_PLANE\n");
+    break;
+  case OMAPFB_SETUP_MEM:
+    printk("OMAPFB_SETUP_MEM\n");
+    break;
+  }
+  printk("%s\n", __func__);
+  return 0;
+}
+
+static int fb_mmap(struct fb_info *info, struct vm_area_struct *vma)
+{
+  const unsigned long offset = vma-&gt;vm_pgoff &lt;&lt; PAGE_SHIFT;
+  const unsigned long size = vma-&gt;vm_end - vma-&gt;vm_start;
+ 
+  if(offset + size &gt; info-&gt;fix.smem_len){
+    return -EINVAL;
+  }
+ 
+  if(remap_pfn_range(vma, vma-&gt;vm_start, (info-&gt;fix.smem_start + offset) &gt;&gt; PAGE_SHIFT, size, vma-&gt;vm_page_prot)){
+    return -EAGAIN;
+  }
+  return 0;
+}
+
+static struct fb_ops st7789v_fb_ops = {
+  .owner = THIS_MODULE,
+  .fb_check_var = fb_check_var,
+  .fb_set_par   = fb_set_par,
+  .fb_setcolreg = fb_setcolreg,
+  .fb_ioctl     = fb_ioctl,
+  .fb_mmap      = fb_mmap,
+
+  .fb_fillrect  = cfb_fillrect,
+  .fb_copyarea  = cfb_copyarea,
+  .fb_imageblit = cfb_imageblit,
+};
+
+static irqreturn_t lcdc_irq_handler(int irq, void *arg)
+{
+  unsigned int stat=0;
+  struct st7789v_fb_par *par=(struct st7789v_fb_par*)arg;
+  
+  stat = ioread32(st7789v_fb_reg_base + IRQSTATUS);
+  if((stat &amp; 0x04) || (stat &amp; 0x20)){ // LCD_SYNC_LOST, LCD_FIFO_UNDERFLOW
+    iowrite32(LCD_PALMODE_RAWDATA | LCD_TFT_MODE, st7789v_fb_reg_base + RASTER_CTRL);
+    printk("%s, stat: 0x%x, LCDC sync lost or underflow error occured\n", __func__, stat);
+    while(!(ioread32(st7789v_fb_reg_base + IRQSTATUS) &amp; 0x01)){
+      mdelay(1);
+    }
+    printk("wait complete\n");
+    iowrite32(stat, st7789v_fb_reg_base + IRQSTATUS);
+    iowrite32(LCD_PALMODE_RAWDATA | LCD_TFT_MODE | LCD_RASTER_ENABLE, st7789v_fb_reg_base + RASTER_CTRL);
+  }
+  else{
+    uint32_t x, y;
+    uint16_t *s = par-&gt;vram_virt;
+    uint16_t *d = par-&gt;lram_virt[0];
+    for(y=0; y&lt;240; y++){
+      for(x=0; x&lt;320; x++){
+        d[(x * 240) + y] = s[(y * 320) + x];
+      }
+    }
+    iowrite32(stat, st7789v_fb_reg_base + IRQSTATUS);
+  }
+  return IRQ_HANDLED;
+}
+
+static int fb_probe(struct platform_device *device)
+{
+  int i, ret;
+  uint32_t ulcm, raster_timing0, raster_timing1, raster_timing2, raster_ctrl;
+  struct st7789v_lcdc_platform_data *fb_pdata = device-&gt;dev.platform_data;
+  struct fb_videomode *lcdc_info;
+  struct fb_info *st7789v_fb_info;
+  struct clk *fb_clk = NULL;
+  struct st7789v_fb_par *par;
+
+  uint32_t hactive = 320;
+  uint32_t vactive = 240;
+  uint32_t hfp = 3;
+  uint32_t hbp = 3;
+  uint32_t hsw = 10;
+  uint32_t vbp = 3;
+  uint32_t vfp = 3;
+  uint32_t vsw = 10;
+
+  printk("%s, ++\n", __func__);
+  if((fb_pdata == NULL) &amp;&amp; (!device-&gt;dev.of_node)){
+    dev_err(&amp;device-&gt;dev, "can not get platform data\n");
+    return -ENOENT;
+  }
+
+  lcdc_info = devm_kzalloc(&amp;device-&gt;dev, sizeof(struct fb_videomode), GFP_KERNEL);
+  if(lcdc_info == NULL){
+    return -ENODEV;
+  }
+  lcdc_info-&gt;name = "320x240";
+  lcdc_info-&gt;xres = 320;
+  lcdc_info-&gt;yres = 240;
+  lcdc_info-&gt;vmode = FB_VMODE_NONINTERLACED;
+  lcdc_regs = platform_get_resource(device, IORESOURCE_MEM, 0);
+  st7789v_fb_reg_base = devm_ioremap_resource(&amp;device-&gt;dev, lcdc_regs);
+  if(!st7789v_fb_reg_base){
+    dev_err(&amp;device-&gt;dev, "memory resource setup failed\n");
+    return -EADDRNOTAVAIL;
+  }
+  printk("%s, lcdc_reg: 0x%x\n", __func__, lcdc_regs);
+  printk("%s, fb_reg_base: 0x%x\n", __func__, st7789v_fb_reg_base);
+
+  fb_clk = devm_clk_get(&amp;device-&gt;dev, "fck");
+  if(IS_ERR(fb_clk)){
+    dev_err(&amp;device-&gt;dev, "can not get device clock\n");
+    return -ENODEV;
+  }
+
+  ret = clk_get_rate(fb_clk);
+  printk("%s, current clk rate before setting: %d\n", __func__, ret);
+
+  // st7789v clock 
+  // de clock: 60ns
+  // pclk clock: 120ns
+  // hsync/vsync setup time: 30ns
+  ret = clk_set_rate(fb_clk, 83000000);
+  if(IS_ERR(fb_clk)){
+    dev_err(&amp;device-&gt;dev, "can not set device clock\n");
+    return -ENODEV;
+  }
+  pm_runtime_enable(&amp;device-&gt;dev);
+  pm_runtime_get_sync(&amp;device-&gt;dev);
+  
+  ret = clk_get_rate(fb_clk);
+  printk("%s, current clk rate after setting: %d\n", __func__, ret);
+
+  printk("%s, lidd pid: 0x%x\n", __func__, ioread32(st7789v_fb_reg_base + PID));
+
+  raster_timing0 = LCD_HORLSB(hactive) | LCD_HORMSB(hactive) | LCD_HFPLSB(hfp) | LCD_HBPLSB(hbp) | LCD_HSWLSB(hsw);
+  raster_timing1 = LCD_VBP(vbp) | LCD_VFP(vfp) | LCD_VSW(vsw) | LCD_VERLSB(vactive);
+  raster_timing2 = LCD_HSWMSB(hsw) | LCD_VERMSB(vactive) | LCD_HBPMSB(hbp) | LCD_HFPMSB(hfp) | 0x00000a00 | 0x400000; // invert pixel clock
+  printk("%s, timing2: 0x%x\n", __func__, raster_timing2);
+
+  iowrite32(0x00000007, st7789v_fb_reg_base + CLKC_ENABLE);
+  iowrite32(0x00000a01, st7789v_fb_reg_base + CTRL); // clock/10, raster mode
+  iowrite32(raster_timing0, st7789v_fb_reg_base + RASTER_TIMING_0);
+  iowrite32(raster_timing1, st7789v_fb_reg_base + RASTER_TIMING_1);
+  iowrite32(raster_timing2, st7789v_fb_reg_base + RASTER_TIMING_2);
+ 
+  st7789v_fb_info = framebuffer_alloc(sizeof(struct st7789v_fb_par), &amp;device-&gt;dev);
+  if(!st7789v_fb_info){
+    dev_dbg(&amp;device-&gt;dev, "memory allocation failed for fb_info\n");
+    ret = -ENOMEM;
+    goto err_pm_runtime_disable;
+  }
+
+  par = st7789v_fb_info-&gt;par;
+  par-&gt;dev = &amp;device-&gt;dev;
+  par-&gt;bpp = 16;
+  
+  fb_videomode_to_var(&amp;st7789v_fb_var, lcdc_info);
+  printk("%s, xres: %d, yres:%d, bpp:%d\n", __func__, lcdc_info-&gt;xres, lcdc_info-&gt;yres, par-&gt;bpp);
+
+  // allocate frame buffer
+  par-&gt;vram_size = lcdc_info-&gt;xres * lcdc_info-&gt;yres * par-&gt;bpp;
+  ulcm = lcm((lcdc_info-&gt;xres * par-&gt;bpp * 2) / 8, PAGE_SIZE); // double buffer
+  par-&gt;vram_size = roundup(par-&gt;vram_size/8, ulcm);
+  par-&gt;vram_size = par-&gt;vram_size;
+  par-&gt;vram_virt = dma_alloc_coherent(NULL, par-&gt;vram_size, (resource_size_t*) &amp;par-&gt;vram_phys, GFP_KERNEL | GFP_DMA);
+  if(!par-&gt;vram_virt){
+    dev_err(&amp;device-&gt;dev, "GLCD: kmalloc for frame buffer(vram) failed\n");
+    ret = -EINVAL;
+    goto err_release_fb;
+  }
+
+  // swap video ram
+  par-&gt;tram_virt = dma_alloc_coherent(NULL, par-&gt;vram_size, (resource_size_t*)&amp;par-&gt;tram_phys, GFP_KERNEL | GFP_DMA);
+  if(!par-&gt;tram_virt){
+    dev_err(&amp;device-&gt;dev, "GLCD: kmalloc for frame buffer(tram) failed\n");
+    ret = -EINVAL;
+    goto err_release_fb;
+  }
+
+  par-&gt;lram_size = 320 * 240 * 2; // fixed size for st7789v panel
+  for(i=0; i&lt;2; i++){
+    par-&gt;lram_virt[i] = dma_alloc_coherent(NULL, par-&gt;lram_size, (resource_size_t*) &amp;par-&gt;lram_phys[i], GFP_KERNEL | GFP_DMA);
+    if(!par-&gt;lram_virt[i]){
+      dev_err(&amp;device-&gt;dev, "GLCD: kmalloc for frame buffer[%d](lram) failed\n", i);
+      ret = -EINVAL;
+      goto err_release_fb;
+    }
+    memset(par-&gt;lram_virt[i], 0, par-&gt;lram_size);
+  }
+  st7789v_fb_info-&gt;screen_base = (char __iomem*) par-&gt;vram_virt;
+  st7789v_fb_fix.smem_start    = par-&gt;vram_phys;
+  st7789v_fb_fix.smem_len      = par-&gt;vram_size;
+  st7789v_fb_fix.line_length   = (lcdc_info-&gt;xres * par-&gt;bpp) / 8;
+
+  // allocate palette buffer
+  par-&gt;v_palette_base = dma_alloc_coherent(NULL, PALETTE_SIZE, (resource_size_t*)&amp;par-&gt;p_palette_base, GFP_KERNEL | GFP_DMA);
+  if(!par-&gt;v_palette_base){
+    dev_err(&amp;device-&gt;dev, "GLCD: kmalloc for palette buffer failed\n");
+    ret = -EINVAL;
+    goto err_release_fb_mem;
+  }
+  memset(par-&gt;v_palette_base, 0, PALETTE_SIZE);
+
+  par-&gt;irq = platform_get_irq(device, 0);
+  if(par-&gt;irq &lt; 0){
+    ret = -ENOENT;
+    goto err_release_pl_mem;
+  }
+
+  st7789v_fb_var.grayscale = 0;
+  st7789v_fb_var.bits_per_pixel = par-&gt;bpp;
+
+  // Initialize fbinfo
+  st7789v_fb_info-&gt;flags = FBINFO_FLAG_DEFAULT;
+  st7789v_fb_info-&gt;fix = st7789v_fb_fix;
+  st7789v_fb_info-&gt;var = st7789v_fb_var;
+  st7789v_fb_info-&gt;fbops = &amp;st7789v_fb_ops;
+  st7789v_fb_info-&gt;pseudo_palette = par-&gt;pseudo_palette;
+  st7789v_fb_info-&gt;fix.visual = (st7789v_fb_info-&gt;var.bits_per_pixel &lt;= 8) ? FB_VISUAL_PSEUDOCOLOR : FB_VISUAL_TRUECOLOR;
+
+  ret = fb_alloc_cmap(&amp;st7789v_fb_info-&gt;cmap, PALETTE_SIZE, 0);
+  if(ret){
+    goto err_release_pl_mem;
+  }
+  st7789v_fb_info-&gt;cmap.len = 32;
+
+  // initialize var_screeninfo
+  st7789v_fb_var.activate = FB_ACTIVATE_FORCE;
+  fb_set_var(st7789v_fb_info, &amp;st7789v_fb_var);
+  dev_set_drvdata(&amp;device-&gt;dev, st7789v_fb_info);
+
+  // Register the Frame Buffer
+  if(register_framebuffer(st7789v_fb_info) &lt; 0){
+    dev_err(&amp;device-&gt;dev, "GLCD: Frame Buffer Registration Failed(/dev/fb0) !\n");
+    ret = -EINVAL;
+    goto err_dealloc_cmap;
+  }
+
+  do_request(ST7789V_SLCD_RST, "slcd_rst");
+  do_request(ST7789V_SLCD_SDO, "slcd_sdo");
+  do_request(ST7789V_SLCD_SDI, "slcd_sdi");
+  do_request(ST7789V_SLCD_SCK, "slcd_sck");
+  do_request(ST7789V_SLCD_SCS, "slcd_scs");
+  gpio_direction_input(ST7789V_SLCD_SDO);
+
+  st7789v_init();
+  iowrite32(0x00000040, st7789v_fb_reg_base + LCDDMA_CTRL); // burst=16, 1 frame
+  iowrite32(0x00000325, st7789v_fb_reg_base + IRQENABLE_SET);
+
+  iowrite32(par-&gt;lram_phys[0], st7789v_fb_reg_base + LCDDMA_FB0_BASE);
+  iowrite32(par-&gt;lram_phys[0] + (320 * 240 * 2) - 1, st7789v_fb_reg_base + LCDDMA_FB0_CEILING);
+
+  iowrite32(par-&gt;lram_phys[1], st7789v_fb_reg_base + LCDDMA_FB1_BASE);
+  iowrite32(par-&gt;lram_phys[1] + (320 * 240 * 2) - 1, st7789v_fb_reg_base + LCDDMA_FB1_CEILING); 
+
+  ret = devm_request_irq(&amp;device-&gt;dev, par-&gt;irq, lcdc_irq_handler, 0, DRIVER_NAME, par);
+  if(ret){
+    goto irq_freq;
+  } 
+  raster_ctrl = LCD_PALMODE_RAWDATA | LCD_TFT_MODE | LCD_RASTER_ENABLE;
+  iowrite32(raster_ctrl, st7789v_fb_reg_base + RASTER_CTRL);
+  printk("%s, raster_ctrl: 0x%x\n", __func__, raster_ctrl);
+
+  fb_prepare_logo(st7789v_fb_info, 0);
+  fb_show_logo(st7789v_fb_info, 0);
+
+  printk("%s, --\n", __func__);
+  return 0;
+
+irq_freq:
+  unregister_framebuffer(st7789v_fb_info);
+
+err_dealloc_cmap:
+  fb_dealloc_cmap(&amp;st7789v_fb_info-&gt;cmap);
+
+err_release_pl_mem:
+  dma_free_coherent(NULL, PALETTE_SIZE, par-&gt;v_palette_base, par-&gt;p_palette_base);
+
+err_release_fb_mem:
+  dma_free_coherent(NULL, par-&gt;vram_size, par-&gt;tram_virt, par-&gt;tram_phys);
+  dma_free_coherent(NULL, par-&gt;vram_size, par-&gt;vram_virt, par-&gt;vram_phys);
+
+err_release_fb:
+  framebuffer_release(st7789v_fb_info);
+
+err_pm_runtime_disable:
+  pm_runtime_put_sync(&amp;device-&gt;dev);
+  pm_runtime_disable(&amp;device-&gt;dev);
+
+  return ret;
+}
+
+#ifdef CONFIG_PM
+static int fb_suspend(struct platform_device *dev, pm_message_t state)
+{
+  struct fb_info *info = platform_get_drvdata(dev);
+
+  console_lock();
+  fb_set_suspend(info, 1);
+  pm_runtime_put_sync(&amp;dev-&gt;dev);
+  console_unlock();
+  return 0;
+}
+
+static int fb_resume(struct platform_device *dev)
+{
+  struct fb_info *info = platform_get_drvdata(dev);
+
+  console_lock();
+  pm_runtime_get_sync(&amp;dev-&gt;dev);
+  fb_set_suspend(info, 0);
+  console_unlock();
+  return 0;
+}
+
+#else
+
+#define fb_suspend NULL
+#define fb_resume NULL
+
+#endif
+
+static const struct of_device_id st7789v_fb_of_match[] = {
+  {.compatible = "ti,am335x-lcdc", },
+  {},
+};
+MODULE_DEVICE_TABLE(of, st7789v_fb_of_match);
+
+static struct platform_driver st7789v_fb_driver = {
+  .probe = fb_probe,
+  .remove = fb_remove,
+  .suspend = fb_suspend,
+  .resume = fb_resume,
+  .driver = {
+    .name = DRIVER_NAME,
+    .owner = THIS_MODULE,
+    .of_match_table = of_match_ptr(st7789v_fb_of_match),
+  },
+};
+
+static int __init st7789v_fb_init(void)
+{
+  printk("%s\n", __func__);
+  return platform_driver_register(&amp;st7789v_fb_driver);
+}
+
+static void __exit st7789v_fb_cleanup(void)
+{
+  printk("%s\n", __func__);
+  platform_driver_unregister(&amp;st7789v_fb_driver);
+}
+
+module_init(st7789v_fb_init);
+module_exit(st7789v_fb_cleanup);
+
+MODULE_DESCRIPTION("AM335x framebuffer driver for ST7789V SLCD panel");
+MODULE_AUTHOR("Steward Fu &lt;steward.fu@gmail.com&gt;");
+MODULE_LICENSE("GPL");
+</pre><br>
+
+<p>
+menuconfig<br>
+<img src="st7789v_raster/2.jpg" class="maxSize"><br><br>
+
+完成<br>
+<img src="st7789v_raster/1.jpg" class="maxSize"><br>
+</p>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

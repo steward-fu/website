@@ -1,0 +1,160 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Motorola XT897 &gt;&gt; Sailfish</h3>
+<p><b>initramfs debugging</b></p>
+<hr size="1">
+<p>
+參考資訊： <br>
+1. <a href="https://github.com/mer-hybris/hybris-boot">hybris-boot</a><br><br>
+
+init
+</p>
+<pre>
+#!/bin/sh
+set -x
+exec &gt; /init.log 2&gt;&amp;1
+echo "running initramfs loader..."
+
+LOCAL_IP=192.168.2.15
+ANDROID_USB=/sys/class/android_usb/android0
+
+#echo "ls -l /" &gt;/init-ctl/stdin
+#echo "continue" &gt;/init-ctl/stdin
+
+export PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin
+/bin/busybox --install -s
+
+mkdir -p /dev
+mount -t devtmpfs devtmpfs /dev
+mkdir -p /dev/pts
+mount -t devpts devpts /dev/pts
+mkdir -p /proc
+mkdir -p /sys
+mount -t sysfs sysfs /sys
+mount -t proc proc /proc
+mkdir -p /config
+
+echo /sbin/mdev &gt; /proc/sys/kernel/hotplug
+mdev -s
+sleep 3
+
+ln -s . /dev/block
+ln -s /proc/mounts /etc/mtab
+
+mkdir /mnt
+mount /dev/mmcblk0p39 /mnt
+echo /dev/mmcblk0 &gt; /sys/class/android_usb/f_mass_storage/lun/file
+    
+echo 0                  &gt; $ANDROID_USB/enable
+echo ""                 &gt; $ANDROID_USB/functions
+echo 1                  &gt; $ANDROID_USB/enable
+usleep 500000
+echo 0                  &gt; $ANDROID_USB/enable
+echo 18D1               &gt; $ANDROID_USB/idVendor
+echo D001               &gt; $ANDROID_USB/idProduct
+echo "MyLoader"         &gt; $ANDROID_USB/iManufacturer
+echo "initramfs"        &gt; $ANDROID_USB/iProduct
+echo "v1.0"             &gt; $ANDROID_USB/iSerial
+echo rndis,mass_storage &gt; $ANDROID_USB/functions
+echo 1                  &gt; $ANDROID_USB/enable
+
+/sbin/ifconfig rndis0 $LOCAL_IP
+echo "start 192.168.2.20"             &gt; /etc/udhcpd.conf
+echo "end 192.168.2.90"              &gt;&gt; /etc/udhcpd.conf
+echo "lease_file /var/udhcpd.leases" &gt;&gt; /etc/udhcpd.conf
+echo "interface rndis0"              &gt;&gt; /etc/udhcpd.conf
+echo "option subnet 255.255.255.0"   &gt;&gt; /etc/udhcpd.conf
+
+udhcpd
+telnetd -b ${LOCAL_IP}:23 -l /bin/sh
+
+INJ_DIR=/init-ctl
+INJ_STDIN=$INJ_DIR/stdin
+
+mkdir $INJ_DIR
+mkfifo $INJ_STDIN
+while : ; do
+  while read IN; do
+  if [ "$IN" = "continue" ]; then break 2;fi
+    $IN
+  done &lt;$INJ_STDIN
+done
+rm -rf $INJ_DIR
+
+killall telnetd
+killall udhcpd
+
+echo "" &gt; /proc/sys/kernel/hotplug
+exec switch_root /mnt /sbin/init
+</pre><br>
+
+<p>
+步驟：<br>
+1. 下載<a href="https://github.com/steward-fu/xt897/releases/download/v1.0/myloader.tar.gz">myloader.tar.gz</a><br>
+2. 透過Recovery刷入boot.zip<br>
+3. 開機後，連接USB至PC<br>
+4. 執行如下命令進行連線
+</p>
+<pre>
+$ telnet 192.168.2.15
+  Trying 192.168.2.15...
+  Connected to 192.168.2.15.
+  Escape character is '^]'.
+
+~ # ls
+  bin       config    dev       etc       init      init-ctl  init.log  mnt       proc      root      sbin      sys       usr
+</pre><br>
+
+<p>
+<br><a href="../../phone.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,306 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../../header.js"></script>
+<div id="page">
+<h3>Nokia N900 &gt;&gt; Easy Debian</h3>
+<p><b>reverse qobi-wmhint-fix</b></p>
+<hr size="1">
+<p>
+Easy Debian為了取得Keyboard控制權，藉由呼叫<b>/sbin/qobi-wmhint-fix</b>取得，不過由於<b>Qobi-wmhint-fix</b>的原始程式已經不可考，司徒只能從maemo.org的討論區取得片段程式，因怕資訊不夠完整，司徒決定Reverse Qobi-wmhint-fix，看看該程式的實際內容，到底這支程式的內容是如何取得鍵盤控制權。<br><br>
+
+首先，使用GDB載入Qobi-wmhint-fix並Disassemble main()副程式，司徒將Disassemble後的副程式加上註解，說明如下：
+</p>
+<pre>
+Dump of assembler code for function main:
+0x0000877c &lt;main+0&gt;:  mov  r12, sp
+0x00008780 &lt;main+4&gt;:  push  {r11, r12, lr, pc}
+0x00008784 &lt;main+8&gt;:  sub  r11, r12, #4
+0x00008788 &lt;main+12&gt;:  sub  sp, sp, #64  ; 0x40
+// save argc
+0x0000878c &lt;main+16&gt;:  str  r0, [r11, #-64]  ; 0x40
+// save argv
+0x00008790 &lt;main+20&gt;:  str  r1, [r11, #-68]  ; 0x44
+0x00008794 &lt;main+24&gt;:  mov  r3, #0
+0x00008798 &lt;main+28&gt;:  str  r3, [r11, #-24]
+0x0000879c &lt;main+32&gt;:  ldr  r3, [r11, #-64]  ; 0x40
+// if (argc == 2) then goto 0x87c8
+0x000087a0 &lt;main+36&gt;:  cmp  r3, #2
+0x000087a4 &lt;main+40&gt;:  beq  0x87c8 &lt;main+76&gt;
+0x000087a8 &lt;main+44&gt;:  ldr  r3, [pc, #528]  ; 0x89c0 &lt;main+580&gt;
+0x000087ac &lt;main+48&gt;:  ldr  r3, [r3]
+// string="usage: set-input-hint &lt;id&gt;\n"
+0x000087b0 &lt;main+52&gt;:  ldr  r0, [pc, #524]  ; 0x89c4 &lt;main+584&gt;
+0x000087b4 &lt;main+56&gt;:  mov  r1, #1
+0x000087b8 &lt;main+60&gt;:  mov  r2, #27
+// fwrite(string, 1, strlen(string))
+0x000087bc &lt;main+64&gt;:  bl  0x8678 &lt;fwrite&gt;
+0x000087c0 &lt;main+68&gt;:  mvn  r0, #0
+// exit(-1)
+0x000087c4 &lt;main+72&gt;:  bl  0x869c &lt;exit&gt;
+// r3=argc[0]
+0x000087c8 &lt;main+76&gt;:  ldr  r3, [r11, #-68]  ; 0x44
+// argc1
+0x000087cc &lt;main+80&gt;:  add  r3, r3, #4
+// r3=argv[1]
+0x000087d0 &lt;main+84&gt;:  ldr  r3, [r3]
+// buf1=address of (r11-#24)
+0x000087d4 &lt;main+88&gt;:  sub  r2, r11, #24
+0x000087d8 &lt;main+92&gt;:  mov  r0, r3
+// string="0x%lx"
+0x000087dc &lt;main+96&gt;:  ldr  r1, [pc, #484]  ; 0x89c8 &lt;main+588&gt;
+// sscanf(argv[1], string, buf)
+0x000087e0 &lt;main+100&gt;:  bl  0x8654 &lt;__isoc99_sscanf&gt;
+// r3=sscanf()
+0x000087e4 &lt;main+104&gt;:  mov  r3, r0
+// if (sscanf() == 1) then goto 0x880c
+0x000087e8 &lt;main+108&gt;:  cmp  r3, #1
+0x000087ec &lt;main+112&gt;:  beq  0x880c &lt;main+144&gt;
+0x000087f0 &lt;main+116&gt;:  ldr  r3, [pc, #456]  ; 0x89c0 &lt;main+580&gt;
+// r3=0xc20
+0x000087f4 &lt;main+120&gt;:  ldr  r3, [r3]
+// r0=0xc20
+0x000087f8 &lt;main+124&gt;:  mov  r0, r3
+// string="id must be in parsable by 0x%%lx\n"
+0x000087fc &lt;main+128&gt;:  ldr  r1, [pc, #456]  ; 0x89cc &lt;main+592&gt;
+// fprintf(0xc20, string)
+0x00008800 &lt;main+132&gt;:  bl  0x8690 &lt;fprintf&gt;
+// r0=-1
+0x00008804 &lt;main+136&gt;:  mvn  r0, #0
+// exit(-1)
+0x00008808 &lt;main+140&gt;:  bl  0x869c &lt;exit&gt;
+// string=""
+0x0000880c &lt;main+144&gt;:  ldr  r0, [pc, #444]  ; 0x89d0 &lt;main+596&gt;
+// XOpenDisplay(string)
+0x00008810 &lt;main+148&gt;:  bl  0x8660 &lt;XOpenDisplay&gt;
+// r3=XOpenDisplay()
+0x00008814 &lt;main+152&gt;:  mov  r3, r0
+// buf2=r3
+0x00008818 &lt;main+156&gt;:  str  r3, [r11, #-20]
+0x0000881c &lt;main+160&gt;:  ldr  r3, [r11, #-20]
+// if (XOpenDisplay() != 0) then goto 0x8848
+0x00008820 &lt;main+164&gt;:  cmp  r3, #0
+0x00008824 &lt;main+168&gt;:  bne  0x8848 &lt;main+204&gt;
+// r3=0xc20
+0x00008828 &lt;main+172&gt;:  ldr  r3, [pc, #400]  ; 0x89c0 &lt;main+580&gt;
+0x0000882c &lt;main+176&gt;:  ldr  r3, [r3]
+// string="can't open display\n"
+0x00008830 &lt;main+180&gt;:  ldr  r0, [pc, #412]  ; 0x89d4 &lt;main+600&gt;
+0x00008834 &lt;main+184&gt;:  mov  r1, #1
+0x00008838 &lt;main+188&gt;:  mov  r2, #19
+// fwrite(string, 1, strlen(string))
+0x0000883c &lt;main+192&gt;:  bl  0x8678 &lt;fwrite&gt;
+// r0=-1
+0x00008840 &lt;main+196&gt;:  mvn  r0, #0
+// exit(-1)
+0x00008844 &lt;main+200&gt;:  bl  0x869c &lt;exit&gt;
+// sscanf(buf1)
+0x00008848 &lt;main+204&gt;:  ldr  r3, [r11, #-24]
+// buf2=XOpenDisplay()
+0x0000884c &lt;main+208&gt;:  ldr  r0, [r11, #-20]
+0x00008850 &lt;main+212&gt;:  mov  r1, r3
+// XGetWMHints(buf2, buf1)
+0x00008854 &lt;main+216&gt;:  bl  0x866c &lt;XGetWMHints&gt;
+0x00008858 &lt;main+220&gt;:  mov  r3, r0
+// buf3=XGetWMHints()
+0x0000885c &lt;main+224&gt;:  str  r3, [r11, #-16]
+0x00008860 &lt;main+228&gt;:  ldr  r3, [r11, #-16]
+// if (XGetWMHints() != 0) then goto 0x8970
+0x00008864 &lt;main+232&gt;:  cmp  r3, #0
+0x00008868 &lt;main+236&gt;:  bne  0x8970 &lt;main+500&gt;
+0x0000886c &lt;main+240&gt;:  sub  r2, r11, #60  ; 0x3c
+0x00008870 &lt;main+244&gt;:  str  r2, [r11, #-76]  ; 0x4c
+0x00008874 &lt;main+248&gt;:  mov  r3, #0
+0x00008878 &lt;main+252&gt;:  ldr  r2, [r11, #-76]  ; 0x4c
+0x0000887c &lt;main+256&gt;:  str  r3, [r2]
+0x00008880 &lt;main+260&gt;:  ldr  r3, [r11, #-76]  ; 0x4c
+0x00008884 &lt;main+264&gt;:  add  r3, r3, #4
+0x00008888 &lt;main+268&gt;:  str  r3, [r11, #-76]  ; 0x4c
+0x0000888c &lt;main+272&gt;:  mov  r3, #0
+0x00008890 &lt;main+276&gt;:  ldr  r2, [r11, #-76]  ; 0x4c
+0x00008894 &lt;main+280&gt;:  str  r3, [r2]
+0x00008898 &lt;main+284&gt;:  ldr  r3, [r11, #-76]  ; 0x4c
+0x0000889c &lt;main+288&gt;:  add  r3, r3, #4
+0x000088a0 &lt;main+292&gt;:  str  r3, [r11, #-76]  ; 0x4c
+0x000088a4 &lt;main+296&gt;:  mov  r3, #0
+0x000088a8 &lt;main+300&gt;:  ldr  r2, [r11, #-76]  ; 0x4c
+0x000088ac &lt;main+304&gt;:  str  r3, [r2]
+0x000088b0 &lt;main+308&gt;:  ldr  r3, [r11, #-76]  ; 0x4c
+0x000088b4 &lt;main+312&gt;:  add  r3, r3, #4
+0x000088b8 &lt;main+316&gt;:  str  r3, [r11, #-76]  ; 0x4c
+0x000088bc &lt;main+320&gt;:  mov  r3, #0
+0x000088c0 &lt;main+324&gt;:  ldr  r2, [r11, #-76]  ; 0x4c
+0x000088c4 &lt;main+328&gt;:  str  r3, [r2]
+0x000088c8 &lt;main+332&gt;:  ldr  r3, [r11, #-76]  ; 0x4c
+0x000088cc &lt;main+336&gt;:  add  r3, r3, #4
+0x000088d0 &lt;main+340&gt;:  str  r3, [r11, #-76]  ; 0x4c
+0x000088d4 &lt;main+344&gt;:  mov  r3, #0
+0x000088d8 &lt;main+348&gt;:  ldr  r2, [r11, #-76]  ; 0x4c
+0x000088dc &lt;main+352&gt;:  str  r3, [r2]
+0x000088e0 &lt;main+356&gt;:  ldr  r3, [r11, #-76]  ; 0x4c
+0x000088e4 &lt;main+360&gt;:  add  r3, r3, #4
+0x000088e8 &lt;main+364&gt;:  str  r3, [r11, #-76]  ; 0x4c
+0x000088ec &lt;main+368&gt;:  mov  r3, #0
+0x000088f0 &lt;main+372&gt;:  ldr  r2, [r11, #-76]  ; 0x4c
+0x000088f4 &lt;main+376&gt;:  str  r3, [r2]
+0x000088f8 &lt;main+380&gt;:  ldr  r3, [r11, #-76]  ; 0x4c
+0x000088fc &lt;main+384&gt;:  add  r3, r3, #4
+0x00008900 &lt;main+388&gt;:  str  r3, [r11, #-76]  ; 0x4c
+0x00008904 &lt;main+392&gt;:  mov  r3, #0
+0x00008908 &lt;main+396&gt;:  ldr  r2, [r11, #-76]  ; 0x4c
+0x0000890c &lt;main+400&gt;:  str  r3, [r2]
+0x00008910 &lt;main+404&gt;:  ldr  r3, [r11, #-76]  ; 0x4c
+0x00008914 &lt;main+408&gt;:  add  r3, r3, #4
+0x00008918 &lt;main+412&gt;:  str  r3, [r11, #-76]  ; 0x4c
+0x0000891c &lt;main+416&gt;:  mov  r3, #0
+0x00008920 &lt;main+420&gt;:  ldr  r2, [r11, #-76]  ; 0x4c
+0x00008924 &lt;main+424&gt;:  str  r3, [r2]
+0x00008928 &lt;main+428&gt;:  ldr  r3, [r11, #-76]  ; 0x4c
+0x0000892c &lt;main+432&gt;:  add  r3, r3, #4
+0x00008930 &lt;main+436&gt;:  str  r3, [r11, #-76]  ; 0x4c
+0x00008934 &lt;main+440&gt;:  mov  r3, #0
+0x00008938 &lt;main+444&gt;:  ldr  r2, [r11, #-76]  ; 0x4c
+0x0000893c &lt;main+448&gt;:  str  r3, [r2]
+0x00008940 &lt;main+452&gt;:  ldr  r3, [r11, #-76]  ; 0x4c
+0x00008944 &lt;main+456&gt;:  add  r3, r3, #4
+0x00008948 &lt;main+460&gt;:  mov  r3, #1
+0x0000894c &lt;main+464&gt;:  str  r3, [r11, #-60]  ; 0x3c
+0x00008950 &lt;main+468&gt;:  mov  r3, #1
+0x00008954 &lt;main+472&gt;:  str  r3, [r11, #-56]  ; 0x38
+0x00008958 &lt;main+476&gt;:  ldr  r3, [r11, #-24]
+0x0000895c &lt;main+480&gt;:  sub  r2, r11, #60  ; 0x3c
+0x00008960 &lt;main+484&gt;:  ldr  r0, [r11, #-20]
+0x00008964 &lt;main+488&gt;:  mov  r1, r3
+// XSetWMHints()
+0x00008968 &lt;main+492&gt;:  bl  0x86a8 &lt;XSetWMHints&gt;
+0x0000896c &lt;main+496&gt;:  b  0x89ac &lt;main+560&gt;
+0x00008970 &lt;main+500&gt;:  ldr  r2, [r11, #-16]
+0x00008974 &lt;main+504&gt;:  mov  r3, #1
+0x00008978 &lt;main+508&gt;:  str  r3, [r2, #4]
+0x0000897c &lt;main+512&gt;:  ldr  r3, [r11, #-16]
+0x00008980 &lt;main+516&gt;:  ldr  r3, [r3]
+0x00008984 &lt;main+520&gt;:  orr  r2, r3, #1
+0x00008988 &lt;main+524&gt;:  ldr  r3, [r11, #-16]
+0x0000898c &lt;main+528&gt;:  str  r2, [r3]
+0x00008990 &lt;main+532&gt;:  ldr  r3, [r11, #-24]
+0x00008994 &lt;main+536&gt;:  ldr  r0, [r11, #-20]
+0x00008998 &lt;main+540&gt;:  mov  r1, r3
+0x0000899c &lt;main+544&gt;:  ldr  r2, [r11, #-16]
+// XSetWMHints()
+0x000089a0 &lt;main+548&gt;:  bl  0x86a8 &lt;XSetWMHints&gt;
+0x000089a4 &lt;main+552&gt;:  ldr  r0, [r11, #-16]
+// XFree()
+0x000089a8 &lt;main+556&gt;:  bl  0x8624 &lt;XFree&gt;
+0x000089ac &lt;main+560&gt;:  ldr  r0, [r11, #-20]
+// XFlush
+0x000089b0 &lt;main+564&gt;:  bl  0x8684 &lt;XFlush&gt;
+0x000089b4 &lt;main+568&gt;:  sub  sp, r11, #12
+0x000089b8 &lt;main+572&gt;:  ldm  sp, {r11, sp, lr}
+0x000089bc &lt;main+576&gt;:  bx  lr
+0x000089c0 &lt;main+580&gt;:  andeq  r0, r1, r0, lsr #24
+0x000089c4 &lt;main+584&gt;:  andeq  r8, r0, r0, ror r10
+0x000089c8 &lt;main+588&gt;:  andeq  r8, r0, r12, lsl #21
+0x000089cc &lt;main+592&gt;:  muleq  r0, r4, r10
+0x000089d0 &lt;main+596&gt;:  undefined instruction 0x00008ab8
+0x000089d4 &lt;main+600&gt;:  undefined instruction 0x00008abc
+End of assembler dump.
+</pre><br>
+
+<p>
+司徒發現上面這段程式跟maemo.org討論區的某段程式一樣，如下所示：
+</p>
+<pre class="brush:cpp">
+#include &lt;X11/Xlib.h&gt;
+#include &lt;X11/Xutil.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+int main(int argc, char** argv)
+{
+  Display *display;
+  Window window=0;
+  XWMHints *input_hints;
+  if(argc != 2){
+    fprintf(stderr, "usage: set-input-hint &lt;id&gt;\n");
+    exit(-1);
+  }
+
+  if(sscanf(argv[1], "0x%lx", &amp;window) != 1){
+    fprintf(stderr, "id must be in parsable by 0x%%lx\n");
+    exit(-1);
+  }
+
+  display=XOpenDisplay();
+  if(display == NULL){
+    fprintf(stderr, "can't open display\n");
+    exit(-1);
+  }
+
+  input_hints=XGetWMHints(display, window);
+  if(input_hints == NULL){
+    XWMHints input_hints={.input=True, .flags=InputHint};
+    XSetWMHints(display, window, &amp;input_hints);
+  }
+  else{
+    input_hints->input = True;
+    input_hints->flags|= InputHint;
+    XSetWMHints(display, window, input_hints);
+    XFree(input_hints);
+  }
+  XFlush(dislay);
+}
+</pre>
+<p>
+上面這段程式就是透過XSetWMHints取得Keyboard的控制權，透過XSetWMHints的設定，Xephyr Server就可以透過Window Manager(LXDE)取得鍵盤控制權。
+</p>
+
+<p>
+<br><a href="../../../phone.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,207 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>ESP8266MOD</h3>
+<p><b>Flash Image</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://docs.espressif.com/projects/esp-idf/en/latest/get-started/index.html#introduction">get-started</a><br><br>
+
+步驟如下：
+</p>
+<pre>
+$ sudo apt-get update
+$ sudo apt-get install gcc git wget make libncurses-dev flex bison gperf python python-pip python-setuptools python-serial python-cryptography python-future python-pyparsing python-pyelftools
+
+$ cd
+$ wget https://dl.espressif.com/dl/xtensa-esp32-elf-linux64-1.22.0-80-g6c4433a-5.2.0.tar.gz
+$ tar xvf xtensa-esp32-elf-linux64-1.22.0-80-g6c4433a-5.2.0.tar.gz
+$ sudo mv xtensa-esp32-elf /opt/esp32
+
+$ cd
+$ git clone --recursive https://github.com/espressif/esp-idf.git
+$ export IDF_PATH=~/esp-idf
+$ cd esp-idf
+$ python -m pip install --user -r requirements.txt
+$ cd examples/get-started/hello_world
+$ export PATH=$PATH:/opt/esp32/bin
+$ make menuconfig
+</pre><br>
+
+<p>
+依據偵測到的ttyUSB<br>
+<img src="flash_image/1.jpg" class="maxSize"><br><br>
+
+編譯
+</p>
+<pre>
+$ make
+</pre><br>
+
+<p>
+插入USB後，執行如下命令燒錄<br>
+</p>
+<pre>
+$ make flash
+  Toolchain path: /opt/esp32/bin//xtensa-esp32-elf-gcc
+  Toolchain version: crosstool-ng-1.22.0-80-g6c4433a
+  Compiler version: 5.2.0
+  Python requirements from /home/steward/Downloads/esp-idf/requirements.txt are satisfied.
+
+  App "hello-world" version: v4.0-dev-478-gdf61612f8
+  Flashing binaries to serial port /dev/ttyUSB0 (app at offset 0x10000)...
+  esptool.py v2.7-dev
+  Serial port /dev/ttyUSB0
+  Connecting....
+  Chip is ESP32D0WDQ6 (revision 1)
+  Features: WiFi, BT, Dual Core, Coding Scheme None
+  MAC: 30:ae:a4:1c:68:ec
+  Uploading stub...
+  Running stub...
+  Stub running...
+  Configuring flash size...
+  Auto-detected Flash size: 4MB
+  Flash params set to 0x0220
+  Compressed 24464 bytes to 14609...
+  Wrote 24464 bytes (14609 compressed) at 0x00001000 in 1.3 seconds (effective 151.3 kbit/s)...
+  Hash of data verified.
+  Compressed 146464 bytes to 70368...
+  Wrote 146464 bytes (70368 compressed) at 0x00010000 in 6.2 seconds (effective 188.0 kbit/s)...
+  Hash of data verified.
+  Compressed 3072 bytes to 103...
+  Wrote 3072 bytes (103 compressed) at 0x00008000 in 0.0 seconds (effective 1762.2 kbit/s)...
+  Hash of data verified.
+
+  Leaving...
+  Hard resetting via RTS pin...
+</pre><br>
+
+<p>
+接著連接UART的RX、TX就可以看到輸出(Baudrate: 115200bps)
+</p>
+<pre>
+OPTIONS: I18n 
+Compiled on Apr 22 2017, 09:14:19.
+Port /dev/ttyUSB0, 14:56:04
+
+Press CTRL-A Z for help on special keys
+
+ets Jun  8 2016 00:22:57
+
+rst:0x1 (POWERON_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+flash read err, 1000
+ets_main.c 371 
+ets Jun  8 2016 00:22:57
+
+rst:0x10 (RTCWDT_RTC_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+configsip: 0, SPIWP:0xee
+clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+mode:DIO, clock div:2
+load:0x3fff0018,len:4
+load:0x3fff001c,len:6364
+load:0x40078000,len:11304
+load:0x40080400,len:6700
+entry 0x40080764
+I (29) boot: ESP-IDF v4.0-dev-478-gdf61612f8 2nd stage bootloader
+I (29) boot: compile time 14:51:07
+I (29) boot: Enabling RNG early entropy source...
+I (35) boot: SPI Speed      : 40MHz
+I (39) boot: SPI Mode       : DIO
+I (43) boot: SPI Flash Size : 4MB
+I (47) boot: Partition Table:
+I (51) boot: ## Label            Usage          Type ST Offset   Length
+I (58) boot:  0 nvs              WiFi data        01 02 00009000 00006000
+I (66) boot:  1 phy_init         RF data          01 01 0000f000 00001000
+I (73) boot:  2 factory          factory app      00 00 00010000 00100000
+I (81) boot: End of partition table
+I (85) esp_image: segment 0: paddr=0x00010020 vaddr=0x3f400020 size=0x07794 ( 30612) map
+I (104) esp_image: segment 1: paddr=0x000177bc vaddr=0x3ffb0000 size=0x01eac (  7852) load
+I (108) esp_image: segment 2: paddr=0x00019670 vaddr=0x40080000 size=0x00400 (  1024) load
+I (112) esp_image: segment 3: paddr=0x00019a78 vaddr=0x40080400 size=0x06598 ( 26008) load
+I (131) esp_image: segment 4: paddr=0x00020018 vaddr=0x400d0018 size=0x1258c ( 75148) map
+I (158) esp_image: segment 5: paddr=0x000325ac vaddr=0x40086998 size=0x01650 (  5712) load
+I (165) boot: Loaded app from partition at offset 0x10000
+I (165) boot: Disabling RNG early entropy source...
+I (167) cpu_start: Pro cpu up.
+I (171) cpu_start: Application information:
+I (176) cpu_start: Project name:     hello-world
+I (181) cpu_start: App version:      v4.0-dev-478-gdf61612f8
+I (187) cpu_start: Compile time:     May  6 2019 14:51:10
+I (193) cpu_start: ELF file SHA256:  b0132b11b757dd84...
+I (199) cpu_start: ESP-IDF:          v4.0-dev-478-gdf61612f8
+I (206) cpu_start: Starting app cpu, entry point is 0x40080fdc
+I (0) cpu_start: App cpu up.
+I (216) heap_init: Initializing. RAM available for dynamic allocation:
+I (223) heap_init: At 3FFAE6E0 len 00001920 (6 KiB): DRAM
+I (229) heap_init: At 3FFB2ED8 len 0002D128 (180 KiB): DRAM
+I (235) heap_init: At 3FFE0440 len 00003AE0 (14 KiB): D/IRAM
+I (242) heap_init: At 3FFE4350 len 0001BCB0 (111 KiB): D/IRAM
+I (248) heap_init: At 40087FE8 len 00018018 (96 KiB): IRAM
+I (254) cpu_start: Pro cpu start user code
+I (272) cpu_start: Starting scheduler on PRO CPU.
+I (0) cpu_start: Starting scheduler on APP CPU.
+Hello world!
+This is ESP32 chip with 2 CPU cores, WiFi/BT/BLE, silicon revision 1, 4MB external flash
+</pre><br>
+
+<p>
+假如無法燒錄，則可以使用esptool.py進行燒錄
+</p>
+<pre>
+$ cd $IDF_PATH/components/esptool_py/esptool
+$ ./esptool.py --baud 920600 write_flash --flash_mode dio --flash_size 4MB 0 hello-world.bin
+</pre>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

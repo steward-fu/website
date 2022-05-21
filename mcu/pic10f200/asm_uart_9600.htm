@@ -1,0 +1,157 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>PIC10F200 &gt;&gt; Assembly</h3>
+<p><b>UART TX(9600bps)</b></p>
+<hr size="1">
+<p>
+由於PIC10F200沒有UART功能，因此，司徒只好先使用I/O Toggle的方式製作UART TX，TX比較簡單，只要把時間算好，基本上沒有太大問題，唯一要注意的是，最好不要超過3%的誤差，加上PIC10F200的石英震盪器是使用內部震盪器，難免會有誤差，建議不要使用太快的UART Baudrate，目前司徒使用的UART Baudrate是9600bps，格式為N,8,1，過程說明如下。<br><br>
+
+UART傳輸協定<br>
+<img src="../stc15w104/asm_uart_tx/1.jpg" class="maxSize"><br>
+9600bps每個bit時間為：1/9600 = 104.167us<br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+  list p=10f200, r=hex
+  #include &lt;p10f200.inc&gt;
+  __config _CONFIG, _IntRC_OSC &amp; _WDTE_OFF &amp; _MCLRE_OFF
+
+  #define tmp1        0x10
+  #define tmp2        0x11
+  #define tmp3        0x12
+  #define tmp4        0x13
+  #define UART_DELAY  d'28'
+  #define UART_PIN    0x02
+ 
+  org 0x00
+start:
+  movlw b'11000000'
+  option
+
+  movlw b'00000000'
+  movwf OSCCAL
+
+  movlw b'00001011'
+  tris GPIO
+  bsf GPIO, UART_PIN
+
+  clrf tmp4
+loop:
+  movf tmp4, w
+  incf tmp4, f
+  call uart_send_byte
+  call delay
+  goto loop
+
+uart_send_byte:
+  movwf tmp1
+  movlw 0x08
+  movwf tmp2
+
+  bcf GPIO, UART_PIN
+  movlw UART_DELAY
+  movwf tmp3
+  decfsz tmp3, f
+  goto $-1
+u0:
+  rrf tmp1, f
+  btfss STATUS, C
+  bcf GPIO, UART_PIN
+  btfsc STATUS, C
+  bsf GPIO, UART_PIN
+  
+  movlw UART_DELAY
+  movwf tmp3
+  decfsz tmp3, f
+  goto $-1
+
+  decfsz tmp2, f
+  goto u0
+  
+  bsf GPIO, UART_PIN
+  movlw UART_DELAY
+  movwf tmp3
+  nop
+  decfsz tmp3, f
+  goto $-1
+  return
+
+delay:
+  movlw 0xff
+  movwf tmp2
+  movlw 0xff
+  movwf tmp1
+  decfsz tmp1, f
+  goto $-1
+  decfsz tmp2, f
+  goto $-3
+  return
+  end
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ gpasm main.s
+</pre><br>
+
+<p>
+完成<br>
+<img src="asm_uart_9600/1.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,131 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Cosmo Communicator &gt;&gt; Android</h3>
+<p><b>解決待機耗電的問題</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://www.oesf.org/forum/index.php?topic=36281.0">Battery life</a><br><br>
+
+1. 關閉如下設定：
+</p>
+<pre>
+Settings &gt; Battery &gt; Battery Manager
+</pre><br>
+
+<p>
+2. 進入TWRP後，Mount System，接著刪除如下APK
+</p>
+<pre>
+/System/System/priv-app/Baidu_Location/Baidu_Location.apk
+</pre><br>
+
+<p>
+3. 設定WIFI
+</p>
+<pre>
+$ sudo settings put global wifi_scan_aways_enabled 0
+$ sudo settings put global wifi_sleep_policy 0
+</pre><br>
+
+<p>
+依據OESF論壇的訊息，耗電原因在於CPU並沒有進入深度睡眠，使用者可以使用GSam Battery查看
+<img src="fix_battery/1.jpg" class="maxSize"><br>
+P.S. 司徒刷了v25系統後，發現沒有辦法進入深度睡眠，於是混刷v22版的dtbo-verified.img、recovery-verified.img、boot-verified.img後，才可以進入深度睡眠<br><br>
+
+v22混刷腳本
+</p>
+<pre>
+#!/system/bin/sh
+PARTED="/sbin/parted_static"
+DD="/system/bin/dd"
+MBF="/sdcard/cosmo-customos-installer"
+BOOT_PARTITION="/dev/block/mmcblk0p"
+LINUX_ROOTFS="/dev/block/mmcblk0p43"
+OUTPUT="/tmp/output.txt"
+ERROR="/tmp/error.txt"
+FW_VRSN="v22"
+INSTALLER_TITLE="Install Android V22"
+INSTALLER_ASK_FOR_TARGET_BOOT=0
+
+echo "Installing Android v22..." > $OUTPUT
+
+log () {
+  echo -n "$1 " >> $OUTPUT
+}
+
+execute() {
+  log "Running \"$1\""
+  R=$($1 2> $ERROR)
+
+  if [ "$?" -eq "0" ]
+  then
+    log "OK\n"
+  else
+    log "ERROR: `cat /tmp/error`\n"
+  fi
+}
+
+# Flash Factory Firmware
+execute "$DD if=$MBF/$FW_VRSN/dtbo-verified.img of=/dev/block/by-name/dtbo bs=1m"
+execute "$DD if=$MBF/$FW_VRSN/recovery-verified.img of=/dev/block/by-name/recovery bs=1m"
+execute "$DD if=$MBF/$FW_VRSN/boot-verified.img of=/dev/block/by-name/boot bs=1m"
+</pre>
+<p>
+最後，發現耗電的主要原因是開啟Cover Display，司徒做8小時待機測試，開啟Cover Display時，耗電40%，但是關閉Cover Display後，耗電則降為10%
+</p>
+
+<p>
+<br><a href="../../phone.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

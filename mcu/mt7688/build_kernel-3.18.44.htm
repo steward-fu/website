@@ -1,0 +1,101 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>LinkIt Smart MT7688</h3>
+<p><b>Build Kernel 3.18.44</b></p>
+<hr size="1">
+<p>
+編譯： 
+</p>
+<pre>
+$ cd
+$ wget https://github.com/steward-fu/mt7688/releases/download/v1.0/toolchain.tar.gz
+$ tar xvf toolchain.tar.gz
+$ sudo mv mt7688 /opt/
+
+$ wget https://github.com/steward-fu/mt7688/releases/download/v1.0/kernel.tar.gz
+$ tar xvf kernel.tar.gz
+$ cd kernel
+
+$ export ARCH=mips
+$ export CROSS_COMPILE=mipsel-linux-
+$ export PATH=$PATH:/opt/mt7688/bin
+
+$ make mt7688_defconfig
+$ make clean
+$ make all -j4
+
+$ cp vmlinux vmlinux_orig
+$ mipsel-linux-objcopy -O binary -R .reginfo -R .notes -R .note -R .comment -R .mdebug -R .note.gnu.build-id -S vmlinux_orig vmlinux
+$ mipsel-linux-objcopy -R .reginfo -R .notes -R .note -R .comment -R .mdebug -R .note.gnu.build-id -S vmlinux_orig vmlinux.elf
+$ ./utils/dtc -O dtb -o LINKIT7688.dtb dts/LINKIT7688.dts
+$ ./utils/patch-dtb vmlinux LINKIT7688.dtb
+$ ./utils/lzma e vmlinux -lc1 -lp2 -pb2 vmlinux.bin.lzma
+$ mkimage -A mips -O linux -T kernel -C lzma -a 0x80000000 -e 0x80000000 -n "MT7688" -d vmlinux.bin.lzma uImage.lzma
+$ cp uImage.lzma uImage.bin
+$ cat uImage.bin utils/rootfs.squashfs &gt; lks7688.img
+$ ./utils/padjffs2 lks7688.img 4 8 16 64 128 256
+$ rm -rf uImage* vmlinux* LINKIT7688.dtb
+</pre><br>
+
+<p>
+燒錄(請使用USB供電)：<br>
+1. 格式化USBDisk成FAT32<br>
+2. 複製lks7688.img到USBDisk<br>
+3. 插入USBDisk到MT7688 USB host port<br>
+4. 按住WiFi按鈕<br>
+5. 5秒後鬆開WiFi按鈕(第一次WiFi LED滅時)
+</p>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

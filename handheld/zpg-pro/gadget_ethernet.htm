@@ -1,0 +1,111 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Z-Pocket Game Pro(ZPG Pro)</h3>
+<p><b>configfs gadget(ethernet)</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://www.collabora.com/news-and-blog/blog/2019/02/18/modern-usb-gadget-on-linux-and-how-to-integrate-it-with-systemd-part-1/">modern-usb-gadget-on-linux-and-how-to-integrate-it-with-systemd-part-1</a><br><br>
+
+ZPG Pro
+</p>
+<pre>
+$ su
+# insmod libcomposite.ko
+# insmod usb_f_fs.ko
+# insmod u_ether.ko
+# insmod usb_f_ecm.ko
+
+# cd /sys/kernel/config/usb_gadget
+# mkdir g1
+# cd g1
+# echo 0x1d6b > idVendor
+# echo 0x104 > idProduct
+# mkdir strings/0x409
+# echo "Collabora" > strings/0x409/manufacturer
+# echo "ECM" > strings/0x409/product
+# mkdir configs/c.1
+# mkdir functions/ecm.usb0
+# ln -s functions/ecm.usb0/ configs/c.1/
+# echo ff300000.usb > UDC
+
+# ifconfig usb0 10.0.1.3 netmask 255.255.255.0
+# ifconfig usb0
+    usb0: flags=4163&lt;UP,BROADCAST,RUNNING,MULTICAST&gt;  mtu 1500
+        inet 10.0.1.3  netmask 255.255.255.0  broadcast 10.0.1.255
+        inet6 fe80::4093:adff:fed9:e41d  prefixlen 64  scopeid 0x20&lt;link&gt;
+        ether 42:93:ad:d9:e4:1d  txqueuelen 1000  (Ethernet)
+        RX packets 12  bytes 1562 (1.5 KB)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 6  bytes 508 (508.0 B)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+</pre><br>
+
+<p>
+PC
+</p>
+<pre>
+[ 3865.309695] usb 2-2: new high-speed USB device number 8 using xhci_hcd
+[ 3865.458504] usb 2-2: New USB device found, idVendor=1d6b, idProduct=0104, bcdDevice= 4.04
+[ 3865.458507] usb 2-2: New USB device strings: Mfr=1, Product=2, SerialNumber=3
+[ 3865.458509] usb 2-2: Product: ECM
+[ 3865.458510] usb 2-2: Manufacturer: Collabora
+[ 3865.491238] cdc_ether 2-2:1.0 usb0: register 'cdc_ether' at usb-0000:00:14.0-2, CDC Ethernet Device, 5a:07:74:09:01:f4
+[ 3865.492703] usbcore: registered new interface driver cdc_ether
+[ 3865.500673] cdc_ether 2-2:1.0 enp0s20u2: renamed from usb0
+[ 3865.532488] IPv6: ADDRCONF(NETDEV_UP): enp0s20u2: link is not ready
+</pre><br>
+
+<p>
+<br><a href="../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

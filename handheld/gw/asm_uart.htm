@@ -1,0 +1,197 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Game &amp; Watch: Super Mario Bros. &gt;&gt; Assembly</h3>
+<p><b>UART</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://www.st.com/resource/en/reference_manual/dm00463927-stm32h7a37b3-and-stm32h7b0-value-line-advanced-armbased-32bit-mcus-stmicroelectronics.pdf">pm_pdf</a><br>
+2. <a href="https://www.st.com/resource/en/datasheet/stm32h7b0vb.pdf">ds_pdf</a><br>
+3. <a href="https://github.com/ghidraninja/game-and-watch-backup">game-and-watch-backup</a><br>
+4. <a href="https://github.com/ghidraninja/game-and-watch-flashloader">game-and-watch-flashloader</a><br><br>
+
+UART使用到的腳位為PA-2(USART2_TX)、PA-3(USART2_RX)<br>
+<img src="asm_uart/7.jpg" class="maxSize"><br><br>
+
+USART2EN=1<br>
+<img src="asm_uart/1.jpg" class="maxSize"><br><br>
+
+USART234578SEL=3(HSI Clock)<br>
+<img src="asm_uart/2.jpg" class="maxSize"><br><br>
+
+TE=1、UE=1<br>
+<img src="asm_uart/3.jpg" class="maxSize"><br><br>
+
+Baudrate計算方式如下：
+</p>
+<pre>
+Baudrate = USART_KER_CKPRES/USART_DIV = 64000000/556 = 115108 ~= 115200
+</pre>
+<p>
+<img src="asm_uart/4.jpg" class="maxSize"><br><br>
+
+TC是傳送完成旗標<br>
+<img src="asm_uart/5.jpg" class="maxSize"><br><br>
+
+傳送資料<br>
+<img src="asm_uart/6.jpg" class="maxSize"><br><br>
+
+GPIOAEN=1<br>
+<img src="asm_led/2.jpg" class="maxSize"><br><br>
+
+MODER2=2<br>
+<img src="asm_led/3.jpg" class="maxSize"><br><br>
+
+AFR2=7(USART2)<br>
+<img src="asm_uart/8.jpg" class="maxSize"><br>
+<img src="asm_uart/9.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+  .equiv PORTA_BASE,    0x58020000
+  .equiv PORTC_BASE,    0x58020800
+  .equiv PORTE_BASE,    0x58021000
+  .equiv GPIO_MODER,    0x0000
+  .equiv GPIO_ODR,      0x0014
+  .equiv GPIO_AFRL,     0x0020
+ 
+  .equiv RCC_BASE,      0x58024400
+  .equiv RCC_AHB4ENR,   0x0140
+  .equiv RCC_APB4ENR,   0x0154
+  .equiv RCC_CDCCIP2R,  0x0054
+  .equiv RCC_APB1LENR,  0x0148
+
+  .equiv USART2_BASE,   0x40004400
+  .equiv USART_CR1,     0x0000
+  .equiv USART_BRR,     0x000c
+  .equiv USART_ISR,     0x001c
+  .equiv USART_TDR,     0x0028
+
+  .thumb
+  .cpu cortex-m7
+  .syntax unified
+ 
+  .global _start
+ 
+  .text
+  .org 0x0000
+_start:
+  .word 0x20020000
+  .word reset
+ 
+  .org 0x0100
+  .thumb_func
+reset:
+  ldr r0, =RCC_BASE
+  ldr r1, [r0, #RCC_APB1LENR]
+  orr r1, #(1 &lt;&lt; 17)
+  str r1, [r0, #RCC_APB1LENR]
+
+  ldr r1, [r0, #RCC_AHB4ENR]
+  orr r1, #(1 &lt;&lt; 0)
+  str r1, [r0, #RCC_AHB4ENR]
+
+  ldr r0, =RCC_BASE
+  ldr r1, [r0, #RCC_CDCCIP2R]
+  bic r1, #0x07
+  orr r1, #0x03
+  str r1, [r0, #RCC_CDCCIP2R]
+
+  ldr r0, =PORTA_BASE
+  ldr r1, [r0, #GPIO_MODER]
+  bic r1, #0xf0
+  orr r1, #(2 &lt;&lt; 4)
+  str r1, [r0, #GPIO_MODER]
+
+  ldr r1, [r0, #GPIO_AFRL]
+  bic r1, #0xf00
+  orr r1, #(7 &lt;&lt; 8)
+  str r1, [r0, #GPIO_AFRL]
+ 
+  ldr r0, =USART2_BASE
+  ldr r1, =0x22c
+  str r1, [r0, #USART_BRR]
+  ldr r1, [r0, #USART_CR1]
+  orr r1, #0x09
+  str r1, [r0, #USART_CR1]
+
+  ldr r0, =USART2_BASE
+  ldr r2, =hello
+1:
+  ldr r1, [r0, #USART_ISR]
+  tst r1, #(1 &lt;&lt; 6)
+  beq 1b
+  ldrb r1, [r2]
+  strb r1, [r0, #USART_TDR]
+  add r2, #1
+  cmp r1, #0
+  bne 1b
+  b .
+
+  .align
+hello: .asciz "Hello, world!"
+  .end
+</pre><br>
+
+<p>
+接線如下<br>
+<img src="asm_uart/10.jpg" class="maxSize"><br><br>
+
+完成<br>
+<img src="../../mcu/f1c100s/asm_uart/4.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

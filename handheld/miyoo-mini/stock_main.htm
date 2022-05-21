@@ -1,0 +1,189 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Miyoo Mini &gt;&gt; Stock</h3>
+<p><b>/customer/main</b></p>
+<hr size="1">
+<p>
+如下：
+</p>
+<pre>
+#!/bin/sh
+
+#if ! [ -f /mnt/swapfile ] ; then
+#dd if=/dev/zero of=/mnt/swapfile bs=1M count=64
+#chmod 600 /mnt/swapfile
+#mkswap /mnt/swapfile
+#fi
+
+
+#if  [ -f /mnt/swapfile ] ; then
+#swapon /mnt/swapfile
+#fi
+
+#echo 0 > /sys/class/graphics/fbcon/cursor_blink                                 
+#echo 0 > /sys/class/vtconsole/vtcon1/bind
+
+#tinymix set 6 95 
+tinymix set 6 110 
+
+echo 3 > /proc/sys/kernel/printk
+
+chmod a+x /usr/bin/notify
+UPDATE_FILE_NAME=/tmp/.try_upgrade_file
+UPDATE_TMP_DIR=/mnt/SDCARD/.tmp_update
+UPDATE_LOG=/mnt/SDCARD/update.log
+CUSTOMER_DIR=/mnt/SDCARD/miyoo/
+
+killprocess(){
+   pid=`ps | grep $1 | grep -v grep | cut -d' ' -f3`
+   kill -9 $pid
+}
+
+init_lcd(){
+   cat /proc/ls
+   if [ $1 -ne 0 ] ; then
+	sleep $1
+   fi 
+}
+
+echo 12 > /sys/class/gpio/unexport
+
+#dump uboot env, not used anymore
+#chmod a+x /etc/fw_printenv
+#/etc/fw_printenv > /tmp/the_uboot_env
+
+#mv /mnt/SDCARD/update.scr /mnt/SDCARD/_update.scr
+
+audio_all_test -O -i /customer/app/sound/change.wav -D 0 -V -30 &
+
+while [ 1 ]; do
+  if [ -f $UPDATE_FILE_NAME ] ; then
+      upfile=`cat $UPDATE_FILE_NAME`
+      if [ -f ${upfile} ] ; then
+            echo start updating | tee $UPDATE_LOG
+	    updateui >> $UPDATE_LOG &
+            notify 0 extracting package
+            mkdir -p ${UPDATE_TMP_DIR}
+            total=`unzip -l ${upfile} | wc -l`            
+	    unzip -d ${UPDATE_TMP_DIR} ${upfile} | awk -v total="$total" -v out="/tmp/.update_msg" 'function bname(file,a,n){n=split(file,a,"/")
+;return a[n]}BEGIN{cnt=0}{printf "">out;cnt+=1;printf "%d extract %s\n",cnt*100/total,bname($2)>>out;close(out)}'
+           if [ -f ${UPDATE_TMP_DIR}/updater ] ; then
+	           chmod a+x ${UPDATE_TMP_DIR}/updater
+	           ${UPDATE_TMP_DIR}/updater | tee -a $UPDATE_LOG
+	           rm -rf ${UPDATE_TMP_DIR}
+	       else
+	           echo unzip return $? | tee $UPDATE_LOG
+           fi
+           kilall updateui
+      fi
+      rm -f $UPDATE_FILE_NAME
+      rm -f /tmp/state.json
+  elif [ -d ${UPDATE_TMP_DIR} ] ; then
+      echo start updating again | tee $UPDATE_LOG
+      updateui >> $UPDATE_LOG &
+      chmod a+x ${UPDATE_TMP_DIR}/updater
+      ${UPDATE_TMP_DIR}/updater | tee -a $UPDATE_LOG
+      rm -f $UPDATE_FILE_NAME
+      rm -rf ${UPDATE_TMP_DIR}
+      rm -f /tmp/state.json
+      kilall updateui
+  else
+      #exit 0  
+      a=`ps | grep dev/l | grep -v grep`                                                                             
+      if [ "$a" == "" ] ; then                                                                                        
+          init_lcd 1
+      fi
+
+      RUNNED=0
+      if [ -d ${CUSTOMER_DIR} ]   ; then
+        export LD_LIBRARY_PATH=/lib:/config/lib:${CUSTOMER_DIR}/lib 
+        
+        a=`ps | grep keymon | grep -v grep`
+        if [ "$a" == "" ] ; then
+            ${CUSTOMER_DIR}/app/keymon &
+        fi
+
+        ${CUSTOMER_DIR}/app/MainUI
+        if [ $? -eq 0 ] ; then
+            RUNNED=1
+        else
+            RUNNED=0
+        fi
+      fi
+      if [ ${RUNNED} -eq 0 ] ; then
+        export LD_LIBRARY_PATH=/lib:/config/lib:/customer/lib
+
+        a=`ps | grep keymon | grep -v grep`
+        if [ "$a" == "" ] ; then
+            keymon &
+        fi
+
+        MainUI
+      fi
+      sysmon freemma      
+      if [ -f /tmp/.cmdenc ] ; then                                                                                   
+          /root/gameloader                                                                                             
+      elif [ -f /tmp/cmd_to_run.sh ] ; then                                                                           
+         chmod a+x /tmp/cmd_to_run.sh                                                                                 
+         /tmp/cmd_to_run.sh                                                                                           
+         rm /tmp/cmd_to_run.sh                                                                                        
+      fi
+     sysmon freemma 
+  fi
+
+done
+</pre><br>
+
+<p>
+<br><a href="../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,245 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>MS-DOS Device Driver >> Assembly >> Basic</h3>
+<p><b>基本觀念</b></p>
+<hr size="1">
+<p>
+DOS驅動程式分為Char和Block兩種類型，這樣的類型跟Linux驅動程式其實很類似，Char指的就是資料是以1 Byte作為傳輸的單位，而Block則是以多個Bytes為傳輸單位，如：磁碟機就是以512 Bytes作為傳輸的單位，需要注意的是，這兩種不同類型的驅動程式，其支援的I/O Request Packet(IRP)也不相同，所以在撰寫DOS驅動程式前，必須先決定使用Char還是Block的驅動程式，若不知道該選擇哪一種類型作為開發，那就選擇Char驅動程式。
+</p>
+
+<p>  
+DOS驅動程式的進入點是Strategy Callback副程式，所有的呼叫動作一律透過該Callback副程式開始執行，而該Callback副程式是在驅動程式的檔頭資訊宣告，系統在載入驅動程式時，才知道該Callback副程式的位置，進而透過該Callback副程式初始化驅動程式，該檔頭資訊包含如下欄位：
+</p>
+
+<table>
+  <thead>
+    <tr align="center">
+      <th>Name</th>
+      <th>Type</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>NextDriver</td>
+      <td>Double Word</td>
+    </tr>
+    <tr>
+      <td>Attribute</td>
+      <td>Word</td>
+    </tr>
+    <tr>
+      <td>Strategy</td>
+      <td>Word</td>
+    </tr>
+    <tr>
+      <td>Interrupt</td>
+      <td>Word</td>
+    </tr>
+    <tr>
+      <td>DriverName</td>
+      <td>8 Bytes</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>
+基本程式架構如下
+</p>
+
+<pre class="brush:cpp">
+;//===========================================================================
+;// Copyright (c) 2016 by Steward Fu
+;// All rights reserved
+;//===========================================================================
+cseg segment para public 'code'  
+ FirstDOS proc far
+  assume cs:cseg, es:cseg, ds:cseg    
+  Header:
+   NextDriver dd -1
+   Attribute  dw 8000h
+   Strategy   dw MyStrategy
+   Interrupt  dw MyInterrupt
+   DriverName db 'FirstDOS'
+
+  MyStrategy:
+   ret
+
+  MyInterrupt:
+   ret  
+ FirstDOS endp
+cseg ends
+end
+</pre>
+  
+<p>
+<b>NextDriver</b>是指向下一個在本檔案中的驅動程式位置，如果一個檔案僅包含一個驅動程式，則此欄位就設定成<b>-1</b>即可<br>
+<b>Attribute</b>是描述驅動程式的屬性，它本身是一個16 Bits的資料型態，如下列表：
+</p>
+
+<table>
+  <thead>
+    <tr align="center">
+      <th>Bit</th>
+      <th>Value</th>
+      <th>Description</th>
+      <th>DOS</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>0</td>
+      <td>1<hr/>1</td>
+      <td>(CHAR)Standard Input Device<hr/>(BLOCK)Generic IOCTL</td>
+      <td>2.0+<hr/>3.2~4.xx</td>
+    </tr>
+    <tr>
+      <td>1</td>
+      <td>1<hr/>1</td>
+      <td>Standard Output Device<hr/>(BLOCK)32-bit Sector Addresses</td>
+      <td>2.0+<hr/>4.0~5.0</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>1</td>
+      <td>Null Device</td>
+      <td>2.0+</td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td>1</td>
+      <td>Clock Device</td>
+      <td>2.0+</td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td>1</td>
+      <td>Fast Console I/O</td>
+      <td>2.0</td>
+    </tr>
+    <tr>
+      <td>5</td>
+      <td>0</td>
+      <td>Undefined</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>6</td>
+      <td>1<hr/>1</td>
+      <td>(BLOCK)Get/Set Logical Device<hr/>Generic IOCTL</td>
+      <td>3.2+<hr/>3.3~5.0</td>
+    </tr>
+    <tr>
+      <td>7</td>
+      <td>1</td>
+      <td>IOCTL Query</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>8</td>
+      <td>0</td>
+      <td>Undefined</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>9</td>
+      <td>0</td>
+      <td>Undefined</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>10</td>
+      <td>0</td>
+      <td>Undefined</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>11</td>
+      <td>1</td>
+      <td>Open/Close/Removable Media</td>
+      <td>3.0+</td>
+    </tr>
+    <tr>
+      <td>12</td>
+      <td>0</td>
+      <td>Undefined</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>13</td>
+      <td>0<hr/>1<hr/>1</td>
+      <td>(BLOCK)IBM Format<hr/>(BLOCK)Non-IBM Format<hr/>(CHAR)Output Til Busy</td>
+      <td>2.0+<hr/>2.0+<hr/>3.0+</td>
+    </tr>
+    <tr>
+      <td>14</td>
+      <td>1</td>
+      <td>IOCTL</td>
+      <td>2.0+</td>
+    </tr>
+    <tr>
+      <td>15</td>
+      <td>0<hr/>1</td>
+      <td>BLOCK<hr/>CHAR</td>
+      <td>2.0+<hr/>2.0+</td>
+    </tr>
+  </tbody>
+</table>
+  
+<p>
+<b>Strategy</b>和<b>Interrupt</b>這兩個欄位分別指向Strategy和Interrupt Callback副程式位址，DOS系統呼叫驅動程式是採取兩個階段的呼叫方式，所謂兩個階段的意思就是，當DOS要呼叫驅動程式做事情時，DOS會先呼叫Strategy Callback副程式並且把要傳遞給驅動程式的資料放在ES:BX位置，所以，Strategy Callback副程式就類似預處理動作，呼叫完Strategy Callback副程式後，DOS便接著呼叫Interrupt Callback副程式，當Interrupt Callback副程式被呼叫時，驅動程式本身就必需去參考剛剛Strategy Callback副程式儲存在ES:BX的資料，這樣驅動程式就會知道系統要它去執行什麼樣的動作，而ES:BX資料就是所謂的I/O Request Packet(IRP)<br>
+<b>DriverName</b>是驅動程式的名稱，該名稱就是提供給應用程式開啟的名稱，如：COM1就是驅動程式提供給應用程式開啟COM Port1的名稱，這些名稱可以使用：<b>mem /d | more</b>指令查看，它必須是剛好八個字元，不足八個字元時，其餘字元要補上空白字元
+</p>
+
+<p>
+<br><a href="../../driver.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,428 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>F1C100S &gt;&gt; Assembly</h3>
+<p><b>TWI(I2C)</b></p>
+<hr size="1">
+<p>
+參考資料：<br>
+1. <a href="https://github.com/steward-fu/mcu-pdf/tree/master/f1c100s">pdf</a><br>
+2. <a href="http://nano.lichee.pro/">lichee</a><br>
+3. <a href="https://mangopi.org/mangopi_r">mangopi_r</a><br>
+4. <a href="https://www.allwinnertech.com/index.php?c=product&a=index&pid=4">allwinner</a><br>
+5. <a href="https://github.com/allwinner-zh/linux-3.4-sunxi/blob/master/drivers/i2c/busses/i2c-sunxi.c">i2c-sunxi.c</a><br><br>
+
+I2C0腳位
+</p>
+<table>
+<tr><th>I2C0_SCK</th><td>PE11</td></tr>
+<tr><th>I2C0_SDA</th><td>PE12</td></tr>
+</table>
+<p>
+<img src="asm_twi/1.jpg" class="maxSize"><br><br>
+
+暫存器<br>
+<img src="asm_twi/2.jpg" class="maxSize"><br><br>
+
+TWI速度計算
+</p>
+<pre>
+PLL = 24MHz*N*K/M
+
+0x80041800:
+  K = 1
+  M = 1
+  N = 24
+
+PLL_PERIPH = 24MHz*25 = 600MHz
+AHB_CLK = PLL_PERIPH/(AHB_PRE_DIV*AHB_CLK_DIV_RATIO) = 600MHz/(3*1) = 200MHz
+APB_CLK = AHB_CLK/APB_CLK_RATIO = 200MHz/2 = 100MHz
+
+0x00003180:
+  AHB_PRE_DIV = 3
+  APB_CLK_RATIO = 2
+  AHB_CLK_DIV_RATIO = 1
+
+CLK_N = 3
+CLK_M = 2
+TWI = 100MHz/(2^CLK_N)*(CLK_M+1)*10 = 100MHz/240 = 416KHz ~= 400KHz
+</pre><br>
+
+<p>
+傳送步驟：<br>
+1. 設定I2C_START(M_STA)<br>
+2. 寫入I2C_DATA(TWI_DATA_REG)<br>
+3. 清除INTF(INT_FLAG)<br>
+4. 設定I2C_STOP(M_STP)<br>
+5. 清除INTF(INT_FLAG)<br>
+6. 等待I2C BUS閒置(STAT=0xf8)<br><br>
+
+Code Status
+</p>
+<pre>
+0x00: Bus error
+0x08: START condition transmitted
+0x10: Repeated START condition transmitted
+0x18: Address + Write bit transmitted, ACK received
+0x20: Address + Write bit transmitted, ACK not received
+0x28: Data byte transmitted in master mode, ACK received
+0x30: Data byte transmitted in master mode, ACK not received
+0x38: Arbitration lost in address or data byte
+0x40: Address + Read bit transmitted, ACK received
+0x48: Address + Read bit transmitted, ACK not received
+0x50: Data byte received in master mode, ACK transmitted
+0x58: Data byte received in master mode, not ACK transmitted
+0x60: Slave address + Write bit received, ACK transmitted
+0x68: Arbitration lost in address as master, slave address + Write bit received, ACK transmitted
+0x70: General Call address received, ACK transmitted
+0x78: Arbitration lost in address as master, General Call address received, ACK transmitted
+0x80: Data byte received after slave address received, ACK transmitted
+0x88: Data byte received after slave address received, not ACK transmitted
+0x90: Data byte received after General Call received, ACK transmitted
+0x98: Data byte received after General Call received, not ACK transmitted
+0xA0: STOP or repeated START condition received in slave mode
+0xA8: Slave address + Read bit received, ACK transmitted
+0xB0: Arbitration lost in address as master, slave address + Read bit received, ACK transmitted
+0xB8: Data byte transmitted in slave mode, ACK received
+0xC0: Data byte transmitted in slave mode, ACK not received
+0xC8: Last byte transmitted in slave mode, ACK received
+0xD0: Second Address byte + Write bit transmitted, ACK received
+0xD8: Second Address byte + Write bit transmitted, ACK not received
+0xF8: No relevant status information, INT_FLAG=0
+</pre><br>
+
+<p>
+main.s
+</p>
+<pre class="brush:asm">
+  .global _start
+   
+  .equiv CCU_BASE,   0x01c20000
+  .equiv GPIO_BASE,  0x01c20800
+  .equiv TWI0_BASE,  0x01c27000
+  
+  .equiv PLL_PERIPH_CTRL_REG,   0x0028
+  .equiv AHB_APB_HCLKC_CFG_REG, 0x0054
+  .equiv BUS_CLK_GATING_REG2,   0x0068
+  .equiv BUS_SOFT_RST_REG2,     0x02d0
+ 
+  .equiv PE,        (0x24 * 4)
+  .equiv PORT_CFG0, 0x00
+  .equiv PORT_CFG1, 0x04
+  .equiv PORT_PUL0, 0x1c
+
+  .equiv TWI_ADDR,  0x00
+  .equiv TWI_XADDR, 0x04
+  .equiv TWI_DATA,  0x08
+  .equiv TWI_CNTR,  0x0c
+  .equiv TWI_STAT,  0x10
+  .equiv TWI_CCR,   0x14
+  .equiv TWI_SRST,  0x18
+  .equiv TWI_EFR,   0x1c
+  .equiv TWI_LCR,   0x20
+  
+  .equiv SSD1306_ADDRESS,             0x78
+  .equiv SSD1306_LCDWIDTH,            128
+  .equiv SSD1306_LCDHEIGHT,           32
+  .equiv SSD1306_SETCONTRAST,         0x81
+  .equiv SSD1306_DISPLAYALLOW_RESUME, 0xa4
+  .equiv SSD1306_DISPLAYALLOW,        0xa5
+  .equiv SSD1306_NORMALDISPLAY,       0xa6
+  .equiv SSD1306_INVERTDISPLAY,       0xa7
+  .equiv SSD1306_DISPLAYOFF,          0xae
+  .equiv SSD1306_DISPLAYON,           0xaf
+  .equiv SSD1306_SETDISPLAYOFFSET,    0xd3
+  .equiv SSD1306_SETCOMPINS,          0xda
+  .equiv SSD1306_SETVCOMDETECT,       0xdb
+  .equiv SSD1306_SETDISPLAYCLOCKDIV,  0xd5
+  .equiv SSD1306_SETPRECHARGE,        0xd9
+  .equiv SSD1306_SETMULTIPLEX,        0xa8
+  .equiv SSD1306_SETLOWCOLUMN,        0x00
+  .equiv SSD1306_SETHIGHCOLUMN,       0x10
+  .equiv SSD1306_SETSTARTLINE,        0x40
+  .equiv SSD1306_MEMORYMODE,          0x20
+  .equiv SSD1306_COLUMNADDR,          0x21
+  .equiv SSD1306_PAGEADDR,            0x22
+  .equiv SSD1306_COMSCANINC,          0xc0
+  .equiv SSD1306_COMSCANDEC,          0xc8
+  .equiv SSD1306_SEGREMAP,            0xa0
+  .equiv SSD1306_CHARGEPUMP,          0x8d
+  .equiv SSD1306_EXTERNALVCC,         0x01
+  .equiv SSD1306_SWITCHCAPVCC,        0x02
+  
+  .arm
+  .text
+_start:
+  .long 0xea000016
+  .byte 'e', 'G', 'O', 'N', '.', 'B', 'T', '0'
+  .long 0, __spl_size
+  .byte 'S', 'P', 'L', 2
+  .long 0, 0
+  .long 0, 0, 0, 0, 0, 0, 0, 0
+  .long 0, 0, 0, 0, 0, 0, 0, 0
+  
+_vector:
+  b reset
+  b .
+  b .
+  b .
+  b .
+  b .
+  b .
+  b .
+  
+reset:
+  ldr r0, =CCU_BASE
+  ldr r1, =0x80041800
+  str r1, [r0, #PLL_PERIPH_CTRL_REG]
+  ldr r1, =0x00003180
+  str r1, [r0, #AHB_APB_HCLKC_CFG_REG]
+  ldr r1, =(1 &lt;&lt; 20) | (1 &lt;&lt; 16)
+  str r1, [r0, #BUS_CLK_GATING_REG2]
+  str r1, [r0, #BUS_SOFT_RST_REG2]
+
+  ldr r0, =GPIO_BASE
+  ldr r1, =0x33000
+  str r1, [r0, #(PE + PORT_CFG1)]
+  ldr r1, =0x01400000
+  str r1, [r0, #(PE + PORT_PUL0)]
+ 
+  ldr r0, =TWI0_BASE
+  ldr r1, =(2 &lt;&lt; 3) | (3 &lt;&lt; 0)
+  str r1, [r0, #TWI_CCR]
+  ldr r1, =1
+  str r1, [r0, #TWI_SRST]
+0:
+  ldr r1, [r0, #TWI_SRST]
+  cmp r1, #0
+  bne 0b
+  ldr r1, =(1 &lt;&lt; 6)
+  str r1, [r0, #TWI_CNTR]
+
+  ldr r0, =SSD1306_DISPLAYOFF
+  bl i2c_cmd
+  ldr r0, =SSD1306_SETDISPLAYCLOCKDIV
+  bl i2c_cmd
+  ldr r0, =0x80
+  bl i2c_cmd
+  ldr r0, =SSD1306_SETMULTIPLEX
+  bl i2c_cmd
+  ldr r0, =0x1F
+  bl i2c_cmd
+  ldr r0, =SSD1306_SETDISPLAYOFFSET
+  bl i2c_cmd
+  ldr r0, =0x00
+  bl i2c_cmd
+  ldr r0, =SSD1306_SETSTARTLINE
+  bl i2c_cmd
+  ldr r0, =SSD1306_CHARGEPUMP
+  bl i2c_cmd
+  ldr r0, =0x14
+  bl i2c_cmd
+  ldr r0, =SSD1306_MEMORYMODE
+  bl i2c_cmd
+  ldr r0, =0x00
+  bl i2c_cmd
+  ldr r0, =SSD1306_SEGREMAP | 0x01
+  bl i2c_cmd
+  ldr r0, =SSD1306_COMSCANDEC
+  bl i2c_cmd
+  ldr r0, =SSD1306_SETCOMPINS
+  bl i2c_cmd
+  ldr r0, =0x02
+  bl i2c_cmd
+  ldr r0, =SSD1306_SETCONTRAST
+  bl i2c_cmd
+  ldr r0, =0x8f
+  bl i2c_cmd
+  ldr r0, =SSD1306_SETPRECHARGE
+  bl i2c_cmd
+  ldr r0, =0xf1
+  bl i2c_cmd
+  ldr r0, =SSD1306_SETVCOMDETECT
+  bl i2c_cmd
+  ldr r0, =0x40
+  bl i2c_cmd
+  ldr r0, =SSD1306_DISPLAYALLOW_RESUME
+  bl i2c_cmd
+  ldr r0, =SSD1306_NORMALDISPLAY
+  bl i2c_cmd
+  ldr r0, =SSD1306_DISPLAYON
+  bl i2c_cmd
+  ldr r0, =SSD1306_COLUMNADDR
+  bl i2c_cmd
+  ldr r0, =0
+  bl i2c_cmd
+  ldr r0, =SSD1306_LCDWIDTH-1
+  bl i2c_cmd
+  ldr r0, =SSD1306_PAGEADDR
+  bl i2c_cmd
+  ldr r0, =0
+  bl i2c_cmd
+  ldr r0, =(SSD1306_LCDHEIGHT/8)-1
+  bl i2c_cmd
+
+  ldr r4, =512
+0:
+  ldr r0, =0xff
+  bl i2c_dat
+  subs r4, #1
+  bne 0b
+  
+main:
+  b main
+
+i2c_clr_intf:
+  push {r4, lr}
+  ldr r4, =TWI0_BASE
+  ldr r1, [r4, #TWI_CNTR]
+  bic r1, #0x08
+  str r1, [r4, #TWI_CNTR]
+  pop {r4, pc}
+
+i2c_cmd:
+  push {r4, lr}
+  ldr r4, =TWI0_BASE
+  ldr r1, [r4, #TWI_CNTR]
+  orr r1, #(1 &lt;&lt; 5)
+  str r1, [r4, #TWI_CNTR]
+0:
+  ldr r1, [r4, #TWI_STAT]
+  cmp r1, #0x08
+  bne 0b
+  
+  ldr r1, =SSD1306_ADDRESS
+  str r1, [r4, #TWI_DATA]
+  bl i2c_clr_intf 
+0:
+  ldr r1, [r4, #TWI_STAT]
+  cmp r1, #0x18
+  bne 0b
+  
+  ldr r1, =0x00
+  str r1, [r4, #TWI_DATA]
+  bl i2c_clr_intf 
+0:
+  ldr r1, [r4, #TWI_STAT]
+  cmp r1, #0x28
+  bne 0b
+  
+  str r0, [r4, #TWI_DATA]
+  bl i2c_clr_intf 
+0:
+  ldr r1, [r4, #TWI_STAT]
+  cmp r1, #0x28
+  bne 0b
+  
+  ldr r1, [r4, #TWI_CNTR]
+  orr r1, #(1 &lt;&lt; 4)
+  str r1, [r4, #TWI_CNTR]
+  bl i2c_clr_intf
+0:
+  ldr r1, [r4, #TWI_STAT]
+  cmp r1, #0xf8
+  bne 0b
+  pop {r4, pc}
+
+i2c_dat:
+  push {r4, lr}
+  ldr r4, =TWI0_BASE
+  ldr r1, [r4, #TWI_CNTR]
+  orr r1, #(1 &lt;&lt; 5)
+  str r1, [r4, #TWI_CNTR]
+0:
+  ldr r1, [r4, #TWI_STAT]
+  cmp r1, #0x08
+  bne 0b
+  
+  ldr r1, =SSD1306_ADDRESS
+  str r1, [r4, #TWI_DATA]
+  bl i2c_clr_intf 
+0:
+  ldr r1, [r4, #TWI_STAT]
+  cmp r1, #0x18
+  bne 0b
+  
+  ldr r1, =0x40
+  str r1, [r4, #TWI_DATA]
+  bl i2c_clr_intf 
+0:
+  ldr r1, [r4, #TWI_STAT]
+  cmp r1, #0x28
+  bne 0b
+  
+  str r0, [r4, #TWI_DATA]
+  bl i2c_clr_intf 
+0:
+  ldr r1, [r4, #TWI_STAT]
+  cmp r1, #0x28
+  bne 0b
+  
+  ldr r1, [r4, #TWI_CNTR]
+  orr r1, #(1 &lt;&lt; 4)
+  str r1, [r4, #TWI_CNTR]
+  bl i2c_clr_intf
+0:
+  ldr r1, [r4, #TWI_STAT]
+  cmp r1, #0xf8
+  bne 0b
+  pop {r4, pc}
+  .end
+</pre><br>
+<p>
+完成<br>
+<img src="asm_twi/3.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

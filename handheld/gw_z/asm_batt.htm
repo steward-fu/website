@@ -1,0 +1,154 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Game &amp; Watch: The Legend of Zelda &gt;&gt; Assembly</h3>
+<p><b>Battery Charging Indicator</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://www.st.com/resource/en/reference_manual/dm00463927-stm32h7a37b3-and-stm32h7b0-value-line-advanced-armbased-32bit-mcus-stmicroelectronics.pdf">pm_pdf</a><br>
+2. <a href="https://www.st.com/resource/en/datasheet/stm32h7b0vb.pdf">ds_pdf</a><br>
+3. <a href="https://github.com/ghidraninja/game-and-watch-backup">game-and-watch-backup</a><br>
+4. <a href="https://github.com/Upcycle-Electronics/game-and-watch-hardware">game-and-watch-hardware</a><br>
+5. <a href="https://github.com/ghidraninja/game-and-watch-flashloader">game-and-watch-flashloader</a><br><br>
+
+電池充電電路<br>
+<img src="asm_batt/1.jpg" class="maxSize">
+</p>
+<table>
+<tr><td>PE8</td><td>0(開始充電)</td><td>1(停止充電)</td></tr>
+<tr><td>PA2</td><td>0(有效電源)</td><td>1(無效電源)</td></tr>
+<tr><td>PE7</td><td>0(充電中)</td><td>1(充電完成)</td></tr>
+</table><br>
+
+<p>
+BQ24072RGT<br>
+<img src="asm_batt/2.jpg" class="maxSize">
+</p>
+<p>
+main.s
+</p>
+<pre class="brush:asm">
+  .equiv PORTA_BASE,  0x58020000
+  .equiv PORTE_BASE,  0x58021000
+  .equiv GPIO_MODER,  0x0000
+  .equiv GPIO_PUPDR,  0x000c
+  .equiv GPIO_IDR,    0x0010
+  .equiv GPIO_ODR,    0x0014
+ 
+  .equiv RCC_BASE,    0x58024400
+  .equiv RCC_AHB4ENR, 0x0140
+ 
+  .thumb
+  .cpu cortex-m7
+  .syntax unified
+ 
+  .global _start
+ 
+  .text
+  .org 0x0000
+_start:
+  .word 0x20020000
+  .word reset
+ 
+  .org 0x0100
+  .thumb_func
+reset:
+  ldr r0, =RCC_BASE
+  ldr r1, [r0, #RCC_AHB4ENR]
+  orr r1, #0x1f
+  str r1, [r0, #RCC_AHB4ENR]
+  
+  ldr r0, =PORTA_BASE
+  ldr r1, =0xa9000000 | (1 &lt;&lt; 12) | (1 &lt;&lt; 8)
+  str r1, [r0, #GPIO_MODER]
+ 
+  ldr r0, =PORTE_BASE
+  ldr r1, =(1 &lt;&lt; 22)
+  str r1, [r0, #GPIO_MODER]
+  ldr r1, =(1 &lt;&lt; 11)
+  str r1, [r0, #GPIO_ODR]
+ 
+0:
+  ldr r0, =PORTA_BASE
+  ldr r1, [r0, #GPIO_IDR]
+  lsl r1, #4
+  and r1, #(1 &lt;&lt; 6)
+  eor r1, #(1 &lt;&lt; 6)
+  
+  ldr r0, =PORTE_BASE
+  ldr r2, [r0, #GPIO_IDR]
+  lsr r2, #3
+  and r2, #(1 &lt;&lt; 4)
+  eor r2, #(1 &lt;&lt; 4)
+  orr r1, r2
+
+  ldr r0, =PORTA_BASE
+  str r1, [r0, #GPIO_ODR]
+  b 0b
+  .end
+</pre><br>
+
+<p>
+屏背光有三顆LED(PA6、PA5、PA4)，PA6用來指示有效電源，PA4用來代表充電狀態<br>
+<img src="asm_batt/3.jpg" class="maxSize"><br><br>
+
+拔掉USB-TypeC後<br>
+<img src="asm_batt/4.jpg" class="maxSize"><br><br>
+
+完成充電後<br>
+<img src="asm_batt/5.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,210 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Game &amp; Watch: Super Mario Bros. &gt;&gt; Assembly</h3>
+<p><b>LED</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://www.st.com/resource/en/reference_manual/dm00463927-stm32h7a37b3-and-stm32h7b0-value-line-advanced-armbased-32bit-mcus-stmicroelectronics.pdf">pm_pdf</a><br>
+2. <a href="https://www.st.com/resource/en/datasheet/stm32h7b0vb.pdf">ds_pdf</a><br>
+3. <a href="https://github.com/ghidraninja/game-and-watch-backup">game-and-watch-backup</a><br><br>
+
+LED腳位(PE-11)<br>
+<img src="asm_led/1.jpg" class="maxSize"><br><br>
+
+PORTE Clock<br>
+<img src="asm_led/2.jpg" class="maxSize"><br><br>
+
+Mode<br>
+<img src="asm_led/3.jpg" class="maxSize"><br><br>
+
+Output<br>
+<img src="asm_led/4.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+  .equiv PORTE_BASE,  0x58021000
+  .equiv GPIO_MODER,  0x0000
+  .equiv GPIO_ODR,    0x0014
+
+  .equiv RCC_BASE,    0x58024400
+  .equiv RCC_AHB4ENR, 0x0140
+
+  .thumb
+  .cpu cortex-m7
+  .syntax unified
+
+  .global _start
+
+  .text
+  .org 0x0000
+_start:
+  .word 0x20020000
+  .word reset
+
+  .org 0x0100
+  .thumb_func
+reset:
+  ldr r0, =RCC_BASE
+  ldr r1, [r0, #RCC_AHB4ENR]
+  orr r1, #(1 &lt;&lt; 4)
+  str r1, [r0, #RCC_AHB4ENR]
+
+  ldr r0, =PORTE_BASE
+  ldr r1, =(1 &lt;&lt; 22)
+  str r1, [r0, #GPIO_MODER]
+  ldr r1, =(0 &lt;&lt; 11)
+  str r1, [r0, #GPIO_ODR]
+
+0:
+  eor r1, #(1 &lt;&lt; 11)
+  str r1, [r0, #GPIO_ODR]
+  ldr r2, =0x2000000
+1:
+  subs r2, #1
+  bne 1b
+  b 0b
+  .end
+</pre><br>
+
+<p>
+main.ld
+</p>
+<pre>
+MEMORY {
+  ITCMRAM  (xrw) : ORIGIN = 0x00000000, LENGTH = 64K
+  DTCMRAM  (xrw) : ORIGIN = 0x20000000, LENGTH = 128K
+  RAM      (xrw) : ORIGIN = 0x24000000, LENGTH = 1024K
+  FLASH    (xr ) : ORIGIN = 0x08000000, LENGTH = 128K
+  EXTFLASH (xr ) : ORIGIN = 0x90000000, LENGTH = 1024K
+}
+
+SECTIONS {
+  .text   : { *(.text*) } &gt; FLASH
+  .rodata : { *(.rodata*) } &gt; FLASH
+  .bss    : { *(.bss*) } &gt; FLASH
+}
+</pre><br>
+
+<p>
+main.cfg
+</p>
+<pre>
+source [find interface/stlink.cfg]
+adapter speed 500
+transport select hla_swd
+source [find target/stm32h7x.cfg]
+reset_config none
+</pre><br>
+
+<p>
+Makefile
+</p>
+<pre>
+all:
+  arm-none-eabi-as -mcpu=cortex-m7 main.s -o main.o
+  arm-none-eabi-ld -T main.ld -o main.elf main.o
+
+flash:
+  openocd -f main.cfg -c "init; halt; program main.elf; reset; exit;"
+
+clean:
+  rm -rf main.o main.elf
+</pre><br>
+
+<p>
+編譯、燒錄
+</p>
+<pre>
+$ make
+  arm-none-eabi-as -mcpu=cortex-m7 main.s -o main.o
+  arm-none-eabi-ld -T main.ld -o main.elf main.o
+
+$ make flash
+  openocd -f main.cfg -c "init; halt; program main.elf; reset; exit;"
+  Open On-Chip Debugger 0.11.0-rc1+dev-00010-gc69b4deae-dirty (2020-12-27-01:20)
+  Licensed under GNU GPL v2
+  For bug reports, read
+    http://openocd.org/doc/doxygen/bugs.html
+  Info : The selected transport took over low-level target control. The results might differ compared to plain JTAG/SWD
+  none separate
+
+  Info : clock speed 1800 kHz
+  Info : STLINK V2J17S4 (API v2) VID:PID 0483:3748
+  Info : Target voltage: 3.194245
+  Info : stm32h7x.cpu0: hardware has 8 breakpoints, 4 watchpoints
+  Info : starting gdb server for stm32h7x.cpu0 on 3333
+  Info : Listening on port 3333 for gdb connections
+  target halted due to debug-request, current mode: Thread
+  xPSR: 0x21000000 pc: 0x08001026 msp: 0x20020000
+  target halted due to debug-request, current mode: Thread
+  xPSR: 0x01000000 pc: 0x08001000 msp: 0x20020000
+  ** Programming Started **
+  Info : Device: STM32H7Ax/7Bx
+  Info : STM32H7 flash has dual banks
+  Info : Bank (0) size is 1024 kb, base address is 0x08000000
+  Info : Padding image section 0 at 0x08001034 with 12 bytes (bank write end alignment)
+  Warn : Adding extra erase range, 0x08001040 .. 0x08001fff
+  ** Programming Finished **
+</pre><br>
+
+<p>
+完成<br>
+<img src="asm_led/5.jpg" class="maxSize"><br>
+<img src="asm_led/6.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

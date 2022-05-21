@@ -1,0 +1,275 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>GCW Zero</h3>
+<p><b>build buildroot</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://github.com/pbouda/buildroot-qt-dev/issues/6">issue6</a><br>
+2. <a href="https://blog.csdn.net/weixin_42421766/article/details/82983170">82983170</a><br>
+3. <a href="https://github.com/etnaviv/galcore_headers">galcore_headers</a><br>
+4. <a href="http://www.synerlab.ee/lang/v8/files/patch-src-objects.h">patch-src-objects</a><br>
+5. <a href="https://github.com/mono/mono/commit/16ee0252305fbd4f40ea39c3c4421dc7f103f8a0">16ee0252305fbd4f40ea39c3c4421dc7f103f8a0</a><br><br>
+
+Debian 9 x64：
+</p>
+
+<pre>
+$ sudo apt-get install bison flex gettext texinfo wget cpio python unzip mercurial subversion libncurses5-dev libc6-dev-i386 bzr
+$ git clone git://github.com/gcwnow/buildroot.git
+$ cd buildroot
+$ wget https://w1.fi/releases/hostapd-2.8.tar.gz dl/hostapd-0.8_rtw_r7475.20130812.tar.gz
+$ make gcw0_defconfig
+$ make
+  cfns.gperf:101:1: error: ‘const char* libc_name_p(const char*, unsigned int)’ redeclared inline with ‘gnu_inline’ attribute
+
+$ vim output/build/host-gcc-final-4.9.1/gcc/cp/cfns.h +55
+  //__inline
+
+$ make
+  In file included from ../ncurses/curses.priv.h:283:0, 
+                   from ../ncurses/lib_gen.c:19:
+  _9246.c:835:15: error: expected ‘)’ before ‘int’
+  ../include/curses.h:1594:56: note: in definition of macro ‘mouse_trafo’
+  #define mouse_trafo(y,x,to_screen) wmouse_trafo(stdscr,y,x,to_screen)
+
+$ vim output/build/host-ncurses-5.9/ncurses/base/MKlib_gen.sh +439
+  cat &gt;$ED1 &lt;&lt;EOF
+  s/  / /g
+  s/^ //
+  s/ $//
+  s/P_NCURSES_BOOL/NCURSES_BOOL/g
+  EOF
+
+  # A patch discussed here:
+  #  https://gcc.gnu.org/ml/gcc-patches/2014-06/msg02185.html
+  # introduces spurious #line markers.  Work around that by ignoring the system's
+  # attempt to define "bool" and using our own symbol here.
+  sed -e 's/bool/P_NCURSES_BOOL/g' $TMP &gt; $ED2
+  cat $ED2 &gt;$TMP
+
+   $preprocessor $TMP 2&gt;/dev/null \
+   | sed -f $ED1 \
+   | $AWK -f $AW2 \
+   | sed -f $ED3 \
+   | sed \
+
+$ make
+  gdate.c:2497:7: error: format not a string literal, format string not checked [-Werror=format-nonliteral]
+  tmplen = strftime (tmpbuf, tmpbufsize, locale_format, &tm);
+
+$ vim output/build/host-libglib2-2.38.2/glib/Makefile +621
+  CFLAGS = -O2 -Ioutput/host/usr/include -Wno-format-nonliteral
+
+$ make
+  CMake Error at CMakeLists.txt:1 (cmake_minimum_required):
+  CMake 3.1.0 or higher is required.  You are running version 2.8.12.2
+
+$ rm -rf output/build/host-cmake-2.8.12.2
+$ rm package/cmake/cmake-0001-FindQt4-do-not-prepend-CMake-root-path-when-searchin.patch
+$ vim package/cmake/cmake.mk
+  CMAKE_VERSION_MAJOR = 3.1
+  CMAKE_VERSION = $(CMAKE_VERSION_MAJOR).0
+
+$ vim package/etna_viv/etna_viv.mk
+  22: $(MAKE) -C $(@D)/attic \
+  32: cp $(@D)/attic/etnaviv/libetnaviv.a $(STAGING_DIR)/usr/lib
+  34: cp $(@D)/attic/etnaviv/*.h $(STAGING_DIR)/usr/include/etnaviv
+
+$ make
+  etna.c:34:20: fatal error: gc_abi.h: No such file or directory
+  #include "gc_abi.h"
+
+$ vim output/build/etna_viv-master/attic/Makefile.inc
+  1:   ifndef GCABI
+  2:     #$(error GCABI is undefined. Consult the README.md file to set it according to your kernel)
+  3:   endif
+  12:  GCC_CFLAGS = -D_POSIX_C_SOURCE=200809 -D_GNU_SOURCE -I../../src
+
+$ git clone https://github.com/etnaviv/galcore_headers
+$ cp -a galcore_headers/include_v4/* output/build/etna_viv-master/attic
+$ rm -rf galcore_headers
+
+$ vim output/build/etna_viv-master/attic/driver/etna_rasterizer.h +30
+  #define VIVS_PA_SYSTEM_MODE_UNK0  0x00000001
+  #define VIVS_PA_SYSTEM_MODE_UNK4  0x00000010
+
+$ make 
+  etna_internal.h:29:31: fatal error: etnaviv/state.xml.h: No such file or directory
+  #include &lt;etnaviv/state.xml.h&gt;
+
+$ vim output/build/mesa3d-etna_viv-pre_rebase_2014_09/src/gallium/drivers/etna/Makefile +206
+  CFLAGS = -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64  -pipe -O2  -Wall -std=c99 -Werror=implicit-function-declaration -Werror=missing-prototypes -fno-strict-aliasing -fno-builtin-memcmp -Ixxx/output/build/etna_viv-master/src
+
+$ vim output/build/mesa3d-etna_viv-pre_rebase_2014_09/src/gallium/winsys/etna/drm/Makefile +201
+  CFLAGS = -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64  -pipe -O2  -Wall -std=c99 -Werror=implicit-function-declaration -Werror=missing-prototypes -fno-strict-aliasing -fno-builtin-memcmp -Ixxx/output/build/etna_viv-master/src
+
+$ vim output/build/mesa3d-etna_viv-pre_rebase_2014_09/src/gallium/winsys/etna/fbdev/Makefile +201
+  CFLAGS = -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64  -pipe -O2  -Wall -std=c99 -Werror=implicit-function-declaration -Werror=missing-prototypes -fno-strict-aliasing -fno-builtin-memcmp -Ixxx/output/build/etna_viv-master/src
+
+$ make
+  etna_rasterizer.c:61:66: error: 'VIVS_PA_SYSTEM_MODE_UNK4' undeclared (first use in this function)
+  (rs->half_pixel_center ? (VIVS_PA_SYSTEM_MODE_UNK0 | VIVS_PA_SYSTEM_MODE_UNK4) : 0);
+
+$ vim output/build/mesa3d-etna_viv-pre_rebase_2014_09/src/gallium/drivers/etna/etna_rasterizer.h +30
+  #define VIVS_PA_SYSTEM_MODE_UNK0  0x00000001
+  #define VIVS_PA_SYSTEM_MODE_UNK4  0x00000010
+
+$ vim output/build/mesa3d-etna_viv-pre_rebase_2014_09/src/gallium/drivers/etna/etna_zsa.h +30
+  #define VIVS_PE_STENCIL_CONFIG                    0x0000141c
+  #define VIVS_PE_STENCIL_CONFIG_MODE__MASK         0x00000003
+  #define VIVS_PE_STENCIL_CONFIG_MODE__SHIFT        0
+  #define VIVS_PE_STENCIL_CONFIG_MODE_DISABLED      0x00000000
+  #define VIVS_PE_STENCIL_CONFIG_MODE_ONE_SIDED     0x00000001
+  #define VIVS_PE_STENCIL_CONFIG_MODE_TWO_SIDED     0x00000002
+  #define VIVS_PE_STENCIL_CONFIG_MODE_MASK          0x00000010
+  #define VIVS_PE_STENCIL_CONFIG_REF_FRONT_MASK     0x00000020
+  #define VIVS_PE_STENCIL_CONFIG_MASK_FRONT_MASK    0x00000040
+  #define VIVS_PE_STENCIL_CONFIG_WRITE_MASK_MASK    0x00000080
+  #define VIVS_PE_STENCIL_CONFIG_REF_FRONT__MASK    0x0000ff00
+  #define VIVS_PE_STENCIL_CONFIG_REF_FRONT__SHIFT   8
+  #define VIVS_PE_STENCIL_CONFIG_REF_FRONT(x)       (((x) &lt;&lt; VIVS_PE_STENCIL_CONFIG_REF_FRONT__SHIFT) &amp; VIVS_PE_STENCIL_CONFIG_REF_FRONT__MASK)
+  #define VIVS_PE_STENCIL_CONFIG_MASK_FRONT__MASK   0x00ff0000
+  #define VIVS_PE_STENCIL_CONFIG_MASK_FRONT__SHIFT  16
+  #define VIVS_PE_STENCIL_CONFIG_MASK_FRONT(x)      (((x) &lt;&lt; VIVS_PE_STENCIL_CONFIG_MASK_FRONT__SHIFT) &amp; VIVS_PE_STENCIL_CONFIG_MASK_FRONT__MASK)
+  #define VIVS_PE_STENCIL_CONFIG_WRITE_MASK__MASK   0xff000000
+  #define VIVS_PE_STENCIL_CONFIG_WRITE_MASK__SHIFT  24
+  #define VIVS_PE_STENCIL_CONFIG_WRITE_MASK(x)      (((x) &lt;&lt; VIVS_PE_STENCIL_CONFIG_WRITE_MASK__SHIFT) &amp; VIVS_PE_STENCIL_CONFIG_WRITE_MASK__MASK)
+
+$ make
+  output/build/host-mono-3.10.0/mono/mini/mini.c:2642: undefined reference to mono_jit_tls
+
+$ vim output/build/host-mono-3.10.0/mono/metadata/sgen-alloc.c +97
+  static __thread char **tlab_next_addr MONO_ATTR_USED;
+
+$ vim output/build/host-mono-3.10.0/mono/utils/mono-compiler.h +16
+  #ifdef __GNUC__
+    #define MONO_ATTR_USED __attribute__ ((used))
+  #else
+    #define MONO_ATTR_USED
+  #endif
+  #define MONO_FAST_TLS_DECLARE(x) static __thread gpointer x MONO_TLS_FAST MONO_ATTR_USED;
+
+$ make
+  ../deps/v8/src/objects.h:5188:44: error: left operand of shift expression ‘(-1 &lt;&lt; 3)’ is negative [-fpermissive]
+    static const int kElementsKindMask = (-1 &lt;&lt; kElementsKindShift) &amp;
+  ../deps/v8/src/objects.h:7376:39: warning: left shift of negative value [-Wshift-negative-value]
+    (~kMaxCachedArrayIndexLength &lt;&lt; kArrayIndexHashLengthShift) |
+  ../deps/v8/src/objects.h:7376:36: error: left operand of shift expression ‘(-8 &lt;&lt; 26)’ is negative [-fpermissive]
+    (~kMaxCachedArrayIndexLength &lt;&lt; kArrayIndexHashLengthShift) |
+
+$ vim output/build/host-nodejs-0.10.12/deps/v8/src/objects.h +5188
+  static const int kElementsKindMask = -(1 &lt;&lt; kElementsKindShift) &amp;
+
+$ vim output/build/host-nodejs-0.10.12/deps/v8/src/objects.h +7376
+  (~static_cast&lt;unsigned&gt;(kMaxCachedArrayIndexLength) &lt;&lt; kArrayIndexHashLengthShift) |
+
+$ make
+  ../deps/v8/src/liveedit.cc:205:41: error: left operand of shift expression ‘(-1 &lt;&lt; 2)’ is negative [-fpermissive]
+  static const int kEmptyCellValue = -1 &lt;&lt; kDirectionSizeBits;
+
+$ vim output/build/host-nodejs-0.10.12/deps/v8/src/liveedit.cc +205
+  static const int kEmptyCellValue = -(1 &lt;&lt; kDirectionSizeBits);
+
+$ make
+  checking whether your compiler passes the ACC conformance test... FAILED
+
+$ vim output/build/host-lzo-2.06/src/miniacc.h
+  755 #elif defined(__amd64__) || defined(__x86_64__) || defined(_M_AMD64)
+  756 #  define ACC_ARCH_AMD64            1
+  757 #  define ACC_INFO_ARCH             "amd64"
+  758 #  if defined(__ILP32__)
+  759 #    define ACC_ARCH_AMD64_X32      1
+  760 #  endif
+  761 #elif defined(__thumb__) || (defined(_M_ARM) &amp;&amp; defined(_M_THUMB))
+
+  4473 #if defined(__MSDOS__) &amp;&amp; defined(__TURBOC__) &amp;&amp; (__TURBOC__ &lt; 0x0150)
+  4474 #elif 1 &amp;&amp; (ACC_CC_SUNPROC) &amp;&amp; !defined(ACCCHK_CFG_PEDANTIC)
+  4475 #else
+  4476     ACCCHK_ASSERT((int)(1u   &lt;&lt; (8*SIZEOF_INT-1)) &lt; 0)
+  4477 #endif
+  4478     ACCCHK_ASSERT((1u  &lt;&lt; (8*SIZEOF_INT-1)) &gt; 0)
+  4479 #if 1 &amp;&amp; (ACC_CC_SUNPROC) &amp;&amp; !defined(ACCCHK_CFG_PEDANTIC)
+  4480 #else
+  4481     ACCCHK_ASSERT((long)(1ul  &lt;&lt; (8*SIZEOF_LONG-1)) &lt; 0)
+  4482 #endif
+  4483     ACCCHK_ASSERT((1ul &lt;&lt; (8*SIZEOF_LONG-1)) &gt; 0)
+
+  4708 #elif 1 &amp;&amp; (ACC_CC_SUNPROC) &amp;&amp; !defined(ACCCHK_CFG_PEDANTIC)
+  4709 #elif !(ACC_BROKEN_INTEGRAL_PROMOTION) &amp;&amp; (SIZEOF_INT &gt; 1)
+  4710     ACCCHK_ASSERT( (int)((unsigned int)((unsigned char)128) &lt;&lt; (int)(8*sizeof(int)-8)) &lt; 0)
+  4711 #endif
+  4712 #if (ACC_CC_BORLANDC &amp;&amp; (__BORLANDC__ &gt;= 0x0530) &amp;&amp; (__BORLANDC__ &lt; 0x0560))
+
+  6788 ACCLIB_PUBLIC_NOINLINE(void, acc_debug_nop) (void)
+  6789 {
+  6790 }
+  6791 ACCLIB_PUBLIC_NOINLINE(int, acc_debug_align_check_query) (void)
+  6792 {
+  6793 #if (ACC_ARCH_AMD64 || ACC_ARCH_I386) &amp;&amp; (ACC_ASM_SYNTAX_GNUC)
+  6794     #  if defined(ACC_ARCH_AMD64_X32)
+  6795       unsigned long long r;
+  6796     #  else
+  6797       size_t r;
+  6798     #  endif
+  6799     __asm__ __volatile__("pushf\n pop %0\n" : "=a" (r) : : __ACC_ASM_CLOBBER);
+  6800     return (int)(r &gt;&gt; 18) &amp; 1;
+  6801 #elif (ACC_ARCH_I386) &amp;&amp; (ACC_ASM_SYNTAX_MSC)
+</pre>
+<p>
+P.S. Toolchain(output/host)、rootfs(output/images/rootfs.squashfs)
+</p>
+
+<p>
+<br><a href="../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

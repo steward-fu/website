@@ -1,0 +1,217 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../../../header.js"></script>
+<div id="page">
+<h3>Pandora Rebirth &gt;&gt; Debian Mark3</h3>
+<p><b>Framebuffer Layer1</b></p>
+<hr size="1">
+<p>
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;sys/ioctl.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;sys/mman.h&gt;
+#include &lt;string.h&gt;
+#include &lt;linux/fb.h&gt;
+#include &lt;linux/omapfb.h&gt;
+#include &lt;SDL.h&gt;
+#include &lt;SDL_image.h&gt;
+#include &lt;SDL_ttf.h&gt;
+
+#define FB_MAP_SIZE (800*480*2*2)
+
+int fbdev[2]={0};
+void* fbpixels[2]={0};
+
+uint32_t get_ticks(void)
+{
+  struct timeval tv={0};
+  static struct timeval init_tv={0};
+
+  gettimeofday(&amp;tv, 0); 
+  if(init_tv.tv_sec == 0){
+    init_tv = tv;
+  }
+  return ((tv.tv_sec - init_tv.tv_sec) * 1000000) + tv.tv_usec - init_tv.tv_usec;
+}
+
+void init_fb(void)
+{
+  int arg=0;
+  struct omapfb_mem_info mi={0};
+  struct omapfb_plane_info pi={0};
+  struct fb_var_screeninfo vinfo={0};
+  struct fb_fix_screeninfo finfo={0};
+
+  fbdev[0] = open("/dev/fb0", O_RDWR);
+  fbdev[1] = open("/dev/fb1", O_RDWR);
+
+  ioctl(fbdev[1], OMAPFB_QUERY_PLANE, &amp;pi);
+  ioctl(fbdev[1], OMAPFB_QUERY_MEM, &amp;mi);
+  if(pi.enabled){
+    pi.enabled = 0;
+    ioctl(fbdev[1], OMAPFB_SETUP_PLANE, &amp;pi);
+  }
+
+  mi.size = FB_MAP_SIZE;
+  ioctl(fbdev[1], OMAPFB_SETUP_MEM, &amp;mi);
+
+  pi.pos_x = 0;
+  pi.pos_y = 0;
+  pi.out_width = 800;
+  pi.out_height = 480;
+  pi.enabled = 1;
+  ioctl(fbdev[1], OMAPFB_SETUP_PLANE, &amp;pi);
+
+  ioctl(fbdev[0], FBIOGET_VSCREENINFO, &amp;vinfo);
+  ioctl(fbdev[0], FBIOGET_FSCREENINFO, &amp;finfo);
+  fbpixels[0] = (uint16_t*)mmap(0, FB_MAP_SIZE, PROT_WRITE | PROT_READ, MAP_SHARED, fbdev[0], 0);
+  memset(fbpixels[0], 0, FB_MAP_SIZE);
+  printf("fb0: fd:0x%08lx name:\"%s\" @ 0x%08lx (mmap: 0x%08lx)\n", fbdev[0], finfo.id, finfo.smem_start, fbpixels[0]);
+  
+  ioctl(fbdev[1], FBIOGET_VSCREENINFO, &amp;vinfo);
+  ioctl(fbdev[1], FBIOGET_FSCREENINFO, &amp;finfo);
+  fbpixels[1] = (uint16_t*)mmap(0, FB_MAP_SIZE, PROT_WRITE | PROT_READ, MAP_SHARED, fbdev[1], 0);
+  memset(fbpixels[1], 0, FB_MAP_SIZE);
+  printf("fb1: fd:0x%08lx name:\"%s\" @ 0x%08lx (mmap: 0x%08lx)\n", fbdev[1], finfo.id, finfo.smem_start, fbpixels[1]);
+}
+
+void deinit_fb(void)
+{
+  struct omapfb_plane_info pi={0};
+ 
+  if(fbpixels[0]){
+    munmap(fbpixels[0], FB_MAP_SIZE);
+  }
+  if(fbpixels[1]){
+    munmap(fbpixels[1], FB_MAP_SIZE);
+  }
+  if(fbdev[0] &gt; 0){
+    close(fbdev[0]);
+  }
+  if(fbdev[1] &gt; 0){
+    ioctl(fbdev[1], OMAPFB_QUERY_PLANE, &amp;pi);
+    pi.enabled = 0;
+    ioctl(fbdev[1], OMAPFB_SETUP_PLANE, &amp;pi);
+    close(fbdev[1]);
+  }
+}
+
+int main(int argc, char *args[])
+{
+  int x=0, y=0, arg=0;
+  uint16_t *p=NULL, col=0;
+  int index=0, cnt=600, off=0;
+  struct fb_var_screeninfo vinfo={0};
+  
+  uint32_t frame=0;
+  uint32_t speed_target=0;
+  uint32_t speed_next=1000000/60;
+  
+  init_fb();
+  ioctl(fbdev[1], FBIOGET_VSCREENINFO, &amp;vinfo);
+  speed_target = get_ticks();
+  while(cnt--) {
+    if(off == 0){
+      p = fbpixels[1];
+    }
+    else{
+      p = (uint16_t*)fbpixels[1] + (480 * 800);
+    }
+    for(y=0; y&lt;480; y++){
+      for(x=0; x&lt;800; x++){
+        *p++ = col;
+      }
+    }
+    vinfo.yoffset = off;
+    ioctl(fbdev[1], FBIOPAN_DISPLAY, &amp;vinfo);
+    ioctl(fbdev[1], FBIO_WAITFORVSYNC, &amp;arg);
+    off = off ? 0 : 480;
+    
+    switch(index) {
+    case 0:
+      index = 1;
+      col = 0xf800;
+      break;
+    case 1:
+      index = 2;
+      col = 0x7e0;
+      break;
+    default:
+      index = 0;
+      col = 0x1f;
+      break;
+    }
+    
+    frame+= 1;
+    speed_target+= speed_next;
+    while(get_ticks() &lt; speed_target){
+      usleep(5);
+    }
+  }
+
+  deinit_fb();
+  return 0;
+}
+</pre><br>
+
+<p>
+<br><a href="../../../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,120 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>FC3000</h3>
+<p><b>嘗試解析電流聲問題</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://whycan.com/t_6647.html">whycan</a><br>
+2. <a href="https://www.ti.com/lit/ds/symlink/lm4890.pdf?ts=1649426381256">lm4890</a><br><br>
+
+依據網友測試，發現電流聲音跟LCD背光設定有關係，只要將LCD背光亮度調到100%，就不會有電流聲音，於是，司徒看一下PCB線路，發現聲音輸出是走在LCD背光電路旁邊<br>
+<img src="audio_em/1.jpg" class="maxSize"><br><br>
+
+LCD背光使用PWM方式控制，亮度在100%時，輸出固定維持在高電位狀態，因此，不會有干擾的狀況發生，這也是為何原廠系統是固定在此亮度的原因<br>
+<img src="audio_em/2.jpg" class="maxSize"><br><br>
+
+XS4890(LM4890)腳位<br>
+<img src="audio_em/3.jpg" class="maxSize"><br><br>
+
+司徒看了一下PCB，發現FC3000使用的電路如下：<br>
+<img src="audio_em/4.jpg" class="maxSize"><br><br>
+
+雖然目前看來，應該是輸出遭到EM干擾所造成的問題，不過，如果是輸入源遭到干擾，可以考慮改造成差分放大電路<br>
+<img src="audio_em/5.jpg" class="maxSize"><br>
+解法，大約有幾個思路：<br>
+<b>軟體思考：</b><br>
+1. 可以依據LCD背光的頻率，疊加對應的波形，類似主動式噪音消除法，可以在聲音驅動實作<br>
+<b>硬體思考：</b><br>
+1. 將啦叭輸出線路切斷(PCB)，使用外圍有接地包覆的線材取代<br>
+2. 使用鐵片包覆LCD背光電路並且將鐵片接地<br>
+3. 將喇叭移到下方<br><br>
+
+接著司徒開始嘗試解決噪音問題，首先，標注相關線路<br>
+<img src="audio_em/6.jpg" class="maxSize"><br><br>
+
+背面<br>
+<img src="audio_em/7.jpg" class="maxSize"><br><br>
+
+1：Vo2割斷，下半部份接地<br>
+2：Vo1割斷，下半部份接地<br>
+3：Vo2、Vo1、GND接在一起<br>
+4：4.7v割斷<br>
+5：4.7v下半部份接地<br>
+6：4.7v下半部份接地<br>
+7：GND接MicroSD的GND(這個可以省略)<br>
+8：Vo1割斷<br>
+9：Vo2割斷<br>
+LM4890第5腳接喇叭<br>
+LM4890第6腳連接到加密IC第一腳位3.3V<br>
+LM4890第8腳接喇叭<br>
+<img src="audio_em/8.jpg" class="maxSize"><br><br>
+
+Vo2下半部份接地<br>
+<img src="audio_em/9.jpg" class="maxSize"><br><br>
+
+連接示波器量測訊號(需要掛上喇叭負載)<br>
+<img src="audio_em/13.jpg" class="maxSize"><br><br>
+
+官方系統開機後，量測的喇叭訊號<br>
+<img src="audio_em/10.jpg" class="maxSize"><br><br>
+OD系統開機後，量測的喇叭訊號(4.7v割斷，但是沒有接地)<br>
+<img src="audio_em/11.jpg" class="maxSize"><br><br>
+OD系統開機後，量測的喇叭訊號(4.7v割斷，餘線部份接地)<br>
+<img src="audio_em/12.jpg" class="maxSize"><br>
+從量測到的訊號，可以發現4.7v那根線是一個關鍵性的影響，因為有一個很穩定影響波形，這個波形應該就是LCD背光震盪電路，因此，玩家也可以先從4.7v割斷開始改造，目前司徒測試改造後的電流聲音，已經跟原廠系統幾乎一樣
+</p>
+
+<p>
+<br><a href="../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

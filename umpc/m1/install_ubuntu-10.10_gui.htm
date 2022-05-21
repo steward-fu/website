@@ -1,0 +1,157 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Mbook M1</h3>
+<p><b>安裝Ubuntu 10.10(GUI)</b></p>
+<hr size="1">
+<p>
+目前最佳的Linux開發編譯環境還是Ubuntu系統，它具有相當親善的UI介面以及習慣的Terminal介面，因此，司徒決定重新安裝Ubuntu系統到Mbook M1電腦，司徒測試過許多新版的Ubuntu系統，但是，這些系統都會有當機的現象發生，因此，司徒最後決定使用Ubuntu Netbook 10.10版本，Netbook版本是專為小型、舊式電腦設計的Ubuntu系統，而最後一個Netbook版本是v10.10，在此之後的版本都已經整合成一個Desktop版本<br><br>
+
+<b>步驟如下</b><br>
+1. 下載<a href="http://ftp.isu.edu.tw/pub/Linux/Ubuntu/releases/.pool/ubuntu-10.10-netbook-i386.iso">Ubuntu Netbook 10.10 i386</a>檔案並安裝<br>
+2. 由於安裝後的Ubuntu系統無法透過內建網卡存取網路，因此，司徒插入系統預設支援的USB無線網卡，讓網路可以先連線<br>
+3. 將<b>/ect/apt/sources.list</b>檔案內容改成如下
+</p>
+<pre>
+deb http://old-releases.ubuntu.com/ubuntu/ maverick main restricted universe multiverse
+deb http://old-releases.ubuntu.com/ubuntu/ maverick-updates main restricted universe multiverse
+deb http://old-releases.ubuntu.com/ubuntu/ maverick-security main restricted universe multiverse
+
+deb-src http://old-releases.ubuntu.com/ubuntu/ maverick main restricted universe multiverse
+deb-src http://old-releases.ubuntu.com/ubuntu/ maverick-updates main restricted universe multiverse
+deb-src http://old-releases.ubuntu.com/ubuntu/ maverick-security main restricted universe multiverse
+</pre>
+
+<p>
+4. 執行如下命令(更新系統)<br>
+</p>
+<pre>
+# apt-get update &amp;&amp; sudo apt-get dist-upgrade
+</pre>
+
+<p>
+5. 安裝輸入法
+</p>
+<pre>
+# apt-get install ibus-table-quick
+</pre>
+
+<p>
+6. 減少SSD硬碟的寫入次數(使用RAMDISK)，在<b>/etc/fstab</b>檔案新增以下內容
+</p>
+<pre>
+tmpfs  /var/log   tmpfs  defaults  0  0
+tmpfs  /tmp     tmpfs  defaults  0  0
+tmpfs  /var/tmp   tmpfs  defaults  0  0
+</pre>
+
+<p>
+並在<b>/etc/rc.local</b>檔案中的<b>exit 0</b>前加入以下內容
+</p>
+
+<pre>
+for dir in apparmor apt news cups dist-upgrade fsck gdm installer samba unattended-upgrades
+do
+  if [ ! -e /var/log/$dir ]
+  then
+    mkdir /var/log/$dir
+  fi
+done
+</pre>
+
+<p>
+7. 重新開機並且使用<b>df -l</b>命令查看掛載狀態是否正確<br>
+8. 減少Swap Space空間(使用<b>cat /proc/sys/vm/swappiness</b>查看)，編輯<b>/etc/sysctl.conf</b>檔案，在最後的地方加入
+</p>
+
+<pre>
+vm.swappiness=0
+</pre>
+
+<p>
+P.S. 注意，此步驟將會使Ubuntu系統無法進入睡眠狀態
+</p>
+
+<p>
+9. 優化SSD的存取效能，在<b>/etc/rc.local</b>檔案中的<b>exit 0</b>前加入以下內容
+</p>
+
+<pre>
+for dev in sda
+do
+  echo deadline &gt; "/sys/block/$dev/queue/scheduler"
+  echo 1 &gt; "/sys/block/$dev/queue/iosched/fifo_batch"
+done
+</pre>
+
+<p>
+或者在<b>/etc/default/grub</b>檔案中的<b>GRUB_CMDLINE_LINUX</b>加上<b>elevator=deadline</b>參數
+</p>
+
+<p>
+11. 節省USB的電力開銷，將如下內容加入<b>/etc/rc.local</b>尾端
+</p>
+
+<pre>
+echo auto &gt; /sys/bus/usb/devices/usb1/power/level
+echo auto &gt; /sys/bus/usb/devices/usb2/power/level
+echo auto &gt; /sys/bus/usb/devices/usb3/power/level
+echo auto &gt; /sys/bus/usb/devices/usb4/power/level
+echo auto &gt; /sys/bus/usb/devices/3-2/power/level
+</pre>
+<p>
+10. 重新開機
+</p>
+
+<p>
+<br><a href="../../umpc.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

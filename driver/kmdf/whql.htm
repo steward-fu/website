@@ -1,0 +1,239 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Kernel Mode Driver Framework</h3>
+<p><b>WHQL測試流程</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://docs.microsoft.com/zh-tw/windows-hardware/test/hlk/getstarted/windows-hlk-getting-started">windows-hlk-getting-started</a><br>
+2. <a href="https://www.microsoft.com/en-us/evalcenter/evaluate-hyper-v-server-2012">evaluate-hyper-v-server-2012</a><br>
+3. <a href="https://www.microsoft.com/en-us/evalcenter/evaluate-hyper-v-server-2016">evaluate-hyper-v-server-2016</a><br>
+4. <a href="https://blog.miniasp.com/post/2017/12/24/How-to-use-Hyper-V-under-Windows-10-Wi-Fi-and-DHCP">How-to-use-Hyper-V-under-Windows-10-Wi-Fi-and-DHCP</a><br><br>
+
+司徒依稀記得第一次測試WHQL大約是在2003年左右，當初使用的測試方式是，準備兩台雙核CPU的電腦，然後使用網路連接測試，一台是Controller主機，另一台則是Client主機，每測試完一個系統後，就會使用Ghost開機光碟，將Client主機倒回其它測試系統，就這樣把需要測試的系統全部測完，測試的時間也很長，一個系統大約需要一天的測試時間，過程遇到錯誤，一般都是使用Rerun或者上Patch解決，印象最深刻的，還是費用高昂這件事情，難怪MS一般都會被縮寫成M$，也不是沒有道理的！<br><br>
+
+如今司徒剛好又有那樣的機緣，可以跑WHQL測試流程，就順便紀錄下整個安裝以及測試過程，以供日後參考使用，目前使用的機器已經是很高檔的Dell R640機器(CPU:24核心，RAM:128GB, DISK:1TB)，而且最方便的是，可以透過Hyper-V做虛擬機測試(不建議使用VirtualBox、VMware)，因此，整體測試就可以單純許多。<br><br>
+
+司徒使用Windows Server 2019當作主力系統並且啟動Hyper-V服務，然後把Controller、Client系統都安裝在Hyper-V
+</p>
+<pre>
+PS &gt; Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V-Tools-All
+</pre><br>
+
+<p>
+HLK、HCK安裝建議
+</p>
+<table>
+<tr><td></td><th>Controller</th><th>Client</th></tr>
+<tr><th>HLK</th><td>Windows Server 2016</td><td>
+(HLK v2004) Windows 10 20H2<br>
+(HLK v2004) Windows 10 2004<br>
+(HLK v1903) Windows 10 1909<br>
+(HLK v1903) Windows 10 1903<br>
+(HLK v1809) Windows 10 1809<br>
+(HLK v1809) Windows Server 2019<br>
+(HLK v1803) Windows 10 1803<br>
+(HLK v1709) Windows 10 1709<br>
+(HLK v1703) Windows 10 1703<br>
+(HLK v1607) Windows 10 1607<br>
+(HLK v1607) Windows 10 1511<br>
+(HLK v1607) Windows 10 1507<br>
+(HLK v1607) Windows Server 2016
+</td></tr>
+<tr><th>HCK</th><td>Windows Server 2012</td><td>
+Windows 7<br>
+Windows 8<br>
+Windows 8.1<br>
+Windows Server 2008 R2<br>
+Windows Server 2012<br>
+Windows Server 2012 R2</td></tr>
+<tr><th>WLK</th><td>Windows Server 2012</td><td>
+Windows Server 2003<br>
+Windows Server 2008</td></tr>
+</table>
+<p>
+P.S. <b>Windows XP</b>、<b>Windows 2000</b>、<b>Windows Vista</b>這三個系統，目前不需要跑WHQL測試，在Submission時，就可以勾選，而測試的系統(如：Windows 7)，如果遇到沒有測試選項在Tests頁面，直接打包就可以，不需要測試<br><br>
+
+接著需要先設定Hyper-V NAT網卡，只要新增一張<b>connection type</b>是<b>Internal network</b>網卡，名稱可以隨意取名<br>
+<img src="whql/1.jpg" class="maxSize"><br><br>
+
+接著就可以看到新增的網卡<br>
+<img src="whql/2.jpg" class="maxSize"><br><br>
+
+接著將原本的主要網卡(如：NIC1)，設定成可以分享<br>
+<img src="whql/3.jpg" class="maxSize"><br><br>
+
+Hyper-V NAT網卡自動配置的IP<br>
+<img src="whql/4.jpg" class="maxSize"><br><br>
+
+接著透過Hyper-V先安裝Controller系統：<br>
+1. 建議<b>RAM 2GB</b>、<b>DISK 60GB</b><br>
+2. 關閉<b>Windows Firewall</b><br>
+3. 關閉<b>Windows AntiVirus</b><br>
+4. 關閉<b>Windows Defender</b><br>
+5. 開啟網路芳鄰(<b>SMB Service</b>)，記得<a href="../../system/windows/fix_nn.htm">開啟相關服務</a><br>
+<img src="whql/5.jpg" class="maxSize"><br>
+P.S. 如果遇到Hyper-V NAT網卡無法連網，可以交互Enable、Disable原本網卡(NIC1)以及Hyper-V NAT網卡，如果還是不行，可以重新建立Hyper-V NAT網卡，因為Hyper-V的網路真是不敢領教...，出錯的問題可能是<b>Microsoft NDIS Packet Capture Filter Driver</b>，目前建議可以把HCK/HLK先下載到資料夾，然後再透過網路芳鄰複製到Controller主機安裝，因為沒有連外網的情況下，也是可以測試WHQL<br><br>
+
+接著安裝HLK或者HCK(依照測試選項)<br>
+<img src="whql/6.jpg" class="maxSize"><br>
+<img src="whql/7.jpg" class="maxSize"><br>
+<img src="whql/8.jpg" class="maxSize"><br>
+<img src="whql/9.jpg" class="maxSize"><br><br>
+
+接著安裝Client系統：<br>
+1. 建議<b>RAM 2GB</b>、<b>DISK 60GB</b><br>
+2. 關閉<b>Windows Firewall</b><br>
+3. 關閉<b>Windows AntiVirus</b><br>
+4. 關閉<b>Windows Defender</b><br>
+5. 開啟網路芳鄰(<b>SMB Service</b>)，記得<a href="../../system/windows/fix_nn.htm">開啟相關服務</a><br>
+6. 開啟BCD設定並且重新開機<br>
+</p>
+<pre>
+c:\&gt; bcdedit.exe /set testsigning on
+c:\&gt; bcdedit.exe /set bootstatuspolicy ignoreallfailures
+c:\&gt; bcdedit.exe /set bootmenupolicy legacy
+</pre>
+<p>
+7. 掛載需要的檔案系統(<b>FSFilter Driver</b>測試需要，可以使用<b>fltmc</b>指令查看是否為<b>FSFilter Driver</b>)<br>
+<img src="whql/12.jpg" class="maxSize"><br>
+8. 安裝測試的驅動程式，由於BCD已經開啟TESTSIGNING，因此，驅動程式只需要有一個簡單的測試簽章即可安裝使用，如何製作個人測試簽章，請參考<a href="../wdm/self_sign.htm">這裡</a>，必須注意的是，INF必須先使用INF2CAT檢查，否則在打包WHQL結果時，會有錯誤訊息<br>
+9. 接著在Client安裝HLK或者HCK，安裝的方式則是透過Controller的網路芳鄰資料夾(HLKInstall &gt; Client &gt; Setup.cmd/Setup.exe)<br>
+<img src="whql/10.jpg" class="maxSize"><br>
+<img src="whql/11.jpg" class="maxSize"><br>
+<img src="whql/13.jpg" class="maxSize"><br>
+<img src="whql/14.jpg" class="maxSize"><br>
+<img src="whql/15.jpg" class="maxSize"><br>
+10. 接著，登出目前帳號，因為WHQL會有一組測試的帳號登入使用<br><br>
+
+接著在Controller開啟HLK Studio<br>
+<img src="whql/16.jpg" class="maxSize"><br><br>
+
+選擇Configuration<br>
+<img src="whql/18.jpg" class="maxSize"><br>
+<img src="whql/19.jpg" class="maxSize"><br><br>
+
+Create Machine Pool<br>
+<img src="whql/20.jpg" class="maxSize"><br><br>
+
+接著把Default Pool的測試機器拉到新增的Pool裡面，如果發生怎麼拖拉都會出現錯誤時，重新開啟HLK Studio即可<br>
+<img src="whql/21.jpg" class="maxSize"><br><br>
+
+接著按滑鼠右鍵，設定成Ready<br>
+<img src="whql/25.jpg" class="maxSize"><br><br>
+
+等待狀態變成READY<br>
+<img src="whql/26.jpg" class="maxSize"><br><br>
+
+接著返回主頁，然後Create Project<br>
+<img src="whql/22.jpg" class="maxSize"><br>
+<img src="whql/17.jpg" class="maxSize"><br>
+<img src="whql/23.jpg" class="maxSize"><br><br>
+
+切到Selection頁面，並且選擇剛剛新增的Pool，接著點選左邊的<b>software device</b>，選擇要測試的驅動程式，如果沒有找到，請確定該驅動程式已經安裝完成且為<b>啟動狀態</b>，如果還是不行，可以重新啟動該台測試Client機器，接著記得重新配置成READY狀態，多測試幾次就可以<br>
+<img src="whql/24.jpg" class="maxSize"><br><br>
+
+勾選全部測試選項，如果沒有任何測試選項可以勾選，例如：Win7系統，則代表不需要測試，也就是Results代表已經PASS<br>
+<img src="whql/27.jpg" class="maxSize"><br><br>
+
+接著，按下<b>Run Selected</b><br>
+<img src="whql/28.jpg" class="maxSize"><br><br>
+
+測試中，請不要去操作Client機器，避免發生錯誤<br>
+<img src="whql/29.jpg" class="maxSize"><br><br>
+
+完成後，所有的選項都需要PASS，如果有選項錯誤，可以切到Results頁面查看問題，一般來說，SLEEP或者PNP問題，<b>重新跑幾次</b>就可以或者<b>將DVD Drive移除</b>，如果都還是無法PASS，可以上網找尋解法<br>
+<img src="whql/30.jpg" class="maxSize"><br><br>
+
+Results頁面，可以查看細部測試項目<br>
+<img src="whql/31.jpg" class="maxSize"><br><br>
+
+接著準備打包測試結果<br>
+<img src="whql/32.jpg" class="maxSize"><br><br>
+
+由於不同的Windows作業系統，需要使用不同的HLK/HCK版本做測試，因此，通常會有多份測試結果需要做合併的動作，如果沒有合併，則每個各別Submission的驅動程式，將只能安裝在有測試的系統上，因此，點選<b>Merge Package</b>做合併的動作，如果目前這個HLK/HCK不是要做最後合併的動作，則只要點選右下方的<b>Create Package</b><br>
+<img src="whql/34.jpg" class="maxSize"><br>
+<img src="whql/33.jpg" class="maxSize"><br><br>
+
+選擇<b>Add</b>加入從其它HLK/HCK測試的結果<br>
+<img src="whql/35.jpg" class="maxSize"><br><br>
+
+接著選擇<b>Add Driver Folder</b><br>
+<img src="whql/37.jpg" class="maxSize"><br>
+<img src="whql/36.jpg" class="maxSize"><br>
+P.S. 值得注意的是，在Windows 7系統上，Microsoft簽章必須放在第一個位置，因為Windows 7只認得第一個欄位的簽章，因此，在<b>Add Driver Folder</b>之前，請先移除測試簽章，如何移除請參考<a href="../wdm/remove_sign.htm">如何移除已經簽章的驅動程式</a><br><br>
+
+加入Driver Folder後，會顯示有測試的Windows作業系統，記得全部勾選<br>
+<img src="whql/38.jpg" class="maxSize"><br><br>
+
+Locales頁面也記得全部勾選<br>
+<img src="whql/39.jpg" class="maxSize"><br><br>
+
+接著，選擇<b>Create Package</b><br>
+<img src="whql/41.jpg" class="maxSize"><br>
+<img src="whql/40.jpg" class="maxSize"><br><br>
+
+<b>Do not sign</b><br>
+<img src="whql/42.jpg" class="maxSize"><br><br>
+
+完成後，就把這包結果Submit到Microsoft做簽章的動作<br>
+<img src="whql/43.jpg" class="maxSize"><br>
+P.S. 在Submit xxx.hlkx時，記得要先經過有效的簽章(公司簽章)，否則Submission Portal會提示無效的格式<br><br>
+
+如下是司徒Submit的結果，可以看到Windows XP、Windows 2000、Windows Vista這三個系統，在Submission時，就可以勾選，Certification部份則是有跑過WHQL測試的系統<br>
+<img src="whql/44.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../driver.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

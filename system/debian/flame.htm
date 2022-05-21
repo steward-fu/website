@@ -1,0 +1,135 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Debian &gt;&gt; Performance</h3>
+<p><b>如何使用Flame Graphs找出耗時的副程式</b></p>
+<hr size="1">
+<p>
+參考資料：<br>
+1. <a href="https://github.com/brendangregg/FlameGraph">FlameGraph</a><br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;unistd.h&gt;
+ 
+void test1(void)
+{
+  for(int x=0; x&lt;100; x++);
+}
+ 
+void test2(void)
+{
+  usleep(1);
+}
+ 
+void test3(void)
+{
+  usleep(100);
+}
+ 
+int main(int argc, char** argv)
+{
+  while(1){
+    test1();
+    test2();
+    test3();
+  }
+}
+</pre><br>
+
+<p>
+編譯並且執行
+</p>
+<pre>
+$ gcc main.c -o main -ggdb
+$ ./main
+</pre><br>
+
+<p>
+使用perf量測(自動量測10秒)
+</p>
+<pre>
+$ perf record -ag -s -d --phys-data -e cpu-cycles:u -F 9999 --call-graph dwarf,8192 -p `pidof ./main` -- sleep 10
+    Warning:
+    PID/TID switch overriding SYSTEM
+    [ perf record: Woken up 1187 times to write data ]
+    [ perf record: Captured and wrote 297.243 MB perf.data (36889 samples) ]
+</pre>
+<p>
+P.S. 使用perf量測時，記得要有debug symbol，不然會無法把副程式解析出來<br><br>
+
+使用Flame Graphs分析
+</p>
+<pre>
+$ git clone https://github.com/brendangregg/FlameGraph
+$ cd FlameGraph
+$ cp ../perf.data .
+$ perf script > out.perf
+$ ./stackcollapse-perf.pl out.perf > out.folded
+$ ./flamegraph.pl out.folded > perf.svg
+</pre><br>
+
+<p>
+使用Chrome或者Firefox開啟perf.svg，接著就可以使用滑鼠點選想要看的副程式，X軸代表該副程式使用的百分比，Y軸則是呼叫的順序，下張圖片是司徒將滑鼠移到test1所顯示的數據，test1佔了main副程式的49.94%使用率，test1上方沒有任何副程式，代表它是末端，而test1、test2、test3都是由main呼叫使用，test2、test3還往後呼叫了usleep，<br>
+<img src="flame/1.jpg" size="maxSize"><br><br>
+
+點選test3，可以發現usleep還往後呼叫nanosleep，nanosleep後方因為缺少debug symbol，因此，無法被正確解析出來<br>
+<img src="flame/2.jpg" size="maxSize"><br>
+P.S. 如要恢復原本的呼叫狀態，只要點選最下方的all即可
+</p>
+
+<p>
+<br><a href="../../system.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,408 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../../header.js"></script>
+<div id="page">
+<h3>Nokia N900 &gt;&gt; Easy Debian</h3>
+<p><b>移植qemu 2.4.0.1</b></p>
+<hr size="1">
+<p>
+步驟如下：
+</p>
+<pre class="brush:cpp">
++++ new/qemu-2.4.0.1/ui/gtk.c
+--- old/qemu-2.4.0.1/ui/gtk.c
++ static GtkDisplayState *gN900GtkDisplayState=NULL;
+void N900ReleaseGrab(void)
+{
+   // uncheck grab menu item
++ if(gN900GtkDisplayState){
++  gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(gN900GtkDisplayState-&gt;grab_item), FALSE);
++ }
+}
+
+static bool gd_is_grab_active(GtkDisplayState *s)
+{
++ gN900GtkDisplayState = s;
+  return gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(s-&gt;grab_item));
+}
+
++++ new/qemu-2.4.0.1/ui/input.c
+--- old/qemu-2.4.0.1/ui/input.c
+void qemu_input_event_send_key_number(QemuConsole *src, int num, bool down)
+{
+  // 支援上、下、左、右鍵
++ if(num == 200) num = 0x48; // Up
++ else if(num == 208) num = 0x50; // Down
++ else if(num == 203) num = 0x4b; // Left
++ else if(num == 205) num = 0x4d; // Right
+}
+
++++ new/qemu-2.4.0.1/hw/input/ps2.c
+--- old/qemu-2.4.0.1/hw/input/ps2.c
++ void N900ReleaseGrab(void);
+
+static void ps2_keyboard_event(DeviceState *dev, QemuConsole *src, InputEvent *evt)
+{
+  PS2KbdState *s = (PS2KbdState*)dev;
+  int scancodes[3], i, count;
++ int code=0;
++ static int ctrl=0, alt=0, shift=0;
+
+  qemu_system_wakeup_request(QEMU_WAKEUP_REASON_OTHER);
+  count = qemu_input_key_value_to_scancode(
+  evt->key->key, evt->key->down, scancodes);
+
+  // remap scancode for n900 keyboard
++ for(i=0; i&lt;count; i++){
++  code = scancodes[i];
++  //printf("steward, 0x%X\n", code);
++  if(code == 0x1d) ctrl = 1;
++  if(code == 0x9d) ctrl = 0;
++  if(code == 0x2a) shift = 1;
++  if(code == 0xaa) shift = 0;
++  if((code == 0xe0) &amp;&amp; (scancodes[i - 1] == 0x38)) alt = 1;
++  if((code == 0xe0) &amp;&amp; (scancodes[i - 1] == 0xb8)) alt = 0;
+
+   // Ctrl+Shift -&gt; poweroff
++  if(ctrl &amp;&amp; shift){
++   printf("steward, enforce to exit\n");
++   exit(1);
++  }
+
++  if(code == 0xe0){
++   i+= 2;
++   continue;
++  }
+
++  if(alt){
++   switch(code){
++   case 0x10: // q -&gt; 1
++    ps2_put_keycode(s, 0x02);
++    break;
++   case 0x11: // w -&gt; 2
++    ps2_put_keycode(s, 0x03);
++    break;
++   case 0x12: // e -&gt; 3 ^
++    if(shift){
++     ps2_put_keycode(s, 0x2a);
++     ps2_put_keycode(s, 0x07);
++     ps2_put_keycode(s, 0xaa);
++    }
++    else{
++     ps2_put_keycode(s, 0x04);
++    }
++    break;
++   case 0x13: // r -&gt; 4 `
++    if(shift){
++     ps2_put_keycode(s, 0xaa);
++     ps2_put_keycode(s, 0x29);
++    }
++    else{
++     ps2_put_keycode(s, 0x05);
++    }
++    break;
++   case 0x14: // t -&gt; 5
++    ps2_put_keycode(s, 0x06);
++    break;
++   case 0x15: // y -&gt; 6 [
++    if(shift){
++      ps2_put_keycode(s, 0xaa);
++      ps2_put_keycode(s, 0x1a);
++    }
++    else{
++     ps2_put_keycode(s, 0x07);
++    }
++    break;
++   case 0x16: // u -&gt; 7 ]
++    if(shift){
++     ps2_put_keycode(s, 0xaa);
++     ps2_put_keycode(s, 0x1b);
++    }
++    else{
++     ps2_put_keycode(s, 0x08);
++    }
++    break;
++   case 0x17: // i -&gt; 8
++    ps2_put_keycode(s, 0x09);
++    break;
++   case 0x18: // o -&gt; 9
++    ps2_put_keycode(s, 0x0a);
++    break;
++   case 0x19: // p -&gt; 0
++    ps2_put_keycode(s, 0x0b);
++    break;
++   case 0x33: // , -&gt; =
++    ps2_put_keycode(s, 0x0d);
++    break;
++   case 0x1e: // a -&gt; *
++    ps2_put_keycode(s, 0x2a);
++    ps2_put_keycode(s, 0x09);
++    ps2_put_keycode(s, 0xaa);
++    break;
++   case 0x1f: // s -&gt; +
++    ps2_put_keycode(s, 0x2a);
++    ps2_put_keycode(s, 0x0d);
++    ps2_put_keycode(s, 0xaa);
++    break;
++   case 0x20: // d -&gt; #
++    ps2_put_keycode(s, 0x2a);
++    ps2_put_keycode(s, 0x04);
++    ps2_put_keycode(s, 0xaa);
++    break;
++   case 0x21: // f -&gt; + ~
++    if(shift){
++     ps2_put_keycode(s, 0x2a);
++     ps2_put_keycode(s, 0x29);
++     ps2_put_keycode(s, 0xaa);
++    }
++    else{
++     ps2_put_keycode(s, 0x0c);
++    }
++    break;
++   case 0x22: // g -&gt; _
++    if(ctrl){ // Ctrl+Alt+G
++     N900ReleaseGrab();
++    }
++    else{
++     ps2_put_keycode(s, 0x2a);
++     ps2_put_keycode(s, 0x0c);
++     ps2_put_keycode(s, 0xaa);
++    }
++    break;
++   case 0x23: // h -&gt; ( &lt;
++    if(shift){
++     ps2_put_keycode(s, 0x2a);
++     ps2_put_keycode(s, 0x33);
++     ps2_put_keycode(s, 0xaa);
++    }
++    else{
++     ps2_put_keycode(s, 0x2a);
++     ps2_put_keycode(s, 0x0a);
++     ps2_put_keycode(s, 0xaa);
++    }
++    break;
++   case 0x24: // j -&gt; ) &gt;
++    if(shift){
++     ps2_put_keycode(s, 0x2a);
++     ps2_put_keycode(s, 0x34);
++     ps2_put_keycode(s, 0xaa);
++    }
++    else{
++     ps2_put_keycode(s, 0x2a);
++     ps2_put_keycode(s, 0x0b);
++     ps2_put_keycode(s, 0xaa);
++    }
++    break;
++   case 0x25: // k -&gt; &amp;
++    if(shift){
++    }
++    else{
++     ps2_put_keycode(s, 0x2a);
++     ps2_put_keycode(s, 0x08);
++     ps2_put_keycode(s, 0xaa);
++    }
++    break;
++   case 0x26: // l -&gt; ! |
++    if(shift){
++     ps2_put_keycode(s, 0x2a);
++     ps2_put_keycode(s, 0x2b);
++     ps2_put_keycode(s, 0xaa);
++    }
++    else{
++     ps2_put_keycode(s, 0x2a);
++     ps2_put_keycode(s, 0x02);
++     ps2_put_keycode(s, 0xaa);
++    }
++    break;
++   case 0x34: // . -&gt; ?
++    ps2_put_keycode(s, 0x2a);
++    ps2_put_keycode(s, 0x35);
++    ps2_put_keycode(s, 0xaa);
++    break;
++   case 0x2d: // x -&gt; $
++    ps2_put_keycode(s, 0x2a);
++    ps2_put_keycode(s, 0x05);
++    ps2_put_keycode(s, 0xaa);
++    break;
++   case 0x2f: // v -&gt; / %
++    if(shift){
++     ps2_put_keycode(s, 0x2a);
++     ps2_put_keycode(s, 0x06);
++     ps2_put_keycode(s, 0xaa);
++    }
++    else{
++     ps2_put_keycode(s, 0x35);
++    }
++    break;
++   case 0x30: /* b -&gt; \ */
++    ps2_put_keycode(s, 0x2b);
++    break;
++   case 0x31: // n -&gt; " {
++    if(shift){
++     ps2_put_keycode(s, 0x2a);
++     ps2_put_keycode(s, 0x1a);
++     ps2_put_keycode(s, 0xaa);
++    }
++    else{
++     ps2_put_keycode(s, 0x2a);
++     ps2_put_keycode(s, 0x28);
++     ps2_put_keycode(s, 0xaa);
++    }
++    break;
++   case 0x32: // m -&gt; ' }
++    if(shift){
++     ps2_put_keycode(s, 0x2a);
++     ps2_put_keycode(s, 0x1b);
++     ps2_put_keycode(s, 0xaa);
++    }
++    else{
++     ps2_put_keycode(s, 0x28);
++    }
++    break;
++   case 0x39: // space -&gt; @
++    ps2_put_keycode(s, 0x2a);
++    ps2_put_keycode(s, 0x03);
++    ps2_put_keycode(s, 0xaa);
++    break;
++   case 0x0e: // backspace -&gt; tab
++    ps2_put_keycode(s, 0x0f);
++    break;
++   case 0x48: // up -&gt; page up
++    ps2_put_keycode(s, 0x49);
++    break;
++   case 0x50: // down -&gt; page down
++    ps2_put_keycode(s, 0x51);
++    break;
++   case 0x4b: // left -&gt; home
++    ps2_put_keycode(s, 0x47);
++    break;
++   case 0x4d: // right -&gt; end
++    ps2_put_keycode(s, 0x4f);
++    break;
++   default:
++    break;
++   }
++  }
++  else{
++   if(shift){
++    switch(code){
++    case 0x0e: // backspace -> escape
++     ps2_put_keycode(s, 0x01);
++     break;
++    case 0x33: // , -&gt; ;
++     ps2_put_keycode(s, 0xaa);
++     ps2_put_keycode(s, 0x27);
++     break;
++    case 0x34: // . -&gt; :
++     ps2_put_keycode(s, 0x27);
++     break;
++    default:
++     ps2_put_keycode(s, code);
++     break;
++    }
++   }
++   else{
++    ps2_put_keycode(s, code);
++   }
++  }
++ }
+}
+</pre><br>
+
+<p>
+特殊按鍵
+</p>
+<table>
+<tr><th>特殊鍵</th><th>功能</th></tr>
+<tr><td>Ctrl + Shift</td><td>Poweroff</td></tr>
+<tr><td>Ctrl + Alt + g</td><td>Release Grab</td></tr>
+</table><br>
+
+<p>
+一般按鍵
+</p>
+<table>
+<tr><th>Key</th><th>Shift + Key</th><th>Alt + Key</th><th>Alt + Shift + Key</th></tr>
+<tr><td>q</td><td>Q</td><td>1</td><td>q</td></tr>
+<tr><td>w</td><td>W</td><td>2</td><td>w</td></tr>
+<tr><td>e</td><td>E</td><td>3</td><td>^</td></tr>
+<tr><td>r</td><td>R</td><td>4</td><td>`</td></tr>
+<tr><td>t</td><td>T</td><td>5</td><td>t</td></tr>
+<tr><td>y</td><td>Y</td><td>6</td><td>[</td></tr>
+<tr><td>u</td><td>U</td><td>7</td><td>]</td></tr>
+<tr><td>i</td><td>I</td><td>8</td><td>i</td></tr>
+<tr><td>o</td><td>O</td><td>9</td><td>o</td></tr>
+<tr><td>p</td><td>P</td><td>0</td><td>p</td></tr>
+<tr><td>,</td><td>;</td><td>=</td><td>,</td></tr>
+<tr><td>backspace</td><td>escape</td><td>tab</td><td>backspace</td></tr>
+<tr><td>a</td><td>A</td><td>*</td><td>a</td></tr>
+<tr><td>s</td><td>S</td><td>+</td><td>s</td></tr>
+<tr><td>d</td><td>D</td><td>#</td><td>d</td></tr>
+<tr><td>f</td><td>F</td><td>-</td><td>~</td></tr>
+<tr><td>g</td><td>G</td><td>_</td><td>g</td></tr>
+<tr><td>h</td><td>H</td><td>(</td><td>&lt;</td></tr>
+<tr><td>j</td><td>J</td><td>)</td><td>&gt;</td></tr>
+<tr><td>k</td><td>K</td><td>&amp;</td><td>k</td></tr>
+<tr><td>l</td><td>L</td><td>!</td><td>|</td></tr>
+<tr><td>.</td><td>:</td><td>?</td><td>.</td></tr>
+<tr><td>z</td><td>Z</td><td>z</td><td>z</td></tr>
+<tr><td>x</td><td>X</td><td>$</td><td>x</td></tr>
+<tr><td>c</td><td>C</td><td>c</td><td>c</td></tr>
+<tr><td>v</td><td>V</td><td>/</td><td>%</td></tr>
+<tr><td>b</td><td>B</td><td>\</td><td>b</td></tr>
+<tr><td>h</td><td>N</td><td>"</td><td>{</td></tr>
+<tr><td>m</td><td>M</td><td>'</td><td>}</td></tr>
+<tr><td>space</td><td>space</td><td>@</td><td>space</td></tr>
+</table><br>
+
+<p>
+<br><a href="../../../phone.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

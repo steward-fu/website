@@ -1,0 +1,139 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>STM8S001 &gt;&gt; Assembly</h3>
+<p><b>LED</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://www.st.com/resource/en/reference_manual/cd00190271-stm8s-series-and-stm8af-series-8bit-microcontrollers-stmicroelectronics.pdf">pdf</a><br>
+2. <a href="https://github.com/lujji/stm8-bootloader">stm8-bootlaoder</a><br>
+3. <a href="https://github.com/TG9541/stm8ef/wiki/STM8S-Programming">STM8S-Programming</a><br><br>
+
+STM8S001是一顆I/O相當複雜的MCU，如下表：
+</p>
+<table>
+<tr><th>Pin</th><th>Port</th></tr>
+<tr><td>1</td><td>PD6/AIN6/UART1_RX、PA1/OSCIN</td></tr>
+<tr><td>5</td><td>PA3/TIM2_CH3[SPI_NSS]\[UART1_TX]、PB5/I2C_SDA[TIM1_BKIN]</td></tr>
+<tr><td>6</td><td>PB4/I2C_SCL/[ADC_ETR]</td></tr>
+<tr><td>7</td><td>PC3/TIM1_CH3[TLI][TIM1_CH1N]、PC4/CLK_CCO/TIM1_CH4/[AIN2]/[TIM1_CH2N]、PC5/SPI_SCK[TIM2_CH1]</td></tr>
+<tr><td>8</td><td>PC6/SPI_MOSI[TIM1_CH1]、PD1/SWIM、PD3/AIN4/TIM2_CH2/ADC_ETR、PD5/AIN5/UART1_TX</td></tr>
+</table>
+<p>
+例如：PD6和PA1同時綁到第一隻腳，因此，操作一般GPIO時，PD6和PA1是一樣的結果，但是切換到其它功能時，則不同運作，如設定AIN6或者OSCIN<br><br>
+
+官方說明如下<br>
+<img src="asm_led/1.jpg" class="maxSize"><br><br>
+
+表格<br>
+<img src="asm_led/2.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+  .equ PB_ODR, 0x5005
+  .equ PB_IDR, 0x5006
+  .equ PB_DDR, 0x5007
+  .equ PB_CR1, 0x5008
+  .equ PB_CR2, 0x5009
+
+  .area data
+  .area sseg
+  .area home
+  int main
+  
+  .area cseg
+main:
+  mov PB_DDR, #0x20
+  mov PB_CR1, #0x20
+  
+loop:
+  ld a, PB_ODR
+  xor a, #0x20
+  ld PB_ODR, a
+  ldw x, #60000 
+d0:
+  decw x
+  jrne d0
+  jp loop
+</pre><br>
+
+<p>
+編譯和燒錄
+</p>
+<pre>
+$ sdasstm8 -o main.s
+$ sdldstm8 -ni -b home=0x8000 -b cseg=0x8080 -b data=0x0001 -b sseg=0xffff main.rel
+$ sudo stm8flash -c stlinkv2 -p stm8s001j3 -u
+  Determine OPT area
+  Due to its file extension (or lack thereof), "Workaround" is considered as RAW BINARY format!
+  Unlocked device. Option bytes reset to default state.
+  Bytes written: 11
+
+$ sudo stm8flash -c stlinkv2 -p stm8s001j3 -w main.ihx
+  Determine FLASH area
+  Due to its file extension (or lack thereof), "main.ihx" is considered as INTEL HEX format!
+  153 bytes at 0x8000... OK
+  Bytes written: 153
+</pre>
+<p>
+P.S. 如果燒錄失敗，實屬正常，再次執行燒錄命令即可，如果無法unlock(-u)，請更換其它IC<br><br>
+
+完成<br>
+<img src="asm_led/3.jpg" class="maxSize"><br>
+<img src="asm_led/4.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

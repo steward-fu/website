@@ -1,0 +1,139 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Game Boy Color &gt;&gt; Assembly</h3>
+<p><b>Palette(BG)</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://bgb.bircd.org/">bgb</a><br>
+2. <a href="https://github.com/gbdev/rgbds">rgbds</a><br>
+3. <a href="https://github.com/sinamas/gambatte">gambatte</a><br>
+4. <a href="https://github.com/lancekindle/DMGreport">DMGreport</a><br><br>
+
+每個像素使用2bits表示(4個顏色)<br>
+<img src="../gb/asm_chr/1.jpg" class="maxSize"><br><br>
+
+每一個Palette有4個顏色可以設定，共有8個Palette可以使用<br>
+<img src="asm_palette_bg/1.jpg" class="maxSize"><br><br>
+
+每個顏色由15bits組成<br>
+<img src="asm_palette_bg/2.jpg" class="maxSize"><br><br>
+
+設定的方式則是透過BCPS(設定位址)、BCPD(設定資料)<br>
+<img src="asm_palette_bg/3.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+LCDC     equ $ff40
+LCDCF_ON equ %10000000
+    
+section "vblank", rom0[$0040]
+  reti
+      
+section "lcdc", rom0[$0048]
+  reti
+      
+section "timer", rom0[$0050]
+  reti
+      
+section "serial", rom0[$0058]
+  reti
+      
+section "joypad", rom0[$0060]
+  reti
+      
+section "entry", rom0[$0100]
+  nop
+  jp _start
+      
+section "header", rom0[$0104]
+  db $ce, $ed, $66, $66, $cc, $0d, $00, $0b, $03, $73, $00, $83, $00, $0c, $00, $0d
+  db $00, $08, $11, $1f, $88, $89, $00, $0e, $dc, $cc, $6e, $e6, $dd, $dd, $d9, $99
+  db $bb, $bb, $67, $63, $6e, $0e, $ec, $cc, $dd, $dc, $99, $9f, $bb, $b9, $33, $3e
+  db "0123456789abcde"
+  db $80
+  db 0, 0
+  db 0
+  db 0
+  db 0
+  db 0
+  db 1
+  db $33
+  db 0
+  db 0
+  dw 0
+      
+_start:
+  di
+  ld a, 0
+  ld [$ff68], a
+  ld a, $1f
+  ld [$ff69], a
+  ld a, 1
+  ld [$ff68], a
+  ld a, $00
+  ld [$ff69], a
+  jp @
+</pre>
+<p>
+設定Palette0的第1組(共4組)顏色為0x001f(紅色)，而預設開機的第1個Tile，內容都是0，因此，顯示為紅色<br><br>
+
+完成<br>
+<img src="asm_palette_bg/4.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../emu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

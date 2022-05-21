@@ -1,0 +1,140 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Linux Device Driver &gt;&gt; C/C++</h3>
+<p><b>hello, world!</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://github.com/steward-fu/ldd">Source Code</a><br><br>
+
+hello, world!是一個相當經典的入門教學範例，從這個範例的框架，使用者可以一探Linux的精簡之美，當然，它主要表達的目的，更多是對於環境的操作熟悉<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;linux/init.h&gt;
+#include &lt;linux/device.h&gt;
+#include &lt;linux/module.h&gt;
+
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("Steward Fu");
+MODULE_DESCRIPTION("Linux Driver");
+ 
+int ldd_init(void)
+{
+  printk("hello, world!\n");
+  return 0;
+}
+ 
+void ldd_exit(void)
+{
+  printk("unload it\n");
+}
+ 
+module_init(ldd_init);
+module_exit(ldd_exit);
+</pre>
+<p>
+<b>ldd_init</b>: 系統載入驅動程式時，第一時間呼叫使用<br>
+<b>ldd_exit</b>: 卸載驅動程式時，最後時間被系統呼叫使用<br><br>
+
+Makefile
+</p>
+<pre>
+export ARCH=arm
+export CROSS_COMPILE=arm-linux-gnueabihf-
+KERNEL=$(HOME)/Downloads/kernel
+
+obj-m += main.o
+all:
+  make -C $(KERNEL) M=$(PWD) modules
+
+clean:
+  make -C $(KERNEL) M=$(PWD) clean
+</pre>
+<p>
+P.S. make指令前面是一個Tab字元，而非空白字元<br><br>
+
+編譯
+</p>
+<pre>
+$ make
+  make -C kernel M=hello modules
+  make[1]: Entering directory 'kernel'
+    CC [M]  hello/main.o
+    Building modules, stage 2.
+    MODPOST 1 modules
+    CC      hello/main.mod.o
+    LD [M]  hello/main.ko
+  make[1]: Leaving directory 'kernel'
+</pre><br>
+
+<p>
+接著把<b>main.ko</b>放到第一分區，進入系統後，執行如下指令掛載驅動程式：
+</p>
+<pre>
+# insmod /boot/main.ko
+  hello, world!
+</pre><br>
+
+<p>
+卸載驅動程式：
+</p>
+<pre>
+# rmmod main
+  unload it
+</pre><br>
+
+<p>
+<br><a href="../../driver.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

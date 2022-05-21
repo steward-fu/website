@@ -1,0 +1,150 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Miyoo Mini &gt;&gt; Stock &gt;&gt; C/C++</h3>
+<p><b>閃屏測試</b></p>
+<hr size="1">
+<p>
+參考資料：<br>
+1. <a href="https://github.com/steward-fu/miyoo-mini/releases/download/setup/stock_screentest_src.tar.gz">SourceCode</a><br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;SDL.h&gt;
+ 
+int main(int argc, char** argv)
+{
+  uint32_t cnt=0;
+  SDL_Surface* screen=NULL;
+  uint32_t col[]={0xf800, 0x7e0, 0x001f};
+ 
+  SDL_Init(SDL_INIT_VIDEO);
+  screen = SDL_SetVideoMode(640, 480, 16, SDL_SWSURFACE | SDL_DOUBLEBUF);
+  while(cnt &lt; 600){
+    cnt+= 1;
+    SDL_FillRect(screen, &amp;screen->clip_rect, col[cnt % 3]);
+    SDL_Flip(screen);
+    SDL_Delay(1000 / 60);
+  }
+  SDL_Quit();
+  return 0;
+}
+</pre><br>
+
+<p>
+編譯指令
+</p>
+<pre>
+$ arm-linux-gnueabihf-gcc main.c -o test -I/usr/include/SDL libSDL-1.2.so.0.11.4 libmi_common.so libmi_sys.so libmi_disp.so libmi_panel.so libmi_gfx.so libmi_divp.so libmi_ao.so libshmvar.so
+</pre><br>
+
+<p>
+執行閃屏測試<br>
+<img src="stock_screentest/1.jpg" class="maxSize"><br><br>
+
+很遺憾的，Miyoo Mini存在閃屏問題<br>
+<img src="stock_screentest/2.jpg" class="maxSize"><br><br>
+
+司徒後來找了一下，發現顯示驅動並沒有同步PAN_DISPLAY，導致SDL_Flip會有閃屏問題，不過，可以自己使用FBIO_WAITFORVSYNC控制就可以解決閃屏問題
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;sys/ioctl.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;sys/mman.h&gt;
+#include &lt;string.h&gt;
+#include &lt;linux/fb.h&gt;
+
+#include &lt;SDL.h&gt;
+ 
+int main(int argc, char** argv)
+{
+  int zero=0;
+  uint32_t cnt=0;
+  SDL_Surface* screen=NULL;
+  uint32_t col[]={0xff0000, 0xff00, 0xff};
+
+  int fd = open("/dev/fb0", O_RDWR);
+  SDL_Init(SDL_INIT_VIDEO);
+  screen = SDL_SetVideoMode(640, 480, 32, SDL_SWSURFACE | SDL_DOUBLEBUF);
+  while(cnt &lt; 600){
+    cnt+= 1;
+    SDL_FillRect(screen, &amp;screen-&gt;clip_rect, col[cnt % 3]);
+    ioctl(fd, FBIO_WAITFORVSYNC, &amp;zero);
+    SDL_Flip(screen);
+  }
+  SDL_Quit();
+  close(fd);
+  return 0;
+}
+</pre><br>
+
+<p>
+沒有閃屏問題了～<br>
+<img src="stock_screentest/3.jpg" class="maxSize"><br>
+P.S. 司徒最後發現這個閃屏是官方SDL元件的問題
+</p>
+
+<p>
+<br><a href="../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

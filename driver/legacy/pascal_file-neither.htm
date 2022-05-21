@@ -1,0 +1,244 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushPas.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Windows NT Driver &gt;&gt; Pascal &gt;&gt; File</h3>
+<p><b>DO_NEITHER_IO</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://github.com/steward-fu/ntdriver">Source Code</a><br>
+2. <a href="http://www.delphibasics.info/home/delphibasicsprojects/delphidriverdevelopmentkit">delphidriverdevelopmentkit</a><br><br>
+
+基本上，Microsoft沒有定義DO_NEITHER_IO這個Flag，而Neither I/O的意思就是Neither Buffered Nor Direct I/O，因此，當沒有設定DO_BUFFERED_IO或DO_DIRECT_IO Flag時，就會使用Neither的方式，使用這種方式時，I/O Manager會將User Buffer的指標，透過操作後，傳遞給驅動程式使用，因此，驅動程式可以直接存取User Buffer的資料，所以存取速度可以得到很大的改善，對於有速度要求的驅動程式來說，建議使用Neither的方式，不過，關於User Buffer指標的存取問題上，會遇到更多需要面對的問題，如：指標的有效性以及多次存取的同步問題，因此，在選擇使用上，更需要考量到這些額外付出的代價是否值得使用，因為，驅動程式以及User Application雙方都需要很嚴謹的看待這塊共用的Buffer。<br><br>
+
+Microsoft的說明網頁：<br>
+<a href="https://docs.microsoft.com/en-us/windows-hardware/drivers/kernel/using-neither-buffered-nor-direct-i-o">using-neither-buffered-nor-direct-i-o</a><br><br>
+
+記憶體指標：
+</p>
+<table>
+<tr>
+  <th>IRP</th>
+  <th>Buffer</th>
+  <th>Length</th>
+</tr>
+<tr>
+  <td>IRP_MJ_READ</td>
+  <td>(Irp)<br>UserBuffer</td>
+  <td>(IrpStack)<br>Parameters.Read.Length</td>
+</tr>
+<tr>
+  <td>IRP_MJ_WRITE</td>
+  <td>(Irp)<br>UserBuffer</td>
+  <td>(IrpStack)<br>Parameters.Write.Length</td>
+</tr>
+</table><br>
+
+<p>
+main.pas
+</p>
+<pre class="brush:pas">
+unit main;
+
+interface
+  uses 
+    DDDK;
+    
+  const 
+    DEV_NAME = '\Device\MyDriver';
+    SYM_NAME = '\DosDevices\MyDriver';
+    
+  function _DriverEntry(pOurDriver:PDriverObject; pOurRegistry:PUnicodeString):NTSTATUS; stdcall;
+
+implementation
+var
+  szBuf: array[0..255] of char;
+  
+function IrpOpen(pOurDevice:PDeviceObject; pIrp:PIrp):NTSTATUS; stdcall;
+begin
+  DbgPrint('IRP_MJ_CREATE', []);
+  Result:= STATUS_SUCCESS;
+  pIrp^.IoStatus.Information:= 0;
+  pIrp^.IoStatus.Status:= Result;
+  IoCompleteRequest(pIrp, IO_NO_INCREMENT);
+end;
+
+function IrpRead(pOurDevice:PDeviceObject; pIrp:PIrp):NTSTATUS; stdcall;
+var
+  len: ULONG;
+
+begin
+  DbgPrint('IRP_MJ_READ', []);
+  
+  len:= strlen(@szBuf[0])+1;
+  memcpy(pIrp^.UserBuffer, @szBuf[0], len);
+  Result:= STATUS_SUCCESS;
+  pIrp^.IoStatus.Information:= len;
+  pIrp^.IoStatus.Status:= Result;
+  IoCompleteRequest(pIrp, IO_NO_INCREMENT);
+end;
+
+function IrpWrite(pOurDevice:PDeviceObject; pIrp:PIrp):NTSTATUS; stdcall;
+var
+  len: ULONG;
+  psk: PIoStackLocation;
+
+begin
+  DbgPrint('IRP_MJ_WRITE', []);
+
+  psk:= IoGetCurrentIrpStackLocation(pIrp);
+  len:= psk.Parameters.Write.Length;
+  memcpy(@szBuf[0], pIrp^.UserBuffer, len);
+  DbgPrint('Address: 0x%x, Length: %d', [pIrp^.UserBuffer, len]);
+  Result:= STATUS_SUCCESS;
+  pIrp^.IoStatus.Information:= len;
+  pIrp^.IoStatus.Status:= Result;
+  IoCompleteRequest(pIrp, IO_NO_INCREMENT);
+end;
+
+function IrpClose(pOurDevice:PDeviceObject; pIrp:PIrp):NTSTATUS; stdcall;
+begin
+  DbgPrint('IRP_MJ_CLOSE', []);
+  Result:= STATUS_SUCCESS;
+  pIrp^.IoStatus.Information:= 0;
+  pIrp^.IoStatus.Status:= Result;
+  IoCompleteRequest(pIrp, IO_NO_INCREMENT);
+end;
+
+procedure Unload(pOurDriver:PDriverObject); stdcall;
+var
+  szSymName: TUnicodeString;
+
+begin
+  RtlInitUnicodeString(@szSymName, SYM_NAME);
+  IoDeleteSymbolicLink(@szSymName);
+  IoDeleteDevice(pOurDriver^.DeviceObject);
+end;
+
+function _DriverEntry(pOurDriver:PDriverObject; pOurRegistry:PUnicodeString):NTSTATUS; stdcall;
+var
+  suDevName: TUnicodeString;
+  szSymName: TUnicodeString;
+  pOurDevice: PDeviceObject;
+  
+begin
+  RtlInitUnicodeString(@suDevName, DEV_NAME);
+  RtlInitUnicodeString(@szSymName, SYM_NAME);
+  Result:= IoCreateDevice(pOurDriver, 0, @suDevName, FILE_DEVICE_UNKNOWN, 0, FALSE, pOurDevice);
+
+  if NT_SUCCESS(Result) then
+  begin
+    pOurDriver^.MajorFunction[IRP_MJ_CREATE]:= @IrpOpen;
+    pOurDriver^.MajorFunction[IRP_MJ_READ]  := @IrpRead;
+    pOurDriver^.MajorFunction[IRP_MJ_WRITE] := @IrpWrite;
+    pOurDriver^.MajorFunction[IRP_MJ_CLOSE] := @IrpClose;
+    pOurDriver^.DriverUnload := @Unload;
+    pOurDevice^.Flags:= pOurDevice^.Flags and not DO_DEVICE_INITIALIZING;
+    Result:= IoCreateSymbolicLink(@szSymName, @suDevName);
+  end;
+end;
+end.
+</pre>
+<p>
+<b>IrpFile()</b>收到IRP_MJ_WRITE時，Driver複製User Buffer的內容到szBuffer，而收到IRP_MJ_READ時，將szBuffer內容又複製回User Buffer，完成暫存的功能，IoStatus.Information的數值就是ReadFile()或WriteFile()完成的長度。<br><br>
+
+app.pas
+</p>
+<pre class="brush:pas">
+program main;
+
+{$APPTYPE CONSOLE}
+
+uses
+  Windows,
+  Messages,
+  SysUtils,
+  Variants,
+  Classes,
+  Graphics,
+  Controls,
+  Forms,
+  DIALOGS;
+
+var
+  fd: DWORD;
+  ret: DWORD;
+  len: DWORD;
+  szBuf: array[0..255] of char;
+
+begin
+  fd:= CreateFile('\\.\MyDriver', GENERIC_READ or GENERIC_WRITE, FILE_SHARE_READ, Nil, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
+  if (fd &lt;&gt; INVALID_HANDLE_VALUE) then
+  begin
+    StrCopy(szBuf, 'I am error');
+    len:= strlen(szBuf)+1;
+    WriteLn(Output, Format('WR: %s, %d', [szBuf, len]));
+    WriteFile(fd, szBuf, len, ret, Nil);
+    ReadFile(fd, szBuf, len, ret, Nil);
+    WriteLn(Output, Format('RD: %s, %d', [szBuf, ret]));
+    CloseHandle(fd);
+  end else
+  begin
+    WriteLn(Output, 'failed to open mydriver');
+  end;
+end.
+</pre><br>
+
+<p>
+結果<br>
+<img src="../wdm/asm_file-neither/1.jpg" class="maxSize"><br>
+<img src="../wdm/asm_file-neither/2.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../driver.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

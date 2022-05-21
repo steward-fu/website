@@ -1,0 +1,160 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Game &amp; Watch: Super Mario Bros.</h3>
+<p><b>解決"Error: init mode failed (unable to connect to the target)"問題</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://stackoverflow.com/questions/57628401/eclipse-error-init-mode-failed-unable-to-connect-to-the-target">eclipse-error-init-mode-failed-unable-to-connect-to-the-target</a><br><br>
+
+問題如下：
+</p>
+<pre>
+openocd -f main.cfg -c "init; halt; program main.elf; reset; exit;"
+Open On-Chip Debugger 0.11.0-rc1+dev-00010-gc69b4deae-dirty (2020-12-27-01:20)
+Licensed under GNU GPL v2
+For bug reports, read
+	http://openocd.org/doc/doxygen/bugs.html
+Info : The selected transport took over low-level target control. The results might differ compared to plain JTAG/SWD
+none separate
+
+Info : clock speed 1800 kHz
+Info : STLINK V2J17S4 (API v2) VID:PID 0483:3748
+Info : Target voltage: 3.201569
+Error: init mode failed (unable to connect to the target)
+
+
+make: *** [Makefile:6: flash] Error 1
+</pre>
+<p>
+P.S. 原因是錯誤配置SWD腳位或者CPU已經掛點(超頻)<br><br>
+
+解法如下：<br>
+1. 斷開電池<br>
+2. ST-LINK V2重新拔插<br>
+3. 開啟STM32 ST-LINK Utility並且配置成<b>Connect Under Reset</b><br>
+<img src="fix_reset/1.jpg" class="maxSize"><br><br>
+
+4. 按下確定後，出現的錯誤，忽略即可<br>
+<img src="fix_reset/2.jpg" class="maxSize"><br><br>
+
+5. 顯示的錯誤，忽略即可<br>
+<img src="fix_reset/3.jpg" class="maxSize"><br><br>
+
+6. 把MCU Reset腳位接到GND，接著按下Connect<br>
+<img src="fix_reset/4.jpg" class="maxSize"><br><br>
+
+7. 三秒後，斷開MCU Reset與GND的連接，ST-LINK V2即可連線成功<br>
+<img src="fix_reset/5.jpg" class="maxSize"><br><br>
+
+8. Erase Chip<br>
+<img src="fix_reset/6.jpg" class="maxSize"><br><br>
+
+9. 顯示錯誤，忽略即可<br>
+<img src="fix_reset/7.jpg" class="maxSize"><br><br>
+
+10. 接著就可以使用openocd燒錄
+</p>
+<pre>
+openocd -f main.cfg -c "init; halt; program main.elf; reset; exit;"
+Open On-Chip Debugger 0.11.0-rc1+dev-00010-gc69b4deae-dirty (2020-12-27-01:20)
+Licensed under GNU GPL v2
+For bug reports, read
+	http://openocd.org/doc/doxygen/bugs.html
+Info : The selected transport took over low-level target control. The results might differ compared to plain JTAG/SWD
+none separate
+
+Info : clock speed 1800 kHz
+Info : STLINK V2J17S4 (API v2) VID:PID 0483:3748
+Info : Target voltage: 3.189556
+Info : stm32h7x.cpu0: hardware has 8 breakpoints, 4 watchpoints
+Info : starting gdb server for stm32h7x.cpu0 on 3333
+Info : Listening on port 3333 for gdb connections
+target halted due to debug-request, current mode: Thread
+xPSR: 0x01000000 pc: 0x08000008 msp: 0x20020000
+** Programming Started **
+Info : Device: STM32H7Ax/7Bx
+Info : STM32H7 flash has dual banks
+Info : Bank (0) size is 1024 kb, base address is 0x08000000
+Warn : Adding extra erase range, 0x08000080 .. 0x08001fff
+** Programming Finished **
+</pre><br>
+
+<p>
+假如沒有做Erase Chip的動作，則會顯示如下錯誤
+</p>
+<pre>
+openocd -f main.cfg -c "init; halt; program main.elf; reset; exit;"
+Open On-Chip Debugger 0.11.0-rc1+dev-00010-gc69b4deae-dirty (2020-12-27-01:20)
+Licensed under GNU GPL v2
+For bug reports, read
+	http://openocd.org/doc/doxygen/bugs.html
+Info : The selected transport took over low-level target control. The results might differ compared to plain JTAG/SWD
+none separate
+
+Info : clock speed 1800 kHz
+Info : STLINK V2J17S4 (API v2) VID:PID 0483:3748
+Info : Target voltage: 3.193725
+Info : stm32h7x.cpu0: hardware has 8 breakpoints, 4 watchpoints
+Info : starting gdb server for stm32h7x.cpu0 on 3333
+Info : Listening on port 3333 for gdb connections
+embedded:startup.tcl:530: Error: ** Unable to reset target **
+in procedure 'program'
+in procedure 'program_error' called at file "embedded:startup.tcl", line 567
+at file "embedded:startup.tcl", line 530
+make: *** [Makefile:6: flash] Error 1
+</pre><br>
+
+<p>
+<br><a href="../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

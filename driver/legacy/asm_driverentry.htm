@@ -1,0 +1,120 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Windows NT Driver &gt;&gt; Assembly</h3>
+<p><b>DriverEntry()</b></p>
+<hr size="1">
+<p>
+C/C++程式的進入點是main()，而對於Windows NT Driver而言，它的進入點則是DriverEntry()，如果沒有export DriverEntry()，系統將無法正確載入驅動程式。<br><br>
+
+DriverEntry()定義如下
+：</p>
+<pre class="brush:asm">
+proto :PDRIVER_OBJECT, :PUNICODE_STRING
+</pre><br>
+
+<p>
+系統透過呼叫DriverEntry()載入驅動程式並傳入兩個參數，第一個參數PDRIVER_OBJECT是指向該驅動程式的資料位置，該位置會包含驅動程式的所有資訊，這些資訊並非全部都提供給使用者使用，有些欄位是Undocument的，保留給系統調度使用，Microsoft可能隨系統不同而修改，因此，建議使用者不要使用這些Undocument欄位的資料。而另一個參數PUNICODE_STRING則是該驅動程式的Registry位置，驅動程式在安裝時，系統都會產生一個註冊表項目(位於CurrentControlSet\Services\)，該項目就是當Windows系統啟動時，用來載入驅動程式使用的，Windows系統依據註冊表來決定哪些驅動程式需要被載入以及載入的順序，因此，隨意修改註冊表，可能會導致驅動程式無法被正確載入，嚴重時，可能無法啟動系統。<br><br>
+
+那在DriverEntry()副程式，需要做哪一些事情呢？<br>
+1. 設定Callback<br>
+2. 產生新的Device Object<br>
+3. 配置其它資源<br><br>
+
+針對產生新的Device Object，除了給與名稱之外，一般還會建造一條Symbolic Link，該Symbolic Link就是提供給User Application開啟(僅能使用CreateFile() API開啟)，還記得呼叫CreateFile()時會提供一個名字嗎？若記得的話，此名字就是驅動程式的Symbolic Link名稱。<br><br>
+
+那問題又來了，有沒有可能其它驅動程式也使用同一個Symbolic Link名字呢？答案是，肯定會發生的，所以Microsoft建議大家使用GUID的方式註冊，使用者可以使用工具產生新的GUID名稱，並使用該GUID註冊裝置，避免名稱衝突，那User Application又該如何開啟該驅動程式呢？這時候就必須使用Setup API做GUID列舉並取得Symbolic Link名稱，哪一種方式比較好呢？如果是使用Symbolic Link註冊名稱，User Application比較好寫，因為名稱已經知道了，反之，使用GUID註冊的話，User Application需要列舉判斷後才能開啟，所以會比較不好寫，但是優點則是名稱不會衝突。<br><br>
+
+範例： 
+</p>
+<pre class="brush:asm">
+DEV_NAME word "\","D","e","v","i","c","e","\","M","y","D","r","i","v","e","r",0
+SYM_NAME word "\","D","o","s","D","e","v","i","c","e","s","\","M","y","D","r","i","v","e","r",0
+
+DriverEntry proc pOurDriver:PDRIVER_OBJECT, pOurRegistry:PUNICODE_STRING
+  local pOurDevice:PDEVICE_OBJECT
+  local suDevName:UNICODE_STRING
+  local szSymName:UNICODE_STRING
+
+  ; Step 1
+  mov eax, pOurDriver
+  mov (DRIVER_OBJECT PTR [eax]).MajorFunction[IRP_MJ_CREATE * (sizeof PVOID)], offset IrpFile
+  mov (DRIVER_OBJECT PTR [eax]).MajorFunction[IRP_MJ_CLOSE  * (sizeof PVOID)], offset IrpFile
+  mov (DRIVER_OBJECT PTR [eax]).MajorFunction[IRP_MJ_WRITE  * (sizeof PVOID)], offset IrpFile
+  mov (DRIVER_OBJECT PTR [eax]).MajorFunction[IRP_MJ_READ   * (sizeof PVOID)], offset IrpFile
+  mov (DRIVER_OBJECT PTR [eax]).DriverUnload, offset Unload
+
+  ; Step 2
+  invoke RtlInitUnicodeString, addr suDevName, offset DEV_NAME
+  invoke RtlInitUnicodeString, addr szSymName, offset SYM_NAME
+  invoke IoCreateDevice, pOurDriver, sizeof OurDeviceExtension, addr suDevName, FILE_DEVICE_UNKNOWN, 0, FALSE, addr pOurDevice
+  invoke IoCreateSymbolicLink, addr szSymName, addr suDevName
+   
+  ; Step 3
+  mov eax, pOurDevice
+  or (DEVICE_OBJECT PTR [eax]).Flags, DO_BUFFERED_IO
+  and (DEVICE_OBJECT PTR [eax]).Flags, not DO_DEVICE_INITIALIZING
+  mov eax, STATUS_SUCCESS
+  ret
+DriverEntry endp
+</pre>
+<p>
+<b>Step 1：</b>設定相關對應的Callback，這樣I/O Manager才會知道如何呼叫相對應的副程式。<br>
+<b>Step 2：</b>產生一個Device Object(可自己決定名稱)，然後建立一條Symbolic Link(可自己決定名稱)，Device Object名稱一般是放在Windows特殊資料夾中的Device資料夾，使用者可以使用WinObj程式去查看有哪些Device Object，而Symbolic Link的名稱則是放在DosDevices資料夾(GLOBAL??)，那應用程式該如何把完整路徑名稱給CreateFile()呢？答案是加上<b>\.\\</b>關鍵字，有印象開啟COM Port時，需要使用這樣<b>CreateFile("\\.\\\\COM1", ...);</b>的方式嗎？這就是代表完整路徑的意思，在寫COM Port程式時，不一定說是要大於COM9才能加<b>\.\\</b>路徑，其實從COM1就可以開始使用，因為那是Global的名稱表示方式。<br>
+<b>Step 3：</b>初始化相關旗標，比較需要注意的是DO_BUFFERED_IO旗標，因為在做裝置讀寫時，User Application跟驅動程式是否共用同一塊Buffer是取決於該旗標，如果使用者設定成DO_BUFFERED_IO，則代表驅動程式有自己獨立一塊Buffer，驅動程式讀取完硬體資料後，會複製到它自己的Buffer，然後再複製到User Application的Buffer，所以速度會比較慢一些，如果要共用同一塊Buffer的話，則把旗標設定成DO_DIRECT_IO即可。<br><br>
+
+P.S. 需要注意DriverEntry()的回傳值部份，因為回傳值會決定載入驅動程式的成功或失敗，另外，除了DriverEntry()名稱必須固定以外，其餘的Callback副程式名稱都可以隨意命名。<br><br>
+</p>
+
+<p>
+<br><a href="../../driver.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

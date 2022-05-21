@@ -1,0 +1,839 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Miyoo</h3>
+<p><b>移植UBoot</b></p>
+<hr size="1">
+<p>
+移植的部份就只有顯示屏的程式碼，過程如下所示：
+</p>
+<pre class="brush:cpp">
+diff -ruN f1c500s_uboot_old/.config f1c500s_uboot_new/.config
+--- f1c500s_uboot_old/.config	2018-12-23 18:04:40.000000000 +0800
++++ f1c500s_uboot_new/.config	2018-12-31 23:14:48.478954005 +0800
+@@ -199,8 +199,23 @@
+ # CONFIG_I2C2_ENABLE is not set
+ # CONFIG_R_I2C_ENABLE is not set
+ # CONFIG_AXP_GPIO is not set
+-# CONFIG_VIDEO_SUNXI is not set
++CONFIG_VIDEO_SUNXI=y
++CONFIG_VIDEO_LCD_MODE=""
++CONFIG_VIDEO_LCD_DCLK_PHASE=1
++CONFIG_VIDEO_LCD_POWER=""
++CONFIG_VIDEO_LCD_RESET=""
++CONFIG_VIDEO_LCD_BL_EN=""
++CONFIG_VIDEO_LCD_BL_PWM=""
++CONFIG_VIDEO_LCD_BL_PWM_ACTIVE_LOW=y
++# CONFIG_VIDEO_LCD_PANEL_I2C is not set
++CONFIG_VIDEO_LCD_IF_PARALLEL=y
+ # CONFIG_SUNXI_DE2 is not set
++CONFIG_VIDEO_LCD_PANEL_PARALLEL=y
++# CONFIG_VIDEO_LCD_PANEL_LVDS is not set
++# CONFIG_VIDEO_LCD_PANEL_MIPI_4_LANE_513_MBPS_VIA_SSD2828 is not set
++# CONFIG_VIDEO_LCD_PANEL_EDP_4_LANE_1620M_VIA_ANX9804 is not set
++# CONFIG_VIDEO_LCD_PANEL_HITACHI_TX18D42VM is not set
++# CONFIG_VIDEO_LCD_TL059WV5C0 is not set
+ CONFIG_SATAPWR=""
+ CONFIG_GMAC_TX_DELAY=0
+ CONFIG_SPL_STACK_R_ADDR=0x81e00000
+@@ -518,6 +533,7 @@
+ #
+ # Misc commands
+ #
++# CONFIG_CMD_BMP is not set
+ # CONFIG_CMD_BSP is not set
+ # CONFIG_CMD_BKOPS_ENABLE is not set
+ # CONFIG_CMD_CACHE is not set
+@@ -1020,11 +1036,21 @@
+ # CONFIG_VIDEO_VESA is not set
+ # CONFIG_VIDEO_LCD_ANX9804 is not set
+ # CONFIG_VIDEO_LCD_SSD2828 is not set
++# CONFIG_VIDEO_LCD_HITACHI_TX18D42VM is not set
+ # CONFIG_VIDEO_MVEBU is not set
+ # CONFIG_DISPLAY is not set
++# CONFIG_VIDEO_FSL_DCU_FB is not set
+ # CONFIG_VIDEO_TEGRA20 is not set
+ # CONFIG_VIDEO_BRIDGE is not set
+-# CONFIG_VIDEO is not set
++CONFIG_VIDEO=y
++CONFIG_CFB_CONSOLE=y
++# CONFIG_CFB_CONSOLE_ANSI is not set
++CONFIG_VGA_AS_SINGLE_DEVICE=y
++CONFIG_VIDEO_SW_CURSOR=y
++# CONFIG_CONSOLE_EXTRA_INFO is not set
++CONFIG_CONSOLE_SCROLL_LINES=1
++CONFIG_SYS_CONSOLE_BG_COL=0x00
++CONFIG_SYS_CONSOLE_FG_COL=0xa0
+ # CONFIG_LCD is not set
+ # CONFIG_VIDEO_SIMPLE is not set
+ # CONFIG_VIDEO_DT_SIMPLEFB is not set
+diff -ruN f1c500s_uboot_old/.config.old f1c500s_uboot_new/.config.old
+--- f1c500s_uboot_old/.config.old	2018-12-18 21:17:14.000000000 +0800
++++ f1c500s_uboot_new/.config.old	2018-12-31 22:54:10.936830939 +0800
+@@ -265,11 +265,12 @@
+ # CONFIG_QSPI_BOOT is not set
+ # CONFIG_SATA_BOOT is not set
+ # CONFIG_SD_BOOT is not set
+-# CONFIG_SPI_BOOT is not set
+-CONFIG_BOOTDELAY=2
+-# CONFIG_USE_BOOTARGS is not set
++CONFIG_SPI_BOOT=y
++CONFIG_BOOTDELAY=0
++CONFIG_USE_BOOTARGS=y
++CONFIG_BOOTARGS="console=tty0 console=ttyS1,115200 earlyprintk panic=5 rootwait root=/dev/mmcblk0p1 earlyprintk rw rootfstype=ext4"
+ CONFIG_USE_BOOTCOMMAND=y
+-CONFIG_BOOTCOMMAND="run distro_bootcmd"
++CONFIG_BOOTCOMMAND="sf probe 0:0 50000000; sf read 0x80C00000 0x100000 0x4000; sf read 0x80008000 0x110000 0x400000; bootz 0x80008000 - 0x80C00000"
+ 
+ #
+ # Console
+diff -ruN f1c500s_uboot_old/drivers/video/cfb_console.c f1c500s_uboot_new/drivers/video/cfb_console.c
+--- f1c500s_uboot_old/drivers/video/cfb_console.c	2018-12-18 21:17:16.000000000 +0800
++++ f1c500s_uboot_new/drivers/video/cfb_console.c	2019-01-01 00:18:55.124189732 +0800
+@@ -1719,6 +1719,8 @@
+ 	   " "
+ 	   );
+ 
++extern void r61520_lcd_cmd(uint32_t val);
++extern void r61520_lcd_dat(uint32_t val);
+ static void plot_logo_or_black(void *screen, int x, int y, int black)
+ {
+ 
+@@ -1771,6 +1773,7 @@
+ 		}
+ 	}
+ 
++  r61520_lcd_cmd(0x2c);
+ 	while (ycount--) {
+ #if defined(VIDEO_FB_16BPP_PIXEL_SWAP)
+ 		int xpos = x;
+@@ -1786,6 +1789,7 @@
+ 				g = logo_green[*source - VIDEO_LOGO_LUT_OFFSET];
+ 				b = logo_blue[*source - VIDEO_LOGO_LUT_OFFSET];
+ 			}
++      r61520_lcd_dat((((uint16_t)r &amp; 0xf8) &lt;&lt; 8) | (((uint16_t)g &amp; 0xfc) &lt;&lt; 3) | (((uint16_t)b &amp; 0xf8) &gt;&gt; 3));
+ 
+ 			switch (VIDEO_DATA_FORMAT) {
+ 			case GDF__8BIT_INDEX:
+@@ -2010,6 +2014,15 @@
+ 	memsetl(video_fb_address,
+ 		(VIDEO_VISIBLE_ROWS * VIDEO_LINE_LEN) / sizeof(int), bgx);
+ #endif
++
++  uint16_t x, y;
++
++  r61520_lcd_cmd(0x2c);
++  for(y=0; y&lt;240; y++){
++    for(x=0; x&lt;320; x++){
++      r61520_lcd_dat(0);
++    }
++  }
+ }
+ 
+ static int cfg_video_init(void)
+@@ -2102,9 +2115,10 @@
+ 
+ #ifdef CONFIG_VIDEO_LOGO
+ 	/* Plot the logo and get start point of console */
+-	debug("Video: Drawing the logo ...\n");
++	printf("Video: Drawing the logo ...\n");
+ 	video_console_address = video_logo();
+ #else
++	printf("Video: assign fb address\n");
+ 	video_console_address = video_fb_address;
+ #endif
+ 
+diff -ruN f1c500s_uboot_old/drivers/video/Kconfig f1c500s_uboot_new/drivers/video/Kconfig
+--- f1c500s_uboot_old/drivers/video/Kconfig	2018-12-18 21:17:16.000000000 +0800
++++ f1c500s_uboot_new/drivers/video/Kconfig	2018-12-31 23:14:16.462853497 +0800
+@@ -660,4 +660,9 @@
+ 	  The video output is initialized by U-Boot, and kept by the
+ 	  kernel.
+ 
++config VIDEO_SUNXI
++	bool "Enable frambuffer support for Miyoo handheld"
++	help
++    Enables GPIO-based framebuffer support for Miyoo handheld.
++
+ endmenu
+diff -ruN f1c500s_uboot_old/drivers/video/sunxi/sunxi_display.c f1c500s_uboot_new/drivers/video/sunxi/sunxi_display.c
+--- f1c500s_uboot_old/drivers/video/sunxi/sunxi_display.c	2018-12-22 15:49:02.000000000 +0800
++++ f1c500s_uboot_new/drivers/video/sunxi/sunxi_display.c	2019-01-01 00:04:19.780553450 +0800
+@@ -68,6 +68,236 @@
+ 	{ 720,  480, 60, 37037,  27000, 116,  20, 16, 27,   2, 2, 0, FB_VMODE_INTERLACED },
+ };
+ 
++static void sunxi_lcdc_output(uint32_t is_data, uint32_t val)
++{
++  uint32_t ret;
++	struct sunxi_gpio_reg * const gpio = (struct sunxi_gpio_reg *)SUNXI_PIO_BASE;
++
++  ret = (val &amp; 0x00ff) &lt;&lt; 1;
++  ret|= (val &amp; 0xff00) &lt;&lt; 2;
++  ret|= is_data ? 0x80000 : 0;
++  ret|= 0x100000;
++  writel(ret, &amp;gpio-&gt;gpio_bank[SUNXI_GPIO_D].dat);
++  ret|= 0x40000;
++  writel(ret, &amp;gpio-&gt;gpio_bank[SUNXI_GPIO_D].dat);
++}
++
++void r61520_lcd_cmd(uint32_t val)
++{
++  sunxi_lcdc_output(0, val);
++}
++
++void r61520_lcd_dat(uint32_t val)
++{
++  sunxi_lcdc_output(1, val);
++}
++
++static void sunxi_lcdc_gpio_config(void)
++{
++	struct sunxi_gpio_reg * const gpio = (struct sunxi_gpio_reg *)SUNXI_PIO_BASE;
++  
++  writel(0x11111117, &amp;gpio-&gt;gpio_bank[SUNXI_GPIO_D].cfg[0]); // 0x11111117
++  writel(0x11111171, &amp;gpio-&gt;gpio_bank[SUNXI_GPIO_D].cfg[1]); // 0x11111171
++  writel(0x00111111, &amp;gpio-&gt;gpio_bank[SUNXI_GPIO_D].cfg[2]); // 0x00111111, CS/RD/RS/WR
++  writel(0xffffffff, &amp;gpio-&gt;gpio_bank[SUNXI_GPIO_D].dat);
++}
++
++static void r61520_lcd_init(void)
++{
++  uint32_t ret;
++	struct sunxi_gpio_reg * const gpio = (struct sunxi_gpio_reg *)SUNXI_PIO_BASE;
++
++  ret = readl(&amp;gpio-&gt;gpio_bank[SUNXI_GPIO_E].cfg[0]);
++  ret&amp;= 0xf0ffffff;
++  ret|= 0xf1ffffff;
++  writel(ret, &amp;gpio-&gt;gpio_bank[SUNXI_GPIO_E].cfg[0]);
++  ret = readl(&amp;gpio-&gt;gpio_bank[SUNXI_GPIO_E].dat);
++  ret|= 0x0040;
++  writel(ret, &amp;gpio-&gt;gpio_bank[SUNXI_GPIO_E].dat);
++
++  ret = readl(&amp;gpio-&gt;gpio_bank[SUNXI_GPIO_E].cfg[1]);
++  ret&amp;= 0xffff0fff;
++  ret|= 0xffff1fff;
++  writel(ret, &amp;gpio-&gt;gpio_bank[SUNXI_GPIO_E].cfg[1]);
++  ret = readl(&amp;gpio-&gt;gpio_bank[SUNXI_GPIO_E].dat);
++  ret&amp;= ~0x0800;
++  writel(ret, &amp;gpio-&gt;gpio_bank[SUNXI_GPIO_E].dat);
++  mdelay(150);
++  ret|= 0x0800;
++  writel(ret, &amp;gpio-&gt;gpio_bank[SUNXI_GPIO_E].dat);
++  mdelay(150);
++
++  r61520_lcd_cmd(0xb0);
++  r61520_lcd_dat(0x00);
++
++  r61520_lcd_cmd(0xb1);
++  r61520_lcd_dat(0x00);
++
++  r61520_lcd_cmd(0xb3);
++  r61520_lcd_dat(0x02);
++  r61520_lcd_dat(0x00);
++  r61520_lcd_dat(0x00);
++  r61520_lcd_dat(0x00);
++
++  r61520_lcd_cmd(0xb4);
++  r61520_lcd_dat(0x00);
++
++  r61520_lcd_cmd(0xc0);
++  r61520_lcd_dat(0x07);
++  r61520_lcd_dat(0x4f);
++  r61520_lcd_dat(0x00);
++  r61520_lcd_dat(0x00);
++  r61520_lcd_dat(0x00);
++  r61520_lcd_dat(0x00);
++  r61520_lcd_dat(0x01);
++  r61520_lcd_dat(0x33);
++
++  r61520_lcd_cmd(0xc1);
++  r61520_lcd_dat(0x01);
++  r61520_lcd_dat(0x00);
++  r61520_lcd_dat(0x1a);
++  r61520_lcd_dat(0x08);
++  r61520_lcd_dat(0x08);
++
++  r61520_lcd_cmd(0xc3);
++  r61520_lcd_dat(0x01);
++  r61520_lcd_dat(0x00);
++  r61520_lcd_dat(0x1a);
++  r61520_lcd_dat(0x08);
++  r61520_lcd_dat(0x08);
++
++  r61520_lcd_cmd(0xc4);
++  r61520_lcd_dat(0x11);
++  r61520_lcd_dat(0x01);
++  r61520_lcd_dat(0x43);
++  r61520_lcd_dat(0x01);
++
++  r61520_lcd_cmd(0xc8);
++  r61520_lcd_dat(0x00);
++  r61520_lcd_dat(0x0a);
++  r61520_lcd_dat(0x08);
++  r61520_lcd_dat(0x8a);
++  r61520_lcd_dat(0x08);
++  r61520_lcd_dat(0x09);
++  r61520_lcd_dat(0x05);
++  r61520_lcd_dat(0x10);
++  r61520_lcd_dat(0x00);
++  r61520_lcd_dat(0x23);
++  r61520_lcd_dat(0x10);
++  r61520_lcd_dat(0x05);
++  r61520_lcd_dat(0x05);
++  r61520_lcd_dat(0x60);
++  r61520_lcd_dat(0x0a);
++  r61520_lcd_dat(0x08);
++  r61520_lcd_dat(0x05);
++  r61520_lcd_dat(0x00);
++  r61520_lcd_dat(0x10);
++  r61520_lcd_dat(0x00);
++
++  r61520_lcd_cmd(0xc9);
++  r61520_lcd_dat(0x00);
++  r61520_lcd_dat(0x0a);
++  r61520_lcd_dat(0x08);
++  r61520_lcd_dat(0x8a);
++  r61520_lcd_dat(0x08);
++  r61520_lcd_dat(0x09);
++  r61520_lcd_dat(0x05);
++  r61520_lcd_dat(0x10);
++  r61520_lcd_dat(0x00);
++  r61520_lcd_dat(0x23);
++  r61520_lcd_dat(0x10);
++  r61520_lcd_dat(0x05);
++  r61520_lcd_dat(0x09);
++  r61520_lcd_dat(0x88);
++  r61520_lcd_dat(0x0a);
++  r61520_lcd_dat(0x08);
++  r61520_lcd_dat(0x0a);
++  r61520_lcd_dat(0x00);
++  r61520_lcd_dat(0x23);
++  r61520_lcd_dat(0x00);
++
++  r61520_lcd_cmd(0xca);
++  r61520_lcd_dat(0x00);
++  r61520_lcd_dat(0x0a);
++  r61520_lcd_dat(0x08);
++  r61520_lcd_dat(0x8a);
++  r61520_lcd_dat(0x08);
++  r61520_lcd_dat(0x09);
++  r61520_lcd_dat(0x05);
++  r61520_lcd_dat(0x10);
++  r61520_lcd_dat(0x00);
++  r61520_lcd_dat(0x23);
++  r61520_lcd_dat(0x10);
++  r61520_lcd_dat(0x05);
++  r61520_lcd_dat(0x09);
++  r61520_lcd_dat(0x88);
++  r61520_lcd_dat(0x0a);
++  r61520_lcd_dat(0x08);
++  r61520_lcd_dat(0x0a);
++  r61520_lcd_dat(0x00);
++  r61520_lcd_dat(0x23);
++  r61520_lcd_dat(0x00);
++
++  r61520_lcd_cmd(0xd0);
++  r61520_lcd_dat(0x07);
++  r61520_lcd_dat(0xc6);
++  r61520_lcd_dat(0xdc);
++
++  r61520_lcd_cmd(0xd1);
++  r61520_lcd_dat(0x54);
++  r61520_lcd_dat(0x0d);
++  r61520_lcd_dat(0x02);
++
++  r61520_lcd_cmd(0xd2);
++  r61520_lcd_dat(0x63);
++  r61520_lcd_dat(0x24);
++
++  r61520_lcd_cmd(0xd4);
++  r61520_lcd_dat(0x63);
++  r61520_lcd_dat(0x24);
++
++  r61520_lcd_cmd(0xd8);
++  r61520_lcd_dat(0x07);
++  r61520_lcd_dat(0x07);
++
++  r61520_lcd_cmd(0xe0);
++  r61520_lcd_dat(0x00);
++  r61520_lcd_dat(0x00);
++
++  r61520_lcd_cmd(0x13);
++
++  r61520_lcd_cmd(0x20);
++
++  r61520_lcd_cmd(0x35);
++  r61520_lcd_dat(0x00);
++
++  r61520_lcd_cmd(0x44);
++  r61520_lcd_dat(0x00);
++  r61520_lcd_dat(0x30);
++
++  r61520_lcd_cmd(0x36);
++  r61520_lcd_dat(0xe0);
++
++  r61520_lcd_cmd(0x3a);
++  r61520_lcd_dat(0x55);
++
++  r61520_lcd_cmd(0x2a);
++  r61520_lcd_dat(0x00);
++  r61520_lcd_dat(0x00);
++  r61520_lcd_dat(0x01);
++  r61520_lcd_dat(0x3f);
++
++  r61520_lcd_cmd(0x2b);
++  r61520_lcd_dat(0x00);
++  r61520_lcd_dat(0x00);
++  r61520_lcd_dat(0x00);
++  r61520_lcd_dat(0xef);
++
++  r61520_lcd_cmd(0x11);
++  r61520_lcd_cmd(0x29);
++  r61520_lcd_cmd(0x2c);
++}
++
+ #ifdef CONFIG_VIDEO_HDMI
+ 
+ /*
+@@ -1130,7 +1360,8 @@
+ 
+ 	switch (sunxi_display.monitor) {
+ 	case sunxi_monitor_none:
+-		return NULL;
++    break;
++		//return NULL;
+ 	case sunxi_monitor_dvi:
+ 	case sunxi_monitor_hdmi:
+ 		if (!sunxi_has_hdmi()) {
+@@ -1226,6 +1457,8 @@
+ 	graphic_device-&gt;winSizeY = mode-&gt;yres - 2 * overscan_y;
+ 	graphic_device-&gt;plnSizeX = mode-&gt;xres * graphic_device-&gt;gdfBytesPP;
+ 
++  sunxi_lcdc_gpio_config();
++  r61520_lcd_init();
+ 	return graphic_device;
+ }
+ 
+diff -ruN f1c500s_uboot_old/include/autoconf.mk f1c500s_uboot_new/include/autoconf.mk
+--- f1c500s_uboot_old/include/autoconf.mk	2018-12-23 18:04:47.000000000 +0800
++++ f1c500s_uboot_new/include/autoconf.mk	2018-12-31 23:42:42.344680283 +0800
+@@ -1,4 +1,5 @@
+ CONFIG_SYS_SPI_U_BOOT_OFFS=0x8000
++CONFIG_VIDEO_BMP_LOGO=y
+ CONFIG_BOOTM_NETBSD=y
+ CONFIG_BOOTM_VXWORKS=y
+ CONFIG_MMC_SUNXI_SLOT=0
+@@ -12,6 +13,7 @@
+ CONFIG_SYS_MONITOR_LEN="(768 &lt;&lt; 10)"
+ CONFIG_BOOTM_LINUX=y
+ CONFIG_SYS_SPD_BUS_NUM=0
++CONFIG_VIDEO_STD_TIMINGS=y
+ CONFIG_MISC_INIT_R=y
+ CONFIG_INITRD_TAG=y
+ CONFIG_SUPPORT_RAW_INITRD=y
+@@ -33,9 +35,12 @@
+ CONFIG_SYS_LONGHELP=y
+ CONFIG_SPL_STACK="LOW_LEVEL_SRAM_STACK"
+ CONFIG_SYS_MAX_FLASH_SECT=512
++CONFIG_VIDEO_LOGO=y
++CONFIG_SUNXI_MAX_FB_SIZE="(16 &lt;&lt; 20)"
+ CONFIG_STANDALONE_LOAD_ADDR=$(CONFIG_SYS_LOAD_ADDR)
+ CONFIG_ZLIB=y
+ CONFIG_LIB_UUID=y
++CONFIG_I2C_EDID=y
+ CONFIG_AUTO_COMPLETE=y
+ CONFIG_SYS_NS16550_CLK=100000000
+ CONFIG_GZIP=y
+diff -ruN f1c500s_uboot_old/include/config/auto.conf f1c500s_uboot_new/include/config/auto.conf
+--- f1c500s_uboot_old/include/config/auto.conf	2018-12-23 18:04:47.000000000 +0800
++++ f1c500s_uboot_new/include/config/auto.conf	2018-12-31 23:42:42.352680285 +0800
+@@ -51,6 +51,7 @@
+ CONFIG_PRE_CONSOLE_BUFFER=y
+ CONFIG_USB_STORAGE=y
+ CONFIG_GMAC_TX_DELAY=0
++CONFIG_VIDEO_SW_CURSOR=y
+ CONFIG_CMD_BOOTEFI_HELLO_COMPILE=y
+ CONFIG_EFI_LOADER=y
+ CONFIG_CMD_PING=y
+@@ -63,6 +64,7 @@
+ CONFIG_SYS_STDIO_DEREGISTER=y
+ CONFIG_SYS_CPU="arm926ejs"
+ CONFIG_NETDEVICES=y
++CONFIG_VIDEO_LCD_BL_PWM_ACTIVE_LOW=y
+ CONFIG_USB_GADGET_PRODUCT_NUM=0x1010
+ CONFIG_SPL_MMC_SUPPORT=y
+ CONFIG_CC_OPTIMIZE_FOR_SIZE=y
+@@ -85,6 +87,7 @@
+ CONFIG_TPL_SYS_MALLOC_F_LEN=0x400
+ CONFIG_CMD_SETEXPR=y
+ CONFIG_CMD_SF=y
++CONFIG_VIDEO=y
+ CONFIG_DM_DEVICE_REMOVE=y
+ CONFIG_SYS_CACHELINE_SIZE=32
+ CONFIG_CMD_EXPORTENV=y
+@@ -108,6 +111,7 @@
+ CONFIG_SPI_BOOT=y
+ CONFIG_ENV_IS_IN_SPI_FLASH=y
+ CONFIG_SYS_BOARD="sunxi"
++CONFIG_CFB_CONSOLE=y
+ CONFIG_SYS_CONFIG_NAME="suniv"
+ CONFIG_SPL_SPI_SUNXI=y
+ CONFIG_CMD_NFS=y
+@@ -116,7 +120,9 @@
+ CONFIG_SPI_FLASH=y
+ CONFIG_USE_ARCH_MEMSET=y
+ CONFIG_NET=y
++CONFIG_VIDEO_LCD_RESET=""
+ CONFIG_DM_WARN=y
++CONFIG_VIDEO_LCD_PANEL_PARALLEL=y
+ CONFIG_MACPWR=""
+ CONFIG_USB0_VBUS_PIN=""
+ CONFIG_PARTITION_UUIDS=y
+@@ -130,12 +136,16 @@
+ CONFIG_CMD_FS_GENERIC=y
+ CONFIG_SUPPORT_OF_CONTROL=y
+ CONFIG_SPL_BOOTSTAGE_RECORD_COUNT=5
++CONFIG_SYS_CONSOLE_FG_COL=0xa0
+ CONFIG_DISTRO_DEFAULTS=y
+ CONFIG_CMD_EXT2=y
+ CONFIG_DM_STDIO=y
+ CONFIG_CPU_ARM926EJS=y
++CONFIG_VIDEO_LCD_BL_PWM=""
++CONFIG_CONSOLE_SCROLL_LINES=1
+ CONFIG_LOCALVERSION=""
+ CONFIG_MMC3_PINS=""
++CONFIG_VIDEO_SUNXI=y
+ CONFIG_SUPPORT_SPL=y
+ CONFIG_CMDLINE=y
+ CONFIG_DTOC=y
+@@ -155,6 +165,7 @@
+ CONFIG_INITIAL_USB_SCAN_DELAY=0
+ CONFIG_LOCALVERSION_AUTO=y
+ CONFIG_DRAM_CLK=156
++CONFIG_SYS_CONSOLE_BG_COL=0x00
+ CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_USE_SECTOR=y
+ CONFIG_SPL_SYS_MALLOC_F_LEN=0x400
+ CONFIG_SYS_ARCH="arm"
+@@ -167,9 +178,11 @@
+ CONFIG_BAUDRATE=115200
+ CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR=0x50
+ CONFIG_FAT_WRITE=y
++CONFIG_VGA_AS_SINGLE_DEVICE=y
+ CONFIG_PARTITIONS=y
+ CONFIG_CMD_ITEST=y
+ CONFIG_DISPLAY_CPUINFO=y
++CONFIG_VIDEO_LCD_IF_PARALLEL=y
+ CONFIG_BOOTP_VCI_STRING="U-Boot.arm"
+ CONFIG_DM_SPI_FLASH=y
+ CONFIG_CMD_GPIO=y
+@@ -183,15 +196,18 @@
+ CONFIG_CMD_FDT=y
+ CONFIG_SYS_USB_EVENT_POLL=y
+ CONFIG_CMD_FAT=y
++CONFIG_VIDEO_LCD_POWER=""
+ CONFIG_SPI_FLASH_MACRONIX=y
+ CONFIG_MKIMAGE_DTC_PATH="dtc"
+ CONFIG_SPL_POWER_SUPPORT=y
+ CONFIG_PYLIBFDT=y
+ CONFIG_MMC_SUNXI_SLOT_EXTRA=-1
++CONFIG_VIDEO_LCD_BL_EN=""
+ CONFIG_EFI_PARTITION_ENTRIES_OFF=0
+ CONFIG_CMD_NET=y
+ CONFIG_SPL_RAW_IMAGE_SUPPORT=y
+ CONFIG_MENU=y
++CONFIG_VIDEO_LCD_MODE=""
+ CONFIG_CONS_INDEX=2
+ CONFIG_DEFAULT_DEVICE_TREE="suniv-f1c500s-miyoo"
+ CONFIG_NET_TFTP_VARS=y
+@@ -207,6 +223,7 @@
+ CONFIG_SYS_MALLOC_F=y
+ CONFIG_SPL_USE_ARCH_MEMCPY=y
+ CONFIG_CMD_IMPORTENV=y
++CONFIG_VIDEO_LCD_DCLK_PHASE=1
+ CONFIG_DRAM_ZQ=0
+ CONFIG_MMC3_CD_PIN=""
+ CONFIG_SYS_MALLOC_F_LEN=0x400
+diff -ruN f1c500s_uboot_old/include/config/uboot.release f1c500s_uboot_new/include/config/uboot.release
+--- f1c500s_uboot_old/include/config/uboot.release	2018-12-23 18:04:48.000000000 +0800
++++ f1c500s_uboot_new/include/config/uboot.release	2018-12-31 22:48:23.041124799 +0800
+@@ -1 +1 @@
+-2018.01""-gb74f594-dirty
++2018.01""
+diff -ruN f1c500s_uboot_old/include/configs/sunxi-common.h f1c500s_uboot_new/include/configs/sunxi-common.h
+--- f1c500s_uboot_old/include/configs/sunxi-common.h	2018-12-18 21:17:16.000000000 +0800
++++ f1c500s_uboot_new/include/configs/sunxi-common.h	2018-12-31 23:41:03.512654797 +0800
+@@ -297,6 +297,7 @@
+ #define CONFIG_SUNXI_MAX_FB_SIZE (16 &lt;&lt; 20)
+ 
+ #define CONFIG_VIDEO_LOGO
++#define CONFIG_VIDEO_BMP_LOGO
+ #define CONFIG_VIDEO_STD_TIMINGS
+ #define CONFIG_I2C_EDID
+ #define VIDEO_LINE_LEN (pGD-&gt;plnSizeX)
+diff -ruN f1c500s_uboot_old/include/generated/autoconf.h f1c500s_uboot_new/include/generated/autoconf.h
+--- f1c500s_uboot_old/include/generated/autoconf.h	2018-12-23 18:04:47.000000000 +0800
++++ f1c500s_uboot_new/include/generated/autoconf.h	2018-12-31 23:42:41.896680098 +0800
+@@ -53,6 +53,7 @@
+ #define CONFIG_PRE_CONSOLE_BUFFER 1
+ #define CONFIG_USB_STORAGE 1
+ #define CONFIG_GMAC_TX_DELAY 0
++#define CONFIG_VIDEO_SW_CURSOR 1
+ #define CONFIG_CMD_BOOTEFI_HELLO_COMPILE 1
+ #define CONFIG_EFI_LOADER 1
+ #define CONFIG_CMD_PING 1
+@@ -65,6 +66,7 @@
+ #define CONFIG_SYS_STDIO_DEREGISTER 1
+ #define CONFIG_SYS_CPU "arm926ejs"
+ #define CONFIG_NETDEVICES 1
++#define CONFIG_VIDEO_LCD_BL_PWM_ACTIVE_LOW 1
+ #define CONFIG_USB_GADGET_PRODUCT_NUM 0x1010
+ #define CONFIG_SPL_MMC_SUPPORT 1
+ #define CONFIG_CC_OPTIMIZE_FOR_SIZE 1
+@@ -87,6 +89,7 @@
+ #define CONFIG_TPL_SYS_MALLOC_F_LEN 0x400
+ #define CONFIG_CMD_SETEXPR 1
+ #define CONFIG_CMD_SF 1
++#define CONFIG_VIDEO 1
+ #define CONFIG_DM_DEVICE_REMOVE 1
+ #define CONFIG_SYS_CACHELINE_SIZE 32
+ #define CONFIG_CMD_EXPORTENV 1
+@@ -110,6 +113,7 @@
+ #define CONFIG_SPI_BOOT 1
+ #define CONFIG_ENV_IS_IN_SPI_FLASH 1
+ #define CONFIG_SYS_BOARD "sunxi"
++#define CONFIG_CFB_CONSOLE 1
+ #define CONFIG_SYS_CONFIG_NAME "suniv"
+ #define CONFIG_SPL_SPI_SUNXI 1
+ #define CONFIG_CMD_NFS 1
+@@ -118,7 +122,9 @@
+ #define CONFIG_SPI_FLASH 1
+ #define CONFIG_USE_ARCH_MEMSET 1
+ #define CONFIG_NET 1
++#define CONFIG_VIDEO_LCD_RESET ""
+ #define CONFIG_DM_WARN 1
++#define CONFIG_VIDEO_LCD_PANEL_PARALLEL 1
+ #define CONFIG_MACPWR ""
+ #define CONFIG_USB0_VBUS_PIN ""
+ #define CONFIG_PARTITION_UUIDS 1
+@@ -132,12 +138,16 @@
+ #define CONFIG_CMD_FS_GENERIC 1
+ #define CONFIG_SUPPORT_OF_CONTROL 1
+ #define CONFIG_SPL_BOOTSTAGE_RECORD_COUNT 5
++#define CONFIG_SYS_CONSOLE_FG_COL 0xa0
+ #define CONFIG_DISTRO_DEFAULTS 1
+ #define CONFIG_CMD_EXT2 1
+ #define CONFIG_DM_STDIO 1
+ #define CONFIG_CPU_ARM926EJS 1
++#define CONFIG_VIDEO_LCD_BL_PWM ""
++#define CONFIG_CONSOLE_SCROLL_LINES 1
+ #define CONFIG_LOCALVERSION ""
+ #define CONFIG_MMC3_PINS ""
++#define CONFIG_VIDEO_SUNXI 1
+ #define CONFIG_SUPPORT_SPL 1
+ #define CONFIG_CMDLINE 1
+ #define CONFIG_DTOC 1
+@@ -157,6 +167,7 @@
+ #define CONFIG_INITIAL_USB_SCAN_DELAY 0
+ #define CONFIG_LOCALVERSION_AUTO 1
+ #define CONFIG_DRAM_CLK 156
++#define CONFIG_SYS_CONSOLE_BG_COL 0x00
+ #define CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_USE_SECTOR 1
+ #define CONFIG_SPL_SYS_MALLOC_F_LEN 0x400
+ #define CONFIG_SYS_ARCH "arm"
+@@ -169,9 +180,11 @@
+ #define CONFIG_BAUDRATE 115200
+ #define CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR 0x50
+ #define CONFIG_FAT_WRITE 1
++#define CONFIG_VGA_AS_SINGLE_DEVICE 1
+ #define CONFIG_PARTITIONS 1
+ #define CONFIG_CMD_ITEST 1
+ #define CONFIG_DISPLAY_CPUINFO 1
++#define CONFIG_VIDEO_LCD_IF_PARALLEL 1
+ #define CONFIG_BOOTP_VCI_STRING "U-Boot.arm"
+ #define CONFIG_DM_SPI_FLASH 1
+ #define CONFIG_CMD_GPIO 1
+@@ -185,15 +198,18 @@
+ #define CONFIG_CMD_FDT 1
+ #define CONFIG_SYS_USB_EVENT_POLL 1
+ #define CONFIG_CMD_FAT 1
++#define CONFIG_VIDEO_LCD_POWER ""
+ #define CONFIG_SPI_FLASH_MACRONIX 1
+ #define CONFIG_MKIMAGE_DTC_PATH "dtc"
+ #define CONFIG_SPL_POWER_SUPPORT 1
+ #define CONFIG_PYLIBFDT 1
+ #define CONFIG_MMC_SUNXI_SLOT_EXTRA -1
++#define CONFIG_VIDEO_LCD_BL_EN ""
+ #define CONFIG_EFI_PARTITION_ENTRIES_OFF 0
+ #define CONFIG_CMD_NET 1
+ #define CONFIG_SPL_RAW_IMAGE_SUPPORT 1
+ #define CONFIG_MENU 1
++#define CONFIG_VIDEO_LCD_MODE ""
+ #define CONFIG_CONS_INDEX 2
+ #define CONFIG_DEFAULT_DEVICE_TREE "suniv-f1c500s-miyoo"
+ #define CONFIG_NET_TFTP_VARS 1
+@@ -209,6 +225,7 @@
+ #define CONFIG_SYS_MALLOC_F 1
+ #define CONFIG_SPL_USE_ARCH_MEMCPY 1
+ #define CONFIG_CMD_IMPORTENV 1
++#define CONFIG_VIDEO_LCD_DCLK_PHASE 1
+ #define CONFIG_DRAM_ZQ 0
+ #define CONFIG_MMC3_CD_PIN ""
+ #define CONFIG_SYS_MALLOC_F_LEN 0x400
+diff -ruN f1c500s_uboot_old/include/generated/generic-asm-offsets.h f1c500s_uboot_new/include/generated/generic-asm-offsets.h
+--- f1c500s_uboot_old/include/generated/generic-asm-offsets.h	2018-12-18 21:17:16.000000000 +0800
++++ f1c500s_uboot_new/include/generated/generic-asm-offsets.h	2018-12-31 23:14:57.286981815 +0800
+@@ -10,10 +10,10 @@
+ #define GENERATED_BD_INFO_SIZE 80 /* (sizeof(struct bd_info) + 15) &amp; ~15	@ */
+ #define GD_SIZE 200 /* sizeof(struct global_data)	@ */
+ #define GD_BD 0 /* offsetof(struct global_data, bd)	@ */
+-#define GD_MALLOC_BASE 148 /* offsetof(struct global_data, malloc_base)	@ */
+-#define GD_RELOCADDR 48 /* offsetof(struct global_data, relocaddr)	@ */
+-#define GD_RELOC_OFF 68 /* offsetof(struct global_data, reloc_off)	@ */
+-#define GD_START_ADDR_SP 64 /* offsetof(struct global_data, start_addr_sp)	@ */
+-#define GD_NEW_GD 72 /* offsetof(struct global_data, new_gd)	@ */
++#define GD_MALLOC_BASE 152 /* offsetof(struct global_data, malloc_base)	@ */
++#define GD_RELOCADDR 52 /* offsetof(struct global_data, relocaddr)	@ */
++#define GD_RELOC_OFF 72 /* offsetof(struct global_data, reloc_off)	@ */
++#define GD_START_ADDR_SP 68 /* offsetof(struct global_data, start_addr_sp)	@ */
++#define GD_NEW_GD 76 /* offsetof(struct global_data, new_gd)	@ */
+ 
+ #endif
+diff -ruN f1c500s_uboot_old/include/generated/timestamp_autogenerated.h f1c500s_uboot_new/include/generated/timestamp_autogenerated.h
+--- f1c500s_uboot_old/include/generated/timestamp_autogenerated.h	2018-12-23 18:04:47.000000000 +0800
++++ f1c500s_uboot_new/include/generated/timestamp_autogenerated.h	2019-01-01 09:52:55.002527413 +0800
+@@ -1,5 +1,5 @@
+-#define U_BOOT_DATE "Dec 23 2018"
+-#define U_BOOT_TIME "18:04:47"
++#define U_BOOT_DATE "Jan 01 2019"
++#define U_BOOT_TIME "09:52:55"
+ #define U_BOOT_TZ "+0800"
+-#define U_BOOT_DMI_DATE "12/23/2018"
+-#define U_BOOT_BUILD_DATE 0x20181223
++#define U_BOOT_DMI_DATE "01/01/2019"
++#define U_BOOT_BUILD_DATE 0x20190101
+diff -ruN f1c500s_uboot_old/include/generated/version_autogenerated.h f1c500s_uboot_new/include/generated/version_autogenerated.h
+--- f1c500s_uboot_old/include/generated/version_autogenerated.h	2018-12-23 18:04:48.000000000 +0800
++++ f1c500s_uboot_new/include/generated/version_autogenerated.h	2018-12-31 22:48:23.049124854 +0800
+@@ -1,4 +1,4 @@
+-#define PLAIN_VERSION "2018.01-gb74f594-dirty"
++#define PLAIN_VERSION "2018.01"
+ #define U_BOOT_VERSION "U-Boot " PLAIN_VERSION
+ #define CC_VERSION_STRING "arm-linux-gcc (Debian 6.3.0-18) 6.3.0 20170516"
+ #define LD_VERSION_STRING "GNU ld (GNU Binutils for Debian) 2.28"
+diff -ruN f1c500s_uboot_old/logo.sh f1c500s_uboot_new/logo.sh
+--- f1c500s_uboot_old/logo.sh	1970-01-01 08:00:00.000000000 +0800
++++ f1c500s_uboot_new/logo.sh	2019-01-01 09:21:24.381580630 +0800
+@@ -0,0 +1,3 @@
++#!/bin/sh
++# logo.sh xxx.jpg ./tools/logos/xxx.bmp
++jpegtopnm $1 | ppmquant 31 | ppmtobmp -bpp 8 &gt; $2
+Binary files f1c500s_uboot_old/scripts/kconfig/mconf and f1c500s_uboot_new/scripts/kconfig/mconf differ
+diff -ruN f1c500s_uboot_old/spl/include/autoconf.mk f1c500s_uboot_new/spl/include/autoconf.mk
+--- f1c500s_uboot_old/spl/include/autoconf.mk	2018-12-23 18:04:47.000000000 +0800
++++ f1c500s_uboot_new/spl/include/autoconf.mk	2018-12-31 23:42:42.340680280 +0800
+@@ -1,4 +1,5 @@
+ CONFIG_SYS_SPI_U_BOOT_OFFS=0x8000
++CONFIG_VIDEO_BMP_LOGO=y
+ CONFIG_BOOTM_NETBSD=y
+ CONFIG_BOOTM_VXWORKS=y
+ CONFIG_MMC_SUNXI_SLOT=0
+@@ -12,6 +13,7 @@
+ CONFIG_SYS_MONITOR_LEN="(768 &lt;&lt; 10)"
+ CONFIG_BOOTM_LINUX=y
+ CONFIG_SYS_SPD_BUS_NUM=0
++CONFIG_VIDEO_STD_TIMINGS=y
+ CONFIG_MISC_INIT_R=y
+ CONFIG_INITRD_TAG=y
+ CONFIG_SPL_BUILD=y
+@@ -29,9 +31,12 @@
+ CONFIG_BOARDDIR="board/sunxi"
+ CONFIG_SPL_STACK="LOW_LEVEL_SRAM_STACK"
+ CONFIG_SYS_MAX_FLASH_SECT=512
++CONFIG_VIDEO_LOGO=y
++CONFIG_SUNXI_MAX_FB_SIZE="(16 &lt;&lt; 20)"
+ CONFIG_STANDALONE_LOAD_ADDR=$(CONFIG_SYS_LOAD_ADDR)
+ CONFIG_ZLIB=y
+ CONFIG_LIB_UUID=y
++CONFIG_I2C_EDID=y
+ CONFIG_SYS_NS16550_CLK=100000000
+ CONFIG_GZIP=y
+ CONFIG_SYS_INIT_RAM_SIZE=0x8000
+Binary files f1c500s_uboot_old/tools/logos/miyoo_1.bmp and f1c500s_uboot_new/tools/logos/miyoo_1.bmp differ
+Binary files f1c500s_uboot_old/tools/logos/miyoo_2.bmp and f1c500s_uboot_new/tools/logos/miyoo_2.bmp differ
+Binary files f1c500s_uboot_old/tools/logos/miyoo_3.bmp and f1c500s_uboot_new/tools/logos/miyoo_3.bmp differ
+diff -ruN f1c500s_uboot_old/tools/Makefile f1c500s_uboot_new/tools/Makefile
+--- f1c500s_uboot_old/tools/Makefile	2018-12-18 21:17:16.000000000 +0800
++++ f1c500s_uboot_new/tools/Makefile	2019-01-01 09:52:27.086877753 +0800
+@@ -220,7 +220,10 @@
+ 
+ # Generic logo
+ ifeq ($(LOGO_BMP),)
+-LOGO_BMP= $(srctree)/$(src)/logos/denx.bmp
++#LOGO_BMP= $(srctree)/$(src)/logos/miyoo_1.bmp
++#LOGO_BMP= $(srctree)/$(src)/logos/miyoo_2.bmp
++LOGO_BMP= $(srctree)/$(src)/logos/miyoo_3.bmp
++#LOGO_BMP= $(srctree)/$(src)/logos/denx.bmp
+ 
+ # Use board logo and fallback to vendor
+ ifneq ($(wildcard $(srctree)/$(src)/logos/$(BOARD).bmp),)
+</pre><br>
+
+<p>
+完成<br>
+<img src="porting_uboot/1.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

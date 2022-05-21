@@ -1,0 +1,160 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Lichee Pi Zero &gt;&gt; C/C++</h3>
+<p><b>LED</b></p>
+<hr size="1">
+<p>
+電路圖<br>
+<img src="led_gpio/2.jpg" class="maxSize"><br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;linux/init.h&gt;
+#include &lt;linux/device.h&gt;
+#include &lt;linux/module.h&gt;
+#include &lt;linux/delay.h&gt;
+#include &lt;linux/timer.h&gt;
+#include &lt;linux/gpio.h&gt;
+ 
+MODULE_AUTHOR("Steward_Fu");
+MODULE_DESCRIPTION("LED driver for Lichee Pi Zero");
+MODULE_LICENSE("GPL");
+
+#define LED_G ((32 * 6) + 0)
+#define LED_B ((32 * 6) + 1)
+#define LED_R ((32 * 6) + 2)
+ 
+static int g_blink_period=300;
+static struct timer_list g_blink_timer;
+ 
+void blink_handler(unsigned long unused)
+{
+  static int index=0;
+
+  gpio_set_value(LED_R, 1);
+  gpio_set_value(LED_G, 1);
+  gpio_set_value(LED_B, 1);
+  switch(index){
+  case 0:
+    gpio_set_value(LED_R, 0);
+    break;
+  case 1:
+    gpio_set_value(LED_G, 0);
+    break;
+  case 2:
+    gpio_set_value(LED_B, 0);
+    break;
+  default:
+    break;
+  }
+  index+= 1;
+  if(index &gt; 3){
+    index = 0;
+  }
+  mod_timer(&amp;g_blink_timer, jiffies + msecs_to_jiffies(g_blink_period));
+}
+ 
+static int __init main_init(void)
+{
+  printk("LED driver for Lichee Pi Zero\n");
+
+  gpio_request(LED_R, "led_r"); gpio_direction_output(LED_R, 1); gpio_set_value(LED_R, 1);
+  gpio_request(LED_G, "led_g"); gpio_direction_output(LED_G, 1); gpio_set_value(LED_G, 1);
+  gpio_request(LED_B, "led_b"); gpio_direction_output(LED_B, 1); gpio_set_value(LED_B, 1);
+  setup_timer(&amp;g_blink_timer, blink_handler, 0);
+  mod_timer(&amp;g_blink_timer, jiffies + msecs_to_jiffies(g_blink_period));
+  return 0;
+}
+  
+static void __exit main_exit(void)
+{
+  del_timer(&amp;g_blink_timer);
+  gpio_free(LED_R);
+  gpio_free(LED_G);
+  gpio_free(LED_B);
+  printk("Unload it!\n");
+}
+  
+module_init(main_init);
+module_exit(main_exit);
+</pre><br>
+
+<p>
+Makefile
+</p>
+<pre>
+obj-m += main.o
+all:
+  make -C /home/steward/Github/v3s_kernel M=$(PWD) modules
+
+clean:
+  make -C /home/steward/Github/v3s_kernel M=$(PWD) clean
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- clean
+$ make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf-
+</pre><br>
+
+<p>
+完成<br>
+<img src="led_gpio/1.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

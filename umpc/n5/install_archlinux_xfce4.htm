@@ -1,0 +1,127 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Viliv N5</h3>
+<p><b>安裝Arch Linux(XFCE4)</b></p>
+<hr size="1">
+<p>
+1. 插入USB無線網卡<br>
+2. 安裝Lubuntu用來產生Bootable Partition
+</p>
+<pre>
+  /dev/sda1 System(Bootable)
+  /dev/sda5 Swap
+</pre>
+<p>
+3. 安裝Arch Linux
+</p>
+<pre>
+# mkfs.ext4 /dev/sda1
+# mkswap /dev/sda5
+# mount /dev/sda1 /mnt
+# wifi-menu
+# vim /etc/pacman.d/mirrorlist
+  Server=http://ftp.tku.edu.tw/Linux/ArchLinux/$repo/os/$arch
+  Server=http://archlinux.cs.nctu.edu.tw/$repo/os/$arch
+
+# pacman -Syy
+# pacstrap /mnt base
+# genfstab -p -U /mnt &gt; /mnt/etc/fstab
+# arch-chroot /mnt
+
+[chroot] passwd
+[chroot] echo arch &gt; /etc/hostname
+[chroot] ln -s /usr/share/zoneinfo/Asia/Taipei /etc/localtime
+[chroot] nano /etc/locale.gen
+  en_US.UTF-8 UTF-8
+  zh_CN.UTF-8 UTF-8
+  zh_TW.UTF-8 UTF-8
+
+[chroot] locale-gen
+[chroot] nano /etc/locale.conf
+  LANG="en_US.UTF-8"
+
+[chroot] pacman -S xf86-input-synaptics xorg-server xorg-xrandr grub
+[chroot] pacman -S net-tools wpa_supplicant wireless_tools networkmanager network-manager-applet gnome-keyring
+[chroot] pacman -S xfce4 xfce4-goodies slim gamin
+[chroot] systemctl enable NetworkManager.service
+[chroot] systemctl enable wpa_supplicant.service
+[chroot] systemctl enable slim.service
+
+[chroot] mkinitcpio -p linux
+[chroot] grub-install --target=i386-pc --recheck /dev/sda
+[chroot] grub-mkconfig -o /boot/grub/grub.cfg
+[chroot] nano /etc/default/grub
+  GRUB_CMDLINE_LINUX="i8042.nomux=1 i8042.noloop=1"
+
+[chroot] grub-mkconfig -o /boot/grub/grub.cfg
+[chroot] exit
+
+# umount /mnt
+# reboot
+</pre>
+<p>
+假如遇到Failed to execute login command(非root帳號)，請在登入畫面按時Ctrl + Alt + F2並且使用如下方式解決：
+</p>
+<pre>
+$ nano ~/.xinitrc
+  DEFAULT_SESSION=xfce4
+  setxkbmap jp
+  exec startxfce4
+</pre>
+<p>
+接著，重新開機即可登入
+</p>
+
+<p>
+<br><a href="../../umpc.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

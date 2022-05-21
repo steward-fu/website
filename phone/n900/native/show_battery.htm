@@ -1,0 +1,125 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../../scripts/shBrushPython.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../../header.js"></script>
+<div id="page">
+<h3>Nokia N900 &gt;&gt; Native Debian &gt;&gt; Kernel 5.3.0</h3>
+<p><b>自製電池顯示</b></p>
+<hr size="1">
+<p>
+由於司徒替換大容量電池後，發現電池的顯示百分比不準確，司徒嘗試修改UPower以及xfce4-battery-monitor都無法修復，因此最終只好寫個Python做顯示(記得把UPower移除)，使用的量測方式爲電壓方式，公式很簡單，只要把充滿電(4.2V)和終止電(3.2V)做百分比顯示即可，最後透過Generic Monitor輸出，步驟如下：<br>
+<img src="show_battery/1.jpg" class="maxSize"><br><br>
+
+加入Generic Monitor<br>
+<img src="show_battery/2.jpg" class="maxSize"><br><br>
+
+調整位置<br>
+<img src="show_battery/3.jpg" class="maxSize"><br><br>
+
+參數<br>
+<img src="show_battery/4.jpg" class="maxSize"><br><br>
+
+完成<br>
+<img src="show_battery/5.jpg" class="maxSize"><br><br>
+
+battery.py
+</p>
+<pre class="brush:python">
+#!/usr/bin/python
+import os
+import sys
+
+f = open('/sys/devices/platform/68000000.ocp/48072000.i2c/i2c-2/2-0055/power_supply/bq27200-0/voltage_now')
+volt = int(f.read().replace('\r', '').replace('\n', ''))
+f.close()
+
+f = open('/sys/devices/platform/68000000.ocp/48072000.i2c/i2c-2/2-0055/power_supply/bq27200-0/current_now')
+curr = int(f.read().replace('\r', '').replace('\n', ''))
+f.close()
+
+volt = volt / 1000
+curr = curr / 1000
+curr = curr * -1
+per = 100 - ((4200 - volt) / 10)
+print '{}% ({}mV, {}mA)'.format(per, volt, curr)
+</pre><br>
+
+<p>
+經過測試，bq27xxx_battery驅動無法準確偵測自製電池且會讓系統自動關機(大約在3500mV)，因此，司徒在rc.local啟動時，卸載bq27xxx_battery以及bq27xxx_battery_i2c，然後把上面的Python改成如下：
+</p>
+<pre class="brush:python">
+#!/usr/bin/python
+import os
+import sys
+import commands
+
+volt = commands.getoutput('/usr/sbin/i2cget -y 2 0x55 0x08 w')
+volt = volt.replace('\r', '').replace('\n', '')
+volt = int(volt, 16)
+
+ip = None
+try:
+  r = commands.getoutput('ip -o addr show up primary scope global')
+  ip = r.split('inet')[1].split('/')[0].replace(' ', '')
+except:
+  ip = 'ERR'
+
+print '({}, {}mV)'.format(ip, volt)
+</pre><br>
+
+<p>
+完成<br>
+<img src="show_battery/6.jpg" class="maxSize"><br>
+P.S. 記得安裝i2c-tools並且修改<b>i2cget</b>以及<b>/dev/i2c*</b>的權限。
+</p>
+
+<p>
+<br><a href="../../../phone.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

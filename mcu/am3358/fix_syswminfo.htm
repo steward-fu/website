@@ -1,0 +1,219 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>BeagleBone Green Wireless</h3>
+<p><b>解決"error: SDL_SysWMinfo ... has no member named info"</b></p>
+<hr size="1">
+<p>
+問題如下：
+</p>
+<pre>
+error: SDL_SysWMinfo {aka struct SDL_SysWMinfo} has no member named info
+</pre><br>
+
+<p>
+在CFLAGS加上<b>-DSDL_VIDEO_DRIVER_X11</b>，因為在<b>usr/include/SDL/SDL_syswm.h</b>裡面有使用if隔開定義，如下所示：
+</p>
+<pre class="brush:cpp">
+/* This is the structure for custom window manager events */
+#if defined(SDL_VIDEO_DRIVER_X11)
+#if defined(__APPLE__) &amp;&amp; defined(__MACH__)
+/* conflicts with Quickdraw.h */
+#define Cursor X11Cursor
+#endif
+
+#include &lt;X11/Xlib.h&gt;
+#include &lt;X11/Xatom.h&gt;
+
+#if defined(__APPLE__) &amp;&amp; defined(__MACH__)
+/* matches the re-define above */
+#undef Cursor
+#endif
+
+/** These are the various supported subsystems under UNIX */
+typedef enum {
+  SDL_SYSWM_X11
+} SDL_SYSWM_TYPE;
+
+/** The UNIX custom event structure */
+struct SDL_SysWMmsg {
+  SDL_version version;
+  SDL_SYSWM_TYPE subsystem;
+  union {
+      XEvent xevent;
+  } event;
+};
+
+/** The UNIX custom window manager information structure.
+ *  When this structure is returned, it holds information about which
+ *  low level system it is using, and will be one of SDL_SYSWM_TYPE.
+ */
+typedef struct SDL_SysWMinfo {
+  SDL_version version;
+  SDL_SYSWM_TYPE subsystem;
+  union {
+      struct {
+        Display *display;  /**&lt; The X11 display */
+        Window window;    /**&lt; The X11 display window */
+    /** These locking functions should be called around
+                 *  any X11 functions using the display variable, 
+                 *  but not the gfxdisplay variable.
+                 *  They lock the event thread, so should not be
+     *  called around event functions or from event filters.
+     */
+                /*@{*/
+    void (*lock_func)(void);
+    void (*unlock_func)(void);
+                /*@}*/
+
+    /** @name Introduced in SDL 1.0.2 */
+                /*@{*/
+        Window fswindow;  /**&lt; The X11 fullscreen window */
+        Window wmwindow;  /**&lt; The X11 managed input window */
+                /*@}*/
+
+    /** @name Introduced in SDL 1.2.12 */
+                /*@{*/
+    Display *gfxdisplay;  /**&lt; The X11 display to which rendering is done */
+                /*@}*/
+      } x11;
+  } info;
+} SDL_SysWMinfo;
+
+#elif defined(SDL_VIDEO_DRIVER_NANOX)
+#include &lt;microwin/nano-X.h&gt;
+
+/** The generic custom event structure */
+struct SDL_SysWMmsg {
+  SDL_version version;
+  int data;
+};
+
+/** The windows custom window manager information structure */
+typedef struct SDL_SysWMinfo {
+  SDL_version version ;
+  GR_WINDOW_ID window ;  /* The display window */
+} SDL_SysWMinfo;
+
+#elif defined(SDL_VIDEO_DRIVER_WINDIB) || defined(SDL_VIDEO_DRIVER_DDRAW) || defined(SDL_VIDEO_DRIVER_GAPI)
+#define WIN32_LEAN_AND_MEAN
+#include &lt;windows.h&gt;
+
+/** The windows custom event structure */
+struct SDL_SysWMmsg {
+  SDL_version version;
+  HWND hwnd;      /**&lt; The window for the message */
+  UINT msg;      /**&lt; The type of message */
+  WPARAM wParam;      /**&lt; WORD message parameter */
+  LPARAM lParam;      /**&lt; LONG message parameter */
+};
+
+/** The windows custom window manager information structure */
+typedef struct SDL_SysWMinfo {
+  SDL_version version;
+  HWND window;      /**&lt; The Win32 display window */
+  HGLRC hglrc;      /**&lt; The OpenGL context, if any */
+} SDL_SysWMinfo;
+
+#elif defined(SDL_VIDEO_DRIVER_RISCOS)
+
+/** RISC OS custom event structure */
+struct SDL_SysWMmsg {
+  SDL_version version;
+  int eventCode;    /**&lt; The window for the message */
+  int pollBlock[64];
+};
+
+/** The RISC OS custom window manager information structure */
+typedef struct SDL_SysWMinfo {
+  SDL_version version;
+  int wimpVersion;    /**&lt; Wimp version running under */
+  int taskHandle;     /**&lt; The RISC OS task handle */
+  int window;    /**&lt; The RISC OS display window */
+} SDL_SysWMinfo;
+
+#elif defined(SDL_VIDEO_DRIVER_PHOTON)
+#include &lt;sys/neutrino.h&gt;
+#include &lt;Ph.h&gt;
+
+/** The QNX custom event structure */
+struct SDL_SysWMmsg {
+  SDL_version version;
+  int data;
+};
+
+/** The QNX custom window manager information structure */
+typedef struct SDL_SysWMinfo {
+  SDL_version version;
+  int data;
+} SDL_SysWMinfo;
+
+#else
+
+/** The generic custom event structure */
+struct SDL_SysWMmsg {
+  SDL_version version;
+  int data;
+};
+
+/** The generic custom window manager information structure */
+typedef struct SDL_SysWMinfo {
+  SDL_version version;
+  int data;
+} SDL_SysWMinfo;
+
+#endif /* video driver type */
+</pre><br>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

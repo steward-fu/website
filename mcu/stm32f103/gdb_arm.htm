@@ -1,0 +1,128 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>STM32F103</h3>
+<p><b>Debug STM32 on Debian x64</b></p>
+<hr size="1">
+<p>
+openocd
+</p>
+<pre>
+$ sudo apt-get update
+$ sudo apt-get install gdb-arm-none-eabi
+
+$ sudo openocd -f /usr/local/share/openocd/scripts/interface/stlink-v2.cfg -f /usr/local/share/openocd/scripts/target/stm32f1x.cfg -c "program main.bin halt 0x8000000"
+  Open On-Chip Debugger 0.10.0+dev-00450-gd0425419 (2018-07-12-23:42)
+  Licensed under GNU GPL v2
+  For bug reports, read
+    http://openocd.org/doc/doxygen/bugs.html
+  WARNING: interface/stlink-v2.cfg is deprecated, please switch to interface/stlink.cfg
+  Info : auto-selecting first available session transport "hla_swd". To override use 'transport select &lt;transport&gt;'.
+  Info : The selected transport took over low-level target control. The results might differ compared to plain JTAG/SWD
+  adapter speed: 1000 kHz
+  adapter_nsrst_delay: 100
+  none separate
+  Info : Unable to match requested speed 1000 kHz, using 950 kHz
+  Info : Unable to match requested speed 1000 kHz, using 950 kHz
+  Info : clock speed 950 kHz
+  Info : STLINK v2 JTAG v17 API v2 SWIM v4 VID 0x0483 PID 0x3748
+  Info : using stlink api v2
+  Info : Target voltage: 3.192157
+  Info : stm32f1x.cpu: hardware has 6 breakpoints, 4 watchpoints
+  Info : Listening on port 3333 for gdb connections
+  target halted due to debug-request, current mode: Thread 
+  xPSR: 0x01000000 pc: 0x00000100 msp: 0x20005000
+  ** Programming Started **
+  auto erase enabled
+  Info : device id = 0x20036410
+  Info : flash size = 128kbytes
+  target halted due to breakpoint, current mode: Thread 
+  xPSR: 0x61000000 pc: 0x2000003a msp: 0x20005000
+  wrote 2048 bytes from file main.elf in 0.178833s (11.184 KiB/s)
+  ** Programming Finished **
+  Info : Listening on port 6666 for tcl connections
+  Info : Listening on port 4444 for telnet connections
+</pre><br>
+
+<p>
+使用arm版本gdb，而非x64/x86版本的gdb
+</p>
+<pre>
+$ arm-none-eabi-gdb main.elf
+  GNU gdb (7.12-6+9+b2) 7.12.0.20161007-git
+  Copyright (C) 2016 Free Software Foundation, Inc.
+  License GPLv3+: GNU GPL version 3 or later &lt;http://gnu.org/licenses/gpl.html&gt;
+  This is free software: you are free to change and redistribute it.
+  There is NO WARRANTY, to the extent permitted by law.  Type "show copying"
+  and "show warranty" for details.
+  This GDB was configured as "--host=x86_64-linux-gnu --target=arm-none-eabi".
+  Type "show configuration" for configuration details.
+  For bug reporting instructions, please see:
+  &lt;http://www.gnu.org/software/gdb/bugs/&gt;.
+  Find the GDB manual and other documentation resources online at:
+  &lt;http://www.gnu.org/software/gdb/documentation/&gt;.
+  For help, type "help".
+  Type "apropos word" to search for commands related to "word"...
+  Reading symbols from main.elf...(no debugging symbols found)...done.
+
+  (gdb) target remote localhost:3333
+  Remote debugging using localhost:3333
+  0x00000100 in _start ()
+
+  (gdb) monitor reset init
+  target halted due to debug-request, current mode: Thread 
+  xPSR: 0x01000000 pc: 0x08000104 msp: 0x20005000
+</pre><br>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

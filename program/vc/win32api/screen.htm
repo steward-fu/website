@@ -1,0 +1,145 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../../header.js"></script>
+<div id="page">
+<h3>Virusl C++ &gt;&gt; GUI &gt;&gt; Win32 API</h3>
+<p><b>Screen Capture</b></p>
+<hr size="1">
+<p>
+好用的副程式
+</p>
+<pre class="brush:cpp">
+int CaptureImage(HWND hWnd)
+{
+  RECT rt={0};
+  int ret = 0;
+  HDC hdcWindow;
+  HDC hdcMemDC = NULL;
+  HBITMAP hbmScreen = NULL;
+  BITMAP bmpScreen;
+
+  hdcWindow = GetDC(NULL);
+  hdcMemDC = CreateCompatibleDC(hdcWindow);
+  if(!hdcMemDC){
+    ret = -1;
+    goto done;
+  }
+
+  rt.right = GetSystemMetrics(SM_CXSCREEN);
+  rt.bottom = GetSystemMetrics(SM_CYSCREEN);
+  if(hWnd != NULL){
+    GetWindowRect(hWnd, &amp;rt);
+  }
+
+  hbmScreen = CreateCompatibleBitmap(hdcWindow, rt.right-rt.left, rt.bottom-rt.top);
+  if(!hbmScreen){
+    ret = -2;
+    goto done;
+  }
+  SelectObject(hdcMemDC, hbmScreen);
+  if (!BitBlt(hdcMemDC, 0, 0, rt.right - rt.left, rt.bottom - rt.top, hdcWindow, rt.left, rt.top, SRCCOPY)){
+    ret = -3;
+    goto done;
+  }
+  GetObject(hbmScreen, sizeof(BITMAP), &amp;bmpScreen);
+  BITMAPFILEHEADER bmfHeader;
+  BITMAPINFOHEADER bi;
+  bi.biSize = sizeof(BITMAPINFOHEADER);
+  bi.biWidth = bmpScreen.bmWidth;
+  bi.biHeight = bmpScreen.bmHeight;
+  bi.biPlanes = 1;
+  bi.biBitCount = 32;
+  bi.biCompression = BI_RGB;
+  bi.biSizeImage = 0;
+  bi.biXPelsPerMeter = 0;
+  bi.biYPelsPerMeter = 0;
+  bi.biClrUsed = 0;
+  bi.biClrImportant = 0;
+
+  DWORD dwBmpSize = ((bmpScreen.bmWidth * bi.biBitCount + 31) / 32) * 4 * bmpScreen.bmHeight;
+  HANDLE hDIB = GlobalAlloc(GHND, dwBmpSize);
+  char *lpbitmap = (char*)GlobalLock(hDIB);
+  GetDIBits(hdcWindow, hbmScreen, 0, (UINT)bmpScreen.bmHeight, lpbitmap, (BITMAPINFO*)&amp;bi, DIB_RGB_COLORS);
+
+  HANDLE hFile = CreateFile(_T("c:\\demo.bmp"), GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+  DWORD dwSizeofDIB = dwBmpSize + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER);
+  bmfHeader.bfOffBits = (DWORD)sizeof(BITMAPFILEHEADER) + (DWORD)sizeof(BITMAPINFOHEADER);
+  bmfHeader.bfSize = dwSizeofDIB;
+  bmfHeader.bfType = 0x4D42; //BM   
+
+  DWORD dwBytesWritten = 0;
+  WriteFile(hFile, (LPSTR)&amp;bmfHeader, sizeof(BITMAPFILEHEADER), &amp;dwBytesWritten, NULL);
+  WriteFile(hFile, (LPSTR)&amp;bi, sizeof(BITMAPINFOHEADER), &amp;dwBytesWritten, NULL);
+  WriteFile(hFile, (LPSTR)lpbitmap, dwBmpSize, &amp;dwBytesWritten, NULL);
+  GlobalUnlock(hDIB);
+  GlobalFree(hDIB);
+  CloseHandle(hFile);
+
+done:
+  DeleteObject(hbmScreen);
+  DeleteObject(hdcMemDC);
+  ReleaseDC(NULL, hdcWindow);
+  return ret;
+}
+</pre><br>
+
+<p>
+使用方式如下所示
+</p>
+
+<pre class="brush:cpp">
+CaptureImage(NULL); // whole screen
+CaptureImage(hWnd); // hWnd point to the specific windows that we would like to capture
+</pre><br>
+
+<p>
+<br><a href="../../program.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

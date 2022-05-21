@@ -1,0 +1,150 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>PIC12F1822 &gt;&gt; Assembly</h3>
+<p><b>Interrupt On Change(IOC)</b></p>
+<hr size="1">
+<p>
+1. 設定TRISA輸入<br>
+2. 設定WPUA提昇電阻<br>
+3. 設定IOCAx正緣、負緣觸發<br>
+4. 開啟GPE、IOC中斷<br>
+5. 進入中斷後，清除IOC以及IOCA旗標<br>
+<img src="asm_ioc/1.jpg" class="maxSize"><br>
+<img src="asm_ioc/2.jpg" class="maxSize"><br>
+<img src="asm_ioc/3.jpg" class="maxSize"><br>
+<img src="asm_ioc/4.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+  list p=12f1822, r=hex
+  #include &lt;p12f1822.inc&gt;
+  __config _CONFIG1, _FOSC_INTOSC &amp; _WDTE_OFF &amp; _MCLRE_OFF
+  __config _CONFIG2, _LVP_OFF
+
+  #define tmp 0x20
+
+  org 0x0000
+  goto start
+
+  org 0x0004
+  goto myisr
+   
+  org 0x0100
+myisr:
+  banksel INTCON
+  bcf INTCON, 7
+  bcf INTCON, 0
+
+  banksel IOCAF
+  movlw 0xff
+  xorwf IOCAF, w
+  andwf IOCAF, f
+ 
+  banksel tmp
+  btfss tmp, 0
+  bcf PORTA, 0
+  btfsc tmp, 0
+  bsf PORTA, 0
+  movlw 0xff
+  xorwf tmp, f
+  
+  banksel INTCON
+  bsf INTCON, 7
+  retfie
+
+start:
+  banksel TRISA
+  bcf TRISA, 0
+  bsf TRISA, 3
+
+  banksel OPTION_REG
+  bcf OPTION_REG, 7
+
+  banksel WPUA
+  bsf WPUA, 3
+
+  banksel PORTA
+  bsf PORTA, 0
+
+  banksel tmp
+  clrf tmp
+  
+  banksel IOCAN
+  bsf IOCAN, 3
+
+  banksel INTCON
+  bsf INTCON, 7
+  bsf INTCON, 3
+  bcf INTCON, 0
+
+  goto $
+  end
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ gpasm main.s
+</pre><br>
+
+<p>
+完成<br>
+<img src="asm_button/1.jpg" class="maxSize"><br>
+<img src="asm_button/2.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

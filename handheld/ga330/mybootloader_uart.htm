@@ -1,0 +1,261 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Gemei A330</h3>
+<p><b>(MyBootloader) UART</b></p>
+<hr size="1">
+<p>
+目前國外已經有高手釋出GA330掌機的燒錄程式(rom.bin)，但是受限於原廠的限制，這位高手並沒有釋出相關資料手冊，司徒也只能先將此燒錄程式進行逆向工程，看看是否有機會將Linux系統移植到GA330掌機身上，當然，要把所有GA330掌機的CPU暫存器全部逆向出來也是不太可能的，但是，至少這是唯一有機會將Linux移植到GA330掌機。<br><br>
+
+首先開啟Command Line並輸入如下指令進行反組譯
+</p>
+
+<pre>
+c:\&gt; PATH c:/ga330/cygwin/arm-linux/bin;c:/ga330/CYGWIN/BIN;C:\windows\
+c:\&gt; arm-linux-objcopy --change-addresses=0x00000000 -I binary -O elf32-littlearm -B arm rom.bin rom-elf
+c:\&gt; arm-linux-objcopy --set-section-flags .data=code rom-elf
+c:\&gt; arm-linux-objdump -d rom-elf &gt; rom.dis
+</pre><br>
+
+<p>
+司徒花了一些時間，從反組譯後的程式改寫一個簡單的<b>Helo, world!</b>程式，並將此訊息從UART輸出，希望從簡單的<b>Hello, world!</b>程式，開始進行GA330掌機的逆向破解之路
+</p>
+
+<pre class="brush:cpp">
+.equ UART_BASE, 0x04000000
+.equ UART_FLAG, 0x04000018
+.equ UART_TX,   0x04000020
+
+.global _start
+_start:    b begin
+undefined: b undefined
+software:  b software
+preabort:  b preabort
+dataabort: b dataabort
+irq:       b irq_process
+fiq:       b fiq
+
+.align
+welcome_msg:
+.ascii "\r\n"
+.ascii "+---------------------------------------------------+\r\n"
+.ascii "| (MyBootloader) UART for Gemei A330 by Steward_Fu  |\r\n"
+.ascii "| 2013.3.10                                         |\r\n"
+.ascii "+---------------------------------------------------+\r\n"
+.asciz "#&gt; "
+
+.align
+irq_process:
+  sub sp, sp, #4
+  stmdb sp!, {r8}
+  ldr r8, =0x00103ff0
+  ldr r8, [r8]
+  str r8, [sp, #4]
+  ldmia sp!, {r8, pc}
+
+begin:
+  ldr r0, =0x0408800c
+  ldr r1, =0x00ffeaaa
+  str r1, [r0]   /* [0x0408800c] &lt;= 0x00ffeaaa */
+  mov r0, #1048576   /* r0 = 0x100000 */
+  add r1, r0, #8192  /* r1 = 0x102000 */
+  add r3, r1, #8192  /* r3 = 0x104000 */
+ 
+relocate_code: 
+  /* copy code from 0x1000000 to 0x102000 with 0x2000 bytes */
+  cmp r1, r3
+  ldrcc r2, [r0], #4
+  strcc r2, [r1], #4
+  bcc relocate_code
+  add r0, pc, #4    /* r0 = pc + 4 */
+  add r0, r0, #8192 /* r0+= 0x2000 */
+  mov pc, r0 /* jump to ram address */
+  bl init_irq
+  ldr r0, =0x00102b7c
+  ldr r1, =0x00102b7c
+  ldr r3, =0x00102b80
+  cmp r0, r1
+  beq init_boot
+ 
+relocate_ram:
+  cmp r1, r3 /* copy data from 0x00102b7c to 0x00102b80 with 4 bytes */
+  ldrcc r2, [r0], #4
+  strcc r2, [r1], #4
+  bcc relocate_ram
+   
+init_boot:
+  ldr r1, =0x00102b94
+  mov r2, #0
+  init_ram:
+  cmp r3, r1
+  strcc r2, [r3], #4 /* zero ram from 0x00102b80 to 0x00102b94 */
+  bcc init_ram
+  b init_uart_reg
+ 
+init_irq:
+  mrs r0, CPSR
+  bic r0, r0, #31   /* 0x1f */
+  orr r1, r0, #219  /* 0xdb */
+  msr CPSR_fsxc, r1 /* disable irq and fiq, enter udefined mode*/
+  ldr sp, =0x00103cf0
+
+  orr r1, r0, #215  /* 0xd7 */
+  msr CPSR_fsxc, r1 /* disable irq and fiq, enter abort mode*/
+  ldr sp, =0x00103d70
+
+  orr r1, r0, #210  /* 0xd2 */
+  msr CPSR_fsxc, r1 /* disable irq and fiq, enter irq mode*/
+  ldr sp, =0x00103f70
+
+  orr r1, r0, #209  /* 0xd1 */
+  msr CPSR_fsxc, r1 /* disable irq and fiq, enter fiq mode*/
+  ldr sp, =0x00103ff0
+
+  bic r0, r0, #223  /* 0xdf */
+  orr r1, r0, #19   /* 0x13 */
+  msr CPSR_fsxc, r1 /* enable irq and fiq, enter supervisor mode*/
+  ldr sp, =0x00103bf0
+  mov pc, lr
+
+send_char:
+  mov r2, #0x04000000 /* uart base address */
+wait_tx_flag:
+  ldr r1, [r2, #0x18] /* r1 = [0x4000018] */
+  tst r1, #0x200      /* tx flag */
+  bne wait_tx_flag
+  strb r0, [r2, #0x20] /* [0x4000020] = char */
+  bx lr
+show_message:
+  str lr, [sp, #-4]!
+  mov r3, r0
+  b check_char
+next_char:
+  add r3, r3, #1
+  bl send_char
+check_char:
+  ldrb r0, [r3]  /* if not ending char, send this char via uart */
+  cmp r0, #0
+  bne next_char
+  ldr pc, [sp], #4
+
+init_uart_reg:
+  mov r0, #19
+  mov r1, #67108864
+  str r0, [r1, #40] /* [0x4000040] = 0x13 */
+
+  mov r0, #7
+  mov r1, #67108864
+  str r0, [r1]      /* [0x4000000] = 0x07 */
+
+  mov r0, #133
+  mov r1, #67108864
+  str r0, [r1, #4]  /* [0x4000004] = 0x85 */
+
+  mov r0, #150
+  mov r1, #67108864
+  str r0, [r1, #8]  /* [0x4000008] = 0x96 */
+
+  add r0, r1, #565248
+  ldr r1, [r0, #16]
+  orr r1, r1, #2
+  str r1, [r0, #16] /* [0x408a010]|= 2 */
+  adr r0, welcome_msg  /* pointer to uart initial message */
+  bl show_message
+ 
+while:
+  b while
+</pre><br>
+
+<p>
+經由上面的程式註解可以知道RAM的起始執行位置是位於0x1002000，因此我們需要一個LD Script檔案進行定位，該檔案內容如下
+</p>
+
+<pre>
+OUTPUT_FORMAT("elf32-littlearm", "elf32-littlearm", "elf32-littlearm")
+OUTPUT_ARCH(arm)
+ENTRY(_start)
+SECTIONS
+{
+  . = 0x102000;
+  . = ALIGN(4);
+  .text : {
+    *(.text)
+  }
+}
+</pre><br>
+
+<p>
+接著使用如下指令進行編譯即可產生<b>boot.bin</b>燒錄檔案
+</p>
+
+<pre>
+c:\&gt; PATH c:/ga330/cygwin/arm-linux/bin;c:/ga330/CYGWIN/BIN;C:\windows\
+c:\&gt; arm-linux-gcc -fno-pic -pipe -O2 -Wall -finline-functions -fomit-frame-pointer -msoft-float -fno-builtin -mcpu=arm926ej-s -c ga330_boot.s
+c:\&gt; arm-linux-gcc -nostdlib -o boot-elf32 ga330_boot.o -T ga330_link
+c:\&gt; arm-linux-objcopy -O binary boot-elf32 boot.bin
+</pre><br>
+
+<p>
+接著使用司徒之前介紹的燒錄步驟，將boot.bin燒錄到MiniSD並插上UART線，接著按下DPad的<b class="content">下按鈕</b>開機，即可看到如下的開機訊息(Baudrate: 115200bps)
+</p>
+
+<pre>
++---------------------------------------------------+  
+| (MyBootloader) UART for Gemei A330 by Steward_Fu  |
+| 2013.3.10                                         |
++---------------------------------------------------+
+#&gt;
+</pre><br>
+
+<p>
+<br><a href="../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

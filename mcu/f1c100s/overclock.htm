@@ -1,0 +1,157 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>F1C100S</h3>
+<p><b>如何超頻到2.0GHz</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://github.com/steward-fu/mcu-pdf/tree/master/f1c100s">pdf</a><br>
+2. <a href="http://nano.lichee.pro/">lichee</a><br>
+3. <a href="https://mangopi.org/mangopi_r">mangopi_r</a><br>
+4. <a href="https://www.allwinnertech.com/index.php?c=product&a=index&pid=4">allwinner</a><br><br>
+
+荔枝姐詢問司徒，為何最近都在搞芒果哥？這問題...，司徒如何啟齒...<br>
+<img src="overclock/2.jpg" class="maxSize"><br><br>
+
+目前VCC_CORE=1.1V，超頻首要工作就是加大電壓，電壓公式：<b>0.6 * (R47 / R48) + 0.6)</b><br>
+<img src="overclock/1.jpg" class="maxSize"><br><br>
+
+R47、R48位置<br>
+<img src="overclock/3.jpg" class="maxSize"><br><br>
+
+移除R47、R48<br>
+<img src="overclock/4.jpg" class="maxSize"><br><br>
+
+R47=442K、R48=160K，<b>0.6 * (442K / 160K) + 0.6 = 2.2575V</b><br>
+<img src="overclock/5.jpg" class="maxSize"><br><br>
+
+CPU=2016MHz，三秒就掛了，於是，電風扇伺候，CPU=1920MHz，可以跑I/O Toggle了...<br>
+<img src="overclock/6.jpg" class="maxSize"><br><br>
+
+司徒一摸荔枝姐，這...溫度怎麼比芒果哥還要激情...<br>
+<img src="overclock/7.jpg" class="maxSize"><br><br>
+
+測試程式
+</p>
+<pre class="brush:asm">
+  .global _start
+   
+  .equiv CCU_BASE,              0x01c20000
+  .equiv GPIO_BASE,             0x01c20800
+
+  .equiv PLL_CPU_CTRL_REG,      0x0000
+  .equiv PLL_PERIPH_CTRL_REG,   0x0028
+  .equiv AHB_APB_HCLKC_CFG_REG, 0x0054
+  .equiv BUS_CLK_GATING_REG2,   0x0068
+  .equiv BUS_SOFT_RST_REG2,     0x02d0
+
+  .equiv PE,                    (0x24 * 4)
+  .equiv PORT_CFG0,             0x00
+  .equiv PORT_DATA,             0x10
+    
+  .arm
+  .text
+_start:
+  .long 0xea000016
+  .byte 'e', 'G', 'O', 'N', '.', 'B', 'T', '0'
+  .long 0, __spl_size
+  .byte 'S', 'P', 'L', 2
+  .long 0, 0
+  .long 0, 0, 0, 0, 0, 0, 0, 0
+  .long 0, 0, 0, 0, 0, 0, 0, 0
+    
+_vector:
+  b reset
+  b .
+  b .
+  b .
+  b .
+  b .
+  b .
+  b .
+    
+reset:
+  ldr r4, =CCU_BASE
+  ldr r1, =(1 &lt;&lt; 31) | (19 &lt;&lt; 8) | (3 &lt;&lt; 4)
+  str r1, [r4, #PLL_CPU_CTRL_REG]
+0:
+  ldr r1, [r4, #PLL_CPU_CTRL_REG]
+  tst r1, #(1 &lt;&lt; 28)
+  beq 0b
+
+  ldr r0, =GPIO_BASE
+  ldr r1, =0x10000
+  str r1, [r0, #(PE + PORT_CFG0)]
+  
+0:
+  eor r1, #0x10
+  str r1, [r0, #(PE + PORT_DATA)]
+  ldr r2, =500000
+1:
+  subs r2, #1
+  bne 1b
+  b 0b
+  .end
+</pre><br>
+
+<p>
+<img src="../f1c200s/overclock/23.jpg" class="maxSize"><br><br>
+
+結論：<br>
+CPU=2016MHz，需要找出臨界電壓，容易燒毀，不建議使用<br>
+CPU=1920MHz，F1C100S加上散熱片，可以跑，不過目前只有測試GPIO Toggle
+</p>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

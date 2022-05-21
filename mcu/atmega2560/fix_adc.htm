@@ -1,0 +1,88 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>ATmega2560</h3>
+<p><b>提高analogRead()讀取速率</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://www.arduino.cn/thread-12569-1-1.html">如何加快analogRead速度提高采樣率Sampling Rate</a><br>
+2. <a href="http://www.gammon.com.au/forum/?id=12779">ADC conversion on the Arduino (analogRead)</a><br><br>
+
+程式如下：
+</p>
+<pre class="brush:cpp">
+unsigned short buf[16]={0};
+int cc=0, adc[16]={A0, A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12, A13, A14, A15};
+
+void setup() {
+  Serial.begin(460800);
+  ADCSRA|= (1 &lt;&lt; ADPS2);
+  ADCSRA&amp;= ~(1 &lt;&lt; ADPS1);
+  ADCSRA&amp;= ~(1 &lt;&lt; ADPS0);
+  Serial.flush();
+}
+
+void loop() {
+  for(cc=0; cc&lt;16; cc++){
+    buf[cc] = analogRead(adc[cc]);
+  }
+  Serial.write((unsigned char*)buf, 16);
+}
+</pre>
+<p>
+P.S. 預設Sample Rate最高只有9600Hz，ADC Prescaler改為16後，Sample Rate可以達到76.8KHz
+</p>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

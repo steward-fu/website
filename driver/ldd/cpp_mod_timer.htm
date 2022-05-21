@@ -1,0 +1,127 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Linux Device Driver &gt;&gt; C/C++</h3>
+<p><b>mod_timer</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://github.com/steward-fu/ldd">Source Code</a><br><br>
+
+Timer是一種Callback機制，提供使用者設定片段時間後觸發的方式，Timer有區分一次性或者週期性，Linux Kernel提供的mod_timer()是屬於一次性，而計算片段時間則是使用jiffies計算，jiffies是一個Global變數，該變數用來紀錄時間的中斷次數(從開機後)，可以搭配msecs_to_jiffies()計算出需要的時間間隔<br><br>
+
+使用步驟：<br>
+1. setup_timer()<br>
+2. mod_timer()<br>
+3. del_timer()<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;glinux/init.h&gt;g
+#include &lt;glinux/device.h&gt;g
+#include &lt;glinux/module.h&gt;g
+#include &lt;glinux/delay.h&gt;g
+#include &lt;glinux/kernel.h&gt;g
+#include &lt;glinux/errno.h&gt;g
+#include &lt;glinux/mm.h&gt;g
+#include &lt;glinux/gpio.h&gt;g
+
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("Steward Fu");
+MODULE_DESCRIPTION("Linux Driver");
+ 
+#define USR3_LED ((32 * 1) + 24)
+
+static int period=300;
+static struct timer_list timer={0};
+
+void timer_handler(unsigned long unused)
+{
+  static int state=0;
+     
+  state^= 1;
+  gpio_set_value(USR3_LED, state);
+  mod_timer(&amp;gtimer, jiffies + msecs_to_jiffies(period));
+}
+ 
+int ldd_init(void)
+{
+  gpio_request(USR3_LED, "USR3");
+  gpio_direction_output(USR3_LED, 1);
+  setup_timer(&amp;gtimer, timer_handler, 0);
+  mod_timer(&amp;gtimer, jiffies + msecs_to_jiffies(period));
+  return 0;
+}
+ 
+void ldd_exit(void)
+{
+  del_timer(&amp;gtimer);
+  gpio_free(USR3_LED);
+}
+ 
+module_init(ldd_init);
+module_exit(ldd_exit);
+</pre>
+<p>
+<b>ldd_init</b>: 設定GPIO以及Timer，msecs_to_jiffies()設定的內容，司徒直接使用常數設定<br>
+<b>timer_handler</b>: 閃爍LED之外，由於mod_timer()是屬於一次性，因此，只要再次設定就可以變成週期性Timer<br>
+<b>ldd_exit</b>: 刪除GPIO以及Timer資源<br><br>
+
+完成<br>
+<img src="cpp_gpio_output/2.jpg" class="maxSize"><br>
+<img src="cpp_gpio_output/3.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../driver.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

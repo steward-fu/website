@@ -1,0 +1,138 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>GNU &gt;&gt; C/C++</h3>
+<p><b>domain socket</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://troydhanson.github.io/network/Unix_domain_sockets.html">unix_domain_sockets</a><br><br>
+
+domain socket不需要使用port且透過filesystem機制傳輸<br><br>
+
+server.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;sys/socket.h&gt;
+#include &lt;sys/un.h&gt;
+#include &lt;stdlib.h&gt;
+
+int main(int argc, char *argv[])
+{
+  int fd=-1, cl=0;
+  char buf[255]={0};
+  struct sockaddr_un addr={0};
+  const char *path = "./domain_socket";
+
+  unlink(path);
+  fd = socket(AF_UNIX, SOCK_STREAM, 0);
+  addr.sun_family = AF_UNIX;
+  strcpy(addr.sun_path, path);
+  bind(fd, (struct sockaddr*)&amp;addr, sizeof(addr));
+  listen(fd, 5);
+
+  cl = accept(fd, NULL, NULL);
+  while(read(cl, buf, sizeof(buf))){
+    printf("read: \"%s\"\n", buf);
+  }
+  close(cl);
+  return 0;
+}
+</pre><br>
+
+<p>
+client.c
+</p>
+<pre class="brush:cpp">
+#include &lt;sys/socket.h&gt;
+#include &lt;sys/un.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;unistd.h&gt;
+
+int main(int argc, char *argv[])
+{
+  int fd=-1;
+  char buf[255]={"I am error !"};
+  struct sockaddr_un addr={0};
+
+  fd = socket(AF_UNIX, SOCK_STREAM, 0);
+  addr.sun_family = AF_UNIX;
+  strcpy(addr.sun_path, "./domain_socket");
+  connect(fd, (struct sockaddr*)&amp;addr, sizeof(addr));
+  write(fd, buf, strlen(buf));
+  close(fd);
+  return 0;
+}
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ gcc server.c -o server
+$ gcc client.c -o client
+
+$ ./server&
+
+$ ls -al ./domain_socket
+  srwxr-xr-x 1 steward steward 0 Dec  1 01:21 domain_socket
+
+$ ./client
+  read: "I am error !"
+</pre>
+
+<p>
+<br><a href="../../program.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

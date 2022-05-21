@@ -1,0 +1,145 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Gtk &gt;&gt; Assembly (ARM)</h3>
+<p><b>hello, world!</b></p>
+<hr size="1">
+<p>
+main.s
+</p>
+<pre class="brush:asm">
+  .text
+  .align
+title: .asciz "Hello, world!"
+ 
+  .align
+destroy:.asciz "destroy"
+ 
+  .align
+str_ptr:
+  .word title
+  .word destroy
+  .word gtk_main_quit
+ 
+  .align
+  .global main
+ 
+main:
+  stmfd sp!, {r4, lr}
+  sub sp, sp, #24
+  str r0, [sp, #12]
+  str r1, [sp, #8]
+  add r3, sp, #12
+  add r2, sp, #8
+  mov r0, r3
+  mov r1, r2
+  bl gtk_init
+ 
+  mov r0, #0
+  bl gtk_window_new
+ 
+  mov r3, r0
+  str r3, [sp, #16]
+  ldr r0, str_ptr
+  bl gtk_label_new
+ 
+  mov r3, r0
+  str r3, [sp, #20]
+  ldr r4, [sp, #16]
+  bl gtk_container_get_type
+ 
+  mov r3, r0
+  mov r0, r4
+  mov r1, r3
+  bl g_type_check_instance_cast
+ 
+  mov r3, r0
+  mov r0, r3
+  ldr r1, [sp, #20]
+  bl gtk_container_add
+ 
+  ldr r0, [sp, #16]
+  bl gtk_widget_show_all
+ 
+  mov r3, #0
+  str r3, [sp, #0]
+  mov r3, #0
+  str r3, [sp, #4]
+  ldr r0, [sp, #16]
+  ldr r1, str_ptr+4
+  ldr r2, str_ptr+8
+  mov r3, #0
+  bl g_signal_connect_data
+  bl gtk_main
+ 
+  mov r3, #0
+  mov r0, r3
+  add sp, sp, #24
+  ldmfd sp!, {r4, pc}
+
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ as main.s -o main.o
+$ gcc main.o -o main `pkg-config --libs --cflags gtk+-2.0`
+$ ./main
+</pre>
+<p>
+<img src="arm_hello/1.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../program.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

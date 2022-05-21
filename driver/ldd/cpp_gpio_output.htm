@@ -1,0 +1,136 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Linux Device Driver &gt;&gt; C/C++</h3>
+<p><b>gpio output</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://github.com/steward-fu/ldd">Source Code</a><br><br>
+
+PocketBeagle開發板上有四顆USR LED，此次範例將使用USR3 LED，位置如下：<br>
+<img src="cpp_gpio_output/1.jpg" class="maxSize"><br><br>
+
+Device Tree
+</p>
+<pre>
+led@5 {
+  label = "beaglebone:green:usr3";
+  gpios = &lt;&amp;gpio1 24 GPIO_ACTIVE_HIGH&gt;
+  linux,default-trigger = "mmc1";
+  default-state = "off";
+};
+</pre>
+<p>
+P.S. USR3位置是GPIO1-24<br><br>
+
+控制GPIO的輸出方式，基本上，就是操作CPU Register，設定GPIO方向，然後針對該GPIO設定Low、High電位，因此，使用者需要查閱CPU Register說明手冊，過程真是相當繁瑣，而除了控制Register方式之外，Linux Kernel提供一些更友好的GPIO操作函數，供使用者方便開發使用，也大大增加其移植性<br><br>
+
+使用步驟：<br>
+1. gpio_request()<br>
+2. gpio_direction_output()<br>
+3. gpio_set_value()<br>
+4. gpio_free()<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;linux/init.h&gt;
+#include &lt;linux/device.h&gt;
+#include &lt;linux/module.h&gt;
+#include &lt;linux/delay.h&gt;
+#include &lt;linux/kernel.h&gt;
+#include &lt;linux/errno.h&gt;
+#include &lt;linux/mm.h&gt;
+#include &lt;linux/gpio.h&gt;
+
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("Steward Fu");
+MODULE_DESCRIPTION("Linux Driver");
+ 
+#define USR3_LED ((32 * 1) + 24)
+
+int ldd_init(void)
+{
+  int c=0;
+
+  gpio_request(USR3_LED, "USR3");
+  gpio_direction_output(USR3_LED, 1);
+  for(c=0; c&lt;3; c++){
+    gpio_set_value(USR3_LED, 0);
+    msleep(1000);
+    gpio_set_value(USR3_LED, 1);
+    msleep(1000);
+  }
+  gpio_free(USR3_LED);
+  return 0;
+}
+ 
+void ldd_exit(void)
+{
+}
+ 
+module_init(ldd_init);
+module_exit(ldd_exit);
+</pre>
+<p>
+<b>ldd_init</b>: 首先請求GPIO資源，接著設定GPIO輸出方向，最後則是使用迴圈輸出LED閃爍動作<br>
+<b>ldd_exit</b>: 不做任何事情<br><br>
+
+完成<br>
+<img src="cpp_gpio_output/2.jpg" class="maxSize"><br>
+<img src="cpp_gpio_output/3.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../driver.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

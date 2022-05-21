@@ -1,0 +1,190 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>F1C200S &gt;&gt; Assembly</h3>
+<p><b>Timer2</b></p>
+<hr size="1">
+<p>
+參考資料：<br>
+1. <a href="https://github.com/steward-fu/mcu-pdf/tree/master/f1c100s">pdf</a><br>
+2. <a href="http://nano.lichee.pro/">lichee</a><br>
+3. <a href="https://mangopi.org/mangopi_r">mangopi_r</a><br>
+4. <a href="https://www.allwinnertech.com/index.php?c=product&a=index&pid=4">allwinner</a><br><br>
+
+Work Flow<br>
+<img src="../f1c100s/asm_wdt/1.jpg" class="maxSize"><br><br>
+
+暫存器<br>
+<img src="../f1c100s/asm_wdt/2.jpg" class="maxSize"><br><br>
+
+中斷<br>
+<img src="../f1c100s/asm_timer0/1.jpg" class="maxSize"><br><br>
+
+Timer2時間
+</p>
+<pre>
+Ticks = LOSC/(TMR2_CLK_PRES*TMR2_INTV_VALUE_REG) = 32KHz/(128*256) = 1Hz
+</pre><br>
+
+<p>
+main.s
+</p>
+<pre class="brush:asm">
+  .global _start
+  
+  .equiv GPIO_BASE,  0x01c20800 
+  .equiv TIMER_BASE, 0x01c20c00
+  .equiv INTC_BASE,  0x01c20400
+  
+  .equiv PA,         (0x24 * 0)
+  .equiv PORT_CFG0,  0x00
+  .equiv PORT_DATA,  0x10
+  
+  .equiv INTC_BASE_ADDR_REG, 0x04
+  .equiv INTC_PEND_REG0,     0x10
+  .equiv INTC_PEND_REG1,     0x14
+  .equiv INTC_EN_REG0,       0x20
+  .equiv INTC_EN_REG1,       0x24
+  .equiv INTC_MASK_REG0,     0x30
+  .equiv INTC_MASK_REG1,     0x34
+  .equiv INTC_RESP_REG0,     0x40
+  .equiv INTC_RESP_REG1,     0x44
+  .equiv INTC_FF_REG0,       0x50
+  .equiv INTC_FF_REG1,       0x54
+  
+  .equiv TMR_IRQ_EN_REG,      0x00
+  .equiv TMR_IRQ_STA_REG,     0x04
+  .equiv TMR2_CTRL_REG,       0x30
+  .equiv TMR2_INTV_VALUE_REG, 0x34
+  .equiv TMR2_CUR_VALUE_REG,  0x38
+  
+  .arm
+  .text
+_start:
+  .long 0xea000016
+  .byte 'e', 'G', 'O', 'N', '.', 'B', 'T', '0'
+  .long 0, __spl_size
+  .byte 'S', 'P', 'L', 2
+  .long 0, 0
+  .long 0, 0, 0, 0, 0, 0, 0, 0
+  .long 0, 0, 0, 0, 0, 0, 0, 0
+     
+_vector:
+  b reset
+  b .
+  b .
+  b .
+  b .
+  b .
+  ldr pc, _irq
+  b .
+  
+_irq: .word irq_handler
+  
+irq_handler:
+  ldr r0, =GPIO_BASE
+  ldr r1, =0x00
+  str r1, [r0, #(PA + PORT_DATA)]
+  subs pc, lr, #4
+  
+reset:
+  mrc p15, 0, r0, c1, c0, 0
+  bic r0, #(1 &lt;&lt; 13)
+  mcr p15, 0, r0, c1, c0, 0
+  
+  adr r0, _vector
+  mrc p15, 0, r2, c1, c0, 0
+  ands r2, r2, #(1 &lt;&lt; 13)
+  ldreq r1, =0x00000000
+  ldrne r1, =0xffff0000
+  ldmia r0!, {r2-r8, r10}
+  stmia r1!, {r2-r8, r10}
+  ldmia r0!, {r2-r8, r10}
+  stmia r1!, {r2-r8, r10}
+  
+  mrs r0, cpsr
+  bic r0, #0x80
+  msr cpsr_c, r0
+  
+  ldr r0, =INTC_BASE
+  ldr r1, =(1 &lt;&lt; 15)
+  str r1, [r0, #INTC_EN_REG0]
+  ldr r1, =~(1 &lt;&lt; 15)
+  str r1, [r0, #INTC_MASK_REG0]
+  
+  ldr r0, =GPIO_BASE
+  ldr r1, =0x1000
+  str r1, [r0, #(PA + PORT_CFG0)]
+  ldr r1, =0x08
+  str r1, [r0, #(PA + PORT_DATA)]
+  
+  ldr r0, =TIMER_BASE
+  ldr r1, =0x300
+  str r1, [r0, #TMR2_INTV_VALUE_REG]
+  ldr r1, =(7 &lt; 4) | (1 &lt;&lt; 1) | 1
+  str r1, [r0, #TMR2_CTRL_REG]
+  ldr r1, =4
+  str r1, [r0, #TMR_IRQ_EN_REG]
+  str r1, [r0, #TMR_IRQ_STA_REG]
+  
+  b .
+  .end
+</pre><br>
+<p>
+完成<br>
+<img src="asm_led/1.jpg" class="maxSize"><br>
+<img src="asm_led/2.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

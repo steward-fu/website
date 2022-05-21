@@ -1,0 +1,105 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Motorola XT894 &gt;&gt; Maemo Leste</h3>
+<p><b>安裝系統</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://leste.maemo.org/Motorola_Droid_4">wiki</a><br>
+2. <a href="https://maedevu.maemo.org/images/droid4/">maemo</a><br>
+3. <a href="https://github.com/tmlind/droid4-kexecboot.git">kexecboot</a><br><br>
+
+下載燒錄檔案：
+</p>
+<pre>
+$ sudo apt-get install fastboot
+$ cd
+$ wget https://maedevu.maemo.org/images/droid4/VRZ_XT894_9.8.2O-72_VZW-18-8_CFC.xml.zip
+$ wget https://maedevu.maemo.org/images/droid4/flash-droid-4-fw.sh
+$ wget https://maedevu.maemo.org/images/droid4/20200323/maemo-leste-1.0-armhf-droid4-20200323.img.xz
+$ wget https://github.com/tmlind/droid4-kexecboot/blob/master/utags-mmcblk1p13.bin
+$ wget https://github.com/tmlind/droid4-kexecboot/blob/master/2019-03-08/droid4-kexecboot.img
+$ unzip VRZ_XT894_9.8.2O-72_VZW-18-8_CFC.xml.zip
+</pre><br>
+
+<p>
+燒錄kexecboot：<br>
+1. XT894關機<br>
+2. 按住電源、音量上、音量下，一秒後同時放開即可進入fastboot模式<br>
+3. 執行如下命令
+</p>
+<pre>
+$ pushd VRZ_XT894_9.8.2O-72_VZW-18-8_CFC.xml
+$ sudo bash ../flash-droid-4-fw.sh
+$ popd
+$ sudo fastboot flash mbm VRZ_XT894_9.8.2O-72_VZW-18-8_CFC.xml/allow-mbmloader-flashing-mbm.bin
+$ sudo fastboot reboot-bootloader
+$ sudo fastboot flash bpsw droid4-kexecboot.img
+$ sudo fastboot flash utags utags-mmcblk1p13.bin
+$ sudo fastboot reboot
+</pre><br>
+
+<p>
+製作開機系統：
+</p>
+<pre>
+$ xzcat maemo-leste-1.0-armhf-droid4-20200323.img.xz | sudo dd status=progress bs=1M of=/dev/xxx
+$ sync
+</pre>
+<p>
+P.S. 插入XT894後開機即可。
+</p>
+
+<p>
+<br><a href="../../phone.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

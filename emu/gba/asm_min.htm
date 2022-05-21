@@ -1,0 +1,505 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Game Boy Advance &gt;&gt; Assembly</h3>
+<p><b>Minimal</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://github.com/steward-fu/gba/releases/tag/v1.1">doc</a><br>
+2. <a href="http://www.coranac.com/tonc/text/toc.htm">tonc</a><br>
+3. <a href="https://patater.com/gbaguy/gbaasm.htm">gbaasm</a><br>
+3. <a href="https://wii.leseratte10.de/devkitPro/">devkitPro</a><br>
+4. <a href="https://github.com/devkitPro/devkitarm-crtls">devkitarm-crtls</a><br>
+5. <a href="https://devkitpro.org/index.php">devkitPro website</a><br>
+6. <a href="https://gist.github.com/JShorthouse/bfe49cdfad126e9163d9cb30fd3bf3c2">Compiling GBA programs on Linux with GCC</a><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+  .global main
+   
+  .arm
+  .text
+main:
+  b main
+</pre><br>
+
+<p>
+crt0.s
+</p>
+<pre class="brush:asm">
+  .global _start
+
+  .section ".crt0","ax"
+  .arm
+  .cpu arm7tdmi
+  .align
+_start:
+  b rom_header_end
+  .fill 156, 1, 0
+  .fill 16, 1, 0
+  .byte 0x30, 0x31
+  .byte 0x96
+  .byte 0x00
+  .byte 0x00
+  .fill 7, 1, 0
+  .byte 0x00
+  .byte 0xf0
+  .byte 0x00, 0x00
+
+rom_header_end:
+  b start_vector
+
+  .global  __boot_method, __slave_number
+__boot_method:
+  .byte 0
+__slave_number:
+  .byte 0
+  .byte 0
+  .byte 0
+  .word 0
+  .word 0
+  .word 0
+  .word 0
+  .word 0
+  .word 0
+
+  .align
+start_vector:
+  mov r0, #0x4000000
+  str r0, [r0, #0x208]
+
+  mov r0, #0x12
+  msr cpsr, r0
+  ldr sp, =__sp_irq
+  mov r0, #0x1f
+  msr cpsr, r0
+  ldr sp, =__sp_usr
+
+  add r0, pc, #1
+  bx r0
+
+  .thumb
+  ldr r0, =__text_start
+  lsl r0, #5
+  bcs DoEWRAMClear
+  mov r0, pc
+  lsl r0, #5
+  bcc SkipEWRAMClear
+  mov r2, #2
+  lsl r2, r2, #24
+  ldr r3, =__end__
+  sub r3, r2
+  mov r6, r2
+  lsl r1, r2, #2
+  bl CopyMem
+  bx r6
+
+DoEWRAMClear:
+  mov r1, #0x40
+  lsl r1, #12
+  lsl r0, r1, #7
+  bl ClearMem
+
+SkipEWRAMClear:
+  ldr r0, =__bss_start__
+  ldr r1, =__bss_end__
+  sub r1, r0
+  bl ClearMem
+
+  ldr r0, =__sbss_start__
+  ldr r1, =__sbss_end__
+  sub r1, r0
+  bl ClearMem
+
+  ldr r1, =__data_lma
+  ldr r2, =__data_start__
+  ldr r4, =__data_end__
+  bl CopyMemChk
+
+  ldr r1,= __iwram_lma
+  ldr r2,= __iwram_start__
+  ldr r4,= __iwram_end__
+  bl CopyMemChk
+
+  ldr r2,= __load_stop_iwram0
+  ldr r1,= __load_start_iwram0
+  sub r3, r2, r1
+  beq CIW0Skip
+
+  ldr r2,= __iwram_overlay_start
+  bl CopyMem
+
+CIW0Skip:
+  ldr r1, =__ewram_lma
+  ldr r2, =__ewram_start
+  ldr r4, =__ewram_end
+  bl CopyMemChk
+
+CEW0Skip:
+  ldr r1, =fake_heap_end
+  ldr r0, =__eheap_end
+  str r0, [r1]
+  ldr r3, =__libc_init_array
+  bl _blx_r3_stub
+  mov r0, #0
+  mov r1, #0
+  ldr r3, =main
+  bl _blx_r3_stub
+  swi #0x00
+
+ClearMem:
+  mov r2, #3
+  add r1, r2
+  bic r1, r2
+  beq ClearMX
+  mov r2,#0
+ClrLoop:
+  stmia r0!, {r2}
+  sub r1,#4
+  bne ClrLoop
+ClearMX:
+  bx lr
+_blx_r3_stub:
+  bx r3
+
+CopyMemChk:
+  sub r3, r4, r2
+CopyMem:
+  mov r0, #3
+  add r3, r0
+  bic r3, r0
+  beq CIDExit
+CIDLoop:
+  ldmia r1!, {r0}
+  stmia r2!, {r0}
+  sub r3, #4
+  bne CIDLoop
+CIDExit:
+  bx lr
+
+  .align
+  .pool
+  .end
+</pre><br>
+
+<p>
+main.ld
+</p>
+<pre>
+OUTPUT_FORMAT("elf32-littlearm", "elf32-bigarm", "elf32-littlearm")
+OUTPUT_ARCH(arm)
+ENTRY(_start)
+MEMORY {
+  rom : ORIGIN = 0x08000000, LENGTH = 32M
+  iwram : ORIGIN = 0x03000000, LENGTH = 32K
+  ewram : ORIGIN = 0x02000000, LENGTH = 256K
+}
+
+__text_start = ORIGIN(rom);
+__eheap_end = ORIGIN(ewram) + LENGTH(ewram);
+__iwram_start = ORIGIN(iwram);
+__iwram_top = ORIGIN(iwram) + LENGTH(iwram);;
+__sp_irq = __iwram_top - 0x060;
+__sp_usr = __sp_irq - 0x0a0;
+__irq_flags = 0x03007ff8;
+
+SECTIONS
+{
+  . = __text_start;
+  .crt0 :
+  {
+    KEEP (*(.crt0))
+    . = ALIGN(4);
+  } &gt;rom =0xff
+
+  .init :
+  {
+    KEEP (*(SORT_NONE(.init)))
+  } &gt;rom
+
+  .plt :
+  {
+    *(.plt)
+    . = ALIGN(4);
+  } &gt;rom
+
+  .text :
+  {
+    *(EXCLUDE_FILE (*.iwram*) .text*)
+    *(.gnu.linkonce.t.*)
+    KEEP (*(.text.*personality*))
+    *(.gnu.warning)
+    *(.glue_7t) *(.glue_7) *(.vfp11_veneer)
+    . = ALIGN(4);
+  } &gt;rom = 0xff
+
+  __text_end = .;
+  .fini :
+  {
+    KEEP (*(.fini))
+    . = ALIGN(4);
+  } &gt;rom =0
+
+  .rodata :
+  {
+    *(.rodata)
+    *all.rodata*(*)
+    *(.roda)
+    *(.rodata.*)
+    *(.gnu.linkonce.r*)
+    SORT(CONSTRUCTORS)
+    . = ALIGN(4);
+  } &gt;rom = 0xff
+  .ARM.extab : { *(.ARM.extab* .gnu.linkonce.armextab.*) } &gt;rom
+  __exidx_start = .;
+  .ARM.exidx : { *(.ARM.exidx* .gnu.linkonce.armexidx.*) } &gt;rom
+  __exidx_end = .;
+
+  .ctors :
+  {
+    KEEP (*crtbegin.o(.ctors))
+    KEEP (*(EXCLUDE_FILE (*crtend.o) .ctors))
+    KEEP (*(SORT(.ctors.*)))
+    KEEP (*(.ctors))
+    . = ALIGN(4);
+  } &gt;rom = 0
+
+  .dtors :
+  {
+    KEEP (*crtbegin.o(.dtors))
+    KEEP (*(EXCLUDE_FILE (*crtend.o) .dtors))
+    KEEP (*(SORT(.dtors.*)))
+    KEEP (*(.dtors))
+    . = ALIGN(4);
+  } &gt;rom = 0
+
+  .eh_frame :
+  {
+    KEEP (*(.eh_frame))
+    . = ALIGN(4);
+  } &gt;rom = 0
+
+  .gcc_except_table :
+  {
+    *(.gcc_except_table)
+    . = ALIGN(4);
+  } &gt;rom = 0
+
+  __iwram_lma = .;
+
+  .iwram __iwram_start : AT (__iwram_lma)
+  {
+    __iwram_start__ = ABSOLUTE(.) ;
+    *(.iwram .iwram*)
+    *iwram.*(.text* .data*)
+    . = ALIGN(4);
+    __iwram_end__ = ABSOLUTE(.) ;
+  } &gt;iwram = 0xff
+
+  __data_lma = __iwram_lma + SIZEOF(.iwram) ;
+
+  .bss ALIGN(4) (NOLOAD) :
+  {
+    __bss_start = ABSOLUTE(.);
+    __bss_start__ = ABSOLUTE(.);
+    *(.dynbss)
+    *(.gnu.linkonce.b*)
+    *(.bss*)
+    *(COMMON)
+    . = ALIGN(4);
+    __bss_end__ = ABSOLUTE(.);
+
+  } AT&gt;iwram
+
+  .data ALIGN(4) : AT (__data_lma)
+  {
+    __data_start__ = ABSOLUTE(.);
+    *(.data*)
+    *(.gnu.linkonce.d*)
+    CONSTRUCTORS
+    . = ALIGN(4);
+  } &gt;iwram = 0xff
+
+  __preinit_lma = __data_lma + SIZEOF(.data);
+
+  .preinit_array ALIGN(4) : AT (__preinit_lma)
+  {
+    __preinit_array_start = ABSOLUTE(.);
+    KEEP (*(.preinit_array))
+    __preinit_array_end = ABSOLUTE(.);
+  } &gt;iwram
+
+  __init_lma = __preinit_lma + SIZEOF(.preinit_array);
+
+  .init_array ALIGN(4) : AT (__init_lma)
+  {
+    __init_array_start = ABSOLUTE(.);
+    KEEP (*(SORT(.init_array.*)))
+    KEEP (*(.init_array))
+    __init_array_end = ABSOLUTE(.);
+  } &gt;iwram
+
+  __fini_lma = __init_lma + SIZEOF(.init_array);
+
+  .fini_array ALIGN(4) : AT (__fini_lma)
+  {
+    __fini_array_start = ABSOLUTE(.);
+    KEEP (*(SORT(.fini_array.*)))
+    KEEP (*(.fini_array))
+      __fini_array_end = ABSOLUTE(.);
+  } &gt;iwram
+
+  __jcr_lma = __fini_lma + SIZEOF(.fini_array);
+  .jcr ALIGN(4) : AT (__jcr_lma) { KEEP (*(.jcr)) } &gt;iwram
+
+  __data_end__ = ABSOLUTE(.);
+  __iwram_overlay_lma = __jcr_lma + SIZEOF(.jcr);
+
+  __iwram_overlay_start = . ;
+
+  OVERLAY ALIGN(4) : NOCROSSREFS AT (__iwram_overlay_lma)
+  {
+    .iwram0 { *(.iwram0) . = ALIGN(4);}
+    .iwram1 { *(.iwram1) . = ALIGN(4);}
+    .iwram2 { *(.iwram2) . = ALIGN(4);}
+    .iwram3 { *(.iwram3) . = ALIGN(4);}
+    .iwram4 { *(.iwram4) . = ALIGN(4);}
+    .iwram5 { *(.iwram5) . = ALIGN(4);}
+    .iwram6 { *(.iwram6) . = ALIGN(4);}
+    .iwram7 { *(.iwram7) . = ALIGN(4);}
+    .iwram8 { *(.iwram8) . = ALIGN(4);}
+    .iwram9 { *(.iwram9) . = ALIGN(4);}
+  }&gt;iwram = 0xff
+
+  __iwram_overlay_end = . ;
+  __ewram_lma = __iwram_overlay_lma + (__iwram_overlay_end - __iwram_overlay_start) ;
+
+  __iheap_start = . ;
+
+  __ewram_start = ORIGIN(ewram);
+  .ewram __ewram_start : AT (__ewram_lma)
+  {
+    *(.ewram*)
+    . = ALIGN(4);
+    __ewram_end = ABSOLUTE(.);
+  }&gt;ewram = 0xff
+
+  __pad_lma = __ewram_lma + SIZEOF(.ewram);
+
+  .sbss ALIGN(4)(NOLOAD):
+   {
+    __sbss_start__ = ABSOLUTE(.);
+     *(.sbss*)
+     . = ALIGN(4);
+    __sbss_end__ = ABSOLUTE(.);
+    __end__ = ABSOLUTE(.);
+    __eheap_start = ABSOLUTE(.);
+   } AT&gt;ewram
+
+  .pad ALIGN(4) : AT (__pad_lma)
+  {
+    LONG(0x52416b64)
+    LONG(0x4d)
+    . = ALIGN(4);
+  } = 0xff
+  __rom_end__ = __pad_lma + SIZEOF(.pad);
+
+  .stab 0 : { *(.stab) }
+  .stabstr 0 : { *(.stabstr) }
+  .stab.excl 0 : { *(.stab.excl) }
+  .stab.exclstr 0 : { *(.stab.exclstr) }
+  .stab.index 0 : { *(.stab.index) }
+  .stab.indexstr 0 : { *(.stab.indexstr) }
+  .comment 0 : { *(.comment) }
+  .debug          0 : { *(.debug) }
+  .line           0 : { *(.line) }
+  .debug_srcinfo  0 : { *(.debug_srcinfo) }
+  .debug_sfnames  0 : { *(.debug_sfnames) }
+  .debug_aranges  0 : { *(.debug_aranges) }
+  .debug_pubnames 0 : { *(.debug_pubnames) }
+  .debug_info     0 : { *(.debug_info) }
+  .debug_abbrev   0 : { *(.debug_abbrev) }
+  .debug_line     0 : { *(.debug_line) }
+  .debug_frame    0 : { *(.debug_frame) }
+  .debug_str      0 : { *(.debug_str) }
+  .debug_loc      0 : { *(.debug_loc) }
+  .debug_macinfo  0 : { *(.debug_macinfo) }
+  .debug_weaknames 0 : { *(.debug_weaknames) }
+  .debug_funcnames 0 : { *(.debug_funcnames) }
+  .debug_typenames 0 : { *(.debug_typenames) }
+  .debug_varnames  0 : { *(.debug_varnames) }
+  .stack 0x80000 : { _stack = .; *(.stack) }
+  .note.gnu.arm.ident 0 : { KEEP (*(.note.gnu.arm.ident)) }
+  .ARM.attributes 0 : { KEEP (*(.ARM.attributes)) }
+  /DISCARD/ : { *(.note.GNU-stack) }
+}
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ export PATH=/opt/devkitARM/bin:$PATH
+$ arm-none-eabi-gcc -mthumb-interwork main.s crt0.s -T main.ld -o main.elf
+$ arm-none-eabi-objcopy -O binary main.elf main.gba
+$ mgba main.gba
+</pre>
+<p>
+<img src="asm_min/1.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../emu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

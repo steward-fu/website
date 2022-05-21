@@ -1,0 +1,302 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>STC15W204S</h3>
+<p><b>0.96" OLED 128x64 SSD1306</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://cdn-shop.adafruit.com/datasheets/SSD1306.pdf">SSD1306.pdf</a><br>
+2. <a href="https://github.com/adafruit/Adafruit_SSD1306/blob/master/Adafruit_SSD1306.cpp">Adafruit_SSD1306</a><br>
+3. <a href="http://www.stcmicro.com/datasheet/STC15F2K60S2-en.pdf">STC15F2K60S2-en.pdf</a><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+  i2c_sda         set 0xcc
+  i2c_scl         set 0xcd
+ 
+  i2c_addr        equ 0x78
+  lcd_width       equ 128
+  lcd_height      equ 64
+ 
+  cmd_contrast    equ 0x81
+  cmd_disp_resume equ 0xa4
+  cmd_normal_disp equ 0xa6
+  cmd_invert_disp equ 0xa7
+  cmd_disp_off    equ 0xae
+  cmd_disp_on     equ 0xaf
+  cmd_disp_offset equ 0xd3
+  cmd_com_pins    equ 0xda
+  cmd_vcom_detect equ 0xdb
+  cmd_clock_div   equ 0xd5
+  cmd_pre_charge  equ 0xd9
+  cmd_multiplex   equ 0xa8
+  cmd_start_line  equ 0x40
+  cmd_memory_mode equ 0x20
+  cmd_column_addr equ 0x21
+  cmd_page_addr   equ 0x22
+  cmd_scan_dec    equ 0xc8
+  cmd_seg_remap   equ 0xa0
+  cmd_charge_pump equ 0x8d
+ 
+  .org 0h
+  jmp _start
+ 
+  .org 100h
+_start:
+  call ssd1306_init
+  call ssd1306_set_col_addr
+  call ssd1306_set_page_addr
+  
+  call i2c_start
+  mov a, #i2c_addr
+  call i2c_write
+  mov a, #40h
+  call i2c_write 
+
+  mov r4, #16
+m0:
+  mov r5, #64
+m1:
+  mov a, #55h
+  call i2c_write
+  djnz r5, m1
+  djnz r4, m0
+  call i2c_stop
+  jmp $
+ 
+delay:
+  mov r0, #10
+  djnz r0, $
+  ret
+ 
+i2c_start:
+  setb i2c_sda
+  setb i2c_scl
+  call delay
+  clr i2c_sda
+  call delay
+  clr i2c_scl
+  ret
+ 
+i2c_stop:
+  call delay
+  clr i2c_sda
+  call delay
+  setb i2c_scl
+  call delay
+  setb i2c_sda
+  ret
+ 
+i2c_write:
+  push 4
+  push 5
+  mov r4, #8
+  mov r5, a
+i0:
+  mov a, r5
+  rlc a
+  mov r5, a
+  jc i1
+  clr i2c_sda
+  sjmp i2
+i1:
+  setb i2c_sda
+i2:
+  call delay
+  setb i2c_scl
+  call delay
+  clr i2c_scl
+  djnz r4, i0
+   
+  call delay
+  setb i2c_sda
+  call delay
+  setb i2c_scl
+  call delay
+  mov c, i2c_sda
+  call delay
+  clr i2c_scl
+  pop acc
+  mov r5, a
+  pop acc
+  mov r4, a
+  ret
+ 
+send_cmd:
+  push 4
+  mov r4, a
+  call i2c_start
+  mov a, #i2c_addr
+  call i2c_write
+  mov a, #0
+  call i2c_write
+  mov a, r4
+  call i2c_write
+  call i2c_stop
+  pop acc
+  mov r4, a
+  ret
+ 
+send_data:
+  push 4
+  mov r4, a
+  call i2c_start
+  mov a, #i2c_addr
+  call i2c_write
+  mov a, #40h
+  call i2c_write
+  mov a, r4
+  call i2c_write
+  call i2c_stop
+  pop acc
+  mov r4, a
+  ret
+ 
+ssd1306_init:
+  mov a, #cmd_disp_off
+  call send_cmd
+  mov a, #cmd_clock_div
+  call send_cmd
+  mov a, #80h
+  call send_cmd
+  mov a, #cmd_multiplex
+  call send_cmd
+  mov a, #3fh
+  call send_cmd
+  mov a, #cmd_disp_offset
+  call send_cmd
+  mov a, #0
+  call send_cmd
+  mov a, #cmd_start_line
+  call send_cmd
+  mov a, #cmd_charge_pump
+  call send_cmd
+  mov a, #14h
+  call send_cmd
+  mov a, #cmd_memory_mode
+  call send_cmd
+  mov a, #0
+  call send_cmd
+  mov a, #cmd_seg_remap | 1
+  call send_cmd
+  mov a, #cmd_scan_dec
+  call send_cmd
+  mov a, #cmd_com_pins
+  call send_cmd
+  mov a, #12h
+  call send_cmd
+  mov a, #cmd_contrast
+  call send_cmd
+  mov a, #0cfh
+  call send_cmd
+  mov a, #cmd_pre_charge
+  call send_cmd
+  mov a, #0f1h
+  call send_cmd
+  mov a, #cmd_vcom_detect
+  call send_cmd
+  mov a, #40h
+  call send_cmd
+  mov a, #cmd_disp_resume
+  call send_cmd
+  mov a, #cmd_normal_disp
+  call send_cmd
+  mov a, #cmd_disp_on
+  call send_cmd
+  ret
+ 
+ssd1306_set_col_addr:
+  mov a, #cmd_column_addr
+  call send_cmd
+  mov a, #0
+  call send_cmd
+  mov a, #lcd_width - 1
+  call send_cmd
+  ret
+  
+ssd1306_set_page_addr:
+  mov a, #cmd_page_addr
+  call send_cmd
+  mov a, #0
+  call send_cmd
+  mov a, #lcd_height / 8 - 1
+  call send_cmd
+  ret
+  .end
+</pre><br>
+
+<p>
+編譯程式：
+</p>
+<pre>
+$ mcu8051ide --compile main.s
+</pre><br>
+
+<p>
+燒錄程式：
+</p>
+<pre>
+$ sudo stcgal -P stc15 main.hex
+</pre><br>
+
+<p>
+完成<br>
+<img src="asm_oled/1.jpg" class="maxSize"><br>
+<img src="asm_oled/2.jpg" class="maxSize">
+</p>
+
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

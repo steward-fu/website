@@ -1,0 +1,110 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../../header.js"></script>
+<div id="page">
+<h3>Nokia N900 &gt;&gt; Sbox</h3>
+<p><b>build kernel(power53)</b></p>
+<hr size="1">
+<p>
+多虧有Pali以及社群的努力下，讓N900的Kernel增添許多新功能，如：USB Host功能，讓N900的生命力可以繼續延伸，而該改版的Kernel稱為Kernel Power，目前最新版的版號為Kernel Power53，如想自己動手編譯，可以參考如下方式：
+</p>
+<pre>
+$ sudo apt-get install make libncurses5-dev gcc sdk-fiasco-gen wl1251-maemo-source
+$ cd /usr/src
+$ sudo apt-get source kernel-power
+</pre><br>
+
+<p>
+編譯Kernel
+</p>
+<pre>
+$ cd kernel-2.6.28-2.6.28
+$ sudo vim debian/rules
+  cd $(BUILDTMP) &amp;&amp; tar <b>-jxvf</b> /usr/src/compat-wireless-2.6.tar.bz2
+  cd $(BUILDTMP) &amp;&amp; tar <b>-jxvf</b> /usr/src/compat.tar.bz2
+  cd $(BUILDTMP) &amp;&amp; tar <b>-jxvf</b> /usr/src/wireless-testing.tar.bz2
+
+$ sudo dpkg-buildpackage -b -rfakeroot
+$ sudo vim debian/build/compat-wireless-2.6/config.mk +26
+  #$(foreach ver,$(COMPAT_VERSIONS),$(eval CONFIG_COMPAT_KERNEL_$(ver)=y))
+  CONFIG_COMPAT_KERNEL_29 = y
+  CONFIG_COMPAT_KERNEL_30 = y
+  CONFIG_COMPAT_KERNEL_31 = y
+  CONFIG_COMPAT_KERNEL_32 = y
+  CONFIG_COMPAT_KERNEL_33 = y
+  CONFIG_COMPAT_KERNEL_34 = y
+  CONFIG_COMPAT_KERNEL_35 = y
+  CONFIG_COMPAT_KERNEL_36 = y
+  CONFIG_COMPAT_KERNEL_37 = y
+  CONFIG_COMPAT_KERNEL_38 = y
+
+$ sudo dpkg-buildpackage -b -nc -rfakeroot
+</pre><br>
+
+<p>
+更新Kernel和Modules(需要安裝UBoot)
+</p>
+<pre>
+$ sudo cp arch/arm/boot/zImage /opt/boot/zImage-2.6.28.10-power53
+$ sudo INSTALL_MOD_PATH="/lib/modules/2.6.28.10-power53" sudo make modules_install
+$ sudo find /lib/modules/2.6.28.10-power53/ -name *.ko -exec strip --remove-section=.comment --remove-section=.note --strip-unneeded {} \;
+$ sudo vim /etc/bootmenu.d/30-Maemo5-power53.item 
+  ITEM_NAME="Maemo 5 with kernel-power 2.6.28.10-power53"
+  ITEM_KERNEL="2.6.28.10-power53"
+  ITEM_OMAPATAG="1"
+
+$ u-boot-update-bootmenu
+$ sudo reboot
+</pre><br>
+
+<p>
+<br><a href="../../../phone.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

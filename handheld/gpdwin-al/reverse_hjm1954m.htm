@@ -1,0 +1,101 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>GPD Win 上蓋鋁合金版</h3>
+<p><b>逆向按鍵更新程式(HJM1954M Updater)</b></p>
+<hr size="1">
+<p>
+由於目前GPD Win的按鍵配置(滑鼠模式)是把DPad設定成WASD對應鍵；而4顆按鍵則是上下左右對應鍵，司徒使用後，還是比較習慣使用Pandora掌機的設定，因此，司徒嘗試找尋是否有相關配置可以更改，結果當然是沒用，最後只好嘗試逆向GPD Win提供的按鍵更新程式，看看是否可以Patch掉更新的韌體程式，結果還是失敗收場，因為該按鍵更新程式除了Hardcode韌體程式之外，基本上只提供片段更新，看來應該只是提供參數更新的服務，最後司徒只能訓練自己適應並整理此篇逆向過程。<br><br>
+
+解壓後的更新程式<br>
+<img src="reverse_hjm1954m/1.jpg" class="maxSize"><br><br>
+
+接著就是主程式開啟後的畫面，預設是無法更新韌體程式的，因為必須先讓硬體進入更新模式<br>
+<img src="reverse_hjm1954m/2.jpg" class="maxSize"><br><br>
+
+司徒使用ResourceHacker找出相對應的ID<br>
+<img src="reverse_hjm1954m/3.jpg" class="maxSize"><br><br>
+
+接著使用對應的ID，找出可能對應的副程式位置<br>
+<img src="reverse_hjm1954m/4.jpg" class="maxSize"><br><br>
+
+接著使用OllyDbg跟蹤就可以發現讓<b>Update Firmware</b>按鍵變成灰色的位置<br>
+<img src="reverse_hjm1954m/5.jpg" class="maxSize"><br><br>
+
+接著Patch掉該判斷指令並重新執行測試<br>
+<img src="reverse_hjm1954m/6.jpg" class="maxSize"><br><br>
+
+結果證明該位置無誤，<b>Update Firmware</b>的副程式就在剛剛Patch的附近<br>
+<img src="reverse_hjm1954m/7.jpg" class="maxSize"><br><br>
+
+目前還沒進入更新模式，測試看看是否可以運行更新功能，當然結果一定是跳出錯誤訊息<br>
+<img src="reverse_hjm1954m/8.jpg" class="maxSize"><br><br>
+
+再度跟蹤可以發現<b>Update Firmware</b>會嘗試開啟USB HID裝置進行溝通，這也是為何司徒會遇到錯誤的原因<br>
+<img src="reverse_hjm1954m/9.jpg" class="maxSize"><br><br>
+
+從OllyDbg發現的位置找到位於IDA Pro的副程式位置<br>
+<img src="reverse_hjm1954m/10.jpg" class="maxSize"><br><br>
+
+嘗試往回找到原始的位置(Update Firmware副程式)<br>
+<img src="reverse_hjm1954m/11.jpg" class="maxSize"><br><br>
+
+Main entry for <b>Updating Firmware</b><br>
+<img src="reverse_hjm1954m/12.jpg" class="maxSize"><br><br>
+
+Hardcode<br>
+<img src="reverse_hjm1954m/13.jpg" class="maxSize"><br><br>
+</p>
+
+<p>
+<br><a href="../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

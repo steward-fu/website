@@ -1,0 +1,234 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>STM32F103 &gt;&gt; Assembly</h3>
+<p><b>UART</b></p>
+<hr size="1">
+<p>
+參考資料：<br>
+1. <a href="https://www.st.com/resource/en/reference_manual/cd00171190-stm32f101xx-stm32f102xx-stm32f103xx-stm32f105xx-and-stm32f107xx-advanced-arm-based-32-bit-mcus-stmicroelectronics.pdf">pdf</a><br><br>
+
+RCC_APB2ENR暫存器，需要開啟IOPA、USART1EN、AFIOEN的Clock<br>
+<img src="asm_led/1.jpg" class="maxSize"><br><br>
+
+UART1_TX是位於PA9、UART1_RX則是PA10<br>
+<img src="asm_led/2.jpg" class="maxSize"><br><br>
+
+UART暫存器<br>
+<img src="asm_uart/1.jpg" class="maxSize"><br>
+<img src="asm_uart/2.jpg" class="maxSize"><br>
+<img src="asm_uart/3.jpg" class="maxSize"><br><br>
+
+Baudrate計算方式如下：
+</p>
+<pre>
+Baudrate = PLL2 / (16 * DIV) = 128000000 / (16 * 69.44)
+</pre><br>
+
+<p>
+main.s
+</p>
+<pre class="brush:asm">
+  .thumb
+  .cpu cortex-m3
+  .syntax unified
+   
+  .equiv GPIOA_CRL,   0x40010800
+  .equiv GPIOA_CRH,   0x40010804
+  .equiv GPIOA_IDR,   0x40010808
+  .equiv GPIOA_ODR,   0x4001080c
+
+  .equiv GPIOC_CRL,   0x40011000
+  .equiv GPIOC_CRH,   0x40011004
+  .equiv GPIOC_IDR,   0x40011008
+  .equiv GPIOC_ODR,   0x4001100c
+
+  .equiv RCC_CR,      0x40021000
+  .equiv RCC_CFGR,    0x40021004
+  .equiv RCC_APB2ENR, 0x40021018
+
+  .equiv FLASH_ACR,   0x40022000
+
+  .equiv UART1_SR,    0x40013800
+  .equiv UART1_DR,    0x40013804
+  .equiv UART1_BRR,   0x40013808
+  .equiv UART1_CR1,   0x4001380c
+  .equiv UART1_CR2,   0x40013810
+  .equiv UART1_CR3,   0x40013814
+
+  .equiv STACKINIT,   0x20005000
+    
+  .global _start
+  .section .text
+
+  .org 0x0
+  .word STACKINIT
+  .word _start
+  
+  .org 0x100
+  .align 2
+  .thumb_func
+_start:
+  bl rcc_init
+  bl flash_init
+  bl uart_init
+
+  ldr r4, =hello
+0:
+  ldrb r0, [r4]
+  cmp r0, #0
+  beq 1f
+  bl uart_byte
+  add r4, #1
+  bne 0b
+1:
+  b .
+  
+  .align 2
+  .thumb_func
+uart_init:
+  push {r4, lr}
+  ldr r4, =RCC_APB2ENR
+  ldr r1, [r4]
+  ldr r2, =(1 << 14) | (1 << 2) | (1 << 0)
+  orr r1, r2
+  str r1, [r4]
+
+  ldr r4, =GPIOA_CRH
+  ldr r1, [r4]
+  bic r1, #0xff0
+  orr r1, #0x4b0
+  str r1, [r4]
+
+  ldr r4, =UART1_BRR
+  @ldr r1, =(39 << 4) | (1 << 0) @ 115200bps 72MHz
+  ldr r1, =(69 << 4) | (7 << 0) @ 115200bps 128MHz
+  str r1, [r4]
+
+  ldr r4, =UART1_CR1
+  ldr r1, =(1 << 13) | (1 << 3)
+  str r1, [r4]
+  pop {r4, pc}
+  
+  .align 2
+  .thumb_func
+uart_byte:
+  push {r4, lr}
+  ldr r4, =UART1_SR
+0:
+  ldr r1, [r4]
+  tst r1, #(1 << 7)
+  beq 0b
+
+  ldr r4, =UART1_DR
+  str r0, [r4]
+  pop {r4, pc}
+  
+  .align 2
+  .thumb_func
+rcc_init:
+  push {r4, lr}
+  ldr r4, =RCC_CR
+  ldr r1, =(1 << 26) | (1 << 16)
+  str r1, [r4]
+0:
+  ldr r1, [r4]
+  tst r1, #(1 << 17)
+  bne 0b
+
+  ldr r4, =RCC_CFGR
+  @mov r1, #(7 << 18) @ 72MHz
+  mov r1, #(14 << 18) @ 128MHz
+  orr r1, #(1 << 16)
+  str r1, [r4]
+
+  ldr r4, =RCC_CR
+  ldr r1, [r4]
+  orr r1, #(1 << 24)
+  str r1, [r4]
+0:
+  ldr r1, [r4]
+  tst r1, #(1 << 25)
+  bne 0b
+
+  ldr r4, =RCC_CFGR
+  ldr r1, [r4]
+  orr r1, #2
+  str r1, [r4]
+0:
+  ldr r1, [r4]
+  tst r1, #(1 << 3)
+  bne 0b
+  pop {r4, pc}
+
+  .align
+  .thumb_func
+flash_init:
+  push {r4, lr}
+  ldr r4, =FLASH_ACR
+  mov r1, #0x32
+  str r1, [r4]
+  pop {r4, pc}
+
+  .align
+hello: .asciz "Hello, world!"
+  .end
+</pre><br>
+
+<p>
+完成<br>
+<img src="../f1c100s/asm_uart/4.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

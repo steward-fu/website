@@ -1,0 +1,181 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushPython.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Zipit Z1</h3>
+<p><b>Upload程式(Python)</b></p>
+<hr size="1">
+<p>
+程式碼如下：
+</p>
+<pre class="brush:py">
+#!/usr/bin/python
+import os
+import sys
+import serial
+import readchar
+import argparse
+import threading
+from time import sleep
+ 
+def print_serial():
+  while True:
+    sys.stdout.write(ser.read())
+
+def send_file(path, ch):
+  f = open(path, 'rb')
+  c = f.read()
+  f.close()
+
+  n = len(c)
+  buf = [(n % 65536) % 256, (n % 65536) / 256, (n / 65536) % 256, (n / 65536) / 256]
+  ser.write(ch)
+  ser.write(buf)
+  sleep(1)
+  ser.write(c)
+  sleep(1)
+
+parser = argparse.ArgumentParser()
+parser.add_argument('-port', default='/dev/ttyUSB0')
+args = parser.parse_args()
+
+if os.geteuid() != 0:
+  print "run me as root"
+  sys.exit()
+
+if os.path.exists('zpm.bin') == False:
+  print 'failed to open zpm.bin'
+  sys.exit()
+
+print """Upload commands
+  'A' - allrom.bin upload (2MB)
+  'a' - loader.bin upload (8K max)
+  'k' - zimage.dat upload (581K max)
+  'u' - ramdisk.gz upload (1.5MB max) Follow changes with 'WYes' to write
+  '?' - show zipit information
+Other commands
+  'R' - grab ROM
+  'x' - exit\n"""
+
+f = open('zpm.bin', 'rb')
+zpm = f.read()
+f.close()
+
+ser = serial.Serial(args.port, 9600)
+for x in range(2048):
+  ser.write(zpm[x])
+ser.close()
+
+ser = serial.Serial(args.port, 57600)
+thread = threading.Thread(target=print_serial)
+thread.daemon = True
+thread.start()
+
+while True:
+  ch = readchar.readchar()
+  if ch == 'A':
+    print 'send allrom.bin...'
+    send_file('allrom.bin', ch)
+  elif ch == 'a':
+    print 'send loader.bin...'
+    send_file('loader.bin', ch)
+  elif ch == 'k':
+    print 'send zimage.dat...'
+    send_file('zimage.dat', ch)
+  elif ch == 'u':
+    print 'send ramdisk.gz...'
+    send_file('ramdisk.gz', ch)
+  elif ch == 'x':
+    break
+  else:
+    ser.write(ch)
+
+ser.close()
+</pre><br>
+
+<p>
+操作指令跟原本Upload程式一樣
+</p>
+<pre>
+$ sudo ./run.py 
+Upload commands
+  'A' - allrom.bin upload (2MB)
+  'a' - loader.bin upload (8K max)
+  'k' - zimage.dat upload (581K max)
+  'u' - ramdisk.gz upload (1.5MB max) Follow changes with 'WYes' to write
+  '?' - show zipit information
+Other commands
+  'R' - grab ROM
+  'x' - exit
+
+
+ZPM .02 - 57.6Kbps new cmds
+ Loader addresses: 00002000 00090000
+
+OK &gt;
+send loader.bin...
+BEG:00000D30END:E6OK &gt;
+send zimage.dat...
+BEG:00084DE8END:76OK &gt;
+send ramdisk.gz...
+BEG:0013720CEND:B3OK &gt;
+E+W PWD?ERASING,ERASED,WRITTEN!
+OK &gt;
+</pre><br>
+
+<p>
+司徒終於可以在Pandora掌機上開發Zipit Z1的程式了！<br>
+<img src="upload_python/1.jpg" class="maxSize">
+</p>
+
+<p>
+<br><br><a href="../../umpc.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

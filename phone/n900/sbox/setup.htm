@@ -1,0 +1,111 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../../scripts/shBrushBash.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../../header.js"></script>
+<div id="page">
+<h3>Nokia N900 &gt;&gt; SBox</h3>
+<p><b>架設環境</b></p>
+<hr size="1">
+<p>
+由於N900的rootfs空間只有256MB，不可能將開發環境全部安裝在rootfs，因此，可以使用Linux的chroot方式切換到ScratchBox，這樣就可以在ScratchBox環境下安裝開發環境並編譯程式，待編譯完成後，再拿到Maemo下執行。司徒建議將home分區加大，這樣就可以將ScratchBox放到home分區底下，當然使用者也可以將ScratchBox放到SDCard底下，不過建議使用高速SDCard卡，而ScratchBox的製作步驟，請參考如下方式：
+</p>
+<pre>
+$ mkdir mysbox
+$ sudo mount -o bind / /mnt
+$ sudo cp -a /mnt/* mysbox/
+$ sudo umount /mnt
+$ sudo cp -a /opt/* mysbox/opt/
+</pre><br>
+
+<p>
+接著製作Login Script，方便登入
+</p>
+<pre>
+$ vim mysbox/login
+</pre>
+<pre class="brush:bash">
+#!/bin/sh
+if [ `whoami` != "root" ];then
+ echo "Run me as root"
+ exit 1
+fi
+
+MYPATH=`dirname $0`
+mount -o bind /proc           "$MYPATH/proc"
+mount -o bind /sys            "$MYPATH/sys"
+mount -o bind /dev            "$MYPATH/dev"
+mount -o bind /dev/pts        "$MYPATH/dev/pts"
+mount /dev/mmcblk0p1          "$MYPATH/home/user/MyDocs"
+chroot "$MYPATH" /bin/bash -c 'su - user'
+umount "$MYPATH/dev/pts"
+umount "$MYPATH/dev"
+umount "$MYPATH/sys"
+umount "$MYPATH/proc"
+umount "$MYPATH/home/user/MyDocs"
+</pre><br>
+
+<p>
+使用如下方式進入ScratchBox
+</p>
+<pre>
+$ sudo sh mysbox/login
+</pre><br>
+
+<p>
+如要登出，直接在ScratchBox下執行<b>exit</b>即可。
+</p>
+<pre>
+$ exit
+</pre><br>
+
+<p>
+<br><a href="../../../phone.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

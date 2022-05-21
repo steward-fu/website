@@ -1,0 +1,179 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Windows Driver Model</h3>
+<p><b>使用私人憑證加簽驅動程式</b></p>
+<hr size="1">
+<p>
+目前在Windows新釋出的系統上，使用者只能安裝有Microsoft簽章的驅動程式，不然驅動程式將無法被成功掛載執行，但是，在取得Microsoft簽章之前，使用者需要先取得憑證(如：VeriSign)，再使用此憑證加簽驅動程式做WHQL測試，最後再把測試結果提交給Microsoft，才可以取得Microsoft簽章的驅動程式，手續是相當繁雜，為此，司徒特地整理一下，在未取得憑證之前，使用者如何自製測試用的數位簽章，也順便當作日後的參考筆記<br><br>
+
+首先開啟Command Line並且切換到<b>$(DDKROOT)\bin\x86</b>目錄，接著輸入如下命令(司徒使用Steward作為測試名字)產生私人憑證檔案
+</p>
+<pre>
+c:\WinDDK\7600.16385.1\bin\x86&gt; MakeCert.exe -r -pe -ss Steward Steward.cer
+</pre>
+<p>
+成功後會顯示Succeeded訊息並且產生Steward.cer檔案。<br><br>
+
+接著將產生的憑證加入憑證管理員
+</p>
+<pre>
+c:\WinDDK\7600.16385.1\bin\x86&gt; CertMgr.exe -add Steward.cer -s -r localMachine root
+</pre>
+
+<p>
+成功後會顯示<b>CertMgr Succeeded</b>訊息<br><br>
+
+接著輸入certmgr.exe指令，開啟後點選<b>信任的根憑證授權</b>就可以看到<b>Joe's-Software-Emporium</b>這個簽章了，而開始的時間就是使用者剛剛產生CER檔案的時間<br>
+<img src="self_sign/1.jpg" class="maxSize"><br><br>
+
+因為數位簽章是針對CAT檔案、SYS檔案進行加簽，但是處於開發階段一定不會有CAT檔案，因為CAT檔案是必須經過Microsoft的WHQL認證後才會拿到的數位簽章檔案，為此，微軟也準備了一個INF2CAT的暫時轉換工具(<b>$(DDKROOT)\bin\selfsign</b>)，可以提供暫時加簽測試用，因此可以輸入如下命令產生暫時的CAT檔案(支援批次處理INF檔案)(/os:參數可以只挑要測試的作業系統即可)
+</p>
+<pre>
+c:\WinDDK\7600.16385.1\bin\selfsign&gt; Inf2Cat.exe /driver:c:\Test /os:XP_X86,XP_X64,Server2003_X86,Server2003_X64,Vista_x86,Vista_X64,Server2008_x86,Server2008_x64,Server2008_IA64
+</pre><br>
+
+<p>
+成功後會顯示如下訊息(INF2CAT程式會檢查INF檔案的規則，若INF檔案有錯誤，需要修正到完全正確才可以產生CAT檔案)
+</p>
+<pre>
+.....................................
+Signability test complete.
+
+Errors:
+None
+
+Warnings:
+None
+
+Catalog generation complete.
+</pre><br>
+
+<p>
+接著輸入如下指令進行驅動程式(CAT檔案、SYS檔案)的加簽動作
+</p>
+<pre>
+c:\WinDDK\7600.16385.1\bin\x86&gt; SignTool.exe sign /s Steward Test.cat
+c:\WinDDK\7600.16385.1\bin\x86&gt; SignTool.exe sign /s Steward Test.sys
+</pre><br>
+
+<p>
+如果使用者產生太多私人憑證，則會顯示類似如下訊息
+</p>
+<pre>
+SignTool Error: Multiple certificates were found that meet all the given
+criteria. Use the /a option to allow SignTool to choose the best
+certificate automatically or use the /sha1 option with the hash of the
+desired certificate.
+The following certificates meet all given criteria:
+Issued to: Joe's-Software-Emporium
+Issued by: Joe's-Software-Emporium
+Expires:   2040/1/1     SHA1 hash: B9F2BCA7B3C87AEF0C4CA796EDBAE6AEF535C951
+
+Issued to: Joe's-Software-Emporium
+Issued by: Joe's-Software-Emporium
+Expires:   2040/1/1     SHA1 hash: AE95C79602721E7A38098CF211F1B455886B1F85
+
+Issued to: Joe's-Software-Emporium
+Issued by: Joe's-Software-Emporium
+Expires:   2040/1/1     SHA1 hash: A3A4BB9160A2938BB028E293568A6889256237EC
+
+Issued to: Joe's-Software-Emporium
+Issued by: Joe's-Software-Emporium
+Expires:   2040/1/1     SHA1 hash: 5B9B045345D9743C33D2D951BF69CE3182A93A93
+
+Issued to: Joe's-Software-Emporium
+Issued by: Joe's-Software-Emporium
+Expires:   2040/1/1     SHA1 hash: 514BCBE420C4E2176CC9CDAF1DBF306EF1B2807F
+
+Issued to: Joe's-Software-Emporium
+Issued by: Joe's-Software-Emporium
+Expires:   2040/1/1     SHA1 hash: 06D5BC9EF616FF46C909F5ABDDF34EAF8652A6EB
+
+
+Number of errors: 1
+</pre>
+<p>
+如是這樣的話，使用者可以使用Regedit把<b>[HKEY_CURRENT_USER\Software\Microsoft\SystemCertificates\]</b>底下的使用者機碼刪除，如：Steward，然後再重新製作一次憑證並重新匯入即可做驅動程式簽章<br><br>
+
+若成功則會顯示如下訊息
+</p>
+<pre>
+Done Adding Additional Store
+Successfully signed: Test.sys
+</pre><br>
+
+<p>
+若要測試有無簽章成功，則可以輸入如下指令確認
+</p>
+<pre>
+c:\WinDDK\7600.16385.1\bin\x86&gt; SignTool.exe verify Test.sys
+</pre>
+
+<p>
+或者使用滑鼠查看驅動程式檔案內容也可以看到簽章資訊<br>
+<img src="self_sign/2.jpg" class="maxSize"><br><br>
+
+最後，為了要讓Windows系統接受測試的數位簽章，還需要使用<b>bcdedit.exe</b>做系統更改，使用者需要輸入如下指令
+</p>
+<pre>
+c:\&gt; bcdedit.exe /set testsigning on
+c:\&gt; bcdedit.exe /set bootstatuspolicy ignoreallfailures
+c:\&gt; bcdedit.exe /set bootmenupolicy legacy
+</pre>
+<p>
+指令完成後，重新開機就可以開始做測試
+</p>
+
+<p>
+<br><a href="../../driver.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

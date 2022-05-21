@@ -1,0 +1,114 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>LPC2103 &gt;&gt; Assembly</h3>
+<p><b>Button</b></p>
+<hr size="1">
+<p>
+參考資料：<br>
+1. <a href="https://www.keil.com/dd/docs/datashts/philips/user_manual_lpc2101_2102_2103.pdf">pdf</a><br><br>
+
+暫存器<br>
+<img src="asm_led/3.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+  .equ IOPIN, 0xe0028000
+  .equ IOSET, 0xe0028004
+  .equ IODIR, 0xe0028008
+  .equ IOCLR, 0xe002800c
+
+  .text
+  .align 2
+  .global _start
+_start:    b reset
+_undef:    b .
+_swi:      b .
+_pabort:   b .
+_dabort:   b .
+_reserved: b .
+_irq:      b .
+_fiq:      b .
+
+reset:
+  ldr r0, =IODIR
+  ldr r1, =(1 &lt;&lt; 22)
+  str r1, [r0]
+loop:
+  ldr r0, =IOPIN
+  ldr r0, [r0]
+  and r0, #(1 &lt;&lt; 14)
+  cmp r0, #(1 &lt;&lt; 14)
+  bne 1f
+0:
+  ldr r0, =IOCLR
+  ldr r1, =(1 &lt;&lt; 22)
+  str r1, [r0]
+  b loop
+1:
+  ldr r0, =IOSET
+  ldr r1, =(1 &lt;&lt; 22)
+  str r1, [r0]
+  b loop
+  .end 
+</pre><br>
+
+<p>
+完成<br>
+<img src="asm_button/1.jpg" class="maxSize"><br>
+<img src="asm_button/2.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

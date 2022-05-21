@@ -1,0 +1,203 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../../header.js"></script>
+<div id="page">
+<h3>Visual C++ &gt;&gt; Console</h3>
+<p><b>(y*3.14)、((y*314)/100)、((y*201)&gt;&gt;6)</b></p>
+<hr size="1">
+<p>
+這是一個相當有趣的選擇題，因為從使用者選擇的答案就可以知道使用者對於程式效能的要求有多高，雖然電腦硬體不斷進化提升中，但是寫程式不單單是寫在電腦上執行，也需要考慮到單晶片、嵌入式系統上面，而要寫出高效能的程式，基本功是不可缺少的技能。<br><br>
+
+一般C/C++程式設計師對於除法、乘法的細節都不會有過多的注意，因為有很多的Bug需要解決，然而，解決完Bug之後，是否會回頭去解決程式效能的問題呢？答案是否定的，因為怕動了程式之後問題更多，因此這個問題就這樣被略過，除非這個效能提升是一個關鍵問題，否則這個問題可能不太有人去理會，因此，一開始就把事情做對，是有其必要性，寧願一開始就多注意一些細節，也不要後來再來大改程式。<br><br>
+
+原始程式如下(main.c)
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+volatile unsigned int result=0;
+
+int main(void)
+{
+  unsigned int y;
+
+  y*= 3.14;
+  result = y;
+  return 0;
+}
+</pre>
+
+<p>
+這個程式相當簡單，就只有做浮點數的乘法，但是，是否有更好的寫法呢？答案是肯定有的，有寫過組合語言、提升效能程式的工程師就會有更多改善的想法，司徒就大約說明一下過程，首先，浮點數一般使用IEEE 754的做法，使用整數去表示浮點數，然而，它的運算量是相當大的，一般單晶片或嵌入式編譯系統都會調用系統函數去運算，所以消耗的時間就會大大增加。<br><br>
+
+Keil C 8051組合語言結果(main.c)
+</p>
+<pre class="brush:cpp">
+6: int main(void) 
+7: { 
+8:         unsigned int y; 
+9:          
+10:         y*= 3.14; 
+C:0x0262    AC0A     MOV      R4,0x0A
+C:0x0264    AD0B     MOV      R5,0x0B
+C:0x0266    E4       CLR      A
+C:0x0267    12010E   LCALL    C?FCASTI(C:010E)
+C:0x026A    7BC3     MOV      R3,#0xC3
+C:0x026C    7AF5     MOV      R2,#0xF5
+C:0x026E    7948     MOV      R1,#0x48
+C:0x0270    7840     MOV      R0,#0x40
+C:0x0272    120003   LCALL    C?FPMUL(C:0003)
+C:0x0275    120147   LCALL    C?CASTF(C:0147)
+C:0x0278    8E0A     MOV      0x0A,R6
+C:0x027A    8F0B     MOV      0x0B,R7
+11:         result = y; 
+C:0x027C    850A08   MOV      result(0x08),0x0A
+C:0x027F    850B09   MOV      0x09,0x0B
+12:         return 0; 
+C:0x0282    E4       CLR      A
+C:0x0283    FE       MOV      R6,A
+C:0x0284    FF       MOV      R7,A
+13: }
+</pre>
+<p>
+編譯成組合語言後可以發現呼叫相當多的系統函數(如：C?FPMUL)，呼叫函數本來就會耗費資源，更何況運算內容。<br><br>
+
+Keil C ARM組合語言結果(main.c 最佳化Level-0)
+</p>
+
+<pre class="brush:cpp">
+6: int main(void) 
+7: { 
+8:         unsigned int y; 
+9:          
+0x000001A0 B510      PUSH     {r4,lr}
+10:         y*= 3.14; 
+0x000001A2 F000F89F  BL.W     _dfltu (0x000002E4)
+0x000001A6 A205      ADR      r2,{pc}+2  ; @0x000001BC
+0x000001A8 6853      LDR      r3,[r2,#0x04]
+0x000001AA 6812      LDR      r2,[r2,#0x00]
+0x000001AC F000F8BE  BL.W     _dmul (0x0000032C)
+0x000001B0 F000F85E  BL.W     _dfixu (0x00000270)
+11:         result = y; 
+0x000001B4 4903      LDR      r1,[pc,#12]  ; @0x000001C4
+0x000001B6 6008      STR      r0,[r1,#0x00]
+12:         return 0; 
+0x000001B8 2000      MOVS     r0,#0x00
+13: }
+</pre>
+
+<p>
+不開最佳化的情況下還是一樣呼叫系統函數做浮點運算。<br><br>
+
+知道浮點數運算相當耗時之後，一般工程師會從整數下手，也就是改成如下程式
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+volatile unsigned int result=0;
+
+int main(void)
+{
+  unsigned int y;
+
+  y = ((y * 314) / 100);
+  result = y;
+  return 0;
+}
+</pre>
+
+<p>
+改成如上程式，已經算是比較快速的做法，也很適合大多數系統的提升準則。<br><br>
+
+那是否還有更好的做法呢？答案是有的，也就是做改成位移方式，如果是基於2的整數倍除法可以使用邏輯右移運算，而基於2的整數倍乘法可以使用邏輯左移運算，因此，可以再度改成更佳的運算方式
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+volatile unsigned int result=0;
+
+int main(void)
+{
+  unsigned int y;
+
+  y = ((y * 201) &gt;&gt; 6);
+  result = y;
+  return 0;
+}
+</pre>
+
+<p>
+當然這樣的改法需要去拆解，如果遇到不能拆解時，就只能使用整數代替除法的方式。<br><br>
+
+使用者可能會提出質疑，問說編譯器已經有最佳化選項，只要一打開就可以了ㄚ，為何要做到這麼複雜呢？司徒必須說，編譯器一般尚無法做到非常聰明的安排，像上面的例子，編譯器一般無法拆解，所以編譯成組合語言，還是會帶較大的數值運算，當然也有例外的編譯器，但是，重點是你是否會去想如何改進程式效能，以及你的解法思路是怎麼思考的呢？<br><br>
+
+Keil C ARM(最大最佳化效果)
+</p>
+<pre class="brush:cpp">
+6: int main(void) 
+7: { 
+8:         unsigned int y; 
+9:          
+0x000001A0 B510      PUSH     {r4,lr}
+10:         y*= 3.14; 
+0x000001A2 F000F89F  BL.W     _dfltu (0x000002E4)
+0x000001A6 A205      ADR      r2,{pc}+2  ; @0x000001BC
+0x000001A8 CA0C      LDM      r2,{r2-r3}
+0x000001AA F000F8BF  BL.W     _dmul (0x0000032C)
+0x000001AE F000F85F  BL.W     _dfixu (0x00000270)
+11:         result = y; 
+0x000001B2 4904      LDR      r1,[pc,#16]  ; @0x000001C4
+0x000001B4 6008      STR      r0,[r1,#0x00]
+12:         return 0; 
+0x000001B6 2000      MOVS     r0,#0x00
+13: } 
+</pre><br>
+
+<p>
+<br><a href="../../../program.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,108 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushPas.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>10M02SCM &gt;&gt; VHDL</h3>
+<p><b>Clock</b></p>
+<hr size="1">
+<p>
+程式如下：
+</p>
+<pre class="brush:pas">
+library ieee;
+use ieee.std_logic_1164.all;
+  
+entity main is
+  port(
+    clk: in bit;
+    seg_out: out bit_vector(8 downto 0));
+end main;
+  
+architecture logic of main is
+signal seg_cnt:integer:=0;
+signal clk_cnt:integer:=0;
+type seg_type is array (0 to 9) of bit_vector(8 downto 0);
+constant seg_def:seg_type:=(
+  "000111111", "000000110", "001011011", "001001111", "001100110", 
+  "001101101", "001111101", "000000111", "001111111", "001101111");
+ 
+begin
+  process(clk) is
+  begin
+    if (clk'event and clk = '1') then
+      clk_cnt&lt;= clk_cnt + 1;
+    end if;
+    
+    if (clk_cnt &gt;= 12000000) then
+      clk_cnt&lt;= 0;
+      seg_out&lt;= seg_def(seg_cnt);
+      seg_cnt&lt;= seg_cnt + 1;
+    end if;
+    
+    if (seg_cnt &gt;= 10) then
+      seg_cnt&lt;= 0;
+    end if;
+  end process;
+end logic;
+</pre>
+<p>
+開發板上連接的是12MHz振盪器，因此，每數到12000000時，就更新七段顯示器的數值<br><br>
+
+腳位<br>
+<img src="vhdl_clock/1.jpg" class="maxSize"><br><br>
+
+完成<br>
+<img src="vhdl_clock/2.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

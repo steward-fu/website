@@ -1,0 +1,173 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Linux Device Driver &gt;&gt; C/C++ &gt;&gt; chrdev</h3>
+<p><b>read、write</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://github.com/steward-fu/ldd">Source Code</a><br><br>
+
+User Application可以透過read()、write()傳遞資料給驅動程式，而需要注意的地方是，複製資料使用的方式是copy_to_user()、copy_from_user()，而不是一般的memcpy()<br><br>
+
+使用方式：<br>
+1. copy_to_user()<br>
+2. copy_from_user()<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;linux/cdev.h&gt;
+#include &lt;linux/init.h&gt;
+#include &lt;linux/device.h&gt;
+#include &lt;linux/module.h&gt;
+#include &lt;linux/uaccess.h&gt;
+
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("Steward Fu");
+MODULE_DESCRIPTION("Linux Driver");
+
+static int base=0;
+static struct cdev mycdev;
+static char mybuf[255]={0};
+static struct class *myclass=NULL;
+
+static int myopen(struct inode *inode, struct file *file)
+{
+  printk("%s\n", __func__);
+  return 0;
+}
+
+static int myclose(struct inode *inode, struct file *file)
+{
+  printk("%s\n", __func__);
+  return 0;
+}
+
+static ssize_t myread(struct file *flip, char __user *buf, size_t len, loff_t *off)
+{
+  int r=0;
+  
+  r = copy_to_user(buf, mybuf, strlen(mybuf));
+  printk("%s, %s\n", __func__, mybuf);
+  return r;
+}
+
+static ssize_t mywrite(struct file *flip, const char __user *buf, size_t len, loff_t *off)
+{
+  int r=0;
+
+  r = copy_from_user(mybuf, buf, len);
+  printk("%s, %s\n", __func__, mybuf);
+  return r;
+}
+
+static const struct file_operations myfops = {
+  .owner = THIS_MODULE,
+  .open = myopen,
+  .read = myread,
+  .write = mywrite,
+  .release = myclose,
+};
+
+int ldd_init(void)
+{
+  alloc_chrdev_region(&amp;base, 0, 1, "myfile");
+  myclass = class_create(THIS_MODULE, "myfile");
+  device_create(myclass, NULL, base, NULL, "myfile");
+  cdev_init(&amp;mycdev, &amp;myfops);
+  cdev_add(&amp;mycdev, base, 1);
+  return 0;
+}
+ 
+void ldd_exit(void)
+{
+  device_destroy(myclass, base);
+  cdev_del(&amp;mycdev);
+  class_destroy(myclass);
+  unregister_chrdev_region(base, 1);
+}
+ 
+module_init(ldd_init);
+module_exit(ldd_exit);
+</pre>
+<p>
+<b>ldd_init</b>: 建立字元驅動程式<br>
+<b>myopen</b>: 僅列印字串<br>
+<b>mywrite</b>: 儲存並且列印User Application傳送的字串<br>
+<b>myread</b>: 複製儲存的字串給User Application並且列印出來<br>
+<b>myclose</b>: 僅列印字串<br>
+<b>ldd_exit</b>: 刪除字元驅動程式<br><br>
+
+寫入字串
+</p>
+<pre>
+# echo "test" &gt; /dev/myfile
+  mywrite, test
+
+</pre>
+<p>
+P.S. 按下<b>ctrl+c</b>停止<br><br>
+
+讀取字串
+</p>
+<pre>
+# cat /dev/myfile
+  myopen
+  myread, test
+
+  myclose
+</pre><br>
+
+<p>
+<br><a href="../../driver.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

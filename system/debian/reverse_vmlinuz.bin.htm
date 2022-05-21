@@ -1,0 +1,105 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Debian</h3>
+<p><b>Extract vmlinuz.bin</b></p>
+<hr size="1">
+<p>
+拆解後的Body才可以拿來逆向分析，而載入的起始位址可以從<b>/proc/iomem</b>得知，Symbols則可以從<b>/proc/kallsyms</b>拿到：
+</p>
+<pre>
+$ file vmlinuz.bin
+  vmlinuz.bin: data
+
+$ od -A d -t x1 vmlinuz.bin | grep '1f 8b 08'
+  0014384 1f 8b 08 00 00 00 00 00 02 03 ec bd 0d 74 1c e5
+
+$ dd if=vmlinuz.bin of=head bs=1 count=14384
+  14384+0 records in
+  14384+0 records out
+  14384 bytes (14 kB, 14 KiB) copied, 0.0405731 s, 355 kB/s
+
+$ dd if=vmlinuz.bin of=body bs=1 skip=14384
+  2710256+0 records in
+  2710256+0 records out
+  2710256 bytes (2.7 MB, 2.6 MiB) copied, 5.79015 s, 468 kB/s
+
+$ file body
+ body: gzip compressed data, max compression, from Unix
+
+$ zcat body > body_ext
+$ file body_ext 
+  body_ext: data
+
+$ strings body_ext | grep Linux
+  Linux version 3.12.0-dingux (steward@debian) (gcc version 4.9.1 (Buildroot 2014.08-g252c9b7dd-dirty) ) #1 Sat May 2 14:36:13 CST 2020
+  $PLATFORM$Linux$
+  No init found.  Try passing init= option to kernel. See Linux Documentation/init.txt for guidance.
+  Linux
+  6Linux video capture interface: v2.00
+  6Advanced Linux Sound Architecture Driver Initialized.
+  Advanced Linux Sound Architecture Driver Version k%s.
+  Linux
+</pre>
+<p>
+P.S. od計算出來的'1f 8b 08'需要加上偏移位置，這個範例剛好是從起始開始，所以是14384 + 0<br><br>
+
+合併回去原本vmlinuz.bin
+</p>
+<pre>
+$ gzip -9 -n body_ext
+$ cat head body_ext.gz > vmlinuz_new.bin
+</pre><br>
+
+<p>
+<br><a href="../../system.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

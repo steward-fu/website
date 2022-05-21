@@ -1,0 +1,210 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Q8 &gt;&gt; Assembly</h3>
+<p><b>SELECT、START、VOL</b></p>
+<hr size="1">
+<p>
+參考資料：<br>
+1. <a href="https://github.com/steward-fu/mcu-pdf/tree/master/f1c100s">pdf</a><br>
+2. <a href="http://nano.lichee.pro/">lichee</a><br>
+3. <a href="https://mangopi.org/mangopi_r">mangopi_r</a><br>
+4. <a href="https://www.allwinnertech.com/index.php?c=product&a=index&pid=4">allwinner</a><br><br>
+
+暫存器<br>
+<img src="asm_tp/1.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+  .global _start
+    
+  .equiv CCU_BASE,              0x01c20000
+  .equiv GPIO_BASE,             0x01c20800
+  .equiv UART1_BASE,            0x01c25400
+  .equiv TP_BASE,               0x01c24800
+ 
+  .equiv PLL_PERIPH_CTRL_REG,   0x0028
+  .equiv AHB_APB_HCLKC_CFG_REG, 0x0054
+  .equiv BUS_CLK_GATING_REG2,   0x0068
+  .equiv BUS_SOFT_RST_REG2,     0x02d0
+
+  .equiv TP_CTRL_REG0,         0x00
+  .equiv TP_CTRL_REG1,         0x04
+  .equiv TP_CTRL_REG2,         0x08
+  .equiv TP_CTRL_REG3,         0x0c
+  .equiv TP_INT_FIFO_CTRL_REG, 0x10
+  .equiv TP_INT_FIFO_STAT_REG, 0x14
+  .equiv TP_COM_DATA_REG,      0x1c
+  .equiv TP_DATA_REG,          0x24
+  
+  .equiv PA,        (0x24 * 0) 
+  .equiv PORT_CFG0, 0x00
+  .equiv PORT_DATA, 0x10
+  .equiv UART_RBR,  0x0000
+  .equiv UART_DLL,  0x0000
+  .equiv UART_DLH,  0x0004
+  .equiv UART_IER,  0x0004
+  .equiv UART_IIR,  0x0008
+  .equiv UART_LCR,  0x000c
+  .equiv UART_MCR,  0x0010
+  .equiv UART_USR,  0x007c
+   
+  .arm
+  .text
+_start:
+  .long 0xea000016
+  .byte 'e', 'G', 'O', 'N', '.', 'B', 'T', '0'
+  .long 0, __spl_size
+  .byte 'S', 'P', 'L', 2
+  .long 0, 0
+  .long 0, 0, 0, 0, 0, 0, 0, 0
+  .long 0, 0, 0, 0, 0, 0, 0, 0
+   
+_vector:
+  b reset
+  b .
+  b .
+  b .
+  b .
+  b .
+  b .
+  b .
+   
+reset:
+  ldr r4, =CCU_BASE
+  ldr r1, =0x80041800
+  str r1, [r4, #PLL_PERIPH_CTRL_REG]
+  ldr r1, =0x00003180
+  str r1, [r4, #AHB_APB_HCLKC_CFG_REG]
+  
+  ldr r4, =GPIO_BASE
+  ldr r1, =0x5520
+  str r1, [r4, #(PA + PORT_CFG0)]
+  
+  ldr r4, =CCU_BASE
+  ldr r1, =(1 &lt;&lt; 21)
+  str r1, [r4, #BUS_CLK_GATING_REG2]
+  str r1, [r4, #BUS_SOFT_RST_REG2]
+  
+  ldr r4, =UART1_BASE
+  ldr r1, =0x00
+  str r1, [r4, #UART_IER]
+  ldr r1, =0xf7
+  str r1, [r4, #UART_IIR]
+  ldr r1, =0x00
+  str r1, [r4, #UART_MCR]
+  ldr r1, [r4, #UART_LCR]
+  orr r1, #(1 &lt;&lt; 7)
+  str r1, [r4, #UART_LCR]
+  ldr r1, =54
+  str r1, [r4, #UART_DLL]
+  ldr r1, =0x00
+  str r1, [r4, #UART_DLH]
+  ldr r1, [r4, #UART_LCR]
+  bic r1, #(1 &lt;&lt; 7)
+  str r1, [r4, #UART_LCR]
+  ldr r1, [r4, #UART_LCR]
+  bic r1, #0x1f
+  orr r1, #0x03
+  str r1, [r4, #UART_LCR]
+
+  ldr r4, =TP_BASE
+  ldr r1, =(3 &lt;&lt; 20) | (1 &lt;&lt; 16) | (1 &lt;&lt; 0)
+  str r1, [r4, #TP_CTRL_REG0]
+  ldr r1, =(1 &lt;&lt; 5) | (1 &lt;&lt; 4) | (1 &lt;&lt; 1)
+  str r1, [r4, #TP_CTRL_REG1]
+0:
+  ldr r0, [r4, #TP_DATA_REG]
+  lsr r0, #4
+  bl uart_print_byte
+
+  ldr r1, =10000
+1:
+  subs r1, #1
+  bne 1b
+  b 0b
+
+uart_print_byte:
+  push {r4, lr}
+  ldr r4, =UART1_BASE
+0:
+  ldr r1, [r4, #UART_USR]
+  tst r1, #(1 &lt;&lt; 1)
+  beq 0b
+  strb r0, [r4, #UART_RBR]
+  pop {r4, pc}
+
+uart_print_4byte:
+  push {r4, lr}
+  mov r4, r0
+  lsr r0, #24
+  bl uart_print_byte
+ 
+  mov r0, r4
+  lsr r0, #16
+  bl uart_print_byte
+   
+  mov r0, r4
+  lsr r0, #8
+  bl uart_print_byte
+   
+  mov r0, r4
+  bl uart_print_byte
+  pop {r4, pc}
+
+  .end
+</pre><br>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

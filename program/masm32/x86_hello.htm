@@ -1,0 +1,123 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>MASM32 &gt;&gt; Assembly (x86)</h3>
+<p><b>Hello, world!</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="http://win32assembly.programminghorizon.com/tutorials.html">win32assembly</a><br><br>
+
+main.asm
+</p>
+<pre class="brush:asm">
+.386 
+.model flat,stdcall 
+option casemap:none 
+
+include    c:\masm32\include\windows.inc 
+include    c:\masm32\include\kernel32.inc 
+include    c:\masm32\include\user32.inc 
+includelib c:\masm32\lib\user32.lib
+includelib c:\masm32\lib\kernel32.lib 
+
+.data 
+caption db "Info",0 
+text    db "Hello, world!",0
+
+.code 
+start: 
+  invoke MessageBox, NULL, addr text, addr caption, MB_OK 
+  invoke ExitProcess, NULL 
+end start
+</pre><br>
+
+<p>
+指令說明
+</p>
+<table>
+  <tr><th class="right">.386</th><td>使用80386指令</td></tr>
+  <tr><th class="right">.model flat,stdcall</th><td>記憶體模式為flat，calling convention使用stdcall</td></tr>
+  <tr><th class="right">option casemap:none</th><td>區分大小寫</td></tr>
+  <tr><th class="right">include</th><td>使用的header檔案(MSDN會說明Win32 API需要那些Header)</td></tr>
+  <tr><th class="right">includelib</th><td>使用的library檔案(MSDN會說明Win32 API需要那些Library)</td></tr>
+  <tr><th class="right">.data</th><td>初始化的資料區段</td></tr>
+  <tr><th class="right">.code</th><td>程式區段</td></tr>
+  <tr><th class="right">invoke</th><td>等同於push + call</td></tr>
+</table><br>
+
+<p>
+Makefile
+</p>
+<pre>
+all:
+  wine ml /c /coff /Cp main.asm
+  wine link /SUBSYSTEM:WINDOWS /LIBPATH:c:\masm32\lib main.obj
+
+clean:
+  rm -rf main.obj
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ make
+$ wine ./main.exe
+</pre>
+<p>
+<img src="x86_hello/1.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../program.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

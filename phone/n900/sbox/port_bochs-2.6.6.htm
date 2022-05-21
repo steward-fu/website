@@ -1,0 +1,220 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../../header.js"></script>
+<div id="page">
+<h3>Nokia N900 &gt;&gt; Sbox</h3>
+<p><b>移植bochs 2.6.6</b></p>
+<hr size="1">
+<p>
+雖然Maemo系統上已經有移植的Bochs模擬器，不過那個版本也只是基本編譯而已，並沒有針對N900的鍵盤進行有效的移植，因此有跟沒有是一樣的意思，而為了將全鍵盤映射到N900鍵盤上，司徒找了一版比Maemo版本更新的2.6.6版進行移植，不過，司徒後來發現，Bochs 2.6.6版會有CPU Usage過高的問題，而且會有很多Exception的狀況發生，導致Bochs跑得很慢，最後司徒還是改回Bochs 2.3.7版，不過司徒還是整理移植過程，因為該移植步驟也可以適用於Bochs 2.3.7版。
+</p>
+<pre class="brush:cpp">
+void bx_keyb_c::gen_scancode(Bit32u key)
+{
+  // 定義N900鍵盤按鍵
++ BX_DEBUG(("steward, scancode=0x%X", scancode[i]));
++ static unsigned char alt_down=0, shift_down=0;
++ unsigned char key_val = translation8042[scancode[i]] | escaped;
++ const unsigned char map_key[][7] = {
++  {0x10, 0x00, 0x10, 0x00, 0x02, 0xaa, 0x3b},
++  {0x11, 0x00, 0x11, 0x00, 0x03, 0xaa, 0x3c},
++  {0x12, 0x00, 0x12, 0x00, 0x04, 0x2a, 0x07},
++  {0x13, 0x00, 0x13, 0x00, 0x05, 0xaa, 0x29},
++  {0x14, 0x00, 0x14, 0x00, 0x06, 0xaa, 0x3f},
++  {0x15, 0x00, 0x15, 0x00, 0x07, 0xaa, 0x1a},
++  {0x16, 0x00, 0x16, 0x00, 0x08, 0xaa, 0x1b},
++  {0x17, 0x00, 0x17, 0x00, 0x09, 0xaa, 0x42},
++  {0x18, 0x00, 0x18, 0x00, 0x0a, 0xaa, 0x43},
++  {0x19, 0x00, 0x19, 0x00, 0x0b, 0xaa, 0x44},
++  {0x33, 0xaa, 0x27, 0x00, 0x0d, 0x00, 0x00},
++  {0x0e, 0x00, 0x01, 0x00, 0x53, 0x00, 0x00},
++
++  {0x1e, 0x00, 0x1e, 0x2a, 0x09, 0x00, 0x00},
++  {0x1f, 0x00, 0x1f, 0x2a, 0x0d, 0x00, 0x00},
++  {0x20, 0x00, 0x20, 0x2a, 0x04, 0x00, 0x00},
++  {0x21, 0x00, 0x21, 0x00, 0x0c, 0x00, 0x29},
++  {0x22, 0x00, 0x22, 0x2a, 0x0c, 0x00, 0x00},
++  {0x23, 0x00, 0x23, 0x2a, 0x0a, 0x00, 0x33},
++  {0x24, 0x00, 0x24, 0x2a, 0x0b, 0x00, 0x34},
++  {0x25, 0x00, 0x25, 0x2a, 0x08, 0x00, 0x00},
++  {0x26, 0x00, 0x26, 0x2a, 0x02, 0x00, 0x2b},
++  {0x34, 0x00, 0x27, 0x2a, 0x35, 0x00, 0x00},
++
++  {0x2c, 0x00, 0x2c, 0x00, 0x00, 0x00, 0x00},
++  {0x2d, 0x00, 0x2d, 0x2a, 0x05, 0x00, 0x00},
++  {0x2e, 0x00, 0x2e, 0x00, 0x00, 0x00, 0x00},
++  {0x2f, 0x00, 0x2f, 0x00, 0x35, 0x2a, 0x06},
++  {0x30, 0x00, 0x30, 0x00, 0x2b, 0x00, 0x00},
++  {0x31, 0x00, 0x31, 0x2a, 0x28, 0x2a, 0x1a},
++  {0x32, 0x00, 0x32, 0x00, 0x28, 0x2a, 0x1b},
++  {0x39, 0x00, 0x39, 0x2a, 0x03, 0x00, 0x00},
++
++  {0x00, 0x00, 0x00, 0x00}
++ };
+
+  // 針對N900的ALT和Shift鍵做處理
++ BX_INFO(("steward, original value=0x%X", key_val));
++ if((scancode[i] == 0x76) &amp;&amp; (escaped == 0x00)){
++  alt_down = 1;
++ }
++ else if((scancode[i] == 0x76) &amp;&amp; (escaped == 0x80)){
++  alt_down = 0;
++ }
++ else if(key_val == 0x2a){
++  shift_down = 1;
++  kbd_enQ(key_val | escaped);
++ }
++ else if(key_val == 0xaa){
++  shift_down = 0;
++  kbd_enQ(key_val | escaped);
++ }
++ else{
+   // Ctrl + Shift -&gt; 強制關機
++  if((shift_down != 0) &amp;&amp; (key_val == 0x9d)){
++   BX_INFO(("steward, poweroff\n"));
++   SIM->quit_sim(1);
++   return;
++  }
++  if((alt_down != 0) || (shift_down != 0)){
++   for(int i=0; map_key[i][0]!=0; i++){
++    if((key_val &amp; 0x7f) == map_key[i][0]){
++     const int true_table[2][2]={{0, 3}, {1, 5}};
++     int index=true_table[shift_down][alt_down];
++     unsigned char new_key1=map_key[i][index + 0];
++     unsigned char new_key2=map_key[i][index + 1];
++
++     if(new_key1 != 0){
++      BX_INFO(("steward, key1=0x%X", new_key1 | escaped));
++      kbd_enQ(new_key1 | escaped);
++     }
++     if(new_key2 != 0){
++      BX_INFO(("steward, key2=0x%X", new_key2 | escaped));
++      kbd_enQ(new_key2 | escaped);
++     }
++    }
++   }
++  }
++  else{
++   kbd_enQ(key_val | escaped);
++  }
++ }
++ escaped=0;
+
+- BX_DEBUG(("gen_scancode(): writing translated %02x",translation8042[scancode[i] ] | escaped));
+- kbd_enQ(translation8042[scancode[i]] | escaped);
+- escaped=0x00;
+}
+
++++ new/bochs-2.6.6/gui/sdl.cc
+--- old/bochs-2.6.6/gui/sdl.cc
+static Bit32u sdl_sym_to_bx_key(SDLKey sym)
+{
+  // 轉換成N900 ALT鍵
++ case 313:
++  BX_INFO(("steward, special key: %d", (int)sym));
++  return 0x138;
+}
+
+void bx_sdl_gui_c::specific_init(int argc, char **argv, unsigned header_bar_y)
+{
+ // 全螢幕
++ sdl_fullscreen_toggle = 1;
+}
+</pre><br>
+
+<p>
+特殊鍵
+</p>
+<table>
+<tr><th>特殊鍵</th><th>功能</th></tr>
+<tr><td>Shift + Ctrl</td><td>Poweroff</td></tr>
+</table><br>
+
+<p>
+一般按鍵
+</p>
+<table>
+<tr><th>Key</th><th>Shift + Key</th><th>Alt + Key</th><th>Alt + Shift + Key</th></tr>
+<tr><td>q</td><td>Q</td><td>1</td><td>q</td></tr>
+<tr><td>w</td><td>W</td><td>2</td><td>w</td></tr>
+<tr><td>e</td><td>E</td><td>3</td><td>^</td></tr>
+<tr><td>r</td><td>R</td><td>4</td><td>`</td></tr>
+<tr><td>t</td><td>T</td><td>5</td><td>t</td></tr>
+<tr><td>y</td><td>Y</td><td>6</td><td>y</td></tr>
+<tr><td>u</td><td>U</td><td>7</td><td>[</td></tr>
+<tr><td>i</td><td>I</td><td>8</td><td>]</td></tr>
+<tr><td>o</td><td>O</td><td>9</td><td>o</td></tr>
+<tr><td>p</td><td>P</td><td>0</td><td>p</td></tr>
+<tr><td>,</td><td>;</td><td>=</td><td>,</td></tr>
+<tr><td>backspace</td><td>escape</td><td>tab</td><td>backspace</td></tr>
+<tr><td>a</td><td>A</td><td>*</td><td>a</td></tr>
+<tr><td>s</td><td>S</td><td>+</td><td>s</td></tr>
+<tr><td>d</td><td>D</td><td>#</td><td>d</td></tr>
+<tr><td>f</td><td>F</td><td>-</td><td>~</td></tr>
+<tr><td>g</td><td>G</td><td>_</td><td>g</td></tr>
+<tr><td>h</td><td>H</td><td>(</td><td>&lt;</td></tr>
+<tr><td>j</td><td>J</td><td>)</td><td>&gt;</td></tr>
+<tr><td>k</td><td>K</td><td>&amp;</td><td>k</td></tr>
+<tr><td>l</td><td>L</td><td>!</td><td>|</td></tr>
+<tr><td>.</td><td>:</td><td>?</td><td>.</td></tr>
+<tr><td>z</td><td>Z</td><td>z</td><td>z</td></tr>
+<tr><td>x</td><td>X</td><td>$</td><td>x</td></tr>
+<tr><td>c</td><td>C</td><td>c</td><td>c</td></tr>
+<tr><td>v</td><td>V</td><td>/</td><td>%</td></tr>
+<tr><td>b</td><td>B</td><td>\</td><td>b</td></tr>
+<tr><td>h</td><td>N</td><td>"</td><td>{</td></tr>
+<tr><td>m</td><td>M</td><td>'</td><td>}</td></tr>
+<tr><td>space</td><td>space</td><td>@</td><td>space</td></tr>
+</table><br>
+
+<p>
+<br><a href="../../../phone.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

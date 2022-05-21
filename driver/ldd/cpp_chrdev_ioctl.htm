@@ -1,0 +1,169 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Linux Device Driver &gt;&gt; C/C++ &gt;&gt; chrdev</h3>
+<p><b>ioctl</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://github.com/steward-fu/ldd">Source Code</a><br><br>
+
+User Application除了使用read()、write()跟驅動程式傳遞資料之外，也可以使用以控制為主的ioctl()去跟驅動程式做交互設定的動作，作法只要添加unlocked_ioctl的Callback副程式即可<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;linux/cdev.h&gt;
+#include &lt;linux/init.h&gt;
+#include &lt;linux/device.h&gt;
+#include &lt;linux/module.h&gt;
+
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("Steward Fu");
+MODULE_DESCRIPTION("Linux Driver");
+
+static int base=0;
+static struct cdev mycdev;
+static struct class *myclass=NULL;
+
+static int myopen(struct inode *inode, struct file *file)
+{
+  printk("%s\n", __func__);
+  return 0;
+}
+
+static int myclose(struct inode *inode, struct file *file)
+{
+  printk("%s\n", __func__);
+  return 0;
+}
+
+static long myioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+{
+  printk("%s, 0x%x\n", __func__, cmd);
+  return 0;
+}
+
+static const struct file_operations myfops = {
+  .owner = THIS_MODULE,
+  .open = myopen,
+  .release = myclose,
+  .unlocked_ioctl = myioctl,
+};
+
+int ldd_init(void)
+{
+  alloc_chrdev_region(&amp;base, 0, 1, "myfile");
+  myclass = class_create(THIS_MODULE, "myfile");
+  device_create(myclass, NULL, base, NULL, "myfile");
+  cdev_init(&amp;mycdev, &amp;myfops);
+  cdev_add(&amp;mycdev, base, 1);
+  return 0;
+}
+ 
+void ldd_exit(void)
+{
+  cdev_del(&amp;mycdev);
+  device_destroy(myclass, base);
+  class_destroy(myclass);
+  unregister_chrdev_region(base, 1);
+}
+ 
+module_init(ldd_init);
+module_exit(ldd_exit);
+</pre>
+<p>
+<b>ldd_init</b>: 建立字元驅動程式<br>
+<b>myopen</b>: 僅列印字串<br>
+<b>myioctl</b>: 僅列印字串<br>
+<b>myclose</b>: 僅列印字串<br>
+<b>ldd_exit</b>: 刪除字元驅動程式<br><br>
+
+app.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;sys/fcntl.h&gt; 
+#include &lt;sys/stat.h&gt;
+#include &lt;sys/ioctl.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;linux/ioctl.h&gt;
+
+#define MY_IOCTL _IOWR(0x100, 0, unsigned long)
+
+int main(int argc, char **argv)
+{
+  int fd=0;
+
+  fd = open("/dev/myfile", O_RDWR);
+  ioctl(fd, MY_IOCTL, 0);
+  close(fd);
+  return 0;
+}
+</pre><br>
+
+<p>
+測試
+</p>
+<pre>
+# insmod /boot/main.ko
+# /boot/app
+  myopen
+  myioctl, 0xc0050000
+  myclose
+</pre><br>
+
+<p>
+<br><a href="../../driver.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

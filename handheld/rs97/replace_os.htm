@@ -1,0 +1,165 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>RetroGame</h3>
+<p><b>如何替換系統</b></p>
+<hr size="1">
+<p>
+如果使用者想要替換自己編譯的系統，如：Buildroot，只要保留SDCard前8MB的Uboot以及Kernel即可，過程如下說明：<br>
+1. 從原本的SDCard提取UBoot和Kernel檔案
+</p>
+<pre>
+$ sudo dd if=/dev/mmcblk0 of=head.img bs=1M count=8
+</pre><br>
+
+<p>
+2. 格式化SDCard並保留前8MB空間<br>
+<img src="replace_os/1.jpg" class="maxSize"><br><br>
+
+3. 把編譯後的rootfs.tar解壓縮到SDCard根目錄<br>
+4. 還原原廠UBoot和Kernel檔案
+</p>
+<pre>
+$ sudo dd if=head.img of=/dev/mmcblk0 bs=512 skip=1 seek=1
+</pre><br>
+
+<p>
+5. 更新inittab檔案
+</p>
+<pre>
+$ sudo vim etc/inittab
+</pre>
+<pre class="brush:cpp">
+# /etc/inittab
+#
+# Copyright (C) 2001 Erik Andersen &lt;andersen@codepoet.org&gt;
+#
+# Note: BusyBox init doesn't support runlevels.  The runlevels field is
+# completely ignored by BusyBox init. If you want runlevels, use
+# sysvinit.
+#
+# Format for each entry: &lt;id&gt;:&lt;runlevels&gt;:&lt;action&gt;:&lt;process&gt;
+#
+# id        == tty to run on, or empty for /dev/console
+# runlevels == ignored
+# action    == one of sysinit, respawn, askfirst, wait, and once
+# process   == program to run
+
+# Startup the system
+::sysinit:/bin/mount -t proc proc /proc
+::sysinit:/bin/mount -t sysfs sysfs /sys
+::sysinit:/bin/mount -o size=64k,mode=0755 -t tmpfs tmpfs /dev
+::sysinit:/bin/mkdir -p /dev/pts
+::sysinit:/bin/mount -o mode=0620 -t devpts devpts /dev/pts
+::sysinit:/bin/mount -t tmpfs tmpfs /tmp
+::sysinit:/bin/mount -t tmpfs tmpfs /var
+
+
+::sysinit:/bin/echo /sbin/mdev &gt; /proc/sys/kernel/hotplug
+::sysinit:/sbin/mdev -s
+
+#::sysinit:/bin/hostname -F /etc/hostname
+
+# lo networking
+#::sysinit:/sbin/ifconfig lo 127.0.0.1 up
+#::sysinit:/sbin/route add -net 127.0.0.0 netmask 255.0.0.0 lo
+
+# Logging junk
+::sysinit:/sbin/syslogd -C
+::sysinit:/sbin/klogd
+
+
+# USB networking
+#::sysinit:/sbin/ifconfig usb0 10.1.0.2 netmask 255.255.255.252 up
+#::sysinit:/sbin/route add default gw 10.1.0.1
+
+# Miscellaneous daemons
+#::sysinit:/usr/sbin/inetd
+#::sysinit:/usr/sbin/udhcpd /etc/udhcpd.conf
+
+# Run rc script
+#::sysinit:/etc/init.d/rcS
+
+#Mount appfs
+#::sysinit:/bin/mount /dev/mmcblk0p2 /usr/mtdblock3  -t ext3  -o ro
+#::sysinit:/bin/mount /dev/mmcblk0p3 /usr/mtdblock4  -t ext3 -o rw
+#::sysinit:/bin/mount /dev/mmcblk0p4 /mnt/memory -t vfat -o rw,utf8
+::sysinit:/bin/mknod  /dev/tcsm c 238 73
+#::sysinit:/bin/cp  /boot/local/dmenu/dmenu_ln /tmp/dmenu_ln
+
+#wifi config,now no use
+#::sysinit:/bin/mkdir -p /var/run/wpa_supplicant
+#::sysinit:/bin/mkdir -p /var/state/dhcp
+#::sysinit:/bin/touch /var/state/dhcp/dhclient.lease
+#::sysinit:/bin/touch /var/state/dhcp/dhcpd.leases
+
+# Launch the main application
+#tty1::respawn:/etc/main
+tty1::respawn:/bin/sh
+
+# Put a getty on the serial port
+ttyS1::respawn:/sbin/getty -L ttyS1 57600 vt100
+
+# Stuff to do for the 3-finger salute
+::ctrlaltdel:/sbin/reboot
+
+# Stuff to do before rebooting
+null::shutdown:/usr/bin/killall klogd
+null::shutdown:/usr/bin/killall syslogd
+null::shutdown:/bin/umount -a -r
+null::shutdown:/sbin/swapoff -a
+</pre><br>
+
+<p>
+<br><a href="../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

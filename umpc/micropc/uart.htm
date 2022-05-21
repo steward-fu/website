@@ -1,0 +1,182 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushScad.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>GPD MicroPC</h3>
+<p><b>UART改造</b></p>
+<hr size="1">
+<p>
+雖然這台掌機的定位爲IT網絡相關應用，不過對於司徒來說，由於具備UART串口介面，實爲難得的配置，畢竟目前主流筆電已經找不到這樣的配置了，而UART是一個相當方便除錯的介面，雖然可以使用USB轉UART線，不過司徒還是喜愛原生介面，因此，考慮一段時間後，司徒還是說服自己入手這臺筆電，而爲了方便除錯，司徒特意將原本RS-232電位(正負12V)改成3.3V，原因是目前司徒接觸到的開發板都是3.3V UART，如果不改造，那司徒感覺浪費了這個介面，改造過此如下說明。<br><br>
+
+拆機後的樣子<br>
+<img src="uart/18.jpg" class="maxSize"><br><br>
+
+原本UART接頭<br>
+<img src="uart/19.jpg" class="maxSize"><br><br>
+
+電位轉換IC<br>
+<img src="uart/20.jpg" class="maxSize"><br><br>
+
+Pin1~10: GND、RI、CTS、RTS、DSR、GND、DTR、TXD、RXD、CD<br>
+<img src="uart/1.jpg" class="maxSize"><br><br>
+
+司徒手畫對應腳位<br>
+<img src="uart/3.jpg" class="maxSize"><br><br>
+
+電位對應腳位<br>
+<img src="uart/2.jpg" class="maxSize"><br><br>
+
+可以偷電的地方(用來提供外部電壓)<br>
+<img src="uart/4.jpg" class="maxSize"><br><br>
+
+裁切PCB<br>
+<img src="uart/5.jpg" class="maxSize"><br><br>
+
+上排針<br>
+<img src="uart/6.jpg" class="maxSize"><br><br>
+
+拉線<br>
+<img src="uart/7.jpg" class="maxSize"><br><br>
+
+確認位置<br>
+<img src="uart/8.jpg" class="maxSize"><br><br>
+
+置中就可以<br>
+<img src="uart/9.jpg" class="maxSize"><br><br>
+
+依據電路圖跳線<br>
+<img src="uart/10.jpg" class="maxSize"><br><br>
+
+終於有3.3V UART可以使用了！<br>
+<img src="uart/11.jpg" class="maxSize"><br>
+P.S. Debian 10: /dev/ttyS1<br><br>
+
+要求完美的司徒決定把這個洞補起來，因爲怕有東西掉進去<br>
+<img src="uart/12.jpg" class="maxSize"><br><br>
+
+司徒使用OpenSCAD畫了一個擋板
+</p>
+<pre class="brush:scad">
+$fn = 100;
+ 
+module meniscus(h=10, r=1){
+  difference(){
+    translate([r/2+0.1, r/2+0.1, 0]){
+      cube([r+0.2, r+0.1, h+0.2], center=true);
+    }
+    cylinder(h=h+0.2, r=r, center=true);
+  }
+}
+ 
+module cube_round_corner(w=10, h=10, z=10, r=1){
+  difference(){
+    cube([w, h, z], center=true);
+    translate([(w/2)-r, (h/2)-r]){
+      rotate(0){  
+        meniscus(z, r);
+      }
+    }
+    translate([(-w/2)+r, (h/2)-r]){
+      rotate(90){
+        meniscus(z, r);
+      }
+    }
+    translate([(-w/2)+r, (-h/2)+r]){
+      rotate(180){
+        meniscus(z, r);
+      }
+    }
+    translate([(w/2)-r, (-h/2)+r]){
+      rotate(270){
+        meniscus(z, r);
+      }
+    }
+  }
+}
+
+
+difference(){
+  union(){
+    translate([0, 2.5, 0]){
+      cube_round_corner(w=16, h=7, z=2, r=2.5);
+    }
+    cube_round_corner(w=18, h=7, z=2, r=2.5);
+    translate([0, 1.25, 0]){
+      cube_round_corner(w=31, h=6, z=2, r=3);
+    }
+  }
+  
+  translate([-6.5, -1.5, -1]){
+    cube([14.5, 3, 2]);
+  }
+}
+</pre><br>
+
+<p>
+電腦預覽顯示<br>
+<img src="uart/17.jpg" class="maxSize"><br><br>
+
+司徒使用3D Printer列印<br>
+<img src="uart/13.jpg" class="maxSize"><br><br>
+
+完美<br>
+<img src="uart/14.jpg" class="maxSize"><br><br>
+
+使用三秒膠固定<br>
+<img src="uart/15.jpg" class="maxSize"><br><br>
+
+完成<br>
+<img src="uart/16.jpg" class="maxSize">
+</p>
+
+<p>
+<br><br><a href="../../umpc.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

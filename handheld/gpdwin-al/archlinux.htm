@@ -1,0 +1,158 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>GPD Win 上蓋鋁合金版</h3>
+<p><b>安裝Arch Linux(LXDE)</b></p>
+<hr size="1">
+<p>
+司徒日常使用的作業系統是Linux系統，而作為司徒隨身攜帶的掌機，當然也必須安裝Linux系統，畢竟對於司徒來說，Linux系統還是比較熟悉，只可惜GPD官網目前並沒用釋出Linux系統相關的驅動程式，當然可以預期以後應該也不會有，不過這並不能澆熄對於熱愛Linux的使用者，感謝國外高手的熱心移植，終究讓Arch Linux可以順利運行，司徒依樣畫葫蘆，整理如下：<br>
+1. 製作Arch Linux的USB開機片<br>
+2. 插入USB網卡(無線或者有線都可以，司徒目前是使用有線USB網卡)<br>
+3. 經由USB開機片開機(Fn + F7)<br>
+4. 使用fdisk分割成如下分區：
+</p>
+<pre>
+/dev/mmcblk0p1 100MB UEFI System
+/dev/mmcblk0p2 56GB Linux System
+/dev/mmcblk0p3 2.2GB Linux Swap
+</pre><br>
+
+<p>
+5. 格式化分區並掛載分區
+</p>
+<pre>
+# mkfs.vfat -F32 /dev/mmcblk0p1
+# mkfs.ext4 /dev/mmcblk0p2
+# mkswap /dev/mmcblk0p3
+# mount /dev/mmcblk0p2 /mnt
+# mkdir -p /mnt/boot
+# mount /dev/mmcblk0p1 /mnt/boot
+</pre><br>
+
+<p>
+6. 設定Repository
+</p>
+<pre>
+# ifconfig
+# vim /etc/pacman.d/mirrorlist
+Server=http://ftp.tku.edu.tw/Linux/ArchLinux/$repo/os/$arch
+Server=http://archlinux.cs.nctu.edu.tw/$repo/os/$arch
+</pre><br>
+
+<p>
+7. Bootstrap
+</p>
+<pre>
+# pacman -Syy
+# pacstrap /mnt base
+# genfstab -p -U /mnt &gt; /mnt/etc/fstab
+</pre><br>
+
+<p>
+8. 開始安裝元件以及系統設定
+</p>
+<pre>
+# arch-chroot /mnt
+[chroot] passwd
+[chroot] echo arch &gt; /etc/hostname
+[chroot] ln -s /usr/share/zoneinfo/Asia/Taipei /etc/localtime
+[chroot] nano /etc/locale.gen
+en_US.UTF-8 UTF-8
+zh_CN.UTF-8 UTF-8
+zh_TW.UTF-8 UTF-8
+
+[chroot] locale-gen
+[chroot] nano /etc/locale.conf
+LANG="en_US.UTF-8"
+
+[chroot] pacman -S xf86-input-synaptics xorg-server grub 
+[chroot] pacman -S net-tools wpa_supplicant wireless_tools
+[chroot] pacman -S networkmanager cpupower efibootmgr
+[chroot] pacman -S network-manager-applet gnome-keyring
+[chroot] pacman -S lxde obconf openbox lxdm lxde-common gamin
+[chroot] pacman -S ttf-dejavu ttf-droid
+[chroot] systemctl enable NetworkManager.service
+[chroot] systemctl enable wpa_supplicant.service
+[chroot] systemctl enable lxdm.service
+
+[chroot] mkinitcpio -p linux
+[chroot] grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=arch_grub --recheck
+[chroot] grub-mkconfig -o /boot/grub/grub.cfg
+
+[chroot] nano /etc/default/grub
+GRUB_CMDLINE_LINUX="i915.fastboot=1 fbcon=rotate:1"
+
+[chroot] grub-mkconfig -o /boot/grub/grub.cfg
+[chroot] exit
+
+# umount /mnt/boot
+# umount /mnt
+# reboot
+</pre><br>
+
+<p>
+9. 安裝Wifi驅動(上網找：brcmfmac4356-pcie.bin, brcmfmac4356-pcie.txt)
+</p>
+<pre>
+$ sudo cp brcmfmac4356-pcie.bin /lib/firmware/brcm/
+$ sudo cp brcmfmac4356-pcie.txt /lib/firmware/brcm/
+$ sudo reboot
+</pre><br>
+
+<p>
+10. 完成<br>
+<img src="archlinux/1.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

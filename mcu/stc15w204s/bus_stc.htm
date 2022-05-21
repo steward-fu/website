@@ -1,0 +1,335 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>STC15W204S</h3>
+<p><b>逆向STC-ISP V6.85I(Bus Hound)</b></p>
+<hr size="1">
+<p>
+雖然使用IDA Pro可以完整逆出原始程式碼的樣子，不過需要花費一些時間，因此，司徒打算使用較快速的方式，那就是使用Bus Hound錄取資料的傳輸過程並且參考網路上既有的逆向Protocol，這樣司徒就可以模仿傳送資料，達到在N900上燒錄的目標，接著就讓司徒介紹一下這個過程。<br><br>
+
+首先寫一個最簡單的GPIO輸出程式並且在Keil C上編譯輸出Hex檔案，主程式如下：
+</p>
+<pre class="brush:cpp">
+sfr p3 = 0xb0;
+
+void main(void)
+{
+  p3 = 0x00;
+  while(1);
+}
+</pre><br>
+
+<p>
+Hex內容如下：
+</p>
+<pre>
+02 00 11 75 80 FF 75 90 FF 75 A0 FF E4 F5 B0 80 
+FE 78 7F E4 F6 D8 FD 75 81 07 02 00 03 00 
+</pre><br>
+
+<p>
+Bus Hound錄到的燒錄過程：
+</p>
+<pre>
+Bus Hound 6.01 capture on Windows XP Service Pack 3 (x86). Complements of www.perisoft.net
+
+  Device - Device ID (followed by the endpoint for USB devices)
+            (15) Prolific USB-to-Serial Comm Port (COM3)
+  Address - FireWire async address or channel number
+  Length - Total transfer length
+  Phase  - Phase Type
+            IN    Data in transfer           
+            OUT   Data out transfer          
+  Data   - Hex dump of the data transferred
+  Descr  - Description of the phase
+  Cmd... - Position in the captured data
+
+
+Device  Address              Length    Phase  Data                      Description       Cmd.Phase.Ofs(rep)
+------  -------------------  --------  -----  ------------------------  ----------------  ------------------
+  15                                1  OUT    7f                        .                        1.1.0        
+  15                                1  IN     00                        .                        2.1.0        
+  15                                1  OUT    7f                        .                        3.1.0(204)   
+  15                                1  IN     46                        F                      207.1.0        
+  15                                1  IN     b9                        .                      208.1.0        
+  15                                1  IN     68                        h                      209.1.0        
+  15                                1  IN     00                        .                      210.1.0        
+  15                                1  IN     34                        4                      211.1.0        
+  15                               49  IN     50 91 11 6a  8a f7 ba 9f  P..j....               212.1.0        
+                                              00 a8 ee e0  fd 26 03 03  .....&amp;..               212.1.8        
+                                              81 72 54 00  f5 14 04 06  .rT.....               212.1.16       
+                                              70 8a 02 29  2b 2f 30 2c  p..)+/0,               212.1.24       
+                                              00 14 10 04  e7 ec 6b bf  ......k.               212.1.32       
+                                              ff ff 15 08  25 01 12 0c  ....%...               212.1.40       
+                                              16                        .                      212.1.48       
+  15                               34  OUT    46 b9 6a 00  20 00 0b 00  F.j. ...               213.1.0        
+                                              c0 80 c0 ff  c0 00 80 80  ........               213.1.8        
+                                              80 ff 80 00  40 80 40 ff  ....@.@.               213.1.16       
+                                              40 00 00 80  00 00 00 0a  @.......               213.1.24       
+                                              12 16                     ..                     213.1.32       
+  15                                1  OUT    fe                        .                      214.1.0(23)    
+  15                                1  IN     46                        F                      237.1.0        
+  15                                1  IN     b9                        .                      238.1.0        
+  15                                1  IN     68                        h                      239.1.0        
+  15                                1  IN     00                        .                      240.1.0        
+  15                                1  IN     20                                               241.1.0        
+  15                               29  IN     00 0b 0d 58  13 07 18 c0  ...X....               242.1.0        
+                                              1a 82 25 ae  30 da 36 1b  ..%.0.6.               242.1.8        
+                                              4c 55 61 db  54 c5 76 08  LUa.T.v.               242.1.16       
+                                              00 00 08 28  16           ...(.                  242.1.24       
+  15                               34  OUT    46 b9 6a 00  20 00 0c 69  F.j. ..i               243.1.0        
+                                              80 6a 80 6b  80 6c 80 6d  .j.k.l.m               243.1.8        
+                                              80 6e 80 64  40 65 40 66  .n.d@e@f               243.1.16       
+                                              40 67 40 68  40 69 40 0a  @g@h@i@.               243.1.24       
+                                              02 16                     ..                     243.1.32       
+  15                                1  OUT    fe                        .                      244.1.0(21)    
+  15                                1  IN     46                        F                      265.1.0        
+  15                                1  IN     b9                        .                      266.1.0        
+  15                                1  IN     68                        h                      267.1.0        
+  15                                1  IN     00                        .                      268.1.0        
+  15                                1  IN     20                                               269.1.0        
+  15                               29  IN     00 0c 23 dd  23 fb 24 0f  ..#.#.$.               270.1.0        
+                                              24 32 24 4b  24 64 47 ff  $2$K$dG.               270.1.8        
+                                              48 2c 48 63  48 90 48 81  H,HcH.H.               270.1.16       
+                                              48 a4 09 24  16           H..$.                  270.1.24       
+  15                               16  OUT    46 b9 6a 00  0e 01 64 40  F.j...d@               271.1.0        
+                                              ff d0 80 6b  81 04 58 16  ...k..X.               271.1.8        
+  15                                1  IN     46                        F                      272.1.0        
+  15                                1  IN     b9                        .                      273.1.0        
+  15                                1  IN     68                        h                      274.1.0        
+  15                                1  IN     00                        .                      275.1.0        
+  15                                1  IN     07                        .                      276.1.0        
+  15                                4  IN     01 00 70 16               ..p.                   277.1.0        
+  15                               13  OUT    46 b9 6a 00  0b 05 00 00  F.j.....               278.1.0        
+                                              5a a5 01 79  16           Z..y.                  278.1.8        
+  15                                1  IN     46                        F                      279.1.0        
+  15                                1  IN     b9                        .                      280.1.0        
+  15                                1  IN     68                        h                      281.1.0        
+  15                                1  IN     00                        .                      282.1.0        
+  15                                1  IN     07                        .                      283.1.0        
+  15                                4  IN     05 00 74 16               ..t.                   284.1.0        
+  15                               13  OUT    46 b9 6a 00  0b 03 00 00  F.j.....               285.1.0        
+                                              5a a5 01 77  16           Z..w.                  285.1.8        
+  15                                1  IN     46                        F                      286.1.0        
+  15                                1  IN     b9                        .                      287.1.0        
+  15                                1  IN     68                        h                      288.1.0        
+  15                                1  IN     00                        .                      289.1.0        
+  15                                1  IN     0e                        .                      290.1.0        
+  15                               11  IN     03 f5 14 00  d6 05 aa 28  .......(               291.1.0        
+                                              03 2f 16                  ./.                    291.1.8        
+  15                              141  OUT    46 b9 6a 00  8b 22 00 00  F.j.."..               292.1.0        
+                                              5a a5 02 00  11 75 80 ff  Z....u..               292.1.8        
+                                              75 90 ff 75  a0 ff e4 f5  u..u....               292.1.16       
+                                              b0 80 fe 78  7f e4 f6 d8  ...x....               292.1.24       
+                                              fd 75 81 07  02 00 03 ff  .u......               292.1.32       
+                                              ff ff ff ff  ff ff ff ff  ........               292.1.40       
+                                              ff ff ff ff  ff ff ff ff  ........               292.1.48       
+                                              ff ff ff ff  ff ff ff ff  ........               292.1.56       
+                                              ff ff ff ff  ff ff ff ff  ........               292.1.64       
+                                              ff ff ff ff  ff ff ff ff  ........               292.1.72       
+                                              ff ff ff ff  ff ff ff ff  ........               292.1.80       
+                                              ff ff ff ff  ff ff ff ff  ........               292.1.88       
+                                              ff ff ff ff  ff ff ff ff  ........               292.1.96       
+                                              ff ff ff ff  ff ff ff ff  ........               292.1.104      
+                                              ff ff ff ff  ff ff ff ff  ........               292.1.112      
+                                              ff ff ff ff  ff ff ff ff  ........               292.1.120      
+                                              ff ff ff ff  ff ff ff ff  ........               292.1.128      
+                                              ff ff 74 81  16           ..t..                  292.1.136      
+  15                                1  IN     46                        F                      293.1.0        
+  15                                1  IN     b9                        .                      294.1.0        
+  15                                1  IN     68                        h                      295.1.0        
+  15                                1  IN     00                        .                      296.1.0        
+  15                                1  IN     08                        .                      297.1.0        
+  15                                5  IN     02 54 00 c6  16           .T...                  298.1.0        
+  15                              141  OUT    46 b9 6a 00  8b 02 00 80  F.j.....               299.1.0        
+                                              5a a5 ff ff  ff ff ff ff  Z.......               299.1.8        
+                                              ff ff ff ff  ff ff ff ff  ........               299.1.16       
+                                              ff ff ff ff  ff ff ff ff  ........               299.1.24       
+                                              ff ff ff ff  ff ff ff ff  ........               299.1.32       
+                                              ff ff ff ff  ff ff ff ff  ........               299.1.40       
+                                              ff ff ff ff  ff ff ff ff  ........               299.1.48       
+                                              ff ff ff ff  ff ff ff ff  ........               299.1.56       
+                                              ff ff ff ff  ff ff ff ff  ........               299.1.64       
+                                              ff ff ff ff  ff ff ff ff  ........               299.1.72       
+                                              ff ff ff ff  ff ff ff ff  ........               299.1.80       
+                                              ff ff ff ff  ff ff ff ff  ........               299.1.88       
+                                              ff ff ff ff  ff ff ff ff  ........               299.1.96       
+                                              ff ff ff ff  ff ff ff ff  ........               299.1.104      
+                                              ff ff ff ff  ff ff ff ff  ........               299.1.112      
+                                              ff ff ff ff  ff ff ff ff  ........               299.1.120      
+                                              ff ff ff ff  ff ff ff ff  ........               299.1.128      
+                                              ff ff 81 f6  16           .....                  299.1.136      
+  15                                1  IN     46                        F                      300.1.0        
+  15                                1  IN     b9                        .                      301.1.0        
+  15                                1  IN     68                        h                      302.1.0        
+  15                                1  IN     00                        .                      303.1.0        
+  15                                1  IN     08                        .                      304.1.0        
+  15                                5  IN     02 54 00 c6  16           .T...                  305.1.0        
+  15                              141  OUT    46 b9 6a 00  8b 02 01 00  F.j.....               306.1.0        
+                                              5a a5 ff ff  ff ff ff ff  Z.......               306.1.8        
+                                              ff ff ff ff  ff ff ff ff  ........               306.1.16       
+                                              ff ff ff ff  ff ff ff ff  ........               306.1.24       
+                                              ff ff ff ff  ff ff ff ff  ........               306.1.32       
+                                              ff ff ff ff  ff ff ff ff  ........               306.1.40       
+                                              ff ff ff ff  ff ff ff ff  ........               306.1.48       
+                                              ff ff ff ff  ff ff ff ff  ........               306.1.56       
+                                              ff ff ff ff  ff ff ff ff  ........               306.1.64       
+                                              ff ff ff ff  ff ff ff ff  ........               306.1.72       
+                                              ff ff ff ff  ff ff ff ff  ........               306.1.80       
+                                              ff ff ff ff  ff ff ff ff  ........               306.1.88       
+                                              ff ff ff ff  ff ff ff ff  ........               306.1.96       
+                                              ff ff ff ff  ff ff ff ff  ........               306.1.104      
+                                              ff ff ff ff  ff ff ff ff  ........               306.1.112      
+                                              ff ff ff ff  ff ff ff ff  ........               306.1.120      
+                                              ff ff ff ff  ff ff ff ff  ........               306.1.128      
+                                              ff ff 81 77  16           ...w.                  306.1.136      
+  15                                1  IN     46                        F                      307.1.0        
+  15                                1  IN     b9                        .                      308.1.0        
+  15                                1  IN     68                        h                      309.1.0        
+  15                                1  IN     00                        .                      310.1.0        
+  15                                1  IN     08                        .                      311.1.0        
+  15                                5  IN     02 54 00 c6  16           .T...                  312.1.0        
+  15                              141  OUT    46 b9 6a 00  8b 02 01 80  F.j.....               313.1.0        
+                                              5a a5 ff ff  ff ff ff ff  Z.......               313.1.8        
+                                              ff ff ff ff  ff ff ff ff  ........               313.1.16       
+                                              ff ff ff ff  ff ff ff ff  ........               313.1.24       
+                                              ff ff ff ff  ff ff ff ff  ........               313.1.32       
+                                              ff ff ff ff  ff ff ff ff  ........               313.1.40       
+                                              ff ff ff ff  ff ff ff ff  ........               313.1.48       
+                                              ff ff ff ff  ff ff ff ff  ........               313.1.56       
+                                              ff ff ff ff  ff ff ff ff  ........               313.1.64       
+                                              ff ff ff ff  ff ff ff ff  ........               313.1.72       
+                                              ff ff ff ff  ff ff ff ff  ........               313.1.80       
+                                              ff ff ff ff  ff ff ff ff  ........               313.1.88       
+                                              ff ff ff ff  ff ff ff ff  ........               313.1.96       
+                                              ff ff ff ff  ff ff ff ff  ........               313.1.104      
+                                              ff ff ff ff  ff ff ff ff  ........               313.1.112      
+                                              ff ff ff ff  ff ff ff ff  ........               313.1.120      
+                                              ff ff ff ff  ff ff ff ff  ........               313.1.128      
+                                              ff ff 81 f7  16           .....                  313.1.136      
+  15                                1  IN     46                        F                      314.1.0        
+  15                                1  IN     b9                        .                      315.1.0        
+  15                                1  IN     68                        h                      316.1.0        
+  15                                1  IN     00                        .                      317.1.0        
+  15                                1  IN     08                        .                      318.1.0        
+  15                                5  IN     02 54 00 c6  16           .T...                  319.1.0        
+  15                               77  OUT    46 b9 6a 00  4b 04 00 00  F.j.K...               320.1.0        
+                                              5a a5 ff ff  ff 00 ff ff  Z.......               320.1.8        
+                                              00 ff ff ff  ff ff ff ff  ........               320.1.16       
+                                              ff ff ff ff  ff ff ff ff  ........               320.1.24       
+                                              00 00 ff a8  ff a8 ff 90  ........               320.1.32       
+                                              ff fd 03 ff  ff ff ff ff  ........               320.1.40       
+                                              ff ff ff ff  ff ff ff ff  ........               320.1.48       
+                                              ff ff ff ff  ff ff ff ff  ........               320.1.56       
+                                              ff ec ff ff  ff 6a bf f7  .....j..               320.1.64       
+                                              ba 9f 39 cc  16           ..9..                  320.1.72       
+  15                                1  IN     46                        F                      321.1.0        
+  15                                1  IN     b9                        .                      322.1.0        
+  15                                1  IN     68                        h                      323.1.0        
+  15                                1  IN     00                        .                      324.1.0        
+  15                                1  IN     08                        .                      325.1.0        
+  15                                5  IN     04 54 00 c8  16           .T...                  326.1.0        
+</pre><br>
+
+<p>
+根據網路上的分析，封包的傳輸流程，可以分成如下幾個步驟：
+</p>
+<pre>
+(PC Out) &gt; Pulse 
+           (7f)
+(PC In)  &gt; Infomation packet 
+           (46 b9 68 00 34 50 91 11 6a 8a f7 ba 9f 00 a8 ee e0 fd 26 03 03 81 72 54 00 f5 14 04 06 70 8a 02 29 2b 2f 30 2c 00 14 10 04 e7 ec 6b bf ff ff 15 08 25 01 12 0c 16)
+(PC Out) &gt; Frequency challenges round 1
+           (46 b9 6a 00 20 00 0b 00 c0 80 c0 ff c0 00 80 80 80 ff 80 00 40 80 40 ff 40 00 00 80 00 00 00 0a 12 16 fe)
+(PC In)  &gt; Frequency responses
+           (46 b9 68 00 20 00 0b 0d 58 13 07 18 c0 1a 82 25 ae 30 da 36 1b 4c 55 61 db 54 c5 76 08 00 00 08 28 16)
+(PC Out) &gt; Frequency challenges round 2
+           (46 b9 6a 00 20 00 0c 69 80 6a 80 6b 80 6c 80 6d 80 6e 80 64 40 65 40 66 40 67 40 68 40 69 40 0a 02 16 fe)
+(PC In)  &gt; Frequency responses
+           (46 b9 68 00 20 00 0c 23 dd 23 fb 24 0f 24 32 24 4b 24 64 47 ff 48 2c 48 63 48 90 48 81 48 a4 09 24 16)
+(PC Out) &gt; Baudrate switch
+           (46 b9 6a 00 0e 01 64 40 ff d0 80 6b 81 04 58 16)
+(PC In)  &gt; Ack
+           (46 b9 68 00 07 01 00 70 16)
+(PC Out) &gt; Prepare
+           (46 b9 6a 00 0b 05 00 00 5a a5 01 79 16)
+(PC In)  &gt; Ack
+           (46 b9 68 00 07 05 00 74 16)
+(PC Out) &gt; Erase
+           (46 b9 6a 00 0b 03 00 00 5a a5 01 77 16)
+(PC In)  &gt; Ack + UID
+           (46 b9 68 00 0e 03 f5 14 00 d6 05 aa 28 03 2f 16)
+(PC Out) &gt; Write block 1
+           (46 b9 6a 00 8b 22 00 00 5a a5 02 00 11 75 80 ff 75 90 ff 75 a0 ff e4 f5 b0 80 fe 78 7f e4 f6 d8 fd 75 81 07 02 00 03 ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 74 81 16)
+(PC In)  &gt; Ack
+           (46 b9 68 00 08 02 54 00 c6 16)
+(PC Out) &gt; Write block 2
+           (46 b9 6a 00 8b 02 00 80 5a a5 ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 81 f6 16)
+(PC In)  &gt; Ack
+           (46 b9 68 00 08 02 54 00 c6 16)
+(PC Out) &gt; Write block 3
+           (46 b9 6a 00 8b 02 01 00 5a a5 ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 81 77 16)
+(PC In)  &gt; Ack
+           (46 b9 68 00 08 02 54 00 c6 16)
+(PC Out) &gt; Write block 4
+           (46 b9 6a 00 8b 02 01 80 5a a5 ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 81 f7 16)
+(PC In)  &gt; Ack
+           (46 b9 68 00 08 02 54 00 c6 16)
+(PC Out) &gt; Option packet
+           (46 b9 6a 00 4b 04 00 00 5a a5 ff ff ff 00 ff ff 00 ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 00 00 ff a8 ff a8 ff 90 ff fd 03 ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ec ff ff ff 6a bf f7 ba 9f 39 cc 16)
+(PC In)  &gt; Ack
+           (46 b9 68 00 08 04 54 00 c8 16)
+</pre><br>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

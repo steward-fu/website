@@ -1,0 +1,479 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Windows Driver Model</h3>
+<p><b>Namespace("\\.\"、"\??\")</b></p>
+<hr size="1">
+<p>
+Lucas最近又開始假認真了！司徒只好配合演出，誇張的是他竟然在研究Namespace，這部份真的相當複雜，因為有分NT Namespace、Win32 Device Namespace、Device Namespace、File Namespace("\\.\"、"\??\"、"\??\GLOBALROOT\"、"\\?\"、"\GLOBAL??\"、"\Device\"、"\DosDevices\")等幾個部份，說實話，這部份建議使用者依照既有的範例使用即可，除非使用者想找一些微軟的漏洞，不然真的不需要花時間看這種東西，理由是：這部份可能會跟OS版本而略有差異，而司徒介紹的也緊止於測試WinXP、Win7x86平台，是否在之後的OS又有變更，司徒真的不敢保證，如果說完這些後，使用者還是有興趣的話，就可以繼續看下去。<br><br>
+
+NT Namespace<br>
+<img src="namespace/1.jpg" class="maxSize"><br>
+</p>
+<table border=1>
+  <tr>
+    <th width="20%">Name</th>
+    <th width="20%">Windows APIs String Parsing</th>
+    <th>Description</th>
+  </tr>
+  <tr>
+    <td>\\.\</td>
+    <td>Yes</td>
+    <td>Win32 Device Namespace，指到NT Namespace的GLOBAL??資料夾，只能使用Win32 API相關的API呼叫，如：CreateFile()</td>
+  </tr>
+  <tr>
+    <td>\??\</td>
+    <td>Yes</td>
+    <td>指到NT Namespace根目錄，WinXP不支援</td>
+  </tr>
+  <tr>
+    <td>\??\GLOBALROOT\</td>
+    <td>Yes</td>
+    <td>指到NT Namespace根目錄，WinXP不支援</td>
+  </tr>
+  <tr>
+    <td>\\?\</td>
+    <td>No</td>
+    <td>指到NT Namespace根目錄，Windows APIs會把\\?\改成\??\</td>
+  </tr>
+  <tr>
+    <td>\GLOBAL??\</td>
+    <td>Yes</td>
+    <td>指到NT Namespace的GLOBAL??資料夾</td>
+  </tr>
+  <tr>
+    <td>\Device\</td>
+    <td>Yes</td>
+    <td>指到NT Namespace的Device資料夾</td>
+  </tr>
+  <tr>
+    <td>\DosDevices\</td>
+    <td>Yes</td>
+    <td>指到NT Namespace的GLOBAL??資料夾</td>
+  </tr>
+</table>
+<p>
+P.S. Windows APIs String Parsing代表是否需要轉置Namespace(WinXP呼叫RtlDosPathNameToNtPathName_U(), Win7呼叫RtlDosPathNameToRelativeNtPathName())，轉置的意思就是：是否會把<b>/</b>改成<b>\</b><br><br>
+
+程式碼：
+</p>
+<pre class="brush:cpp">
+#include &lt;windows.h&gt;
+#include &lt;winternl.h&gt;
+#include &lt;stdio.h&gt;
+#pragma comment(lib, "ntdll.lib")
+
+typedef NTSTATUS (__stdcall *NT_OPEN_FILE)(PHANDLE FileHandle, ACCESS_MASK DesiredAccess, POBJECT_ATTRIBUTES ObjectAttributes, PIO_STATUS_BLOCK IoStatusBlock, ULONG ShareAccess, ULONG OpenOptions);
+
+void WINAPI RtlInitUnicodeString(PUNICODE_STRING target, LPCWSTR source)
+{
+  if((target-&gt;Buffer = (LPWSTR)source)){
+    target-&gt;Length = wcslen(source) * sizeof(WCHAR);
+    target-&gt;MaximumLength = target-&gt;Length + sizeof(WCHAR);
+  }
+  else{
+    target-&gt;Length = target-&gt;MaximumLength = 0;
+  }
+}
+
+void DoNtOpenFile(wchar_t *name)
+{
+  PVOID Info;
+  NT_OPEN_FILE NtOpenFileStruct;
+  HMODULE hModule = LoadLibrary("ntdll.dll");
+  NtOpenFileStruct = (NT_OPEN_FILE)GetProcAddress(hModule, "NtOpenFile");
+  if(NtOpenFileStruct != NULL){
+    UNICODE_STRING filename;
+    RtlInitUnicodeString(&amp;filename, name);
+   
+    OBJECT_ATTRIBUTES obj;
+    obj.Attributes = 0x40;
+    obj.ObjectName = &amp;filename;
+    obj.Length = 0x18;
+    obj.RootDirectory = NULL;
+    obj.SecurityDescriptor = NULL;
+    obj.SecurityQualityOfService = NULL;
+   
+    IO_STATUS_BLOCK iostatusblock;
+    HANDLE hFile = NULL;
+    NTSTATUS stat = NtOpenFileStruct(&amp;hFile, 0x100001, &amp;obj, &amp;iostatusblock, 7, 0x20);
+    printf("NtOpenFileStruct(%S): (status:0x%x)\n", name, stat);
+    if(stat == 0){
+      CloseHandle(hFile);
+    }
+  }
+}
+
+void DoCreateFile(char *name)
+{
+  HANDLE hFile = CreateFile(name, MAXIMUM_ALLOWED, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
+  printf("CreateFile(%s): (handle:0x%x, err:0x%x)\n", name, hFile, GetLastError());
+  if(hFile != (HANDLE)-1){
+    CloseHandle(hFile);
+  }
+}
+
+int __cdecl main(int argc, char* argv[])
+{
+  // device namespace
+  DoCreateFile("\\\\.\\ndis");
+  DoCreateFile("\\??\\ndis");
+  DoCreateFile("\\??\\GLOBALROOT\\ndis");
+  DoCreateFile("\\\\?\\ndis");
+  DoCreateFile("\\GLOBAL??\\ndis");
+  DoCreateFile("\\Device\\ndis");
+  DoCreateFile("\\DosDevices\\ndis");
+  DoCreateFile("ndis");
+  printf("\n");
+  
+  DoNtOpenFile(L"\\\\.\\ndis");
+  DoNtOpenFile(L"\\??\\ndis");
+  DoNtOpenFile(L"\\??\\GLOBALROOT\\ndis");
+  DoNtOpenFile(L"\\\\?\\ndis");
+  DoNtOpenFile(L"\\GLOBAL??\\ndis");
+  DoNtOpenFile(L"\\Device\\ndis");
+  DoNtOpenFile(L"\\DosDevices\\ndis");
+  DoNtOpenFile(L"ndis");
+  printf("\n");
+  
+  // file namespace
+  DoCreateFile("\\\\.\\c:\\test\\test.txt");
+  DoCreateFile("\\??\\c:\\test\\test.txt");
+  DoCreateFile("\\??\\GLOBALROOT\\c:\\test\\test.txt");
+  DoCreateFile("\\\\?\\c:\\test\\test.txt");
+  DoCreateFile("\\GLOBAL??\\c:\\test\\test.txt");
+  DoCreateFile("\\Device\\c:\\test\\test.txt");
+  DoCreateFile("\\DosDevices\\c:\\test\\test.txt");
+  DoCreateFile("c:\\test\\test.txt");
+  printf("\n");
+  
+  DoNtOpenFile(L"\\\\.\\c:\\test\\test.txt");
+  DoNtOpenFile(L"\\??\\c:\\test\\test.txt");
+  DoNtOpenFile(L"\\??\\GLOBALROOT\\c:\\test\\test.txt");
+  DoNtOpenFile(L"\\\\?\\c:\\test\\test.txt");
+  DoNtOpenFile(L"\\GLOBAL??\\c:\\test\\test.txt");
+  DoNtOpenFile(L"\\Device\\c:\\test\\test.txt");
+  DoNtOpenFile(L"\\DosDevices\\c:\\test\\test.txt");
+  DoNtOpenFile(L"c:\\test\\test.txt");
+  printf("\n");
+  
+  // c:\test/test.txt
+  DoCreateFile("\\\\.\\c:\\test/test.txt");
+  DoCreateFile("\\??\\c:\\test/test.txt");
+  DoCreateFile("\\??\\GLOBALROOT\\c:\\test/test.txt");
+  DoCreateFile("\\\\?\\c:\\test/test.txt");
+  DoCreateFile("\\GLOBAL??\\c:\\test/test.txt");
+  DoCreateFile("\\Device\\c:\\test/test.txt");
+  DoCreateFile("\\DosDevices\\c:\\test/test.txt");
+  DoCreateFile("c:\\test/test.txt");
+  return 0;
+}
+</pre><br>
+
+<p>
+Device Namespace測試<br>
+<img src="namespace/2.jpg" class="maxSize"><br><br>
+
+逆向看一下轉換後的名稱<br>
+<img src="namespace/5.jpg" class="maxSize"><br><br>
+
+整理表格(Device Namespace測試)
+</p>
+
+<table border="1">
+  <tr>
+    <th>Before CreateFile()</th>
+    <th>In CreateFile()</th>
+  </tr>
+  <tr>
+    <td>\\.\ndis</td>
+    <td>\??\ndis</td>
+  </tr>
+  <tr>
+    <td>\??\ndis</td>
+    <td>\??\c:\??\ndis</td>
+  </tr>
+  <tr>
+    <td>\??\GLOBALROOT\ndis</td>
+    <td>\??\c:\??\GLOBALROOT\ndis</td>
+  </tr>
+  <tr>
+    <td>\\?\ndis</td>
+    <td>\??\ndis</td>
+  </tr>
+  <tr>
+    <td>\GLOBAL??\ndis</td>
+    <td>\??\c:\GLOBAL??\ndis</td>
+  </tr>
+  <tr>
+    <td>\Device\ndis</td>
+    <td>\??\c:\Device\ndis</td>
+  </tr>
+  <tr>
+    <td>\DosDevices\ndis</td>
+    <td>\??\c:\DosDevices\ndis</td>
+  </tr>
+  <tr>
+    <td>ndis</td>
+    <td>\??\${CURRENT_DIR}\ndis</td>
+  </tr>
+  <tr>
+    <th>Before NtOpenFileStruct()</th>
+    <th>In NtOpenFileStruct()</th>
+  </tr>
+  <tr>
+    <td>\\.\ndis</td>
+    <td>\\.\ndis</td>
+  </tr>
+  <tr>
+    <td>\??\ndis</td>
+    <td>\??\ndis</td>
+  </tr>
+  <tr>
+    <td>\??\GLOBALROOT\ndis</td>
+    <td>\??\GLOBALROOT\ndis</td>
+  </tr>
+  <tr>
+    <td>\\?\ndis</td>
+    <td>\\?\ndis</td>
+  </tr>
+  <tr>
+    <td>\GLOBAL??\ndis</td>
+    <td>\GLOBAL??\ndis</td>
+  </tr>
+  <tr>
+    <td>\Device\ndis</td>
+    <td>\Device\ndis</td>
+  </tr>
+  <tr>
+    <td>\DosDevices\ndis</td>
+    <td>\DosDevices\ndis</td>
+  </tr>
+  <tr>
+    <td>ndis</td>
+    <td>ndis</td>
+  </tr>
+</table><br>
+
+<p>
+File Namespace測試<br>
+<img src="namespace/3.jpg" class="maxSize"><br><br>
+
+逆向看一下轉換後的名稱<br>
+<img src="namespace/6.jpg" class="maxSize"><br><br>
+
+整理表格(File Namespace測試)
+</p>
+
+<table border="1">
+  <tr>
+    <th>Before CreateFile()</th>
+    <th>In CreateFile()</th>
+  </tr>
+  <tr>
+    <td>\\.\c:\test\test.txt</td>
+    <td>\??\c:\test\test.txt</td>
+  </tr>
+  <tr>
+    <td>\??\c:\test\test.txt</td>
+    <td>\??\c:\??\c:\test\test.txt</td>
+  </tr>
+  <tr>
+    <td>\??\GLOBALROOT\c:\test\test.txt</td>
+    <td>\??\c:\??\GLOBALROOT\c:\test\test.txt</td>
+  </tr>
+  <tr>
+    <td>\\?\c:\test\test.txt</td>
+    <td>\??\c:\test\test.txt</td>
+  </tr>
+  <tr>
+    <td>\GLOBAL??\c:\test\test.txt</td>
+    <td>\??\c:\GLOBAL??\c:\test\test.txt</td>
+  </tr>
+  <tr>
+    <td>\Device\c:\test\test.txt</td>
+    <td>\??\c:\Device\c:\test\test.txt</td>
+  </tr>
+  <tr>
+    <td>\DosDevices\c:\test\test.txt</td>
+    <td>\??\c:\DosDevices\c:\test\test.txt</td>
+  </tr>
+  <tr>
+    <td>c:\test\test.txt</td>
+    <td>\??\c:\test\test.txt</td>
+  </tr>
+  <tr>
+    <th>Before NtOpenFileStruct()</th>
+    <th>In NtOpenFileStruct()</th>
+  </tr>
+  <tr>
+    <td>\\.\c:\test\test.txt</td>
+    <td>\\.\c:\test\test.txt</td>
+  </tr>
+  <tr>
+    <td>\??\c:\test\test.txt</td>
+    <td>\??\c:\test\test.txt</td>
+  </tr>
+  <tr>
+    <td>\??\GLOBALROOT\c:\test\test.txt</td>
+    <td>\??\GLOBALROOT\c:\test\test.txt</td>
+  </tr>
+  <tr>
+    <td>\\?\c:\test\test.txt</td>
+    <td>\\?\c:\test\test.txt</td>
+  </tr>
+  <tr>
+    <td>\GLOBAL??\c:\test\test.txt</td>
+    <td>\GLOBAL??\c:\test\test.txt</td>
+  </tr>
+  <tr>
+    <td>\Device\c:\test\test.txt</td>
+    <td>\Device\c:\test\test.txt</td>
+  </tr>
+  <tr>
+    <td>\DosDevices\c:\test\test.txt</td>
+    <td>\DosDevices\c:\test\test.txt</td>
+  </tr>
+  <tr>
+    <td>c:\test\test.txt</td>
+    <td>c:\test\test.txt</td>
+  </tr>
+</table><br>
+
+<p>
+轉置測試<br>
+<img src="namespace/4.jpg" class="maxSize"><br><br>
+
+逆向看一下轉換後的名稱<br>
+<img src="namespace/7.jpg" class="maxSize"><br><br>
+
+整理表格(轉置測試)
+</p>
+
+<table border="1">
+  <tr>
+    <th>Before CreateFile()</th>
+    <th>In CreateFile()</th>
+  </tr>
+  <tr>
+    <td>\\.\c:\test/test.txt</td>
+    <td>\??\c:\test\test.txt</td>
+  </tr>
+  <tr>
+    <td>\??\c:\test/test.txt</td>
+    <td>\??\c:\??\c:\test\test.txt</td>
+  </tr>
+  <tr>
+    <td>\??\GLOBALROOT\c:\test/test.txt</td>
+    <td>\??\c:\??\GLOBALROOT\c:\test\test.txt</td>
+  </tr>
+  <tr>
+    <td>\\?\c:\test/test.txt</td>
+    <td>\??\c:\test/test.txt</td>
+  </tr>
+  <tr>
+    <td>\GLOBAL??\c:\test/test.txt</td>
+    <td>\??\c:\GLOBAL??\c:\test\test.txt</td>
+  </tr>
+  <tr>
+    <td>\Device\c:\test/test.txt</td>
+    <td>\??\c:\Device\c:\test\test.txt</td>
+  </tr>
+  <tr>
+    <td>\DosDevices\c:\test/test.txt</td>
+    <td>\??\c:\DosDevices\c:\test\test.txt</td>
+  </tr>
+  <tr>
+    <td>c:\test/test.txt</td>
+    <td>\??\c:\test\test.txt</td>
+  </tr>
+  <tr>
+    <th>Before NtOpenFileStruct()</th>
+    <th>In NtOpenFileStruct()</th>
+  </tr>
+  <tr>
+    <td>\\.\c:\test/test.txt</td>
+    <td>\\.\c:\test/test.txt</td>
+  </tr>
+  <tr>
+    <td>\??\c:\test/test.txt</td>
+    <td>\??\c:\test/test.txt</td>
+  </tr>
+  <tr>
+    <td>\??\GLOBALROOT\c:\test/test.txt</td>
+    <td>\??\GLOBALROOT\c:\test/test.txt</td>
+  </tr>
+  <tr>
+    <td>\\?\c:\test/test.txt</td>
+    <td>\\?\c:\test/test.txt</td>
+  </tr>
+  <tr>
+    <td>\GLOBAL??\c:\test/test.txt</td>
+    <td>\GLOBAL??\c:\test/test.txt</td>
+  </tr>
+  <tr>
+    <td>\Device\c:\test/test.txt</td>
+    <td>\Device\c:\test/test.txt</td>
+  </tr>
+  <tr>
+    <td>\DosDevices\c:\test/test.txt</td>
+    <td>\DosDevices\c:\test/test.txt</td>
+  </tr>
+  <tr>
+    <td>c:\test/test.txt</td>
+    <td>c:\test/test.txt</td>
+  </tr>
+</table><br>
+
+<p>
+<br><a href="../../driver.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,112 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Kernel Mode Driver Framework &gt;&gt; Assembly (PNP)</h3>
+<p><b>DriverEntry()</b></p>
+<hr size="1">
+<p>
+C/C++程式的進入點是main()，而對於KMDF驅動程式而言，它的進入點則是DriverEntry()，如果沒有export DriverEntry()，系統將無法正確載入驅動程式。<br><br>
+
+DriverEntry()定義如下：</p>
+<pre class="brush:asm">
+DriverEntry proc :PDRIVER_OBJECT, :PUNICODE_STRING
+</pre><br>
+
+<p>
+系統透過呼叫DriverEntry()載入驅動程式並傳入兩個參數，第一個參數PDRIVER_OBJECT是指向該驅動程式的資料位置，該位置會包含驅動程式的所有資訊，這些資訊並非全部都提供給使用者使用，有些欄位是Undocument的，保留給系統調度使用，Microsoft可能隨系統不同而修改，因此，建議使用者不要使用這些Undocument欄位的資料。而另一個參數PUNICODE_STRING則是該驅動程式的Registry位置，驅動程式在安裝時，系統都會產生一個註冊表項目(位於CurrentControlSet\Services\)，該項目就是當Windows系統啟動時，用來載入驅動程式使用的，Windows系統依據註冊表來決定哪些驅動程式需要被載入以及載入的順序，因此，隨意修改註冊表，可能會導致驅動程式無法被正確載入，嚴重時，可能無法啟動系統。<br><br>
+
+使用者需要注意的是，就算有多個相同的裝置(如：兩個一樣型號的USB滑鼠插入電腦)，系統只會在發現第一個裝置時，載入該驅動程式並產生一份Driver Object，之後發現的裝置，系統還是使用那份已經產生的Driver Object，使用者可能很好奇，相同裝置使用同一份Driver Object資料？那每個裝置的驅動程式資料不就會亂掉嗎？答案是：不會的，因為每個裝置必須Create自己的Device Object(跟Driver Object是不一樣的東西)，每個裝置的資料必須存在自己Create的Device Object中，因此，每個Device Object各代表不同的裝置。<br><br>
+
+那在DriverEntry()副程式，需要做哪一些事情呢？
+</p>
+
+<table>
+<tr>
+  <th class="width33">KMDF驅動程式</th>
+  <th class="width33">WDM驅動程式</th>
+  <th class="width33">Legacy驅動程式</th>
+</tr>
+<tr>
+  <td>基於WDF架構，需要產生WDF專用的Driver Object並且設定AddDevice Callback副程式，值得注意的是，其餘Callback副程式已經改成在AddDevice()做設定</td>
+  <td>需要註冊使用到的Callback副程式，如：AddDevice()、DriverUnload()等</td>
+  <td>除了需要註冊Callback副程式以外，還要產生Device Object，因為Legacy驅動程式沒有AddDevice() Callback，所以需要在DriverEntry()產生Device Object</td>
+</tr>
+</table><br>
+
+<p>
+範例： 
+</p>
+<pre class="brush:asm">
+DriverEntry proc pOurDriver:PDRIVER_OBJECT, pOurRegistry:PUNICODE_STRING
+  local config:WDF_DRIVER_CONFIG
+  
+  invoke WDF_DRIVER_CONFIG_INIT, addr config, AddDevice
+  lea eax, config
+  mov (WDF_DRIVER_CONFIG ptr [eax]).EvtDriverUnload, DriverUnload
+  invoke WdfDriverCreate, pOurDriver, pOurRegistry, WDF_NO_OBJECT_ATTRIBUTES, addr config, WDF_NO_HANDLE
+  ret
+DriverEntry endp
+</pre>
+<p>
+基本上，PNP類型的驅動程式不需設置DriverUnload Callback副程式，除非需要在DriverEntry()和DriverUnload()配置或刪除資源，因為PNP類型的驅動程式主要以AddDevice()為主要入口，資源的配置應該改在這個地方，需要注意DriverEntry()的回傳值部份，因為回傳值會決定載入驅動程式的成功或失敗，另外，除了DriverEntry()名稱必須固定以外，其餘Callbak的名稱可以隨意命名。<br><br>
+
+如果使用者好奇WdfDriverCreate()裡面究竟是什麼東西，可以參考如下逆向的程式碼：<br>
+<img src="asm_pnp_driverentry/1.jpg" class="maxSize"><br><br>
+
+幾乎所有WDF的呼叫都是藉由WdfFunctions[]這個Function Pointer來操作<br>
+<img src="asm_pnp_driverentry/2.jpg" class="maxSize"><br>
+eax加上0x1d0的偏移就是WdfDriverCreateTableIndex(位於c:\masm32\include\wdf\kmdf\1.9\wdffuncenum.inc)，其數值就是：<b>WdfDriverCreateTableIndex(116*4)</b>，在WDF v1.9，WdfFunctions有接近400個Functions可用，司徒說明這些東西的用意不是想要嚇初學者，而是要告知WDF重新封裝一些東西，而WdfFunctions就是一個關鍵指標，了解這個東西有助於Debug KMDF驅動程式。<br>
+</p>
+
+<p>
+<br><a href="../../driver.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,679 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>F1C100S &gt;&gt; Assembly</h3>
+<p><b>SDMMC</b></p>
+<hr size="1">
+<p>
+參考資料：<br>
+1. <a href="https://github.com/steward-fu/mcu-pdf/tree/master/f1c100s">pdf</a><br>
+2. <a href="http://elm-chan.org/docs/mmc/mmc_e.html">emmc_e</a><br>
+3. <a href="http://nano.lichee.pro/">lichee</a><br>
+4. <a href="https://mangopi.org/mangopi_r">mangopi_r</a><br>
+5. <a href="https://www.allwinnertech.com/index.php?c=product&a=index&pid=4">allwinner</a><br>
+6. <a href="http://www.zeroplus.com.tw/E-paper/200907/image/SD_command%20and%20register%20list.pdf">sdcard_command_list</a><br><br>
+
+暫存器<br>
+<img src="../f1c200s/asm_sdmmc/1.jpg" class="maxSize"><br><br>
+
+腳位<br>
+<img src="../f1c200s/asm_sdmmc/2.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+  .global _start
+   
+  .equiv SDC0_BASE,             0x01c0f000
+  .equiv CCU_BASE,              0x01c20000
+  .equiv PIO_BASE,              0x01c20800
+  .equiv UART0_BASE,            0x01c25000
+
+  .equiv PA,                    (0 * 0x24)
+  .equiv PE,                    (4 * 0x24)
+  .equiv PF,                    (5 * 0x24)
+  .equiv PIO_CFG0,              0x00
+  .equiv PIO_DATA,              0x10
+
+  .equiv PLL_PERIPH_CTRL_REG,   0x0028
+  .equiv AHB_APB_HCLKC_CFG_REG, 0x0054
+  .equiv BUS_CLK_GATING_REG0,   0x0060
+  .equiv BUS_CLK_GATING_REG2,   0x0068
+  .equiv SDMMC0_CLK_REG,        0x0088
+  .equiv BUS_SOFT_RST_REG0,     0x02c0
+  .equiv BUS_SOFT_RST_REG2,     0x02d0
+
+  .equiv UART_RBR,              0x0000
+  .equiv UART_DLL,              0x0000
+  .equiv UART_DLH,              0x0004
+  .equiv UART_IER,              0x0004
+  .equiv UART_IIR,              0x0008
+  .equiv UART_LCR,              0x000c
+  .equiv UART_MCR,              0x0010
+  .equiv UART_USR,              0x007c
+
+  .equiv SD_GCTL_REG,           0x0000
+  .equiv SD_CKCR_REG,           0x0004
+  .equiv SD_TMOR_REG,           0x0008
+  .equiv SD_BWDR_REG,           0x000c
+  .equiv SD_BKSR_REG,           0x0010
+  .equiv SD_BYCR_REG,           0x0014
+  .equiv SD_CMDR_REG,           0x0018
+  .equiv SD_CAGR_REG,           0x001c
+  .equiv SD_RESP0_REG,          0x0020
+  .equiv SD_RESP1_REG,          0x0024
+  .equiv SD_RESP2_REG,          0x0028
+  .equiv SD_RESP3_REG,          0x002c
+  .equiv SD_IMKR_REG,           0x0030
+  .equiv SD_MISR_REG,           0x0034
+  .equiv SD_RISR_REG,           0x0038
+  .equiv SD_STAR_REG,           0x003c
+  .equiv SD_FWLR_REG,           0x0040
+  .equiv SD_FUNS_REG,           0x0044
+  .equiv SD_CBCR_REG,           0x0048
+  .equiv SD_BBCR_REG,           0x004c
+  .equiv SD_DBGC_REG,           0x0050
+  .equiv SD_A12A_REG,           0x0058
+  .equiv SD_HWRST_REG,          0x0078
+  .equiv SD_DMAC_REG,           0x0080
+  .equiv SD_DLBA_REG,           0x0084
+  .equiv SD_IDST_REG,           0x0088
+  .equiv SD_IDIE_REG,           0x008c
+  .equiv SD_CHDA_REG,           0x0090
+  .equiv SD_CBDA_REG,           0x0094
+  .equiv CARD_THLDC_REG,        0x0100
+  .equiv EMMC_DSBD_REG,         0x010c
+  .equiv SD_FIFO_REG,           0x0200
+ 
+  .equiv MMC_RSP_NONE,                 (0)
+  .equiv MMC_RSP_R1,                   (MMC_RSP_PRESENT | MMC_RSP_CRC | MMC_RSP_OPCODE)
+  .equiv MMC_RSP_R1b,                  (MMC_RSP_PRESENT | MMC_RSP_CRC | MMC_RSP_OPCODE | MMC_RSP_BUSY)
+  .equiv MMC_RSP_R2,                   (MMC_RSP_PRESENT | MMC_RSP_136 | MMC_RSP_CRC)
+  .equiv MMC_RSP_R3,                   (MMC_RSP_PRESENT)
+  .equiv MMC_RSP_R4,                   (MMC_RSP_PRESENT)
+  .equiv MMC_RSP_R5,                   (MMC_RSP_PRESENT | MMC_RSP_CRC | MMC_RSP_OPCODE)
+  .equiv MMC_RSP_R6,                   (MMC_RSP_PRESENT | MMC_RSP_CRC | MMC_RSP_OPCODE)
+  .equiv MMC_RSP_R7,                   (MMC_RSP_PRESENT | MMC_RSP_CRC | MMC_RSP_OPCODE)
+
+  .equiv MMC_RSP_PRESENT,              (1 &lt;&lt; 0)
+  .equiv MMC_RSP_136,                  (1 &lt;&lt; 1)
+  .equiv MMC_RSP_CRC,                  (1 &lt;&lt; 2)
+  .equiv MMC_RSP_BUSY,                 (1 &lt;&lt; 3)
+  .equiv MMC_RSP_OPCODE,               (1 &lt;&lt; 4)
+
+  .equiv MMC_CMD_GO_IDLE_STATE,        0
+  .equiv MMC_CMD_SEND_OP_COND,         1
+  .equiv MMC_CMD_ALL_SEND_CID,         2
+  .equiv MMC_CMD_SET_RELATIVE_ADDR,    3
+  .equiv MMC_CMD_SET_DSR,              4
+  .equiv MMC_CMD_SWITCH,               6
+  .equiv MMC_CMD_SELECT_CARD,          7
+  .equiv MMC_CMD_SEND_EXT_CSD,         8
+  .equiv MMC_CMD_SEND_CSD,             9
+  .equiv MMC_CMD_SEND_CID,             10
+  .equiv MMC_CMD_STOP_TRANSMISSION,    12
+  .equiv MMC_CMD_SEND_STATUS,          13
+  .equiv MMC_CMD_SET_BLOCKLEN,         16
+  .equiv MMC_CMD_READ_SINGLE_BLOCK,    17
+  .equiv MMC_CMD_READ_MULTIPLE_BLOCK,  18
+  .equiv MMC_CMD_SET_BLOCK_COUNT,      23
+  .equiv MMC_CMD_WRITE_SINGLE_BLOCK,   24
+  .equiv MMC_CMD_WRITE_MULTIPLE_BLOCK, 25
+  .equiv MMC_CMD_ERASE_GROUP_START,    35
+  .equiv MMC_CMD_ERASE_GROUP_END,      36
+  .equiv MMC_CMD_ERASE,                38
+  .equiv MMC_CMD_APP_CMD,              55
+  .equiv MMC_CMD_SPI_READ_OCR,         58
+  .equiv MMC_CMD_SPI_CRC_ON_OFF,       59
+  .equiv MMC_CMD_RES_MAN,              62
+  .equiv MMC_VDD_32_33,                0x00100000
+  .equiv MMC_VDD_33_34,                0x00200000
+
+  .equiv SD_CMD_SEND_RELATIVE_ADDR,    3
+  .equiv SD_CMD_SWITCH_FUNC,           6
+  .equiv SD_CMD_SEND_IF_COND,          8
+  .equiv SD_CMD_SWITCH_UHS18V,         11
+  .equiv SD_CMD_APP_SET_BUS_WIDTH,     6
+  .equiv SD_CMD_APP_SD_STATUS,         13
+  .equiv SD_CMD_ERASE_WR_BLK_START,    32
+  .equiv SD_CMD_ERASE_WR_BLK_END,      33
+  .equiv SD_CMD_APP_SEND_OP_COND,      41
+  .equiv SD_CMD_APP_SEND_SCR,          51
+
+  .equiv OCR_BUSY,                     0x80000000
+  .equiv OCR_HCS,                      0x40000000
+  .equiv OCR_VOLTAGE_MASK,             0x007fff80
+  .equiv OCR_ACCESS_MODE,              0x60000000
+
+  .equiv MMC_STATUS_SWITCH_ERROR,      (0x01 &lt;&lt; 7)
+  .equiv MMC_STATUS_RDY_FOR_DATA,      (0x01 &lt;&lt; 8)
+  .equiv MMC_STATUS_CURR_STATE,        (0x0f &lt;&lt; 9)
+  .equiv MMC_STATUS_ERROR,             (0x01 &lt;&lt; 19)
+  .equiv MMC_STATE_PRG,                (0x07 &lt;&lt; 9)
+
+  .equiv SUNXI_MMC_CMD_RESP_EXPIRE,          (1 &lt;&lt; 6)
+  .equiv SUNXI_MMC_CMD_LONG_RESPONSE,        (1 &lt;&lt; 7)
+  .equiv SUNXI_MMC_CMD_CHK_RESPONSE_CRC,     (1 &lt;&lt; 8)
+  .equiv SUNXI_MMC_CMD_DATA_EXPIRE,          (1 &lt;&lt; 9)
+  .equiv SUNXI_MMC_CMD_WRITE,                (1 &lt;&lt; 10)
+  .equiv SUNXI_MMC_CMD_AUTO_STOP,            (1 &lt;&lt; 12)
+  .equiv SUNXI_MMC_CMD_WAIT_PRE_OVER,        (1 &lt;&lt; 13)
+  .equiv SUNXI_MMC_CMD_SEND_INIT_SEQ,        (1 &lt;&lt; 15)
+  .equiv SUNXI_MMC_CMD_UPCLK_ONLY,           (1 &lt;&lt; 21)
+  .equiv SUNXI_MMC_CMD_START,                (1 &lt;&lt; 31)
+  .equiv SUNXI_MMC_RINT_RESP_ERROR,          (1 &lt;&lt; 1)
+  .equiv SUNXI_MMC_RINT_COMMAND_DONE,        (1 &lt;&lt; 2)
+  .equiv SUNXI_MMC_RINT_DATA_OVER,           (1 &lt;&lt; 3)
+  .equiv SUNXI_MMC_RINT_TX_DATA_REQUEST,     (1 &lt;&lt; 4)
+  .equiv SUNXI_MMC_RINT_RX_DATA_REQUEST,     (1 &lt;&lt; 5)
+  .equiv SUNXI_MMC_RINT_RESP_CRC_ERROR,      (1 &lt;&lt; 6)
+  .equiv SUNXI_MMC_RINT_DATA_CRC_ERROR,      (1 &lt;&lt; 7)
+  .equiv SUNXI_MMC_RINT_RESP_TIMEOUT,        (1 &lt;&lt; 8)
+  .equiv SUNXI_MMC_RINT_DATA_TIMEOUT,        (1 &lt;&lt; 9)
+  .equiv SUNXI_MMC_RINT_VOLTAGE_CHANGE_DONE, (1 &lt;&lt; 10)
+  .equiv SUNXI_MMC_RINT_FIFO_RUN_ERROR,      (1 &lt;&lt; 11)
+  .equiv SUNXI_MMC_RINT_HARD_WARE_LOCKED,    (1 &lt;&lt; 12)
+  .equiv SUNXI_MMC_RINT_START_BIT_ERROR,     (1 &lt;&lt; 13)
+  .equiv SUNXI_MMC_RINT_AUTO_COMMAND_DONE,   (1 &lt;&lt; 14)
+  .equiv SUNXI_MMC_RINT_END_BIT_ERROR,       (1 &lt;&lt; 15)
+  .equiv SUNXI_MMC_RINT_SDIO_INTERRUPT,      (1 &lt;&lt; 16)
+  .equiv SUNXI_MMC_RINT_CARD_INSERT,         (1 &lt;&lt; 30)
+  .equiv SUNXI_MMC_RINT_CARD_REMOVE,         (1 &lt;&lt; 31)
+  .equiv SUNXI_MMC_GCTRL_SOFT_RESET,         (1 &lt;&lt; 0)
+  .equiv SUNXI_MMC_GCTRL_FIFO_RESET,         (1 &lt;&lt; 1)
+  .equiv SUNXI_MMC_GCTRL_DMA_RESET,          (1 &lt;&lt; 2)
+  .equiv SUNXI_MMC_GCTRL_RESET,              (SUNXI_MMC_GCTRL_SOFT_RESET | SUNXI_MMC_GCTRL_FIFO_RESET | SUNXI_MMC_GCTRL_DMA_RESET)
+  .equiv SUNXI_MMC_GCTRL_DMA_ENABLE,         (1 &lt;&lt; 5)
+  .equiv SUNXI_MMC_GCTRL_ACCESS_BY_AHB,      (1 &lt;&lt; 31)
+  .equiv SUNXI_MMC_CLK_ENABLE,               (1 &lt;&lt; 16)
+
+  .equiv SUNXI_MMC_STATUS_RXWL_FLAG,         (1 &lt;&lt; 0)
+  .equiv SUNXI_MMC_STATUS_TXWL_FLAG,         (1 &lt;&lt; 1)
+  .equiv SUNXI_MMC_STATUS_FIFO_EMPTY,        (1 &lt;&lt; 2)
+  .equiv SUNXI_MMC_STATUS_FIFO_FULL,         (1 &lt;&lt; 3)
+  .equiv SUNXI_MMC_STATUS_CARD_PRESENT,      (1 &lt;&lt; 8)
+  .equiv SUNXI_MMC_STATUS_CARD_DATA_BUSY,    (1 &lt;&lt; 9)
+  .equiv SUNXI_MMC_STATUS_DATA_FSM_BUSY,     (1 &lt;&lt; 10)
+
+  .arm
+  .text
+_start:
+  .long 0xea000016
+  .byte 'e', 'G', 'O', 'N', '.', 'B', 'T', '0'
+  .long 0, __spl_size
+  .byte 'S', 'P', 'L', 2
+  .long 0, 0
+  .long 0, 0, 0, 0, 0, 0, 0, 0
+  .long 0, 0, 0, 0, 0, 0, 0, 0
+    
+_vector:
+  b reset
+  b .
+  b .
+  b .
+  b .
+  b .
+  b .
+  b .
+    
+reset:
+  bl ccu_init
+  bl uart_init
+  bl sdcard_init
+  
+  ldr r0, =MMC_CMD_GO_IDLE_STATE
+  mov r1, #0
+  ldr r2, =MMC_RSP_NONE
+  mov r3, #0
+  bl sdcard_cmd
+
+  ldr r0, =SD_CMD_SEND_IF_COND
+  ldr r1, =0x1aa
+  ldr r2, =MMC_RSP_R7
+  mov r3, #0
+  bl sdcard_cmd
+
+0:
+  ldr r0, =MMC_CMD_APP_CMD
+  mov r1, #0
+  ldr r2, =MMC_RSP_R1
+  mov r3, #0
+  bl sdcard_cmd
+
+  ldr r0, =SD_CMD_APP_SEND_OP_COND
+  ldr r1, =OCR_HCS | MMC_VDD_32_33 | MMC_VDD_33_34
+  ldr r2, =MMC_RSP_R3
+  mov r3, #0
+  bl sdcard_cmd
+
+  tst r0, #OCR_BUSY
+  beq 0b
+
+  ldr r0, =MMC_CMD_ALL_SEND_CID
+  mov r1, #0
+  ldr r2, =MMC_RSP_R2
+  mov r3, #0
+  bl sdcard_cmd
+  
+  ldr r0, =SD_CMD_SEND_RELATIVE_ADDR
+  mov r1, #0
+  ldr r2, =MMC_RSP_R6
+  mov r3, #0
+  bl sdcard_cmd
+  
+  mov r1, r0, lsr #8
+  lsl r1, #8
+  ldr r2, =mmc_rca
+  str r1, [r2]
+
+  ldr r0, =MMC_CMD_SEND_CSD
+  ldr r2, =MMC_RSP_R2
+  mov r3, #0
+  bl sdcard_cmd
+  
+  ldr r0, =MMC_CMD_SELECT_CARD
+  ldr r1, =mmc_rca
+  ldr r1, [r1]
+  ldr r2, =MMC_RSP_R1
+  mov r3, #0
+  bl sdcard_cmd
+ 
+  ldr r0, =MMC_CMD_APP_CMD
+  ldr r1, =mmc_rca
+  ldr r1, [r1]
+  ldr r2, =MMC_RSP_R1
+  mov r3, #0
+  bl sdcard_cmd
+
+  ldr r0, =MMC_CMD_SWITCH
+  mov r1, #2
+  ldr r2, =MMC_RSP_R1b
+  mov r3, #0
+  bl sdcard_cmd
+  bl sdcard_wait
+  
+  ldr r4, =SDC0_BASE
+  mov r1, #1
+  str r1, [r4, #SD_BWDR_REG]
+  
+  ldr r0, =MMC_CMD_SET_BLOCKLEN
+  mov r1, #512
+  ldr r2, =MMC_RSP_R1
+  mov r3, #0
+  bl sdcard_cmd
+
+  ldr r0, =SD_CMD_ERASE_WR_BLK_START
+  ldr r1, =0x2000
+  ldr r2, =MMC_RSP_R1
+  mov r3, #0
+  bl sdcard_cmd
+  
+  ldr r0, =SD_CMD_ERASE_WR_BLK_END
+  ldr r1, =0x2000 + 512
+  ldr r2, =MMC_RSP_R1
+  mov r3, #0
+  bl sdcard_cmd
+  
+  ldr r0, =MMC_CMD_ERASE
+  mov r1, #0
+  ldr r2, =MMC_RSP_R1b
+  mov r3, #0
+  bl sdcard_cmd
+  bl sdcard_wait
+  
+  ldr r1, =mmc_wr
+  mov r2, #512
+  mov r3, #0
+0:
+  str r3, [r1]
+  add r3, #1
+  add r1, #4
+  subs r2, #4
+  bne 0b
+  
+  ldr r0, =MMC_CMD_WRITE_SINGLE_BLOCK
+  ldr r1, =0x2000
+  ldr r2, =MMC_RSP_R1
+  ldr r3, =512
+  bl sdcard_cmd
+  bl sdcard_wait
+ 
+  ldr r1, =mmc_rd
+  mov r2, #512
+  mov r3, #0
+0:
+  str r3, [r1]
+  add r1, #4
+  subs r2, #4
+  bne 0b
+
+  ldr r0, =MMC_CMD_READ_SINGLE_BLOCK
+  ldr r1, =0x2000
+  ldr r2, =MMC_RSP_R1
+  ldr r3, =512
+  bl sdcard_cmd
+
+  ldr r4, =mmc_rd
+  mov r5, #512
+0:
+  ldr r0, [r4]
+  bl uart_4byte
+  add r4, #4
+  subs r5, #4
+  bne 0b
+  b .
+
+sdcard_wait:
+  push {lr}
+0:
+  ldr r0, =MMC_CMD_SEND_STATUS
+  ldr r1, =mmc_rca
+  ldr r1, [r1]
+  ldr r2, =MMC_RSP_R1
+  mov r3, #0
+  bl sdcard_cmd
+  tst r0, #MMC_STATUS_RDY_FOR_DATA
+  beq 0b
+  tst r0, #MMC_STATE_PRG
+  beq 0b
+  pop {pc}
+
+sdcard_wr:
+  push {r4, lr}
+  ldr r4, =SDC0_BASE
+  ldr r1, =mmc_wr
+0:
+  ldr r2, [r4, #SD_STAR_REG]
+  tst r2, #SUNXI_MMC_STATUS_FIFO_FULL
+  bne 0b
+  
+  ldr r2, [r1]
+  str r2, [r4, #SD_FIFO_REG]
+  add r1, #4
+  subs r0, #4
+  bne 0b
+  pop {r4, pc}
+  
+sdcard_rd:
+  push {r4, lr}
+  ldr r4, =SDC0_BASE
+  ldr r1, =mmc_rd
+0:
+  ldr r2, [r4, #SD_STAR_REG]
+  tst r2, #SUNXI_MMC_STATUS_FIFO_EMPTY
+  bne 0b
+
+  ldr r2, [r4, #SD_FIFO_REG]
+  str r2, [r1]
+  add r1, #4
+  subs r0, #4
+  bne 0b
+  pop {r4, pc}
+  
+sdcard_cmd:
+  push {r4, r5, r6, r7, lr}
+  ldr r4, =SDC0_BASE
+  
+  mov r5, r2
+  mov r6, #SUNXI_MMC_RINT_COMMAND_DONE
+  mov r7, r0
+
+  cmp r7, #MMC_CMD_GO_IDLE_STATE
+  orreq r0, #SUNXI_MMC_CMD_SEND_INIT_SEQ
+  orr r0, #SUNXI_MMC_CMD_START
+  tst r2, #MMC_RSP_PRESENT
+  orrne r0, #SUNXI_MMC_CMD_RESP_EXPIRE
+  tst r2, #MMC_RSP_136
+  orrne r0, #SUNXI_MMC_CMD_LONG_RESPONSE
+  tst r2, #MMC_RSP_CRC
+  orrne r0, #SUNXI_MMC_CMD_CHK_RESPONSE_CRC
+
+  cmp r7, #MMC_CMD_WRITE_SINGLE_BLOCK
+  orreq r0, #SUNXI_MMC_CMD_WRITE
+  
+  cmp r3, #0
+  orrne r6, #SUNXI_MMC_RINT_DATA_OVER
+  strne r3, [r4, #SD_BKSR_REG]
+  strne r3, [r4, #SD_BYCR_REG]
+  orrne r0, #SUNXI_MMC_CMD_DATA_EXPIRE
+  orrne r0, #SUNXI_MMC_CMD_WAIT_PRE_OVER
+  str r1, [r4, #SD_CAGR_REG]
+  str r0, [r4, #SD_CMDR_REG]
+  beq 0f
+
+  ldr r1, [r4, #SD_GCTL_REG]
+  orr r1, #SUNXI_MMC_GCTRL_ACCESS_BY_AHB
+  str r1, [r4, #SD_GCTL_REG]
+
+  mov r0, r3
+  cmp r7, #MMC_CMD_WRITE_SINGLE_BLOCK
+  bleq sdcard_wr
+  blne sdcard_rd
+
+0:
+  ldr r1, [r4, #SD_RISR_REG]
+  tst r1, r6
+  beq 0b
+
+  ldr r1, =0xffffffff
+  str r1, [r4, #SD_RISR_REG]
+
+  ldr r1, [r4, #SD_GCTL_REG]
+  orr r1, #SUNXI_MMC_GCTRL_FIFO_RESET
+  str r1, [r4, #SD_GCTL_REG]
+ 
+  tst r5, #MMC_RSP_136
+  ldrne r3, [r4, #SD_RESP0_REG]
+  ldrne r2, [r4, #SD_RESP1_REG]
+  ldrne r1, [r4, #SD_RESP2_REG]
+  ldrne r0, [r4, #SD_RESP3_REG]
+  ldreq r0, [r4, #SD_RESP0_REG]
+  ldreq r1, [r4, #SD_RESP1_REG]
+  ldreq r2, [r4, #SD_RESP2_REG]
+  ldreq r3, [r4, #SD_RESP3_REG]
+  pop {r4, r5, r6, r7, pc}
+
+ccu_init:
+  push {r4, lr}
+  ldr r4, =CCU_BASE
+  ldr r1, =0x80041800
+  str r1, [r4, #PLL_PERIPH_CTRL_REG]
+0:
+  ldr r1, [r4, #PLL_PERIPH_CTRL_REG]
+  tst r1, #(1 &lt;&lt; 28)
+  beq 0b
+
+  ldr r1, =0x00003180
+  str r1, [r4, #AHB_APB_HCLKC_CFG_REG]
+  pop {r4, pc}
+
+sdcard_init:
+  push {r4, lr}
+  ldr r4, =PIO_BASE
+  ldr r1, =0x222222
+  str r1, [r4, #(PF + PIO_CFG0)]
+
+  ldr r4, =CCU_BASE
+  ldr r1, [r4, #BUS_CLK_GATING_REG0]
+  orr r1, #(1 &lt;&lt; 8)
+  str r1, [r4, #BUS_CLK_GATING_REG0]
+
+  ldr r1, [r4, #BUS_SOFT_RST_REG0]
+  orr r1, #(1 &lt;&lt; 8)
+  str r1, [r4, #BUS_SOFT_RST_REG0]
+ 
+  ldr r1, =(1 &lt;&lt; 31) | (1 &lt;&lt; 24) | (3 &lt;&lt; 0)
+  str r1, [r4, #SDMMC0_CLK_REG]
+  
+  ldr r4, =SDC0_BASE
+  ldr r1, =SUNXI_MMC_GCTRL_RESET
+  str r1, [r4, #SD_GCTL_REG]
+  
+  ldr r1, =SUNXI_MMC_CLK_ENABLE
+  str r1, [r4, #SD_CKCR_REG]
+  
+  ldr r1, =SUNXI_MMC_CMD_START | SUNXI_MMC_CMD_UPCLK_ONLY | SUNXI_MMC_CMD_WAIT_PRE_OVER
+  str r1, [r4, #SD_CMDR_REG]
+0:
+  ldr r1, [r4, #SD_CMDR_REG]
+  tst r1, #SUNXI_MMC_CMD_START
+  bne 0b
+  ldr r1, =0xffffffff
+  str r1, [r4, #SD_RISR_REG]
+  
+  ldr r1, =0
+  str r1, [r4, #SD_BWDR_REG]
+  pop {r4, pc}
+
+uart_init:
+  push {r4, lr}
+  ldr r4, =PIO_BASE
+  ldr r1, [r4, #(PE + PIO_CFG0)]
+  bic r1, #0xff
+  orr r1, #0x55
+  str r1, [r4, #(PE + PIO_CFG0)]
+
+  ldr r4, =CCU_BASE
+  ldr r1, [r4, #BUS_CLK_GATING_REG2]
+  orr r1, #(1 &lt;&lt; 20)
+  str r1, [r4, #BUS_CLK_GATING_REG2]
+
+  ldr r1, [r4, #BUS_SOFT_RST_REG2]
+  orr r1, #(1 &lt;&lt; 20)
+  str r1, [r4, #BUS_SOFT_RST_REG2]
+
+  ldr r4, =UART0_BASE
+  ldr r1, =0x00
+  str r1, [r4, #UART_IER]
+  ldr r1, =0xf7
+  str r1, [r4, #UART_IIR]
+  ldr r1, =0x00
+  str r1, [r4, #UART_MCR]
+  ldr r1, [r4, #UART_LCR]
+  orr r1, #(1 &lt;&lt; 7)
+  str r1, [r4, #UART_LCR]
+  ldr r1, =54
+  str r1, [r4, #UART_DLL]
+  ldr r1, =0x00
+  str r1, [r4, #UART_DLH]
+  ldr r1, [r4, #UART_LCR]
+  bic r1, #(1 &lt;&lt; 7)
+  str r1, [r4, #UART_LCR]
+  ldr r1, [r4, #UART_LCR]
+  bic r1, #0x1f
+  orr r1, #0x03
+  str r1, [r4, #UART_LCR]
+  pop {r4, pc}
+
+uart_byte:
+  push {r4, lr}
+  ldr r4, =UART0_BASE
+0:
+  ldr r1, [r4, #UART_USR]
+  tst r1, #(1 &lt;&lt; 1)
+  beq 0b
+  strb r0, [r4, #UART_RBR]
+  pop {r4, pc}
+
+uart_4byte:
+  push {r4, lr}
+  mov r4, r0
+  lsr r0, #24
+  bl uart_byte
+
+  mov r0, r4
+  lsr r0, #16
+  bl uart_byte
+  
+  mov r0, r4
+  lsr r0, #8
+  bl uart_byte
+  
+  mov r0, r4
+  bl uart_byte
+  pop {r4, pc}
+
+uart_resp:
+  push {r4, r5, r6, r7, lr}
+  mov r4, r0
+  mov r5, r1
+  mov r6, r2
+  mov r7, r3
+
+  mov r0, r4
+  bl uart_4byte
+
+  mov r0, r5
+  bl uart_4byte
+
+  mov r0, r6
+  bl uart_4byte
+
+  mov r0, r7
+  bl uart_4byte
+  pop {r4, r5, r6, r7, pc}
+
+  .data
+mmc_rca: .word 0
+mmc_rd: .skip 512
+mmc_wr: .skip 512
+  .end
+</pre><br>
+
+<p>
+完成<br>
+<img src="../f1c200s/asm_sdmmc/3.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

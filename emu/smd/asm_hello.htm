@@ -1,0 +1,210 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Sega Genesis &gt;&gt; Assembly</h3>
+<p><b>Hello world!</b></p>
+<hr size="1">
+<p>
+Ref. <a href="http://mode5.net/tutorials/tutorial3.html">http://mode5.net/tutorials/tutorial3.html</a><br><br>
+
+main.asm
+</p>
+<pre class="brush:cpp">
+  dc.l $fffffe, start,  err,      err
+  dc.l err,     err,    err,      err
+  dc.l err,     err,    err,      err
+  dc.l err,     err,    err,      err
+  dc.l err,     err,    err,      err
+  dc.l err,     err,    err,      err
+  dc.l err,     err,    err,      err
+  dc.l hblank,  err,    vblank,   err
+  dc.l err,     err,    err,      err
+  dc.l err,     err,    err,      err
+  dc.l err,     err,    err,      err
+  dc.l err,     err,    err,      err
+  dc.l err,     err,    err,      err
+  dc.l err,     err,    err,      err
+  dc.l err,     err,    err,      err
+  dc.l err,     err,    err,      err
+  dc.b "SEGA GENESIS    "
+  dc.b "(C)0000 2019.060"
+  dc.b "SEGA Genesis Programming                        "
+  dc.b "SEGA Genesis Programming                        "
+  dc.b "gm 01234567-89"
+  dc.w $dead
+  dc.b "j               "
+  dc.l 0
+  dc.l rom_end
+  dc.l $ff0000
+  dc.l $ffffff
+
+  org $1000
+start:
+  bsr clear_regs
+  bsr clear_ram    
+  bsr setup_vdp
+  bsr clear_vram  
+  move.l #$c0000000,(a3)
+  move.w #$00ee,(a4)
+
+loop:
+  bra loop  
+
+setup_vdp:
+  lea $c00004.l,a3
+  lea $c00000.l,a4
+  lea vdpsetuparray,a5
+  move.w #0018,d4
+vdp_loop:
+  move.w (a5)+,(a3)
+  nop
+  dbf d4,vdp_loop
+  rts
+
+clear_vram:
+  move.l #$40000000,(a3)
+  move.w #$7fff,d4
+vram_clear_loop:
+  move.w #$0000,(a4)
+  dbf d4,vram_clear_loop
+  rts
+
+clear_regs:
+  moveq #$00000000,d0
+  move.l d0,d1
+  move.l d0,d2
+  move.l d0,d3
+  move.l d0,d4
+  move.l d0,d5
+  move.l d0,d6
+  move.l d0,d7
+  move.l d0,a0
+  move.l d0,a1
+  move.l d0,a2
+  move.l d0,a3
+  move.l d0,a4
+  move.l d0,a5
+  move.l d0,a6
+  rts
+
+clear_ram:
+  move.w #$7ff0,d0
+  move.l #$ff0000,a0
+clear_ram_loop:
+  move.w #$0000,(a0)+
+  dbf d0,clear_ram_loop
+  rts
+
+err:            
+  bra err
+
+hblank:
+  rte
+
+vblank:
+  rte
+
+vdpsetuparray:
+  dc.w $8014
+  dc.w $8174
+  dc.w $8208
+  dc.w $8300
+  dc.w $8401
+  dc.w $8518
+  dc.w $8600
+  dc.w $8700
+  dc.w $8800
+  dc.w $8900
+  dc.w $8aff
+  dc.w $8b00
+  dc.w $8c81
+  dc.w $8d34
+  dc.w $8e00
+  dc.w $8f02
+  dc.w $9001
+  dc.w $9100
+  dc.w $9200
+rom_end:
+
+</pre><br>
+
+<p>
+Makefile
+</p>
+<pre>
+all:
+  vasmm68k_mot -o main.bin -Fbin -no-opt -nosym main.asm
+
+clean:
+  rm -rf main.bin
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ make
+  vasmm68k_mot -o main.bin -Fbin -no-opt -nosym main.asm
+  vasm 1.4d (c) in 2002-2009 Volker Barthelmann
+  vasm M68k/CPU32/ColdFire cpu backend 1.1f (c) 2002-2009 Frank Wille
+  vasm motorola syntax module 3.1 (c) 2002-2009 Frank Wille
+  vasm binary output module 1.6 (c) 2002-2009 Volker Barthelmann
+</pre><br>
+
+<p>
+完成<br>
+<img src="asm_hello/1.jpg" class="maxSize">
+</p>
+
+<p>
+<br><br><a href="../../emu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

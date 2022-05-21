@@ -1,0 +1,523 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../../header.js"></script>
+<div id="page">
+<h3>GPD Win 上蓋鋁合金版 &gt;&gt; Debian 9.0</h3>
+<p><b>build kernel 4.13(Hans de Goede)</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="http://hansdegoede.livejournal.com/17445.html">hansdegoede</a><br><br>
+
+雖然該作者是針對Fedora系統客制，不過Arch Linux相關網頁卻也建議使用者依照該網頁編譯Kernel，剛好司徒習慣使用的Linux系統是Debian系統，於是司徒在Debian系統上編譯測試該客制Kernel，結果竟然可以完美地支援電池和音效等相關驅動，於是司徒借花獻佛、依樣畫葫蘆，整理成如下：
+</p>
+
+<pre>
+$ cd
+$ git clone https://github.com/jwrdegoede/linux-sunxi
+$ cd linux-sunxi
+$ make-kpkg clean
+$ fakeroot make-kpkg --initrd --revision=0.0.1 kernel_image kernel_headers
+$ sudo dpkg -i ../linux-image-4.13.0-rc2+_0.0.1_amd64.deb
+$ sudo reboot
+</pre><br>
+
+<p>
+Fix Audio
+</p>
+<pre>
+$ sudo vim /etc/pulse/daemon.conf
+  realtime-scheduling = no
+
+$ sudo mkdir -p /usr/share/alsa/ucm/chtrt5645
+$ sudo vim /usr/share/alsa/ucm/chtrt5645/chtrt5645.conf
+</pre>
+<pre class="brush:cpp">
+Comment "Intel SoC Audio Device"
+SectionUseCase."HiFi" {
+  File "HiFi.conf"
+  Comment "Default"
+}
+</pre><br>
+
+<pre>
+$ sudo vim /usr/share/alsa/ucm/chtrt5645/HiFi.conf
+</pre>
+<pre class="brush:cpp">
+SectionVerb {
+  # ALSA PCM
+  Value {
+    TQ "HiFi"
+
+    # ALSA PCM device for HiFi
+    PlaybackPCM "hw:chtrt5645"
+    CapturePCM "hw:chtrt5645"
+  }
+
+  EnableSequence [
+    cdev "hw:chtrt5645"
+
+    # media mixer settings
+    #   compress
+    cset "name='media0_in Gain 0 Switch' on"
+    cset "name='media0_in Gain 0 Volume' 0"
+
+    #   normal
+    cset "name='media1_in Gain 0 Switch' on"
+    cset "name='media1_in Gain 0 Volume' 0"
+    #   swm loopback
+    cset "name='media2_in Gain 0 Switch' off"
+    cset "name='media2_in Gain 0 Volume' 0%"
+    #   deep buffer
+    cset "name='media3_in Gain 0 Switch' on"
+    cset "name='media3_in Gain 0 Volume' 0"
+
+    cset "name='media0_out mix 0 media0_in Switch' on"
+    cset "name='media0_out mix 0 media1_in Switch' on"
+    cset "name='media0_out mix 0 media2_in Switch' off"
+    cset "name='media0_out mix 0 media3_in Switch' on"
+
+    cset "name='media1_out mix 0 media0_in Switch' off"
+    cset "name='media1_out mix 0 media1_in Switch' off"
+    cset "name='media1_out mix 0 media2_in Switch' off"
+    cset "name='media1_out mix 0 media3_in Switch' off"
+
+    cset "name='pcm0_in Gain 0 Switch' on"
+    cset "name='pcm0_in Gain 0 Volume' 0"
+
+    cset "name='pcm1_in Gain 0 Switch' off"
+    cset "name='pcm1_in Gain 0 Volume' 0%"
+
+    # codec0_out settings (used if ssp2 is connected to aif1)
+    cset "name='codec_out0 mix 0 codec_in0 Switch' off"
+    cset "name='codec_out0 mix 0 codec_in1 Switch' off"
+    cset "name='codec_out0 mix 0 media_loop1_in Switch' off"
+    cset "name='codec_out0 mix 0 media_loop2_in Switch' off"
+    cset "name='codec_out0 mix 0 pcm0_in Switch' on"
+    cset "name='codec_out0 mix 0 pcm1_in Switch' off"
+    cset "name='codec_out0 mix 0 sprot_loop_in Switch' off"
+    cset "name='codec_out0 Gain 0 Switch' on"
+    cset "name='codec_out0 Gain 0 Volume' 0"
+
+    # modem_out settings (used if ssp0 is connected to aif2)
+    cset "name='modem_out mix 0 codec_in0 Switch' off"
+    cset "name='modem_out mix 0 codec_in1 Switch' off"
+    cset "name='modem_out mix 0 media_loop1_in Switch' off"
+    cset "name='modem_out mix 0 media_loop2_in Switch' off"
+    cset "name='modem_out mix 0 pcm0_in Switch' on"
+    cset "name='modem_out mix 0 pcm1_in Switch' off"
+    cset "name='modem_out mix 0 sprot_loop_in Switch' off"
+    cset "name='modem_out Gain 0 Switch' on"
+    cset "name='modem_out Gain 0 Volume' 0"
+
+    # input settings
+    # pcm1_out settings
+
+    # input used when SSP2 is connected
+    cset "name='codec_in0 Gain 0 Switch' on"
+    cset "name='codec_in0 Gain 0 Volume' 0"
+
+    # input used when SSP0 is connected
+    cset "name='modem_in Gain 0 Switch' on"
+    cset "name='modem_in Gain 0 Volume' 0"
+
+    cset "name='pcm1_out mix 0 codec_in0 Switch' on"
+    cset "name='pcm1_out mix 0 modem_in Switch' on"
+    cset "name='pcm1_out mix 0 codec_in1 Switch' off"
+    cset "name='pcm1_out mix 0 media_loop1_in Switch' off"
+    cset "name='pcm1_out mix 0 media_loop2_in Switch' off"
+    cset "name='pcm1_out mix 0 pcm0_in Switch' off"
+    cset "name='pcm1_out mix 0 pcm1_in Switch' off"
+    cset "name='pcm1_out mix 0 sprot_loop_in Switch' off"
+
+    cset "name='pcm1_out Gain 0 Switch' on"
+    cset "name='pcm1_out Gain 0 Volume' 0"
+
+    # disable codec_out1
+    cset "name='codec_out1 mix 0 codec_in0 Switch' off"
+    cset "name='codec_out1 mix 0 codec_in1 Switch' off"
+    cset "name='codec_out1 mix 0 media_loop1_in Switch' off"
+    cset "name='codec_out1 mix 0 media_loop2_in Switch' off"
+    cset "name='codec_out1 mix 0 pcm0_in Switch' off"
+    cset "name='codec_out1 mix 0 pcm1_in Switch' off"
+    cset "name='codec_out1 mix 0 sprot_loop_in Switch' off"
+    cset "name='codec_out1 Gain 0 Switch' off"
+    cset "name='codec_out1 Gain 0 Volume' 0%"
+
+    # disable codec_in1
+    cset "name='codec_in1 Gain 0 Switch' off"
+    cset "name='codec_in1 Gain 0 Volume' 0%"
+
+    # disable all loops
+    cset "name='media_loop1_out mix 0 codec_in0 Switch' off"
+    cset "name='media_loop1_out mix 0 codec_in1 Switch' off"
+    cset "name='media_loop1_out mix 0 media_loop1_in Switch' off"
+    cset "name='media_loop1_out mix 0 media_loop2_in Switch' off"
+    cset "name='media_loop1_out mix 0 pcm0_in Switch' off"
+    cset "name='media_loop1_out mix 0 pcm1_in Switch' off"
+    cset "name='media_loop1_out mix 0 sprot_loop_in Switch' off"
+
+    cset "name='media_loop2_out mix 0 codec_in0 Switch' off"
+    cset "name='media_loop2_out mix 0 codec_in1 Switch' off"
+    cset "name='media_loop2_out mix 0 media_loop1_in Switch' off"
+    cset "name='media_loop2_out mix 0 media_loop2_in Switch' off"
+    cset "name='media_loop2_out mix 0 pcm0_in Switch' off"
+    cset "name='media_loop2_out mix 0 pcm1_in Switch' off"
+    cset "name='media_loop2_out mix 0 sprot_loop_in Switch' off"
+
+    cset "name='sprot_loop_out mix 0 codec_in0 Switch' off"
+    cset "name='sprot_loop_out mix 0 codec_in1 Switch' off"
+    cset "name='sprot_loop_out mix 0 media_loop1_in Switch' off"
+    cset "name='sprot_loop_out mix 0 media_loop2_in Switch' off"
+    cset "name='sprot_loop_out mix 0 pcm0_in Switch' off"
+    cset "name='sprot_loop_out mix 0 pcm1_in Switch' off"
+    cset "name='sprot_loop_out mix 0 sprot_loop_in Switch' off"
+
+    # Output Configuration
+    cset "name='DAC1 L Mux' IF1 DAC"
+    cset "name='DAC1 R Mux' IF1 DAC"
+    cset "name='DAC1 MIXL DAC1 Switch' 1"
+    cset "name='DAC1 MIXR DAC1 Switch' 1"
+    cset "name='Stereo DAC MIXL DAC L1 Switch' 1"
+    cset "name='Stereo DAC MIXR DAC R1 Switch' 1"
+
+    cset "name='DAC L2 Mux' IF2 DAC"
+    cset "name='DAC R2 Mux' IF2 DAC"
+    cset "name='Mono DAC MIXL DAC L2 Switch' on"
+    cset "name='Mono DAC MIXR DAC R2 Switch' on"
+    cset "name='DAC2 Playback Switch' on"
+
+    cset "name='HPOVOL MIXL DAC1 Switch' on"
+    cset "name='HPOVOL MIXR DAC1 Switch' on"
+    cset "name='HPOVOL MIXL DAC2 Switch' on"
+    cset "name='HPOVOL MIXR DAC2 Switch' on"
+    cset "name='HPO MIX HPVOL Switch' on"
+    cset "name='HPOVOL L Switch' on"
+    cset "name='HPOVOL R Switch' on"
+
+    cset "name='SPK MIXL DAC L1 Switch' on"
+    cset "name='SPK MIXR DAC R1 Switch' on"
+    cset "name='SPK MIXL DAC L2 Switch' on"
+    cset "name='SPK MIXR DAC R2 Switch' on"
+    cset "name='SPOL MIX SPKVOL L Switch' on"
+    cset "name='SPOR MIX SPKVOL R Switch' on"
+    cset "name='SPKVOL L Switch' on"
+    cset "name='SPKVOL R Switch' on"
+
+    # Input Configuration
+    cset "name='Stereo1 DMIC Mux' 0"
+    cset "name='Stereo1 ADC2 Mux' 1"
+    cset "name='ADC Capture Switch' on"
+    cset "name='ADC Capture Volume' 31"
+    cset "name='ADC Boost Capture Volume' 3"
+    cset "name='Mono ADC Capture Volume' 63"
+    cset "name='Mono ADC Boost Capture Volume' 2"
+    cset "name='IN Capture Volume' 63"
+    cset "name='I2S2 Func Switch' on"
+
+  ]
+
+  DisableSequence [
+    cdev "hw:chtrt5645"
+
+    # Disable audio output path
+    cset "name='codec_out1 mix 0 pcm0_in Switch' off"
+    cset "name='media0_out mix 0 media1_in Switch' off"
+
+    cset "name='media1_in Gain 0 Switch' off"
+    cset "name='pcm0_in Gain 0 Switch' off"
+    cset "name='codec_out1 Gain 0 Switch' off"
+
+    # Disable audio input path
+    cset "name='pcm1_out mix 0 media_loop2_in Switch' off"
+    cset "name='media_loop2_out mix 0 codec_in0 Switch' off"
+
+    cset "name='media_loop2_out Gain 0 Switch' off"
+    cset "name='pcm1_out Gain 0 Switch' off"
+    cset "name='codec_in0 Gain 0 Switch' off"
+  ]
+}
+
+SectionDevice."Speaker" {
+  Comment "Speaker"
+
+  Value {
+    PlaybackChannels "2"
+  }
+
+  ConflictingDevice [
+    "Headphones"
+  ]
+
+  EnableSequence [
+    cdev "hw:chtrt5645"
+
+    cset "name='Headphone Switch' off"
+    cset "name='Headphone Channel Switch' off"
+
+    cset "name='Ext Spk Switch' on"
+    cset "name='Speaker Channel Switch' on"
+    cset "name='Speaker Playback Volume' 31"
+  ]
+
+  DisableSequence [
+    cdev "hw:chtrt5645"
+
+    cset "name='Ext Spk Switch' off"
+    cset "name='Speaker Channel Switch' off"
+  ]
+}
+
+SectionDevice."Headphones" {
+  Comment "Headphones"
+
+  Value {
+    PlaybackChannels "2"
+    #JackControl "Headphone Jack"
+    #JackHWMute "Speaker"
+  }
+
+  ConflictingDevice [
+    "Speaker"
+  ]
+
+  EnableSequence [
+    cdev "hw:chtrt5645"
+
+    cset "name='Ext Spk Switch' off"
+    cset "name='Speaker Channel Switch' off"
+
+    cset "name='Headphone Switch' on"
+    cset "name='Headphone Channel Switch' on"
+    cset "name='Headphone Playback Volume' 31"
+  ]
+
+  DisableSequence [
+    cdev "hw:chtrt5645"
+
+    cset "name='Headphone Switch' off"
+    cset "name='Headphone Channel Switch' off"
+  ]
+}
+
+SectionDevice."Mic".0 {
+  Comment "Internal Analog Microphones"
+
+  Value {
+    CaptureChannels "2"
+    CapturePriority "150"
+  }
+
+  EnableSequence [
+    cdev "hw:chtrt5645"
+
+    cset "name='Int Mic Switch' on"
+
+    cset "name='Sto1 ADC MIXL ADC1 Switch' on"
+    cset "name='Sto1 ADC MIXR ADC1 Switch' on"
+    cset "name='Sto1 ADC MIXL ADC2 Switch' off"
+    cset "name='Sto1 ADC MIXR ADC2 Switch' off"
+
+    cset "name='Mono ADC MIXL ADC1 Switch' on"
+    cset "name='Mono ADC MIXR ADC1 Switch' on"
+    cset "name='Mono ADC MIXL ADC2 Switch' off"
+    cset "name='Mono ADC MIXR ADC2 Switch' off"
+
+    cset "name='RECMIXL BST1 Switch' on"
+    cset "name='RECMIXR BST1 Switch' on"
+
+  ]
+
+  DisableSequence [
+    cdev "hw:chtrt5645"
+
+    cset "name='Sto1 ADC MIXL ADC1 Switch' off"
+    cset "name='Sto1 ADC MIXR ADC1 Switch' off"
+    cset "name='Mono ADC MIXL ADC1 Switch' off"
+    cset "name='Mono ADC MIXR ADC1 Switch' off"
+
+    cset "name='RECMIXL BST1 Switch' off"
+    cset "name='RECMIXR BST1 Switch' off"
+
+    cset "name='Int Mic Switch' off"
+  ]
+}
+
+
+SectionDevice."DMic".0 {
+  Comment "Internal Digital Microphones"
+
+  Value {
+    CaptureChannels "2"
+
+  }
+
+  EnableSequence [
+    cdev "hw:chtrt5645"
+
+    cset "name='Int Mic Switch' on"
+
+    cset "name='Stereo1 DMIC Mux' DMIC1"
+    cset "name='Stereo1 ADC2 Mux' DMIC"
+    cset "name='Mono ADC L2 Mux' DMIC"
+    cset "name='Mono ADC R2 Mux' DMIC"
+
+    cset "name='Sto1 ADC MIXL ADC1 Switch' off"
+    cset "name='Sto1 ADC MIXR ADC1 Switch' off"
+    cset "name='Sto1 ADC MIXL ADC2 Switch' on"
+    cset "name='Sto1 ADC MIXR ADC2 Switch' on"
+    cset "name='Mono ADC MIXL ADC1 Switch' off"
+    cset "name='Mono ADC MIXR ADC1 Switch' off"
+    cset "name='Mono ADC MIXL ADC2 Switch' on"
+    cset "name='Mono ADC MIXR ADC2 Switch' on"
+
+  ]
+
+  DisableSequence [
+    cdev "hw:chtrt5645"
+
+    cset "name='Sto1 ADC MIXL ADC2 Switch' off"
+    cset "name='Sto1 ADC MIXR ADC2 Switch' off"
+    cset "name='Mono ADC MIXL ADC2 Switch' off"
+    cset "name='Mono ADC MIXR ADC2 Switch' off"
+    cset "name='Int Mic Switch' off"
+  ]
+}
+
+SectionDevice."HSMic".0 {
+  Comment "Headset Microphone"
+
+  Value {
+    CaptureChannels "2"
+    JackControl "Headset Mic Jack"
+    JackHWMute "Mic"
+  }
+
+  EnableSequence [
+    cdev "hw:chtrt5645"
+
+    cset "name='Headset Mic Switch' on"
+
+    cset "name='Sto1 ADC MIXL ADC1 Switch' on"
+    cset "name='Sto1 ADC MIXR ADC1 Switch' on"
+    cset "name='Sto1 ADC MIXL ADC2 Switch' off"
+    cset "name='Sto1 ADC MIXR ADC2 Switch' off"
+
+    cset "name='Mono ADC MIXL ADC1 Switch' on"
+    cset "name='Mono ADC MIXR ADC1 Switch' on"
+    cset "name='Mono ADC MIXL ADC2 Switch' off"
+    cset "name='Mono ADC MIXR ADC2 Switch' off"
+
+    cset "name='RECMIXL BST1 Switch' on"
+    cset "name='RECMIXR BST1 Switch' on"
+
+  ]
+
+  DisableSequence [
+    cdev "hw:chtrt5645"
+
+    cset "name='Headset Mic Switch' off"
+
+    cset "name='RECMIXL BST1 Switch' off"
+    cset "name='RECMIXR BST1 Switch' off"
+    cset "name='Sto1 ADC MIXL ADC1 Switch' off"
+    cset "name='Sto1 ADC MIXR ADC1 Switch' off"
+    cset "name='Mono ADC MIXL ADC1 Switch' on"
+    cset "name='Mono ADC MIXR ADC1 Switch' on"
+
+  ]
+}
+</pre><br>
+
+<p>
+Fix Proxy Sensor
+</p>
+<pre>
+$ sudo vim /lib/udev/hwdb.d/99-local.hwdb
+ sensor:modalias:acpi:KIOX000A*:dmi*:
+  ACCEL_MOUNT_MATRIX=-1, 0, 0; 0, -1, 0; 0, 0, 1
+
+$ sudo vim /lib/udev/rules.d/60-sensor.rules
+</pre>
+<pre class="brush:cpp">
+# do not edit this file, it will be overwritten on update
+
+ACTION=="remove", GOTO="sensor_end"
+
+# device matching the sensor's name and the machine's DMI data for IIO devices
+SUBSYSTEM=="iio", KERNEL=="iio*", SUBSYSTEMS=="usb|i2c", \
+  IMPORT{builtin}="hwdb 'sensor:modalias:$attr{modalias}:$attr{[dmi/id]modalias}'", \
+  GOTO="sensor_end"
+
+SUBSYSTEM=="input", ENV{ID_INPUT_ACCELEROMETER}=="1", SUBSYSTEMS=="acpi", \
+  IMPORT{builtin}="hwdb 'sensor:modalias:acpi:$attr{hid}:$attr{[dmi/id]modalias}'", \
+  GOTO="sensor_end"
+
+SUBSYSTEM=="input", ENV{ID_INPUT_ACCELEROMETER}=="1", SUBSYSTEMS=="platform", \
+  IMPORT{builtin}="hwdb 'sensor:modalias:platform:$id:$attr{[dmi/id]modalias}'", \
+  GOTO="sensor_end"
+
+LABEL="sensor_end"
+</pre>
+<pre>
+$ sudo udevadm hwdb --update
+</pre><br>
+
+<p>
+完成<br>
+<img src="build_patch_kernel-4.13/1.jpg" class="maxSize"><br>
+P.S. 開機後，如果發現PulseAudio無法連接，執行<b>sudo rmmod snd_hdmi_lpe_audio</b>
+</p>
+
+<p>
+<br><a href="../../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,152 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../../header.js"></script>
+<div id="page">
+<h3>GPD Win2 &gt;&gt; Debian 9.0</h3>
+<p><b>build desmume 0.9.11</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://wiki.desmume.org/index.php?title=Installing_DeSmuME_from_source_on_Linux">Installing_DeSmuME_from_source_on_Linux</a><br><br>
+
+RetroArch模擬器在載入NDS遊戲時(黃金太陽)，會有聲音不同步以及掉FPS的問題，司徒原本以為是RetroArch架構的問題，因此嘗試編譯獨立的DeSmuME模擬器，看看是否有改善，只是結果還是一樣，問題沒有得到解決，不過司徒覺得應該是優化問題，目前只能再找時間研究程式碼，看看是否可以改善，不過司徒還是把編譯的步驟寫下，供以後參考：
+</p>
+<pre>
+$ cd
+$ sudo apt-get install build-essential autoconf automake libgtk2.0-dev libglu1-mesa-dev libsdl1.2-dev libglade2-dev gettext zlib1g-dev libosmesa6-dev intltool libagg-dev libasound2-dev libsoundtouch-dev libpcap-dev
+$ wget http://sourceforge.net/projects/desmume/files/desmume/0.9.11/desmume-0.9.11.tar.gz/download
+$ mv download desmume-0.9.11.tar.gz
+$ tar xvzf desmume-0.9.11.tar.gz
+$ cd desmume-0.9.11
+$ ./configure
+
+$ vim src/Makefile +430
+  CPPFLAGS = -fpermissive
+
+$ make
+</pre><br>
+
+<p>
+編譯過程中，竟然發生錯誤，司徒只好使用快速修復方式修補
+</p>
+<pre class="brush:cpp">
+--- ../old/src/wifi.cpp	2015-02-14 23:05:26.000000000 +0800
++++ ../new/src/wifi.cpp	2018-08-16 18:21:43.680568654 +0800
+@@ -314,9 +314,9 @@
+ 
+ #if (WIFI_LOGGING_LEVEL &gt;= 1)
+ 	#if WIFI_LOG_USE_LOGC
+-		#define WIFI_LOG(level, ...) if(level &lt;= WIFI_LOGGING_LEVEL) LOGC(8, "WIFI: "__VA_ARGS__);
++		#define WIFI_LOG(level, ...) if(level &lt;= WIFI_LOGGING_LEVEL) LOGC(8, __VA_ARGS__);
+ 	#else
+-		#define WIFI_LOG(level, ...) if(level &lt;= WIFI_LOGGING_LEVEL) printf("WIFI: "__VA_ARGS__);
++		#define WIFI_LOG(level, ...) if(level &lt;= WIFI_LOGGING_LEVEL) printf(__VA_ARGS__);
+ 	#endif
+ #else
+ #define WIFI_LOG(level, ...) {}
+
+--- old/src/ctrlssdl.cpp	2015-02-14 23:05:26.000000000 +0800
++++ new/src/ctrlssdl.cpp	2018-08-16 18:25:45.586399269 +0800
+@@ -200,7 +200,7 @@
+           break;
+         case SDL_JOYAXISMOTION:
+           /* Dead zone of 50% */
+-          if( (abs(event.jaxis.value) &gt;&gt; 14) != 0 )
++          /*if( (abs(event.jaxis.value) &gt;&gt; 14) != 0 )
+             {
+               key = ((event.jaxis.which &amp; 15) &lt;&lt; 12) | JOY_AXIS &lt;&lt; 8 | ((event.jaxis.axis &amp; 127) &lt;&lt; 1);
+               if (event.jaxis.value &gt; 0) {
+@@ -210,7 +210,7 @@
+               else
+                 printf( "Device: %d; Axis: %d (-)\n", event.jaxis.which, event.jaxis.axis );
+               done = TRUE;
+-            }
++            }*/
+           break;
+         case SDL_JOYHATMOTION:
+           /* Diagonal positions will be treated as two separate keys being activated, rather than a single diagonal key. */
+@@ -370,7 +370,7 @@
+          Note: button constants have a 1bit offset. */
+     case SDL_JOYAXISMOTION:
+       key_code = ((event-&gt;jaxis.which &amp; 15) &lt;&lt; 12) | JOY_AXIS &lt;&lt; 8 | ((event-&gt;jaxis.axis &amp; 127) &lt;&lt; 1);
+-      if( (abs(event-&gt;jaxis.value) &gt;&gt; 14) != 0 )
++      /*if( (abs(event-&gt;jaxis.value) &gt;&gt; 14) != 0 )
+         {
+           if (event-&gt;jaxis.value &gt; 0)
+             key_code |= 1;
+@@ -390,7 +390,7 @@
+             RM_KEY( *keypad, key );
+           if (key_o != 0)
+             RM_KEY( *keypad, key_o );
+-        }
++        }*/
+       break;
+ 
+     case SDL_JOYHATMOTION:
+</pre><br>
+
+<p>
+再次編譯
+</p>
+<pre>
+$ make
+$ ./src/gtk/desmume --cpu-mode=1
+</pre><br>
+
+<p>
+完成<br>
+<img src="build_desmume/1.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

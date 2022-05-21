@@ -1,0 +1,199 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>LPC810 &gt;&gt; Assembly</h3>
+<p><b>LED</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://github.com/microbuilder/LPC810_CodeBase/blob/master/doc/LPC81x%20User%20Manual.pdf">pdf</a><br>
+2. <a href="https://www-users.cs.york.ac.uk/~pcc/Circuits/LPC800/data/lpc810.html">lpc810</a><br><br>
+
+預設PIO0_2是SWDIO<br>
+<img src="asm_led/1.jpg" class="maxSize"><br><br>
+
+DIR<br>
+<img src="asm_led/2.jpg" class="maxSize"><br><br>
+
+SET<br>
+<img src="asm_led/3.jpg" class="maxSize"><br><br>
+
+CLR<br>
+<img src="asm_led/4.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+  .cpu cortex-m0
+  .thumb
+
+  .equ PINENABLE0, 0x4000c1c0
+  .equ GPIO_DIR0,  0xa0002000
+  .equ GPIO_PIN0,  0xa0002100
+  .equ GPIO_SET0,  0xa0002200
+  .equ GPIO_CLR0,  0xa0002280
+  .equ BIT1,       1
+  .equ BIT2,       2
+   
+  .thumb_func
+  .global _start
+_start:
+  .word 0x10000400 @ stacktop
+  .word reset @ reset
+  .word hang @ nmi
+  .word hang @ hardfault
+  .word hang @ reserved
+  .word hang @ reserved
+  .word hang @ reserved
+  .word hang @ reserved
+  .word hang @ reserved
+  .word hang @ reserved
+  .word hang @ reserved
+  .word hang @ svcall
+  .word hang @ reserved
+  .word hang @ reserved
+  .word hang @ pendsv
+  .word hang @ systick
+   
+  .thumb_func
+reset:
+  ldr r0, =PINENABLE0
+  ldr r1, =0xffffffff
+  str r1, [r0]
+
+  ldr r0, =GPIO_DIR0
+  ldr r1, =(1 &lt;&lt; BIT2)
+  str r1, [r0]
+ 
+loop:
+  ldr r0, =GPIO_SET0
+  ldr r1, =(1 &lt;&lt; BIT2)
+  str r1, [r0]
+  bl delay
+ 
+  ldr r0, =GPIO_CLR0
+  ldr r1, =(1 &lt;&lt; BIT2)
+  str r1, [r0]
+  bl delay
+  b loop
+ 
+delay:
+  push {lr}
+  ldr r0, =3000000
+1:
+  nop
+  sub r0, #1
+  bne 1b
+  pop {pc}
+ 
+hang:
+  b .
+.end
+</pre><br>
+
+<p>
+main.ld
+</p>
+<pre>
+OUTPUT_FORMAT("elf32-littlearm", "elf32-bigarm", "elf32-littlearm")
+OUTPUT_ARCH(arm)
+
+MEMORY {
+  rom (rx) : ORIGIN = 0x00000000, LENGTH = 0x00001000
+  ram (rwx) : ORIGIN = 0x10000000, LENGTH = 0x00000400
+}
+
+SECTIONS {
+  . = 0x0;
+  .text : { *(.text*) } &gt; rom
+  .rodata : { *(.rodata*) } &gt; rom
+  .bss : { *(.bss*) } &gt; ram
+  . = ALIGN(8);
+}
+</pre><br>
+
+<p>
+接著按下按鍵(PIO0_1接地)並接上電源以及UART TX、RX，使用如下方式編譯、燒錄
+</p>
+<pre>
+$ arm-none-eabi-as -mcpu=cortex-m0 -mthumb main.s -o main.o
+$ arm-none-eabi-ld -o main.elf -T main.ld main.o
+$ arm-none-eabi-objcopy main.elf main.bin -O binary
+$ arm-none-eabi-objcopy main.elf main.hex -O ihex
+$ sudo lpc21isp -wipe -control -verify -debug2 ./main.hex /dev/ttyUSB0 9600 12000
+  Verify after copy RAM to Flash.
+  lpc21isp version 1.97
+  File ./main.hex:
+    loaded...
+    converted to binary format...
+    image size : 140
+  Image size : 140
+  Synchronizing (ESC to abort)...... OK
+  Read bootcode version: 4
+  13
+  Read part ID: LPC810M021FN8, 4 kiB FLASH / 1 kiB SRAM (0x00008100)
+  Will start programming at Sector 1 if possible, and conclude with Sector 0 to ensure that checksum is written last.
+  Wiping Device. OK
+  Sector 0: ..
+  Download Finished and Verified correct... taking 1 seconds
+  Now launching the brand new code
+</pre><br>
+
+<p>
+完成<br>
+<img src="asm_led/5.jpg" class="maxSize"><br>
+<img src="asm_led/6.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

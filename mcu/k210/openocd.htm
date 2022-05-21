@@ -1,0 +1,128 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>MAIX Bit AI K210</h3>
+<p><b>連接OpenOCD(SiPEED USB-JTAG/TTL)</b></p>
+<hr size="1">
+<p>
+連接TDI、TDO、TMS、TCK、RXD、TXD、RST、GND，最後記得連接USB Type-C提供電源：<br>
+<img src="openocd/1.jpg" class="maxSize"><br><br>
+
+k210.cfg
+</p>
+<pre>
+# debug adapter
+source [find ft2232c.cfg]
+
+transport select jtag
+adapter_khz 10000
+
+# server port
+gdb_port 3333
+telnet_port 4444
+
+# add cpu target
+set _CHIPNAME riscv
+
+jtag newtap $_CHIPNAME cpu -irlen 5 -expected-id 0x04e4796b
+
+set _TARGETNAME $_CHIPNAME.cpu
+target create $_TARGETNAME riscv -chain-position $_TARGETNAME
+
+# command
+init
+halt
+</pre><br>
+
+<p>
+ft2232c.cfg
+</p>
+<pre>
+interface ftdi
+ftdi_vid_pid 0x0403 0x6010
+
+ftdi_layout_init 0xfff8 0xfffb
+ftdi_layout_signal nTRST -data 0x0100 -oe 0x0100
+ftdi_layout_signal nSRST -data 0x0200 -oe 0x0200
+</pre><br>
+
+<p>
+連接步驟：
+</p>
+<pre>
+$ cd 
+$ wget https://s3.cn-north-1.amazonaws.com.cn/dl.kendryte.com/documents/kendryte-openocd-0.1.3-ubuntu64.tar.gz
+$ tar xvf kendryte-openocd-0.1.3-ubuntu64.tar.gz
+$ ./kendryte-openocd/bin/openocd -f k210.cfg 
+  Kendryte Open On-Chip Debugger For RISC-V v0.1.3 (20180912)
+  Licensed under GNU GPL v2
+  adapter speed: 10000 kHz
+  Info : ftdi: if you experience problems at higher adapter clocks, try the command "ftdi_tdo_sample_edge falling"
+  Info : clock speed 10000 kHz
+  Info : JTAG tap: riscv.cpu tap/device found: 0x04e4796b (mfg: 0x4b5 (<unknown>), part: 0x4e47, ver: 0x0)
+  Info : [0] Found 4 triggers
+  Info : [1] Found 4 triggers
+  [1] halted at 0x800005ec due to debug interrupt
+  Info : Examined RISCV core; found 2 harts, XLEN=64, misa=0x800000000014112d
+  Info : Listening on port 3333 for gdb connections
+  [1] halted at 0x800005ec due to debug interrupt
+  [0] halted at 0x800b3840 due to debug interrupt
+  Info : Listening on port 6666 for tcl connections
+  Info : Listening on port 4444 for telnet connections
+</pre>
+<p>
+P.S. 由於有連接RXD和TXD，因此，可以使用minicom開啟FT2232C做UART測試。
+</p>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

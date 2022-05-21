@@ -1,0 +1,261 @@
+<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Kernel Mode Driver Framework &gt;&gt; Assembly (PNP)</h3>
+<p><b>Thread</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://github.com/steward-fu/kmdf">Source Code</a><br>
+2. <a href="https://mropengate.blogspot.com/2015/01/operating-system-ch4-multithread.html">operating-system-ch4-multithread</a><br>
+3. <a href="https://www.tutorialspoint.com/user-level-threads-and-kernel-level-threads">user-level-threads-and-kernel-level-threads</a><br><br>
+
+Thread是一個最小的執行單位，一個Process可以產生多個Thread，在多核CPU上，產生的Thread可以同時的運作，這意謂著使用Thread技術可以用來改善效能，但是，每個Thread間的資料同步則是另一個課題，在此練習，司徒著重在教導使用者如何撰寫一個最基本的Thread，了解其架構後，使用者可以再更深入了解Thread需要面對的其它問題，而值得注意的是，Thread有區分User Thread和System Thread兩種，各有優缺點，細節可以參考如上的參考資訊。<br><br>
+
+main.asm
+</p>
+<pre class="brush:asm">
+.386p
+.model flat, stdcall
+option casemap:none
+
+include c:\masm32\Macros\Strings.mac
+include c:\masm32\include\w2k\ntdef.inc
+include c:\masm32\include\w2k\ntstatus.inc
+include c:\masm32\include\w2k\ntddk.inc
+include c:\masm32\include\w2k\ntoskrnl.inc
+include c:\masm32\include\w2k\ntddkbd.inc
+include c:\masm32\include\wxp\wdm.inc
+include c:\masm32\include\wdf\umdf\1.9\wudfddi_types.inc
+include c:\masm32\include\wdf\kmdf\1.9\wdf.inc
+include c:\masm32\include\wdf\kmdf\1.9\wdftypes.inc
+include c:\masm32\include\wdf\kmdf\1.9\wdfglobals.inc
+include c:\masm32\include\wdf\kmdf\1.9\wdffuncenum.inc
+include c:\masm32\include\wdf\kmdf\1.9\wdfobject.inc
+include c:\masm32\include\wdf\kmdf\1.9\wdfdevice.inc
+include c:\masm32\include\wdf\kmdf\1.9\wdfdriver.inc
+include c:\masm32\include\wdf\kmdf\1.9\wdfrequest.inc
+include c:\masm32\include\wdf\kmdf\1.9\wdfio.inc
+include c:\masm32\include\wdf\kmdf\1.9\wdfmemory.inc
+
+includelib c:\masm32\lib\wxp\i386\BufferOverflowK.lib 
+includelib c:\masm32\lib\wxp\i386\ntoskrnl.lib 
+includelib c:\masm32\lib\wxp\i386\hal.lib 
+includelib c:\masm32\lib\wxp\i386\wmilib.lib 
+includelib c:\masm32\lib\wxp\i386\sehupd.lib 
+includelib c:\masm32\lib\wdf\kmdf\i386\1.9\wdfldr.lib
+includelib c:\masm32\lib\wdf\kmdf\i386\1.9\wdfdriverentry.lib
+
+public DriverEntry
+IOCTL_START equ CTL_CODE(FILE_DEVICE_UNKNOWN, 800h, METHOD_BUFFERED, FILE_ANY_ACCESS)
+IOCTL_STOP  equ CTL_CODE(FILE_DEVICE_UNKNOWN, 801h, METHOD_BUFFERED, FILE_ANY_ACCESS)
+
+.const
+DEV_NAME word "\","D","e","v","i","c","e","\","M","y","D","r","i","v","e","r",0
+SYM_NAME word "\","D","o","s","D","e","v","i","c","e","s","\","M","y","D","r","i","v","e","r",0
+MSG_START byte "IOCTL_START",0
+MSG_STOP  byte "IOCTL_STOP",0
+
+.data
+bExitThread DWORD ?
+pThread PVOID ?
+  
+.code
+MyThread proc pParam:DWORD
+  local stTime:LARGE_INTEGER
+ 
+  or stTime.HighPart, -1
+  mov stTime.LowPart, -10000000
+ 
+  mov eax, bExitThread
+  .while(eax != TRUE)
+    invoke KeDelayExecutionThread, KernelMode, FALSE, addr stTime
+    invoke DbgPrint, $CTA0("Sleep 1s")
+    mov eax, bExitThread
+  .endw
+  invoke DbgPrint, $CTA0("Exit MyThread")
+  invoke PsTerminateSystemThread, STATUS_SUCCESS
+  ret
+MyThread endp
+
+IrpFileCreate proc Device:WDFDEVICE, Request:WDFREQUEST, FileObject:WDFFILEOBJECT
+  invoke DbgPrint, $CTA0("IrpFieCreate")
+  invoke WdfRequestComplete, Request, STATUS_SUCCESS
+  ret
+IrpFileCreate endp
+
+IrpFileClose proc FileObject:WDFFILEOBJECT
+  invoke DbgPrint, $CTA0("IrpFieClose")
+  ret
+IrpFileClose endp
+
+IrpIOCTL proc Queue:WDFQUEUE, Request:WDFREQUEST, OutputBufferLength:DWORD, InputBufferLength:DWORD, IoControlCode:DWORD
+  local hThread:DWORD
+
+  .if IoControlCode == IOCTL_START
+    invoke DbgPrint, offset MSG_START
+    mov bExitThread, FALSE
+    
+    ;// NtCurrentProcess equ -1
+    ;// NtCurrentProcess will run on user thread area
+    ;// Null wiil run on system area
+    invoke PsCreateSystemThread, addr hThread, THREAD_ALL_ACCESS, NULL, -1, NULL, offset MyThread, NULL
+    .if eax == STATUS_SUCCESS
+      invoke ObReferenceObjectByHandle, hThread, THREAD_ALL_ACCESS, NULL, KernelMode, offset pThread, NULL
+      invoke ZwClose, hThread
+    .endif
+    
+  .elseif IoControlCode == IOCTL_STOP
+    invoke DbgPrint, offset MSG_STOP
+    mov bExitThread, TRUE
+    mov eax, pThread
+    .if eax != NULL
+      invoke KeWaitForSingleObject, pThread, Executive, KernelMode, FALSE, NULL
+      invoke ObDereferenceObject, pThread
+    .endif
+  .endif
+  invoke WdfRequestComplete, Request, STATUS_SUCCESS
+  ret
+IrpIOCTL endp
+
+AddDevice proc Driver:WDFDRIVER, pDeviceInit:PWDFDEVICE_INIT
+  local device:WDFDEVICE
+  local suDevName:UNICODE_STRING
+  local szSymName:UNICODE_STRING
+  local file_cfg:WDF_FILEOBJECT_CONFIG
+  local ioqueue_cfg:WDF_IO_QUEUE_CONFIG
+
+  invoke RtlInitUnicodeString, addr suDevName, offset DEV_NAME
+  invoke RtlInitUnicodeString, addr szSymName, offset SYM_NAME
+  invoke WdfDeviceInitAssignName, pDeviceInit, addr suDevName
+  invoke WdfDeviceInitSetIoType, pDeviceInit, WdfDeviceIoBuffered
+  invoke WDF_FILEOBJECT_CONFIG_INIT, addr file_cfg, offset IrpFileCreate, offset IrpFileClose, NULL
+  invoke WdfDeviceInitSetFileObjectConfig, pDeviceInit, addr file_cfg, WDF_NO_OBJECT_ATTRIBUTES
+  invoke WdfDeviceCreate, addr pDeviceInit, WDF_NO_OBJECT_ATTRIBUTES, addr device
+  invoke WdfDeviceCreateSymbolicLink, device, addr szSymName
+  invoke WDF_IO_QUEUE_CONFIG_INIT_DEFAULT_QUEUE, addr ioqueue_cfg, WdfIoQueueDispatchSequential
+  lea eax, ioqueue_cfg
+  mov (WDF_IO_QUEUE_CONFIG ptr [eax]).EvtIoDeviceControl, offset IrpIOCTL
+  invoke WdfIoQueueCreate, device, addr ioqueue_cfg, WDF_NO_OBJECT_ATTRIBUTES, WDF_NO_HANDLE
+  ret
+AddDevice endp
+
+DriverEntry proc pOurDriver:PDRIVER_OBJECT, pOurRegistry:PUNICODE_STRING
+  local config:WDF_DRIVER_CONFIG
+  
+  invoke WDF_DRIVER_CONFIG_INIT, addr config, AddDevice
+  invoke WdfDriverCreate, pOurDriver, pOurRegistry, WDF_NO_OBJECT_ATTRIBUTES, addr config, WDF_NO_HANDLE
+  ret
+DriverEntry endp
+end DriverEntry
+.end
+</pre>
+<p>
+<b>IrpIOCTL</b>收到IOCTL_START後，產生一個新的Thread(注意有User和System區分)，接著呼叫ZwClose()，值得注意的是，這個ZwClose()僅是釋放Handle的資源，實際Thread並不會被關閉，原因在於提前做ObReferenceObjectByHandle()，而當收到IOCTL_STOP，則設定bExit並等待Thread結束，最後呼叫ObDereferenceObject()釋放Object資源。<br><br>
+
+app.asm
+</p>
+<pre class="brush:asm">
+.386p
+.model flat, stdcall
+option casemap:none
+
+include c:\masm32\include\windows.inc
+include c:\masm32\include\masm32.inc
+include c:\masm32\include\user32.inc
+include c:\masm32\include\msvcrt.inc
+include c:\masm32\include\kernel32.inc
+include c:\masm32\include\w2k\ntddkbd.inc
+include c:\masm32\Macros\Strings.mac
+ 
+includelib c:\masm32\lib\user32.lib
+includelib c:\masm32\lib\masm32.lib
+includelib c:\masm32\lib\msvcrt.lib
+includelib c:\masm32\lib\kernel32.lib
+
+IOCTL_START equ CTL_CODE(FILE_DEVICE_UNKNOWN, 800h, METHOD_BUFFERED, FILE_ANY_ACCESS)
+IOCTL_STOP  equ CTL_CODE(FILE_DEVICE_UNKNOWN, 801h, METHOD_BUFFERED, FILE_ANY_ACCESS)
+
+.const
+DEV_NAME db "\\.\MyDriver",0
+ 
+.data?
+hFile dd ?
+dwRet dd ?
+
+.code
+start:
+  invoke CreateFile, offset DEV_NAME, GENERIC_READ or GENERIC_WRITE, FILE_SHARE_READ, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0
+  .if eax == INVALID_HANDLE_VALUE
+    invoke crt_printf, $CTA0("failed to open mydriver")
+    invoke ExitProcess, -1
+  .endif
+  
+  mov hFile, eax 
+  invoke DeviceIoControl, hFile, IOCTL_START, NULL, 0, NULL, 0, offset dwRet, NULL
+  invoke Sleep, 3000
+  invoke DeviceIoControl, hFile, IOCTL_STOP, NULL, 0, NULL, 0, offset dwRet, NULL
+  invoke CloseHandle, hFile
+  invoke ExitProcess, 0
+  
+end start
+</pre><br>
+
+<p>
+結果<br>
+<img src="asm_pnp_thread/2.jpg" class="maxSize"><br>
+<img src="asm_pnp_thread/1.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../driver.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

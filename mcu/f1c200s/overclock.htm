@@ -1,0 +1,369 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>F1C200S &gt;&gt; Assembly</h3>
+<p><b>如何超頻到2.0GHz</b></p>
+<hr size="1">
+<p>
+參考資料：<br>
+1. <a href="https://github.com/steward-fu/mcu-pdf/tree/master/f1c100s">pdf</a><br>
+2. <a href="http://nano.lichee.pro/">lichee</a><br>
+3. <a href="https://mangopi.org/mangopi_r">mangopi_r</a><br>
+4. <a href="https://www.allwinnertech.com/index.php?c=product&a=index&pid=4">allwinner</a><br><br>
+
+VCC_CORE電壓足夠，才可以做超頻的動作，VCC_CORE是由EA3036供電，目前是1.2V<br>
+<img src="overclock/1.jpg" class="maxSize"><br><br>
+
+電壓計算方式如下，從公式可以得知，只要把R13改成75K，輸出電壓就可以變成 <b>0.6 * (150K / 75K) + 0.6 = 1.8V</b><br>
+<img src="overclock/3.jpg" class="maxSize"><br><br>
+
+絲印位置<br>
+<img src="overclock/2.jpg" class="maxSize"><br><br>
+
+料雞已經就位<br>
+<img src="overclock/4.jpg" class="maxSize"><br><br>
+
+焊接<br>
+<img src="overclock/5.jpg" class="maxSize"><br><br>
+
+確定電壓是1.8V<br>
+<img src="overclock/6.jpg" class="maxSize"><br><br>
+
+CPU速度計算公式
+</p>
+<pre>
+PLL = (24MHz*N*K)/(M*P)
+
+N = 13
+K = 4
+M = 1
+P = 1
+PLL = (24MHz*13*4)/(1*1) = 1248MHz
+</pre><br>
+
+<p>
+main.s
+</p>
+<pre class="brush:asm">
+  .global _start
+    
+  .equiv CCU_BASE,              0x01c20000
+  .equiv GPIO_BASE,             0x01c20800
+ 
+  .equiv PLL_CPU_CTRL_REG,      0x0000
+  .equiv PLL_PERIPH_CTRL_REG,   0x0028
+  .equiv AHB_APB_HCLKC_CFG_REG, 0x0054
+  .equiv BUS_CLK_GATING_REG2,   0x0068
+  .equiv BUS_SOFT_RST_REG2,     0x02d0
+  
+  .equiv PD,                    (0x24 * 3)
+  .equiv PORT_CFG0,             0x00
+  .equiv PORT_CFG1,             0x04
+  .equiv PORT_CFG2,             0x08
+  .equiv PORT_DATA,             0x10
+  .equiv PORT_PUL0,             0x1c
+  .equiv PORT_PUL1,             0x20
+
+  .arm
+  .text
+_start:
+  .long 0xea000016
+  .byte 'e', 'G', 'O', 'N', '.', 'B', 'T', '0'
+  .long 0, __spl_size
+  .byte 'S', 'P', 'L', 2
+  .long 0, 0
+  .long 0, 0, 0, 0, 0, 0, 0, 0
+  .long 0, 0, 0, 0, 0, 0, 0, 0
+   
+_vector:
+  b reset
+  b .
+  b .
+  b .
+  b .
+  b .
+  b .
+  b .
+
+reset:
+  ldr r4, =CCU_BASE
+  ldr r1, =(1 &lt;&lt; 31) | (12 &lt;&lt; 8) | (3 &lt;&lt; 4)
+  str r1, [r4, #PLL_CPU_CTRL_REG]
+0:
+  ldr r1, [r4, #PLL_CPU_CTRL_REG]
+  tst r1, #(1 &lt;&lt; 28)
+  beq 0b
+
+  ldr r1, =(1 &lt;&lt; 31) | (1 &lt;&lt; 18) | (31 &lt;&lt; 8)
+  str r1, [r4, #PLL_PERIPH_CTRL_REG]
+0:
+  ldr r1, [r4, #PLL_PERIPH_CTRL_REG]
+  tst r1, #(1 &lt;&lt; 28)
+  beq 0b
+
+  ldr r1, =(3 &lt;&lt; 12)
+  str r1, [r4, #AHB_APB_HCLKC_CFG_REG]
+
+  ldr r4, =GPIO_BASE
+  mov r1, #1
+  str r1, [r4, #(PD + PORT_CFG0)]
+0:
+  eor r1, #1
+  str r1, [r4, #(PD + PORT_DATA)]
+  b 0b
+  .end
+</pre><br>
+
+<p>
+接著測量一下I/O速度<br>
+<img src="overclock/7.jpg" class="maxSize"><br><br>
+
+I/O速度為2.8MHz，不過CPU速度已經可以跑到1.2GHz，如果電壓再繼續增加，司徒相信CPU還可以操到更高，因為官方說最高可以到2.6GHz<br>
+<img src="overclock/8.jpg" class="maxSize"><br><br>
+
+既然官方說最高可以超頻到2.6GHz，那最高到底可以超到多少呢？基於這個好奇心，司徒決定研究一下超頻，因此，司徒找來芒果四兄弟<br>
+<img src="overclock/9.jpg" class="maxSize"><br><br>
+
+首先挺身而出的是芒果大哥，大哥深知，超頻可以會讓自己變成一隻燒雞，剛好今天是端午佳節，明年的今天可能會是自己的清明節...<br>
+<img src="overclock/10.jpg" class="maxSize"><br><br>
+
+由於司徒並沒有太多精密電阻做分壓測試，因此，趕緊從隔壁找來老王協助<br>
+<img src="overclock/11.jpg" class="maxSize"><br><br>
+
+為了避免發生榨妻的嫌疑，司徒量測一下老王的電壓，果然，老王還是無法信任...<br>
+<img src="overclock/12.jpg" class="maxSize"><br><br>
+
+遺憾的是，司徒手上剛好沒有溫度測量器，因此，勇敢的五姊妹挺身而出，由二姐負責量測...<br>
+<img src="overclock/13.jpg" class="maxSize"><br><br>
+
+芒果派果然值得信任，固定輸出1.2V<br>
+<img src="overclock/14.jpg" class="maxSize"><br><br>
+
+接著，司徒開始從1.8V測試<br>
+<img src="overclock/15.jpg" class="maxSize"><br><br>
+
+啟動後，吃掉0.05V<br>
+<img src="overclock/16.jpg" class="maxSize"><br><br>
+
+確定LED可以閃爍，代表此時的CPU頻率是可以工作的<br>
+<img src="overclock/17.jpg" class="maxSize"><br><br>
+
+測試程式
+</p>
+<pre class="brush:asm">
+  .global _start
+    
+  .equiv CCU_BASE,              0x01c20000
+  .equiv GPIO_BASE,             0x01c20800
+ 
+  .equiv PLL_CPU_CTRL_REG,      0x0000
+  .equiv PLL_PERIPH_CTRL_REG,   0x0028
+  .equiv AHB_APB_HCLKC_CFG_REG, 0x0054
+  .equiv BUS_CLK_GATING_REG2,   0x0068
+  .equiv BUS_SOFT_RST_REG2,     0x02d0
+  
+  .equiv PA,                    (0x24 * 0)
+  .equiv PORT_CFG0,             0x00
+  .equiv PORT_DATA,             0x10
+
+  .arm
+  .text
+_start:
+  .long 0xea000016
+  .byte 'e', 'G', 'O', 'N', '.', 'B', 'T', '0'
+  .long 0, __spl_size
+  .byte 'S', 'P', 'L', 2
+  .long 0, 0
+  .long 0, 0, 0, 0, 0, 0, 0, 0
+  .long 0, 0, 0, 0, 0, 0, 0, 0
+   
+_vector:
+  b reset
+  b .
+  b .
+  b .
+  b .
+  b .
+  b .
+  b .
+
+reset:
+  ldr r4, =CCU_BASE
+  ldr r1, =(1 &lt;&lt; 31) | (20 &lt;&lt; 8) | (3 &lt;&lt; 4)
+  str r1, [r4, #PLL_CPU_CTRL_REG]
+0:
+  ldr r1, [r4, #PLL_CPU_CTRL_REG]
+  tst r1, #(1 &lt;&lt; 28)
+  beq 0b
+
+  ldr r0, =GPIO_BASE
+  ldr r1, =0x1000
+  str r1, [r0, #(PA + PORT_CFG0)]
+0:
+  eor r1, #8
+  str r1, [r0, #(PA + PORT_DATA)]
+  ldr r2, =1000000
+1:
+  subs r2, #1
+  bne 1b
+  b 0b
+  .end
+</pre>
+<p>
+P.S. 在最早的測試，司徒忘記N最大只有到31，因此，在此次測試，司徒先把K設定成3，然後依序調整N，上面的程式：<b>24MHz * N * K = 24MHz * 21 * 4 = 2016MHz</b><br><br>
+
+接著就開始慢慢調整電壓測試，找出該CPU頻率下，最低可以接受的電壓<br>
+<img src="overclock/18.jpg" class="maxSize"><br><br>
+
+二姐持續量測溫度...<br>
+<img src="overclock/19.jpg" class="maxSize"><br><br>
+
+最後，司徒測試發現，電壓2.4V時，CPU可以超頻到2016MHz，此時CPU還可以正常運作，不過已經呈現發燙的狀態(可憐的二姐)，可以加上散熱片使用，而電壓再往上增加時，CPU已經無法運作<br>
+<img src="overclock/20.jpg" class="maxSize"><br><br>
+
+因此，司徒整理一下F1C100S超頻表格
+</p>
+<table>
+<tr><th>CORE電壓</th><th>CPU頻率</th><th>人體溫度量測</th><th>CPU設定</th></tr>
+<tr><td>1.20v</td><td>480MHz</td><td>正常</td><td>PLL_CPU_CTRL_REG = (1 &lt;&lt; 31) | (4 &lt;&lt; 8) | (3 &lt;&lt; 4)</td></tr>
+<tr><td>1.20v</td><td>576MHz</td><td>正常</td><td>PLL_CPU_CTRL_REG = (1 &lt;&lt; 31) | (5 &lt;&lt; 8) | (3 &lt;&lt; 4)</td></tr>
+<tr><td>1.20v</td><td>672MHz</td><td>正常</td><td>PLL_CPU_CTRL_REG = (1 &lt;&lt; 31) | (6 &lt;&lt; 8) | (3 &lt;&lt; 4)</td></tr>
+<tr><td>1.20v</td><td>768MHz</td><td>正常</td><td>PLL_CPU_CTRL_REG = (1 &lt;&lt; 31) | (7 &lt;&lt; 8) | (3 &lt;&lt; 4)</td></tr>
+<tr><td>1.20v</td><td>864MHz</td><td>正常</td><td>PLL_CPU_CTRL_REG = (1 &lt;&lt; 31) | (8 &lt;&lt; 8) | (3 &lt;&lt; 4)</td></tr>
+<tr><td>1.20v</td><td>960MHz</td><td>正常</td><td>PLL_CPU_CTRL_REG = (1 &lt;&lt; 31) | (9 &lt;&lt; 8) | (3 &lt;&lt; 4)</td></tr>
+<tr><td>1.20v</td><td>1056MHz</td><td>正常</td><td>PLL_CPU_CTRL_REG = (1 &lt;&lt; 31) | (10 &lt;&lt; 8) | (3 &lt;&lt; 4)</td></tr>
+<tr><td>1.30v</td><td>1152MHz</td><td>正常</td><td>PLL_CPU_CTRL_REG = (1 &lt;&lt; 31) | (11 &lt;&lt; 8) | (3 &lt;&lt; 4)</td></tr>
+<tr><td>1.35v</td><td>1248MHz</td><td>微微溫</td><td>PLL_CPU_CTRL_REG = (1 &lt;&lt; 31) | (12 &lt;&lt; 8) | (3 &lt;&lt; 4)</td></tr>
+<tr><td>1.45v</td><td>1344MHz</td><td>微微溫</td><td>PLL_CPU_CTRL_REG = (1 &lt;&lt; 31) | (13 &lt;&lt; 8) | (3 &lt;&lt; 4)</td></tr>
+<tr><td>1.55v</td><td>1440MHz</td><td>微微溫</td><td>PLL_CPU_CTRL_REG = (1 &lt;&lt; 31) | (14 &lt;&lt; 8) | (3 &lt;&lt; 4)</td></tr>
+<tr><td>1.65v</td><td>1536MHz</td><td>微微溫</td><td>PLL_CPU_CTRL_REG = (1 &lt;&lt; 31) | (15 &lt;&lt; 8) | (3 &lt;&lt; 4)</td></tr>
+<tr><td>1.75v</td><td>1632MHz</td><td>微微溫</td><td>PLL_CPU_CTRL_REG = (1 &lt;&lt; 31) | (16 &lt;&lt; 8) | (3 &lt;&lt; 4)</td></tr>
+<tr><td>1.95v</td><td>1728MHz</td><td>微微溫</td><td>PLL_CPU_CTRL_REG = (1 &lt;&lt; 31) | (17 &lt;&lt; 8) | (3 &lt;&lt; 4)</td></tr>
+<tr><td>2.00v</td><td>1824MHz</td><td>微溫</td><td>PLL_CPU_CTRL_REG = (1 &lt;&lt; 31) | (18 &lt;&lt; 8) | (3 &lt;&lt; 4)</td></tr>
+<tr><td>2.20v</td><td>1920MHz</td><td>溫~燙</td><td>PLL_CPU_CTRL_REG = (1 &lt;&lt; 31) | (19 &lt;&lt; 8) | (3 &lt;&lt; 4)</td></tr>
+<tr><td>2.40v</td><td>2016MHz</td><td>發燙</td><td>PLL_CPU_CTRL_REG = (1 &lt;&lt; 31) | (20 &lt;&lt; 8) | (3 &lt;&lt; 4)</td></tr>
+</table><br>
+
+<p>
+最後，芒果四兄弟依然健在<br>
+<img src="overclock/21.jpg" class="maxSize"><br><br>
+
+幸好二姐也平安無事<br>
+<img src="overclock/22.jpg" class="maxSize"><br><br>
+
+<img src="overclock/23.jpg" class="maxSize"><br><br>
+
+F1C200S在2.0GHz下，I/O速度可以多快呢？答案是7MHz<br>
+<img src="overclock/24.jpg" class="maxSize"><br><br>
+
+同場加映，司徒決定測試一下F1C100S超頻的持久度，這問題，真是一個老男人心中的痛...，於是，司徒找來幾顆精密電阻，<b>0.6 * (464K / 150K) + 0.6 = 2.456V</b><br>
+<img src="overclock/25.jpg" class="maxSize"><br>
+2.456V，雖然多了0.056V，不過應該差不多，這個電壓是司徒之前測試，F1C100S最大可以承受的電壓<br><br>
+
+接著，司徒再度詢問芒果四兄弟，此時，勇敢的二哥二話不說，馬上挺身而出<br>
+<img src="overclock/26.jpg" class="maxSize"><br><br>
+
+移除R12、R13<br>
+<img src="overclock/27.jpg" class="maxSize"><br><br>
+
+<b>0.6 * (464K / 150K) + 0.6 = 2.456V</b>，司徒也幫二哥焊接一顆光明燈，期許實驗平安順利<br>
+<img src="overclock/28.jpg" class="maxSize"><br><br>
+
+既然，芒果都由二哥出戰了，於是司徒詢問三姐的意願，三姐說它不適合拍照，司徒不相信，要求三姐給一張照片證明<br>
+<img src="overclock/29.jpg" class="maxSize"><br>
+恩，三姐還是不要出戰好了，不然，司徒可能會變成殘障人士...<br><br>
+
+於是，司徒請來金大哥，聽說金大哥練過金鐘罩...<br>
+<img src="overclock/30.jpg" class="maxSize"><br><br>
+
+開始測驗，CPU=2016MHz，二哥忍耐一下，馬上就可以脫離苦海了...<br>
+<img src="overclock/31.jpg" class="maxSize"><br><br>
+
+二哥的光明燈開始閃爍<br>
+<img src="overclock/32.jpg" class="maxSize"><br><br>
+
+6秒後...，芒果二哥終於離開人間，再怎麼連接USB，都無法進入燒錄模式，願二哥安祥...<br>
+<img src="overclock/33.jpg" class="maxSize"><br><br>
+
+於是，司徒找來另外的精密電阻，442K電阻配上160K電阻，<b>0.6 * (442K / 160K) + 0.6 = 2.2575V</b><br>
+<img src="overclock/34.jpg" class="maxSize"><br><br>
+
+此時，三哥默默走了出來，司徒替三哥治裝...，<b>0.6 * (442K / 160K) + 0.6 = 2.2575V</b><br>
+<img src="overclock/35.jpg" class="maxSize"><br><br>
+
+三哥開始...<br>
+<img src="overclock/36.jpg" class="maxSize"><br>
+CPU=2016MHz，10秒後掛點，不過插入USB，還是可以進入燒錄模式，因此，電壓2.2575V是不會燒毀F1C100S的保險電壓，而司徒測試CPU=1920MHz，三哥竟然撐過60秒，三哥真男人<br><br>
+
+60秒後，二姐馬上量測溫度，果然會燙...<br>
+<img src="overclock/37.jpg" class="maxSize"><br><br>
+
+於是，小護士準備幫三哥打針，可惜司徒臨時找不到散熱片...<br>
+<img src="overclock/38.jpg" class="maxSize"><br><br>
+
+那就只好電風扇伺候...<br>
+<img src="overclock/39.jpg" class="maxSize"><br><br>
+
+二姐測量溫度，果然還是有點燙，不過，CPU=1920MHz，跑了三分鐘，依然沒有問題，因此，司徒覺得1920MHz，加上散熱片，應該是可以拿來使用的<br>
+<img src="overclock/40.jpg" class="maxSize"><br><br>
+
+僅存的芒果三兄弟<br>
+<img src="overclock/41.jpg" class="maxSize"><br><br>
+
+結論：<br>
+CPU=2016MHz，需要找出臨界電壓，容易燒毀，不建議使用<br>
+CPU=1920MHz，F1C100S加上散熱片，可以跑，不過目前只有測試GPIO Toggle
+</p>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

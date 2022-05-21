@@ -1,0 +1,1632 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Game Gear Micro</h3>
+<p><b>找出LCD初始化代碼</b></p>
+<hr size="1">
+<p>
+參考資料：<br>
+1. <a href="https://github.com/ethanpierce/gamegearmicrohack">gamegearmicrohack</a><br><br>
+
+司徒想了想，發現有一個位置可以用來擺放MicroSD<br>
+<img src="find_lcd/1.jpg" class="maxSize"><br><br>
+
+F1C200S左邊是屏的走線，右邊則是用來跳線連接MicroSD，這改機難度屬於中上...<br>
+<img src="find_lcd/2.jpg" class="maxSize"><br><br>
+
+為了方便跳線，司徒先將10uPF、1M電阻拆掉<br>
+<img src="find_lcd/3.jpg" class="maxSize"><br><br>
+
+原本想直接使用MicroSD元件，但是，發現接觸的排針會脫落，需要固定，因此，司徒找來一個肉雞<br>
+<img src="find_lcd/4.jpg" class="maxSize"><br><br>
+
+電宰後...<br>
+<img src="find_lcd/5.jpg" class="maxSize"><br><br>
+
+相當完美的位置<br>
+<img src="find_lcd/6.jpg" class="maxSize"><br><br>
+
+但是，下方是屏的走線，假如先改造MicroSD，這屏的問題可能就很難解<br>
+<img src="find_lcd/7.jpg" class="maxSize"><br><br>
+
+因此，司徒打算先把屏的初始化代碼找出來，於是開始刮線<br>
+<img src="find_lcd/8.jpg" class="maxSize"><br><br>
+
+腳位圖<br>
+<img src="find_lcd/9.jpg" class="maxSize"><br><br>
+
+標示位置<br>
+<img src="find_lcd/10.jpg" class="maxSize"><br><br>
+
+跳線<br>
+<img src="find_lcd/11.jpg" class="maxSize"><br><br>
+
+屏的走線真的蠻細的，需要一點苦工，司徒一想到後面的MicroSD跳線，有種想哭的感覺...<br>
+<img src="find_lcd/12.jpg" class="maxSize"><br><br>
+
+寨機邏輯分析儀上場<br>
+<img src="find_lcd/13.jpg" class="maxSize"><br><br>
+
+由上而下分別是：CS、RD、RS、WR、PD0、DB0~DB7、PD8，從這個圖，得到四個資訊：<br>
+1. 屏的驅動方式是MCU方式(i80)<br>
+2. 屏有TE腳位(Screen Tearing)<br>
+3. PD0是TE腳位<br>
+4. PD8是RESET腳位<br>
+<img src="find_lcd/14.jpg" class="maxSize"><br><br>
+
+TE腳位剛好是60Hz，代表這個屏的顯示可以達60FPS，相當不錯的屏<br>
+<img src="find_lcd/15.jpg" class="maxSize"><br><br>
+
+邏輯分析儀取得的資料
+</p>
+<pre>
+0.000000000,1,1,1,0,0,0,0,0,0,0,0,1
+0.000002600,1,1,1,0,0,0,0,0,0,0,0,0
+0.000003200,1,1,1,0,0,0,0,0,0,0,0,1
+0.110548360,1,1,1,0,0,0,0,0,0,0,0,0
+0.220564240,1,1,1,0,0,0,0,0,0,0,0,1
+0.230566400,1,1,1,0,0,0,0,0,0,0,0,0
+0.240566320,1,1,1,0,0,0,0,0,0,0,0,1
+0.340535600,0,0,1,0,0,0,1,0,0,0,1,1
+0.340535640,0,0,0,0,0,0,1,0,0,0,1,1
+0.340535680,0,0,1,0,0,0,1,0,0,0,1,1
+0.340535720,1,1,1,0,0,0,0,0,0,0,0,1
+0.460496120,0,0,0,0,0,1,1,0,1,1,0,1
+0.460496200,1,1,1,0,0,0,0,0,0,0,0,1
+0.460598320,0,1,0,0,0,0,0,1,1,0,0,1
+0.460598400,1,1,1,0,0,0,0,0,0,0,0,1
+0.460699800,0,0,1,0,0,0,0,1,0,0,0,1
+0.460699840,0,0,0,0,0,1,1,1,1,0,0,1
+0.460699880,0,0,1,0,0,1,1,1,1,0,0,1
+0.460699920,1,1,1,0,0,0,0,0,0,0,0,1
+0.460801720,0,1,1,0,0,0,0,0,0,1,1,1
+0.460801760,0,1,0,0,0,0,0,0,0,1,1,1
+0.460801800,0,1,1,0,0,0,0,0,0,1,1,1
+0.460801840,1,1,1,0,0,0,0,0,0,0,0,1
+0.460902760,0,0,0,0,0,1,1,0,0,1,0,1
+0.460902840,1,1,1,0,0,0,0,0,0,0,0,1
+0.461004640,0,0,1,0,0,1,1,0,0,1,1,1
+0.461004680,0,0,0,0,0,1,1,0,0,1,1,1
+0.461004720,0,0,1,0,0,1,1,0,0,1,1,1
+0.461004760,1,1,1,0,0,0,0,0,0,0,0,1
+0.461105680,0,1,1,0,0,0,0,0,0,0,0,1
+0.461105720,0,1,0,0,0,0,0,0,0,0,0,1
+0.461105760,1,1,1,0,0,0,0,0,0,0,0,1
+0.461206600,0,0,1,1,0,1,1,0,1,0,0,1
+0.461206640,0,0,0,1,0,1,1,0,1,0,0,1
+0.461206680,0,0,1,1,0,1,1,0,1,0,0,1
+0.461206720,1,1,1,0,0,0,0,0,0,0,0,1
+0.461308600,0,1,1,0,0,0,0,1,0,1,0,1
+0.461308640,0,1,0,0,0,0,0,1,0,1,0,1
+0.461308680,0,1,1,0,0,0,0,1,0,1,0,1
+0.461308720,1,1,1,0,0,0,0,0,0,0,0,1
+0.461409520,0,1,1,0,0,0,0,0,0,0,0,1
+0.461409560,0,1,0,0,0,0,0,1,0,1,0,1
+0.461409600,0,1,1,0,0,0,0,1,0,1,0,1
+0.461409640,1,1,1,0,0,0,0,0,0,0,0,1
+0.461510560,0,1,1,0,0,0,0,0,0,0,0,1
+0.461510600,0,1,0,0,0,0,0,0,0,0,0,1
+0.461510640,0,1,1,0,0,0,0,0,0,0,0,1
+0.461510680,1,1,1,0,0,0,0,0,0,0,0,1
+0.461612480,0,1,0,0,0,1,1,0,1,0,1,1
+0.461612560,1,1,1,0,0,0,0,0,0,0,0,1
+0.461713480,0,1,1,0,0,1,0,0,1,0,1,1
+0.461713520,0,1,0,0,0,1,1,0,1,0,1,1
+0.461713560,0,1,1,0,0,1,1,0,1,0,1,1
+0.461713600,1,1,1,0,0,0,0,0,0,0,0,1
+0.461815400,0,0,1,1,0,1,1,0,1,1,1,1
+0.461815440,0,0,0,1,0,1,1,0,1,1,1,1
+0.461815480,1,1,1,1,0,1,0,0,0,0,0,1
+0.461815520,1,1,1,0,0,0,0,0,0,0,0,1
+0.461916440,0,1,0,0,0,0,0,0,1,0,0,1
+0.461916520,1,1,1,0,0,0,0,0,0,0,0,1
+0.462017360,0,0,1,1,0,1,1,1,1,0,1,1
+0.462017400,0,0,0,1,0,1,1,1,1,0,1,1
+0.462017440,1,1,1,0,0,0,0,0,0,0,0,1
+0.462119360,0,1,1,0,0,1,1,0,0,0,0,1
+0.462119400,0,1,0,0,0,1,1,0,0,0,0,1
+0.462119440,1,1,1,0,0,1,0,0,0,0,0,1
+0.462119480,1,1,1,0,0,0,0,0,0,0,0,1
+0.462220280,0,0,1,1,1,0,0,0,0,0,0,1
+0.462220320,0,0,0,1,1,0,0,0,0,0,0,1
+0.462220360,0,0,1,1,1,0,0,0,0,0,0,1
+0.462220400,1,1,1,0,0,0,0,0,0,0,0,1
+0.462321200,0,1,1,0,0,1,0,1,0,1,0,1
+0.462321240,0,1,0,0,0,1,0,1,0,1,0,1
+0.462321280,0,1,1,0,0,1,0,1,0,1,0,1
+0.462321320,1,1,1,0,0,0,0,0,0,0,0,1
+0.462422240,0,0,1,1,1,0,0,0,1,0,0,1
+0.462422280,0,0,0,1,1,0,0,0,1,0,0,1
+0.462422320,1,1,1,1,1,0,0,0,1,0,0,1
+0.462422360,1,1,1,0,0,0,0,0,0,0,0,1
+0.462523160,0,1,1,0,0,0,0,0,0,0,1,1
+0.462523200,0,1,0,0,0,0,0,0,0,0,1,1
+0.462523240,0,1,1,0,0,0,0,0,0,0,1,1
+0.462523280,1,1,1,0,0,0,0,0,0,0,0,1
+0.462624200,0,0,1,1,1,0,0,0,1,0,1,1
+0.462624240,0,0,0,1,1,0,0,0,1,0,1,1
+0.462624280,1,1,1,0,0,0,0,0,0,0,0,1
+0.462725120,0,1,1,0,0,0,1,0,1,1,1,1
+0.462725160,0,1,0,0,0,0,1,0,1,1,1,1
+0.462725200,0,1,1,0,0,0,1,0,1,1,1,1
+0.462725240,1,1,1,0,0,0,0,0,0,0,0,1
+0.462826040,0,0,1,1,1,0,0,0,0,1,0,1
+0.462826080,0,0,0,1,1,0,0,0,0,1,0,1
+0.462826120,0,0,1,1,1,0,0,0,0,1,0,1
+0.462826160,1,1,1,0,0,0,0,0,0,0,0,1
+0.462927960,0,1,1,0,0,1,0,0,0,0,0,1
+0.462928000,0,1,0,0,0,1,0,0,0,0,0,1
+0.462928040,1,1,1,0,0,0,0,0,0,0,0,1
+0.463029000,0,0,0,1,1,0,0,0,1,1,0,1
+0.463029080,1,1,1,0,0,0,0,0,0,0,0,1
+0.463130000,0,1,1,0,0,0,0,1,1,1,1,1
+0.463130040,0,1,0,0,0,0,0,1,1,1,1,1
+0.463130080,0,1,1,0,0,0,0,1,1,1,1,1
+0.463130120,1,1,1,0,0,0,0,0,0,0,0,1
+0.463231920,0,0,1,1,1,0,1,0,0,0,0,1
+0.463231960,0,0,0,1,1,0,1,0,0,0,0,1
+0.463232000,1,1,1,0,0,0,0,0,0,0,0,1
+0.463332960,0,1,0,1,0,1,0,0,0,1,0,1
+0.463333000,0,1,1,1,0,1,0,0,0,1,0,1
+0.463333040,1,1,1,0,0,0,0,0,0,0,0,1
+0.463434840,0,1,1,1,0,1,0,0,0,0,1,1
+0.463434880,0,1,0,1,0,1,0,0,0,0,1,1
+0.463434920,0,1,1,1,0,1,0,0,0,0,1,1
+0.463434960,1,1,1,0,0,0,0,0,0,0,0,1
+0.463535760,0,0,1,1,1,0,1,0,1,1,0,1
+0.463535800,0,0,0,1,1,0,1,0,1,1,0,1
+0.463535840,0,0,1,1,1,0,1,0,1,1,0,1
+0.463535880,1,1,1,0,0,0,0,0,0,0,0,1
+0.463636800,0,1,1,1,0,1,0,0,0,0,1,1
+0.463636840,0,1,0,1,0,1,0,0,0,0,1,1
+0.463636880,1,1,1,0,0,1,0,0,0,0,0,1
+0.463636920,1,1,1,0,0,0,0,0,0,0,0,1
+0.463738720,0,0,0,1,1,1,0,0,0,0,0,1
+0.463738800,1,1,1,0,0,0,0,0,0,0,0,1
+0.463839720,0,1,1,1,1,0,1,0,0,0,0,1
+0.463839760,0,1,0,1,1,0,1,0,0,0,0,1
+0.463839800,0,1,1,1,1,0,1,0,0,0,0,1
+0.463839840,1,1,1,0,0,0,0,0,0,0,0,1
+0.463940760,0,1,1,0,0,0,0,0,0,1,0,1
+0.463940800,0,1,0,0,0,0,0,0,0,1,0,1
+0.463940840,1,1,1,0,0,0,0,0,0,0,0,1
+0.464042680,0,1,0,0,0,0,0,1,0,1,0,1
+0.464042720,0,1,1,0,0,0,0,1,0,1,0,1
+0.464042760,1,1,1,0,0,0,0,0,0,0,0,1
+0.464143680,0,1,1,0,0,0,1,0,0,0,1,1
+0.464143720,0,1,0,0,0,0,1,0,0,0,1,1
+0.464143760,0,1,1,0,0,0,1,0,0,0,1,1
+0.464143800,1,1,1,0,0,0,0,0,0,0,0,1
+0.464245600,0,1,1,0,0,0,1,0,1,0,1,1
+0.464245640,0,1,0,0,0,0,1,0,1,0,1,1
+0.464245680,1,1,1,0,0,0,0,0,0,0,0,1
+0.464346520,0,1,1,0,0,1,0,1,0,1,0,1
+0.464346560,0,1,0,0,0,1,0,1,0,1,0,1
+0.464346600,1,1,1,0,0,1,0,0,0,0,0,1
+0.464346640,1,1,1,0,0,0,0,0,0,0,0,1
+0.464447560,0,1,0,0,0,1,1,1,1,0,1,1
+0.464447640,1,1,1,0,0,0,0,0,0,0,0,1
+0.464549440,0,1,1,0,1,0,1,0,0,1,1,1
+0.464549480,0,1,0,0,1,0,1,0,0,1,1,1
+0.464549520,0,1,1,0,1,0,1,0,0,1,1,1
+0.464549560,1,1,1,0,0,0,0,0,0,0,0,1
+0.464650480,0,1,1,0,1,0,0,0,0,1,0,1
+0.464650520,0,1,0,0,1,0,0,0,0,1,0,1
+0.464650560,1,1,1,0,0,0,0,0,0,0,0,1
+0.464751400,0,1,1,0,0,0,1,0,1,1,0,1
+0.464751440,0,1,0,0,0,0,1,0,1,1,0,1
+0.464751480,0,1,1,0,0,0,1,0,1,1,0,1
+0.464751520,1,1,1,0,0,0,0,0,0,0,0,1
+0.464852320,0,1,1,0,0,0,0,1,0,1,1,1
+0.464852360,0,1,0,0,0,0,0,1,0,1,1,1
+0.464852400,0,1,1,0,0,0,0,1,0,1,1,1
+0.464852440,1,1,1,0,0,0,0,0,0,0,0,1
+0.464953360,0,1,1,0,0,0,0,1,1,0,1,1
+0.464953400,0,1,0,0,0,0,0,1,1,0,1,1
+0.464953440,1,1,1,0,0,0,0,1,1,0,0,1
+0.464953480,1,1,1,0,0,0,0,0,0,0,0,1
+0.465054280,0,1,1,0,0,0,1,1,1,1,1,1
+0.465054320,0,1,0,0,0,0,1,1,1,1,1,1
+0.465054360,0,1,1,0,0,0,1,1,1,1,1,1
+0.465054400,1,1,1,0,0,0,0,0,0,0,0,1
+0.465155200,0,1,1,0,0,1,0,0,0,0,1,1
+0.465155240,0,1,0,0,0,1,0,0,1,0,1,1
+0.465155280,0,1,1,0,0,1,0,0,1,0,1,1
+0.465155320,1,1,1,0,0,0,0,0,0,0,0,1
+0.465256240,0,0,1,1,1,1,0,0,0,0,1,1
+0.465256280,0,0,0,1,1,1,0,0,0,0,1,1
+0.465256320,0,0,1,1,1,1,0,0,0,0,1,1
+0.465256360,1,1,1,0,0,0,0,0,0,0,0,1
+0.465358160,0,1,0,1,1,0,1,0,0,0,0,1
+0.465358240,1,1,1,0,0,0,0,0,0,0,0,1
+0.465459160,0,1,1,0,0,0,0,0,0,1,0,1
+0.465459200,0,1,0,0,0,0,0,0,0,1,0,1
+0.465459240,0,1,1,0,0,0,0,0,0,1,0,1
+0.465459280,1,1,1,0,0,0,0,0,0,0,0,1
+0.465560120,0,1,0,0,0,0,0,1,1,0,1,1
+0.465560200,1,1,1,0,0,0,0,0,0,0,0,1
+0.465662120,0,1,0,0,0,0,1,0,0,0,0,1
+0.465662200,1,1,1,0,0,0,0,0,0,0,0,1
+0.465763040,0,1,1,0,0,0,1,0,1,0,1,1
+0.465763080,0,1,0,0,0,0,1,0,1,0,1,1
+0.465763120,1,1,1,0,0,0,0,0,0,0,0,1
+0.465865040,0,1,1,0,0,1,0,1,0,1,0,1
+0.465865080,0,1,0,0,0,1,0,1,0,1,0,1
+0.465865120,1,1,1,0,0,0,0,0,0,0,0,1
+0.465965960,0,1,1,0,0,1,1,1,1,0,0,1
+0.465966000,0,1,0,0,0,1,1,1,1,0,0,1
+0.465966040,0,1,1,0,0,1,1,1,1,0,0,1
+0.465966080,1,1,1,0,0,0,0,0,0,0,0,1
+0.466067000,0,1,1,0,1,0,0,0,0,1,0,1
+0.466067040,0,1,0,0,1,0,0,0,0,1,0,1
+0.466067080,1,1,1,0,0,0,0,0,0,0,0,1
+0.466168880,0,1,1,0,1,0,1,0,0,0,1,1
+0.466168920,0,1,0,0,1,0,1,0,0,0,1,1
+0.466168960,0,1,1,0,1,0,1,0,0,0,1,1
+0.466169000,1,1,1,0,0,0,0,0,0,0,0,1
+0.466269920,0,1,1,0,0,1,0,0,1,1,0,1
+0.466269960,0,1,0,0,0,1,0,0,1,1,0,1
+0.466270000,1,1,1,0,0,1,0,0,1,0,0,1
+0.466270040,1,1,1,0,0,0,0,0,0,0,0,1
+0.466370840,0,1,1,0,0,0,1,1,1,1,1,1
+0.466370880,0,1,0,0,0,0,1,1,1,1,1,1
+0.466370920,0,1,1,0,0,0,1,1,1,1,1,1
+0.466370960,1,1,1,0,0,0,0,0,0,0,0,1
+0.466472840,0,1,1,0,0,0,1,1,1,1,1,1
+0.466472880,0,1,0,0,0,0,1,1,1,1,1,1
+0.466472920,0,1,1,0,0,0,1,1,1,1,1,1
+0.466472960,1,1,1,0,0,0,0,0,0,0,0,1
+0.466573800,0,1,0,0,0,1,0,0,0,0,0,1
+0.466573840,0,1,1,0,0,1,0,0,0,0,0,1
+0.466573880,1,1,1,0,0,0,0,0,0,0,0,1
+0.466675800,0,1,0,0,0,1,0,0,1,0,1,1
+0.466675880,1,1,1,0,0,0,0,0,0,0,0,1
+0.466776720,0,0,1,0,0,1,0,0,0,0,1,1
+0.466776760,0,0,0,0,0,1,0,0,0,0,1,1
+0.466776800,1,1,1,0,0,0,0,0,0,0,0,1
+0.466877720,0,0,1,0,0,1,0,1,0,0,0,1
+0.466877760,0,0,0,0,0,1,0,1,1,0,0,1
+0.466877800,0,0,1,0,0,1,0,1,1,0,0,1
+0.466877840,1,1,1,0,0,0,0,0,0,0,0,1
+0.466979640,0,1,1,0,0,0,0,0,0,0,0,1
+0.466979680,0,1,0,0,0,0,0,0,0,0,0,1
+0.466979720,0,1,1,0,0,0,0,0,0,0,0,1
+0.466979760,1,1,1,0,0,0,0,0,0,0,0,1
+0.467080560,0,1,1,0,0,0,0,0,0,0,0,1
+0.467080600,0,1,0,0,0,0,0,0,0,0,0,1
+0.467080640,0,1,1,0,0,0,0,0,0,0,0,1
+0.467080680,1,1,1,0,0,0,0,0,0,0,0,1
+0.467181600,0,1,1,0,0,0,0,0,0,0,0,1
+0.467181640,0,1,0,0,0,0,0,0,0,0,0,1
+0.467181680,1,1,1,0,0,0,0,0,0,0,0,1
+0.467283520,0,1,0,1,1,1,0,1,1,1,1,1
+0.467283560,0,1,1,1,1,1,0,1,1,1,1,1
+0.467283600,1,1,1,0,0,0,0,0,0,0,0,1
+0.467384520,0,0,1,0,0,1,0,1,1,0,1,1
+0.467384560,0,0,0,0,0,1,0,1,1,0,1,1
+0.467384600,0,0,1,0,0,1,0,1,1,0,1,1
+0.467384640,1,1,1,0,0,0,0,0,0,0,0,1
+0.467486440,0,1,1,0,0,0,0,0,0,0,0,1
+0.467486480,0,1,0,0,0,0,0,0,0,0,0,1
+0.467486520,1,1,1,0,0,0,0,0,0,0,0,1
+0.467587440,0,1,1,0,0,0,0,0,0,0,0,1
+0.467587480,0,1,0,0,0,0,0,0,0,0,0,1
+0.467587520,0,1,1,0,0,0,0,0,0,0,0,1
+0.467587560,1,1,1,0,0,0,0,0,0,0,0,1
+0.467688480,0,1,1,0,0,0,0,0,0,0,0,1
+0.467688520,0,1,0,0,0,0,0,0,0,0,0,1
+0.467688560,0,1,1,0,0,0,0,0,0,0,0,1
+0.467688600,1,1,1,0,0,0,0,0,0,0,0,1
+0.467790400,0,1,0,1,1,1,0,1,1,1,1,1
+0.467790480,1,1,1,0,0,0,0,0,0,0,0,1
+0.467891400,0,0,1,0,0,0,0,0,0,0,0,1
+0.467891440,0,0,0,0,0,0,0,0,0,0,0,1
+0.467891480,0,0,1,0,0,0,0,0,0,0,0,1
+0.467891520,1,1,1,0,0,0,0,0,0,0,0,1
+0.467992360,0,0,0,0,0,1,0,1,0,0,1,1
+0.467992440,1,1,1,0,0,0,0,0,0,0,0,1
+0.587952560,0,0,0,0,0,1,0,1,0,1,0,1
+0.587952640,1,1,1,0,0,0,0,0,0,0,0,1
+0.588053280,0,0,1,0,0,1,0,1,0,1,0,1
+0.588053320,0,0,0,0,0,1,0,1,0,1,0,1
+0.588053360,1,1,1,0,0,1,0,0,0,0,0,1
+</pre><br>
+
+<p>
+司徒寫了一隻Python用來解資料
+</p>
+<pre>
+#!/usr/bin/python
+import os
+import sys
+
+f = open('digital.csv')
+c = f.readlines()
+f.close()
+
+for x in c:
+  l = x.replace('\r', '').replace('\n', '').split(',')
+  t0 = l[0]
+  cs = l[1]
+  rs = l[2]
+  wr = l[3]
+  db = '0x%02x' % int(''.join('{:x}'.format(int(v)) for v in l[4:12]), 2)
+  rst = l[12]
+
+  if cs == '0' and wr == '0':
+    if rs == '0':
+      print 'CMD:{}'.format(db)
+    else:
+      print 'DAT:{}'.format(db)
+</pre><br>
+
+<p>
+解譯後的屏初始化資料
+</p>
+<pre>
+CMD:0x11
+CMD:0x36
+DAT:0x0c
+CMD:0x3c
+DAT:0x03
+CMD:0x32
+CMD:0x33
+DAT:0x00
+CMD:0xb4
+DAT:0x0a
+DAT:0x0a
+DAT:0x00
+DAT:0x35
+DAT:0x35
+CMD:0xb7
+DAT:0x04
+CMD:0xbd
+DAT:0x30
+CMD:0xc0
+DAT:0x2a
+CMD:0xc4
+DAT:0x01
+CMD:0xc5
+DAT:0x17
+CMD:0xc2
+DAT:0x20
+CMD:0xc6
+DAT:0x0f
+CMD:0xd0
+DAT:0xa2
+DAT:0xa1
+CMD:0xd6
+DAT:0xa1
+CMD:0xe0
+DAT:0xd0
+DAT:0x02
+DAT:0x0a
+DAT:0x11
+DAT:0x15
+DAT:0x2a
+DAT:0x3d
+DAT:0x53
+DAT:0x42
+DAT:0x16
+DAT:0x0b
+DAT:0x0d
+DAT:0x1f
+DAT:0x25
+CMD:0xe1
+DAT:0xd0
+DAT:0x02
+DAT:0x0d
+DAT:0x10
+DAT:0x15
+DAT:0x2a
+DAT:0x3c
+DAT:0x42
+DAT:0x51
+DAT:0x26
+DAT:0x1f
+DAT:0x1f
+DAT:0x20
+DAT:0x25
+CMD:0x21
+CMD:0x2c
+DAT:0x00
+DAT:0x00
+DAT:0x00
+DAT:0xef
+CMD:0x2d
+DAT:0x00
+DAT:0x00
+DAT:0x00
+DAT:0xef
+CMD:0x00
+CMD:0x29
+CMD:0x2a
+CMD:0x2a
+</pre><br>
+
+<p>
+main.s
+</p>
+<pre class="brush:asm">
+  .global _start
+   
+  .equiv PIO_BASE,  0x01c20800 
+  .equiv PA,        (0x24 * 0)
+  .equiv PB,        (0x24 * 1)
+  .equiv PC,        (0x24 * 2)
+  .equiv PD,        (0x24 * 3)
+  .equiv PE,        (0x24 * 4)
+  .equiv PIO_CFG0,  0x00
+  .equiv PIO_CFG1,  0x04
+  .equiv PIO_CFG2,  0x08
+  .equiv PIO_DATA,  0x10
+ 
+  .equiv LCD_CS,    (1 &lt;&lt; 21)
+  .equiv LCD_RD,    (1 &lt;&lt; 20)
+  .equiv LCD_RS,    (1 &lt;&lt; 19)
+  .equiv LCD_WR,    (1 &lt;&lt; 18)
+  .equiv LCD_RST,   (1 &lt;&lt; 0)
+ 
+  .arm
+  .text
+_start:
+  .long 0xea000016
+  .byte 'e', 'G', 'O', 'N', '.', 'B', 'T', '0'
+  .long 0, __spl_size
+  .byte 'S', 'P', 'L', 2
+  .long 0, 0
+  .long 0, 0, 0, 0, 0, 0, 0, 0
+  .long 0, 0, 0, 0, 0, 0, 0, 0
+    
+_vector:
+  b reset
+  b .
+  b .
+  b .
+  b .
+  b .
+  b .
+  b .
+    
+reset:
+  ldr r4, =PIO_BASE + PD
+  ldr r1, =0x11111111
+  str r1, [r4, #PIO_CFG0]
+  str r1, [r4, #PIO_CFG1]
+  str r1, [r4, #PIO_CFG2]
+  
+  ldr r4, =PIO_BASE + PE
+  ldr r1, =0x11111111
+  str r1, [r4, #PIO_CFG0]
+  str r1, [r4, #PIO_CFG1]
+  str r1, [r4, #PIO_CFG2]
+ 
+  ldr r4, =PIO_BASE + PD
+  ldr r1, =0xffffffff
+  str r1, [r4, #PIO_DATA]
+ 
+  ldr r4, =PIO_BASE + PE
+  ldr r1, =0xffffffff
+  str r1, [r4, #PIO_DATA]
+ 
+  bl lcd_rst
+
+  ldr r0, =0x11
+  bl lcd_cmd
+  ldr r0, =0x36
+  bl lcd_cmd
+  ldr r1, =0x0c
+  bl lcd_dat
+  ldr r0, =0x3c
+  bl lcd_cmd
+  ldr r1, =0x03
+  bl lcd_dat
+  ldr r0, =0x32
+  bl lcd_cmd
+  ldr r0, =0x33
+  bl lcd_cmd
+  ldr r1, =0x00
+  bl lcd_dat
+  ldr r0, =0xb4
+  bl lcd_cmd
+  ldr r1, =0x0a
+  bl lcd_dat
+  ldr r1, =0x0a
+  bl lcd_dat
+  ldr r1, =0x00
+  bl lcd_dat
+  ldr r1, =0x35
+  bl lcd_dat
+  ldr r1, =0x35
+  bl lcd_dat
+  ldr r0, =0xb7
+  bl lcd_cmd
+  ldr r1, =0x04
+  bl lcd_dat
+  ldr r0, =0xbd
+  bl lcd_cmd
+  ldr r1, =0x30
+  bl lcd_dat
+  ldr r0, =0xc0
+  bl lcd_cmd
+  ldr r1, =0x2a
+  bl lcd_dat
+  ldr r0, =0xc4
+  bl lcd_cmd
+  ldr r1, =0x01
+  bl lcd_dat
+  ldr r0, =0xc5
+  bl lcd_cmd
+  ldr r1, =0x17
+  bl lcd_dat
+  ldr r0, =0xc2
+  bl lcd_cmd
+  ldr r1, =0x20
+  bl lcd_dat
+  ldr r0, =0xc6
+  bl lcd_cmd
+  ldr r1, =0x0f
+  bl lcd_dat
+  ldr r0, =0xd0
+  bl lcd_cmd
+  ldr r1, =0xa2
+  bl lcd_dat
+  ldr r1, =0xa1
+  bl lcd_dat
+  ldr r0, =0xd6
+  bl lcd_cmd
+  ldr r1, =0xa1
+  bl lcd_dat
+  ldr r0, =0xe0
+  bl lcd_cmd
+  ldr r1, =0xd0
+  bl lcd_dat
+  ldr r1, =0x02
+  bl lcd_dat
+  ldr r1, =0x0a
+  bl lcd_dat
+  ldr r1, =0x11
+  bl lcd_dat
+  ldr r1, =0x15
+  bl lcd_dat
+  ldr r1, =0x2a
+  bl lcd_dat
+  ldr r1, =0x3d
+  bl lcd_dat
+  ldr r1, =0x53
+  bl lcd_dat
+  ldr r1, =0x42
+  bl lcd_dat
+  ldr r1, =0x16
+  bl lcd_dat
+  ldr r1, =0x0b
+  bl lcd_dat
+  ldr r1, =0x0d
+  bl lcd_dat
+  ldr r1, =0x1f
+  bl lcd_dat
+  ldr r1, =0x25
+  bl lcd_dat
+  ldr r0, =0xe1
+  bl lcd_cmd
+  ldr r1, =0xd0
+  bl lcd_dat
+  ldr r1, =0x02
+  bl lcd_dat
+  ldr r1, =0x0d
+  bl lcd_dat
+  ldr r1, =0x10
+  bl lcd_dat
+  ldr r1, =0x15
+  bl lcd_dat
+  ldr r1, =0x2a
+  bl lcd_dat
+  ldr r1, =0x3c
+  bl lcd_dat
+  ldr r1, =0x42
+  bl lcd_dat
+  ldr r1, =0x51
+  bl lcd_dat
+  ldr r1, =0x26
+  bl lcd_dat
+  ldr r1, =0x1f
+  bl lcd_dat
+  ldr r1, =0x1f
+  bl lcd_dat
+  ldr r1, =0x20
+  bl lcd_dat
+  ldr r1, =0x25
+  bl lcd_dat
+  ldr r0, =0x21
+  bl lcd_cmd
+  ldr r0, =0x2c
+  bl lcd_cmd
+  ldr r1, =0x00
+  bl lcd_dat
+  ldr r1, =0x00
+  bl lcd_dat
+  ldr r1, =0x00
+  bl lcd_dat
+  ldr r1, =0xef
+  bl lcd_dat
+  ldr r0, =0x2d
+  bl lcd_cmd
+  ldr r1, =0x00
+  bl lcd_dat
+  ldr r1, =0x00
+  bl lcd_dat
+  ldr r1, =0x00
+  bl lcd_dat
+  ldr r1, =0xef
+  bl lcd_dat
+  ldr r0, =0x00
+  bl lcd_cmd
+  ldr r0, =0x29
+  bl lcd_cmd
+  ldr r0, =0x2a
+  bl lcd_cmd
+  ldr r0, =0x2a
+  bl lcd_cmd
+
+  ldr r4, =240*180
+  ldr r5, =0xffff
+0:
+  lsr r0, r5, #8
+  bl lcd_dat
+  mov r0, r5
+  bl lcd_dat
+  subs r4, #1
+  bne 0b
+
+loop:
+  b loop
+
+delay:
+  push {lr}
+0:
+  subs r0, #1
+  bne 0b
+  pop {pc}
+ 
+lcd_rst:
+  push {r4, r5, lr}
+  ldr r4, =PIO_BASE + PD
+  ldr r5, =0xffffffff
+ 
+  bic r5, #LCD_RST
+  str r5, [r4, #PIO_DATA]
+  ldr r0, =10000
+  bl delay
+ 
+  orr r5, #LCD_RST
+  str r5, [r4, #PIO_DATA]
+  ldr r0, =10000
+  bl delay
+  pop {r4, r5, pc}
+ 
+lcd_wr:
+  push {r4, r5, lr}
+  ldr r4, =PIO_BASE + PD
+
+  and r0, #0xff
+  lsl r0, #1
+  mov r5, r0
+  orr r5, r1
+  orr r5, #LCD_RST
+  orr r5, #LCD_RD
+  str r5, [r4, #PIO_DATA]
+ 
+  orr r5, #LCD_WR
+  str r5, [r4, #PIO_DATA]
+  pop {r4, r5, pc}
+ 
+lcd_dat:
+  push {lr}
+  mov r1, #LCD_RS
+  bl lcd_wr
+  pop {pc}
+ 
+lcd_cmd:
+  push {lr}
+  mov r1, #0
+  bl lcd_wr
+  pop {pc}
+  .end
+</pre><br>
+
+<p>
+main.ld
+</p>
+<pre>
+OUTPUT_FORMAT("elf32-littlearm", "elf32-bigarm", "elf32-littlearm")
+OUTPUT_ARCH(arm)
+ENTRY(_start)
+
+MEMORY {
+  ram : ORIGIN = 0x00000000, LENGTH = 32M
+}
+
+SECTIONS {
+  .text :
+  {
+    PROVIDE(__spl_start = .);
+    *(.text*)
+    PROVIDE(__spl_end = .);
+    *(.init.text)
+    *(.exit.text)
+    *(.glue*)
+    *(.note.gnu.build-id)
+  } > ram
+  PROVIDE(__spl_size = __spl_end - __spl_start);
+
+  .rodata ALIGN(8) :
+  {
+    PROVIDE(__rodata_start = .);
+    *(SORT_BY_ALIGNMENT(SORT_BY_NAME(.rodata*)))
+    PROVIDE(__rodata_end = .);
+  } > ram
+
+  .data ALIGN(8) :
+  {
+    PROVIDE(__data_start = .);  
+    *(.data*)
+    . = ALIGN(8);
+      PROVIDE(__data_end = .);
+    PROVIDE(__image_end = .);
+  } > ram
+
+  .bss ALIGN(8) (NOLOAD) :
+  {
+    PROVIDE(__bss_start = .);
+    *(.bss*)
+    *(.sbss*)
+    *(COMMON)
+    . = ALIGN(8);
+    PROVIDE(__bss_end = .);
+  } > ram
+
+  .stab 0 : { *(.stab) }
+  .stabstr 0 : { *(.stabstr) }
+  .stab.excl 0 : { *(.stab.excl) }
+  .stab.exclstr 0 : { *(.stab.exclstr) }
+  .stab.index 0 : { *(.stab.index) }
+  .stab.indexstr 0 : { *(.stab.indexstr) }
+  .comment 0 : { *(.comment) }
+  .debug_abbrev 0 : { *(.debug_abbrev) }
+  .debug_info 0 : { *(.debug_info) }
+  .debug_line 0 : { *(.debug_line) }
+  .debug_pubnames 0 : { *(.debug_pubnames) }
+  .debug_aranges 0 : { *(.debug_aranges) }
+}
+</pre><br>
+
+<p>
+Makefile
+</p>
+<pre>
+all:
+  arm-none-eabi-as -mcpu=arm9 -o main.o main.s
+  arm-none-eabi-ld -T main.ld -o main.elf main.o
+  arm-none-eabi-objcopy -O binary main.elf main.bin
+  gcc mksunxi.c -o mksunxi
+  ./mksunxi main.bin
+
+ram:
+  sunxi-fel -p write 0 main.bin &amp;&amp; sunxi-fel exec 0
+
+clean:
+  rm -rf main.bin main.o main.elf
+</pre><br>
+
+<p>
+進入下載模式<br>
+<img src="find_lcd/17.jpg" class="maxSize"><br><br>
+
+編譯下載
+</p>
+<pre>
+$ make
+  arm-none-eabi-as -mcpu=arm9 -o main.o main.s
+  arm-none-eabi-ld -T main.ld -o main.elf main.o
+  arm-none-eabi-objcopy -O binary main.elf main.bin
+  gcc mksunxi.c -o mksunxi
+  ./mksunxi main.bin
+  The bootloader head has been fixed, spl size is 1024 bytes.
+
+$ make ram
+  sunxi-fel -p write 0 main.bin &amp;&amp; sunxi-fel exec 0
+  100% [================================================]     1 kB,  167.0 kB/s
+</pre><br>
+
+<p>
+這...，讓司徒又陷入難點，應該是要顯示全白才對，從這個畫面顯示結果，代表屏初始化有問題，經過幾番查找，司徒發現一般屏的最後一道命令應該是0x2C，而且設定位址的命令一般是0x2A、0x2B，因此，比對了一下，司徒應該是記錯DB1和DB2的位置，導致解析錯誤<br>
+<img src="find_lcd/16.jpg" class="maxSize"><br><br>
+
+修正DB1和DB2
+</p>
+<pre>
+#!/usr/bin/python
+import os
+import sys
+
+f = open('digital.csv')
+c = f.readlines()
+f.close()
+
+for x in c:
+  l = x.replace('\r', '').replace('\n', '').split(',')
+  t0 = l[0]
+  cs = l[1]
+  rs = l[2]
+  wr = l[3]
+  t = l[9]
+  l[9] = l[10]
+  l[10] = t
+  db = '0x%02x' % int(''.join('{:x}'.format(int(v)) for v in l[4:12]), 2)
+  rst = l[12]
+
+  if cs == '0' and wr == '0':
+    if rs == '0':
+      print 'CMD:{}'.format(db)
+    else:
+      print 'DAT:{}'.format(db)
+</pre><br>
+
+<p>
+最後一道命令是0x2C了～
+</p>
+<pre>
+CMD:0x11
+CMD:0x36
+DAT:0x0a
+CMD:0x3a
+DAT:0x05
+CMD:0x34
+CMD:0x35
+DAT:0x00
+CMD:0xb2
+DAT:0x0c
+DAT:0x0c
+DAT:0x00
+DAT:0x33
+DAT:0x33
+CMD:0xb7
+DAT:0x02
+CMD:0xbb
+DAT:0x30
+CMD:0xc0
+DAT:0x2c
+CMD:0xc2
+DAT:0x01
+CMD:0xc3
+DAT:0x17
+CMD:0xc4
+DAT:0x20
+CMD:0xc6
+DAT:0x0f
+CMD:0xd0
+DAT:0xa4
+DAT:0xa1
+CMD:0xd6
+DAT:0xa1
+CMD:0xe0
+DAT:0xd0
+DAT:0x04
+DAT:0x0c
+DAT:0x11
+DAT:0x13
+DAT:0x2c
+DAT:0x3b
+DAT:0x55
+DAT:0x44
+DAT:0x16
+DAT:0x0d
+DAT:0x0b
+DAT:0x1f
+DAT:0x23
+CMD:0xe1
+DAT:0xd0
+DAT:0x04
+DAT:0x0b
+DAT:0x10
+DAT:0x13
+DAT:0x2c
+DAT:0x3a
+DAT:0x44
+DAT:0x51
+DAT:0x26
+DAT:0x1f
+DAT:0x1f
+DAT:0x20
+DAT:0x23
+CMD:0x21
+CMD:0x2a
+DAT:0x00
+DAT:0x00
+DAT:0x00
+DAT:0xef
+CMD:0x2b
+DAT:0x00
+DAT:0x00
+DAT:0x00
+DAT:0xef
+CMD:0x00
+CMD:0x29
+CMD:0x2c
+CMD:0x2c
+</pre><br>
+
+<p>
+main.s
+</p>
+<pre>
+  .global _start
+   
+  .equiv PIO_BASE,  0x01c20800 
+  .equiv PA,        (0x24 * 0)
+  .equiv PB,        (0x24 * 1)
+  .equiv PC,        (0x24 * 2)
+  .equiv PD,        (0x24 * 3)
+  .equiv PE,        (0x24 * 4)
+  .equiv PIO_CFG0,  0x00
+  .equiv PIO_CFG1,  0x04
+  .equiv PIO_CFG2,  0x08
+  .equiv PIO_DATA,  0x10
+ 
+  .equiv LCD_CS,    (1 &lt;&lt; 21)
+  .equiv LCD_RD,    (1 &lt;&lt; 20)
+  .equiv LCD_RS,    (1 &lt;&lt; 19)
+  .equiv LCD_WR,    (1 &lt;&lt; 18)
+  .equiv LCD_RST,   (1 &lt;&lt; 0)
+ 
+  .arm
+  .text
+_start:
+  .long 0xea000016
+  .byte 'e', 'G', 'O', 'N', '.', 'B', 'T', '0'
+  .long 0, __spl_size
+  .byte 'S', 'P', 'L', 2
+  .long 0, 0
+  .long 0, 0, 0, 0, 0, 0, 0, 0
+  .long 0, 0, 0, 0, 0, 0, 0, 0
+    
+_vector:
+  b reset
+  b .
+  b .
+  b .
+  b .
+  b .
+  b .
+  b .
+    
+reset:
+  ldr r4, =PIO_BASE + PD
+  ldr r1, =0x11111111
+  str r1, [r4, #PIO_CFG0]
+  str r1, [r4, #PIO_CFG1]
+  str r1, [r4, #PIO_CFG2]
+  
+  ldr r4, =PIO_BASE + PE
+  ldr r1, =0x11111111
+  str r1, [r4, #PIO_CFG0]
+  str r1, [r4, #PIO_CFG1]
+  str r1, [r4, #PIO_CFG2]
+ 
+  ldr r4, =PIO_BASE + PD
+  ldr r1, =0xffffffff
+  str r1, [r4, #PIO_DATA]
+ 
+  ldr r4, =PIO_BASE + PE
+  ldr r1, =0xffffffff
+  str r1, [r4, #PIO_DATA]
+ 
+  bl lcd_rst
+
+  ldr r0, =0x11
+  bl lcd_cmd
+  ldr r0, =0x36
+  bl lcd_cmd
+  ldr r0, =0x0a
+  bl lcd_dat
+  ldr r0, =0x3a
+  bl lcd_cmd
+  ldr r0, =0x05
+  bl lcd_dat
+  ldr r0, =0x34
+  bl lcd_cmd
+  ldr r0, =0x35
+  bl lcd_cmd
+  ldr r0, =0x00
+  bl lcd_dat
+  ldr r0, =0xb2
+  bl lcd_cmd
+  ldr r0, =0x0c
+  bl lcd_dat
+  ldr r0, =0x0c
+  bl lcd_dat
+  ldr r0, =0x00
+  bl lcd_dat
+  ldr r0, =0x33
+  bl lcd_dat
+  ldr r0, =0x33
+  bl lcd_dat
+  ldr r0, =0xb7
+  bl lcd_cmd
+  ldr r0, =0x02
+  bl lcd_dat
+  ldr r0, =0xbb
+  bl lcd_cmd
+  ldr r0, =0x30
+  bl lcd_dat
+  ldr r0, =0xc0
+  bl lcd_cmd
+  ldr r0, =0x2c
+  bl lcd_dat
+  ldr r0, =0xc2
+  bl lcd_cmd
+  ldr r0, =0x01
+  bl lcd_dat
+  ldr r0, =0xc3
+  bl lcd_cmd
+  ldr r0, =0x17
+  bl lcd_dat
+  ldr r0, =0xc4
+  bl lcd_cmd
+  ldr r0, =0x20
+  bl lcd_dat
+  ldr r0, =0xc6
+  bl lcd_cmd
+  ldr r0, =0x0f
+  bl lcd_dat
+  ldr r0, =0xd0
+  bl lcd_cmd
+  ldr r0, =0xa4
+  bl lcd_dat
+  ldr r0, =0xa1
+  bl lcd_dat
+  ldr r0, =0xd6
+  bl lcd_cmd
+  ldr r0, =0xa1
+  bl lcd_dat
+  ldr r0, =0xe0
+  bl lcd_cmd
+  ldr r0, =0xd0
+  bl lcd_dat
+  ldr r0, =0x04
+  bl lcd_dat
+  ldr r0, =0x0c
+  bl lcd_dat
+  ldr r0, =0x11
+  bl lcd_dat
+  ldr r0, =0x13
+  bl lcd_dat
+  ldr r0, =0x2c
+  bl lcd_dat
+  ldr r0, =0x3b
+  bl lcd_dat
+  ldr r0, =0x55
+  bl lcd_dat
+  ldr r0, =0x44
+  bl lcd_dat
+  ldr r0, =0x16
+  bl lcd_dat
+  ldr r0, =0x0d
+  bl lcd_dat
+  ldr r0, =0x0b
+  bl lcd_dat
+  ldr r0, =0x1f
+  bl lcd_dat
+  ldr r0, =0x23
+  bl lcd_dat
+  ldr r0, =0xe1
+  bl lcd_cmd
+  ldr r0, =0xd0
+  bl lcd_dat
+  ldr r0, =0x04
+  bl lcd_dat
+  ldr r0, =0x0b
+  bl lcd_dat
+  ldr r0, =0x10
+  bl lcd_dat
+  ldr r0, =0x13
+  bl lcd_dat
+  ldr r0, =0x2c
+  bl lcd_dat
+  ldr r0, =0x3a
+  bl lcd_dat
+  ldr r0, =0x44
+  bl lcd_dat
+  ldr r0, =0x51
+  bl lcd_dat
+  ldr r0, =0x26
+  bl lcd_dat
+  ldr r0, =0x1f
+  bl lcd_dat
+  ldr r0, =0x1f
+  bl lcd_dat
+  ldr r0, =0x20
+  bl lcd_dat
+  ldr r0, =0x23
+  bl lcd_dat
+  ldr r0, =0x21
+  bl lcd_cmd
+  ldr r0, =0x2a
+  bl lcd_cmd
+  ldr r0, =0x00
+  bl lcd_dat
+  ldr r0, =0x00
+  bl lcd_dat
+  ldr r0, =0x00
+  bl lcd_dat
+  ldr r0, =0xef
+  bl lcd_dat
+  ldr r0, =0x2b
+  bl lcd_cmd
+  ldr r0, =0x00
+  bl lcd_dat
+  ldr r0, =0x00
+  bl lcd_dat
+  ldr r0, =0x00
+  bl lcd_dat
+  ldr r0, =0xef
+  bl lcd_dat
+  ldr r0, =0x00
+  bl lcd_cmd
+  ldr r0, =0x29
+  bl lcd_cmd
+  ldr r0, =0x2c
+  bl lcd_cmd
+  ldr r0, =0x2c
+  bl lcd_cmd
+
+  ldr r4, =240*180
+  ldr r5, =0xffff
+0:
+  lsr r0, r5, #8
+  bl lcd_dat
+  mov r0, r5
+  bl lcd_dat
+  subs r4, #1
+  bne 0b
+
+loop:
+  b loop
+
+delay:
+  push {lr}
+0:
+  subs r0, #1
+  bne 0b
+  pop {pc}
+ 
+lcd_rst:
+  push {r4, r5, lr}
+  ldr r4, =PIO_BASE + PD
+  ldr r5, =0xffffffff
+ 
+  bic r5, #LCD_RST
+  str r5, [r4, #PIO_DATA]
+  ldr r0, =10000
+  bl delay
+ 
+  orr r5, #LCD_RST
+  str r5, [r4, #PIO_DATA]
+  ldr r0, =10000
+  bl delay
+  pop {r4, r5, pc}
+ 
+lcd_wr:
+  push {r4, r5, lr}
+  ldr r4, =PIO_BASE + PD
+
+  and r0, #0xff
+  lsl r0, #1
+  mov r5, r0
+  orr r5, r1
+  orr r5, #LCD_RST
+  orr r5, #LCD_RD
+  str r5, [r4, #PIO_DATA]
+ 
+  orr r5, #LCD_WR
+  str r5, [r4, #PIO_DATA]
+  pop {r4, r5, pc}
+ 
+lcd_dat:
+  push {lr}
+  mov r1, #LCD_RS
+  bl lcd_wr
+  pop {pc}
+ 
+lcd_cmd:
+  push {lr}
+  mov r1, #0
+  bl lcd_wr
+  pop {pc}
+  .end
+</pre><br>
+
+<p>
+終於顯示白屏了～但是，怎麼沒有全屏？司徒往回找了一下，發現這個屏的初始化命令(解析度)竟然是使用240x240...<br>
+<img src="find_lcd/18.jpg" class="maxSize"><br><br>
+
+司徒開始探測問題，發現屏的上方有一塊區域被隱蔽(前30行)<br>
+<img src="find_lcd/19.jpg" class="maxSize"><br><br>
+
+下方也有一塊區域被隱蔽(後15行)<br>
+<img src="find_lcd/20.jpg" class="maxSize"><br><br>
+
+經過一番測試後，結論是：屏的原生解析度是240x240，不過，可視區域只有240x195，最後，屏終於可以正常控制了～<br>
+<img src="find_lcd/21.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+  .global _start
+   
+  .equiv PIO_BASE,  0x01c20800 
+  .equiv PA,        (0x24 * 0)
+  .equiv PB,        (0x24 * 1)
+  .equiv PC,        (0x24 * 2)
+  .equiv PD,        (0x24 * 3)
+  .equiv PE,        (0x24 * 4)
+  .equiv PIO_CFG0,  0x00
+  .equiv PIO_CFG1,  0x04
+  .equiv PIO_CFG2,  0x08
+  .equiv PIO_DATA,  0x10
+ 
+  .equiv LCD_CS,    (1 &lt;&lt; 21)
+  .equiv LCD_RD,    (1 &lt;&lt; 20)
+  .equiv LCD_RS,    (1 &lt;&lt; 19)
+  .equiv LCD_WR,    (1 &lt;&lt; 18)
+  .equiv LCD_RST,   (1 &lt;&lt; 0)
+ 
+  .arm
+  .text
+_start:
+  .long 0xea000016
+  .byte 'e', 'G', 'O', 'N', '.', 'B', 'T', '0'
+  .long 0, __spl_size
+  .byte 'S', 'P', 'L', 2
+  .long 0, 0
+  .long 0, 0, 0, 0, 0, 0, 0, 0
+  .long 0, 0, 0, 0, 0, 0, 0, 0
+    
+_vector:
+  b reset
+  b .
+  b .
+  b .
+  b .
+  b .
+  b .
+  b .
+    
+reset:
+  ldr r4, =PIO_BASE + PD
+  ldr r1, =0x11111111
+  str r1, [r4, #PIO_CFG0]
+  str r1, [r4, #PIO_CFG1]
+  str r1, [r4, #PIO_CFG2]
+  
+  ldr r4, =PIO_BASE + PE
+  ldr r1, =0x11111111
+  str r1, [r4, #PIO_CFG0]
+  str r1, [r4, #PIO_CFG1]
+  str r1, [r4, #PIO_CFG2]
+ 
+  ldr r4, =PIO_BASE + PD
+  ldr r1, =0xffffffff
+  str r1, [r4, #PIO_DATA]
+ 
+  ldr r4, =PIO_BASE + PE
+  ldr r1, =0xffffffff
+  str r1, [r4, #PIO_DATA]
+ 
+  bl lcd_rst
+
+  ldr r0, =0x11
+  bl lcd_cmd
+  ldr r0, =0x36
+  bl lcd_cmd
+  ldr r0, =0x0a
+  bl lcd_dat
+  ldr r0, =0x3a
+  bl lcd_cmd
+  ldr r0, =0x05
+  bl lcd_dat
+  ldr r0, =0x34
+  bl lcd_cmd
+  ldr r0, =0x35
+  bl lcd_cmd
+  ldr r0, =0x00
+  bl lcd_dat
+  ldr r0, =0xb2
+  bl lcd_cmd
+  ldr r0, =0x0c
+  bl lcd_dat
+  ldr r0, =0x0c
+  bl lcd_dat
+  ldr r0, =0x00
+  bl lcd_dat
+  ldr r0, =0x33
+  bl lcd_dat
+  ldr r0, =0x33
+  bl lcd_dat
+  ldr r0, =0xb7
+  bl lcd_cmd
+  ldr r0, =0x02
+  bl lcd_dat
+  ldr r0, =0xbb
+  bl lcd_cmd
+  ldr r0, =0x30
+  bl lcd_dat
+  ldr r0, =0xc0
+  bl lcd_cmd
+  ldr r0, =0x2c
+  bl lcd_dat
+  ldr r0, =0xc2
+  bl lcd_cmd
+  ldr r0, =0x01
+  bl lcd_dat
+  ldr r0, =0xc3
+  bl lcd_cmd
+  ldr r0, =0x17
+  bl lcd_dat
+  ldr r0, =0xc4
+  bl lcd_cmd
+  ldr r0, =0x20
+  bl lcd_dat
+  ldr r0, =0xc6
+  bl lcd_cmd
+  ldr r0, =0x0f
+  bl lcd_dat
+  ldr r0, =0xd0
+  bl lcd_cmd
+  ldr r0, =0xa4
+  bl lcd_dat
+  ldr r0, =0xa1
+  bl lcd_dat
+  ldr r0, =0xd6
+  bl lcd_cmd
+  ldr r0, =0xa1
+  bl lcd_dat
+  ldr r0, =0xe0
+  bl lcd_cmd
+  ldr r0, =0xd0
+  bl lcd_dat
+  ldr r0, =0x04
+  bl lcd_dat
+  ldr r0, =0x0c
+  bl lcd_dat
+  ldr r0, =0x11
+  bl lcd_dat
+  ldr r0, =0x13
+  bl lcd_dat
+  ldr r0, =0x2c
+  bl lcd_dat
+  ldr r0, =0x3b
+  bl lcd_dat
+  ldr r0, =0x55
+  bl lcd_dat
+  ldr r0, =0x44
+  bl lcd_dat
+  ldr r0, =0x16
+  bl lcd_dat
+  ldr r0, =0x0d
+  bl lcd_dat
+  ldr r0, =0x0b
+  bl lcd_dat
+  ldr r0, =0x1f
+  bl lcd_dat
+  ldr r0, =0x23
+  bl lcd_dat
+  ldr r0, =0xe1
+  bl lcd_cmd
+  ldr r0, =0xd0
+  bl lcd_dat
+  ldr r0, =0x04
+  bl lcd_dat
+  ldr r0, =0x0b
+  bl lcd_dat
+  ldr r0, =0x10
+  bl lcd_dat
+  ldr r0, =0x13
+  bl lcd_dat
+  ldr r0, =0x2c
+  bl lcd_dat
+  ldr r0, =0x3a
+  bl lcd_dat
+  ldr r0, =0x44
+  bl lcd_dat
+  ldr r0, =0x51
+  bl lcd_dat
+  ldr r0, =0x26
+  bl lcd_dat
+  ldr r0, =0x1f
+  bl lcd_dat
+  ldr r0, =0x1f
+  bl lcd_dat
+  ldr r0, =0x20
+  bl lcd_dat
+  ldr r0, =0x23
+  bl lcd_dat
+  ldr r0, =0x21
+  bl lcd_cmd
+  ldr r0, =0x2a
+  bl lcd_cmd
+  ldr r0, =0x00
+  bl lcd_dat
+  ldr r0, =0x00
+  bl lcd_dat
+  ldr r0, =0x00
+  bl lcd_dat
+  ldr r0, =0xef
+  bl lcd_dat
+  ldr r0, =0x2b
+  bl lcd_cmd
+  ldr r0, =0x00
+  bl lcd_dat
+  ldr r0, =0x00
+  bl lcd_dat
+  ldr r0, =0x00
+  bl lcd_dat
+  ldr r0, =0xef
+  bl lcd_dat
+  ldr r0, =0x00
+  bl lcd_cmd
+  ldr r0, =0x29
+  bl lcd_cmd
+  ldr r0, =0x2c
+  bl lcd_cmd
+  ldr r0, =0x2c
+  bl lcd_cmd
+
+  ldr r4, =240*30
+  ldr r5, =0xffff
+0:
+  lsr r0, r5, #8
+  bl lcd_dat
+  mov r0, r5
+  bl lcd_dat
+  subs r4, #1
+  bne 0b
+
+  ldr r4, =240*65
+  ldr r5, =0xf800
+0:
+  lsr r0, r5, #8
+  bl lcd_dat
+  mov r0, r5
+  bl lcd_dat
+  subs r4, #1
+  bne 0b
+
+  ldr r4, =240*65
+  ldr r5, =0x7e0
+0:
+  lsr r0, r5, #8
+  bl lcd_dat
+  mov r0, r5
+  bl lcd_dat
+  subs r4, #1
+  bne 0b
+
+  ldr r4, =240*65
+  ldr r5, =0x1f
+0:
+  lsr r0, r5, #8
+  bl lcd_dat
+  mov r0, r5
+  bl lcd_dat
+  subs r4, #1
+  bne 0b
+
+loop:
+  b loop
+
+delay:
+  push {lr}
+0:
+  subs r0, #1
+  bne 0b
+  pop {pc}
+ 
+lcd_rst:
+  push {r4, r5, lr}
+  ldr r4, =PIO_BASE + PD
+  ldr r5, =0xffffffff
+ 
+  bic r5, #LCD_RST
+  str r5, [r4, #PIO_DATA]
+  ldr r0, =10000
+  bl delay
+ 
+  orr r5, #LCD_RST
+  str r5, [r4, #PIO_DATA]
+  ldr r0, =10000
+  bl delay
+  pop {r4, r5, pc}
+ 
+lcd_wr:
+  push {r4, r5, lr}
+  ldr r4, =PIO_BASE + PD
+
+  and r0, #0xff
+  lsl r0, #1
+  mov r5, r0
+  orr r5, r1
+  orr r5, #LCD_RST
+  orr r5, #LCD_RD
+  str r5, [r4, #PIO_DATA]
+ 
+  orr r5, #LCD_WR
+  str r5, [r4, #PIO_DATA]
+  pop {r4, r5, pc}
+ 
+lcd_dat:
+  push {lr}
+  mov r1, #LCD_RS
+  bl lcd_wr
+  pop {pc}
+ 
+lcd_cmd:
+  push {lr}
+  mov r1, #0
+  bl lcd_wr
+  pop {pc}
+  .end
+</pre><br>
+
+<p>
+<br><a href="../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

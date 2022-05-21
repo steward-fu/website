@@ -1,0 +1,162 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>TRIMUI</h3>
+<p><b>如何使用root帳號透過UART登入</b></p>
+<hr size="1">
+<p>
+updater
+</p>
+<pre>
+#!/bin/sh
+dir=`dirname $0`
+cd $dir
+
+mount -o remount,rw /
+cp inittab /etc/
+sync
+reboot
+</pre><br>
+
+<p>
+inittab
+</p>
+<pre>
+null::sysinit:/bin/mount -o remount,rw /
+null::sysinit:/bin/mkdir -p /dev/pts
+null::sysinit:/bin/mount -a
+::sysinit:/etc/init.d/rcS boot
+/dev/console::respawn:-/bin/sh
+::ctrlaltdel:/sbin/reboot
+null::shutdown:/bin/umount -a -r
+</pre><br>
+
+<p>
+打包成TrimuiUpdateV9999_root_login.zip
+</p>
+<pre>
+$ zip TrimuiUpdateV9999_root_login.zip updater inittab
+</pre><br>
+
+<p>
+接著刷入TrimuiUpdateV9999_root_login.zip，開機就會以root帳號登入(baudrate: 115200bps)
+</p>
+<pre>
+BusyBox v1.27.2 () built-in shell (ash)
+
+ _____  _              __     _
+|_   _||_| ___  _ _   |  |   |_| ___  _ _  _ _
+  | |   _ |   ||   |  |  |__ | ||   || | ||_'_|
+  | |  | || | || _ |  |_____||_||_|_||___||_,_|
+  |_|  |_||_|_||_|_|  Tina is Based on OpenWrt!
+ ----------------------------------------------
+ Tina Linux (Neptune, 5C1C9C53)
+ ----------------------------------------------
+@Linux:/#
+
+@Linux:/# cat /proc/cpuinfo
+  processor       : 0
+  model name      : ARM926EJ-S rev 5 (v5l)
+  BogoMIPS        : 358.80
+  Features        : swp half thumb fastmult edsp java
+  CPU implementer : 0x41
+  CPU architecture: 5TEJ
+  CPU variant     : 0x0
+  CPU part        : 0x926
+  CPU revision    : 5
+
+  Hardware        : Allwinner A1X (Device Tree)
+  Revision        : 0000
+  Serial          : 0000000000000000
+
+@Linux:/# cat /proc/version
+  Linux version 3.10.65 (alfchen@alfchen-ubuntu) (gcc version 6.4.1 (OpenWrt/Linaro GCC 6.4-2017.11 2017-11) ) #508 Sun Aug 30 16:04:27 UTC 2020
+
+@Linux:/# cat /proc/meminfo
+  MemTotal:          58296 kB
+  MemFree:           11024 kB
+  Buffers:            6484 kB
+  Cached:            27084 kB
+  SwapCached:            0 kB
+  Active:            13760 kB
+  Inactive:          23320 kB
+  Active(anon):       1900 kB
+  Inactive(anon):     1652 kB
+  Active(file):      11860 kB
+  Inactive(file):    21668 kB
+  Unevictable:           4 kB
+  Mlocked:               0 kB
+  SwapTotal:        131068 kB
+  SwapFree:         131068 kB
+  Dirty:                 0 kB
+  Writeback:             0 kB
+  AnonPages:          3544 kB
+  Mapped:             2816 kB
+  Shmem:                36 kB
+  Slab:               6092 kB
+  SReclaimable:       4204 kB
+  SUnreclaim:         1888 kB
+  KernelStack:         400 kB
+  PageTables:          264 kB
+  NFS_Unstable:          0 kB
+  Bounce:                0 kB
+  WritebackTmp:          0 kB
+  CommitLimit:      160216 kB
+  Committed_AS:      50440 kB
+  VmallocTotal:     958464 kB
+  VmallocUsed:        4152 kB
+  VmallocChunk:     712272 kB
+</pre><br>
+
+<p>
+<br><a href="../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

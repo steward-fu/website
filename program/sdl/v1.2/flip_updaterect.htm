@@ -1,0 +1,153 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../../header.js"></script>
+<div id="page">
+<h3>SDL v1.2</h3>
+<p><b>SDL_Flip()、SDL_UpdateRect()</b></p>
+<hr size="1">
+<p>
+區別如下：
+</p>
+<table>
+<tr><th>SDL_Flip()</th><td>假如有設定SDL_DOUBLEBUF時，會直接呼叫Framebuffer Driver的fb_pan_display()，藉此快速刷屏，假如沒有設定，則執行SDL_UpdateRect()</td></tr>
+<tr><th>SDL_UpdateRect()</th><td>一個區塊慢慢複製(透過blitFunc())</th></tr>
+</table><br>
+<p>
+(SDL 1.2.15)src/video/SDL_video.c
+</p>
+<pre class="brush:cpp">
+1105 int SDL_Flip(SDL_Surface *screen)
+...
+1147   if ( (screen-&gt;flags &amp; SDL_DOUBLEBUF) == SDL_DOUBLEBUF ) {
+1148     SDL_VideoDevice *this  = current_video;
+1149     return(video-&gt;FlipHWSurface(this, SDL_VideoSurface));
+1150   } else {
+1151     SDL_UpdateRect(screen, 0, 0, 0, 0);
+1152   }
+1153   return(0);
+1154 }
+</pre><br>
+
+<p>
+(SDL 1.2.15)src/video/fbcon/SDL_fbvideo.c
+</p>
+<pre class="brush:cpp">
+1423 static int FB_FlipHWSurface(_THIS, SDL_Surface *surface)
+1424 {
+1425   if ( switched_away ) {
+1426     return -2; /* no hardware access */
+1427   }
+1428 
+1429   /* Wait for vertical retrace and then flip display */
+1430   cache_vinfo.yoffset = flip_page*surface-&gt;h;
+1431   if ( FB_IsSurfaceBusy(this-&gt;screen) ) {
+1432     FB_WaitBusySurfaces(this);
+1433   }
+1434   wait_vbl(this);
+1435   if ( ioctl(console_fd, FBIOPAN_DISPLAY, &amp;cache_vinfo) &lt; 0 ) {
+1436     SDL_SetError("ioctl(FBIOPAN_DISPLAY) failed");
+1437     return(-1);
+1438   }
+1439   flip_page = !flip_page;
+1440 
+1441   surface-&gt;pixels = flip_address[flip_page];
+1442   return(0);
+1443 }
+
+1014 void SDL_UpdateRect(SDL_Surface *screen, Sint32 x, Sint32 y, Uint32 w, Uint32 h)
+1015 { 
+1016   if ( screen ) {
+1017     SDL_Rect rect;
+1018     
+1019     /* Perform some checking */
+1020     if ( w == 0 )
+1021       w = screen-&gt;w;
+1022     if ( h == 0 )
+1023       h = screen-&gt;h;
+1024     if ( (int)(x+w) &gt; screen-&gt;w )
+1025       return;
+1026     if ( (int)(y+h) &gt; screen-&gt;h )
+1027       return;
+1028     
+1029     /* Fill the rectangle */
+1030     rect.x = (Sint16)x;
+1031     rect.y = (Sint16)y;
+1032     rect.w = (Uint16)w;
+1033     rect.h = (Uint16)h;
+1034     SDL_UpdateRects(screen, 1, &amp;rect);
+1035   }
+1036 }
+
+1037 void SDL_UpdateRects (SDL_Surface *screen, int numrects, SDL_Rect *rects)
+...
+1097       video-&gt;UpdateRects(this, numrects, rects);
+1098     }
+1099   }
+1100 }
+
+1183   this-&gt;UpdateRects = FB_DirectUpdate;
+
+1496 static void FB_DirectUpdate(_THIS, int numrects, SDL_Rect *rects)
+...
+1600     blitFunc((Uint8 *) src_start,
+1601         shadow_right_delta,
+1602         shadow_down_delta,
+1603         (Uint8 *) dst_start,
+1604         physlinebytes,
+1605         scr_x2 - scr_x1,
+1606         scr_y2 - scr_y1);
+1607   }
+1608 }
+</pre><br>
+
+<p>
+<br><a href="../../../driver.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

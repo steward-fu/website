@@ -1,0 +1,262 @@
+<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Kernel Mode Driver Framework &gt;&gt; Assembly (PNP) &gt;&gt; IOCTL</h3>
+<p><b>METHOD_BUFFERED</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://github.com/steward-fu/kmdf">Source Code</a><br><br>
+
+METHOD_BUFFERED的處理手法就是I/O Manager會在Kernel配置一塊跟User Buffer一樣大小的記憶體，Driver只能對該配置的記憶體做讀寫的操作，而讀寫的操作都會同步回User Buffer，也因為結果都需要整塊複製回User Buffer，因此，METHOD_BUFFERED的方式會消耗比較大的資源，速度也比較慢。<br><br>
+
+記憶體指標：
+</p>
+<table>
+<tr>
+  <th></th>
+  <th>Buffer</th>
+  <th>Length</th>
+</tr>
+<tr>
+  <td>Input</td>
+  <td>Step 1. WdfRequestRetrieveInputMemory()<br>Step 2. WdfMemoryGetBuffer()</td>
+  <td>傳入的第四個參數</td>
+</tr>
+<tr>
+  <td>Output</td>
+  <td>Step 1. WdfRequestRetrieveOutputMemory()<br>Step 2. WdfMemoryGetBuffer()</td>
+  <td>傳入的第三個參數</td>
+<tr>
+</table><br>
+
+<p>
+main.asm
+</p>
+<pre class="brush:asm">
+.386p
+.model flat, stdcall
+option casemap:none
+
+include c:\masm32\Macros\Strings.mac
+include c:\masm32\include\w2k\ntdef.inc
+include c:\masm32\include\w2k\ntstatus.inc
+include c:\masm32\include\w2k\ntddk.inc
+include c:\masm32\include\w2k\ntoskrnl.inc
+include c:\masm32\include\w2k\ntddkbd.inc
+include c:\masm32\include\wxp\wdm.inc
+include c:\masm32\include\wdf\umdf\1.9\wudfddi_types.inc
+include c:\masm32\include\wdf\kmdf\1.9\wdf.inc
+include c:\masm32\include\wdf\kmdf\1.9\wdftypes.inc
+include c:\masm32\include\wdf\kmdf\1.9\wdfglobals.inc
+include c:\masm32\include\wdf\kmdf\1.9\wdffuncenum.inc
+include c:\masm32\include\wdf\kmdf\1.9\wdfobject.inc
+include c:\masm32\include\wdf\kmdf\1.9\wdfdevice.inc
+include c:\masm32\include\wdf\kmdf\1.9\wdfdriver.inc
+include c:\masm32\include\wdf\kmdf\1.9\wdfrequest.inc
+include c:\masm32\include\wdf\kmdf\1.9\wdfio.inc
+include c:\masm32\include\wdf\kmdf\1.9\wdfmemory.inc
+
+includelib c:\masm32\lib\wxp\i386\BufferOverflowK.lib 
+includelib c:\masm32\lib\wxp\i386\ntoskrnl.lib 
+includelib c:\masm32\lib\wxp\i386\hal.lib 
+includelib c:\masm32\lib\wxp\i386\wmilib.lib 
+includelib c:\masm32\lib\wxp\i386\sehupd.lib 
+includelib c:\masm32\lib\wdf\kmdf\i386\1.9\wdfldr.lib
+includelib c:\masm32\lib\wdf\kmdf\i386\1.9\wdfdriverentry.lib
+
+public DriverEntry
+IOCTL_GET equ CTL_CODE(FILE_DEVICE_UNKNOWN, 800h, METHOD_BUFFERED, FILE_ANY_ACCESS)
+IOCTL_SET equ CTL_CODE(FILE_DEVICE_UNKNOWN, 801h, METHOD_BUFFERED, FILE_ANY_ACCESS)
+
+.const
+DEV_NAME word "\","D","e","v","i","c","e","\","M","y","D","r","i","v","e","r",0
+SYM_NAME word "\","D","o","s","D","e","v","i","c","e","s","\","M","y","D","r","i","v","e","r",0
+MSG_SET byte "IOCTL_SET",0
+MSG_GET byte "IOCTL_GET",0
+
+.data
+szBuffer byte 255 dup(0)
+
+.code
+IrpFileCreate proc Device:WDFDEVICE, Request:WDFREQUEST, FileObject:WDFFILEOBJECT
+  invoke DbgPrint, $CTA0("IrpFieCreate")
+  invoke WdfRequestComplete, Request, STATUS_SUCCESS
+  ret
+IrpFileCreate endp
+
+IrpFileClose proc FileObject:WDFFILEOBJECT
+  invoke DbgPrint, $CTA0("IrpFieClose")
+  ret
+IrpFileClose endp
+
+IrpIOCTL proc Queue:WDFQUEUE, Request:WDFREQUEST, OutputBufferLength:DWORD, InputBufferLength:DWORD, IoControlCode:DWORD
+  local memory:WDFMEMORY
+  local len:dword
+  
+  .if IoControlCode == IOCTL_SET
+    invoke DbgPrint, offset MSG_SET
+    invoke WdfRequestRetrieveInputMemory, Request, addr memory
+    invoke WdfMemoryCopyToBuffer, memory, 0, offset szBuffer, InputBufferLength
+    invoke DbgPrint, $CTA0("Buffer: %s, Length:%d"), offset szBuffer, InputBufferLength
+    invoke WdfRequestSetInformation, Request, InputBufferLength
+  .elseif IoControlCode == IOCTL_GET
+    invoke DbgPrint, offset MSG_GET
+    invoke WdfRequestRetrieveOutputMemory, Request, addr memory
+    invoke WdfMemoryCopyFromBuffer, memory, 0, offset szBuffer, OutputBufferLength
+    invoke strlen, offset szBuffer
+    inc eax
+    invoke WdfRequestSetInformation, Request, eax
+  .endif
+  invoke WdfRequestComplete, Request, STATUS_SUCCESS
+  ret
+IrpIOCTL endp
+
+AddDevice proc Driver:WDFDRIVER, pDeviceInit:PWDFDEVICE_INIT
+  local device:WDFDEVICE
+  local suDevName:UNICODE_STRING
+  local szSymName:UNICODE_STRING
+  local file_cfg:WDF_FILEOBJECT_CONFIG
+  local ioqueue_cfg:WDF_IO_QUEUE_CONFIG
+  
+  invoke RtlInitUnicodeString, addr suDevName, offset DEV_NAME
+  invoke RtlInitUnicodeString, addr szSymName, offset SYM_NAME
+  invoke WdfDeviceInitAssignName, pDeviceInit, addr suDevName
+  invoke WdfDeviceInitSetIoType, pDeviceInit, WdfDeviceIoBuffered
+  invoke WDF_FILEOBJECT_CONFIG_INIT, addr file_cfg, offset IrpFileCreate, offset IrpFileClose, NULL
+  invoke WdfDeviceInitSetFileObjectConfig, pDeviceInit, addr file_cfg, WDF_NO_OBJECT_ATTRIBUTES
+  invoke WdfDeviceCreate, addr pDeviceInit, WDF_NO_OBJECT_ATTRIBUTES, addr device
+  invoke WdfDeviceCreateSymbolicLink, device, addr szSymName
+  invoke WDF_IO_QUEUE_CONFIG_INIT_DEFAULT_QUEUE, addr ioqueue_cfg, WdfIoQueueDispatchSequential
+  lea eax, ioqueue_cfg
+  mov (WDF_IO_QUEUE_CONFIG ptr [eax]).EvtIoDeviceControl, offset IrpIOCTL
+  invoke WdfIoQueueCreate, device, addr ioqueue_cfg, WDF_NO_OBJECT_ATTRIBUTES, WDF_NO_HANDLE
+  ret
+AddDevice endp
+
+DriverEntry proc pOurDriver:PDRIVER_OBJECT, pOurRegistry:PUNICODE_STRING
+  local config:WDF_DRIVER_CONFIG
+  
+  invoke WDF_DRIVER_CONFIG_INIT, addr config, AddDevice
+  invoke WdfDriverCreate, pOurDriver, pOurRegistry, WDF_NO_OBJECT_ATTRIBUTES, addr config, WDF_NO_HANDLE
+  ret
+DriverEntry endp
+end DriverEntry
+.end
+</pre>
+<p>
+<b>IrpIOCTL()</b>收到IOCTL_SET時，Driver複製User Buffer的內容到szBuffer，而收到IOCTL_GET時，將szBuffer內容又複製回User Buffer，完成暫存的功能。<br><br>
+
+app.asm
+</p>
+<pre class="brush:asm">
+.386p
+.model flat, stdcall
+option casemap:none
+
+include c:\masm32\include\windows.inc
+include c:\masm32\include\masm32.inc
+include c:\masm32\include\user32.inc
+include c:\masm32\include\msvcrt.inc
+include c:\masm32\include\kernel32.inc
+include c:\masm32\include\w2k\ntddkbd.inc
+include c:\masm32\Macros\Strings.mac
+ 
+includelib c:\masm32\lib\user32.lib
+includelib c:\masm32\lib\masm32.lib
+includelib c:\masm32\lib\msvcrt.lib
+includelib c:\masm32\lib\kernel32.lib
+
+IOCTL_GET equ CTL_CODE(FILE_DEVICE_UNKNOWN, 800h, METHOD_BUFFERED, FILE_ANY_ACCESS)
+IOCTL_SET equ CTL_CODE(FILE_DEVICE_UNKNOWN, 801h, METHOD_BUFFERED, FILE_ANY_ACCESS)
+ 
+.const
+DEV_NAME  db "\\.\MyDriver",0
+ 
+.data?
+hFile    dd ?
+dwRet    dd ?
+szBuffer db 255 dup(?)
+ 
+.code
+start:
+  invoke CreateFile, offset DEV_NAME, GENERIC_READ or GENERIC_WRITE, FILE_SHARE_READ, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0
+  .if eax == INVALID_HANDLE_VALUE
+    invoke crt_printf, $CTA0("failed to open mydriver")
+    invoke ExitProcess, -1
+  .endif
+  
+  mov hFile, eax
+  invoke wsprintf, offset szBuffer, $CT0("I am error")
+  invoke StrLen, offset szBuffer
+  inc eax
+  mov dwRet, eax
+  invoke crt_printf, $CTA0("SET: %s, %d\n"), offset szBuffer, dwRet
+  invoke DeviceIoControl, hFile, IOCTL_SET, offset szBuffer, dwRet, NULL, 0, offset dwRet, NULL
+  invoke crt_memset, offset szBuffer, 0, 255
+  invoke DeviceIoControl, hFile, IOCTL_GET, NULL, 0, offset szBuffer, 255, offset dwRet, NULL
+  invoke crt_printf, $CTA0("GET: %s, %d\n"), offset szBuffer, dwRet
+  invoke CloseHandle, hFile
+  invoke ExitProcess, 0
+  
+end start
+</pre><br>
+
+<p>
+結果<br>
+<img src="asm_pnp_ioctl-buffer/2.jpg" class="maxSize"><br>
+<img src="asm_pnp_ioctl-buffer/1.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../driver.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

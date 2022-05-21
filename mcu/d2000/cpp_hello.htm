@@ -1,0 +1,136 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>D2000 &gt;&gt; C/C++</h3>
+<p><b>Hello, world!</b></p>
+<hr size="1">
+<p>
+連接UART_A TX、RX並且上電<br>
+<img src="cpp_hello/2.jpg" class="maxSize"><br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include "qm_common.h"
+
+int main(void)
+{
+  QM_PUTS("Hello, world!");
+  return 0;
+}
+</pre><br>
+
+<p>
+Makefile
+</p>
+<pre>
+APP_NAME = hello
+SOC ?= quark_d2000
+TARGET ?= x86
+BASE_DIR := xxx/qmsi
+APP_DIR := .
+include $(BASE_DIR)/examples/app.mk
+</pre>
+<p>
+P.S. BASE_DIR必須指到qmsi資料夾。<br><br>
+
+編譯程式
+</p>
+<pre>
+$ wget https://github.com/steward-fu/d2000/releases/download/v1.0/issm-toolchain-linux-2017-02-07.tar.gz
+$ tar xvf issm-toolchain-linux-2017-02-07.tar.gz
+$ sudo mv issm-toolchain-linux-2017-02-07 /opt/d2000
+$ export IAMCU_TOOLCHAIN_DIR=/opt/d2000/tools/compiler/gcc-ia/5.2.1/bin
+$ make
+  APP_NAME = hello
+  SOC = quark_d2000
+  TARGET = x86
+  APP_DIR = .
+  BUILD = release
+  CSTD = c99
+  VERSION = '1.4.0'
+  make -C /home/steward/Downloads/qmsi/drivers SOC=quark_d2000 TARGET=x86 BUILD=release V=0 CSTD=c99 ITA_NO_ASSERT=0
+  make[1]: Entering directory '/home/steward/Downloads/qmsi/drivers'
+  BUILD = release
+  CSTD = c99
+  VERSION = '1.4.0'
+  make[1]: Nothing to be done for 'all'.
+  make[1]: Leaving directory '/home/steward/Downloads/qmsi/drivers'
+  CC release/quark_d2000/x86/obj/./main.o
+  CC release/quark_d2000/x86/obj/./app_entry.o
+  CC release/quark_d2000/x86/obj/./newlib-syscalls.o
+  LD release/quark_d2000/x86/bin/hello.bin
+  Size release/quark_d2000/x86/bin/hello.bin
+     text     data      bss      dec      hex  filename
+      380        8       12      400      190  ./release/quark_d2000/x86/obj/hello.elf
+  Objcopy release/quark_d2000/x86/bin/hello.bin
+</pre><br>
+
+<p>
+接著使用gdb下載檔案
+</p>
+<pre>
+$ gdb
+(gdb) target remote :3333
+(gdb) monitor clk32M 5000
+(gdb) monitor load_image /tmp/quark_d2000_rom_fm_hmac.bin 0x0
+(gdb) monitor load_image /tmp/hello.bin 0x00180000
+</pre><br>
+
+<p>
+完成<br>
+<img src="cpp_hello/1.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

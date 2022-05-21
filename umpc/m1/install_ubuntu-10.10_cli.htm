@@ -1,0 +1,170 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Mbook M1</h3>
+<p><b>安裝Ubuntu 10.10(CLI)</b></p>
+<hr size="1">
+<p>
+由於Ubuntu無線網路軟體(Applet)在操作Marvell SDIO SD8686網卡時，會造成系統大當機的情況發生，加上司徒對於Ubuntu系統也僅是使用編譯Kernel相關的套件，所以安裝Ubuntu(GUI System)系統就相當浪費硬碟空間(安裝完成至少需要3GB以上)，如果改安裝Ubuntu(Command-Line System)系統就可以節省相當多的硬碟空間(安裝完成僅需要600MB以上)，因此，司徒決定讓MBook M1安裝只有Command-Line的Ubuntu系統，順便回味一下最經典的Linux Command-Line System，而安裝完成後，Marvell SDIO SD8686已經可以正常運作，連線速度也比USB網卡好很多，因此，建議各位可以嘗試安裝看看<br><br>
+
+<b>步驟如下</b><br>
+1. 下載<a href="http://old-releases.ubuntu.com/releases/10.10/ubuntu-10.10-beta-alternate-i386.iso">Ubuntu Alternate 10.10 ISO</a>檔案<br>
+2. 下載<a href="http://www.marvell.com/support/downloads/search.do">Marvell Firmware</a>檔案(Linux 2.6 &gt; SD-8686-LINUX26-SYSKT-9.70.3.p24-26409.P45-GPL)<br>
+3. 使用UNetBootin軟體將ISO檔案製作到USB開機磁碟<br>
+4. 將下載的Ubuntu Alternate 10.10 ISO檔案複製到USB開機磁碟並且命名為cdrom.iso<br>
+5. 將Helper_SD.bin改名成SD8686_Helper.bin並且將SD8686.bin、SD8686_Helper.bin檔案複製到USB開機磁碟裡面<br>
+6. 使用USB磁碟開機<br>
+7. 進入安裝畫面後，選擇需要安裝的語言<br>
+8. 按F4選擇<b>Install a command-line system</b><br>
+9. 選擇Install Ubuntu<br>
+10. 按<b>Alt + F2</b>開啟Command Line視窗<br>
+11. 執行如下命令
+</p>
+
+<pre>
+# mount -t vfat /dev/sdb1 /mnt
+</pre>
+
+<p>
+12. 按<b>Alt + F1</b>跳回安裝畫面並繼續安裝<br>
+13. 當出現<b>No CD-ROM Drive</b>時，選擇不要從Removable Media載入CD-ROM Module<br>
+14. 選擇手動載入CD-ROM Drive並輸入如下路徑繼續安裝
+</p>
+<pre>
+/mnt/cdrom.iso
+</pre>
+
+<p>
+15. Ubuntu系統安裝完成後，將SD8686.bin、SD8686_Helper.bin檔案複製到<b>/lib/firmware</b>裡面並且開啟WIFI網卡<br>
+16. 將<b>/ect/apt/sources/list</b>檔案內容改成如下
+</p>
+<pre>
+deb http://old-releases.ubuntu.com/ubuntu/ maverick main restricted universe multiverse
+deb http://old-releases.ubuntu.com/ubuntu/ maverick-updates main restricted universe multiverse
+deb http://old-releases.ubuntu.com/ubuntu/ maverick-security main restricted universe multiverse
+
+deb-src http://old-releases.ubuntu.com/ubuntu/ maverick main restricted universe multiverse
+deb-src http://old-releases.ubuntu.com/ubuntu/ maverick-updates main restricted universe multiverse
+deb-src http://old-releases.ubuntu.com/ubuntu/ maverick-security main restricted universe multiverse
+</pre>
+
+<p>
+17. 執行如下命令(更新系統)<br>
+</p>
+<pre>
+# apt-get update &amp;&amp; sudo apt-get dist-upgrade
+</pre>
+
+<p>
+18. 減少SSD硬碟的寫入次數(使用RAMDISK)，在<b>/etc/fstab</b>檔案新增以下內容
+</p>
+<pre>
+tmpfs  /var/log   tmpfs  defaults  0  0
+tmpfs  /tmp     tmpfs  defaults  0  0
+tmpfs  /var/tmp   tmpfs  defaults  0  0
+</pre>
+
+<p>
+並在<b>/etc/rc.local</b>檔案中的<b>exit 0</b>前加入以下內容
+</p>
+<pre>
+for dir in apparmor apt news cups dist-upgrade fsck gdm installer samba unattended-upgrades
+do
+  if [ ! -e /var/log/$dir ]
+  then
+      mkdir /var/log/$dir
+  fi
+done
+</pre>
+<p>
+19. 重新開機並且使用<b>df -l</b>命令查看掛載狀態是否正確<br>
+20. 減少Swap Space空間(使用<b>cat /proc/sys/vm/swappiness</b>查看)，編輯<b>/etc/sysctl.conf</b>檔案，在最後的地方加入
+</p>
+
+<pre>
+vm.swappiness=0
+</pre>
+<p>
+P.S. 注意，此步驟將會使Ubuntu系統無法進入睡眠狀態
+</p>
+
+<p>
+21. 優化SSD的存取效能，在<b>/etc/rc.local</b>檔案中的<b>exit 0</b>前加入以下內容
+</p>
+<pre>
+for dev in sda
+do
+  echo deadline &gt; "/sys/block/$dev/queue/scheduler"
+  echo 1 &gt; "/sys/block/$dev/queue/iosched/fifo_batch"
+done
+</pre>
+
+<p>
+或者在<b>/etc/default/grub</b>檔案中的<b>GRUB_CMDLINE_LINUX</b>加上<b>elevator=deadline</b>參數
+</p>
+<p>
+22. 節省USB的電力開銷，將如下內容加入<b>/etc/rc.local</b>尾端
+</p>
+<pre>
+echo auto &gt; /sys/bus/usb/devices/usb1/power/level
+echo auto &gt; /sys/bus/usb/devices/usb2/power/level
+echo auto &gt; /sys/bus/usb/devices/usb3/power/level
+echo auto &gt; /sys/bus/usb/devices/usb4/power/level
+echo auto &gt; /sys/bus/usb/devices/3-2/power/level
+</pre>
+<p>
+23. 重新開機
+</p>
+
+<p>
+<br><a href="../../umpc.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

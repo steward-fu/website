@@ -1,0 +1,356 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../../header.js"></script>
+<div id="page">
+<h3>Dingoo A320 &gt;&gt; Dingoo</h3>
+<p><b>解析App文件格式</b></p>
+<hr size="1">
+<p>
+丁果系統使用的執行檔是以副檔名<b>.app</b>結尾的檔案，這個檔案並非一般標準ELF檔案格式，司徒發現在X760+、GA330等掌機中，也是使用這種檔案格式，可見這些系統應該都是出於同一系統開發商，而爲了更了解這個檔案格式，司徒特地花了一些時間研究並整理此篇文章，看看將來是否有機會逆向移植這些優異的遊戲到其它平臺，分析過程如下說明。<br><br>
+
+依據丁果SDK開發包的Header檔案可以發現，*.app檔案是以如下固定格式爲檔頭：
+</p>
+<table>
+  <tr><td>CCDL (32Bytes)</td></tr>
+  <tr><td>Import Table (32Bytes)</td></tr>
+  <tr><td>Import String (Unit: 8Bytes)</td></tr>
+  <tr><td>Export Table (32Bytes)</td></tr>
+  <tr><td>Export String (Unit: 8Bytes)</td></tr>
+  <tr><td>Raw Table (32Bytes)</td></tr>
+  <tr><td>Raw Binary</td></tr>
+</table>
+<p>
+基本上，*.app的檔頭分成六個區塊，第一個區塊是固定的CCDL字串，接著是Import和Export Table，最後則是Binary程式主體，因此，從丁果SDK開發包可以發現，每次編譯後的ELF檔案會再度被包裝成*.app格式，而包裝的過程則是處理Import和Export Table並且把ELF檔頭去掉，這是因爲丁果系統是基於ucOS製作，所以自組檔頭也是合理，不然再包個ELF Parser也不見得輕鬆，接著司徒寫個Parser解析*.app檔案格式。<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;string.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;unistd.h&gt;
+
+typedef struct {
+  char     ident[4];
+  uint8_t  unknown[20];
+  uint8_t  padding[8];
+} __attribute__((__packed__)) _app_ccdl;
+
+typedef struct {
+  char     ident[4];
+  uint32_t unknown;
+  uint32_t offset;
+  uint32_t size;
+  uint8_t  padding[16];
+} __attribute__((__packed__)) _app_impt;
+
+typedef struct {
+  char     ident[4];
+  uint32_t unknown;
+  uint32_t offset;
+  uint32_t size;
+  uint8_t  padding[16];
+} __attribute__((__packed__)) _app_expt;
+
+typedef struct {
+  char     ident[4];
+  uint32_t unknown0;
+  uint32_t offset;
+  uint32_t size;
+  uint32_t unknown1;
+  uint32_t entry;
+  uint32_t origin;
+  uint32_t prog_size;
+} __attribute__((__packed__)) _app_rawd;
+
+typedef struct {
+  uint32_t str_offset;
+  uint32_t unknown[2];
+  uint32_t offset;
+} __attribute__((__packed__)) _app_impt_entry;
+
+typedef struct {
+  uint32_t str_offset;
+  uint32_t unknown[2];
+  uint32_t offset;
+} __attribute__((__packed__)) _app_expt_entry;
+
+uint32_t print_table(uint8_t *src, uint32_t off, uint32_t size)
+{
+  // find string table
+  uint8_t *p = src + off;
+  uint32_t str_off = off;
+  uint32_t cnt, total = size/sizeof(_app_impt_entry);
+  for(cnt=0; cnt&lt;total; cnt++){
+    if(((_app_impt_entry*)p)-&gt;unknown[1] &gt; 0x20000){
+      printf("  string: count(0x%x) offset(0x%x)\n", cnt, str_off);
+      break;
+    }
+    p+= sizeof(_app_impt_entry);
+    str_off+= sizeof(_app_impt_entry);
+  }
+
+  // print each import item
+  p = src + off;
+  for(cnt=0; cnt&lt;total; cnt++, p+= sizeof(_app_impt_entry)){
+    if(((_app_impt_entry*)p)-&gt;unknown[1] == 0x00000){
+      continue;
+    }
+    if(((_app_impt_entry*)p)-&gt;unknown[1] &gt; 0x20000){
+      break;
+    }
+    printf("  0x%x(%s)\n", ((_app_impt_entry*)p)-&gt;offset, &amp;src[((_app_impt_entry*)p)-&gt;str_offset + str_off]);
+  }
+  return str_off;
+}
+
+int main(int argc, char** argv)
+{
+  // check argument
+  printf("decode dingoo app back to binary file\n");
+  if(argc != 2){
+    printf("usage:\n  app2bin test.app\n");
+    return -1;
+  }
+ 
+  // read xxx.app
+  FILE* file = fopen(argv[1], "rb");
+  if(file == NULL) {
+    printf("failed to open app: %s", argv[1]);
+    return -1;
+  }
+  fseek(file, 0, SEEK_END);
+  uintptr_t len = ftell(file);
+  printf("app length: %d\n", len);
+  fseek(file, 0, SEEK_SET);
+  uint8_t* body = (uint8_t*)malloc(len);
+  if(body == NULL) {
+    printf("failed to allocate buffer for reading app\n");
+    fclose(file);
+    return -1;
+  }
+  fread(body, 1, len, file);
+  fclose(file);
+
+  // parsing
+  printf("parsing app...\n");  
+  _app_ccdl ccdl;
+  _app_impt impt;
+  _app_expt expt;
+  _app_rawd rawd;
+
+  // ccdl table
+  uint8_t *ptr = body;
+  if(memcmp(ptr, "CCDL", 4) != 0){
+    printf("invalid app file format (miss CCDL section)\n");
+    goto err;
+  }
+  ptr+= sizeof(_app_ccdl);
+
+  // import table
+  uint32_t cnt=0, total=0;
+  uint32_t off = ((_app_impt*)ptr)-&gt;offset;
+  uint32_t size = ((_app_impt*)ptr)-&gt;size;
+  if(memcmp(ptr, "IMPT", 4) != 0){
+    printf("invalid app file format (miss IMPT section)\n");
+    goto err;
+  }
+  printf("import offset: 0x%x\n", off);
+  printf("import size: 0x%x\n", size);
+  print_table(body, off, size);
+  ptr+= sizeof(_app_impt);
+
+  // export table
+  if(memcmp(ptr, "EXPT", 4) != 0){
+    printf("invalid app file format (miss EXPT section)\n");
+    goto err;
+  }
+  off = ((_app_rawd*)ptr)-&gt;offset;
+  size = ((_app_rawd*)ptr)-&gt;size;
+  printf("export offset: %d\n", off);
+  printf("export size: %d\n", size);
+  print_table(body, off, size);
+  ptr+= sizeof(_app_expt);
+  
+  if(memcmp(ptr, "RAWD", 4) != 0){
+    printf("invalid app file format (miss RAWD section)\n");
+    goto err;
+  }
+
+  // raw table
+  off = ((_app_rawd*)ptr)-&gt;offset;
+  size = ((_app_rawd*)ptr)-&gt;size;
+  printf("raw offset: %d\n", off);
+  printf("raw size: %d\n", size);
+  printf("raw entry: 0x%x\n", ((_app_rawd*)ptr)-&gt;entry);
+  printf("raw origin: 0x%x\n", ((_app_rawd*)ptr)-&gt;origin);
+  printf("raw prog_size: %d\n", ((_app_rawd*)ptr)-&gt;prog_size);
+  ptr+= sizeof(_app_rawd);
+
+  int fd = open("raw.bin", O_CREAT | O_WRONLY, S_IRUSR);
+  if(fd &lt; 0){
+    printf("failed to create out.elf file\n");
+    goto err;
+  }
+  write(fd, body+off, size);
+  close(fd);
+  printf("task done !\n");
+err:
+  free(body);
+  return 0;
+}
+</pre><br>
+
+<p>
+測試丁果最經典的七夜遊戲
+</p>
+<pre>
+$ sha1sum 7days.app
+33e5a1b7eb4a9329a1f5afea6714759e93c6e115  7days.app
+
+$ ./app2bin 7days.app 
+decode dingoo app back to binary file
+app length: 45732749
+parsing app...
+import offset: 0xa0
+import size: 0x860
+  string: count(0x48) offset(0x520)
+  0x80ad4500(abort)
+  0x80ad4508(printf)
+  0x80ad4510(sprintf)
+  0x80ad4518(fprintf)
+  0x80ad4520(strncasecmp)
+  0x80ad4528(malloc)
+  0x80ad4530(realloc)
+  0x80ad4538(free)
+  0x80ad4540(fread)
+  0x80ad4548(fwrite)
+  0x80ad4550(fseek)
+  0x80ad4558(LcdGetDisMode)
+  0x80ad4560(vxGoHome)
+  0x80ad4568(StartSwTimer)
+  0x80ad4570(free_irq)
+  0x80ad4578(fsys_RefreshCache)
+  0x80ad4580(strlen)
+  0x80ad4588(_lcd_set_frame)
+  0x80ad4590(_lcd_get_frame)
+  0x80ad4598(lcd_get_cframe)
+  0x80ad45a0(ap_lcd_set_frame)
+  0x80ad45a8(lcd_flip)
+  0x80ad45b0(__icache_invalidate_all)
+  0x80ad45b8(__dcache_writeback_all)
+  0x80ad45c0(TaskMediaFunStop)
+  0x80ad45c8(OSCPUSaveSR)
+  0x80ad45d0(OSCPURestoreSR)
+  0x80ad45d8(serial_getc)
+  0x80ad45e0(serial_putc)
+  0x80ad45e8(_kbd_get_status)
+  0x80ad45f0(get_game_vol)
+  0x80ad45f8(_kbd_get_key)
+  0x80ad4600(fsys_fopen)
+  0x80ad4608(fsys_fread)
+  0x80ad4610(fsys_fclose)
+  0x80ad4618(fsys_fseek)
+  0x80ad4620(fsys_ftell)
+  0x80ad4628(fsys_remove)
+  0x80ad4630(fsys_rename)
+  0x80ad4638(fsys_ferror)
+  0x80ad4640(fsys_feof)
+  0x80ad4648(fsys_fwrite)
+  0x80ad4650(fsys_findfirst)
+  0x80ad4658(fsys_findnext)
+  0x80ad4660(fsys_findclose)
+  0x80ad4668(fsys_flush_cache)
+  0x80ad4670(USB_Connect)
+  0x80ad4678(udc_attached)
+  0x80ad4680(USB_No_Connect)
+  0x80ad4688(waveout_open)
+  0x80ad4690(waveout_close)
+  0x80ad4698(waveout_close_at_once)
+  0x80ad46a0(waveout_set_volume)
+  0x80ad46a8(HP_Mute_sw)
+  0x80ad46b0(waveout_can_write)
+  0x80ad46b8(waveout_write)
+  0x80ad46c0(pcm_can_write)
+  0x80ad46c8(pcm_ioctl)
+  0x80ad46d0(OSTimeGet)
+  0x80ad46d8(OSTimeDly)
+  0x80ad46e0(OSSemPend)
+  0x80ad46e8(OSSemPost)
+  0x80ad46f0(OSSemCreate)
+  0x80ad46f8(OSTaskCreate)
+  0x80ad4700(OSSemDel)
+  0x80ad4708(OSTaskDel)
+  0x80ad4710(GetTickCount)
+  0x80ad4718(_sys_judge_event)
+  0x80ad4720(fsys_fopenW)
+  0x80ad4728(__to_unicode_le)
+  0x80ad4730(__to_locale_ansi)
+export offset: 2304
+export size: 64
+  string: count(0x3) offset(0x930)
+  0x80ad4824(getext)
+  0x80ad483c(AppMain)
+raw offset: 2368
+raw size: 1273280
+raw entry: 0x80ad4740
+raw origin: 0x80a00000
+raw prog_size: 1315408
+task done !
+</pre><br>
+
+<p>
+<br><a href="../../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

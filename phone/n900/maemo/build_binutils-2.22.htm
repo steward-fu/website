@@ -1,0 +1,149 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../../header.js"></script>
+<div id="page">
+<h3>Nokia N900 &gt;&gt; Maemo</h3>
+<p><b>build binutils 2.22</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://github.com/OlegGirko/binutils/blob/master/0001-Fix-newer-binutils-not-to-assert-on-non-existence-tag_FP_arch.patch">HardFP.patch</a><br><br>
+
+步驟如下：
+</p>
+<pre>
+$ cd
+$ wget https://ftp.gnu.org/gnu/binutils/binutils-2.22.tar.gz
+$ tar xvf binutils-2.22.tar.gz
+$ ./configure --enable-shared
+$ make
+</pre><br>
+<p>
+Patch
+</p>
+<pre class="brush:cpp">
+diff --git a/binutils-2.21/bfd/elf-attrs.c b/binutils-2.21/bfd/elf-attrs.c
+index e1893d3..01a1180 100644
+--- a/binutils-2.21/bfd/elf-attrs.c
++++ b/binutils-2.21/bfd/elf-attrs.c
+@@ -297,7 +297,7 @@ bfd_elf_add_obj_attr_int (bfd *abfd, int vendor, int tag, unsigned int i)
+   obj_attribute *attr;
+ 
+   attr = elf_new_obj_attr (abfd, vendor, tag);
+-  attr-&gt;type = _bfd_elf_obj_attrs_arg_type (abfd, vendor, tag);
++  attr-&gt;type = _bfd_elf_obj_attrs_arg_type (abfd, vendor, tag) | ATTR_TYPE_FLAG_EXIST;
+   attr-&gt;i = i;
+ }
+ 
+@@ -320,7 +320,7 @@ bfd_elf_add_obj_attr_string (bfd *abfd, int vendor, int tag, const char *s)
+   obj_attribute *attr;
+ 
+   attr = elf_new_obj_attr (abfd, vendor, tag);
+-  attr-&gt;type = _bfd_elf_obj_attrs_arg_type (abfd, vendor, tag);
++  attr-&gt;type = _bfd_elf_obj_attrs_arg_type (abfd, vendor, tag) | ATTR_TYPE_FLAG_EXIST;
+   attr-&gt;s = _bfd_elf_attr_strdup (abfd, s);
+ }
+ 
+@@ -332,7 +332,7 @@ bfd_elf_add_obj_attr_int_string (bfd *abfd, int vendor, int tag,
+   obj_attribute *attr;
+ 
+   attr = elf_new_obj_attr (abfd, vendor, tag);
+-  attr-&gt;type = _bfd_elf_obj_attrs_arg_type (abfd, vendor, tag);
++  attr-&gt;type = _bfd_elf_obj_attrs_arg_type (abfd, vendor, tag) | ATTR_TYPE_FLAG_EXIST;
+   attr-&gt;i = i;
+   attr-&gt;s = _bfd_elf_attr_strdup (abfd, s);
+ }
+diff --git a/binutils-2.21/bfd/elf-bfd.h b/binutils-2.21/bfd/elf-bfd.h
+index 2e607f8..3338ea7 100644
+--- a/binutils-2.21/bfd/elf-bfd.h
++++ b/binutils-2.21/bfd/elf-bfd.h
+@@ -1430,17 +1430,20 @@ struct bfd_elf_section_data
+ 
+ /* The value of an object attribute.  The type indicates whether the attribute
+    holds and integer, a string, or both.  It can also indicate that there can
+-   be no default (i.e. all values must be written to file, even zero).  */
++   be no default (i.e. all values must be written to file, even zero), and whether
++   it exists in bfd to begin with. */
+ 
+ typedef struct obj_attribute
+ {
+ #define ATTR_TYPE_FLAG_INT_VAL    (1 &lt;&lt; 0)
+ #define ATTR_TYPE_FLAG_STR_VAL    (1 &lt;&lt; 1)
+ #define ATTR_TYPE_FLAG_NO_DEFAULT (1 &lt;&lt; 2)
++#define ATTR_TYPE_FLAG_EXIST      (1 &lt;&lt; 3)
+ 
+ #define ATTR_TYPE_HAS_INT_VAL(TYPE)  ((TYPE) &amp; ATTR_TYPE_FLAG_INT_VAL)
+ #define ATTR_TYPE_HAS_STR_VAL(TYPE)  ((TYPE) &amp; ATTR_TYPE_FLAG_STR_VAL)
+ #define ATTR_TYPE_HAS_NO_DEFAULT(TYPE)  ((TYPE) &amp; ATTR_TYPE_FLAG_NO_DEFAULT)
++#define ATTR_TYPE_EXIST(TYPE)          ((TYPE) &amp; ATTR_TYPE_FLAG_EXIST)
+ 
+   int type;
+   unsigned int i;
+diff --git a/binutils-2.21/bfd/elf32-arm.c b/binutils-2.21/bfd/elf32-arm.c
+index ee920b7..e865d52 100644
+--- a/binutils-2.21/bfd/elf32-arm.c
++++ b/binutils-2.21/bfd/elf32-arm.c
+@@ -10197,7 +10197,9 @@ elf32_arm_merge_eabi_attributes (bfd *ibfd, bfd *obfd)
+      nothing.  */
+         else if (in_attr[i].i == 0)
+     {
+-      BFD_ASSERT (in_attr[Tag_ABI_HardFP_use].i == 0);
++           /* When linking against earlier version of object file, Tag_FP_arch may not
++              even exist, while Tag_ABI_HardFP_use is non-zero. */
++      BFD_ASSERT (!ATTR_TYPE_EXIST(in_attr[i].type) || in_attr[Tag_ABI_HardFP_use].i == 0);
+       break;
+     }
+</pre><br>
+
+<p>
+<br><a href="../../../phone.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,218 @@
+<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Windows NT Driver &gt;&gt; C/C++</h3>
+<p><b>Thread</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://github.com/steward-fu/ntdriver">Source Code</a><br>
+2. <a href="https://mropengate.blogspot.com/2015/01/operating-system-ch4-multithread.html">operating-system-ch4-multithread</a><br>
+3. <a href="https://www.tutorialspoint.com/user-level-threads-and-kernel-level-threads">user-level-threads-and-kernel-level-threads</a><br><br>
+
+Thread是一個最小的執行單位，一個Process可以產生多個Thread，在多核CPU上，產生的Thread可以同時的運作，這意謂著使用Thread技術可以用來改善效能，但是，每個Thread間的資料同步則是另一個課題，在此練習，司徒著重在教導使用者如何撰寫一個最基本的Thread，了解其架構後，使用者可以再更深入了解Thread需要面對的其它問題，而值得注意的是，Thread有區分User Thread和System Thread兩種，各有優缺點，細節可以參考如上的參考資訊。<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;wdm.h&gt;
+
+#define IOCTL_START CTL_CODE(FILE_DEVICE_UNKNOWN, 0x800, METHOD_BUFFERED, FILE_ANY_ACCESS)
+#define IOCTL_STOP  CTL_CODE(FILE_DEVICE_UNKNOWN, 0x801, METHOD_BUFFERED, FILE_ANY_ACCESS)
+
+#define DEV_NAME L"\\Device\\MyDriver"
+#define SYM_NAME L"\\DosDevices\\MyDriver"
+
+PVOID pThread=NULL;
+volatile BOOLEAN bExit=FALSE;
+
+VOID MyThread(PVOID pParam)
+{
+  LARGE_INTEGER stTime;
+
+  stTime.HighPart|= -1;
+  stTime.LowPart = -10000000;
+  DbgPrint("Current process: %s", (char*)((ULONG)IoGetCurrentProcess() + 0x174));
+  while(bExit != TRUE){
+    KeDelayExecutionThread(KernelMode, FALSE, &amp;stTime);
+    DbgPrint("Sleep 1s");
+  }
+  DbgPrint("Exit MyThread");
+  PsTerminateSystemThread(STATUS_SUCCESS);
+}
+
+void Unload(PDRIVER_OBJECT pOurDriver)
+{
+  UNICODE_STRING usSymboName;
+           
+  RtlInitUnicodeString(&amp;usSymboName, L"\\DosDevices\\MyDriver");
+  IoDeleteSymbolicLink(&amp;usSymboName);
+  IoDeleteDevice(pOurDriver-&gt;DeviceObject);
+}
+
+NTSTATUS IrpIOCTL(PDEVICE_OBJECT pOurDevice, PIRP pIrp)
+{
+  HANDLE hThread;
+  NTSTATUS status;
+  PIO_STACK_LOCATION psk = IoGetCurrentIrpStackLocation(pIrp);
+
+  switch(psk-&gt;Parameters.DeviceIoControl.IoControlCode){
+  case IOCTL_START:
+    DbgPrint("IOCTL_START");
+    bExit = FALSE;
+    
+    // user thread
+    status = PsCreateSystemThread(&amp;hThread, THREAD_ALL_ACCESS, NULL, (PHANDLE)-1, NULL, MyThread, (PVOID)pOurDevice);
+    
+    // system thread
+    //status = PsCreateSystemThread(&amp;hThread, THREAD_ALL_ACCESS, NULL, NULL, NULL, MyThread, pOurDevice);
+    
+    if(status == STATUS_SUCCESS){
+      ObReferenceObjectByHandle(hThread, THREAD_ALL_ACCESS, NULL, KernelMode, &amp;pThread, NULL);
+      ZwClose(hThread);
+    }
+    break;
+  case IOCTL_STOP:
+    DbgPrint("IOCTL_STOP");
+    bExit = TRUE;
+    if(pThread != NULL){
+      KeWaitForSingleObject(pThread, Executive, KernelMode, FALSE, NULL);
+      ObDereferenceObject(pThread);
+    }
+    break;
+  }
+  pIrp-&gt;IoStatus.Information = 0;
+  pIrp-&gt;IoStatus.Status = STATUS_SUCCESS;
+  IoCompleteRequest(pIrp, IO_NO_INCREMENT);
+  return STATUS_SUCCESS;
+}
+
+NTSTATUS IrpFile(PDEVICE_OBJECT pOurDevice, PIRP pIrp)
+{
+  PIO_STACK_LOCATION psk = IoGetCurrentIrpStackLocation(pIrp);
+
+  switch(psk-&gt;MajorFunction){
+  case IRP_MJ_CREATE:
+    DbgPrint("IRP_MJ_CREATE");
+    break;
+  case IRP_MJ_CLOSE:
+    DbgPrint("IRP_MJ_CLOSE");
+    break;
+  }
+  IoCompleteRequest(pIrp, IO_NO_INCREMENT);
+  return STATUS_SUCCESS;
+}
+
+NTSTATUS DriverEntry(PDRIVER_OBJECT pOurDriver, PUNICODE_STRING pOurRegistry)
+{
+  PDEVICE_OBJECT pOurDevice=NULL;
+  UNICODE_STRING usDeviceName;
+  UNICODE_STRING usSymboName;
+      
+  pOurDriver-&gt;MajorFunction[IRP_MJ_CREATE] =
+  pOurDriver-&gt;MajorFunction[IRP_MJ_CLOSE] = IrpFile;
+  pOurDriver-&gt;MajorFunction[IRP_MJ_DEVICE_CONTROL] = IrpIOCTL;
+  pOurDriver-&gt;DriverUnload = Unload;
+        
+  RtlInitUnicodeString(&amp;usDeviceName, L"\\Device\\MyDriver");
+  IoCreateDevice(pOurDriver, 0, &amp;usDeviceName, FILE_DEVICE_UNKNOWN, 0, FALSE, &amp;pOurDevice);
+  RtlInitUnicodeString(&amp;usSymboName, L"\\DosDevices\\MyDriver");
+  IoCreateSymbolicLink(&amp;usSymboName, &amp;usDeviceName);
+  pOurDevice-&gt;Flags&amp;= ~DO_DEVICE_INITIALIZING;
+  pOurDevice-&gt;Flags|= DO_BUFFERED_IO;
+  return STATUS_SUCCESS;
+}
+</pre>
+<p>
+<b>IrpIOCTL</b>收到IOCTL_START後，產生一個新的Thread(注意有User和System區分)，接著呼叫ZwClose()，值得注意的是，這個ZwClose()僅是釋放Handle的資源，實際Thread並不會被關閉，原因在於提前做ObReferenceObjectByHandle()，而當收到IOCTL_STOP，則設定bExit並等待Thread結束，最後呼叫ObDereferenceObject()釋放Object資源。<br><br>
+
+app.c
+</p>
+<pre class="brush:cpp">
+#define INITGUID
+#include &lt;windows.h&gt;
+#include &lt;winioctl.h&gt;
+#include &lt;strsafe.h&gt;
+#include &lt;setupapi.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+#define IOCTL_START CTL_CODE(FILE_DEVICE_UNKNOWN, 0x800, METHOD_BUFFERED, FILE_ANY_ACCESS)
+#define IOCTL_STOP  CTL_CODE(FILE_DEVICE_UNKNOWN, 0x801, METHOD_BUFFERED, FILE_ANY_ACCESS)
+
+int __cdecl main(int argc, char* argv[])
+{
+  HANDLE hFile = NULL;
+  DWORD dwRet = 0;
+
+  hFile = CreateFile("\\\\.\\MyDriver", GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+  if (hFile == INVALID_HANDLE_VALUE) {
+    printf("failed to open mydriver\n");
+    return -1;
+  }
+  DeviceIoControl(hFile, IOCTL_START, NULL, 0, NULL, 0, &amp;dwRet, NULL);
+  Sleep(3000);
+  DeviceIoControl(hFile, IOCTL_STOP, NULL, 0, NULL, 0, &amp;dwRet, NULL);
+  CloseHandle(hFile);
+  return 0;
+}
+</pre><br>
+
+<p>
+結果<br>
+<img src="../wdm/asm_thread/1.jpg" class="maxSize"><br>
+<img src="../wdm/asm_thread/2.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../driver.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

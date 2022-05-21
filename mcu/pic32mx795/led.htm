@@ -1,0 +1,123 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>PIC32MX795F512L &gt;&gt; C/C++</h3>
+<p><b>LED</b></p>
+<hr size="1">
+<p>
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+#define TRISECLR *((volatile unsigned long*)0xBF886104)
+#define PORTECLR *((volatile unsigned long*)0xBF886114)
+#define PORTESET *((volatile unsigned long*)0xBF886118)
+
+void sdelay(void)
+{
+  unsigned int cnt=5000;
+  while(cnt--);
+}
+
+int main(int argc, char** argv)
+{
+  TRISECLR = 0x0f;
+  PORTESET = 0xff;
+  while(1){
+    PORTECLR = 0x01;
+    PORTESET = 0x06;
+    sdelay();
+
+    PORTECLR = 0x02;
+    PORTESET = 0x05;
+    sdelay();
+    
+    PORTECLR = 0x04;
+    PORTESET = 0x03;
+    sdelay();
+  }
+  return 0;
+}
+</pre><br>
+
+<p>
+Makefile
+</p>
+<pre>
+all:
+  xc32-gcc main.c -o main.elf
+  xc32-bin2hex main.elf main.hex
+
+clean:
+  rm -rf main.hex main.elf
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ export PATH=$PATH:/opt/microchip/xc32/v2.05/bin/
+$ make clean
+$ make
+</pre>
+<p>
+P.S. 接著使用MPLAB IPE燒錄main.hex檔案就可以<br><br>
+
+完成<br>
+<img src="led/1.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

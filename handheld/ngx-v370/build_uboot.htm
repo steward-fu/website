@@ -1,0 +1,136 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>SNK NeoGeo X v370</h3>
+<p><b>build uboot</b></p>
+<hr size="1">
+<p>
+為了達到可以從NeoGeo X掌機的SDCard(SDCard1)開機，司徒決定開始研究北京君正釋出的UBoot程式，在開始研究UBoot程式前，必須先編譯一次官方UBoot程式查看有無問題，若沒有問題再使用此份UBoot程式做修改，這樣可以比較快速修改成司徒想要的功能。<br><br>
+
+下載如下檔案：<br>
+1. <a href="ftp://ftp.ingenic.cn/3sw/01linux/01loader/u-boot/u-boot-1.1.6.tar.bz2">UBoot(v1.1.6)程式碼</a><br>
+2. <a href="ftp://ftp.ingenic.cn/3sw/JZ4770/01LinuxBsp/20110729/source/u-boot-1.1.6-jz-20110719-r1728-FR1.patch.gz">JZ4770 Patch檔案</a><br>
+3. <a href="ftp://ftp.ingenic.cn/3sw/01linux/00toolchain/mipseltools-gcc412-glibc261.tar.bz2">Toolchain工具</a><br><br>
+
+接著使用如下指令進行編譯(Ubuntu)
+</p>
+<pre>
+$ cp mipseltools-gcc412-glibc261.tar.bz2 /opt
+$ cp u-boot-1.1.6.tar.bz2 /tmp
+$ cp u-boot-1.1.6-jz-20110719-r1728-FR1.patch.gz /tmp
+$ cd /opt
+$ tar xjf mipseltools-gcc412-glibc261.tar.bz2
+$ export PATH=/opt/mipseltools-gcc412-glibc261/bin:$PATH
+$ cd /tmp
+$ tar xjf u-boot-1.1.6.tar.bz2
+$ cd u-boot-1.1.6
+$ gzip -cd ../u-boot-1.1.6-jz-20110719-r1728-FR1.patch.gz | patch -p1
+$ make pisces_msc_config
+$ make
+</pre><br>
+
+<p>
+若編譯成功，則在UBoot根目錄可以找到<b>mbr-uboot-msc.bin</b>檔案，該檔案就是UBoot的Binary檔案，使用者可以使用Windows的WinHEX或者Linux的dd指令Clone到MicroSD，並且從SDCard0開機測試，司徒測試後的結果如下(Baudrate: 57600bps)
+</p>
+<pre>
+ MMC init ok
+</pre>
+<p>
+從上面的開機訊息可以知道是從Flash Memory啟動的訊息，但是，司徒目前只能先測試SDCard0，因此需要更改成SDCard0啟動的方式，修改的地方位於<b>include/configs/pisces.h</b>檔案中的第38行，改成如下定義並且重新編譯一次即可
+</p>
+
+<pre class="brush:cpp">
+#ifdef CONFIG_MSC_U_BOOT
+ #define CONFIG_MSC_TYPE_SD
+#endif
+</pre><br>
+
+<p>
+再度燒錄測試的結果如下(Baudrate: 57600bps)
+</p>
+
+<pre>
+SD card found!
+init ok
+
+U-Boot 1.1.6 (Jan 17 2013 - 22:58:30)
+Board: Ingenic Pisces (CPU Speed 1008 MHz)
+DRAM:  512 MB   Ram size &gt; EMC_LOW_SDRAM_SPACE_SIZE, set ram size = EMC_LOW_SDRAM_SPACE_SIZE: 256 MB
+Error: Unknown flash ID, force set to 'SST_ID_39SF040'
+Flash: 512 kB
+NAND:nand_get_flash_type: No NAND device found!!!
+NAND device: dev_id: 0x0000 ext_id: 0x000000 not known!
+nand_scan: No NAND device found!!!
+0 MiB
+SD init ok
+*** Warning - MMC/SD first load, using default environment
+
+In:    serial
+Out:   serial
+Err:   serial
+Net:   JZ ETHERNET
+Hit any key to stop autoboot:  0
+
+MSC readSD init ok
+3145728 bytes OK:
+## Booting image at 80600000 ...
+Bad Magic Number
+F4770 #
+</pre>
+
+<p>
+由上面的輸出訊息可以得知，目前的UBoot程式已經可以從SDCard0啟動，接著司徒就可以開始測試如何從SDCard(SDCard1)載入Kernel檔案。
+</p>
+
+<p>
+<br><a href="../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

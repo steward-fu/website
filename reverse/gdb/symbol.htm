@@ -1,0 +1,277 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>GDB</h3>
+<p><b>Load Symbol File</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://ephrain.net/gdb-%E8%BC%89%E5%85%A5%E6%9F%90%E5%80%8B-library-%E7%9A%84-symbol-file/">gdb-library-symbol-file</a><br><br>
+
+一般release給客戶的檔案都是移掉debug資訊的檔案，不過，在編譯release檔案時，通常會額外編譯一份具有debug symbol的檔案，如何透過這份debug檔案除錯，就是這次要介紹的東西<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+
+void test(int, char*);
+
+int main(int argc, char** argv)
+{
+  test(1, "I am error !");
+  return 0;
+}
+</pre><br>
+
+<p>
+m.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+void test(int a1, char* a2)
+{
+  printf("a1:%d, a2:%s\n", a1, a2);
+}
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ gcc m.c -no-pie -fPIC -shared -o m.so
+$ gcc m.c -no-pie -fPIC -shared -ggdb -o m.so.debug
+$ gcc main.c -o main m.so
+
+$ strip m.so
+$ strip main
+
+$ file main m.so m.so.debug
+main:       ELF 64-bit LSB pie executable, x86-64, version 1 (SYSV), dynamically linked, stripped
+m.so:       ELF 64-bit LSB pie executable, x86-64, version 1 (SYSV), dynamically linked, stripped
+m.so.debug: ELF 64-bit LSB pie executable, x86-64, version 1 (SYSV), dynamically linked, with debug_info, not stripped
+</pre><br>
+
+<p>
+設定斷點在test()
+</p>
+<pre>
+$ gdb main
+  GNU gdb (Debian 8.2.1-2+b3) 8.2.1
+  Copyright (C) 2018 Free Software Foundation, Inc.
+  License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+  This is free software: you are free to change and redistribute it.
+  There is NO WARRANTY, to the extent permitted by law.
+  Type "show copying" and "show warranty" for details.
+  This GDB was configured as "x86_64-linux-gnu".
+  Type "show configuration" for configuration details.
+  For bug reporting instructions, please see:
+  <http://www.gnu.org/software/gdb/bugs/>.
+  Find the GDB manual and other documentation resources online at:
+      <http://www.gnu.org/software/gdb/documentation/>.
+
+  For help, type "help".
+  Type "apropos word" to search for commands related to "word"...
+  Reading symbols from main...(no debugging symbols found)...done.
+
+(gdb) b test
+  Breakpoint 1 at 0x1030
+
+(gdb) r
+  Starting program: /home/steward/Downloads/test/main
+  Breakpoint 1, 0x00007ffff7fca109 in test () from ./m.so
+</pre><br>
+
+<p>
+由於沒有debug symbol，無法看到多餘資訊
+</p>
+<pre>
+(gdb) bt
+  #0  0x00007ffff7fca109 in test () from ./m.so
+  #1  0x0000555555555155 in ?? ()
+  #2  0x00007ffff7de509b in __libc_start_main (main=0x555555555135, argc=1, argv=0x7fffffffe178, init=<optimized out>, fini=<optimized out>, rtld_fini=<optimized out>,
+      stack_end=0x7fffffffe168) at ../csu/libc-start.c:308
+  #3  0x000055555555507a in ?? ()
+
+(gdb) list
+  1	../sysdeps/x86/dl-procinfo.c: No such file or directory.
+</pre><br>
+
+<p>
+載入具有debug symbol的檔案
+</p>
+<pre>
+(gdb) add-symbol-file m.so.debug
+  add symbol table from file "m.so.debug"
+  (y or n) y
+  Reading symbols from m.so.debug...done.
+</pre><br>
+
+<p>
+不過，竟然還是無法看到相關資訊
+</p>
+<pre>
+(gdb) bt
+  #0  0x00007ffff7fca109 in test () from ./m.so
+  #1  0x0000555555555155 in ?? ()
+  #2  0x00007ffff7de509b in __libc_start_main (main=0x555555555135, argc=1, argv=0x7fffffffe178, init=<optimized out>, fini=<optimized out>, rtld_fini=<optimized out>,
+      stack_end=0x7fffffffe168) at ../csu/libc-start.c:308
+  #3  0x000055555555507a in ?? ()
+
+(gdb) list
+  1	in ../sysdeps/x86/dl-procinfo.c
+</pre><br>
+
+<p>
+仔細一看，竟然有兩個斷點，代表載入兩份程式
+</p>
+<pre>
+(gdb) info b
+  Num     Type           Disp Enb Address            What
+  1       breakpoint     keep y   <MULTIPLE>
+    breakpoint already hit 1 time
+  1.1                         y     0x0000000000001105 in test at m.c:5
+  1.2                         y     0x00007ffff7fca109 <test+4>
+</pre><br>
+
+<p>
+接著移除debug symbol檔案
+</p>
+<pre>
+(gdb) symbol-file
+  Discard symbol table from `/home/steward/Downloads/test/main'? (y or n) y
+  No symbol file now.
+</pre><br>
+
+<p>
+列出m.so的位址
+</p>
+<pre>
+(gdb) info sharedlibrary
+  From                To                  Syms Read   Shared Object Library
+  0x00007ffff7fca050  0x00007ffff7fca131  No          ./m.so
+  0x00007ffff7de3320  0x00007ffff7f2939b  No          /lib/x86_64-linux-gnu/libc.so.6
+  0x00007ffff7fd6090  0x00007ffff7ff3b20  No          /lib64/ld-linux-x86-64.so.2
+</pre><br>
+
+<p>
+重新加載debug symbol的檔案到m.so的原本位址
+</p>
+<pre>
+(gdb) add-symbol-file m.so.debug 0x00007ffff7fca050
+  add symbol table from file "m.so.debug" at
+    .text_addr = 0x7ffff7fca050
+  (y or n) y
+  Reading symbols from m.so.debug...done.
+</pre><br>
+
+<p>
+重新設定斷點test()
+</p>
+<pre>
+(gdb) info b
+  Num     Type           Disp Enb Address            What
+  1       breakpoint     keep y   0x00007ffff7fca114 in test at m.c:6
+    breakpoint already hit 1 time
+
+(gdb) del 1
+
+(gdb) b test
+  Breakpoint 2 at 0x7ffff7fca114: file m.c, line 6.
+
+(gdb) info b
+  Num     Type           Disp Enb Address            What
+  2       breakpoint     keep y   0x00007ffff7fca114 in test at m.c:6
+</pre><br>
+
+<p>
+重新執行main就可以看到除錯資訊
+<pre>
+(gdb) r
+  The program being debugged has been started already.
+  Start it from the beginning? (y or n) y
+  Starting program: /home/steward/Downloads/test/main
+
+  Breakpoint 2, test (a1=1, a2=0x555555556004 "I am error !") at m.c:6
+  6	  printf("a1:%d, a2:%s\n", a1, a2);
+
+(gdb) list
+  1	#include <stdio.h>
+  2	#include <stdlib.h>
+  3
+  4	void test(int a1, char* a2)
+  5	{
+  6	  printf("a1:%d, a2:%s\n", a1, a2);
+  7	}
+
+(gdb) p a1
+  $1 = 1
+
+(gdb) p a2
+  $2 = 0x555555556004 "I am error !"
+
+(gdb) info f
+  Stack level 0, frame at 0x7fffffffe080:
+   rip = 0x7ffff7fca114 in test (m.c:6); saved rip = 0x555555555155
+   called by frame at 0x7fffffffe088
+   source language c.
+   Arglist at 0x7fffffffe070, args: a1=1, a2=0x555555556004 "I am error !"
+   Locals at 0x7fffffffe070, Previous frame's sp is 0x7fffffffe080
+   Saved registers:
+    rbp at 0x7fffffffe070, rip at 0x7fffffffe078
+</pre><br>
+
+<p>
+<br><a href="../../reverse.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

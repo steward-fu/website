@@ -1,0 +1,172 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../../header.js"></script>
+<div id="page">
+<h3>Pandora Rebirth</h3>
+<p><b>移植PCSX ReARMed(支援振動功能)</b></p>
+<hr size="1">
+<p>
+移植部份：
+</p>
+<pre class="brush:cpp">
+diff -Naur old/frontend/pandora/ui_feat.h new/frontend/pandora/ui_feat.h
+--- old/frontend/pandora/ui_feat.h	2019-10-20 00:33:53.808949576 -0400
++++ new/frontend/pandora/ui_feat.h	2019-10-19 07:11:26.000000000 -0400
+@@ -7,7 +7,7 @@
+ #define MENU_SHOW_VOUTMODE 0
+ #define MENU_SHOW_SCALER2 0
+ #define MENU_SHOW_NUBS_BTNS 1
+-#define MENU_SHOW_VIBRATION 0
++#define MENU_SHOW_VIBRATION 1
+ #define MENU_SHOW_DEADZONE 0
+ #define MENU_SHOW_MINIMIZE 1
+ #define MENU_SHOW_FULLSCREEN 0
+diff -Naur old/frontend/plat_pandora.c new/frontend/plat_pandora.c
+--- old/frontend/plat_pandora.c	2019-10-20 00:33:53.808949576 -0400
++++ new/frontend/plat_pandora.c	2019-10-19 12:11:55.000000000 -0400
+@@ -6,6 +6,8 @@
+  */
+ 
+ #include &lt;stdio.h&gt;
++#include &lt;unistd.h&gt;
++#include &lt;fcntl.h&gt;
+ #include &lt;linux/input.h&gt;
+ 
+ #include "libpicofe/input.h"
+@@ -75,8 +77,16 @@
+ 	.kmap_size = sizeof(key_pbtn_map) / sizeof(key_pbtn_map[0]),
+ };
+ 
++static int gpio_fd[2]={0};
++static const char* gpio_name[2]={
++  "/sys/class/gpio/gpio58/value", 
++  "/sys/class/gpio/gpio64/value"
++};
++
+ int plat_init(void)
+ {
++  int x;
++
+ 	plat_omap_init();
+ 	plat_target_init();
+ 
+@@ -88,11 +98,22 @@
+ 	in_adev[1] = in_name_to_id("evdev:nub1");
+ 	in_adev_is_nublike[0] = in_adev_is_nublike[1] = 1;
+ 
++  for(x=0; x&lt;2; x++){
++    gpio_fd[x] = open(gpio_name[x], O_RDWR);
++  }
+ 	return 0;
+ }
+ 
+ void plat_finish(void)
+ {
++  int x;
++
++  for(x=0; x&lt;2; x++){
++    if(gpio_fd[x] &gt; 0){
++      close(gpio_fd[x]);
++      gpio_fd[x] = -1;
++    }
++  }
+ 	plat_omap_finish();
+ 	plat_target_finish();
+ }
+@@ -108,4 +129,17 @@
+ 
+ void plat_trigger_vibrate(int pad, int low, int high)
+ {
++  int x;
++
++  for(x=0; x&lt;2; x++){
++    if(gpio_fd[x] &gt; 0){
++      if(high &gt; 0x80){
++        write(gpio_fd[x], "1", 1);
++      }
++      if(high == 0){
++        write(gpio_fd[x], "0", 1);
++      }
++    }
++  }
+ }
++
+</pre><br>
+
+<p>
+Enable GPIO
+</p>
+<pre>
+$ sudo chmod 0777 /sys/class/gpio/export 
+$ sudo chmod 0777 /sys/class/gpio/unexport
+$ echo 58 > /sys/class/gpio/export 
+$ echo 64 > /sys/class/gpio/export
+$ sudo chmod 0777 /sys/class/gpio/gpio58/value
+$ sudo chmod 0777 /sys/class/gpio/gpio64/value
+$ sudo chmod 0777 /sys/class/gpio/gpio58/direction
+$ sudo chmod 0777 /sys/class/gpio/gpio64/direction
+$ echo "low" &gt; /sys/class/gpio/gpio58/direction
+$ echo "low" &gt; /sys/class/gpio/gpio64/direction
+</pre><br>
+
+<p>
+進入PCSX ReARMed後，記得設定成類比搖桿以及啟動振動功能<br>
+<img src="port_pcsx/1.jpg" class="maxSize"><br>
+<img src="port_pcsx/2.jpg" class="maxSize"><br><br>
+
+完美<br>
+<img src="port_pcsx/3.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

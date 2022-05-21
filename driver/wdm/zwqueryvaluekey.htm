@@ -1,0 +1,137 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Windows Driver Model</h3>
+<p><b>ZwQueryValueKey()使用方式</b></p>
+<hr size="1">
+<p>
+相較於RtlQueryRegistryValues()的使用方式，Zw相關的Registry API使用方式會比較貼近User Application的寫法，都會有Open、Query、Close這三個步驟，但是，比較麻煩的是Query還有分Basic、Full、Partial三種取得資料的方式。<br><br>
+
+副程式：
+</p>
+<pre class="brush:cpp">
+NTSTATUS GetRegistryValue(PCWSTR pwcsValueName, ULONG *pReturnLength, UCHAR *pucReturnBuffer, PWSTR pRegistryPath)
+{
+  HANDLE hKey;
+  ULONG ulLength=0;
+  NTSTATUS status;
+  OBJECT_ATTRIBUTES stObjAttr;
+  WCHAR wszKeyBuffer[255]={0};
+  UNICODE_STRING usKeyPath;
+  UNICODE_STRING valueName;
+  KEY_VALUE_PARTIAL_INFORMATION stKeyInfo;
+  PKEY_VALUE_PARTIAL_INFORMATION pstKeyInfo;
+
+  RtlInitUnicodeString(&amp;valueName, pwcsValueName);
+  usKeyPath.Buffer = wszKeyBuffer;
+  usKeyPath.MaximumLength = sizeof(wszKeyBuffer);
+  usKeyPath.Length = 0;
+  status = RtlUnicodeStringPrintf(&amp;usKeyPath, pRegistryPath);
+  if(!NT_SUCCESS(status)){
+    return status; 
+  }
+
+  InitializeObjectAttributes(&amp;stObjAttr, &amp;usKeyPath, OBJ_CASE_INSENSITIVE, NULL, NULL);
+  status = ZwOpenKey(&amp;hKey, KEY_ALL_ACCESS, &amp;stObjAttr);
+  if(!NT_SUCCESS(status)){
+    return status; 
+  }
+
+  ulLength = 0;
+  status = ZwQueryValueKey(hKey, &amp;valueName, KeyValuePartialInformation, &amp;stKeyInfo, sizeof(KEY_VALUE_PARTIAL_INFORMATION), &amp;ulLength);
+  if(!NT_SUCCESS(status) &amp;&amp; (status != STATUS_BUFFER_OVERFLOW) &amp;&amp; (status != STATUS_BUFFER_TOO_SMALL)){
+    ZwClose(hKey);
+    return status; 
+  }
+
+  pstKeyInfo = (PKEY_VALUE_PARTIAL_INFORMATION)ExAllocatePoolWithTag(NonPagedPool, ulLength, '1gaT');
+  if(pstKeyInfo == NULL){
+    ZwClose(hKey);
+    return status; 
+  }
+
+  status = ZwQueryValueKey(hKey, &amp;valueName, KeyValuePartialInformation, pstKeyInfo, ulLength, &amp;ulLength);
+  if(NT_SUCCESS(status)){
+    *pReturnLength = pstKeyInfo-&gt;DataLength;
+    RtlCopyMemory(pucReturnBuffer, pstKeyInfo-&gt;Data, pstKeyInfo-&gt;DataLength);
+  }
+  ExFreePool(pstKeyInfo);
+  ZwClose(hKey);
+  return STATUS_SUCCESS;
+}
+</pre>
+
+<p>
+上面這一段程式可以當成參考程式，使用者可以好好利用。該程式首先開啟Key位置，接著Query相關Value，目前司徒使用Partial的方式，其它兩種(Basic、Full)也都可以使用，而Query的方式也有另一種用途，那就是偵測實際需要的Buffer Size，如果使用者無法確定要讀取的Value需要多大的Buffer，可以使用司徒目前的做法，傳入0(ulLength)去取得需要的Buffer Size，然後再根據此Size動態配置記憶體，比較特別要注意的是，Query會自動將Value Type儲存在KEY_VALUE_PARTIAL_INFORMATION的變數中，因此，使用者就不需要再去查詢或固定Value的型態，當然，REG_DWORD、REG_BINARY、REG_SZ等型態都適用，當Query完之後，記得使用Close方式關閉。<br><br>
+
+呼叫範例：
+</p>
+<pre class="brush:cpp">
+ULONG ulLength;
+UCHAR aucTemp[255]={0};
+
+status = GetRegistryValue(L"Temp", &amp;ulLength, &amp;aucTemp, L"\\Registry\\Machine\\SYSTEM\\CurrentControlSet\\Services\\firstWDM\\Parameters\\");
+if(status != STATUS_SUCCESS){
+  DbgPrint("GetRegistryValue Failed: 0x%X\n", status);
+}
+else{
+  DbgPrint("GetRegistryValue Length: %d\n", ulLength);
+  DbgPrint("GetRegistryValue Value: Byte0:0x%X, Byte1:0x%X\n", aucTemp[0], aucTemp[1]);
+}
+</pre>
+<p>
+上面的範例是取得Key(L"\\Registry\\Machine\\SYSTEM\\CurrentControlSet\\Services\\firstWDM\\Parameters\\")下的Temp數值(REG_BINARY)。
+</p>
+
+<p>
+<br><a href="../../driver.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

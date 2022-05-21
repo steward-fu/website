@@ -1,0 +1,125 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Game Boy &gt;&gt; C/C++</h3>
+<p><b>Sprite</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://bgb.bircd.org/">bgb</a><br>
+2. <a href="http://gbdk.sourceforge.net/doc/html/book01.html">doc</a><br>
+3. <a href="https://github.com/mrombout/gbdk_playground">gbdk_playground</a><br><br>
+
+GBDK裡面的Sprite指的就是Object Attribute Memory(OAM)，而Tile指的則是Character RAM(單位是8x8 Pixels)<br><br>
+
+Tile設定
+</p>
+<pre class="brush:cpp">
+void set_sprite_data(UBYTE first_tile, UBYTE nb_tiles, unsigned char *data);
+</pre>
+<p>
+第一個參數是Tile位置(0~255)<br>
+第二個參數是需要複製多少個Tile像素(0代表256個)，每個Tile像素是8x8(16 Bytes)<br>
+第三個參數是Tile來源位置<br><br>
+
+Title指定
+</p>
+<pre class="brush:cpp">
+void set_sprite_tile(UBYTE nb, UBYTE tile);
+</pre>
+<p>
+第一個參數是OAM的索引(0~39)<br>
+第二個參數是Tile位置(0~255)<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;gb/gb.h&gt;
+
+unsigned char sprite[]={
+  0x7e, // .xxxxxx.
+  0x7e, // .xxxxxx.
+  0x99, // x..xx..x
+  0x99, // x..xx..x
+  0x81, // x......x
+  0x81, // x......x
+  0xa5, // x.x..x.x
+  0xa5, // x.x..x.x
+  0x81, // x......x
+  0x81, // x......x
+  0xdb, // xx.xx.xx
+  0xdb, // xx.xx.xx
+  0xc3, // xx....xx
+  0xc3, // xx....xx
+  0x3c, // ..xxxx..
+  0x3c  // ..xxxx..
+};
+
+void main(void)
+{
+  SPRITES_8x8;
+  set_sprite_data(0, 1, sprite);
+  set_sprite_tile(0, 0);
+  move_sprite(0, 50, 50);
+  SHOW_SPRITES;
+}
+</pre><br>
+
+<p>
+完成<br>
+<img src="cpp_sprite/1.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../emu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,171 @@
+<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Windows Driver Model &gt;&gt; C/C++ &gt;&gt; Synchronization</h3>
+<p><b>Mutex</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://github.com/steward-fu/wdm">Source Code</a><br><br>
+
+Mutex是一個互斥的機制，有點類似Spin Lock，當有CPU取得Mutex後，其餘CPU會處於Wait狀態，而相較於Spin Lock，Mutex並不會讓CPU處於忙碌的狀態，也不會提升到DISPATCH_LEVEL，是一個相當適合用來做序列化的機制，使用步驟如下：<br>
+1. KeInitializeMutex()<br>
+2. KeWaitForSingleObject()<br>
+3. KeReleaseMutex()<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;wdm.h&gt;
+
+#define DEV_NAME L"\\Device\\MyDriver"
+#define SYM_NAME L"\\DosDevices\\MyDriver"
+
+#define MAX_THREAD 3
+
+KMUTEX myMutex={0};
+PVOID pThread[MAX_THREAD]={0};
+PDEVICE_OBJECT pNextDevice=NULL;
+
+void MyThread(PVOID pParam)
+{
+  int t=(int)pParam;
+  NTSTATUS status=0;
+  LARGE_INTEGER stTime;
+ 
+  stTime.HighPart|= -1;
+  stTime.LowPart = -10000000;
+  DbgPrint("Thread%d, Acquiring Mutex", t);
+  status = KeWaitForSingleObject(&amp;myMutex, Executive, KernelMode, FALSE, NULL);
+  DbgPrint("Thread%d, Acquired Mutex", t);
+  DbgPrint("Thread%d, Sleeping", t);
+  KeDelayExecutionThread(KernelMode, FALSE, &amp;stTime);
+  DbgPrint("Thread%d, Releasing Mutex", t);
+  KeReleaseMutex(&amp;myMutex, FALSE);
+  DbgPrint("Thread%d, Released Mutex", t);
+  PsTerminateSystemThread(STATUS_SUCCESS);
+}
+
+NTSTATUS AddDevice(PDRIVER_OBJECT pOurDriver, PDEVICE_OBJECT pPhyDevice)
+{
+  PDEVICE_OBJECT pOurDevice=NULL;
+  UNICODE_STRING usDeviceName;
+  UNICODE_STRING usSymboName;
+
+  RtlInitUnicodeString(&amp;usDeviceName, DEV_NAME);
+  IoCreateDevice(pOurDriver, 0, &amp;usDeviceName, FILE_DEVICE_UNKNOWN, 0, FALSE, &amp;pOurDevice);
+  RtlInitUnicodeString(&amp;usSymboName, SYM_NAME);
+  IoCreateSymbolicLink(&amp;usSymboName, &amp;usDeviceName);
+  pNextDevice = IoAttachDeviceToDeviceStack(pOurDevice, pPhyDevice);
+  pOurDevice-&gt;Flags&amp;= ~DO_DEVICE_INITIALIZING;
+  pOurDevice-&gt;Flags|= DO_BUFFERED_IO;
+  return STATUS_SUCCESS;
+}
+
+void Unload(PDRIVER_OBJECT pOurDriver)
+{
+  pOurDriver = pOurDriver;
+}
+
+NTSTATUS IrpPnp(PDEVICE_OBJECT pOurDevice, PIRP pIrp)
+{
+  int cc=0;
+  UNICODE_STRING usSymboName={0};
+  PIO_STACK_LOCATION psk = IoGetCurrentIrpStackLocation(pIrp);
+
+  if(psk-&gt;MinorFunction == IRP_MN_REMOVE_DEVICE){
+    for(cc=0; cc&lt;MAX_THREAD; cc++){
+      if(pThread[cc] != NULL){
+        KeWaitForSingleObject(pThread[cc], Executive, KernelMode, FALSE, NULL);
+        ObDereferenceObject(pThread[cc]);
+      }
+    }
+    RtlInitUnicodeString(&amp;usSymboName, SYM_NAME);
+    IoDeleteSymbolicLink(&amp;usSymboName);
+    IoDetachDevice(pNextDevice);
+    IoDeleteDevice(pOurDevice);
+  }
+  IoSkipCurrentIrpStackLocation(pIrp);
+  return IoCallDriver(pNextDevice, pIrp);
+}
+
+NTSTATUS DriverEntry(PDRIVER_OBJECT pOurDriver, PUNICODE_STRING pOurRegistry)
+{
+  int cc=0;
+  HANDLE hThread=0;
+  NTSTATUS status=0;
+
+  pOurDriver-&gt;MajorFunction[IRP_MJ_PNP] = IrpPnp;
+  pOurDriver-&gt;DriverExtension-&gt;AddDevice = AddDevice;
+  pOurDriver-&gt;DriverUnload = Unload;
+
+  KeInitializeMutex(&amp;myMutex, 0);
+  for(cc=0; cc&lt;MAX_THREAD; cc++){
+    status = PsCreateSystemThread(&amp;hThread, THREAD_ALL_ACCESS, NULL, (PHANDLE)-1, NULL, MyThread, (PVOID)cc);
+    if(status == STATUS_SUCCESS){
+      ObReferenceObjectByHandle(hThread, THREAD_ALL_ACCESS, NULL, KernelMode, &amp;pThread[cc], NULL);
+      ZwClose(hThread);
+    }
+  }
+  return STATUS_SUCCESS;
+}
+</pre>
+<p>
+<b>DriverEntry()</b>產生3個Thread，每個Thread會嘗試取得Mutex，一旦取得Mutex後，會延遲一秒後才釋放Mutex，達到一次只能有一個CPU執行的效果<br><br>
+
+結果<br>
+<img src="cpp_mutex/1.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../driver.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

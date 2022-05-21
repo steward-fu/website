@@ -1,0 +1,182 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushScad.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>STC15W204S</h3>
+<p><b>開發板</b></p>
+<hr size="1">
+<p>
+雖然司徒之前曾經自製STC15W204S PCB板，不過當初是爲了可以在N900上面開發測試，如今的目標已經慢慢變大，司徒想要在STC15W204S上面跑一些簡單的模擬器，因此，需要一個可以顯示的東西，用來確認結果，剛好司徒手上還有一個0.96" 128x64 OLED模組可以使用，而STC15W204S本身的Flash只有4KBytes，RAM則是256Bytes，稍有不足，爲此司徒特地掛上一顆W25Q128記憶體，用來當作擴展記憶體使用，整體電路相當簡單，如下所示：<br>
+<img src="develop/1.jpg" class="maxSize"><br><br>
+
+官方Pinout<br>
+<img src="pinout/1.jpg" class="maxSize"><br><br>
+
+所需材料<br>
+<img src="develop/2.jpg" class="maxSize"><br><br>
+
+解焊不需要的元件<br>
+<img src="develop/3.jpg" class="maxSize"><br><br>
+
+焊接完成，司徒使用AB膠加強固定<br>
+<img src="develop/4.jpg" class="maxSize"><br><br>
+
+正面<br>
+<img src="develop/5.jpg" class="maxSize"><br><br>
+
+還是一樣小巧可愛<br>
+<img src="develop/6.jpg" class="maxSize"><br><br>
+
+爲了攜帶方面，司徒特地使用OpenSCAD畫了一個保護殼<br>
+<img src="develop/11.jpg" class="maxSize"><br><br>
+
+程式如下：
+</p>
+<pre class="brush:scad">
+$fn = 100;
+
+union(){
+  difference(){
+    cube([28, 29, 10]);
+    translate([1, 1, 1]){
+      cube([26, 27, 20]);
+    }
+    translate([(28-12)/2, -1, 6]){
+      cube([12, 20, 20]);
+    }
+  }
+
+  difference(){
+    union(){
+      translate([0, 0, 0]){
+        cube([4.5, 5, 8]);
+      }
+      translate([0, 24, 0]){
+        cube([5, 5, 8]);
+      }
+      translate([28-4.5, 0, 0]){
+        cube([4.5, 5, 8]);
+      }
+      translate([23, 24, 0]){
+        cube([5, 5, 8]);
+      }
+    }
+    
+    translate([3, 4, 1]){
+      cylinder(10, 0.8, 0.8);
+    }
+    translate([3, 26, 1]){
+      cylinder(10, 0.8, 0.8);
+    }
+    translate([25, 4, 1]){
+      cylinder(10, 0.8, 0.8);
+    }
+    translate([25, 26, 1]){
+      cylinder(10, 0.8, 0.8);
+    }
+  }
+}
+
+translate([30, 0, 0]){
+  difference(){
+    cube([28, 29, 2]);
+    translate([1.5, 6, 0]){
+      cube([25, 18, 10]);
+    }
+    translate([(28-12)/2, 2, 0]){
+      cube([12, 20, 20]);
+    }
+    translate([3, 4, 0]){
+      cylinder(10, 0.8, 0.8);
+    }
+    translate([3, 26, 0]){
+      cylinder(10, 0.8, 0.8);
+    }
+    translate([25, 4, 0]){
+      cylinder(10, 0.8, 0.8);
+    }
+    translate([25, 26, 0]){
+      cylinder(10, 0.8, 0.8);
+    }
+    
+    translate([3, 4, 1.5]){
+      cylinder(10, 1.5, 1.5);
+    }
+    translate([3, 26, 1.5]){
+      cylinder(10, 1.5, 1.5);
+    }
+    translate([25, 4, 1.5]){
+      cylinder(10, 1.5, 1.5);
+    }
+    translate([25, 26, 1.5]){
+      cylinder(10, 1.5, 1.5);
+    }
+  }
+}
+
+</pre><br>
+<p>
+接著使用3D Printer列印<br>
+<img src="develop/7.jpg" class="maxSize"><br><br>
+
+列印完成<br>
+<img src="develop/8.jpg" class="maxSize"><br><br>
+
+尺寸相當剛好(+5V、GND、RX、TX)<br>
+<img src="develop/9.jpg" class="maxSize"><br><br>
+
+完成<br>
+<img src="develop/10.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

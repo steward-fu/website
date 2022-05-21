@@ -1,0 +1,169 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../../header.js"></script>
+<div id="page">
+<h3>Nokia N900 &gt;&gt; Sbox</h3>
+<p><b>解決"Screen Tearing"問題</b></p>
+<hr size="1">
+<p>
+雖然司徒之前已經有上網找尋這個問題，不過看到的解答都是無解，所以司徒便一直認定是N900的驅動問題，直到最近，司徒再度心血來潮，想說來解解看這個問題，這才發現OMAP2的顯示驅動似乎怪怪的，過程如下說明。<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;sys/ioctl.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;sys/mman.h&gt;
+#include &lt;string.h&gt;
+#include &lt;linux/fb.h&gt;
+#include &lt;linux/omapfb.h&gt;
+#include &lt;SDL.h&gt;
+#include &lt;SDL_image.h&gt;
+#include &lt;SDL_ttf.h&gt;
+
+int main(int argc, char* args[])
+{
+  int fd = open("/dev/fb0", O_RDWR);
+  SDL_Init(SDL_INIT_VIDEO);
+ 
+  SDL_Surface* screen;
+  screen = SDL_SetVideoMode(800, 480, 16, SDL_HWSURFACE | SDL_DOUBLEBUF | SDL_FULLSCREEN);
+  SDL_ShowCursor(0);
+
+  int index=0, cnt=200;
+  while(cnt--){
+    switch(index){
+    case 0:
+      SDL_FillRect(screen, &amp;screen-&gt;clip_rect, SDL_MapRGB(screen-&gt;format, 0xff, 0x00, 0x00));
+      break;
+    case 1:
+      SDL_FillRect(screen, &amp;screen-&gt;clip_rect, SDL_MapRGB(screen-&gt;format, 0x00, 0xff, 0x00));
+      break;
+    case 2:
+      SDL_FillRect(screen, &amp;screen-&gt;clip_rect, SDL_MapRGB(screen-&gt;format, 0x00, 0x00, 0xff));
+      break;
+    }
+    index+= 1;
+    if(index &gt;= 3){
+      index = 0;
+    }
+    SDL_Flip(screen);
+
+    int zero=0;
+    ioctl(fd, FBIO_WAITFORVSYNC, &amp;zero);
+    SDL_Delay(30);
+  }
+  close(fd);
+  SDL_Quit();
+  return 0;
+}
+</pre><br>
+
+<pre>
+$ dmesg
+</pre>
+<p>
+<img src="fix_screentearing/1.jpg" class="maxSize"><br><br>
+
+Kernel
+</p>
+<pre class="brush:cpp">
+int omapfb_ioctl(struct fb_info *fbi, unsigned int cmd, unsigned long arg)
+{
+  struct omapfb_info *ofbi = FB2OFB(fbi);
+  struct omapfb2_device *fbdev = ofbi-&gt;fbdev;
+  struct omap_display *display = fb2display(fbi);
+
+  ...
+  switch (cmd) {
+  ...
+  case OMAPFB_WAITFORVSYNC:
+    DBG("ioctl WAITFORVSYNC\n");
+    if (!display) {
+      r = -EINVAL;
+      break;
+    }
+
+    omap_dss_lock();
+    r = display-&gt;wait_vsync(display);
+    omap_dss_unlock();
+    break;
+
+  ...
+  default:
+    dev_err(fbdev-&gt;dev, "Unknown ioctl 0x%x\n", cmd);
+    r = -EINVAL;
+  }
+
+  if (r &lt; 0)
+    DBG("ioctl failed: %d\n", r);
+
+  return r;
+}
+</pre><br>
+
+<p>
+最後改成使用OMAPFB_WAITFORVSYNC即可解決Screen Tearing問題
+</p>
+<pre class="brush:cpp">
+ioctl(fd, OMAPFB_WAITFORVSYNC, &amp;zero);
+</pre><br>
+
+<p>
+<br><a href="../../../phone.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

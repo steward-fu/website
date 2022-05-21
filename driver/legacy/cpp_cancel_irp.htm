@@ -1,0 +1,238 @@
+<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Windows NT Driver &gt;&gt; C/C++</h3>
+<p><b>Cancel IRP</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://github.com/steward-fu/ntdriver">Source Code</a><br>
+2. <a href="https://docs.microsoft.com/en-us/windows-hardware/drivers/kernel/canceling-irps">canceling-irps</a><br><br>
+
+有處理Irp就會有Cancel Irp的時候，Cancel Irp本身就是一個很複雜的課題，司徒在這一篇教學不會做深入探討，有興趣的使用者可以參考上面的參考資訊，取而代之的，司徒只是點出，在處理Irp時，使用者要意識到該Irp可能已經被Cancel掉了，作法上，也是可以切割成很多時期，如：Irp處理前，Irp處裡中，Irp處裡後，因此，在設計驅動程式時，對於Cancel機制有必要嚴謹看待，因為，BSOD常常就是這樣發生了，不過司徒在此僅針對Irp處裡前，作簡單判斷，是否User Application已經Cancel這個Irp，如果沒有被Cancel，則Complete Irp，相反地，如果被Cancel，則Cancel Irp，Cancel作法如下：<br>
+1. CancelRoutine(NULL)<br>
+2. IoCompleteRequest(STATUS_CANCELLED)<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;wdm.h&gt;
+
+#define IOCTL_QUEUE   CTL_CODE(FILE_DEVICE_UNKNOWN, 0x800, METHOD_BUFFERED, FILE_ANY_ACCESS)
+#define IOCTL_PROCESS CTL_CODE(FILE_DEVICE_UNKNOWN, 0x801, METHOD_BUFFERED, FILE_ANY_ACCESS)
+
+#define DEV_NAME L"\\Device\\MyDriver"
+#define SYM_NAME L"\\DosDevices\\MyDriver"
+
+KDPC stDPC={0};
+KTIMER stTime={0};
+LIST_ENTRY stQueue={0};
+
+VOID OnTimer(struct _KDPC *Dpc, PVOID DeferredContext, PVOID SystemArgument1, PVOID SystemArgument2)
+{
+  PIRP pIrp;
+  PLIST_ENTRY plist;
+  if(IsListEmpty(&amp;stQueue) == TRUE){
+    KeCancelTimer(&amp;stTime);
+    DbgPrint("Finish");
+  }
+  else{
+    plist = RemoveHeadList(&amp;stQueue);
+    pIrp = CONTAINING_RECORD(plist, IRP, Tail.Overlay.ListEntry);
+    if(pIrp-&gt;Cancel != TRUE){
+      pIrp-&gt;IoStatus.Status = STATUS_SUCCESS;
+      pIrp-&gt;IoStatus.Information = 0;
+      IoCompleteRequest(pIrp, IO_NO_INCREMENT);
+      DbgPrint("Complete Irp");
+    }
+    else{
+      pIrp-&gt;CancelRoutine = NULL;
+      pIrp-&gt;IoStatus.Status = STATUS_CANCELLED;
+      pIrp-&gt;IoStatus.Information = 0;
+      IoCompleteRequest(pIrp, IO_NO_INCREMENT);
+      DbgPrint("Cancel Irp");
+    }
+  }
+}
+
+void Unload(PDRIVER_OBJECT pOurDriver)
+{
+  UNICODE_STRING usSymboName;
+                
+  RtlInitUnicodeString(&amp;usSymboName, L"\\DosDevices\\MyDriver");
+  IoDeleteSymbolicLink(&amp;usSymboName);
+  IoDeleteDevice(pOurDriver-&gt;DeviceObject);
+}
+
+NTSTATUS IrpIOCTL(PDEVICE_OBJECT pOurDevice, PIRP pIrp)
+{
+  LARGE_INTEGER stTimePeriod;
+  PIO_STACK_LOCATION psk = IoGetCurrentIrpStackLocation(pIrp);
+
+  switch(psk-&gt;Parameters.DeviceIoControl.IoControlCode){
+  case IOCTL_QUEUE:
+    DbgPrint("IOCTL_QUEUE");
+    InsertHeadList(&amp;stQueue, &amp;pIrp-&gt;Tail.Overlay.ListEntry);
+    IoMarkIrpPending(pIrp);
+    return STATUS_PENDING;
+  case IOCTL_PROCESS:
+    DbgPrint("IOCTL_PROCESS");
+    stTimePeriod.HighPart|= -1;
+    stTimePeriod.LowPart = -10000000;
+    KeSetTimerEx(&amp;stTime, stTimePeriod, 1000, &amp;stDPC);
+    break;
+  }
+  pIrp-&gt;IoStatus.Information = 0;
+  pIrp-&gt;IoStatus.Status = STATUS_SUCCESS;
+  IoCompleteRequest(pIrp, IO_NO_INCREMENT);
+  return STATUS_SUCCESS;
+}
+
+NTSTATUS IrpFile(PDEVICE_OBJECT pOurDevice, PIRP pIrp)
+{
+  PIO_STACK_LOCATION psk = IoGetCurrentIrpStackLocation(pIrp);
+
+  switch(psk-&gt;MajorFunction){
+  case IRP_MJ_CREATE:
+    DbgPrint("IRP_MJ_CREATE");
+    break;
+  case IRP_MJ_CLOSE:
+    DbgPrint("IRP_MJ_CLOSE");
+    break;
+  }
+  IoCompleteRequest(pIrp, IO_NO_INCREMENT);
+  return STATUS_SUCCESS;
+}
+
+NTSTATUS DriverEntry(PDRIVER_OBJECT pOurDriver, PUNICODE_STRING pOurRegistry)
+{
+  PDEVICE_OBJECT pOurDevice=NULL;
+  UNICODE_STRING usDeviceName;
+  UNICODE_STRING usSymboName;
+     
+  pOurDriver-&gt;MajorFunction[IRP_MJ_CREATE] =
+  pOurDriver-&gt;MajorFunction[IRP_MJ_CLOSE] = IrpFile;
+  pOurDriver-&gt;MajorFunction[IRP_MJ_DEVICE_CONTROL] = IrpIOCTL;
+  pOurDriver-&gt;DriverUnload = Unload;
+       
+  RtlInitUnicodeString(&amp;usDeviceName, L"\\Device\\MyDriver");
+  IoCreateDevice(pOurDriver, 0, &amp;usDeviceName, FILE_DEVICE_UNKNOWN, 0, FALSE, &amp;pOurDevice);
+  RtlInitUnicodeString(&amp;usSymboName, L"\\DosDevices\\MyDriver");
+  InitializeListHead(&amp;stQueue);
+  KeInitializeTimer(&amp;stTime);
+  KeInitializeDpc(&amp;stDPC, OnTimer, pOurDevice);
+  IoCreateSymbolicLink(&amp;usSymboName, &amp;usDeviceName);
+  pOurDevice-&gt;Flags&amp;= ~DO_DEVICE_INITIALIZING;
+  pOurDevice-&gt;Flags|= DO_BUFFERED_IO;
+  return STATUS_SUCCESS;
+}
+</pre>
+<p>
+<b>DriverEntry()</b>初始List以及DPC Timer，DPC Timer用來定期確認List是否還有資料需要處理，當然，使用Thread檢查或許更恰當些<br>
+<b>IrpIOCTL()</b>IOCTL_QUEUE代表該IOCTL會被Queue起來，稍後處理，而當收到IOCTL_PROCESS時，則啟動DPC Timer開始處理那些被Queue起來的Irp<br>
+<b>OnTimer()</b>處理Queue裡面的Irp，在處理前，先判斷該Irp是否已經被Cancel了<br><br>
+
+app.c
+</p>
+<pre class="brush:cpp">
+#define INITGUID
+#include &lt;windows.h&gt;
+#include &lt;winioctl.h&gt;
+#include &lt;strsafe.h&gt;
+#include &lt;setupapi.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+#define IOCTL_QUEUE   CTL_CODE(FILE_DEVICE_UNKNOWN, 0x800, METHOD_BUFFERED, FILE_ANY_ACCESS)
+#define IOCTL_PROCESS CTL_CODE(FILE_DEVICE_UNKNOWN, 0x801, METHOD_BUFFERED, FILE_ANY_ACCESS)
+
+int __cdecl main(int argc, char* argv[])
+{
+  int i=0;
+  DWORD dwRet = 0;
+  HANDLE hFile = NULL;
+  OVERLAPPED ov[3]={0};
+
+  hFile = CreateFile("\\\\.\\MyDriver", GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_FLAG_OVERLAPPED | FILE_ATTRIBUTE_NORMAL, NULL);
+  if (hFile == INVALID_HANDLE_VALUE) {
+    printf("failed to open mydriver\n");
+    return -1;
+  }
+  for(i=0; i&lt;3; i++){
+    memset(&amp;ov[i], 0, sizeof(ov[i]));
+    ov[i].hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+    printf("queue event\n");
+    DeviceIoControl(hFile, IOCTL_QUEUE, NULL, 0, NULL, 0, &amp;dwRet, &amp;ov[i]);
+  }
+  printf("process all of events\n");
+  DeviceIoControl(hFile, IOCTL_PROCESS, NULL, 0, NULL, 0, &amp;dwRet, NULL);
+  Sleep(1000);
+  CancelIo(hFile);
+  for(i=0; i&lt;3; i++){
+    WaitForSingleObject(ov[i].hEvent, INFINITE);
+    CloseHandle(ov[i].hEvent);
+    printf("wait complete\n");
+  }
+  CloseHandle(hFile);
+  return 0;
+}
+</pre><br>
+
+<p>
+結果<br>
+<img src="../wdm/asm_cancel_irp/1.jpg" class="maxSize"><br>
+<img src="../wdm/asm_cancel_irp/2.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../driver.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

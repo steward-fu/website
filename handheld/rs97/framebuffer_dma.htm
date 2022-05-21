@@ -1,0 +1,194 @@
+<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>RetroGame</h3>
+<p><b>write dma framebuffer</b></p>
+<hr size="1">
+<p>
+多數掌機使用的LCD輸出模組都會搭配DMA使用，藉此減輕CPU負擔，而加速顯示的最快方式則是軟體程式直接操作DMA暫存器，最典型的例子就是Notaz於Wiz掌機實作的PCSX ReARMed模擬器，Notaz將Wiz的硬體DMA暫存器映射成一塊顯示Buffer，然後SDL最後輸出畫面時，直接更新到該Buffer，接著Toggle DMA旗標輸出，成功讓PS模擬器加速運行。<br><br>
+
+RS97掌機由於具備較低的CPU速度，因此，司徒目前想到最快速的方式也就是Notaz這招，藉此提升PS模擬器的效能，但是，如何在RS97實作出DMA操作，則需要一個小程式測試，證明可以直接操作DMA暫存器並且可以輸出LCD畫面，但是比較大的問題在於DMA暫存器，因為目前Kernel還是只能使用官方的版本，因此，無法直接從Kernel配置DMA Buffer並設定給DMA暫存器，相反的，司徒則是直接讀取DMA指標並重新映射Buffer給軟體程式使用，而在畫面更新時，則不能呼叫SDL_Flip()，測試程式碼如下：
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;sys/mman.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;SDL.h&gt;
+#include &lt;SDL_image.h&gt;
+#include &lt;SDL_ttf.h&gt;
+
+#define DMA_BASE  0x13420000
+#define DSA0      (0x00 &gt;&gt; 2)
+#define DTA0      (0x04 &gt;&gt; 2)
+#define DTC0      (0x08 &gt;&gt; 2)
+#define DRT0      (0x0C &gt;&gt; 2)
+#define DCS0      (0x10 &gt;&gt; 2)
+#define DCM0      (0x14 &gt;&gt; 2)
+#define DDA0      (0x18 &gt;&gt; 2)
+#define DSD0      (0x1C &gt;&gt; 2)
+#define DSA1      (0x20 &gt;&gt; 2)
+#define DTA1      (0x24 &gt;&gt; 2)
+#define DTC1      (0x28 &gt;&gt; 2)
+#define DRT1      (0x2C &gt;&gt; 2)
+#define DCS1      (0x30 &gt;&gt; 2)
+#define DCM1      (0x34 &gt;&gt; 2)
+#define DDA1      (0x38 &gt;&gt; 2)
+#define DSD1      (0x3C &gt;&gt; 2)
+
+#define LCD_BASE  0x13050000
+#define LCDDA0    (0x40 &gt;&gt; 2)
+#define LCDSA0    (0x44 &gt;&gt; 2)
+#define LCDFID0   (0x48 &gt;&gt; 2)
+#define LCDCMD0   (0x4C &gt;&gt; 2)
+#define LCDDA1    (0x50 &gt;&gt; 2)
+#define LCDSA1    (0x54 &gt;&gt; 2)
+#define LCDFID1   (0x58 &gt;&gt; 2)
+#define LCDCMD1   (0x5C &gt;&gt; 2)
+
+#define PAGE_SIZE  1024
+
+int fd=-1;
+volatile unsigned long *mem;
+
+int map_it(unsigned long addr, unsigned long size)
+{
+  fd = open("/dev/mem", O_RDWR | O_SYNC);
+  if(fd &lt; 0){
+    printf("failed to open /dev/mem\n");
+    return -1;
+  }
+  mem = mmap(0, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, addr);
+  return 0;
+}
+
+void unmap_it(unsigned long size)
+{
+  munmap((void*)mem, size);
+  close(fd);
+}
+
+int main(int argc, char* argv[])
+{
+  uint32_t dma_addr;
+
+  map_it(LCD_BASE, PAGE_SIZE);
+  printf("LCDDA0: 0x%x\n", mem[LCDDA0]);
+  printf("LCDSA0: 0x%x\n", mem[LCDSA0]);
+  printf("LCDFID0: 0x%x\n", mem[LCDFID0]);
+  printf("LCDCMD0: 0x%x\n", mem[LCDCMD0]);
+
+  printf("LCDDA1: 0x%x\n", mem[LCDDA1]);
+  printf("LCDSA1: 0x%x\n", mem[LCDSA1]);
+  printf("LCDFID1: 0x%x\n", mem[LCDFID1]);
+  printf("LCDCMD1: 0x%x\n", mem[LCDCMD1]);
+
+  dma_addr = mem[LCDSA0];
+  unmap_it(PAGE_SIZE);
+
+  map_it(DMA_BASE, PAGE_SIZE);
+  printf("DSA0: 0x%x\n", mem[DSA0]);
+  printf("DTA0: 0x%x\n", mem[DTA0]);
+  printf("DTC0: 0x%x\n", mem[DTC0]);
+  printf("DRT0: 0x%x\n", mem[DRT0]);
+  printf("DCS0: 0x%x\n", mem[DCS0]);
+  printf("DCM0: 0x%x\n", mem[DCM0]);
+  printf("DDA0: 0x%x\n", mem[DDA0]);
+  printf("DSD0: 0x%x\n", mem[DSD0]);
+
+  printf("DSA1: 0x%x\n", mem[DSA1]);
+  printf("DTA1: 0x%x\n", mem[DTA1]);
+  printf("DTC1: 0x%x\n", mem[DTC1]);
+  printf("DRT1: 0x%x\n", mem[DRT1]);
+  printf("DCS1: 0x%x\n", mem[DCS1]);
+  printf("DCM1: 0x%x\n", mem[DCM1]);
+  printf("DDA1: 0x%x\n", mem[DDA1]);
+  printf("DSD1: 0x%x\n", mem[DSD1]);
+  unmap_it(PAGE_SIZE);
+
+  SDL_Init(SDL_INIT_VIDEO);
+  SDL_Surface *screen = SDL_SetVideoMode(320, 480, 16, SDL_HWSURFACE);
+
+  unsigned long c=0, idx=0;
+  const uint32_t size=320*480*2;
+  map_it(dma_addr, size);
+  volatile uint16_t *ptr = (volatile uint16_t*)mem;
+  uint16_t color[]={0xf800,0x7e0,0x1f};
+  while(1){
+    c = 0;
+    for(int y=0; y&lt;480; y++){
+      for(int x=0; x&lt;320; x++){
+        ptr[c++] = color[idx];
+      }
+    }
+    idx+= 1;
+    if(idx &gt;= 3){
+      idx = 0;
+    }
+    SDL_Delay(100);
+  }
+  unmap_it(size);
+  SDL_Delay(5000);
+  SDL_Quit();
+  return 0;    
+}
+</pre>
+<p>
+P.S. O_SYNC可以配置Memory成沒有Cache機制的記憶體，但是，沒有Cache的缺點就是速度會比較慢一點。
+</p>
+
+<p>
+<br><a href="../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

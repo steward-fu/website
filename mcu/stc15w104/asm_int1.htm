@@ -1,0 +1,119 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>STC15W104 &gt;&gt; Assembly</h3>
+<p><b>INT1</b></p>
+<hr size="1">
+<p>
+I/O的Input中斷可以使用輪詢(Poll)或者中斷向量(Vector)兩種處理方式，輪詢的方式就是一直檢查中斷旗標，藉此得知Input是否有中斷發生，當然這種方式比較耗CPU資源，因為CPU無法在此期間去做其它事情，另一種方式則是在中斷向量表設定要處理的副程式，當Input中斷發生時，因為Input中斷具有高優先權，CPU會優先跳轉到設定的副程式處理Input中斷。<br><br>
+
+設定步驟如下：<br>
+1. 開啟中斷功能(EA)<br>
+2. 開啟INT1中斷功能(EX1)<br>
+3. 設定觸發方式(IT1)<br>
+4. 設定中斷向量表(.org 13h)<br>
+5. 撰寫中斷副程式(硬體會自動清除中斷旗標)<br><br>
+
+<img style="border:0px" src="asm_int1/1.jpg" class="maxSize"><br><br>
+
+<img style="border:0px" src="asm_int1/2.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+  btn .equ p3.3
+  led .equ p3.2
+
+  .org 0h
+  jmp _start
+
+  .org 13h
+  jmp int1_handle
+    
+  .org 100h
+_start:
+  setb ea
+  setb ex1
+  setb it1
+  setb led
+  clr c
+  jmp $
+
+int1_handle:
+  jc i0
+  setb c
+  clr led
+  reti
+i0:
+  clr c
+  setb led
+  reti
+  .end
+</pre>
+<p>
+P.S. 程式利用C旗標當作LED設定判斷，ON、OFF交互設定。<br><br>
+
+編譯程式：
+</p>
+<pre>
+$ mcu8051ide --compile main.s
+</pre><br>
+
+<p>
+完成<br>
+<img src="asm_led/1.jpg" class="maxSize"><br>
+<img src="asm_button/2.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

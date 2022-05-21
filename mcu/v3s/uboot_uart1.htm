@@ -1,0 +1,179 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Lichee Pi Zero</h3>
+<p><b>如何將UBoot的輸出訊息轉到UART1</b></p>
+<hr size="1">
+<p>
+diff
+</p>
+<pre>
+diff -Naur old/arch/arm/dts/sun8i-v3s.dtsi new/arch/arm/dts/sun8i-v3s.dtsi
+--- old/arch/arm/dts/sun8i-v3s.dtsi  2018-08-10 17:52:18.083552923 +0800
++++ new/arch/arm/dts/sun8i-v3s.dtsi  2018-08-10 16:35:27.183862902 +0800
+@@ -214,6 +214,12 @@
+         bias-pull-up;
+       };
+ 
++      uart1_pins_a: uart1@0 {
++        pins = "PE21", "PE22";
++        function = "uart1";
++        bias-pull-up;
++      };
++
+       mmc0_pins_a: mmc0@0 {
+         pins = "PF0", "PF1", "PF2", "PF3",
+                "PF4", "PF5";
+diff -Naur old/arch/arm/dts/sun8i-v3s-licheepi-zero.dts new/arch/arm/dts/sun8i-v3s-licheepi-zero.dts
+--- old/arch/arm/dts/sun8i-v3s-licheepi-zero.dts  2018-08-10 17:52:18.083552923 +0800
++++ new/arch/arm/dts/sun8i-v3s-licheepi-zero.dts  2018-08-10 17:22:13.042186451 +0800
+@@ -50,11 +50,13 @@
+ 
+   aliases {
+     serial0 = &amp;uart0;
++    serial1 = &amp;uart1;
+     spi0 = &amp;spi0;
+   };
+ 
++  /*stdout-path = "serial0:115200n8";*/
+   chosen {
+-    stdout-path = "serial0:115200n8";
++    stdout-path = "serial1:115200n8";
+   };
+ };
+ 
+@@ -76,6 +78,12 @@
+   pinctrl-names = "default";
+   status = "okay";
+ };
++
++&amp;uart1 {
++  pinctrl-0 = &lt;&amp;uart1_pins_a&gt;;
++  pinctrl-names = "default";
++  status = "okay";
++};
+ 
+ &amp;usb_otg {
+   dr_mode = "otg";
+diff -Naur old/arch/arm/include/asm/arch-sunxi/gpio.h new/arch/arm/include/asm/arch-sunxi/gpio.h
+--- old/arch/arm/include/asm/arch-sunxi/gpio.h  2018-08-10 17:52:18.166554175 +0800
++++ new/arch/arm/include/asm/arch-sunxi/gpio.h  2018-08-09 20:18:33.039821806 +0800
+@@ -164,6 +164,7 @@
+ #define SUN8I_A83T_GPB_UART0  2
+ #define SUN8I_V3S_GPB_UART0  3
+ #define SUN50I_GPB_UART0  4
++#define SUN8I_V3S_GPE_UART1  4
+ 
+ #define SUNXI_GPC_NAND    2
+ #define SUNXI_GPC_SPI0    3
+diff -Naur old/arch/arm/mach-sunxi/board.c new/arch/arm/mach-sunxi/board.c
+--- old/arch/arm/mach-sunxi/board.c  2018-08-10 17:52:18.295556120 +0800
++++ new/arch/arm/mach-sunxi/board.c  2018-08-09 20:18:33.042816530 +0800
+@@ -114,6 +114,10 @@
+   sunxi_gpio_set_cfgpin(SUNXI_GPB(8), SUN8I_V3S_GPB_UART0);
+   sunxi_gpio_set_cfgpin(SUNXI_GPB(9), SUN8I_V3S_GPB_UART0);
+   sunxi_gpio_set_pull(SUNXI_GPB(9), SUNXI_GPIO_PULL_UP);
++#elif CONFIG_CONS_INDEX == 2 &amp;&amp; defined(CONFIG_MACH_SUN8I_V3S)
++  sunxi_gpio_set_cfgpin(SUNXI_GPE(21), SUN8I_V3S_GPE_UART1);
++  sunxi_gpio_set_cfgpin(SUNXI_GPE(22), SUN8I_V3S_GPE_UART1);
++  sunxi_gpio_set_pull(SUNXI_GPE(22), SUNXI_GPIO_PULL_UP);
+ #elif CONFIG_CONS_INDEX == 1 &amp;&amp; defined(CONFIG_MACH_SUN9I)
+   sunxi_gpio_set_cfgpin(SUNXI_GPH(12), SUN9I_GPH_UART0);
+   sunxi_gpio_set_cfgpin(SUNXI_GPH(13), SUN9I_GPH_UART0);
+
+diff -Naur old/include/configs/sun8i.h new/include/configs/sun8i.h
+--- old/include/configs/sun8i.h  2018-08-10 17:52:19.868579845 +0800
++++ new/include/configs/sun8i.h  2018-08-09 20:18:33.500010990 +0800
+@@ -27,6 +27,14 @@
+   #define CONFIG_SUNXI_USB_PHYS  2
+ #endif
+ 
++#define CONFIG_BOOTCOMMAND   "sf probe 0; "                           \
++                             "sf read 0x41800000 0x100000 0x10000; "  \
++                             "sf read 0x41000000 0x110000 0x400000; " \
++                             "bootz 0x41000000 - 0x41800000"
++
++#define CONFIG_BOOTARGS      "console=ttyS1,115200 earlyprintk panic=5 rootwait " \
++                             "mtdparts=spi32766.0:1M(uboot)ro,64k(dtb)ro,4M(kernel)ro,-(rootfs) root=31:03 rw rootfstype=jffs2"
++
+ /*
+  * Include common sunxi configuration where most the settings are
+  */
+diff -Naur old/include/configs/sunxi-common.h new/include/configs/sunxi-common.h
+--- old/include/configs/sunxi-common.h  2018-08-10 17:52:19.868579845 +0800
++++ new/include/configs/sunxi-common.h  2018-08-10 16:46:48.887623177 +0800
+@@ -274,16 +274,18 @@
+ #endif
+ 
+ #ifndef CONFIG_CONS_INDEX
+-#define CONFIG_CONS_INDEX              1       /* UART0 */
++#define CONFIG_CONS_INDEX              2       /* UART1 */
+ #endif
+ 
+ #ifdef CONFIG_REQUIRE_SERIAL_CONSOLE
+-#if CONFIG_CONS_INDEX == 1
++#if CONFIG_CONS_INDEX == 1 /* UART0 */
+ #ifdef CONFIG_MACH_SUN9I
+ #define OF_STDOUT_PATH    "/soc/serial@07000000:115200"
+ #else
+ #define OF_STDOUT_PATH    "/soc@01c00000/serial@01c28000:115200"
+ #endif
++#elif CONFIG_CONS_INDEX == 2 &amp;&amp; defined(CONFIG_MACH_SUN8I) /* UART1 */
++#define OF_STDOUT_PATH    "/soc@01c00000/serial@01c28400:115200"
+ #elif CONFIG_CONS_INDEX == 2 &amp;&amp; defined(CONFIG_MACH_SUN5I)
+ #define OF_STDOUT_PATH    "/soc@01c00000/serial@01c28400:115200"
+ #elif CONFIG_CONS_INDEX == 3 &amp;&amp; defined(CONFIG_MACH_SUN8I)
+</pre><br>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

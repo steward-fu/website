@@ -1,0 +1,386 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>PocketBeagle</h3>
+<p><b>build 4.14.108</b></p>
+<hr size="1">
+<p>
+編譯步驟如下：
+</p>
+<pre>
+$ cd
+$ wget https://github.com/steward-fu/pocketbeagle/releases/download/v1.0/gcc-4.9.tar.gz
+$ tar xvf gcc-4.9.tar.gz
+$ sudo mv gcc-4.9 /opt
+$ export PATH=$PATH:/opt/gcc-4.9/bin
+
+$ wget https://github.com/steward-fu/pocketbeagle/releases/download/v1.0/kernel-4.14.108.tar.gz
+$ tar zxvf kernel-4.14.108.tar.gz
+$ cd kernel
+$ ARCH=arm LOCALVERSION=-r114 CROSS_COMPILE=arm-linux-gnueabihf- make pocketbeagle_defconfig
+$ ARCH=arm LOCALVERSION=-r114 CROSS_COMPILE=arm-linux-gnueabihf- make clean
+$ ARCH=arm LOCALVERSION=-r114 CROSS_COMPILE=arm-linux-gnueabihf- make zImage modules dtbs -j4
+</pre><br>
+
+<p>
+uEnv.txt
+</p>
+<pre>
+uname_r=4.14.108-r114
+loadaddr=0x82000000
+fdtaddr=0x88000000
+rdaddr=0x88080000  
+initrd_high=0xffffffff
+fdt_high=0xffffffff
+
+mmcroot=/dev/mmcblk0p2
+loadximage=load mmc 0:1 ${loadaddr} /zImage
+loadxfdt=load mmc 0:1 ${fdtaddr} /${fdtfile}
+loaduEnvtxt=load mmc 0:1 ${loadaddr} /uEnv.txt ; env import -t ${loadaddr} ${filesize};
+loadall=run loaduEnvtxt; run loadximage; run loadxfdt;
+mmcargs=setenv bootargs console=tty0 console=${console} ${optargs} ${cape_disable} ${cape_enable} root=${mmcroot} rootfstype=${mmcrootfstype} ${cmdline}
+uenvcmd=run loadall; run mmcargs; bootz ${loadaddr} - ${fdtaddr};
+</pre><br>
+
+<p>
+把uEnv、zImage、am335x-pocketbeagle.dtb放到第一個FAT分區，然後上電就可以看到UART訊息(115200 bps)
+</p>
+<pre>
+U-Boot SPL 2019.10-rc2-00001-gdf33f86468 (Aug 15 2019 - 04:13:05 -0400)
+Trying to boot from MMC1
+
+
+U-Boot 2019.10-rc2-00001-gdf33f86468 (Aug 15 2019 - 04:13:05 -0400)
+
+CPU  : AM335X-GP rev 2.1
+Model: TI AM335x PocketBeagle
+DRAM:  512 MiB
+WDT:   Started with servicing (60s timeout)
+NAND:  0 MiB
+MMC:   OMAP SD/MMC: 0
+Loading Environment from FAT... *** Warning - bad CRC, using default environment
+
+&lt;ethaddr&gt; not set. Validating first E-fuse MAC
+Net:   No ethernet found.
+Hit any key to stop autoboot:  0 
+switch to partitions #0, OK
+mmc0 is current device
+SD/MMC found on device 0
+600 bytes read in 6 ms (97.7 KiB/s)
+Loaded env from uEnv.txt
+Importing environment from mmc0 ...
+Running uenvcmd ...
+600 bytes read in 5 ms (117.2 KiB/s)
+9929216 bytes read in 641 ms (14.8 MiB/s)
+124423 bytes read in 14 ms (8.5 MiB/s)
+## Flattened Device Tree blob at 88000000
+   Booting using the fdt blob at 0x88000000
+   Using Device Tree in place at 88000000, end 88021606
+
+Starting kernel ...
+
+[    0.000000] Booting Linux on physical CPU 0x0
+[    0.000000] Linux version 4.14.108-r114 (steward@debian) (gcc version 6.3.0 20170516 (Debian 6.3.0-18)) #2 SMP PREEMPT Wed Aug 21 11:17:50 EDT 2019
+[    0.000000] CPU: ARMv7 Processor [413fc082] revision 2 (ARMv7), cr=10c5387d
+[    0.000000] CPU: PIPT / VIPT nonaliasing data cache, VIPT aliasing instruction cache
+[    0.000000] OF: fdt: Machine model: TI AM335x PocketBeagle
+[    0.000000] Memory policy: Data cache writeback
+[    0.000000] efi: Getting EFI parameters from FDT:
+[    0.000000] efi: UEFI not found.
+[    0.000000] cma: Reserved 48 MiB at 0x9c800000
+[    0.000000] CPU: All CPU(s) started in SVC mode.
+[    0.000000] AM335X ES2.1 (sgx neon)
+[    0.000000] random: get_random_bytes called from start_kernel+0xac/0x45c with crng_init=0
+[    0.000000] percpu: Embedded 18 pages/cpu @df900000 s41548 r8192 d23988 u73728
+[    0.000000] Built 1 zonelists, mobility grouping on.  Total pages: 129412
+[    0.000000] Kernel command line: console=tty0 console=ttyO0,115200n8 root=/dev/mmcblk0p2 rootfstype=ext4 rootwait
+[    0.000000] PID hash table entries: 2048 (order: 1, 8192 bytes)
+[    0.000000] Dentry cache hash table entries: 65536 (order: 6, 262144 bytes)
+[    0.000000] Inode-cache hash table entries: 32768 (order: 5, 131072 bytes)
+[    0.000000] Memory: 445476K/522240K available (13312K kernel code, 1084K rwdata, 4236K rodata, 1024K init, 361K bss, 27612K reserved, 49152K cma-reserved, 0K highmem)
+[    0.000000] Virtual kernel memory layout:
+[    0.000000]     vector  : 0xffff0000 - 0xffff1000   (   4 kB)
+[    0.000000]     fixmap  : 0xffc00000 - 0xfff00000   (3072 kB)
+[    0.000000]     vmalloc : 0xe0000000 - 0xff800000   ( 504 MB)
+[    0.000000]     lowmem  : 0xc0000000 - 0xdfe00000   ( 510 MB)
+[    0.000000]     pkmap   : 0xbfe00000 - 0xc0000000   (   2 MB)
+[    0.000000]     modules : 0xbf000000 - 0xbfe00000   (  14 MB)
+[    0.000000]       .text : 0xc0008000 - 0xc0e00000   (14304 kB)
+[    0.000000]       .init : 0xc1400000 - 0xc1500000   (1024 kB)
+[    0.000000]       .data : 0xc1500000 - 0xc160f080   (1085 kB)
+[    0.000000]        .bss : 0xc1619a0c - 0xc1673f80   ( 362 kB)
+[    0.000000] SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=1, Nodes=1
+[    0.000000] ftrace: allocating 40898 entries in 120 pages
+[    0.000000] Preemptible hierarchical RCU implementation.
+[    0.000000]  RCU restricting CPUs from NR_CPUS=2 to nr_cpu_ids=1.
+[    0.000000]  Tasks RCU enabled.
+[    0.000000] RCU: Adjusting geometry for rcu_fanout_leaf=16, nr_cpu_ids=1
+[    0.000000] NR_IRQS: 16, nr_irqs: 16, preallocated irqs: 16
+[    0.000000] IRQ: Found an INTC at 0xfa200000 (revision 5.0) with 128 interrupts
+[    0.000000] OMAP clockevent source: timer2 at 24000000 Hz
+[    0.000022] sched_clock: 32 bits at 24MHz, resolution 41ns, wraps every 89478484971ns
+[    0.000047] clocksource: timer1: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 79635851949 ns
+[    0.000063] OMAP clocksource: timer1 at 24000000 Hz
+[    0.001561] timer_probe: no matching timers found
+[    0.001796] Console: colour dummy device 80x30
+[    0.002567] console [tty0] enabled
+[    0.002600] WARNING: Your 'console=ttyO0' has been replaced by 'ttyS0'
+[    0.002622] This ensures that you still see kernel messages. Please
+[    0.002642] update your kernel commandline.
+[    0.002683] Calibrating delay loop... 995.32 BogoMIPS (lpj=1990656)
+[    0.021869] pid_max: default: 32768 minimum: 301
+[    0.022154] Security Framework initialized
+[    0.022188] Yama: becoming mindful.
+[    0.022239] AppArmor: AppArmor disabled by boot time parameter
+[    0.022333] Mount-cache hash table entries: 1024 (order: 0, 4096 bytes)
+[    0.022364] Mountpoint-cache hash table entries: 1024 (order: 0, 4096 bytes)
+[    0.023423] CPU: Testing write buffer coherency: ok
+[    0.023523] CPU0: Spectre v2: using BPIALL workaround
+[    0.024005] CPU0: thread -1, cpu 0, socket -1, mpidr 0
+[    0.037935] Setting up static identity map for 0x80100000 - 0x80100060
+[    0.045852] Hierarchical SRCU implementation.
+[    0.056979] EFI services will not be available.
+[    0.061860] smp: Bringing up secondary CPUs ...
+[    0.061899] smp: Brought up 1 node, 1 CPU
+[    0.061921] SMP: Total of 1 processors activated (995.32 BogoMIPS).
+[    0.061944] CPU: All CPU(s) started in SVC mode.
+[    0.063628] devtmpfs: initialized
+[    0.094062] VFP support v0.3: implementor 41 architecture 3 part 30 variant c rev 3
+[    0.094585] clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 7645041785100000 ns
+[    0.094643] futex hash table entries: 256 (order: 2, 16384 bytes)
+[    0.098665] xor: measuring software checksum speed
+[    0.137830]    arm4regs  :  1217.000 MB/sec
+[    0.177826]    8regs     :  1089.000 MB/sec
+[    0.217824]    32regs    :  1086.000 MB/sec
+[    0.257826]    neon      :  1665.000 MB/sec
+[    0.257847] xor: using function: neon (1665.000 MB/sec)
+[    0.257880] pinctrl core: initialized pinctrl subsystem
+[    0.259148] NET: Registered protocol family 16
+[    0.262224] DMA: preallocated 256 KiB pool for atomic coherent allocations
+[    0.326178] omap_hwmod: debugss: _wait_target_disable failed
+[    0.379079] cpuidle: using governor menu
+[    0.385106] OMAP GPIO hardware version 0.1
+[    0.408222] No ATAGs?
+[    0.408244] hw-breakpoint: debug architecture 0x4 unsupported.
+[    0.409161] omap4_sram_init:Unable to allocate sram needed to handle errata I688
+[    0.409213] omap4_sram_init:Unable to get sram pool needed to handle errata I688
+[    0.433989] raid6: using algorithm neonx8 gen() 0 MB/s
+[    0.434050] raid6: .... xor() 0 MB/s, rmw enabled
+[    0.434072] raid6: using neon recovery algorithm
+[    0.441784] edma 49000000.edma: TI EDMA DMA engine driver
+[    0.447729] SCSI subsystem initialized
+[    0.450306] usbcore: registered new interface driver usbfs
+[    0.450402] usbcore: registered new interface driver hub
+[    0.450537] usbcore: registered new device driver usb
+[    0.451439] omap_i2c 44e0b000.i2c: could not find pctldev for node /ocp/l4_wkup@44c00000/scm@210000/pinmux@800/pinmux_i2c0_pins, deferring probe
+[    0.452462] omap_i2c 4802a000.i2c: bus 1 rev0.11 at 400 kHz
+[    0.453271] omap_i2c 4819c000.i2c: bus 2 rev0.11 at 400 kHz
+[    0.453690] media: Linux media interface: v0.10
+[    0.453763] Linux video capture interface: v2.00
+[    0.454086] pps_core: LinuxPPS API ver. 1 registered
+[    0.454117] pps_core: Software ver. 5.3.6 - Copyright 2005-2007 Rodolfo Giometti &lt;giometti@linux.it&gt;
+[    0.454164] PTP clock support registered
+[    0.454794] omap-mailbox 480c8000.mailbox: omap mailbox rev 0x400
+[    0.458135] FPGA manager framework
+[    0.458264] Advanced Linux Sound Architecture Driver Initialized.
+[    0.458925] NetLabel: Initializing
+[    0.458959] NetLabel:  domain hash size = 128
+[    0.458978] NetLabel:  protocols = UNLABELED CIPSOv4 CALIPSO
+[    0.459075] NetLabel:  unlabeled traffic allowed by default
+[    0.462245] clocksource: Switched to clocksource timer1
+[    0.599900] VFS: Disk quotas dquot_6.6.0
+[    0.600072] VFS: Dquot-cache hash table entries: 1024 (order 0, 4096 bytes)
+[    0.612703] NET: Registered protocol family 2
+[    0.613689] TCP established hash table entries: 4096 (order: 2, 16384 bytes)
+[    0.613773] TCP bind hash table entries: 4096 (order: 3, 32768 bytes)
+[    0.613850] TCP: Hash tables configured (established 4096 bind 4096)
+[    0.613984] UDP hash table entries: 256 (order: 1, 8192 bytes)
+[    0.614025] UDP-Lite hash table entries: 256 (order: 1, 8192 bytes)
+[    0.614381] NET: Registered protocol family 1
+[    0.623352] RPC: Registered named UNIX socket transport module.
+[    0.623399] RPC: Registered udp transport module.
+[    0.623420] RPC: Registered tcp transport module.
+[    0.623439] RPC: Registered tcp NFSv4.1 backchannel transport module.
+[    0.624655] hw perfevents: no interrupt-affinity property for /pmu, guessing.
+[    0.624979] hw perfevents: enabled with armv7_cortex_a8 PMU driver, 5 counters available
+[    0.627152] audit: initializing netlink subsys (disabled)
+[    0.628425] audit: type=2000 audit(0.628:1): state=initialized audit_enabled=0 res=1
+[    0.628600] workingset: timestamp_bits=14 max_order=17 bucket_order=3
+[    0.634675] zbud: loaded
+[    0.642326] NFS: Registering the id_resolver key type
+[    0.642411] Key type id_resolver registered
+[    0.642432] Key type id_legacy registered
+[    0.642466] nfs4filelayout_init: NFSv4 File Layout Driver Registering...
+[    0.642870] fuse init (API version 7.26)
+[    0.652844] Key type asymmetric registered
+[    0.652903] Asymmetric key parser 'x509' registered
+[    0.653051] Block layer SCSI generic (bsg) driver version 0.4 loaded (major 245)
+[    0.657430] io scheduler noop registered
+[    0.657472] io scheduler deadline registered
+[    0.657747] io scheduler cfq registered (default)
+[    0.657779] io scheduler mq-deadline registered
+[    0.660314] pinctrl-single 44e10800.pinmux: 142 pins at pa f9e10800 size 568
+[    0.668723] gpio-of-helper ocp:cape-universal: ready
+[    0.675902] wkup_m3_ipc 44e11324.wkup_m3_ipc: could not get rproc handle
+[    0.678181] Serial: 8250/16550 driver, 6 ports, IRQ sharing disabled
+[    0.681874] 44e09000.serial: ttyS0 at MMIO 0x44e09000 (irq = 30, base_baud = 3000000) is a 8250
+[    1.247450] random: fast init done
+[    1.512618] console [ttyS0] enabled
+[    1.517341] 48022000.serial: ttyS1 at MMIO 0x48022000 (irq = 31, base_baud = 3000000) is a 8250
+[    1.527346] 48024000.serial: ttyS2 at MMIO 0x48024000 (irq = 32, base_baud = 3000000) is a 8250
+[    1.537298] 481a8000.serial: ttyS4 at MMIO 0x481a8000 (irq = 33, base_baud = 3000000) is a 8250
+[    1.549382] omap_rng 48310000.rng: Random Number Generator ver. 20
+[    1.557031] [drm] Initialized vgem 1.0.0 20120112 for vgem on minor 0
+[    1.563795] usbcore: registered new interface driver udl
+[    1.616614] libphy: Fixed MDIO Bus: probed
+[    1.621791] CAN device driver interface
+[    1.627115] c_can_platform 481cc000.can: c_can_platform device registered (regs=fa1cc000, irq=39)
+[    1.637155] c_can_platform 481d0000.can: c_can_platform device registered (regs=fa1d0000, irq=40)
+[    1.649241] ehci_hcd: USB 2.0 'Enhanced' Host Controller (EHCI) Driver
+[    1.655984] ehci-platform: EHCI generic platform driver
+[    1.661661] ehci-omap: OMAP-EHCI Host Controller driver
+[    1.667854] usbcore: registered new interface driver usb-storage
+[    1.677081] am335x-phy-driver 47401300.usb-phy: 47401300.usb-phy supply vcc not found, using dummy regulator
+[    1.691570] musb-hdrc musb-hdrc.0: MUSB HDRC host driver
+[    1.697048] musb-hdrc musb-hdrc.0: new USB bus registered, assigned bus number 1
+[    1.704870] usb usb1: New USB device found, idVendor=1d6b, idProduct=0002
+[    1.711756] usb usb1: New USB device strings: Mfr=3, Product=2, SerialNumber=1
+[    1.719058] usb usb1: Product: MUSB HDRC host driver
+[    1.724082] usb usb1: Manufacturer: Linux 4.14.108-r114 musb-hcd
+[    1.730154] usb usb1: SerialNumber: musb-hdrc.0
+[    1.735693] hub 1-0:1.0: USB hub found
+[    1.739708] hub 1-0:1.0: 1 port detected
+[    1.746622] am335x-phy-driver 47401b00.usb-phy: 47401b00.usb-phy supply vcc not found, using dummy regulator
+[    1.760871] musb-hdrc musb-hdrc.1: MUSB HDRC host driver
+[    1.766367] musb-hdrc musb-hdrc.1: new USB bus registered, assigned bus number 2
+[    1.774171] usb usb2: New USB device found, idVendor=1d6b, idProduct=0002
+[    1.781061] usb usb2: New USB device strings: Mfr=3, Product=2, SerialNumber=1
+[    1.788360] usb usb2: Product: MUSB HDRC host driver
+[    1.793384] usb usb2: Manufacturer: Linux 4.14.108-r114 musb-hcd
+[    1.799455] usb usb2: SerialNumber: musb-hdrc.1
+[    1.804958] hub 2-0:1.0: USB hub found
+[    1.808962] hub 2-0:1.0: 1 port detected
+[    1.824942] omap_rtc 44e3e000.rtc: registered as rtc0
+[    1.831521] i2c /dev entries driver
+[    1.836302] Driver for 1-wire Dallas network protocol.
+[    1.844920] omap_wdt: OMAP Watchdog Timer Rev 0x01: initial timeout 60 sec
+[    1.852846] softdog: initialized. soft_noboot=0 soft_margin=60 sec soft_panic=0 (nowayout=0)
+[    1.863148] cpuidle: enable-method property 'ti,am3352' found operations
+[    1.870949] sdhci: Secure Digital Host Controller Interface driver
+[    1.877255] sdhci: Copyright(c) Pierre Ossman
+[    1.882670] omap_hsmmc 48060000.mmc: Got CD GPIO
+[    1.928693] sdhci-pltfm: SDHCI platform and OF driver helper
+[    1.942664] ledtrig-cpu: registered to indicate activity on CPUs
+[    1.949411] omap-aes 53500000.aes: OMAP AES hw accel rev: 3.2
+[    1.955612] omap-aes 53500000.aes: will run requests pump with realtime priority
+[    1.965572] omap-sham 53100000.sham: hw accel on OMAP rev 4.3
+[    1.975369] hidraw: raw HID events driver (C) Jiri Kosina
+[    1.982080] usbcore: registered new interface driver usbhid
+[    1.987992] usbhid: USB HID core driver
+[    1.992683] remoteproc remoteproc0: wkup_m3 is available
+[    2.001540] ti_am3359-tscadc 44e0d000.tscadc: chan 0 step_avg truncating to 16
+[    2.008989] mmc0: host does not support reading read-only switch, assuming write-enable
+[    2.017101] ti_am3359-tscadc 44e0d000.tscadc: chan 1 step_avg truncating to 16
+[    2.024484] ti_am3359-tscadc 44e0d000.tscadc: chan 2 step_avg truncating to 16
+[    2.031823] mmc0: Problem switching card into high-speed mode!
+[    2.037734] ti_am3359-tscadc 44e0d000.tscadc: chan 3 step_avg truncating to 16
+[    2.045130] mmc0: new SDHC card at address 0001
+[    2.049732] ti_am3359-tscadc 44e0d000.tscadc: chan 4 step_avg truncating to 16
+[    2.058148] mmcblk0: mmc0:0001 SD16G 14.6 GiB 
+[    2.063232] ti_am3359-tscadc 44e0d000.tscadc: chan 5 step_avg truncating to 16
+[    2.071064] ti_am3359-tscadc 44e0d000.tscadc: chan 6 step_avg truncating to 16
+[    2.078577]  mmcblk0: p1 p2
+[    2.081774] ti_am3359-tscadc 44e0d000.tscadc: chan 7 step_avg truncating to 16
+[    2.095199] wireguard: WireGuard 0.0.20190702 loaded. See www.wireguard.com for information.
+[    2.103898] wireguard: Copyright (C) 2015-2019 Jason A. Donenfeld &lt;Jason@zx2c4.com&gt;. All Rights Reserved.
+[    2.114606] NET: Registered protocol family 10
+[    2.124711] Segment Routing with IPv6
+[    2.128631] mip6: Mobile IPv6
+[    2.131677] NET: Registered protocol family 17
+[    2.136195] can: controller area network core (rev 20170425 abi 9)
+[    2.142549] NET: Registered protocol family 29
+[    2.147210] Key type dns_resolver registered
+[    2.151550] mpls_gso: MPLS GSO support
+[    2.155534] omap_voltage_late_init: Voltage driver support not added
+[    2.162516] PM: Cannot get wkup_m3_ipc handle
+[    2.167190] ThumbEE CPU extension supported.
+[    2.171588] Registering SWP/SWPB emulation handler
+[    2.177462] registered taskstats version 1
+[    2.181811] zswap: loaded using pool lzo/zbud
+[    2.188722] Btrfs loaded, crc32c=crc32c-generic
+[    2.193615] ima: No TPM chip found, activating TPM-bypass! (rc=-19)
+[    2.200069] ima: Allocated hash algorithm: sha256
+[    2.252466] input: tps65217_pwr_but as /devices/platform/ocp/44e0b000.i2c/i2c-0/0-0024/tps65217-pwrbutton/input/input0
+[    2.263937] tps65217 0-0024: TPS65217 ID 0xe version 1.2
+[    2.269836] at24 0-0050: 32768 byte 24c256 EEPROM, writable, 1 bytes/write
+[    2.276995] omap_i2c 44e0b000.i2c: bus 0 rev0.11 at 400 kHz
+[    2.284439] remoteproc remoteproc0: powering up wkup_m3
+[    2.291679] PM: Cannot get wkup_m3_ipc handle
+[    2.296282] remoteproc remoteproc0: Booting fw image am335x-pm-firmware.elf, size 217168
+[    2.305733] omap_rtc 44e3e000.rtc: setting system clock to 2000-01-01 00:00:00 UTC (946684800)
+[    2.314831] remoteproc remoteproc0: remote processor wkup_m3 is now up
+[    2.314854] wkup_m3_ipc 44e11324.wkup_m3_ipc: CM3 Firmware Version = 0x193
+[    2.328449] of_cfs_init
+[    2.331106] of_cfs_init: OK
+[    2.335129] ALSA device list:
+[    2.338155]   No soundcards found.
+[    2.367109] EXT4-fs (mmcblk0p2): mounted filesystem with ordered data mode. Opts: (null)
+[    2.375511] VFS: Mounted root (ext4 filesystem) readonly on device 179:2.
+[    2.387438] devtmpfs: mounted
+[    2.396748] Freeing unused kernel memory: 1024K
+[    2.423021] musb-hdrc musb-hdrc.1: VBUS_ERROR in a_wait_vrise (80, &lt;SessEnd), retry #3, port1 0008010c
+[    2.652159] EXT4-fs (mmcblk0p2): re-mounted. Opts: data=ordered
+</pre><br>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,1289 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>FC3000</h3>
+<p><b>找出LCD的初始化資料</b></p>
+<hr size="1">
+<p>
+目前量測出來的屏腳位
+</p>
+<table>
+<tr><th>腳位</th><th>訊號</th><th>F1C100S</th></tr>
+<tr><td>1</td><td>VDD</td><td></td></tr>
+<tr><td>2</td><td>GND</td><td></td></tr>
+<tr><td>3</td><td>LEDA</td><td>PE6</td></tr>
+<tr><td>4</td><td>RST</td><td>PE11</td></tr>
+<tr><td>5</td><td>CS</td><td>PD21</td></tr>
+<tr><td>6</td><td>RS</td><td>PD19</td></tr>
+<tr><td>7</td><td>WR</td><td>PD18</td></tr>
+<tr><td>8</td><td>VDD</td><td></td></tr>
+<tr><td>9</td><td>DB11</td><td>PD13</td></tr>
+<tr><td>10</td><td>DB12</td><td>PD14</td></tr>
+<tr><td>11</td><td>DB13</td><td>PD15</td></tr>
+<tr><td>12</td><td>DB14</td><td>PD16</td></tr>
+<tr><td>13</td><td>DB15</td><td>PD17</td></tr>
+<tr><td>14</td><td>DB5</td><td>PD6</td></tr>
+<tr><td>15</td><td>DB6</td><td>PD7</td></tr>
+<tr><td>16</td><td>DB7</td><td>PD8</td></tr>
+<tr><td>17</td><td>DB8</td><td>PD10</td></tr>
+<tr><td>18</td><td>DB9</td><td>PD11</td></tr>
+<tr><td>19</td><td>DB10</td><td>PD12</td></tr>
+<tr><td>20</td><td>DB0</td><td>PD1</td></tr>
+<tr><td>21</td><td>DB1</td><td>PD2</td></tr>
+<tr><td>22</td><td>DB2</td><td>PD3</td></tr>
+<tr><td>23</td><td>DB3</td><td>PD4</td></tr>
+<tr><td>24</td><td>DB4</td><td>PD5</td></tr>
+</table><br>
+<p>
+基本上，可以使用如下幾種方式，把屏的初始化資料找出來：<br>
+1. 使用J-Link Debug官方韌體程式<br>
+2. 使用QEMU跑官方韌體程式，然後把存取暫存器的內容Dump出來<br>
+3. 使用邏輯分析儀<br><br>
+
+雖然第一種方式是司徒覺得最好的方式，可惜那個山寨J-Link在Debug官方韌體程式時，常常跑飛，所以目前只能先放棄第一種方式，至於第二種方式，看似簡單，不過需要花一些時間，雖然司徒在最新版QEMU有找到支援Orangipc-PC開發板(Allwinner H3)，不過要改成F1C100S還是需要一點點時間，所以司徒接下來想測試一下邏輯分析儀的部份，不過司徒手上剛好沒有專用的邏輯分析儀，因此，司徒想使用芒果派F1C200S來當作分析儀使用，於是開始製作過程<br><br>
+
+括除焊點<br>
+<img src="lcd_init/1.jpg" class="maxSize"><br><br>
+
+勇敢的芒果派站了出來<br>
+<img src="lcd_init/2.jpg" class="maxSize"><br><br>
+
+腳位
+</p>
+<table>
+<tr><th>腳位</th><th>訊號</th><th>F1C100S</th><th>芒果派</th></tr>
+<tr><td>1</td><td>VDD</td><td></td><td></td></tr>
+<tr><td>2</td><td>GND</td><td></td><td></td></tr>
+<tr><td>3</td><td>LEDA</td><td>PE6</td><td></td></tr>
+<tr><td>4</td><td>RST</td><td>PE11</td><td></td></tr>
+<tr><td>5</td><td>CS</td><td>PD21</td><td></td></tr>
+<tr><td>6</td><td>RS</td><td>PD19</td><td>PD12</td></tr>
+<tr><td>7</td><td>WR</td><td>PD18</td><td>PD0</td></tr>
+<tr><td>8</td><td>VDD</td><td></td><td></td></tr>
+<tr><td>9</td><td>DB11</td><td>PD13</td><td>PE11</td></tr>
+<tr><td>10</td><td>DB12</td><td>PD14</td><td>PA0</td></tr>
+<tr><td>11</td><td>DB13</td><td>PD15</td><td>PA1</td></tr>
+<tr><td>12</td><td>DB14</td><td>PD16</td><td>PA2</td></tr>
+<tr><td>13</td><td>DB15</td><td>PD17</td><td>PA3</td></tr>
+<tr><td>14</td><td>DB5</td><td>PD6</td><td>PE5</td></tr>
+<tr><td>15</td><td>DB6</td><td>PD7</td><td>PE6</td></tr>
+<tr><td>16</td><td>DB7</td><td>PD8</td><td>PE7</td></tr>
+<tr><td>17</td><td>DB8</td><td>PD10</td><td>PE8</td></tr>
+<tr><td>18</td><td>DB9</td><td>PD11</td><td>PE9</td></tr>
+<tr><td>19</td><td>DB10</td><td>PD12</td><td>PE10</td></tr>
+<tr><td>20</td><td>DB0</td><td>PD1</td><td>PE0</td></tr>
+<tr><td>21</td><td>DB1</td><td>PD2</td><td>PE1</td></tr>
+<tr><td>22</td><td>DB2</td><td>PD3</td><td>PE2</td></tr>
+<tr><td>23</td><td>DB3</td><td>PD4</td><td>PE3</td></tr>
+<tr><td>24</td><td>DB4</td><td>PD5</td><td>PE4</td></tr>
+</table><br>
+
+<p>
+跳線<br>
+<img src="lcd_init/3.jpg" class="maxSize"><br>
+<img src="lcd_init/4.jpg" class="maxSize"><br><br>
+
+測試程式
+</p>
+<pre class="brush:asm">
+  .global _start
+    
+  .equiv CCU_BASE,              0x01c20000
+  .equiv GPIO_BASE,             0x01c20800
+  .equiv UART1_BASE,            0x01c25400
+ 
+  .equiv PLL_PERIPH_CTRL_REG,   0x0028
+  .equiv AHB_APB_HCLKC_CFG_REG, 0x0054
+  .equiv BUS_CLK_GATING_REG2,   0x0068
+  .equiv BUS_SOFT_RST_REG2,     0x02d0
+  
+  .equiv PA,                    (0x24 * 0)
+  .equiv PB,                    (0x24 * 1)
+  .equiv PC,                    (0x24 * 2)
+  .equiv PD,                    (0x24 * 3)
+  .equiv PE,                    (0x24 * 4)
+
+  .equiv PORT_CFG0,             0x00
+  .equiv PORT_CFG1,             0x04
+  .equiv PORT_CFG2,             0x08
+  .equiv PORT_DATA,             0x10
+  .equiv PORT_PUL0,             0x1c
+  .equiv PORT_PUL1,             0x20
+
+  .equiv UART_RBR,              0x00
+  .equiv UART_DLL,              0x00
+  .equiv UART_DLH,              0x04
+  .equiv UART_IER,              0x04
+  .equiv UART_IIR,              0x08
+  .equiv UART_LCR,              0x0c
+  .equiv UART_MCR,              0x10
+  .equiv UART_USR,              0x7c
+ 
+  .arm
+  .text
+_start:
+  .long 0xea000016
+  .byte 'e', 'G', 'O', 'N', '.', 'B', 'T', '0'
+  .long 0, __spl_size
+  .byte 'S', 'P', 'L', 2
+  .long 0, 0
+  .long 0, 0, 0, 0, 0, 0, 0, 0
+  .long 0, 0, 0, 0, 0, 0, 0, 0
+   
+_vector:
+  b reset
+  b .
+  b .
+  b .
+  b .
+  b .
+  b .
+  b .
+
+reset:
+  ldr r0, =CCU_BASE
+  ldr r1, =0x80041800
+  str r1, [r0, #PLL_PERIPH_CTRL_REG]
+  ldr r1, =0x00003180
+  str r1, [r0, #AHB_APB_HCLKC_CFG_REG]
+
+  ldr r4, =GPIO_BASE
+  mov r1, #0x00000000
+  str r1, [r4, #(PA + PORT_CFG0)]
+  str r1, [r4, #(PC + PORT_CFG0)]
+  str r1, [r4, #(PD + PORT_CFG0)]
+  str r1, [r4, #(PD + PORT_CFG1)]
+  str r1, [r4, #(PE + PORT_CFG0)]
+  str r1, [r4, #(PE + PORT_CFG1)]
+  ldr r1, =0x55555555
+  str r1, [r4, #(PD + PORT_PUL0)]
+  str r1, [r4, #(PD + PORT_PUL1)]
+  str r1, [r4, #(PE + PORT_PUL0)]
+  str r1, [r4, #(PE + PORT_PUL1)]
+
+  ldr r5, =0x4000
+  ldr r6, =64
+
+  mov r1, #0
+  mov r2, r5
+  mov r3, r6
+0:
+  str r1, [r2]
+  add r2, #4
+  subs r3, #4
+  bne 0b
+
+  ldr r4, =GPIO_BASE
+0:
+  ldr r1, [r4, #(PD + PORT_DATA)]
+  ands r1, #(1 &lt;&lt; 0)
+  bne 0b
+
+  mov r1, #0
+  ldr r2, [r4, #(PD + PORT_DATA)]
+  and r2, #(1 &lt;&lt; 12)
+  lsl r2, #20
+  orr r1, r2
+  ldr r2, [r4, #(PA + PORT_DATA)]
+  and r2, #0x07
+  lsl r2, #12
+  orr r1, r2
+  ldr r2, [r4, #(PE + PORT_DATA)]
+  ldr r3, =0x7ff
+  and r2, r3
+  orr r1, r2
+  str r1, [r5]
+1:
+  ldr r1, [r4, #(PD + PORT_DATA)]
+  ands r1, #(1 &lt;&lt; 0)
+  beq 1b
+
+  add r5, #4
+  subs r6, #4
+  bne 0b
+ 
+  bl uart_init
+  
+  ldr r0, =0x11223344
+  bl uart_4byte
+
+  ldr r5, =0x4000
+  ldr r6, =64
+0:
+  ldr r0, [r5]
+  bl uart_4byte
+
+  ldr r0, =0xaa
+  bl uart_byte
+
+  add r5, #4
+  subs r6, #4
+  bne 0b
+  b .
+ 
+uart_init:
+  push {r4, lr}
+  ldr r4, =CCU_BASE
+  ldr r1, =(1 &lt;&lt; 21)
+  str r1, [r4, #BUS_CLK_GATING_REG2]
+  str r1, [r4, #BUS_SOFT_RST_REG2]
+  
+  ldr r4, =GPIO_BASE
+  ldr r1, =0x5500
+  str r1, [r4, #(PA + PORT_CFG0)]
+
+  ldr r4, =UART1_BASE
+  ldr r1, =0x00
+  str r1, [r4, #UART_IER]
+  ldr r1, =0xf7
+  str r1, [r4, #UART_IIR]
+  ldr r1, =0x00
+  str r1, [r4, #UART_MCR]
+  ldr r1, [r4, #UART_LCR]
+  orr r1, #(1 &lt;&lt; 7)
+  str r1, [r4, #UART_LCR]
+  ldr r1, =54
+  str r1, [r4, #UART_DLL]
+  ldr r1, =0x00
+  str r1, [r4, #UART_DLH]
+  ldr r1, [r4, #UART_LCR]
+  bic r1, #(1 &lt;&lt; 7)
+  str r1, [r4, #UART_LCR]
+  ldr r1, [r4, #UART_LCR]
+  bic r1, #0x1f
+  orr r1, #0x03
+  str r1, [r4, #UART_LCR]
+  pop {r4, pc}
+  
+uart_byte:
+  push {r4, lr}
+  ldr r4, =UART1_BASE
+1:
+  ldr r1, [r4, #UART_USR]
+  tst r1, #(1 &lt;&lt; 1)
+  beq 1b
+  strb r0, [r4, #UART_RBR]
+  pop {r4, pc}
+
+uart_4byte:
+  push {r4, lr}
+  mov r4, r0
+  lsr r0, #24
+  bl uart_byte
+  
+  mov r0, r4
+  lsr r0, #16
+  bl uart_byte
+  
+  mov r0, r4
+  lsr r0, #8
+  bl uart_byte
+  
+  mov r0, r4
+  bl uart_byte
+  pop {r4, pc}
+  .end
+</pre>
+<p>
+P.S. PA3先拔除<br><br>
+
+但是詭異的事情發生了，每次量測到的資料竟然都不一樣<br>
+<img src="lcd_init/5.jpg" class="maxSize"><br><br>
+
+於是，司徒寫了一個GPIO Toggle量測<br>
+<img src="lcd_init/6.jpg" class="maxSize"><br><br>
+
+F1C200S I/O速度只有2.8MHz<br>
+<img src="../../mcu/f1c200s/overclock/8.jpg" class="maxSize"><br><br>
+
+屏的LCD_WR速度則是4.7MHz，難怪取出來的資料每次都不一樣，因為，最低取樣頻率至少要是原生的兩倍...，不過，司徒突然對STM32的GPIO 50MHz相當感興趣，哈<br>
+<img src="lcd_init/7.jpg" class="maxSize"><br><br>
+
+接著司徒打算使用STM32F103來做邏輯分析儀，因為官方文件說，I/O Toggle可以達到18MHz，如果再超頻，那應該是夠用，因此，司徒找來STM32F103開發板<br>
+<img src="lcd_init/9.jpg" class="maxSize"><br><br>
+
+PLL 72MHz，可以達到12MHz<br>
+<img src="../../mcu/stm32f103/asm_toggle/1.jpg" class="maxSize"><br><br>
+
+PLL 128MHz，可以達到21MHz<br>
+<img src="../../mcu/stm32f103/asm_toggle/2.jpg" class="maxSize"><br><br>
+
+值得注意的是，使用eor指令做I/O Toggle時，速度比str指令來的慢，只有12MHz(PLL 128MHz)<br>
+<img src="../../mcu/stm32f103/asm_toggle/3.jpg" class="maxSize"><br><br>
+
+重新跳線<br>
+<img src="lcd_init/8.jpg" class="maxSize"><br><br>
+
+接著開始測試，將LCD_WR接到PB1，經由負緣觸發中斷時，接著將PC的資料寫到RAM，讀取完64Bytes後，透過UART傳回電腦<br>
+<img src="lcd_init/10.jpg" class="maxSize"><br><br>
+
+STM32F103測試程式(PB0:LCD_RS, PB1:LCD_WR, PC:LCD_DB)
+</p>
+<pre class="brush:asm">
+  .thumb
+  .cpu cortex-m3
+  .syntax unified
+
+  .equiv NVIC_ISER0,   0xe000e100
+  .equiv AFIO_EXTICR1, 0x40010008
+
+  .equiv EXTI_IMR,     0x40010400
+  .equiv EXTI_EMR,     0x40010404
+  .equiv EXTI_RTSR,    0x40010408
+  .equiv EXTI_FTSR,    0x4001040c
+  .equiv EXTI_SWIER,   0x40010410
+  .equiv EXTI_PR,      0x40010414
+    
+  .equiv GPIOA_CRL,    0x40010800
+  .equiv GPIOA_CRH,    0x40010804
+  .equiv GPIOA_IDR,    0x40010808
+  .equiv GPIOA_ODR,    0x4001080c
+ 
+  .equiv GPIOB_CRL,    0x40010c00
+  .equiv GPIOB_CRH,    0x40010c04
+  .equiv GPIOB_IDR,    0x40010c08
+  .equiv GPIOB_ODR,    0x40010c0c
+ 
+  .equiv GPIOC_CRL,    0x40011000
+  .equiv GPIOC_CRH,    0x40011004
+  .equiv GPIOC_IDR,    0x40011008
+  .equiv GPIOC_ODR,    0x4001100c
+ 
+  .equiv RCC_CR,       0x40021000
+  .equiv RCC_CFGR,     0x40021004
+  .equiv RCC_APB2ENR,  0x40021018
+ 
+  .equiv FLASH_ACR,    0x40022000
+ 
+  .equiv UART1_SR,     0x40013800
+  .equiv UART1_DR,     0x40013804
+  .equiv UART1_BRR,    0x40013808
+  .equiv UART1_CR1,    0x4001380c
+  .equiv UART1_CR2,    0x40013810
+  .equiv UART1_CR3,    0x40013814
+ 
+  .equiv STACKINIT,    0x20005000
+     
+  .global _start
+  .section .text
+ 
+  .org 0x0000
+  .word STACKINIT
+  .word _start
+
+  .org 0x005c
+  .word _exti1
+  
+  .org 0x0200
+  .align 2
+  .thumb_func
+_exti1:
+  push {r4, lr}
+  ldrh r1, [r7]
+  strh r1, [r5, #2]!
+  ldrh r2, [r8]
+  strh r2, [r5, #2]!
+
+  ldr r4, =EXTI_PR
+  mov r1, #(1 &lt;&lt; 1)
+  str r1, [r4]
+  pop {r4, pc}
+
+  .align 2
+  .thumb_func
+_start:
+  bl rcc_init
+  bl flash_init
+  bl uart_init
+  
+  ldr r4, =RCC_APB2ENR
+  ldr r1, [r4]
+  orr r1, #(1 &lt;&lt; 4) | (1 &lt;&lt; 3) | (1 &lt;&lt; 2)
+  str r1, [r4]
+  
+  ldr r4, =GPIOB_CRL
+  ldr r1, =0x88888888
+  str r1, [r4]
+ 
+  ldr r4, =GPIOB_CRH
+  ldr r1, =0x88888888
+  str r1, [r4]
+   
+  ldr r4, =GPIOC_CRL
+  ldr r1, =0x88888888
+  str r1, [r4]
+ 
+  ldr r4, =GPIOC_CRH
+  ldr r1, =0x88888888
+  str r1, [r4]
+
+  ldr r4, =EXTI_IMR
+  ldr r1, =(1 &lt;&lt; 1)
+  str r1, [r4]
+
+  ldr r4, =EXTI_EMR
+  ldr r1, =(1 &lt;&lt; 1)
+  str r1, [r4]
+
+  ldr r4, =EXTI_FTSR
+  ldr r1, =(1 &lt;&lt; 1)
+  str r1, [r4]
+
+  ldr r4, =AFIO_EXTICR1
+  ldr r1, =(1 &lt;&lt; 4)
+  str r1, [r4]
+
+  ldr r5, =buf
+  ldr r6, =buf
+  ldr r7, =GPIOB_IDR
+  ldr r8, =GPIOC_IDR
+  
+  ldr r4, =NVIC_ISER0
+  ldr r1, =(1 &lt;&lt; 7)
+  str r1, [r4]
+
+  add r6, #(64 * 2 * 2)
+0:
+  cmp r5, r6
+  bcc 0b
+  
+  ldr r4, =NVIC_ISER0
+  mov r1, #0
+  str r1, [r4]
+  
+  ldr r4, =AFIO_EXTICR1
+  mov r1, #0
+  str r1, [r4]
+
+  ldr r5, =buf
+  ldr r6, =64
+0:
+  ldrh r1, [r5, #2]!
+  lsl r1, #31
+
+  eor r0, r0
+  ldrh r0, [r5, #2]!
+  orr r0, r1
+  bl uart_4byte
+
+  subs r6, #1
+  bne 0b
+
+  ldr r0, =0x11223344
+  bl uart_4byte
+  b .
+
+  .align 2
+  .thumb_func
+uart_init:
+  push {r4, lr}
+  ldr r4, =RCC_APB2ENR
+  ldr r1, [r4]
+  ldr r2, =(1 &lt;&lt; 14) | (1 &lt;&lt; 2) | (1 &lt;&lt; 0)
+  orr r1, r2
+  str r1, [r4]
+ 
+  ldr r4, =GPIOA_CRH
+  ldr r1, [r4]
+  bic r1, #0xff0
+  orr r1, #0x4b0
+  str r1, [r4]
+ 
+  ldr r4, =UART1_BRR
+  @ldr r1, =(39 &lt;&lt; 4) | (1 &lt;&lt; 0) @ 115200bps 72MHz
+  ldr r1, =(69 &lt;&lt; 4) | (7 &lt;&lt; 0) @ 115200bps 128MHz
+  str r1, [r4]
+ 
+  ldr r4, =UART1_CR1
+  ldr r1, =(1 &lt;&lt; 13) | (1 &lt;&lt; 3)
+  str r1, [r4]
+  pop {r4, pc}
+ 
+  .align 2
+  .thumb_func
+uart_byte:
+  push {r4, lr}
+  ldr r4, =UART1_SR
+0:
+  ldr r1, [r4]
+  tst r1, #(1 &lt;&lt; 7)
+  beq 0b
+ 
+  ldr r4, =UART1_DR
+  str r0, [r4]
+  pop {r4, pc}
+  
+  .align 2
+  .thumb_func
+uart_4byte:
+  push {r4, lr}
+  mov r4, r0
+  lsr r0, #24
+  bl uart_byte
+
+  mov r0, r4
+  lsr r0, #16
+  bl uart_byte
+  
+  mov r0, r4
+  lsr r0, #8
+  bl uart_byte
+  
+  mov r0, r4
+  bl uart_byte
+  pop {r4, pc}
+   
+  .align 2
+  .thumb_func
+rcc_init:
+  push {r4, lr}
+  ldr r4, =RCC_CR
+  ldr r1, =(1 &lt;&lt; 26) | (1 &lt;&lt; 16)
+  str r1, [r4]
+0:
+  ldr r1, [r4]
+  tst r1, #(1 &lt;&lt; 17)
+  bne 0b
+ 
+  ldr r4, =RCC_CFGR
+  @mov r1, #(7 &lt;&lt; 18) @ 72MHz
+  mov r1, #(14 &lt;&lt; 18) @ 128MHz
+  orr r1, #(1 &lt;&lt; 16)
+  str r1, [r4]
+ 
+  ldr r4, =RCC_CR
+  ldr r1, [r4]
+  orr r1, #(1 &lt;&lt; 24)
+  str r1, [r4]
+0:
+  ldr r1, [r4]
+  tst r1, #(1 &lt;&lt; 25)
+  bne 0b
+ 
+  ldr r4, =RCC_CFGR
+  ldr r1, [r4]
+  orr r1, #2
+  str r1, [r4]
+0:
+  ldr r1, [r4]
+  tst r1, #(1 &lt;&lt; 3)
+  bne 0b
+  pop {r4, pc}
+ 
+  .align 2
+  .thumb_func
+flash_init:
+  push {r4, lr}
+  ldr r4, =FLASH_ACR
+  mov r1, #0x32
+  str r1, [r4]
+  pop {r4, pc}
+
+  .data
+  .align 2
+buf: .skip (64 * 2 * 2)
+  .end
+</pre>
+<p>
+測試後發現，資料還是會有不一致的狀況，因此，STM32F103目前無法勝任這個任務...<br><br>
+
+接著，司徒為了確定LCD輸出代碼是否有問題，因此，測試了一下Miyoo，確實是可以動作的<br>
+<img src="../miyoo/asm_lcd_gpio/1.jpg" class="maxSize"><br><br>
+
+Q8掌機也是沒有問題<br>
+<img src="../q8/asm_lcd_gpio/1.jpg" class="maxSize"><br><br>
+
+不過，將屏拿到Q8掌機測試，結果還是點不亮，共測試GC9300、GC9306、ST7789、HX8357C、R61520初始化程式，還是不行...<br>
+<img src="lcd_init/11.jpg" class="maxSize"><br><br>
+
+於是，司徒買一台山寨Saleae Logic 16，體積很迷你<br>
+<img src="lcd_init/12.jpg" class="maxSize"><br><br>
+
+不過，同時開啟16通道時，取樣率只有16MS/s...<br>
+<img src="lcd_init/14.jpg" class="maxSize"><br><br>
+
+在測試過16通道16MS/s取樣率後，司徒發現每次取的資料都有變動，資料不一致性有點大，這邏輯分析儀...，於是，司徒改成使用12通道25MS/s的取樣率<br>
+<img src="lcd_init/15.jpg" class="maxSize"><br><br>
+
+測試幾次後，發現資料不一致性還是有，不過已經好很多了，不過LCD是16Bits，在加上LCD_WR、LCD_RS，需要18通道才行，於是司徒分兩次擷取<br>
+低位元資料(取5次)：LCD_RS、LCD_WR、LCD_DB0~LCD_DB9<br>
+高位元資料(取5次)：LCD_RS、LCD_WR、LCD_DB6~LCD_DB15<br>
+<img src="lcd_init/13.jpg" class="maxSize"><br><br>
+
+擷取後，把高位元資料進行排列，假定這些多餘的資料為雜訊，手動濾掉<br>
+<img src="lcd_init/16.jpg" class="maxSize"><br><br>
+
+低位元資料進行排列，假定這些多餘的資料為雜訊，手動濾掉<br>
+<img src="lcd_init/17.jpg" class="maxSize"><br><br>
+
+再做合併時，發現低位元資料少一筆，這...，不過，仔細一看，資料都是一筆CMD、一筆DAT，然後LCD_DB6~LCD_DB9是疊加取樣，因此，交叉比對後，發現第一筆高位元資料是雜訊<br>
+<img src="lcd_init/18.jpg" class="maxSize"><br><br>
+
+合併後的初始化命令
+</p>
+<pre>
+CMD:0x800
+DAT:0x100
+CMD:0x1000
+DAT:0x700
+CMD:0x1800
+DAT:0xc002
+CMD:0x2000
+DAT:0x0
+CMD:0x4000
+DAT:0x1200
+CMD:0x4800
+DAT:0x0
+CMD:0x5000
+DAT:0x0
+CMD:0x6000
+DAT:0x0
+CMD:0x6800
+DAT:0x0
+CMD:0x7800
+DAT:0x0
+CMD:0x8000
+DAT:0x0
+CMD:0x8800
+DAT:0x3800
+CMD:0x9000
+DAT:0x0
+CMD:0x9800
+DAT:0x0
+CMD:0x3800
+DAT:0x800
+CMD:0x8000
+DAT:0x8682
+CMD:0x8800
+DAT:0x3e60
+CMD:0x9000
+DAT:0xc080
+CMD:0x9800
+DAT:0x603
+CMD:0x4820
+DAT:0xf000
+CMD:0x5820
+DAT:0x7000
+CMD:0x20
+DAT:0x0
+CMD:0x820
+DAT:0x0
+CMD:0x8020
+DAT:0x0
+CMD:0x8820
+DAT:0x3d00
+CMD:0x9020
+DAT:0x2000
+CMD:0xa820
+DAT:0x2a00
+CMD:0xb020
+DAT:0x2000
+CMD:0xb820
+DAT:0x3b00
+CMD:0xc020
+DAT:0x1000
+CMD:0xc820
+DAT:0x3f00
+CMD:0xe020
+DAT:0x1500
+CMD:0xe820
+DAT:0x2000
+CMD:0x8040
+DAT:0x0
+CMD:0x8840
+DAT:0x78e0
+CMD:0x9040
+DAT:0x0
+CMD:0x9840
+DAT:0xf920
+CMD:0x60
+DAT:0x714
+CMD:0x860
+DAT:0x800
+CMD:0x5060
+DAT:0x0
+CMD:0x80
+DAT:0x0
+CMD:0x880
+DAT:0x0
+CMD:0x1080
+DAT:0x0
+CMD:0x1880
+DAT:0x0
+CMD:0x2080
+DAT:0x0
+CMD:0x2880
+DAT:0x0
+CMD:0x8080
+DAT:0x8000
+CMD:0x9080
+DAT:0x600
+CMD:0x1800
+DAT:0x4020
+CMD:0x3800
+DAT:0x9920
+CMD:0x8040
+DAT:0x0
+CMD:0x8840
+DAT:0x78e0
+CMD:0x9040
+DAT:0x0
+CMD:0x9840
+DAT:0xf920
+CMD:0x20
+DAT:0x78e0
+CMD:0x820
+DAT:0x0
+CMD:0x1020
+DAT:0x0
+</pre><br>
+
+<p>
+測試程式
+</p>
+<pre class="brush:asm">
+  .global _start
+  
+  .equiv PIO_BASE,  0x01c20800 
+  .equiv PD,        (0x24 * 3)
+  .equiv PE,        (0x24 * 4)
+  .equiv PIO_CFG0,  0x00
+  .equiv PIO_CFG1,  0x04
+  .equiv PIO_CFG2,  0x08
+  .equiv PIO_DATA,  0x10
+
+  .equiv LCD_CS,    (1 &lt;&lt; 21)
+  .equiv LCD_RD,    (1 &lt;&lt; 20)
+  .equiv LCD_RS,    (1 &lt;&lt; 19)
+  .equiv LCD_WR,    (1 &lt;&lt; 18)
+  .equiv LCD_RST,   (1 &lt;&lt; 11)
+  .equiv LCD_BL,    (1 &lt;&lt; 6)
+  
+  .arm
+  .text
+_start:
+  .long 0xea000016
+  .byte 'e', 'G', 'O', 'N', '.', 'B', 'T', '0'
+  .long 0, __spl_size
+  .byte 'S', 'P', 'L', 2
+  .long 0, 0
+  .long 0, 0, 0, 0, 0, 0, 0, 0
+  .long 0, 0, 0, 0, 0, 0, 0, 0
+   
+_vector:
+  b reset
+  b .
+  b .
+  b .
+  b .
+  b .
+  b .
+  b .
+   
+reset:
+  ldr r4, =PIO_BASE + PD
+  ldr r1, =0x11111111
+  str r1, [r4, #PIO_CFG0]
+  str r1, [r4, #PIO_CFG1]
+  ldr r1, =0x00111111
+  str r1, [r4, #PIO_CFG2]
+
+  ldr r4, =PIO_BASE + PE
+  ldr r1, [r4, #PIO_CFG0]
+  bic r1, #0xf000000
+  orr r1, #0x1000000
+  str r1, [r4, #PIO_CFG0]
+
+  ldr r1, [r4, #PIO_CFG1]
+  bic r1, #0xf000
+  orr r1, #0x1000
+  str r1, [r4, #PIO_CFG1]
+
+  ldr r4, =PIO_BASE + PD
+  ldr r1, =0xffffffff
+  str r1, [r4, #PIO_DATA]
+
+  ldr r4, =PIO_BASE + PE
+  ldr r1, =0xffffffff
+  str r1, [r4, #PIO_DATA]
+
+  bl lcd_rst
+
+  ldr r0, =0x800
+  bl lcd_cmd
+
+  ldr r0, =0x100
+  bl lcd_dat
+
+  ldr r0, =0x1000
+  bl lcd_cmd
+
+  ldr r0, =0x700
+  bl lcd_dat
+
+  ldr r0, =0x1800
+  bl lcd_cmd
+
+  ldr r0, =0xc002
+  bl lcd_dat
+
+  ldr r0, =0x2000
+  bl lcd_cmd
+
+  ldr r0, =0x0
+  bl lcd_dat
+
+  ldr r0, =0x4000
+  bl lcd_cmd
+
+  ldr r0, =0x1200
+  bl lcd_dat
+
+  ldr r0, =0x4800
+  bl lcd_cmd
+
+  ldr r0, =0x0
+  bl lcd_dat
+
+  ldr r0, =0x5000
+  bl lcd_cmd
+
+  ldr r0, =0x0
+  bl lcd_dat
+
+  ldr r0, =0x6000
+  bl lcd_cmd
+
+  ldr r0, =0x0
+  bl lcd_dat
+
+  ldr r0, =0x6800
+  bl lcd_cmd
+
+  ldr r0, =0x0
+  bl lcd_dat
+
+  ldr r0, =0x7800
+  bl lcd_cmd
+
+  ldr r0, =0x0
+  bl lcd_dat
+
+  ldr r0, =0x8000
+  bl lcd_cmd
+
+  ldr r0, =0x0
+  bl lcd_dat
+
+  ldr r0, =0x8800
+  bl lcd_cmd
+
+  ldr r0, =0x3800
+  bl lcd_dat
+
+  ldr r0, =0x9000
+  bl lcd_cmd
+
+  ldr r0, =0x0
+  bl lcd_dat
+
+  ldr r0, =0x9800
+  bl lcd_cmd
+
+  ldr r0, =0x0
+  bl lcd_dat
+
+  ldr r0, =0x3800
+  bl lcd_cmd
+
+  ldr r0, =0x800
+  bl lcd_dat
+
+  ldr r0, =0x8000
+  bl lcd_cmd
+
+  ldr r0, =0x8682
+  bl lcd_dat
+
+  ldr r0, =0x8800
+  bl lcd_cmd
+
+  ldr r0, =0x3e60
+  bl lcd_dat
+
+  ldr r0, =0x9000
+  bl lcd_cmd
+
+  ldr r0, =0xc080
+  bl lcd_dat
+
+  ldr r0, =0x9800
+  bl lcd_cmd
+
+  ldr r0, =0x603
+  bl lcd_dat
+
+  ldr r0, =0x4820
+  bl lcd_cmd
+
+  ldr r0, =0xf000
+  bl lcd_dat
+
+  ldr r0, =0x5820
+  bl lcd_cmd
+
+  ldr r0, =0x7000
+  bl lcd_dat
+
+  ldr r0, =0x20
+  bl lcd_cmd
+
+  ldr r0, =0x0
+  bl lcd_dat
+
+  ldr r0, =0x820
+  bl lcd_cmd
+
+  ldr r0, =0x0
+  bl lcd_dat
+
+  ldr r0, =0x8020
+  bl lcd_cmd
+
+  ldr r0, =0x0
+  bl lcd_dat
+
+  ldr r0, =0x8820
+  bl lcd_cmd
+
+  ldr r0, =0x3d00
+  bl lcd_dat
+
+  ldr r0, =0x9020
+  bl lcd_cmd
+
+  ldr r0, =0x2000
+  bl lcd_dat
+
+  ldr r0, =0xa820
+  bl lcd_cmd
+
+  ldr r0, =0x2a00
+  bl lcd_dat
+
+  ldr r0, =0xb020
+  bl lcd_cmd
+
+  ldr r0, =0x2000
+  bl lcd_dat
+
+  ldr r0, =0xb820
+  bl lcd_cmd
+
+  ldr r0, =0x3b00
+  bl lcd_dat
+
+  ldr r0, =0xc020
+  bl lcd_cmd
+
+  ldr r0, =0x1000
+  bl lcd_dat
+
+  ldr r0, =0xc820
+  bl lcd_cmd
+
+  ldr r0, =0x3f00
+  bl lcd_dat
+
+  ldr r0, =0xe020
+  bl lcd_cmd
+
+  ldr r0, =0x1500
+  bl lcd_dat
+
+  ldr r0, =0xe820
+  bl lcd_cmd
+
+  ldr r0, =0x2000
+  bl lcd_dat
+
+  ldr r0, =0x8040
+  bl lcd_cmd
+
+  ldr r0, =0x0
+  bl lcd_dat
+
+  ldr r0, =0x8840
+  bl lcd_cmd
+
+  ldr r0, =0x78e0
+  bl lcd_dat
+
+  ldr r0, =0x9040
+  bl lcd_cmd
+
+  ldr r0, =0x0
+  bl lcd_dat
+
+  ldr r0, =0x9840
+  bl lcd_cmd
+
+  ldr r0, =0xf920
+  bl lcd_dat
+
+  ldr r0, =0x60
+  bl lcd_cmd
+
+  ldr r0, =0x714
+  bl lcd_dat
+
+  ldr r0, =0x860
+  bl lcd_cmd
+
+  ldr r0, =0x800
+  bl lcd_dat
+
+  ldr r0, =0x5060
+  bl lcd_cmd
+
+  ldr r0, =0x0
+  bl lcd_dat
+
+  ldr r0, =0x80
+  bl lcd_cmd
+
+  ldr r0, =0x0
+  bl lcd_dat
+
+  ldr r0, =0x880
+  bl lcd_cmd
+
+  ldr r0, =0x0
+  bl lcd_dat
+
+  ldr r0, =0x1080
+  bl lcd_cmd
+
+  ldr r0, =0x0
+  bl lcd_dat
+
+  ldr r0, =0x1880
+  bl lcd_cmd
+
+  ldr r0, =0x0
+  bl lcd_dat
+
+  ldr r0, =0x2080
+  bl lcd_cmd
+
+  ldr r0, =0x0
+  bl lcd_dat
+
+  ldr r0, =0x2880
+  bl lcd_cmd
+
+  ldr r0, =0x0
+  bl lcd_dat
+
+  ldr r0, =0x8080
+  bl lcd_cmd
+
+  ldr r0, =0x8000
+  bl lcd_dat
+
+  ldr r0, =0x9080
+  bl lcd_cmd
+
+  ldr r0, =0x600
+  bl lcd_dat
+
+  ldr r0, =0x1800
+  bl lcd_cmd
+
+  ldr r0, =0x4020
+  bl lcd_dat
+
+  ldr r0, =0x3800
+  bl lcd_cmd
+
+  ldr r0, =0x9920
+  bl lcd_dat
+
+  ldr r0, =0x8040
+  bl lcd_cmd
+
+  ldr r0, =0x0
+  bl lcd_dat
+
+  ldr r0, =0x8840
+  bl lcd_cmd
+
+  ldr r0, =0x78e0
+  bl lcd_dat
+
+  ldr r0, =0x9040
+  bl lcd_cmd
+
+  ldr r0, =0x0
+  bl lcd_dat
+
+  ldr r0, =0x9840
+  bl lcd_cmd
+
+  ldr r0, =0xf920
+  bl lcd_dat
+
+  ldr r0, =0x20
+  bl lcd_cmd
+
+  ldr r0, =0x78e0
+  bl lcd_dat
+
+  ldr r0, =0x820
+  bl lcd_cmd
+
+  ldr r0, =0x0
+  bl lcd_dat
+
+  ldr r0, =0x1020
+  bl lcd_cmd
+
+  ldr r4, =320*80
+  ldr r5, =0x1f
+0:
+  mov r0, r5
+  bl lcd_dat
+  subs r4, #1
+  bne 0b
+  
+  ldr r4, =320*80
+  ldr r5, =0x7e0
+0:
+  mov r0, r5
+  bl lcd_dat
+  subs r4, #1
+  bne 0b
+  
+  ldr r4, =320*80
+  ldr r5, =0xf800
+0:
+  mov r0, r5
+  bl lcd_dat
+  subs r4, #1
+  bne 0b
+  b .
+
+delay:
+  push {lr}
+0:
+  subs r0, #1
+  bne 0b
+  pop {pc}
+
+lcd_rst:
+  push {r4, r5, lr}
+  ldr r4, =PIO_BASE + PE
+  ldr r5, =0xffffffff
+
+  bic r5, #LCD_RST
+  str r5, [r4, #PIO_DATA]
+  ldr r0, =10000
+  bl delay
+
+  orr r5, #LCD_RST
+  str r5, [r4, #PIO_DATA]
+  ldr r0, =10000
+  bl delay
+  pop {r4, r5, pc}
+
+lcd_wr:
+  push {r4, r5, lr}
+  ldr r4, =PIO_BASE + PD
+
+  and r2, r0, #0x00ff
+  and r3, r0, #0xff00
+  lsl r2, #1
+  lsl r3, #2
+
+  eor r5, r5
+  orr r5, r1
+  orr r5, r2
+  orr r5, r3
+  orr r5, #LCD_RD
+  str r5, [r4, #PIO_DATA]
+
+  orr r5, #LCD_WR
+  str r5, [r4, #PIO_DATA]
+  pop {r4, r5, pc}
+
+lcd_dat:
+  push {lr}
+  mov r1, #LCD_RS
+  bl lcd_wr
+  pop {pc}
+
+lcd_cmd:
+  push {lr}
+  mov r1, #0
+  bl lcd_wr
+  pop {pc}
+  .end
+</pre><br>
+
+<p>
+感動的一刻<br>
+<img src="asm_lcd_gpio/1.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

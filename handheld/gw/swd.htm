@@ -1,0 +1,164 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Game &amp; Watch: Super Mario Bros.</h3>
+<p><b>焊接SWD腳位</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://twitter.com/ghidraninja/status/1326856771516964864">stacksmashing</a><br><br>
+
+依照stacksmashing(NSA Ghidra ?)提供的資訊<br>
+<img src="swd/1.jpg" class="maxSize"><br><br>
+
+接著司徒找一個風水寶地塞下這個5 Pin排針<br>
+<img src="swd/2.jpg" class="maxSize"><br><br>
+
+排針寬度<br>
+<img src="swd/3.jpg" class="maxSize"><br><br>
+
+剛好卡住PCB<br>
+<img src="swd/4.jpg" class="maxSize"><br><br>
+
+跳線<br>
+<img src="swd/5.jpg" class="maxSize"><br><br>
+
+使用三秒膠固定排針<br>
+<img src="swd/6.jpg" class="maxSize"><br><br>
+
+為了美感，重新焊接...<br>
+<img src="swd/14.jpg" class="maxSize"><br><br>
+
+B面需要裁切一下<br>
+<img src="swd/7.jpg" class="maxSize"><br>
+<img src="swd/8.jpg" class="maxSize"><br><br>
+
+沒有凸出太多<br>
+<img src="swd/9.jpg" class="maxSize"><br><br>
+
+裁切大小剛好<br>
+<img src="swd/10.jpg" class="maxSize"><br><br>
+
+看了幾下，感覺還可以...<br>
+<img src="swd/11.jpg" class="maxSize"><br><br>
+
+滿意<br>
+<img src="swd/12.jpg" class="maxSize"><br>
+從左到右：SWCLK、VDD(3.3V)、GND、SWDIO、NRST<br><br>
+
+連接ST-LINK V2<br>
+<img src="swd/13.jpg" class="maxSize"><br>
+P.S. VDD接到3.3V<br><br>
+
+編譯openocd
+</p>
+<pre>
+$ cd
+$ git clone git://repo.or.cz/openocd.git
+$ cd openocd
+$ ./bootstrap
+$ ./configure --prefix=/usr
+$ make
+$ sudo make install
+</pre><br>
+
+<p>
+連接
+</p>
+<pre>
+$ sudo openocd -f /usr/local/share/openocd/scripts/interface/stlink.cfg -f /usr/local/share/openocd/scripts/target/stm32h7x.cfg 
+	Open On-Chip Debugger 0.10.0+dev-01524-g861e75f54-dirty (2020-12-09-09:55)
+	Licensed under GNU GPL v2
+	For bug reports, read
+		http://openocd.org/doc/doxygen/bugs.html
+	Info : auto-selecting first available session transport "hla_swd". To override use 'transport select <transport>'.
+	Info : The selected transport took over low-level target control. The results might differ compared to plain JTAG/SWD
+	Info : Listening on port 6666 for tcl connections
+	Info : Listening on port 4444 for telnet connections
+	Info : clock speed 1800 kHz
+	Info : STLINK V2J17S4 (API v2) VID:PID 0483:3748
+	Info : Target voltage: 3.191639
+	Info : stm32h7x.cpu0: hardware has 8 breakpoints, 4 watchpoints
+	Info : starting gdb server for stm32h7x.cpu0 on 3333
+	Info : Listening on port 3333 for gdb connections
+</pre>
+<p>
+P.S. 如果無法連接，先把NRST接到GND再接回NRST<br><br>
+
+接著開啟另一個Terminal
+</p>
+<pre>
+$ telnet localhost 4444
+  Trying ::1...
+  Trying 127.0.0.1...
+  Connected to localhost.
+  Escape character is '^]'.
+  Open On-Chip Debugger
+
+> targets
+    TargetName         Type       Endian TapName            State       
+--  ------------------ ---------- ------ ------------------ ------------
+ 0* stm32h7x.cpu0      hla_target little stm32h7x.cpu       halted
+</pre><br>
+
+<p>
+最後，為了不想要每次都接那一堆線，司徒決定焊接一塊小轉板<br>
+<img src="swd/15.jpg" class="maxSize"><br>
+<img src="swd/16.jpg" class="maxSize"><br><br>
+
+完成<br>
+<img src="swd/17.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

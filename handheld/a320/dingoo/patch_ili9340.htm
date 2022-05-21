@@ -1,0 +1,331 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../../header.js"></script>
+<div id="page">
+<h3>Dingoo A320 &gt;&gt; Dingoo</h3>
+<p><b>Patch ILI9338.DL(支援ILI9340)</b></p>
+<hr size="1">
+<p>
+由於官方並沒有釋出Dingoo原始程式碼，因此，修改的方式就只能透過Patch Binary，加上ILI9340屏也不在官方支援的清單中，於是再度激起司徒使用逆向工程的手法，讓Dingoo系統也可以支援ILI9340，這樣至少可以使用更好的屏幕，再次爽玩七夜這款遊戲。<br><br>
+
+使用者如果有燒錄過Dingoo系統，應該有發現需要ILI93xx.DL、A320.HXF這兩個檔案，其中ILI93xx.DL就是初始化相關硬體的程式碼，格式不像一般的ELF檔案：<br>
+<img src="patch_ili9340/1.jpg" class="maxSize"><br>
+根據Dingoo SDK的說明檔案，這種檔案名稱為CCDL並且會有如下幾種Header：
+</p>
+
+<pre class="brush:cpp">
+CCDL, IMPT, EXPT, RAWD, [ERPT], [&lt;null&gt;]
+</pre><br>
+
+<p>
+每個Header的長度為32 Bytes且格式如下：
+</p>
+
+<pre class="brush:cpp">
+char name[4];
+uint32_t ident;
+uint32_t offset;
+uint32_t size;
+</pre><br>
+
+<p>
+經由上面的格式，可以知道PRAW位置的Offset是0x2b0(size=0x2788)，因此可以使用如下指令取出Binary並且反組譯:
+</p>
+
+<pre>
+$ dd if=ILI9338.DL of=ILI9338.bin bs=1 skip=696
+$ mipsel-linux-objdump -b binary -m mips -D ILI9338.bin &gt; ILI9338.dis
+</pre><br>
+
+<p>
+根據Dingux的驅動程式(drivers/video/jz4740_slcd.h)，ILI9338的LCD初使化片段指令如下：
+</p>
+
+<pre class="brush:cpp">
+Mcupanel_Command(0x11);
+mdelay(100);
+Mcupanel_Command(0xCB);
+Mcupanel_Data(0x01);
+Mcupanel_Command(0xC0);
+Mcupanel_Data(0x26);
+Mcupanel_Data(0x01);
+...
+</pre><br>
+
+<p>
+經由上面的初使化程式，可以找到如下反組譯的位置：
+</p>
+
+<pre class="brush:cpp">
+// Mcupanel_Command(0x11);
+c64:  11000424   li  a0,17
+c68:  1c00bfaf   sw  ra,28(sp)
+c6c:  1800bcaf   sw  gp,24(sp)
+c70:  6023998f   lw  t9,9056(gp)
+c74:  09f82003   jalr  t9
+c78:  00000000   nop
+// mdelay(100);
+c7c:  1000bc8f   lw  gp,16(sp)
+c80:  64000424   li  a0,100
+c84:  8c23998f   lw  t9,9100(gp)
+c88:  09f82003   jalr  t9
+c8c:  00000000   nop
+// Mcupanel_Command(0xCB);
+c90:  1000bc8f   lw  gp,16(sp)
+c94:  cb000424   li  a0,203
+c98:  6023998f   lw  t9,9056(gp)
+c9c:  09f82003   jalr  t9
+ca0:  00000000   nop
+// Mcupanel_Data(0x01);
+ca4:  1000bc8f   lw  gp,16(sp)
+ca8:  01000424   li  a0,1
+cac:  0024998f   lw  t9,9216(gp)
+cb0:  09f82003   jalr  t9
+cb4:  00000000   nop
+// Mcupanel_Command(0xC0);
+cb8:  1000bc8f   lw  gp,16(sp)
+cbc:  c0000424   li  a0,192
+cc0:  6023998f   lw  t9,9056(gp)
+cc4:  09f82003   jalr  t9
+cc8:  00000000   nop
+// Mcupanel_Data(0x26);
+ccc:  1000bc8f   lw  gp,16(sp)
+cd0:  26000424   li  a0,38
+cd4:  0024998f   lw  t9,9216(gp)
+cd8:  09f82003   jalr  t9
+cdc:  00000000   nop
+// Mcupanel_Data(0x01);
+ce0:  1000bc8f   lw  gp,16(sp)
+ce4:  01000424   li  a0,1
+ce8:  0024998f   lw  t9,9216(gp)
+cec:  09f82003   jalr  t9
+cf0:  00000000   nop
+...
+</pre><br>
+
+<p>
+因為使用到Binary Patch的方式，通常需要考慮到是否空間不足的問題，幸運地，司徒發現只需修改幾行指令就可以點亮ILI9340，沒有遇到需要額外找尋空間的問題
+</p>
+
+<pre class="brush:cpp">
+/* Black magic */
+Mcupanel_Command(0x11);
+mdelay(100);
+Mcupanel_Command(0xCB);
+Mcupanel_Data(0x01);
+
+Mcupanel_Command(0xC0);
+//Mcupanel_Data(0x26);
+//Mcupanel_Data(0x01);
+Mcupanel_Data(0X27);
+Mcupanel_Data(0X09);
+
+Mcupanel_Command(0xC1);
+Mcupanel_Data(0x10);
+
+//Mcupanel_Command(0xC5);
+//Mcupanel_Data(0x10);
+//Mcupanel_Data(0x52);
+Mcupanel_Command(0xB6);
+Mcupanel_Data(0X0A);
+Mcupanel_Data(0X02);
+
+Mcupanel_Command(0x26);
+Mcupanel_Data(0x01);
+Mcupanel_Command(0xE0);
+//Mcupanel_Data(0x10);
+//Mcupanel_Data(0x10);
+//Mcupanel_Data(0x10);
+//Mcupanel_Data(0x08);
+//Mcupanel_Data(0x0E);
+//Mcupanel_Data(0x06);
+//Mcupanel_Data(0x42);
+//Mcupanel_Data(0x28);
+//Mcupanel_Data(0x36);
+//Mcupanel_Data(0x03);
+//Mcupanel_Data(0x0E);
+//Mcupanel_Data(0x04);
+//Mcupanel_Data(0x13);
+//Mcupanel_Data(0x0E);
+//Mcupanel_Data(0x0C);
+Mcupanel_Data(0x0f);
+Mcupanel_Data(0x3f);
+Mcupanel_Data(0x3f);
+Mcupanel_Data(0x02);
+Mcupanel_Data(0x04);
+Mcupanel_Data(0x05);
+Mcupanel_Data(0x49);
+Mcupanel_Data(0x75);
+Mcupanel_Data(0x20);
+Mcupanel_Data(0x08);
+Mcupanel_Data(0x14);
+Mcupanel_Data(0x0c);
+Mcupanel_Data(0x15);
+Mcupanel_Data(0x0e);
+Mcupanel_Data(0x00);
+
+Mcupanel_Command(0XE1);
+//Mcupanel_Data(0x0C);
+//Mcupanel_Data(0x23);
+//Mcupanel_Data(0x26);
+//Mcupanel_Data(0x04);
+//Mcupanel_Data(0x0C);
+//Mcupanel_Data(0x04);
+//Mcupanel_Data(0x39);
+//Mcupanel_Data(0x24);
+//Mcupanel_Data(0x4B);
+//Mcupanel_Data(0x03);
+//Mcupanel_Data(0x0B);
+//Mcupanel_Data(0x0B);
+//Mcupanel_Data(0x33);
+//Mcupanel_Data(0x37);
+//Mcupanel_Data(0x0F);
+Mcupanel_Data(0x00);
+Mcupanel_Data(0x00);
+Mcupanel_Data(0x00);
+Mcupanel_Data(0x0c);
+Mcupanel_Data(0x1a);
+Mcupanel_Data(0x0d);
+Mcupanel_Data(0x3a);
+Mcupanel_Data(0x8a);
+Mcupanel_Data(0x40);
+Mcupanel_Data(0x08);
+Mcupanel_Data(0x11);
+Mcupanel_Data(0x0f);
+Mcupanel_Data(0x3f);
+Mcupanel_Data(0x3f);
+Mcupanel_Data(0x0f);
+
+Mcupanel_Command(0x2a);
+Mcupanel_Data(0x00);
+Mcupanel_Data(0x00);
+Mcupanel_Data(0x01);
+Mcupanel_Data(0x3f);
+Mcupanel_Command(0x2b);
+Mcupanel_Data(0x00);
+Mcupanel_Data(0x00);
+Mcupanel_Data(0x00);
+Mcupanel_Data(0xef);
+Mcupanel_Command(0x36);
+Mcupanel_Data(0xe8);
+Mcupanel_Command(0x3A);
+Mcupanel_Data(0x05);
+Mcupanel_Command(0x29);
+Mcupanel_Command(0x2c);
+</pre><br>
+
+<p>
+需要Patch蠻多地方，不過，幸好只有內容需要更改，不然真的很麻煩，Patch後的Bnary如下：
+</p>
+
+<pre>
+0001cc0: c0000424 6023998f 09f82003 00000000  ...$`#.... .....
+0001cd0: 1000bc8f <b>27</b>000424 0024998f 09f82003  ....'..$.$.... .
+0001ce0: 00000000 1000bc8f <b>09</b>000424 0024998f  ...........$.$..
+0001cf0: 09f82003 00000000 1000bc8f c1000424  .. ............$
+0001d00: 6023998f 09f82003 00000000 1000bc8f  `#.... .........
+0001d10: 10000424 0024998f 09f82003 00000000  ...$.$.... .....
+0001d20: 1000bc8f <b>b6</b>000424 6023998f 09f82003  .......$`#.... .
+0001d30: 00000000 1000bc8f <b>0a</b>000424 0024998f  ...........$.$..
+0001d40: 09f82003 00000000 1000bc8f <b>02</b>000424  .. ............$
+0001d50: 0024998f 09f82003 00000000 1000bc8f  .$.... .........
+0001d60: 26000424 6023998f 09f82003 00000000  &amp;..$`#.... .....
+0001d70: 1000bc8f 01000424 0024998f 09f82003  .......$.$.... .
+0001d80: 00000000 1000bc8f e0000424 6023998f  ...........$`#..
+0001d90: 09f82003 00000000 1000bc8f <b>0f</b>000424  .. ............$
+0001da0: 0024998f 09f82003 00000000 1000bc8f  .$.... .........
+0001db0: <b>3f</b>000424 0024998f 09f82003 00000000  ?..$.$.... .....
+0001dc0: 1000bc8f <b>3f</b>000424 0024998f 09f82003  ....?..$.$.... .
+0001dd0: 00000000 1000bc8f <b>02</b>000424 0024998f  ...........$.$..
+0001de0: 09f82003 00000000 1000bc8f <b>04</b>000424  .. ............$
+0001df0: 0024998f 09f82003 00000000 1000bc8f  .$.... .........
+0001e00: <b>05</b>000424 0024998f 09f82003 00000000  ...$.$.... .....
+0001e10: 1000bc8f <b>49</b>000424 0024998f 09f82003  ....I..$.$.... .
+0001e20: 00000000 1000bc8f <b>75</b>000424 0024998f  ........u..$.$..
+0001e30: 09f82003 00000000 1000bc8f <b>20</b>000424  .. ......... ..$
+0001e40: 0024998f 09f82003 00000000 1000bc8f  .$.... .........
+0001e50: <b>08</b>000424 0024998f 09f82003 00000000  ...$.$.... .....
+0001e60: 1000bc8f <b>14</b>000424 0024998f 09f82003  .......$.$.... .
+0001e70: 00000000 1000bc8f <b>0c</b>000424 0024998f  ...........$.$..
+0001e80: 09f82003 00000000 1000bc8f <b>15</b>000424  .. ............$
+0001e90: 0024998f 09f82003 00000000 1000bc8f  .$.... .........
+0001ea0: <b>0e</b>000424 0024998f 09f82003 00000000  ...$.$.... .....
+0001eb0: 1000bc8f <b>00</b>000424 0024998f 09f82003  .......$.$.... .
+0001ec0: 00000000 1000bc8f e1000424 6023998f  ...........$`#..
+0001ed0: 09f82003 00000000 1000bc8f <b>00</b>000424  .. ............$
+0001ee0: 0024998f 09f82003 00000000 1000bc8f  .$.... .........
+0001ef0: <b>00</b>000424 0024998f 09f82003 00000000  ...$.$.... .....
+0001f00: 1000bc8f <b>00</b>000424 0024998f 09f82003  .......$.$.... .
+0001f10: 00000000 1000bc8f <b>0c</b>000424 0024998f  ...........$.$..
+0001f20: 09f82003 00000000 1000bc8f <b>1a</b>000424  .. ............$
+0001f30: 0024998f 09f82003 00000000 1000bc8f  .$.... .........
+0001f40: <b>0d</b>000424 0024998f 09f82003 00000000  ...$.$.... .....
+0001f50: 1000bc8f <b>3a</b>000424 0024998f 09f82003  ....:..$.$.... .
+0001f60: 00000000 1000bc8f <b>8a</b>000424 0024998f  ...........$.$..
+0001f70: 09f82003 00000000 1000bc8f <b>40</b>000424  .. .........@..$
+0001f80: 0024998f 09f82003 00000000 1000bc8f  .$.... .........
+0001f90: <b>08</b>000424 0024998f 09f82003 00000000  ...$.$.... .....
+0001fa0: 1000bc8f <b>11</b>000424 0024998f 09f82003  .......$.$.... .
+0001fb0: 00000000 1000bc8f <b>0f</b>000424 0024998f  ...........$.$..
+0001fc0: 09f82003 00000000 1000bc8f <b>3f</b>000424  .. .........?..$
+0001fd0: 0024998f 09f82003 00000000 1000bc8f  .$.... .........
+0001fe0: <b>3f</b>000424 0024998f 09f82003 00000000  ?..$.$.... .....
+0001ff0: 1000bc8f <b>0f</b>000424 0024998f 09f82003  .......$.$.... .
+</pre><br>
+
+<p>
+最後，使用Patch過後的ILI9340.DL和A320.HXF，就可以點亮換完屛的A320<br>
+<img src="patch_ili9340/2.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

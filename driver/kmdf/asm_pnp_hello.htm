@@ -1,0 +1,215 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Kernel Mode Driver Framework &gt;&gt; Assembly (PNP)</h3>
+<p><b>Hello, world!</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://github.com/steward-fu/kmdf.git">Source Code</a><br><br>
+
+main.asm
+</p>
+<pre class="brush:asm">
+.386p
+.model flat, stdcall
+option casemap:none
+
+include c:\masm32\Macros\Strings.mac
+include c:\masm32\include\w2k\ntdef.inc
+include c:\masm32\include\w2k\ntstatus.inc
+include c:\masm32\include\w2k\ntddk.inc
+include c:\masm32\include\w2k\ntoskrnl.inc
+include c:\masm32\include\w2k\ntddkbd.inc
+include c:\masm32\include\wdf\umdf\1.9\wudfddi_types.inc
+include c:\masm32\include\wdf\kmdf\1.9\wdf.inc
+include c:\masm32\include\wdf\kmdf\1.9\wdftypes.inc
+include c:\masm32\include\wdf\kmdf\1.9\wdfglobals.inc
+include c:\masm32\include\wdf\kmdf\1.9\wdffuncenum.inc
+include c:\masm32\include\wdf\kmdf\1.9\wdfobject.inc
+include c:\masm32\include\wdf\kmdf\1.9\wdfdevice.inc
+include c:\masm32\include\wdf\kmdf\1.9\wdfdriver.inc
+
+includelib c:\masm32\lib\wxp\i386\ntoskrnl.lib 
+includelib c:\masm32\lib\wxp\i386\hal.lib 
+includelib c:\masm32\lib\wxp\i386\wmilib.lib 
+includelib c:\masm32\lib\wxp\i386\sehupd.lib 
+includelib c:\masm32\lib\wxp\i386\BufferOverflowK.lib 
+includelib c:\masm32\lib\wdf\kmdf\i386\1.9\wdfldr.lib
+includelib c:\masm32\lib\wdf\kmdf\i386\1.9\wdfdriverentry.lib
+
+public DriverEntry
+
+.const
+DEV_NAME word "\","D","e","v","i","c","e","\","M","y","D","r","i","v","e","r",0
+MSG_HELLO byte "Hello, world!",0
+
+.code
+AddDevice proc pOurWDF:WDFDRIVER, pDeviceInit:PWDFDEVICE_INIT
+  local device:WDFDEVICE
+  local suDevName:UNICODE_STRING
+
+  invoke DbgPrint, offset MSG_HELLO
+  invoke RtlInitUnicodeString, addr suDevName, offset DEV_NAME
+  invoke WdfDeviceInitAssignName, pDeviceInit, addr suDevName
+  invoke WdfDeviceCreate, addr pDeviceInit, WDF_NO_OBJECT_ATTRIBUTES, addr device
+  ret
+AddDevice endp
+
+DriverEntry proc pOurDriver:PDRIVER_OBJECT, pOurRegistry:PUNICODE_STRING
+  local config:WDF_DRIVER_CONFIG
+  
+  invoke WDF_DRIVER_CONFIG_INIT, addr config, AddDevice
+  invoke WdfDriverCreate, pOurDriver, pOurRegistry, WDF_NO_OBJECT_ATTRIBUTES, addr config, WDF_NO_HANDLE
+  ret
+DriverEntry endp
+end DriverEntry
+.end
+</pre>
+<p>
+<b>DriverEntry()</b>產生WDF Driver Object並且註冊AddDevice Callback<br>
+<b>AddDevice()</b>產生WDF Device Object並且輸出Debug字串<br><br>
+
+main.inf
+</p>
+<pre class="brush:asm">
+[Version]
+Signature=$CHICAGO$
+Class=Unknown
+Provider=%MFGNAME%
+DriverVer=8/21/2019,1.0.0.0
+ 
+[Manufacturer]
+%MFGNAME%=DeviceList
+ 
+[DeviceList]
+%DESCRIPTION%=DriverInstall, *MyDriver
+ 
+[DestinationDirs]
+DefaultDestDir=10,System32\Drivers
+ 
+[SourceDisksFiles]
+main.sys=1,,,
+ 
+[SourceDisksNames]
+1=%INSTDISK%,,,
+ 
+[DriverInstall.NT]
+CopyFiles=DriverCopyFiles
+ 
+[DriverCopyFiles]
+main.sys,,,2
+ 
+[DriverInstall.NT.Services]
+AddService=FILEIO,2,DriverService
+ 
+[DriverService]
+ServiceType=1
+StartType=3
+ErrorControl=1
+ServiceBinary=%10%\system32\drivers\main.sys
+ 
+[DriverInstall.NT.HW]
+AddReg=DriverHwAddReg
+ 
+[DriverHwAddReg]
+HKR,,SampleInfo,,""
+ 
+[DriverInstall]
+AddReg=DriverAddReg
+CopyFiles=DriverCopyFiles
+ 
+[DriverAddReg]
+HKR,,DevLoader,,*ntkern
+HKR,,NTMPDriver,,main.sys
+ 
+[DriverInstall.HW]
+AddReg=DriverHwAddReg
+ 
+[Strings]
+MFGNAME="MyDriver"
+INSTDISK="MyDriver Disc"
+DESCRIPTION="MyDriver"
+</pre>
+<p>
+INF內容也是很制式的，我們先知道如何使用就可以，司徒之後會教導大家如何寫INF檔案<br><br>
+
+編譯程式：
+</p>
+<pre>
+del /s /q main.sys
+c:\masm32\bin\ml /c /coff /Cp "main.asm"
+c:\masm32\bin\link /entry:FxDriverEntry@8 /MAP /IGNORE:4078 /nologo /driver /base:0x10000 /subsystem:native /align:64 /out:"main.sys" main.obj"
+del /s /q main.map
+del /s /q main.obj
+</pre><br>
+
+<p>
+安裝程式：<br>
+在開始安裝驅動程式之前，我們需要先下載除錯工具，讓驅動程式的Debug訊息可以顯示在除錯工具上面，目前在Kernel Mode以及User Mode上，最佳的Debug輸出訊息工具是DbgView，該公司目前已經被Microsoft併購，所以可以從Microsoft網站下載，下載完後執行DbgView並將<b>Capture > Capture Kernel</b>和<b>Enable Verbose Kernel Output</b>選項打勾，接著<b>重啟</b>DbgView<br>
+<img src="asm_pnp_hello/4.jpg" class="maxSize"><br><br>
+
+對於驅動程式的安裝工具，司徒目前先使用NuMega公司製作的安裝工具EzDriverInstaller，請將main.sys和main.inf放在同一個目錄並執行EzDriverInstaller，選擇<b>File > Open...</b>(開啟main.inf檔案)，接著按<b>Add New Device</b>就可以在DbgView上面看到輸出訊息<br>
+<img src="asm_pnp_hello/5.jpg" class="maxSize"><br>
+<img src="asm_pnp_hello/1.jpg" class="maxSize"><br><br>
+
+Device Manager<br>
+<img src="asm_pnp_hello/2.jpg" class="maxSize"><br><br>
+
+Device<br>
+<img src="asm_pnp_hello/3.jpg" class="maxSize">
+</p>
+
+
+<p>
+<br><a href="../../driver.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

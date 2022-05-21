@@ -1,0 +1,100 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Linux Device Driver</h3>
+<p><b>解決"module_put"問題</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://stackoverflow.com/questions/1741415/linux-kernel-modules-when-to-use-try-module-get-module-put">linux-kernel-modules-when-to-use-try-module-get-module-put</a><br><br>
+
+問題如下：
+</p>
+<pre class="brush:cpp">
+[   24.586438] ------------[ cut here ]------------
+[   24.591363] WARNING: CPU: 0 PID: 84 at kernel/module.c:967 module_put+0xa0/0xb4()
+[   24.599345] Modules linked in: main(PO)
+[   24.603421] CPU: 0 PID: 84 Comm: app Tainted: P        W  O    4.1.18 #1
+[   24.610508] Hardware name: Generic AM33XX (Flattened Device Tree)
+[   24.616932] Backtrace: 
+[   24.619557] [&lt;c0012b18&gt;] (dump_backtrace) from [&lt;c0012d38&gt;] (show_stack+0x18/0x1c)
+[   24.627557]  r7:c0854fd8 r6:000003c7 r5:00000009 r4:00000000
+[   24.633585] [&lt;c0012d20&gt;] (show_stack) from [&lt;c06b9e28&gt;] (dump_stack+0x20/0x28)
+[   24.641237] [&lt;c06b9e08&gt;] (dump_stack) from [&lt;c0035d40&gt;] (warn_slowpath_common+0x7c/0xb4)
+[   24.649785] [&lt;c0035cc4&gt;] (warn_slowpath_common) from [&lt;c0035e1c&gt;] (warn_slowpath_null+0x24/0x2c)
+[   24.659039]  r8:ddc42d40 r7:00000000 r6:ddc33790 r5:dd082440 r4:ddc36900
+[   24.666196] [&lt;c0035df8&gt;] (warn_slowpath_null) from [&lt;c008add0&gt;] (module_put+0xa0/0xb4)
+[   24.674540] [&lt;c008ad30&gt;] (module_put) from [&lt;c01050b0&gt;] (__fput+0xb4/0x20c)
+[   24.681900] [&lt;c0104ffc&gt;] (__fput) from [&lt;c0105260&gt;] (____fput+0x10/0x14)
+[   24.688996]  r10:00000000 r9:ddc64000 r8:c000fa24 r7:ddc74828 r6:c099f30c r5:ddc74480
+[   24.697338]  r4:00000000
+[   24.700046] [&lt;c0105250&gt;] (____fput) from [&lt;c004e004&gt;] (task_work_run+0x94/0xc4)
+[   24.707785] [&lt;c004df70&gt;] (task_work_run) from [&lt;c00127bc&gt;] (do_work_pending+0x8c/0xb4)
+[   24.716125]  r7:00000006 r6:ddc65fb0 r5:c000fa24 r4:ddc64000
+[   24.722148] [&lt;c0012730&gt;] (do_work_pending) from [&lt;c000f8cc&gt;] (work_pending+0xc/0x20)
+[   24.730300]  r7:00000006 r6:00000000 r5:00000000 r4:bebd0d18
+[   24.736341] ---[ end trace c4d06157b8bb6695 ]---
+</pre>
+<p>
+解法就是把<b>.owner = THIS_MODULE</b>拿掉
+</p>
+<pre>
+struct file_operations fops = {
+  ...
+  //.owner = THIS_MODULE,
+  ...
+};
+</pre><br>
+
+<p>
+<br><a href="../../driver.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

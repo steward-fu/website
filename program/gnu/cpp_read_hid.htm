@@ -1,0 +1,138 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>GNU &gt;&gt; C/C++</h3>
+<p><b>read data from usb hid</b></p>
+<hr size="1">
+<p>
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;linux/types.h&gt;
+#include &lt;linux/input.h&gt;
+#include &lt;linux/hidraw.h&gt;
+#include &lt;sys/ioctl.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;errno.h&gt;
+#include &lt;time.h&gt;
+#include &lt;sys/time.h&gt;
+
+static uint32_t get_ticks(void)
+{
+  struct timeval tv={0};
+  static struct timeval init_tv={0};
+
+  gettimeofday(&amp;tv, 0);
+  if(init_tv.tv_sec == 0){
+    init_tv = tv;
+  }
+  return ((tv.tv_sec - init_tv.tv_sec) * 1000000) + tv.tv_usec - init_tv.tv_usec;
+}
+
+int main(int argc, char **argv)
+{
+  uint8_t buf[255]={0};
+  struct hidraw_devinfo info={0};
+  int fd=-1, x=0, r=0, desc_size=0;
+  struct hidraw_report_descriptor rpt_desc={0};
+ 
+  fd = open("/dev/hidraw3", O_RDWR);
+  if(fd &lt; 0){
+    printf("failed to open device\n");
+    return -1;
+  }
+ 
+  ioctl(fd, HIDIOCGRDESCSIZE, &amp;desc_size);
+  rpt_desc.size = desc_size;
+  ioctl(fd, HIDIOCGRDESC, &amp;rpt_desc);
+  ioctl(fd, HIDIOCGRAWNAME(sizeof(buf)), buf);
+  ioctl(fd, HIDIOCGRAWPHYS(sizeof(buf)), buf);
+  ioctl(fd, HIDIOCGRAWINFO, &amp;info);
+ 
+  buf[0] = 0x9;
+  buf[1] = 0xff;
+  buf[2] = 0xff;
+  buf[3] = 0xff;
+  ioctl(fd, HIDIOCSFEATURE(4), buf);
+ 
+  buf[0] = 0x9;
+  ioctl(fd, HIDIOCGFEATURE(sizeof(buf)), buf);
+
+  get_ticks();
+  for(x=0; x&lt;1000; x++){
+    r = read(fd, buf, 64);
+    if(r == 64){
+      for(int x=0; x&lt;64; x++){
+        printf("%04d, ", (uint8_t)buf[x]);
+      }
+      printf("\n");
+    }
+  }
+  printf("elapsed time: %dus\n", get_ticks());
+  close(fd);
+  return 0;
+}
+</pre>
+<p>
+P.S. <b>/dev/hidraw3</b>會因為環境而不同
+</p>
+
+<p>
+<br><a href="../../program.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

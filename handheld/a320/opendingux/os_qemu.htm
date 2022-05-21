@@ -1,0 +1,110 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../../header.js"></script>
+<div id="page">
+<h3>Dingoo A320 &gt;&gt; OpenDingux</h3>
+<p><b>安裝OpenDingux(QEMU)</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="http://www.gcw-zero.com/news.php?id=13">gcw-zero</a><br>
+2. <a href="http://prizma.bmstu.ru/~exmortis/posts/2015-04-23-opendingux-qemu.html">2015-04-23-opendingux-qemu</a><br><br>
+
+安裝步驟如下：
+</p>
+<pre>
+$ cd
+$ wget https://github.com/steward-fu/a320/releases/download/v1.0/cc-dx.tar.gz
+$ tar xvf cc-dx.tar.gz
+$ sudo cp -a a320 /opt/a320
+$ export PATH=$PATH:/opt/a320/usr/bin/
+
+$ cd
+$ git clone -b jz-3.16-qemu  https://github.com/dmitrysmagin/linux.git
+$ cd linux
+$ export ARCH=mips
+$ make gcw0-qemu_defconfig
+$ make
+
+$ cd
+$ git clone -b opendingux-2012.11 https://github.com/dmitrysmagin/opendingux-buildroot.git
+$ cd opendingux-buildroot
+$ make a380_defconfig
+$ make
+
+$ cd
+$ dd if=/dev/zero of=512M bs=1M count=512
+$ sudo mkdosfs 512M
+$ sudo mount 512M /mnt/
+$ sudo cp rootfs.squashfs /mnt/
+$ sudo mkdir /mnt/local /mnt/local/apps /mnt/local/home /mnt/local/etc
+$ sudo umount /mnt/
+
+$ sudo apt-get install qemu -y
+$ vim run.sh
+  #!/bin/sh
+  MACHINE="-M malta -m 256"
+  FIRMWARE="-kernel vmlinux -hda 512M"
+  HARDWARE="-sdl -soundhw ac97 -k en-us -rtc clock=vm"
+  NETWORK="-net nic,model=e1000 -net user"
+  SERIAL="-serial stdio -monitor none"
+  qemu-system-mipsel $MACHINE $FIRMWARE $HARDWARE $NETWORK $SERIAL
+
+$ chmod a+x ./run.sh
+$ ./run.sh
+</pre>
+<p>
+<img src="os_qemu/1.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

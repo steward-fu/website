@@ -1,0 +1,101 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Zaurus SL-C3200</h3>
+<p><b>解決"HDD not initialized"問題</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://github.com/steward-fu/sl-c700/releases/download/v1.3/SL-C3200-Qtopia-1.23-2125070506.zip">cacko</a><br>
+2. <a href="https://github.com/steward-fu/sl-c700/releases/download/v1.0/recovery_c3200.zip">recovery</a><br><br>
+
+問題的原因在於，Zaurus開機會檢查<b>/dev/hda1</b>以及<b>/dev/hda2</b>的<b>.sys</b>資料夾檔案，如果發現不存在，就會顯示<b>HDD not initialized</b>並且停止執行，可以使用如下方式解決：<br>
+1. 解開harddisk.zip(在recovery_c3200.zip)並且複製到SDCard<br>
+2. 使用Cacko安裝檔案進入<b>console shell</b>模式<br>
+3. 使用如下方式重新格式化
+</p>
+<pre>
+# fdisk /dev/hda
+  /dev/hda1  Start 1  End 20 83 System Linux
+  /dev/hda2  Start 21 End 40 83 System Linux
+  /dev/hda3  Start 41 End 11905 c System Win95 FAT32 (LBA)
+</pre>
+<p>
+4. 重新開機並且再次進入Cacko <b>console shell</b>模式<br>
+5. 使用如下方式複製檔案
+</p>
+<pre>
+# mke2fs -j /dev/hda1
+# mke2fs -j /dev/hda2
+# mkfs.vfat -F 32 /dev/hda3
+# mkdir /mnt/hda
+
+# mount /dev/hda1 /mnt/hda
+# mkdir /mnt/hda/.sys
+# cp /mn/card/hdd1sys/hdimage2.tgz /mnt/hda/.sys/
+# cp /mn/card/hdd1sys/hdlist1.dat /mnt/hda/.sys/
+# umount /mnt/hda
+
+# mount /dev/hda2 /mnt/hda
+# mkdir /mnt/hda/.sys
+# cp /mn/card/hdd2sys/contlist.dat /mnt/hda/.sys/
+# cp /mn/card/hdd2sys/hdlist2.dat /mnt/hda/.sys/
+# cp /mn/card/hdd2sys/hdlist3.dat /mnt/hda/.sys/
+# umount /mnt/hda
+
+# rm -rf /mnt/hda
+# reboot
+</pre><br>
+
+<p>
+<br><a href="../../umpc.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

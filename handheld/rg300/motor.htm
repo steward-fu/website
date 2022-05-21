@@ -1,0 +1,131 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>RG300</h3>
+<p><b>支援振動馬達</b></p>
+<hr size="1">
+<p>
+司徒最近打算讓開源掌機都可以支援振動功能，因為這樣可以讓遊戲更加有樂趣，當然搭配的則是Hack NES遊戲，借此讓NES遊戲支援振動功能，而第一台開刀的機器就是RG300，因為RG300是目前司徒拿到最新的開源掌機，當然，司徒也相當感謝揚立銘提供的PCB焊點圖，讓司徒可以快速完成硬體改機。<br><br>
+
+使用的腳位為LCD_SDA(TP148)<br>
+<img src="motor/1.jpg" class="maxSize"><br><br>
+
+馬達<br>
+<img src="motor/2.jpg" class="maxSize"><br><br>
+
+接著就開始焊接<br>
+<img src="motor/3.jpg" class="maxSize"><br><br>
+
+幸運地，初始化後的LCD_SDA腳位是低電位，因此，一顆NPN電晶體即可解决<br>
+<img src="motor/4.jpg" class="maxSize"><br><br>
+
+讓馬達置中，藉此得到比較平衡的振動<br>
+<img src="motor/5.jpg" class="maxSize"><br><br>
+
+完成配線<br>
+<img src="motor/6.jpg" class="maxSize"><br><br>
+
+反電動勢二極體<br>
+<img src="motor/7.jpg" class="maxSize"><br><br>
+
+44R限流電阻<br>
+<img src="motor/8.jpg" class="maxSize"><br><br>
+
+電路圖<br>
+<img src="motor/9.jpg" class="maxSize"><br><br>
+
+完成後的樣子<br>
+<img src="motor/10.jpg" class="maxSize"><br><br>
+
+接著找下Remap位置<br>
+<img src="motor/11.jpg" class="maxSize"><br><br>
+
+Set Register<br>
+<img src="motor/12.jpg" class="maxSize"><br><br>
+
+Clear Regsiter<br>
+<img src="motor/13.jpg" class="maxSize"><br><br>
+
+最後司徒寫個馬達測試App
+</p>
+
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;sys/mman.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;time.h&gt;
+
+int main(int argc, char* argv[])
+{
+  int fd = open("/dev/mem", O_RDWR);
+  if(fd &lt; 0){
+    printf("failed to open /dev/mem\n");
+    return -1;
+  }
+  unsigned char *mem = mmap(0, 4096, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0x10010000);
+  printf("mem ptr: 0x%x\n", mem);
+  
+  mem[0x414]|= 4;
+  usleep(5000000);
+  mem[0x418]|= 4;
+  munmap(mem, 4096);
+  close(fd);
+  return 0;
+}
+</pre><br>
+
+<p>
+<br><a href="../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

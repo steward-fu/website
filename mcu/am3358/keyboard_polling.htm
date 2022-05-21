@@ -1,0 +1,226 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>BeagleBone Green Wireless &gt;&gt; C/C++</h3>
+<p><b>Keyboard(Polling)</b></p>
+<hr size="1">
+<p>
+arch/arm/boot/dts/am335x-bonegreen-wireless.dts
+</p>
+<pre>
+  am33xx_pinmux: pinmux@44e10800 {
+    pinctrl-names = "default";
+    pinctrl-0 = &lt;&amp;gpio_keys_s0 &amp;lcd_pins_s0&gt;
+    ...
+    
+    gpio_keys_s0: gpio_keys_s0 {
+      pinctrl-single,pins = &lt;
+        0x90 0x37
+        0x9c 0x37
+        0x34 0x37
+        0x3c 0x37
+        0x2c 0x37
+        0x94 0x37
+        0x98 0x37
+        0x30 0x37
+        0x28 0x37
+        0x38 0x37
+        0x8c 0x37
+        0x78 0x37
+      >;
+    };
+</pre><br>
+
+<p>
+drivers/gpio/keyboard/main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;linux/init.h&gt;
+#include &lt;linux/device.h&gt;
+#include &lt;linux/module.h&gt;
+#include &lt;linux/delay.h&gt;
+#include &lt;linux/timer.h&gt;
+#include &lt;linux/gpio.h&gt;
+#include &lt;linux/input.h&gt;
+
+#include &lt;asm/irq.h&gt;
+#include &lt;asm/io.h&gt;
+#include &lt;asm/io.h&gt;
+
+#define do_request(pin, name) \
+  if(gpio_request(pin, name) &lt; 0){ \
+    printk("failed to request gpio: %s\n", name); \
+  } \
+  else{ \
+    printk("request successfully for gpio: %s\n", name); \
+    gpio_direction_output(pin, 1); \
+    gpio_direction_input(pin); \
+  }
+
+MODULE_AUTHOR("Steward_Fu");
+MODULE_DESCRIPTION("AM335x Keyboard Driver");
+MODULE_LICENSE("GPL");
+
+static int g_blink_period=100;
+static struct input_dev *button_dev;
+static struct timer_list g_blink_timer;
+
+static void report_key(unsigned long btn, unsigned long mask, unsigned char key)
+{
+  static unsigned long btn_pressed=0;
+  static unsigned long btn_released=0xfff;
+
+  if(btn &amp; mask){
+    btn_released&amp;= ~mask;
+    if((btn_pressed &amp; mask) == 0){
+      btn_pressed|= mask;
+      input_report_key(button_dev, key, 1);
+    }
+  }
+  else{
+    btn_pressed&amp;= ~mask;
+    if((btn_released &amp; mask) == 0){
+      btn_released|= mask;
+      input_report_key(button_dev, key, 0);
+    }
+  }
+}
+
+static void blink_handler(unsigned long unused)
+{
+  unsigned long val;
+  static unsigned long pre=0;
+  val = gpio_get_value(66) &lt;&lt; 10; // left
+  val|= gpio_get_value(69) &lt;&lt; 11; // down
+  val|= gpio_get_value(45) &lt;&lt; 8; // up
+  val|= gpio_get_value(47) &lt;&lt; 9; // right
+  val|= gpio_get_value(27) &lt;&lt; 0; // a
+  val|= gpio_get_value(68) &lt;&lt; 3; // b
+  val|= gpio_get_value(67) &lt;&lt; 1; // x
+  val|= gpio_get_value(44) &lt;&lt; 2; // y
+  val|= gpio_get_value(26) &lt;&lt; 4; // l
+  val|= gpio_get_value(60) &lt;&lt; 7; // r
+  val|= gpio_get_value(46) &lt;&lt; 6; // start
+  val|= gpio_get_value(65) &lt;&lt; 5; // select
+   
+  val = ~val;
+  if(pre != val){
+    pre = val;
+
+    report_key(pre, 0x100, KEY_UP);
+    report_key(pre, 0x800, KEY_DOWN);
+    report_key(pre, 0x400, KEY_LEFT);
+    report_key(pre, 0x200, KEY_RIGHT);
+    report_key(pre, 0x080, KEY_BACKSPACE);
+    report_key(pre, 0x040, KEY_ENTER);
+    report_key(pre, 0x020, KEY_ESC);
+    report_key(pre, 0x010, KEY_TAB);
+    report_key(pre, 0x001, KEY_LEFTCTRL);
+    report_key(pre, 0x008, KEY_LEFTALT);
+    report_key(pre, 0x002, KEY_SPACE);
+    report_key(pre, 0x004, KEY_LEFTSHIFT);
+    input_sync(button_dev);
+  }
+  mod_timer(&amp;g_blink_timer, jiffies + msecs_to_jiffies(g_blink_period));
+}
+
+static int __init main_init(void)
+{
+  do_request(66, "gpio-66");
+  do_request(69, "gpio-69");
+  do_request(45, "gpio-45");
+  do_request(47, "gpio-47");
+  do_request(27, "gpio-27");
+  do_request(67, "gpio-67");
+  do_request(68, "gpio-68");
+  do_request(44, "gpio-44");
+  do_request(26, "gpio-26");
+  do_request(46, "gpio-46");
+  do_request(65, "gpio-65");
+  do_request(60, "gpio-60");
+
+  button_dev = input_allocate_device();
+  set_bit(EV_KEY,button_dev-&gt; evbit);
+  set_bit(KEY_UP, button_dev-&gt;keybit);
+  set_bit(KEY_DOWN, button_dev-&gt;keybit);
+  set_bit(KEY_LEFT, button_dev-&gt;keybit);
+  set_bit(KEY_RIGHT, button_dev-&gt;keybit);
+  set_bit(KEY_ENTER, button_dev-&gt;keybit);
+  set_bit(KEY_ESC, button_dev-&gt;keybit);
+  set_bit(KEY_LEFTCTRL, button_dev-&gt;keybit);
+  set_bit(KEY_LEFTALT, button_dev-&gt;keybit);
+  set_bit(KEY_SPACE, button_dev-&gt;keybit);
+  set_bit(KEY_LEFTSHIFT, button_dev-&gt;keybit);
+  set_bit(KEY_TAB, button_dev-&gt;keybit);
+  set_bit(KEY_BACKSPACE, button_dev-&gt;keybit);
+  button_dev-&gt;name = "am335x-kbd";
+  button_dev-&gt;id.bustype = BUS_HOST;
+  input_register_device(button_dev);
+  
+  setup_timer(&amp;g_blink_timer, blink_handler, 0);
+  mod_timer(&amp;g_blink_timer, jiffies + msecs_to_jiffies(g_blink_period));
+  return 0;
+}
+ 
+static void __exit main_exit(void)
+{
+  input_unregister_device(button_dev);
+  del_timer(&amp;g_blink_timer);
+}
+ 
+module_init(main_init);
+module_exit(main_exit);
+</pre><br>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

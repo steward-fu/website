@@ -1,0 +1,146 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Play Station</h3>
+<p><b>The R3000A</b></p>
+<hr size="1">
+<p>
+Ref. <a href="http://www.raphnet.net/electronique/psx_adaptor/Playstation.txt">http://www.raphnet.net/electronique/psx_adaptor/Playstation.txt</a><br>
+感謝Joshua Walker整理了如此詳細的資料，並且願意分享出來，讓對PS1模擬器感興趣的開發者，得以有一個更好的參考資料，司徒基於該資料，重新分段整理，也希望未來的PS1模擬器，可以開發的越來越好。
+</p>
+<hr size="1">
+
+<p>
+<a href="#t1">Overview</a><br>
+<a href="#t2">The R3000A instruction set</a><br>
+<a href="#t3">R3000A opcode encoding</a>
+</p><br><br>
+
+<div id="t1">
+<h3>
+Overview
+</h3>
+<p class="reader">
+The heart of the PSX is a slightly modified R3000A CPU from MIPS and LSI. This is a 32 bit Reduced Instruction Set Controller (RISC) processor that clocks at 33.8688 MHz. It has an operating performance of 30 million instructions per second. In addition, it has an Internal instruction cache of 4 KB, a data cache of  1 KB and has a bus transfer rate of 132 MB/sec. It has internally one Arithmetic/Logic unit (ALU), One shifter, and totally lacks an FPU or floating point unit.  The R3000A is configured for little-endian  byte order and defines a word as 32-bits, a half-word, as 16-bits, and a byte as 8-bits. 
+</p>
+
+<p class="reader">
+The PSX has two co-processors, cop0, the System Control co-processor, and cop2, the GPU or Graphics Processing Unit. These are covered later on in this document. 
+</p>
+
+<p class="reader">
+<b class="lv1">Instruction cache</b><br>
+The PSX’s R3000A contains 4 KB of instruction cache. The instruction cache is organized with a line size of 16 bytes. This should achieve hit rate of around 80%. The cache is implemented using physical address and tags, as opposed to virtual ones.
+</p>
+
+<p class="reader">
+<b class="lv1">Data cache</b><br>
+The PSX’s R3000A incorporates an on-chip data cache of  1KB, organized as a line size of 4 bytes (one word). This also should achieve hit rates of 80% in most applications. This also is a directly mapped physical address cache. The data cache is implemented as a write through cache, to maintain that the main memory is the same as the internal cache. In order to minimize processor stalls due to data write operations, the bus interface unit uses a 4–deep write buffer which captures address and data at the processor execution rate, allowing it to be retired to main memory at a much slower rate without impacting system performance. 
+</p>
+
+<p class="reader">
+<b class="lv1">32 bit architecture</b><br>
+The R3000A uses thirty-two 32-bit registers, a 32 bit program counter, and two 32 bit registers for multiply/divide functions.  The following table lists the registers by register number, name, and usage.<br><br>
+<img src="r3000a/1.jpg" style="border:0;" class="maxSize"><br><br>
+<img src="r3000a/2.jpg" style="border:0;" class="maxSize"><br>
+
+Even though all general purpose registers have different names, they are all treated the same except for two. The R0 (ZR) register is hardwired as zero. The Second exception is R31 (RA) which is used at a link register when link or jump routines are called. These instructions are used in subroutine calls, and the subroutine return address is placed in register R31. This register can be written to or read as a normal register in other operations.
+</p><br>
+
+<div id="t2">
+<h3>
+The R3000A instruction set
+</h3>
+<p class="reader">
+The instruction encoding is based on the MIPS architecture. The means that there are three types of instruction encoding.<br><br>
+<img src="r3000a/3.jpg" style="border:0;" class="maxSize"><br>
+
+The R3000A instruction set can be divided into the following basic groups:<br>
+<b class="lv2">Load/Store</b> instructions move data between memory and the general registers. They are all encoded as “I-Type” instructions, and the only addressing mode implemented is base register plus signed, immediate offset. This directly enables the use of three distinct addressing modes: register plus offset; register direct; and immediate.<br>
+
+<b class="lv2">Computational</b> instructions perform arithmetic, logical, and shift operations on values in registers. They are encoded as either “R-Type” instructions, when both source operands as well as the result are general registers, and “I-Type”, when one of the source operands is a 16-bit immediate value. Computational instructions use a three address format, so that operations don’t needlessly interfere with the contents of source registers.<br>
+
+<b class="lv2">Jump and Branch</b> instructions change the control flow of a program. A Jump instruction can be encoded as a “J-Type” instruction, in which case the Jump target address is a paged absolute address formed by combining the 26-bit immediate value with four bits of the Program Counter. This form is used for subroutine calls. Alternately, Jumps can be encoded using the “R-Type” format, in which case the target address is a 32-bit value contained in one of the general registers. This form is typically used for returns and dispatches. Branch operations are encoded as “I-Type” instructions. The target address is formed from a 16-bit displacement relative to the Program Counter. The Jump and Link instructions save a return address in Register r31. These are typically used as subroutine calls, where the subroutine return address is stored into r31 during the call operation.<br>
+
+<b class="lv2">Co-Processor</b> instructions perform operations on the co-processor set. Co-Processor Loads and Stores are always encoded as “I-Type” instructions; co-processor operational instructions have co-processor dependent formats. In the R3000A, the System Control Co-Processor (cop0) contains registers which are used in memory management and exception handling.<br>
+
+<b class="lv2">Special</b> instructions perform a variety of tasks, including movement of data between special and general registers, system calls, and breakpoint operations. They are always encoded as “R-Type” instructions. 
+</p>
+
+<p class="reader">
+<b class="lv1">INSTRUCTION SET SUMMARY</b><br>
+The following table describes The assembly instructions for the R3000A. Please refer to the appendix for more detail about opcode encoding<br><br>
+<img src="r3000a/4.jpg" style="border:0;" class="maxSize"><br><br>
+<img src="r3000a/5.jpg" style="border:0;" class="maxSize"><br><br>
+<img src="r3000a/6.jpg" style="border:0;" class="maxSize"><br><br>
+<img src="r3000a/7.jpg" style="border:0;" class="maxSize"><br><br>
+<img src="r3000a/8.jpg" style="border:0;" class="maxSize"><br><br>
+<img src="r3000a/9.jpg" style="border:0;" class="maxSize"><br><br>
+<img src="r3000a/10.jpg" style="border:0;" class="maxSize"><br><br>
+<img src="r3000a/11.jpg" style="border:0;" class="maxSize"><br><br>
+<img src="r3000a/12.jpg" style="border:0;" class="maxSize"><br><br>
+<img src="r3000a/13.jpg" style="border:0;" class="maxSize"><br><br>
+</p>
+
+<div id="t3">
+<h3>
+R3000A opcode encoding
+</h3>
+<p class="reader">
+The following shows the opcode encoding for the MIPS architecture.<br><br>
+<img src="r3000a/14.jpg" style="border:0;" class="maxSize"><br><br>
+<img src="r3000a/15.jpg" style="border:0;" class="maxSize">
+</p>
+
+<p>
+<br><br><a href="../../emu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,103 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Raspberry Pi3</h3>
+<p><b>Build Kernel(Debian x64)</b></p>
+<hr size="1">
+<p>Tooolchain(x64)</p>
+<pre>
+$ git clone https://github.com/raspberrypi/tools
+$ sudo mv tools /opt/pi3
+$ export PATH=$PATH:/opt/pi3/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian-x64/bin/
+</pre><br>
+
+<p>
+Build Kernel
+</p>
+<pre>
+$ git clone --depth=1 https://github.com/raspberrypi/linux
+$ cd linux
+$ KERNEL=kernel7
+$ make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- bcm2709_defconfig
+$ make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- zImage modules dtbs
+</pre><br>
+
+<p>
+With sdb1 being the FAT (boot) partition, and sdb2 being the ext4 filesystem (root) partition.
+</p>
+<pre>
+$ mkdir -p mnt/fat32
+$ mkdir -p mnt/ext4
+$ sudo mount /dev/sdb1 mnt/fat32
+$ sudo mount /dev/sdb2 mnt/ext4
+$ sudo make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- INSTALL_MOD_PATH=mnt/ext4 modules_install
+$ sudo cp mnt/fat32/$KERNEL.img mnt/fat32/$KERNEL-backup.img
+$ sudo scripts/mkknlimg arch/arm/boot/zImage mnt/fat32/$KERNEL.img
+$ sudo cp arch/arm/boot/dts/*.dtb mnt/fat32/
+$ sudo cp arch/arm/boot/dts/overlays/*.dtb* mnt/fat32/overlays/
+$ sudo cp arch/arm/boot/dts/overlays/README mnt/fat32/overlays/
+$ sudo umount mnt/fat32
+$ sudo umount mnt/ext4
+</pre><br>
+
+<p>
+Enable UART output for pi3
+</p>
+<pre>
+$ nano mnt/fat32/config.txt
+ dtoverlay=pi3-miniuart-bt
+ force_turbo=1
+</pre><br>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

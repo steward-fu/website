@@ -1,0 +1,181 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>NUC977 &gt;&gt; Assembly</h3>
+<p><b>Timer1</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://github.com/steward-fu/mcu-pdf/blob/master/nuc970/pm.pdf">pdf</a><br>
+2. <a href="https://github.com/OpenNuvoton/NUC970_NonOS_BSP">NUC970_NonOS_BSP</a><br><br>
+
+Timer Interrupt<br>
+<img src="asm_timer0/4.jpg" class="maxSize"><br><br>
+
+CE、IE、Mode<br>
+<img src="asm_timer0/1.jpg" class="maxSize"><br><br>
+
+Compare<br>
+<img src="asm_timer0/2.jpg" class="maxSize"><br><br>
+
+Flag<br>
+<img src="asm_timer0/3.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+  .equ GPIOD_DIR,     (0xb8003000 + 0xc0)
+  .equ GPIOD_DATAOUT, (0xb8003000 + 0xc4)
+  .equ CLK_PCLKEN0,   (0xb0000200 + 0x18)
+  .equ AIC_MECR,      (0xb8002000 + 0x130)
+  .equ AIC_EOSCR,     (0xb8002000 + 0x150)
+  .equ TMR1_CSR,      (0xb8001000 + 0x10)
+  .equ TMR1_CMPR,     (0xb8001000 + 0x14)
+  .equ TMR1_DR,       (0xb8001000 + 0x18)
+  .equ TMR_ISR,       (0xb8001000 + 0x60)
+
+  .data
+blink: .dcb 1
+  
+  .text
+  .align 2
+  .global _start
+_start:    b reset
+_undef:    b .
+_swi:      b .
+_pabort:   b .
+_dabort:   b .
+_reserved: b .
+_irq:      b irq_handler
+_fiq:      b .
+ 
+reset:
+  mrs r0, cpsr
+  bic r0, #0x80
+  msr cpsr_c, r0
+ 
+  ldr r0, =AIC_MECR
+  ldr r1, =(1 &lt;&lt; 17)
+  str r1, [r0]
+  
+  ldr r0, =CLK_PCLKEN0
+  ldr r1, [r0]
+  orr r1, #((1 &lt;&lt; 3) | (1 &lt;&lt; 9))
+  str r1, [r0]
+
+  ldr r0, =TMR1_CMPR
+  ldr r1, =(12000000 &gt;&gt; 1)
+  str r1, [r0]
+
+  ldr r0, =TMR1_CSR
+  ldr r1, =0x60000000
+  str r1, [r0]
+  
+  ldr r0, =GPIOD_DIR
+  ldr r1, =(1 &lt;&lt; 6)
+  str r1, [r0]
+   
+  ldr r0, =GPIOD_DATAOUT
+  ldr r1, =(1 &lt;&lt; 6)
+  str r1, [r0]
+
+  ldr r0, =blink
+  ldr r1, =0x00
+  str r1, [r0]
+  b .
+ 
+irq_handler:
+  ldr r0, =blink
+  ldr r1, [r0]
+  cmp r1, #0x00
+  beq 1f
+  ldr r0, =GPIOD_DATAOUT
+  ldr r1, =(1 &lt;&lt; 6)
+  str r1, [r0]
+  b 2f
+1:
+  ldr r0, =GPIOD_DATAOUT
+  ldr r1, =~(1 &lt;&lt; 6)
+  str r1, [r0]
+2:
+  ldr r0, =blink
+  ldr r1, [r0]
+  eor r1, #0xff
+  str r1, [r0]
+
+  ldr r0, =AIC_EOSCR
+  ldr r1, =1
+  str r1, [r0]
+
+  ldr r0, =TMR_ISR
+  ldr r1, [r0]
+  orr r1, #2
+  str r1, [r0]
+  
+  ldr r0, =TMR1_CSR
+  ldr r1, [r0]
+  orr r1, #(1 &lt;&lt; 30)
+  str r1, [r0]
+  
+  subs pc, lr, #4
+  .end
+</pre><br>
+
+<p>
+完成<br>
+<img src="asm_led/1.jpg" class="maxSize"><br>
+<img src="asm_led/2.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

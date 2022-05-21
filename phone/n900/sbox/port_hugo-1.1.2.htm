@@ -1,0 +1,366 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../../header.js"></script>
+<div id="page">
+<h3>Nokia N900 >> Sbox</h3>
+<p><b>移植Hugo 1.1.2</b></p>
+<hr size="1">
+<p>
+移植內容如下：
+</p>
+<pre class="brush:cpp">
+--- org/src/Hugo.c
++++ new/src/Hugo.c
+@@ -276,7 +276,6 @@
+   if (HUGO.psp_skip_cur_frame &lt;= 0) {
+ 
+     HUGO.psp_skip_cur_frame = HUGO.psp_skip_max_frame;
+-
+     if (HUGO.hugo_render_mode == HUGO_RENDER_FAST    ) loc_put_image_fast();
+     else
+     if (HUGO.hugo_render_mode == HUGO_RENDER_FAST_MAX) loc_put_image_fast_max();
+--- /dev/null
++++ new/src/Makefile
+@@ -0,0 +1,86 @@
++TARGET = hugo
++SDL_CONFIG = sdl-config
++PSP_OBJS =  \
++gp2x_psp.o \
++Hugo.o \
++psp_main.o \
++psp_sdl.o \
++psp_gu.o \
++psp_font.o \
++psp_battery.o \
++psp_kbd.o \
++psp_menu.o \
++psp_danzeff.o \
++psp_menu_set.o \
++psp_menu_cheat.o \
++psp_menu_list.o \
++psp_menu_help.o \
++psp_menu_kbd.o \
++psp_menu_joy.o \
++psp_editor.o \
++psp_joy.o \
++psp_fmgr.o \
++psp_audio.o \
++pspsdk_linux.o  \
++core/psp/osd_psp_cd.o \
++core/psp/osd_psp_gfx.o \
++core/psp/osd_psp_mix.o \
++core/psp/osd_psp_snd.o \
++core/psp/osd_psp_machine.o \
++core/psp/osd_psp_keyboard.o \
++core/psp/osd_psp_music.o \
++core/miniunz.o \
++core/unzip.o
++
++EMU_OBJS= \
++core/cd.o \
++core/dis.o \
++core/edit_ram.o \
++core/followop.o \
++core/format.o \
++core/gfx.o \
++core/h6280.o \
++core/hard_pce.o \
++core/hugo.o \
++core/list_rom.o \
++core/lsmp3.o \
++core/mix.o \
++core/optable.o \
++core/pce.o \
++core/pcecd.o \
++core/sound.o \
++core/sprite.o \
++core/utils.o \
++core/hcd.o  \
++core/bios.o core/cheat.o core/debug.o core/iniconfig.o core/bp.o
++
++OBJS= $(EMU_OBJS) $(PSP_OBJS)
++
++# PG=-pg
++
++DEFAULT_CFLAGS = $(shell $(SDL_CONFIG) --cflags) \
++                 -I/usr/include  -I. -Iinclude/ -I./pspsdk_linux \
++                 -Icore -mcpu=cortex-a8 -mtune=cortex-a8 -mfloat-abi=softfp -mfpu=neon
++
++HUGO_VERSION=v1.1.0-lin
++
++MORE_CFLAGS = -I. -g \
++ -funroll-loops -ffast-math \
++ -fno-strength-reduce -finline-functions \
++ -DLINUX_MODE \
++ -DHUGO_VERSION=\"$(HUGO_VERSION)\" \
++ -DNO_STDIO_REDIRECT $(PG)
++#-fsingle-precision-constant \
++
++CFLAGS = $(DEFAULT_CFLAGS) $(MORE_CFLAGS)
++CXXFLAGS = $(DEFAULT_CFLAGS) $(MORE_CFLAGS) -fno-exceptions -fno-rtti
++
++LIBS += -lSDL_image -lSDL_mixer -lSDL -lXext -lX11 -lpng -ljpeg -lz -lm -lpthread
++all : $(TARGET)
++
++$(TARGET): $(OBJS)
++  gcc $(CFLAGS) $(OBJS) $(LIBS) $(PG) -o $(TARGET)
++
++clean:
++  rm -f $(OBJS) $(TARGET)
++
+--- org/src/gp2x_psp.c
++++ new/src/gp2x_psp.c
+@@ -116,6 +116,7 @@
+       ButtonRelease = 1;
+     }
+ #endif
++#if 0
+     switch (Event) {
+       case GP2X_UP        : Mask = GP2X_CTRL_UP;
+       break;
+@@ -155,6 +156,24 @@
+       break;
+       case GP2X_VOLDOWN   : Mask = GP2X_CTRL_VOLDOWN;
+       break;
++    }
++#endif
++    //printf("steward, scancode: %d\n", Event);
++    switch(Event){
++    case 111: Mask = GP2X_CTRL_UP;       break;
++    case 116: Mask = GP2X_CTRL_DOWN;     break;
++    case 113: Mask = GP2X_CTRL_LEFT;     break;
++    case 114: Mask = GP2X_CTRL_RIGHT;    break;
++    case 29 : Mask = GP2X_CTRL_SQUARE;   break; /* A 38 */
++    case 38 : Mask = GP2X_CTRL_CIRCLE;   break; /* B 56 */
++    case 56 : Mask = GP2X_CTRL_CROSS;    break; /* X 53 */
++    case 53 : Mask = GP2X_CTRL_TRIANGLE; break; /* Y 29 */
++    case 32 : Mask = GP2X_CTRL_LTRIGGER; break; /* O 32 */
++    case 26 : Mask = GP2X_CTRL_RTRIGGER; break; /* E 26 */
++    case 57 : Mask = GP2X_CTRL_FIRE;     break; /* N 57 */
++    case 58 : Mask = GP2X_CTRL_START;    break; /* M 58 */
++    case 54 : Mask = GP2X_CTRL_SELECT;   break; /* C 54 */
++    case 40 : exit(0);                   break; /* D 40 */
+     }
+     loc_LastEventMask = loc_CurrEventMask;
+     if (ButtonPress) {
+--- org/src/psp_sdl.c
++++ new/src/psp_sdl.c
+@@ -26,6 +26,10 @@
+ #include "psp_sdl.h"
+ #include "psp_danzeff.h"
+ 
++  #define N900_QUEUE_SURFACE_SIZE 60
++  #define N900_WIDTH              800
++  #define N900_HEIGHT             480
++
+   extern unsigned char psp_font_8x8[];
+   extern unsigned char psp_font_6x10[];
+ 
+@@ -33,6 +37,12 @@
+   int            psp_font_width  = 8; 
+   int            psp_font_height = 8; 
+ 
++  SDL_Surface *n900_surface;
++  SDL_Surface *n900_queue_surface[N900_QUEUE_SURFACE_SIZE];
++  u16 n900_term;
++  u16 n900_flip_index;
++  u16 n900_mtable[N900_WIDTH];
++
+   SDL_Surface *back_surface;
+   SDL_Surface *back2_surface;
+ 
+@@ -401,8 +411,8 @@
+   psp_sdl_blit_splash();
+   psp_sdl_print(x, y, HUGO_VERSION, col);
+   psp_sdl_flip();
++  SDL_Delay(1000);
+ 
+-
+   while (index &lt; 50) {
+     gp2xCtrlPeekBufferPositive(&amp;c, 1);
+     if (c.Buttons &amp; (GP2X_CTRL_START|GP2X_CTRL_CROSS)) break;
+@@ -416,12 +426,6 @@
+   SDL_UnlockSurface(back_surface);
+ }
+ 
+-void
+-psp_sdl_flip(void)
+-{
+-  SDL_Flip(back_surface);
+-}
+-
+ #define  systemRedShift      (back_surface-&gt;format-&gt;Rshift)
+ #define  systemGreenShift    (back_surface-&gt;format-&gt;Gshift)
+ #define  systemBlueShift     (back_surface-&gt;format-&gt;Bshift)
+@@ -647,7 +651,66 @@
+   psp_sdl_save_screenshot_png(TmpFileName);
+ }
+ 
++void stretch(u16 *src, u16 *dst)
++{ 
++ u16 x, y;
+ 
++ for(y=0; y&lt;PSP_SDL_SCREEN_HEIGHT; y++){
++  for(x=0; x&lt;N900_WIDTH; x++){
++   dst[x] = src[n900_mtable[x]];
++   dst[x + N900_WIDTH] = src[n900_mtable[x]];
++  }
++  src+= PSP_SDL_SCREEN_WIDTH;
++  dst+= (N900_WIDTH &lt;&lt; 1);
++ }
++}
++
++void* n900_thread(void* param)
++{
++ u16 x=0, flip_index=0;
++ for(x=0; x&lt;N900_WIDTH; x++){
++  n900_mtable[x] = ((unsigned long)x*PSP_SDL_SCREEN_WIDTH)/N900_WIDTH;
++ }
++
++ while(n900_term){
++  /*if(n900_flip_index){
++   n900_flip_index = 0;
++   SDL_Rect rt={0, 0, PSP_SDL_SCREEN_WIDTH, PSP_SDL_SCREEN_HEIGHT};
++   SDL_BlitSurface(back_surface, &amp;rt, n900_queue_surface[0], &amp;rt);
++   stretch(n900_queue_surface[0]-&gt;pixels, n900_surface-&gt;pixels);
++   SDL_Flip(n900_surface);
++  }*/
++  if(flip_index != n900_flip_index){
++   stretch(n900_queue_surface[flip_index]-&gt;pixels, 
++    n900_surface-&gt;pixels);
++   SDL_Flip(n900_surface);
++   flip_index+= 1;
++   if(flip_index &gt;= N900_QUEUE_SURFACE_SIZE){
++    flip_index = 0;
++   }
++  }
++ }
++ return NULL;
++}
++
++void psp_sdl_flip(void)
++{
++ if(n900_term == 0){
++  stretch(back_surface-&gt;pixels, n900_surface-&gt;pixels);
++  SDL_Flip(n900_surface);
++ }
++ else{
++  SDL_Rect rt={0, 0, PSP_SDL_SCREEN_WIDTH, PSP_SDL_SCREEN_HEIGHT};
++  SDL_BlitSurface(back_surface, &amp;rt, 
++   n900_queue_surface[n900_flip_index], &amp;rt);
++  n900_flip_index+= 1;
++  if(n900_flip_index &gt;= N900_QUEUE_SURFACE_SIZE){
++   n900_flip_index = 0;
++  }
++  //n900_flip_index = 1;
++ }
++}
++
+ int
+ psp_sdl_init(void)
+ {
+@@ -661,15 +724,30 @@
+     return 0;
+   }
+ 
++  u16 i;
+   psp_sdl_select_font_6x10();
+-
+-  back_surface=SDL_SetVideoMode(PSP_SDL_SCREEN_WIDTH,PSP_SDL_SCREEN_HEIGHT, 16 , 
+-                                SDL_SWSURFACE);
+-
++  n900_surface = SDL_SetVideoMode(800, 480, 16,
++   SDL_HWSURFACE | SDL_FULLSCREEN | SDL_DOUBLEBUF);
++  for(i=0; i&lt;N900_QUEUE_SURFACE_SIZE; i++){
++    n900_queue_surface[i]= SDL_CreateRGBSurface(
++     SDL_HWSURFACE, PSP_SDL_SCREEN_WIDTH, PSP_SDL_SCREEN_HEIGHT, 
++     16, 0xf800, 0x7e0, 0x1f, 0);
++  }
++  back_surface = SDL_CreateRGBSurface(SDL_SWSURFACE, 
++   PSP_SDL_SCREEN_WIDTH, PSP_SDL_SCREEN_HEIGHT, 
++   16, 0xf800, 0x7e0, 0x1f, 0);
+   if ( !back_surface) {
+     return 0;
+   }
+ 
++  pthread_t fd;
++  n900_term = 1;
++  n900_flip_index = 0;
++  if(pthread_create(&amp;fd, NULL, n900_thread, NULL)){
++   n900_term = 0;
++   printf("failed to create thread\n");
++  }
++
+   blit_surface = SDL_CreateRGBSurface(SDL_SWSURFACE, 
+     HUGO_MAX_WIDTH, HUGO_MAX_HEIGHT,
+     back_surface-&gt;format-&gt;BitsPerPixel,
+@@ -708,6 +786,8 @@
+ void
+ psp_sdl_exit(int status)
+ {
++  n900_term = 0;
++  SDL_Delay(500);
+   SDL_CloseAudio();
+   SDL_Quit();
+   exit(status);
+</pre><br>
+
+<p>
+原本<br>
+<img src="port_hugo-1.1.2/1.jpg" class="maxSize"><br><br>
+
+移植後<br>
+<img src="port_hugo-1.1.2/2.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../../phone.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

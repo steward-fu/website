@@ -1,0 +1,178 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>F1C100S &gt;&gt; Assembly</h3>
+<p><b>CCU</b></p>
+<hr size="1">
+<p>
+參考資料：<br>
+1. <a href="https://github.com/steward-fu/mcu-pdf/tree/master/f1c100s">pdf</a><br>
+2. <a href="http://nano.lichee.pro/">lichee</a><br>
+3. <a href="https://mangopi.org/mangopi_r">mangopi_r</a><br>
+4. <a href="https://www.allwinnertech.com/index.php?c=product&a=index&pid=4">allwinner</a><br>
+5. <a href="https://github.com/allwinner-zh/linux-3.4-sunxi/blob/master/drivers/i2c/busses/i2c-sunxi.c">i2c-sunxi.c</a><br><br>
+
+System Bus<br>
+<img src="sbus/1.jpg" class="maxSize"><br><br>
+
+Bus Clock Tree<br>
+<img src="asm_ccu/1.jpg" class="maxSize"><br><br>
+
+Base Address<br>
+<img src="asm_ccu/2.jpg" class="maxSize"><br><br>
+
+暫存器<br>
+<img src="asm_ccu/3.jpg" class="maxSize"><br><br>
+
+速度
+</p>
+<table>
+<tr><th>模組</th><th>預設</th><th>範圍</th></tr>
+<tr><td>CPU</td><td>408MHz</td><td>200MHz~2.6GHz</td></tr>
+<tr><td>AUDIO</td><td>24.571MHz</td><td>20MHz~200MHz</td></tr>
+<tr><td>VIDEO</td><td>297MHz</td><td>30MHz~600MHz</td></tr>
+<tr><td>VE</td><td>210MHz</td><td>30MHz~600MHz</td></tr>
+<tr><td>DDR</td><td>312MHz</td><td>24MHz~3GHz</td></tr>
+<tr><td>PERIPH</td><td>600MHz</td><td>200MHz~1.8GHz</td></tr>
+</table><br>
+
+<p>
+CPU速度計算公式
+</p>
+<pre>
+PLL = (24MHz*N*K)/(M*P)
+
+N = 30
+K = 1
+M = 1
+P = 1
+PLL = (24MHz*30*1)/(1*1) = 720MHz
+</pre><br>
+
+<p>
+main.s
+</p>
+<pre class="brush:asm">
+  .global _start
+ 
+  .equiv CCU_BASE,  0x01c20000
+  .equiv GPIO_BASE, 0x01c20800 
+
+  .equiv PLL_CPU_CTRL_REG, 0x0000
+  .equiv CPU_CLK_SRC_REG,  0x0050
+   
+  .equiv PE,        (0x24 * 4)
+  .equiv PORT_CFG0, 0x00
+  .equiv PORT_DATA, 0x10
+
+  .arm
+  .text
+_start:
+  .long 0xea000016
+  .byte 'e', 'G', 'O', 'N', '.', 'B', 'T', '0'
+  .long 0, __spl_size
+  .byte 'S', 'P', 'L', 2
+  .long 0, 0
+  .long 0, 0, 0, 0, 0, 0, 0, 0
+  .long 0, 0, 0, 0, 0, 0, 0, 0
+   
+_vector:
+  b reset
+  b .
+  b .
+  b .
+  b .
+  b .
+  b .
+  b .
+   
+reset:
+  ldr r0, =CCU_BASE
+  ldr r1, =(1 &lt;&lt; 31) | (29 &lt;&lt; 8)
+  str r1, [r0, #PLL_CPU_CTRL_REG]
+1:
+  ldr r1, [r0, #PLL_CPU_CTRL_REG]
+  tst r1, #(1 &lt;&lt; 28)
+  beq 1b
+  
+  ldr r0, =CCU_BASE
+  ldr r1, =(3 &lt;&lt; 16)
+  str r1, [r0, #CPU_CLK_SRC_REG]
+
+  ldr r0, =GPIO_BASE
+  ldr r1, =0x00010000
+  str r1, [r0, #(PE + PORT_CFG0)]
+0:
+  ldr r1, =0x10
+  str r1, [r0, #(PE + PORT_DATA)]
+  ldr r2, =100000
+1:
+  subs r2, #1
+  bne 1b
+  ldr r1, =0x00
+  str r1, [r0, #(PE + PORT_DATA)]
+  ldr r2, =100000
+2:
+  subs r2, #1
+  bne 2b
+  b 0b
+  .end
+</pre><br>
+<p>
+完成<br>
+<img src="asm_led/5.jpg" class="maxSize"><br>
+<img src="asm_led/6.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

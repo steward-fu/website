@@ -1,0 +1,314 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>GameShell</h3>
+<p><b>UART接頭</b></p>
+<hr size="1">
+<p>
+依據官方的電路圖，可以知道UART0是PB0、PB1腳位<br>
+<img src="uart/1.jpg" class="maxSize"><br><br>
+
+可以找到位於J46連接器<br>
+<img src="uart/2.jpg" class="maxSize"><br><br>
+
+PCB位置<br>
+<img src="uart/3.jpg" class="maxSize"><br><br>
+
+因為司徒尚未購買這種接線，因此，只好使用LR板子的線<br>
+<img src="uart/4.jpg" class="maxSize"><br><br>
+
+連接完成(連接TX、RX和GND腳位可以)<br>
+<img src="uart/5.jpg" class="maxSize"><br><br>
+
+Dump看看Baudrate是多少
+</p>
+
+<pre>
+$ dd if=clockworkos_v0.1.img of=dump.img bs=1M count=8
+$ vim dump.img
+  15139 0003b220: 25 2e 2a 73 00 62 6f 6f 74 63 6d 64 3d 72 75 6e  %.*s.bootcmd=run
+  15140 0003b230: 20 64 69 73 74 72 6f 5f 62 6f 6f 74 63 6d 64 00   distro_bootcmd.
+  15141 0003b240: 62 6f 6f 74 64 65 6c 61 79 3d 30 00 62 61 75 64  bootdelay=0.baud
+  15142 0003b250: 72 61 74 65 3d 31 31 35 32 30 30 00 70 72 65 62  rate=115200.preb
+  15143 0003b260: 6f 6f 74 3d 00 61 72 63 68 3d 61 72 6d 00 63 70  oot=.arch=arm.cp
+  15144 0003b270: 75 3d 61 72 6d 76 37 00 62 6f 61 72 64 3d 73 75  u=armv7.board=su
+  15145 0003b280: 6e 78 69 00 62 6f 61 72 64 5f 6e 61 6d 65 3d 73  nxi.board_name=s
+  15146 0003b290: 75 6e 78 69 00 73 6f 63 3d 73 75 6e 78 69 00 70  unxi.soc=sunxi.p
+  15147 0003b2a0: 72 65 62 6f 6f 74 3d 75 73 62 20 73 74 61 72 74  reboot=usb start
+  15148 0003b2b0: 00 73 74 64 69 6e 3d 73 65 72 69 61 6c 2c 75 73  .stdin=serial,us
+  15149 0003b2c0: 62 6b 62 64 00 73 74 64 6f 75 74 3d 73 65 72 69  bkbd.stdout=seri
+  15150 0003b2d0: 61 6c 2c 76 67 61 00 73 74 64 65 72 72 3d 73 65  al,vga.stderr=se
+  15151 0003b2e0: 72 69 61 6c 2c 76 67 61 00 62 6f 6f 74 6d 5f 73  rial,vga.bootm_s
+  15152 0003b2f0: 69 7a 65 3d 30 78 61 30 30 30 30 30 30 00 6b 65  ize=0xa000000.ke
+  15153 0003b300: 72 6e 65 6c 5f 61 64 64 72 5f 72 3d 30 78 34 32  rnel_addr_r=0x42
+  15154 0003b310: 30 30 30 30 30 30 00 66 64 74 5f 61 64 64 72 5f  000000.fdt_addr_
+  15155 0003b320: 72 3d 30 78 34 33 30 30 30 30 30 30 00 73 63 72  r=0x43000000.scr
+  15156 0003b330: 69 70 74 61 64 64 72 3d 30 78 34 33 31 30 30 30  iptaddr=0x431000
+  15157 0003b340: 30 30 00 70 78 65 66 69 6c 65 5f 61 64 64 72 5f  00.pxefile_addr_
+  15158 0003b350: 72 3d 30 78 34 33 32 30 30 30 30 30 00 72 61 6d  r=0x43200000.ram
+  15159 0003b360: 64 69 73 6b 5f 61 64 64 72 5f 72 3d 30 78 34 33  disk_addr_r=0x43
+  15160 0003b370: 33 30 30 30 30 30 00 64 66 75 5f 61 6c 74 5f 69  300000.dfu_alt_i
+  15161 0003b380: 6e 66 6f 5f 72 61 6d 3d 6b 65 72 6e 65 6c 20 72  nfo_ram=kernel r
+  15162 0003b390: 61 6d 20 30 78 34 32 30 30 30 30 30 30 20 30 78  am 0x42000000 0x
+  15163 0003b3a0: 31 30 30 30 30 30 30 3b 66 64 74 20 72 61 6d 20  1000000;fdt ram
+  15164 0003b3b0: 30 78 34 33 30 30 30 30 30 30 20 30 78 31 30 30  0x43000000 0x100
+  15165 0003b3c0: 30 30 30 3b 72 61 6d 64 69 73 6b 20 72 61 6d 20  000;ramdisk ram
+  15166 0003b3d0: 30 78 34 33 33 30 30 30 30 30 20 30 78 34 30 30  0x43300000 0x400
+  15167 0003b3e0: 30 30 30 30 00 66 64 74 66 69 6c 65 3d 73 75 6e  0000.fdtfile=sun
+  15168 0003b3f0: 38 69 2d 72 31 36 2d 63 6c 6f 63 6b 77 6f 72 6b  8i-r16-clockwork
+  15169 0003b400: 70 69 2d 63 70 69 33 2e 64 74 62 00 63 6f 6e 73  pi-cpi3.dtb.cons
+  15170 0003b410: 6f 6c 65 3d 74 74 79 53 30 2c 31 31 35 32 30 30  ole=ttyS0,115200
+  15171 0003b420: 00 6d 6d 63 5f 62 6f 6f 74 3d 69 66 20 6d 6d 63  .mmc_boot=if mmc
+</pre>
+<p>
+雖然bootcmd描述console=ttyS0，但是目前還是不知道為何沒有輸出。<br><br>
+
+做了相當多的測試後，還是沒有任何UART輸出，而司徒正準備放棄時，意外發現J46的腳位順序好像是反的，因為1和4腳位應該是GND，但是司徒仔細看了一下PCB，發現GND的順序卻是如下所示：<br>
+<img src="uart/6.jpg" class="maxSize"><br><br>
+
+於是，司徒反過來接線測試<br>
+<img src="uart/7.jpg" class="maxSize"><br><br>
+
+UART終於有了輸出(Baudrate 115200bps)
+</p>
+<pre>
+U-Boot SPL 2018.01-rc1-00116-g214ced3654 (Jun 08 2018 - 16:32:06)
+DRAM: 512 MiB
+Trying to boot from MMC1
+
+
+U-Boot 2018.01-rc1-00116-g214ced3654 (Jun 08 2018 - 16:32:06 +0800) Allwinner Technology
+
+CPU:   Allwinner A33 (SUN8I 1667)
+Model: clockworkpi CPI3
+DRAM:  512 MiB
+MMC:   SUNXI SD/MMC: 0, SUNXI SD/MMC: 1
+Card did not respond to voltage select!
+mmc_init: -95, time 22
+*** Warning - MMC init failed, using default environment
+
+Setting up a 320x240 lcd console (overscan 0x0)
+In:    serial
+Out:   serial
+Err:   serial
+Net:   No ethernet found.
+starting USB...
+No controllers found
+Hit any key to stop autoboot:  0 
+switch to partitions #0, OK
+mmc0 is current device
+Scanning mmc 0:1...
+Found U-Boot script /boot.scr
+reading /boot.scr
+348 bytes read in 20 ms (16.6 KiB/s)
+## Executing script at 43100000
+reading uImage
+3756312 bytes read in 239 ms (15 MiB/s)
+reading sun8i-r16-clockworkpi-cpi3.dtb
+23379 bytes read in 30 ms (760.7 KiB/s)
+## Booting kernel from Legacy Image at 48000000 ...
+   Image Name:   Linux kernel
+   Image Type:   ARM Linux Kernel Image (uncompressed)
+   Data Size:    3756248 Bytes = 3.6 MiB
+   Load Address: 40008000
+   Entry Point:  40008000
+   Verifying Checksum ... OK
+## Flattened Device Tree blob at 49000000
+   Booting using the fdt blob at 0x49000000
+   Loading Kernel Image ... OK
+   Loading Device Tree to 49ff7000, end 49fffb52 ... OK
+
+Starting kernel ...
+
+
+Welcome to Debian GNU/Linux 9 (stretch)!
+
+[  OK  ] Started Forward Password Requests to Wall Directory Watch.
+[  OK  ] Created slice System Slice.
+[  OK  ] Reached target Swap.
+[  OK  ] Listening on Syslog Socket.
+[  OK  ] Created slice system-serial\x2dgetty.slice.
+[  OK  ] Listening on /dev/initctl Compatibility Named Pipe.
+[  OK  ] Created slice system-getty.slice.
+[  OK  ] Listening on udev Kernel Socket.
+[  OK  ] Listening on Journal Socket.
+         Starting Set the console keyboard layout...
+         Starting Create Static Device Nodes in /dev...
+         Starting Load Kernel Modules...
+[  OK  ] Created slice User and Session Slice.
+[  OK  ] Reached target Slices.
+[  OK  ] Started Dispatch Password Requests to Console Directory Watch.
+[  OK  ] Reached target Encrypted Volumes.
+[  OK  ] Listening on Journal Socket (/dev/log).
+         Starting Journal Service...
+[  OK  ] Listening on fsck to fsckd communication Socket.
+         Starting File System Check on Root Device...
+[  OK  ] Reached target Remote File Systems.
+[  OK  ] Listening on udev Control Socket.
+[  OK  ] Started Journal Service.
+[  OK  ] Started Set the console keyboard layout.
+[  OK  ] Started Create Static Device Nodes in /dev.
+[  OK  ] Started Load Kernel Modules.
+[  OK  ] Started File System Check on Root Device.
+[  OK  ] Started File System Check Daemon to report status.
+         Starting Remount Root and Kernel File Systems...
+         Mounting Configuration File System...
+         Starting Apply Kernel Variables...
+         Starting udev Kernel Device Manager...
+[  OK  ] Mounted Configuration File System.
+[  OK  ] Started Remount Root and Kernel File Systems.
+[  OK  ] Started Apply Kernel Variables.
+         Starting udev Coldplug all Devices...
+[  OK  ] Reached target Local File Systems (Pre).
+[  OK  ] Reached target Local File Systems.
+         Starting Set console font and keymap...
+         Starting Raise network interfaces...
+         Starting Enable support for additional executable binary formats...
+         Starting Load/Save Random Seed...
+         Starting Flush Journal to Persistent Storage...
+evice Manager.
+[  OK  ] Started Set console font and keymap.
+[  OK  ] Started Enable support for additional executable binary formats.
+[  OK  ] Started Load/Save Random Seed.
+[  OK  ] Started Flush Journal to Persistent Storage.
+         Starting Create Volatile Files and Directories...
+[  OK  ] Started Create Volatile Files and Directories.
+         Starting Network Time Synchronization...
+         Starting Update UTMP about System Boot/Shutdown...
+[  OK  ] Started udev Coldplug all Devices.
+[  OK  ] Started Update UTMP about System Boot/Shutdown.
+[  OK  ] Started Network Time Synchronization.
+[  OK  ] Found device /dev/ttyS0.
+[  OK  ] Listening on Load/Save RF Kill Switch Status /dev/rfkill Watch.
+[  OK  ] Reached target Sound Card.
+[  OK  ] Reached target System Time Synchronized.
+[  OK  ] Created slice system-systemd\x2dbacklight.slice.
+         Starting Load/Save Screen Backlight��…ightness of backlight:backlight...
+[  OK  ] Started Load/Save Screen Backlight Brightness of backlight:backlight.
+[  OK  ] Started Raise network interfaces.
+[  OK  ] Reached target Network.
+[  OK  ] Reached target Network is Online.
+         Starting Load/Save RF Kill Switch Status...
+[  OK  ] Reached target System Initialization.
+[  OK  ] Listening on ACPID Listen Socket.
+[  OK  ] Started Daily Cleanup of Temporary Directories.
+[  OK  ] Started ACPI Events Check.
+[  OK  ] Reached target Paths.
+[  OK  ] Started Daily apt download activities.
+[  OK  ] Started Daily apt upgrade and clean activities.
+[  OK  ] Reached target Timers.
+[  OK  ] Listening on D-Bus System Message Bus Socket.
+[  OK  ] Listening on Avahi mDNS/DNS-SD Stack Activation Socket.
+[  OK  ] Listening on mpd.socket.
+[  OK  ] Reached target Sockets.
+[  OK  ] Reached target Basic System.
+         Starting shairport.service...
+         Starting Samba NMB Daemon...
+         Starting Prepare one time login...
+         Starting OpenBSD Secure Shell server...
+         Starting System Logging Service...
+         Starting Permit User Sessions...
+         Starting Login Service...
+         Starting Internet superserver...
+[  OK  ] Started D-Bus System Message Bus.
+[  OK  ] Started Music Player Daemon.
+         Starting Save/Restore Sound Card State...
+         Starting LSB: exim Mail Transport Agent...
+         Starting LSB: Starts and stops Wicd...
+[  OK  ] Started Regular background program processing daemon.
+         Starting Avahi mDNS/DNS-SD Stack...
+[  OK  ] Started ACPI event daemon.
+         Starting LSB: Start some power management scripts...
+[  OK  ] Started Load/Save RF Kill Switch Status.
+[  OK  ] Started System Logging Service.
+[  OK  ] Started Internet superserver.
+[  OK  ] Started Permit User Sessions.
+[  OK  ] Started Save/Restore Sound Card State.
+[  OK  ] Started OpenBSD Secure Shell server.
+[  OK  ] Started Prepare one time login.
+[  OK  ] Started Avahi mDNS/DNS-SD Stack.
+[  OK  ] Started LSB: Start some power management scripts.
+[  OK  ] Started Login Service.
+[  OK  ] Started Serial Getty on ttyS0.
+[  OK  ] Started Getty on tty1.
+[  OK  ] Reached target Login Prompts.
+[  OK  ] Started shairport.service.
+[  OK  ] Started LSB: Starts and stops Wicd.
+[  OK  ] Started LSB: exim Mail Transport Agent.
+
+Debian GNU/Linux 9 clockworkpi ttyS0
+
+clockworkpi login: root
+Password: 
+Last login: Wed Aug 29 02:09:50 UTC 2018 on ttyS0
+Linux clockworkpi 4.14.2-clockworkpi-cpi3-gc1e827d-dirty #15 SMP Tue Aug 28 20:01:09 CST 2018 armv7l
+
+___/\/\/\/\/\__/\/\/\/\/\____/\/\/\/\_
+_/\/\__________/\/\____/\/\____/\/\___
+_/\/\__________/\/\/\/\/\______/\/\___
+_/\/\__________/\/\____________/\/\___
+___/\/\/\/\/\__/\/\__________/\/\/\/\_
+______________________________________
+Welcome to clockworkPi
+
+For more information please visit:
+https://forum.clockworkpi.com
+
+HAPPY HACKING
+
+root@clockworkpi:~# 
+</pre><br>
+
+<p>
+<br><a href="../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

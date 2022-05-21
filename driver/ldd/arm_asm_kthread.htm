@@ -1,0 +1,145 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Linux Device Driver &gt;&gt; Assembly (ARM)</h3>
+<p><b>kthread</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://github.com/steward-fu/ldd">Source Code</a><br><br>
+
+Thread是執行的最小單位，在多核CPU上，產生的Thread可以同時的運作，這意謂著使用Thread技術可以用來改善效能，但是，每個Thread間的資料同步則是另一個課題<br><br>
+
+使用步驟：<br>
+1. kthread_create_on_node()<br>
+2. wake_up_process()<br>
+3. kthread_should_stop()<br>
+4. kthread_stop()<br><br>
+
+ldd.S
+</p>
+<pre class="brush:asm">
+.global init_module
+.global cleanup_module
+
+.section .modinfo, "ae"
+__UNIQUE_ID_0: .asciz "license=GPL"
+__UNIQUE_ID_1: .asciz "author=Steward Fu"
+__UNIQUE_ID_2: .asciz "description=Linux Driver"
+
+.section .data
+kthread_name: .asciz "mykthread"
+kthread_msg1: .asciz "kthread_handler++\n"
+kthread_msg2: .asciz "kthread_handler--\n"
+mykthread:    .dcb 4
+
+.align 2
+.section .text
+kthread_handler:
+  push {lr}
+  ldr r0, =kthread_msg1
+  bl printk
+loop:
+  bl kthread_should_stop
+  cmp r0, #0
+  bne kthread_exit
+  mov r0, #100
+  bl msleep
+  b loop
+
+kthread_exit:
+  ldr r0, =kthread_msg2
+  bl printk
+  pop {pc}
+
+init_module:
+  push {lr}
+
+  ldr r0, =kthread_handler
+  mov r1, #0
+  mov r2, #0xffffffff
+  ldr r3, =kthread_name
+  bl kthread_create_on_node
+  ldr r1, =mykthread
+  str r0, [r1]
+
+  bl wake_up_process
+
+  mov r0, #0
+  pop {pc}
+
+cleanup_module:
+  push {lr}
+  ldr r0, =mykthread
+  ldr r0, [r0]
+  bl kthread_stop
+  pop {pc}
+.end
+</pre>
+<p>
+<b>init_module</b>: 產生多個Thread並且執行<br>
+<b>kthread_handler</b>: 列印字串<br>
+<b>cleanup_module</b>: 停止Thread執行<br><br>
+
+測試
+</p>
+<pre>
+# insmod /boot/main.ko
+  kthread_handler++
+
+# rmmod main
+  kthread_handler--
+</pre><br>
+
+<p>
+<br><a href="../../driver.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

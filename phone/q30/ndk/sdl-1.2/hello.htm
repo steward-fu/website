@@ -1,0 +1,147 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../../../header.js"></script>
+<div id="page">
+<h3>Blackberry Passport &gt;&gt; Core Native (C/C++) &gt;&gt; SDL 1.2</h3>
+<p><b>Hello, world!</b></p>
+<hr size="1">
+<p>
+由於Blackberry官方提供的Toolchain本身並沒有包含SDL相關的Library，而大部份的懷舊游戲卻是使用SDL Library製作，如果司徒想要在Passport上面玩這些懷舊遊戲的話，只能移植SDL Library到Passport或者重新把這些懷舊游戲的程式碼，從原本的SDL API都改成使用Blackberry支援的OpenGL ES API以及screen API，就花費時間來看，移植SDL Library看似比較划算一點，畢竟一個一個遊戲移植，似乎有點傻，因此，這才讓司徒有了移植SDL Library到Passport的動機，不過，幸運的是，已經有熱心的網友移植SDL Library到Playbook身上，剛好這部分可以直接用在Passport身上，這也幫司徒節省許多寶貴的時間，而針對移植的部份，司徒猜想大家可能會很好奇，移植SDL Library不就是編譯SDL而已嗎？有什麼困難的嗎？其實沒那麼容易，因為Blackberry 10本身並沒有提供<b>/dev/fb*</b>這個裝置，取得代之的則是必須使用QNX的screen API繪製，因此存取<b>/dev/fb*</b>的部份必須改寫，這也比較麻煩的地方，不過，還是得感謝這位網友的移植，造福大家！<br><br>
+
+有了這個動機之後，司徒便開始在網路上找尋相關的SDL教學網站，一方面是可以比較有系統的建立SDL教學文章，另一方面則是可以知道Passport到底還缺多少SDL相關的Library，司徒剛好可以趁這個機會，移植這些缺少的Library到Passport上身，而找尋一段時間之後，司徒發現<a href="http://lazyfoo.net/SDL_tutorials/">lazyfoo</a>的網站算是一個相當不錯的SDL教學網站，可惜的是這個網站在FAQ頁面，很清楚的表示，不能基于它的網站資源建立另一個教學網站，加上該網站的相關資源，在未取得同意前，不可使用隨意使用，這些聲明最終讓司徒打了退堂鼓，於是司徒只好自己建立相關的SDL教學文章，但是，司徒參考的SDL相關文章，還是基于該網站，只是司徒的教導方向是建立在如何熟悉SDL API，而非是如何用SDL寫一個遊戲。<br><br>
+
+main.cpp
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;SDL.h&gt;
+
+int main(int argc, char* args[])
+{
+  if(SDL_Init(SDL_INIT_VIDEO) != 0){
+    printf("%s, failed to SDL_Init\n", __func__);
+    return -1;
+  }
+
+  SDL_Surface* screen;
+  screen = SDL_SetVideoMode(1440, 1440, 32, SDL_HWSURFACE | SDL_DOUBLEBUF);
+  if(screen == NULL){
+    printf("%s, failed to SDL_SetVideMode\n", __func__);
+    return -1;
+  }
+
+  SDL_Surface* bmp = SDL_LoadBMP("app/native/hello.bmp");
+  if(bmp == NULL){
+    printf("%s, failed to SDL_LoadBMP\n", __func__);
+    return -1;
+  }
+
+  SDL_ShowCursor(0);
+  SDL_BlitSurface(bmp, NULL, screen, NULL);
+  SDL_Flip(screen);
+  SDL_Delay(30000);
+  SDL_FreeSurface(bmp);
+  SDL_Quit();
+  return 0;    
+}
+</pre>
+
+<p>
+SDL程式的基本流程就是：初始化(SDL_Init)、設定解析度(SDL_SetVideoMode)、畫圖、刷新畫面(SDL_Flip)、結束並釋放資源(SDL_FreeSurface)。<br>
+大方向掌握後就可以更深入了解SDL的運作方式，因此，如上面的範例，做完基本的初始化後，接著就是載入圖片，完成一個簡單的<b>Hello, world!</b>範例。<br><br>
+
+bar-descriptor.xml
+</p>
+<pre>
+&lt;?xml version="1.0" encoding="utf-8" standalone="no"?&gt;
+&lt;qnx xmlns="http://www.qnx.com/schemas/application/1.0"&gt;
+  &lt;id&gt;com.steward.sdl.ch1&lt;/id&gt;
+  &lt;name&gt;ch1&lt;/name&gt;
+  &lt;filename&gt;ch1&lt;/filename&gt;
+  &lt;versionNumber&gt;1.0.0&lt;/versionNumber&gt;
+  &lt;buildId&gt;1&lt;/buildId&gt;
+  &lt;description&gt;Lession 1. Setting up SDL and Getting an Image on the Screen&lt;/description&gt;
+
+  &lt;author&gt;Steward&lt;/author&gt;
+  &lt;authorId&gt;gYAAgGE4qaHzBnzEAu8JKe4G1OI&lt;/authorId&gt;
+
+  &lt;asset path="main" entry="true" type="Qnx/Elf"&gt;main&lt;/asset&gt;
+  &lt;asset path="hello.bmp"&gt;hello.bmp&lt;/asset&gt;
+  &lt;asset path="libSDL-1.2.so.11" type="Qnx/Elf"&gt;lib/libSDL-1.2.so.11&lt;/asset&gt;
+  &lt;asset path="libTouchControlOverlay.so.1" type="Qnx/Elf"&gt;lib/libTouchControlOverlay.so.1&lt;/asset&gt;
+
+  &lt;permission system="true"&gt;run_native&lt;/permission&gt;
+  &lt;env var="LD_LIBRARY_PATH" value="app/native/lib"/&gt;
+&lt;/qnx&gt;
+</pre><br>
+
+<p>
+Makefile
+</p>
+<pre>
+main: main.cpp
+  ntoarmv7-gcc main.cpp -g -o main libSDL-1.2.so.11 -Iinclude
+  blackberry-nativepackager -package main.bar bar-descriptor.xml -devMode -debugToken ${HOME}/.rim/debugtoken_q30.bar
+clean:
+  rm -rf main
+  rm -rf main.bar
+</pre><br>
+
+<p>
+完成<br>
+<img src="hello/1.jpg" class="maxSize"><br>
+<img src="hello/2.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../../../phone.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

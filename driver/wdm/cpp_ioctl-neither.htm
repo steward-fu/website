@@ -1,0 +1,237 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Windows Driver Model &gt;&gt; C/C++ &gt;&gt; IOCTL</h3>
+<p><b>METHOD_NEITHER</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://github.com/steward-fu/wdm">Source Code</a><br><br>
+
+Neither I/O(METHOD_NEITHER)的意思就是Neither Buffered Nor Direct I/O，使用這種方式時，I/O Manager會將User Buffer的指標，透過操作後，傳遞給驅動程式使用，因此，驅動程式可以直接存取User Buffer的資料，所以存取速度可以得到很大的改善，對於有速度要求的驅動程式來說，建議使用Neither的方式，不過，關於User Buffer指標的存取問題上，會遇到更多需要面對的問題，如：指標的有效性以及多次存取的同步問題，因此，在選擇使用上，更需要考量到這些額外付出的代價是否值得使用，因為，驅動程式以及User Application雙方都需要很嚴謹的看待這塊共用的Buffer。<br><br>
+
+Microsoft的說明網頁：<br>
+<a href="https://docs.microsoft.com/en-us/windows-hardware/drivers/kernel/using-neither-buffered-nor-direct-i-o">using-neither-buffered-nor-direct-i-o</a><br><br>
+
+記憶體指標：
+</p>
+<table>
+  <thead>
+    <tr>
+      <th></th>
+      <th>Buffer</th>
+      <th>Length</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Input</td>
+      <td>(IrpStack)<br>Parameters.DeviceIoControl.Type3InputBuffer</td>
+      <td>(IrpStack)<br>Parameters.DeviceIoControl.InputBufferLength</td>
+    </tr>
+    <tr>
+      <td>Output</td>
+      <td>(Irp)<br>UserBuffer<br></td>
+      <td>(IrpStack)<br>Parameters.DeviceIoControl.OutputBufferLength</td>
+    </tr>
+  </tbody>
+</table><br>
+
+<p>
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;wdm.h&gt;
+
+#define IOCTL_SET CTL_CODE(FILE_DEVICE_UNKNOWN, 0x800, METHOD_NEITHER, FILE_ANY_ACCESS)
+#define IOCTL_GET CTL_CODE(FILE_DEVICE_UNKNOWN, 0x801, METHOD_NEITHER, FILE_ANY_ACCESS)
+
+#define DEV_NAME L"\\Device\\MyDriver"
+#define SYM_NAME L"\\DosDevices\\MyDriver"
+
+PDEVICE_OBJECT pNextDevice=NULL;
+char szBuffer[255]={0};
+
+NTSTATUS AddDevice(PDRIVER_OBJECT pOurDriver, PDEVICE_OBJECT pPhyDevice)
+{
+  PDEVICE_OBJECT pOurDevice=NULL;
+  UNICODE_STRING usDeviceName;
+  UNICODE_STRING usSymboName;
+
+  RtlInitUnicodeString(&amp;usDeviceName, DEV_NAME);
+  IoCreateDevice(pOurDriver, 0, &amp;usDeviceName, FILE_DEVICE_UNKNOWN, 0, FALSE, &amp;pOurDevice);
+  RtlInitUnicodeString(&amp;usSymboName, SYM_NAME);
+  IoCreateSymbolicLink(&amp;usSymboName, &amp;usDeviceName);
+  pNextDevice = IoAttachDeviceToDeviceStack(pOurDevice, pPhyDevice);
+  pOurDevice-&gt;Flags&amp;= ~DO_DEVICE_INITIALIZING;
+  pOurDevice-&gt;Flags|= DO_BUFFERED_IO;
+  return STATUS_SUCCESS;
+}
+
+void Unload(PDRIVER_OBJECT pOurDriver)
+{
+  pOurDriver = pOurDriver;
+}
+
+NTSTATUS IrpPnp(PDEVICE_OBJECT pOurDevice, PIRP pIrp)
+{
+  PIO_STACK_LOCATION psk = IoGetCurrentIrpStackLocation(pIrp);
+  UNICODE_STRING usSymboName;
+
+  if(psk-&gt;MinorFunction == IRP_MN_REMOVE_DEVICE){
+    RtlInitUnicodeString(&amp;usSymboName, SYM_NAME);
+    IoDeleteSymbolicLink(&amp;usSymboName);
+    IoDetachDevice(pNextDevice);
+    IoDeleteDevice(pOurDevice);
+  }
+  IoSkipCurrentIrpStackLocation(pIrp);
+  return IoCallDriver(pNextDevice, pIrp);
+}
+
+NTSTATUS IrpIOCTL(PDEVICE_OBJECT pOurDevice, PIRP pIrp)
+{
+  ULONG Len=0;
+  PIO_STACK_LOCATION psk = IoGetCurrentIrpStackLocation(pIrp);
+
+  switch(psk-&gt;Parameters.DeviceIoControl.IoControlCode){
+  case IOCTL_SET:
+    DbgPrint("IOCTL_SET");
+    Len = psk-&gt;Parameters.DeviceIoControl.InputBufferLength;
+    memcpy(szBuffer, psk-&gt;Parameters.DeviceIoControl.Type3InputBuffer, Len);
+    DbgPrint("Buffer: %s, Length: %d", szBuffer, Len);
+    break;
+  case IOCTL_GET:
+    DbgPrint("IOCTL_GET");
+    Len = strlen(szBuffer)+1;
+    memcpy(pIrp-&gt;UserBuffer, szBuffer, Len);
+    break;
+  }
+  pIrp-&gt;IoStatus.Status = STATUS_SUCCESS;
+  pIrp-&gt;IoStatus.Information = Len;
+  IoCompleteRequest(pIrp, IO_NO_INCREMENT);
+  return STATUS_SUCCESS;
+}
+
+NTSTATUS IrpFile(PDEVICE_OBJECT pOurDevice, PIRP pIrp)
+{
+  PIO_STACK_LOCATION psk = IoGetCurrentIrpStackLocation(pIrp);
+
+  switch(psk-&gt;MajorFunction){
+  case IRP_MJ_CREATE:
+    DbgPrint("IRP_MJ_CREATE");
+    break;
+  case IRP_MJ_CLOSE:
+    DbgPrint("IRP_MJ_CLOSE");
+    break;
+  }
+  IoCompleteRequest(pIrp, IO_NO_INCREMENT);
+  return STATUS_SUCCESS;
+}
+
+NTSTATUS DriverEntry(PDRIVER_OBJECT pOurDriver, PUNICODE_STRING pOurRegistry)
+{
+  pOurDriver-&gt;MajorFunction[IRP_MJ_PNP] = IrpPnp;
+  pOurDriver-&gt;MajorFunction[IRP_MJ_CREATE] =
+  pOurDriver-&gt;MajorFunction[IRP_MJ_CLOSE] = IrpFile;
+  pOurDriver-&gt;MajorFunction[IRP_MJ_DEVICE_CONTROL] = IrpIOCTL;
+  pOurDriver-&gt;DriverExtension-&gt;AddDevice = AddDevice;
+  pOurDriver-&gt;DriverUnload = Unload;
+  return STATUS_SUCCESS;
+}
+</pre>
+<p>
+<b>IrpIOCTL()</b>收到IOCTL_SET時，Driver複製User Buffer的內容到szBuffer，而收到IOCTL_GET時，將szBuffer內容又複製回User Buffer，完成暫存的功能，IoStatus.Information的數值就是OutBufferSize回傳的長度。<br><br>
+
+app.c
+</p>
+<pre class="brush:cpp">
+#define INITGUID
+#include &lt;windows.h&gt;
+#include &lt;winioctl.h&gt;
+#include &lt;strsafe.h&gt;
+#include &lt;setupapi.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+#define IOCTL_SET CTL_CODE(FILE_DEVICE_UNKNOWN, 0x800, METHOD_NEITHER, FILE_ANY_ACCESS)
+#define IOCTL_GET CTL_CODE(FILE_DEVICE_UNKNOWN, 0x801, METHOD_NEITHER, FILE_ANY_ACCESS)
+
+int __cdecl main(int argc, char* argv[])
+{
+  DWORD dwRet = 0;
+  HANDLE hFile = NULL;
+  char szBuffer[255]={"I am error"};
+
+  hFile = CreateFile("\\\\.\\MyDriver", GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+  if (hFile == INVALID_HANDLE_VALUE) {
+    printf("failed to open mydriver");
+    return 1;
+  }
+  printf("SET: %s, %d\n", szBuffer, strlen(szBuffer)+1);
+  DeviceIoControl(hFile, IOCTL_SET, szBuffer, strlen(szBuffer)+1, NULL, 0, &amp;dwRet, NULL);
+  memset(szBuffer, 0, sizeof(szBuffer));
+  DeviceIoControl(hFile, IOCTL_GET, NULL, 0, szBuffer, sizeof(szBuffer), &amp;dwRet, NULL);
+  printf("GET: %s, %d\n", szBuffer, dwRet);
+  CloseHandle(hFile);
+  return 0;
+}
+</pre><br>
+
+<p>
+結果<br>
+<img src="asm_ioctl-buffer/2.jpg" class="maxSize"><br>
+<img src="asm_ioctl-buffer/3.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../driver.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

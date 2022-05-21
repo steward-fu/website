@@ -1,0 +1,142 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>STM8S103 &gt;&gt; Assembly</h3>
+<p><b>Timer1</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://programmer.group/stm8s-timer-basic-interrupt-timing.html">stm8s-timer-basic-interrupt-timing</a><br><br>
+
+暫存器<br>
+<img src="asm_timer1/1.jpg" class="maxSize"><br>
+<img src="asm_timer1/2.jpg" class="maxSize"><br>
+<img src="asm_timer1/3.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+  .equ PB_ODR,     0x5005
+  .equ PB_IDR,     0x5006
+  .equ PB_DDR,     0x5007
+  .equ PB_CR1,     0x5008
+  .equ PB_CR2,     0x5009 
+  .equ TIM1_PSCRH, 0x5260
+  .equ TIM1_PSCRL, 0x5261
+  .equ TIM1_ARRH,  0x5262
+  .equ TIM1_ARRL,  0x5263
+  .equ TIM1_CR1,   0x5250
+  .equ TIM1_IER,   0x5254
+  .equ TIM1_SR1,   0x5255
+  .equ TIM1_CNTRH, 0x525e
+  .equ TIM1_CNTRL, 0x525f
+
+  .area data
+  .area sseg
+  .area home
+  int main
+  int 0
+  int 0
+  int 0
+  int 0
+  int 0
+  int 0
+  int 0
+  int 0
+  int 0
+  int 0
+  int 0
+  int 0
+  int timer1_handler
+   
+  .area cseg
+main:
+  mov PB_DDR, #0x20
+  mov PB_CR1, #0x20 
+  mov TIM1_PSCRH, #0x00
+  mov TIM1_PSCRL, #0x00
+  mov TIM1_ARRH, #0xff
+  mov TIM1_ARRL, #0xff
+  mov TIM1_CNTRH, #0x00
+  mov TIM1_CNTRL, #0x00
+  mov TIM1_IER, #0x01
+  mov TIM1_SR1, #0x01
+  mov TIM1_CR1, #0x91
+  rim
+loop:
+  jp loop
+
+timer1_handler:
+  mov TIM1_SR1, #0
+  bcpl PB_ODR, #5
+  iret
+</pre><br>
+
+<p>
+編譯、燒錄
+</p>
+<pre>
+$ sdasstm8 -o main.s
+$ sdldstm8 -ni -b home=0x8000 -b cseg=0x8080 -b data=0x0001 -b sseg=0xffff main.rel
+$ sudo stm8flash -c stlinkv2 -p stm8s103f3 -u
+$ sudo stm8flash -c stlinkv2 -p stm8s103f3 -s flash -w main.ihx
+</pre><br>
+
+<p>
+完成<br>
+<img src="asm_led/1.jpg" class="maxSize"><br>
+<img src="asm_led/2.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,1123 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>STC15W104</h3>
+<p><b>逆向STC-ISP V6.86E(IDA Pro)</b></p>
+<hr size="1">
+<p>
+由於司徒想要在N900上開發STC15W104程式，希望所有東西都在N900上完成，當然，包含也燒錄步驟，因此，首要步驟就是先取得Linux平台上的STC-ISP燒錄軟體，不過，原廠並沒有Linux平台上的相關資源，因此，也不可能提供Linux平台上的燒錄軟體，更不可能提供燒錄的Protocol，實在是相當遺憾的做法。雖然網路上，有一些熱心的開發者有提供自製的燒錄軟體，如：gSTC-ISP、stc-isp、stcflash、stcgal，不過支援的STC單晶片型號還是不及Windows STC-ISP多，因此，司徒打算使用逆向工程的方式去逆向Windows STC-ISP，而目前最新的版本是V6.86E(sha1: a36cc41f89170c7f4de283e4ec34f42c251d728e)，因此，司徒就鎖定這個版本，因為逆向的過程還蠻花費時間的，因此，司徒將利用空閒的時間，慢慢的逆向Windows STC-ISP，期望有多餘時間可以逆向移植到Linux平台上。<br><br>
+
+首先使用OllyDBG打開確認載入的模組<br>
+<img src="ida_stc/1.jpg" class="maxSize"><br><br>
+
+0x73dd22b5就是OnCmdMsg@CCmdTarget的入口點，可以參考司徒的其它逆向文章<br>
+<img src="ida_stc/2.jpg" class="maxSize"><br><br>
+
+0x73dd238f為AfxFindMessageEntry()入口點，在下一行設定條件式中斷(Shift + F2)<br>
+<img src="ida_stc/3.jpg" class="maxSize"><br><br>
+
+條件為ebx==111(WM_COMMMAND)並且eax!=0(代表需要執行觸發事件)<br>
+<img src="ida_stc/4.jpg" class="maxSize"><br><br>
+
+設定後<br>
+<img src="ida_stc/5.jpg" class="maxSize"><br><br>
+
+接著按F9執行<br>
+<img src="ida_stc/6.jpg" class="maxSize"><br><br>
+
+Open Code File按下的中斷點<br>
+<img src="ida_stc/7.jpg" class="maxSize"><br><br>
+
+副程式位置為0x438270<br>
+<img src="ida_stc/8.jpg" class="maxSize"><br><br>
+
+逆向程式碼
+</p>
+<pre class="brush:cpp">
+int __thiscall sub_438270(void *this)
+{
+  void *v1; // ebx@1
+  _UNKNOWN *v2; // eax@1
+  int v3; // ST08_4@4
+  int v4; // eax@5
+  bool v5; // ST23_1@5
+  bool v6; // al@5
+  int v7; // eax@8
+  int v8; // eax@8
+  int v9; // eax@9
+  int v10; // eax@9
+  HWND v11; // ecx@9
+  WPARAM v12; // edi@9
+  HWND v13; // eax@14
+  int v14; // edi@14
+  unsigned __int16 v15; // ax@14
+  HWND v16; // edx@16
+  char v18; // [sp+Fh] [bp-215h]@5
+  LPARAM v19; // [sp+10h] [bp-214h]@4
+  char v20; // [sp+14h] [bp-210h]@5
+  LPARAM lParam; // [sp+18h] [bp-20Ch]@9
+  char *v22; // [sp+24h] [bp-200h]@16
+  int v23; // [sp+28h] [bp-1FCh]@16
+  int v24; // [sp+30h] [bp-1F4h]@10
+  char v25; // [sp+34h] [bp-1F0h]@3
+  char v26; // [sp+198h] [bp-8Ch]@16
+  int v27; // [sp+220h] [bp-4h]@1
+
+  v1 = this;
+  sub_42DCA0(0);
+  sub_417300(1, v1);
+  v27 = 0;
+  v2 = &amp;unk_49B750;
+  if ( !dword_4A65AC )
+    v2 = (_UNKNOWN *)"Open Code File";
+  sub_4173D0(v2);
+  sub_4173E0("Intel Hex/Binary (*.hex; *.bin)");
+  sub_4173F0(*((_DWORD *)v1 + 7119));
+  if ( sub_4173A0(&amp;v25) == 1 )
+  {
+    v3 = *(_DWORD *)sub_4174A0(&amp;v19);
+    LOBYTE(v27) = 1;
+    if ( !mbsicmp(v3, &amp;unk_49B6EC)
+      || (v4 = sub_4174A0(&amp;v20),
+          v5 = mbsicmp(*(_DWORD *)v4, &amp;unk_49B6E8) == 0,
+          CString::_CString(&amp;v20),
+          v6 = v5,
+          v18 = 0,
+          v6) )
+      v18 = 1;
+    LOBYTE(v27) = 0;
+    CString::_CString(&amp;v19);
+    if ( v18 )
+    {
+      v7 = sub_417450(&amp;v19);
+      LOBYTE(v27) = 2;
+      v8 = CString::operator_((char *)v1 + 28468, v7);
+      CString::operator_((char *)v1 + 28472, v8);
+      LOBYTE(v27) = 0;
+      CString::_CString(&amp;v19);
+      sub_433720(0);
+    }
+    else
+    {
+      v9 = sub_417450(&amp;v19);
+      LOBYTE(v27) = 3;
+      v10 = CString::operator_((char *)v1 + 28460, v9);
+      CString::operator_((char *)v1 + 28476, v10);
+      LOBYTE(v27) = 0;
+      CString::_CString(&amp;v19);
+      sub_436340(0);
+      sub_4331E0(v1);
+      sub_4362F0(v1);
+      sub_43D2E0(v1);
+      v11 = (HWND)*((_DWORD *)v1 + 626);
+      v12 = 0;
+      lParam = 8;
+      if ( SendMessageA(v11, 0x1304u, 0, 0) &gt; 0 )
+      {
+        do
+        {
+          SendMessageA(*((HWND *)v1 + 626), 0x1305u, v12, (LPARAM)&amp;lParam);
+          if ( !v24 )
+            break;
+          ++v12;
+        }
+        while ( (signed int)v12 &lt; SendMessageA(*((HWND *)v1 + 626), 0x1304u, 0, 0) );
+      }
+      if ( v12 != SendMessageA(*((HWND *)v1 + 626), 0x1304u, 0, 0)
+        &amp;&amp; v12 != SendMessageA(*((HWND *)v1 + 626), 0x130Bu, 0, 0) )
+      {
+        SendMessageA(*((HWND *)v1 + 626), 0x130Cu, v12, 0);
+        v13 = GetParent(*((HWND *)v1 + 626));
+        v14 = CWnd::FromHandle(v13);
+        v19 = *((_DWORD *)v1 + 626);
+        v15 = CWnd::GetDlgCtrlID((char *)v1 + 2472);
+        SendMessageA(*(HWND *)(v14 + 32), 0x111u, v15 | 0x10000, v19);
+      }
+      sub_439650(v1);
+    }
+    v16 = (HWND)*((_DWORD *)v1 + 626);
+    memset(&amp;lParam, 0, 0x1Cu);
+    lParam = 9;
+    v22 = &amp;v26;
+    v23 = 128;
+    SendMessageA(v16, 0x1305u, 2u, (LPARAM)&amp;lParam);
+    if ( v24 == 14 )
+    {
+      SendMessageA(*((HWND *)v1 + 626), 0x1308u, 2u, 0);
+      SendMessageA(*((HWND *)v1 + 626), 0x1307u, 0xFu, (LPARAM)&amp;lParam);
+    }
+  }
+  v27 = -1;
+  return sub_417390(&amp;v25);
+}
+</pre><br>
+
+<p>
+Download/Program按下的中斷點<br>
+<img src="ida_stc/9.jpg" class="maxSize"><br><br>
+
+副程式位置為0x438270<br>
+<img src="ida_stc/10.jpg" class="maxSize"><br><br>
+
+再往下跟<br>
+<img src="ida_stc/11.jpg" class="maxSize"><br><br>
+
+逆向程式碼
+</p>
+<pre class="brush:cpp">
+char __thiscall sub_438800(int this, int a2, int a3, LPARAM lParam)
+{
+  int v4; // edi@1
+  char result; // al@1
+  WPARAM v6; // ebp@3
+  HWND v7; // eax@8
+  int v8; // ebp@8
+  unsigned __int16 v9; // ax@8
+  HWND v10; // edx@19
+  WPARAM v11; // ebp@19
+  HWND v12; // eax@24
+  int v13; // ebp@24
+  unsigned __int16 v14; // ax@24
+  int v15; // [sp+10h] [bp-1Ch]@19
+  int v16; // [sp+28h] [bp-4h]@20
+  LPARAM lParama; // [sp+38h] [bp+Ch]@8
+  LPARAM lParamb; // [sp+38h] [bp+Ch]@24
+
+  v4 = this;
+  result = *(_BYTE *)(this + 24807);
+  if ( !result )
+  {
+    if ( lParam != -1 )
+    {
+      *(_DWORD *)(this + 28304) = 1;
+      CString::operator_(this + 28452, this + 28460);
+      CString::operator_(v4 + 28456, v4 + 28464);
+      *(_DWORD *)(v4 + 28388) = *(_DWORD *)(v4 + 28392);
+      sub_422640(1);
+      v6 = 0;
+      *(_DWORD *)(v4 + 28288) = *(_DWORD *)(v4 + 3120);
+      *(_DWORD *)(v4 + 28292) = *(_DWORD *)(v4 + 3124);
+      *(_DWORD *)(v4 + 28296) = *(_DWORD *)(v4 + 3128);
+      *(_DWORD *)(v4 + 28300) = *(_DWORD *)(v4 + 3132);
+      if ( SendMessageA(*(HWND *)(v4 + 2184), 0x146u, 0, 0) &gt; 0 )
+      {
+        do
+        {
+          if ( lParam == SendMessageA(*(HWND *)(v4 + 2184), 0x150u, v6, 0) )
+            break;
+          ++v6;
+        }
+        while ( (signed int)v6 &lt; SendMessageA(*(HWND *)(v4 + 2184), 0x146u, 0, 0) );
+      }
+      if ( v6 != SendMessageA(*(HWND *)(v4 + 2184), 0x146u, 0, 0)
+        &amp;&amp; v6 != SendMessageA(*(HWND *)(v4 + 2184), 0x147u, 0, 0) )
+      {
+        SendMessageA(*(HWND *)(v4 + 2184), 0x14Eu, v6, 0);
+        v7 = GetParent(*(HWND *)(v4 + 2184));
+        v8 = CWnd::FromHandle(v7);
+        lParama = *(_DWORD *)(v4 + 2184);
+        v9 = CWnd::GetDlgCtrlID(v4 + 2152);
+        SendMessageA(*(HWND *)(v8 + 32), 0x111u, v9 | 0x10000, lParama);
+      }
+    }
+    if ( a2 == 7 )
+    {
+      SendMessageA(*(HWND *)(v4 + 4064), 0xF1u, 0, 0);
+      SendMessageA(*(HWND *)(v4 + 4640), 0xF1u, 1u, 0);
+      SendMessageA(*(HWND *)(v4 + 5664), 0xF1u, 0, 0);
+      SendMessageA(*(HWND *)(v4 + 4512), 0xF1u, 1u, 0);
+    }
+    if ( a3 )
+    {
+      if ( !SendMessageA(*(HWND *)(v4 + 2568), 0x402u, 0, 0) &amp;&amp; !SendMessageA(*(HWND *)(v4 + 2632), 0x402u, 0, 0) )
+      {
+        if ( dword_4A65AC )
+          result = CWnd::MessageBoxA(v4, &amp;unk_49B3A4, &amp;unk_49B3BC, 64);
+        else
+          result = CWnd::MessageBoxA(v4, "Please open a code file !", "No Data", 64);
+        return result;
+      }
+      if ( SendMessageA(*(HWND *)(v4 + 6136), 0xF0u, 0, 0) == 1 || SendMessageA(*(HWND *)(v4 + 6072), 0xF0u, 0, 0) == 1 )
+      {
+        v10 = *(HWND *)(v4 + 2440);
+        v11 = 0;
+        v15 = 8;
+        if ( SendMessageA(v10, 0x1304u, 0, 0) &gt; 0 )
+        {
+          do
+          {
+            SendMessageA(*(HWND *)(v4 + 2440), 0x1305u, v11, (LPARAM)&amp;v15);
+            if ( v16 == 1 )
+              break;
+            ++v11;
+          }
+          while ( (signed int)v11 &lt; SendMessageA(*(HWND *)(v4 + 2440), 0x1304u, 0, 0) );
+        }
+        if ( v11 != SendMessageA(*(HWND *)(v4 + 2440), 0x1304u, 0, 0)
+          &amp;&amp; v11 != SendMessageA(*(HWND *)(v4 + 2440), 0x130Bu, 0, 0) )
+        {
+          SendMessageA(*(HWND *)(v4 + 2440), 0x130Cu, v11, 0);
+          v12 = GetParent(*(HWND *)(v4 + 2440));
+          v13 = CWnd::FromHandle(v12);
+          lParamb = *(_DWORD *)(v4 + 2440);
+          v14 = CWnd::GetDlgCtrlID(v4 + 2408);
+          SendMessageA(*(HWND *)(v13 + 32), 0x111u, v14 | 0x10000, lParamb);
+        }
+        sub_43B260(v4);
+      }
+    }
+    sub_432F80(1u);
+    sub_439650(v4);
+    *(_DWORD *)(v4 + 28348) = a2;
+    result = AfxBeginThread(sub_440940, v4, 0, 0, 0, 0);
+  }
+  return result;
+}
+</pre><br>
+
+<p>
+AfxBeginThread(sub_440940, v4, 0, 0, 0, 0);<br>
+可以發現是透過Thread做燒錄的動作，因此，再往下跟就可以發現燒錄的副程式
+</p>
+<pre class="brush:cpp">
+int __cdecl sub_440940(const void *a1)
+{
+  int v1; // ebp@1
+  LRESULT v2; // eax@1
+  int v3; // eax@1
+  int v4; // eax@1
+  int v5; // eax@1
+  int v6; // eax@3
+  HWND v7; // ST00_4@5
+  LRESULT v8; // eax@5
+  int v9; // eax@9
+  signed int v10; // ecx@9
+  int v11; // ecx@11
+  bool v12; // zf@17
+  int v13; // eax@17
+  int v14; // eax@19
+  unsigned int v15; // eax@21
+  unsigned int v16; // eax@23
+  unsigned int v17; // ecx@25
+  const char **v18; // eax@27
+  int v19; // ecx@27
+  WPARAM v20; // eax@27
+  LRESULT v21; // eax@29
+  int v22; // ecx@29
+  int v23; // edx@29
+  int v24; // esi@29
+  int v25; // eax@29
+  int v26; // ecx@29
+  int v27; // eax@29
+  int v28; // ecx@29
+  int v29; // eax@30
+  int v30; // eax@32
+  void *v31; // edi@34
+  int v32; // eax@36
+  int v33; // eax@39
+  unsigned int v34; // ecx@42
+  const void *v35; // esi@42
+  void *v36; // edi@42
+  int v37; // eax@45
+  __int64 v38; // qax@48
+  void *v39; // edi@48
+  unsigned int v40; // esi@48
+  int v41; // edx@48
+  int v42; // edi@48
+  int i; // ecx@48
+  void *v44; // edi@54
+  char v45; // dl@54
+  int v46; // ecx@54
+  int v47; // edi@54
+  int j; // ecx@54
+  void *v49; // edi@58
+  char v50; // dl@58
+  int v51; // ecx@58
+  int v52; // edi@58
+  int k; // ecx@58
+  int v54; // ecx@62
+  int v55; // eax@64
+  int v56; // edx@66
+  int v57; // ecx@68
+  const void *v58; // eax@69
+  const void *v59; // esi@69
+  const void *v60; // ST0C_4@69
+  HANDLE v61; // eax@69
+  unsigned int v62; // eax@69
+  const void *v63; // eax@69
+  const void *v64; // esi@69
+  const void *v65; // ST0C_4@69
+  HANDLE v66; // eax@69
+  unsigned int v67; // eax@69
+  unsigned int v68; // edx@69
+  int v69; // eax@69
+  const void *v70; // esi@71
+  HANDLE v71; // eax@71
+  unsigned int v72; // esi@73
+  const void *v73; // eax@75
+  const void *v74; // edi@75
+  const void *v75; // ST0C_4@75
+  HANDLE v76; // eax@75
+  SIZE_T v77; // eax@75
+  int v78; // eax@75
+  const void *v79; // ST0C_4@76
+  HANDLE v80; // eax@76
+  SIZE_T v81; // esi@76
+  int v82; // esi@76
+  const void *v83; // ST0C_4@78
+  HANDLE v84; // eax@78
+  SIZE_T v85; // esi@78
+  const void *v86; // ST0C_4@80
+  HANDLE v87; // eax@80
+  SIZE_T v88; // esi@80
+  const void *v89; // ST0C_4@82
+  HANDLE v90; // eax@82
+  SIZE_T v91; // esi@82
+  int v92; // eax@86
+  int v93; // eax@98
+  int v94; // eax@103
+  int v95; // ecx@104
+  int v96; // edx@112
+  signed int v97; // esi@113
+  char *v98; // ecx@113
+  signed int v99; // ecx@115
+  signed int v100; // esi@115
+  signed int v101; // edx@119
+  char *v102; // eax@121
+  WPARAM v103; // edi@129
+  HWND v104; // ST00_4@129
+  LRESULT v105; // eax@130
+  HWND v106; // eax@134
+  int v107; // edi@134
+  unsigned __int16 v108; // ax@134
+  HWND v109; // eax@137
+  WPARAM v110; // edi@137
+  HWND v111; // eax@142
+  int v112; // edi@142
+  unsigned __int16 v113; // ax@142
+  int v114; // edx@146
+  int v115; // ebp@146
+  int v117; // [sp-4h] [bp-58h]@70
+  char v118; // [sp+0h] [bp-54h]@0
+  char *Str; // [sp+10h] [bp-44h]@1
+  char v120; // [sp+14h] [bp-40h]@1
+  int v121; // [sp+18h] [bp-3Ch]@30
+  int v122; // [sp+1Ch] [bp-38h]@32
+  int v123; // [sp+20h] [bp-34h]@1
+  LPARAM lParam; // [sp+24h] [bp-30h]@27
+  int v125; // [sp+28h] [bp-2Ch]@8
+  int v126; // [sp+2Ch] [bp-28h]@69
+  int v127; // [sp+44h] [bp-10h]@138
+  int v128; // [sp+50h] [bp-4h]@1
+
+  CString::CString(&amp;Str);
+  v128 = 0;
+  CString::CString(&amp;v120);
+  LOBYTE(v128) = 1;
+  sub_42DCA0(1);
+  v1 = (int)a1;
+  v2 = SendMessageA(*((HWND *)a1 + 594), 0x147u, 0, 0);
+  CComboBox::GetLBText(v1 + 2344, v2, &amp;Str);
+  v3 = CString::ReverseFind(&amp;Str, 40);
+  v4 = CString::Mid(&amp;Str, &amp;a1, v3 + 1);
+  LOBYTE(v128) = 2;
+  CString::operator_(&amp;Str, v4);
+  LOBYTE(v128) = 1;
+  CString::_CString(&amp;a1);
+  CString::TrimRight(&amp;Str, " )");
+  CString::operator_(&amp;v120, &amp;Str);
+  v5 = CString::Left(&amp;v120, &amp;v123, 3);
+  LOBYTE(a1) = mbsicoll(*(_DWORD *)v5, &amp;off_49EC0C) == 0;
+  CString::_CString(&amp;v123);
+  if ( (_BYTE)a1 )
+  {
+    v123 = 1;
+  }
+  else
+  {
+    v6 = CString::Left(&amp;v120, &amp;v123, 3);
+    LOBYTE(a1) = mbsicoll(*(_DWORD *)v6, &amp;off_49EC08) == 0;
+    CString::_CString(&amp;v123);
+    v123 = (_BYTE)a1 != 0 ? 2 : 0;
+  }
+  if ( *(_DWORD *)(v1 + 12676) != -1 )
+  {
+    CString::CString(&amp;a1);
+    v7 = *(HWND *)(v1 + 13712);
+    LOBYTE(v128) = 3;
+    v8 = SendMessageA(v7, 0x147u, 0, 0);
+    CComboBox::GetLBText(v1 + 13680, v8, &amp;a1);
+    if ( !mbsicmp(a1, Str) )
+      SendMessageA(*(HWND *)(v1 + 12612), 0x111u, 0x453u, 0);
+    LOBYTE(v128) = 1;
+    CString::_CString(&amp;a1);
+  }
+  SendMessageA(*(HWND *)(v1 + 2760), 0x402u, 0, 0);
+  CWnd::ShowWindow(v1 + 1896, 0);
+  CWnd::ShowWindow(v1 + 2728, 1);
+  v125 = v1 + 3024;
+  sub_422A90(0, 1);
+  sub_422640(1);
+  sub_41BCD0(1);
+  *(_DWORD *)(v1 + 25148) = 0;
+  while ( 1 )
+  {
+    sub_406BD0(v1 + 24784);
+    CWnd::GetWindowTextA(v1 + 2152, &amp;Str);
+    strcpy((char *)(v1 + 25160), Str);
+    *(_DWORD *)(v1 + 25032) = *(_DWORD *)(v1 + 28392);
+    v9 = v1 + 25044;
+    v10 = 8;
+    *(_DWORD *)(v1 + 25040) = (unsigned __int16)word_468BA8[16 * *(_DWORD *)(v1 + 28392)];
+    do
+    {
+      *(_DWORD *)v9 = *(_DWORD *)(v1 + 25040);
+      v9 += 4;
+      --v10;
+    }
+    while ( v10 );
+    v11 = *(_DWORD *)(v1 + 25280);
+    *(_DWORD *)v11 = *(_DWORD *)(v1 + 3120);
+    *(_DWORD *)(v11 + 4) = *(_DWORD *)(v1 + 3124);
+    *(_DWORD *)(v11 + 8) = *(_DWORD *)(v1 + 3128);
+    *(_DWORD *)(v11 + 12) = *(_DWORD *)(v1 + 3132);
+    *(_BYTE *)(*(_DWORD *)(v1 + 25280) + 16) = -1;
+    if ( CWnd::IsDlgButtonChecked(v1 + 7856, 1197) )
+    {
+      *(_BYTE *)(*(_DWORD *)(v1 + 25280) + 16) &amp;= 0xFEu;
+      if ( !SendMessageA(*(HWND *)(v1 + 8048), 0x147u, 0, 0) )
+        *(_BYTE *)(*(_DWORD *)(v1 + 25280) + 16) &amp;= 0xFDu;
+      if ( !SendMessageA(*(HWND *)(v1 + 7984), 0x147u, 0, 0) )
+        *(_BYTE *)(*(_DWORD *)(v1 + 25280) + 16) &amp;= 0xFBu;
+      *(_BYTE *)(*(_DWORD *)(v1 + 25280) + 17) = sub_402B90(v1 + 7856);
+      *(_BYTE *)(*(_DWORD *)(v1 + 25280) + 18) = sub_402BC0(v1 + 7856);
+    }
+    v12 = SendMessageA(*(HWND *)(v1 + 328), 0xF0u, 0, 0) == 0;
+    v13 = v1 + 2664;
+    *(_BYTE *)(v1 + 24816) = v12;
+    if ( v1 != -2664 )
+      v13 = *(_DWORD *)(v1 + 2696);
+    *(_DWORD *)(v1 + 24792) = v13;
+    v14 = v1 + 2728;
+    if ( v1 != -2728 )
+      v14 = *(_DWORD *)(v1 + 2760);
+    *(_DWORD *)(v1 + 24796) = v14;
+    *(_BYTE *)(v1 + 24809) = CWnd::IsDlgButtonChecked(v1 + 8476, 1199) != 0;
+    *(_BYTE *)(v1 + 24810) = SendMessageA(*(HWND *)(v1 + 11716), 0xF0u, 0, 0) != 0;
+    *(_BYTE *)(v1 + 24811) = SendMessageA(*(HWND *)(v1 + 11780), 0xF0u, 0, 0) != 0;
+    *(_BYTE *)(v1 + 24812) = SendMessageA(*(HWND *)(v1 + 11844), 0xF0u, 0, 0) != 0;
+    *(_BYTE *)(v1 + 24813) = CWnd::IsDlgButtonChecked(v1 + 7856, 1217) != 0;
+    *(_BYTE *)(v1 + 24814) = CWnd::IsDlgButtonChecked(v1 + 6696, 1196) != 0;
+    CWnd::GetWindowTextA(v1 + 6984, &amp;Str);
+    *(_DWORD *)(v1 + 24920) = strtoul(Str, 0, 0);
+    *(_DWORD *)(v1 + 24924) = SendMessageA(*(HWND *)(v1 + 6952), 0x147u, 0, 0);
+    *(_DWORD *)(v1 + 24928) = SendMessageA(*(HWND *)(v1 + 6888), 0x147u, 0, 0);
+    v15 = *(_DWORD *)(v1 + 7148);
+    if ( (signed int)v15 &gt; 255 )
+      v15 = 255;
+    *(_DWORD *)(v1 + 24932) = v15;
+    memcpy(*(void **)(v1 + 25264), *(const void **)(v1 + 7144), v15);
+    *(_BYTE *)(v1 + 24824) = CWnd::IsDlgButtonChecked(v1 + 7164, 1196) != 0;
+    CWnd::GetWindowTextA(v1 + 7644, &amp;Str);
+    *(_DWORD *)(v1 + 24936) = strtoul(Str, 0, 0);
+    *(_DWORD *)(v1 + 24940) = SendMessageA(*(HWND *)(v1 + 7612), 0x147u, 0, 0);
+    *(_DWORD *)(v1 + 24944) = SendMessageA(*(HWND *)(v1 + 7548), 0x147u, 0, 0);
+    v16 = *(_DWORD *)(v1 + 7808);
+    if ( (signed int)v16 &gt; 255 )
+      v16 = 255;
+    *(_DWORD *)(v1 + 24948) = v16;
+    memcpy(*(void **)(v1 + 25284), *(const void **)(v1 + 7804), v16);
+    v17 = *(_DWORD *)(v1 + 7828);
+    if ( (signed int)v17 &gt; 255 )
+      v17 = 255;
+    *(_DWORD *)(v1 + 24952) = v17;
+    memcpy(*(void **)(v1 + 25288), *(const void **)(v1 + 7824), v17);
+    *(_DWORD *)(v1 + 24956) = *(_DWORD *)(v1 + 7844);
+    *(_DWORD *)(v1 + 24960) = *(_DWORD *)(v1 + 7848) - *(_DWORD *)(v1 + 7844) + 1;
+    *(_DWORD *)(v1 + 24964) = dword_4A65AC;
+    *(_DWORD *)(v1 + 24968) = *(_DWORD *)(v1 + 28348);
+    v18 = (const char **)CString::Mid(&amp;v120, &amp;lParam, 3);
+    *(_DWORD *)(v1 + 24972) = strtoul(*v18, 0, 0);
+    CString::_CString(&amp;lParam);
+    CWnd::GetWindowTextA(v1 + 2280, &amp;Str);
+    *(_DWORD *)(v1 + 24976) = strtoul(Str, 0, 0);
+    CWnd::GetWindowTextA(v1 + 2216, &amp;Str);
+    *(_DWORD *)(v1 + 24980) = strtoul(Str, 0, 0);
+    *(_DWORD *)(v1 + 24984) = SendMessageA(*(HWND *)(v1 + 11460), 0x147u, 0, 0);
+    *(_DWORD *)(v1 + 24988) = SendMessageA(*(HWND *)(v1 + 11396), 0x147u, 0, 0);
+    *(_DWORD *)(v1 + 24992) = 5 * SendMessageA(*(HWND *)(v1 + 11332), 0x147u, 0, 0);
+    CWnd::GetWindowTextA(v1 + 3200, &amp;Str);
+    *(_DWORD *)(v1 + 24996) = (signed __int64)(strtod(Str, 0) * 1000000.0);
+    v19 = -((*(_BYTE *)(*(_DWORD *)(v1 + 25280) + 15) &amp; 1) != 0);
+    *(_DWORD *)(v1 + 25024) = (v19 &amp; 0xA8C000) + 11059200;
+    v20 = SendMessageA(*(HWND *)(v1 + 192), 0x147u, 0, 0);
+    *(_DWORD *)(v1 + 25016) = SendMessageA(*(HWND *)(v1 + 192), 0x150u, v20, 0);
+    *(_DWORD *)(v1 + 25076) = *(_DWORD *)(v1 + 12568);
+    *(_DWORD *)(v1 + 25080) = *(_DWORD *)(v1 + 12572);
+    if ( *(_DWORD *)(v1 + 28412) )
+    {
+      *(_BYTE *)(v1 + 24828) = 1;
+      *(_DWORD *)(v1 + 25024) = *(_DWORD *)(v1 + 28412);
+    }
+    *(_DWORD *)(v1 + 25120) = *(_DWORD *)(v1 + 28364);
+    *(_DWORD *)(v1 + 25128) = *(_DWORD *)(v1 + 28368);
+    *(_DWORD *)(v1 + 25132) = *(_DWORD *)(v1 + 28372);
+    *(_DWORD *)(v1 + 25136) = *(_DWORD *)(v1 + 28376);
+    sub_41A350(1, v1 + 27414);
+    *(_DWORD *)(v1 + 25100) = *(_DWORD *)(v1 + 28380);
+    *(_DWORD *)(v1 + 25104) = SendMessageA(*(HWND *)(v1 + 11268), 0x147u, 0, 0) + (*(_DWORD *)(v1 + 24988) != 0 ? 5 : 9);
+    *(_DWORD *)(v1 + 25108) = SendMessageA(*(HWND *)(v1 + 11204), 0x147u, 0, 0);
+    *(_BYTE *)(v1 + 24817) = SendMessageA(*(HWND *)(v1 + 6136), 0xF0u, 0, 0) == 1;
+    v21 = SendMessageA(*(HWND *)(v1 + 6072), 0xF0u, 0, 0);
+    v22 = *(_DWORD *)(v1 + 6036);
+    v23 = *(_DWORD *)(v1 + 6032);
+    v24 = *(_DWORD *)(v1 + 28396);
+    *(_BYTE *)(v1 + 24818) = v21 == 1;
+    v25 = *(_DWORD *)(v1 + 5996);
+    *(_DWORD *)(v1 + 24896) = v22;
+    v26 = *(_DWORD *)(v1 + 5992);
+    *(_DWORD *)(v1 + 24904) = v25;
+    *(_DWORD *)(v1 + 24900) = v24 + v23;
+    *(_DWORD *)(v1 + 24908) = v26;
+    *(_DWORD *)(v1 + 24832) = *(_DWORD *)(v1 + 6016);
+    *(_DWORD *)(v1 + 24836) = *(_DWORD *)(v1 + 6020);
+    *(_DWORD *)(v1 + 24840) = *(_DWORD *)(v1 + 6024);
+    *(_DWORD *)(v1 + 24844) = *(_DWORD *)(v1 + 6028);
+    *(_DWORD *)(v1 + 24848) = *(_DWORD *)(v1 + 6000);
+    *(_DWORD *)(v1 + 24852) = *(_DWORD *)(v1 + 6004);
+    *(_DWORD *)(v1 + 24856) = *(_DWORD *)(v1 + 6008);
+    *(_DWORD *)(v1 + 24860) = *(_DWORD *)(v1 + 6012);
+    *(_DWORD *)(v1 + 24864) = *(_DWORD *)(v1 + 5976);
+    *(_DWORD *)(v1 + 24868) = *(_DWORD *)(v1 + 5980);
+    *(_DWORD *)(v1 + 24872) = *(_DWORD *)(v1 + 5984);
+    *(_DWORD *)(v1 + 24876) = *(_DWORD *)(v1 + 5988);
+    *(_DWORD *)(v1 + 24880) = *(_DWORD *)(v1 + 5960);
+    *(_DWORD *)(v1 + 24884) = *(_DWORD *)(v1 + 5964);
+    *(_DWORD *)(v1 + 24888) = *(_DWORD *)(v1 + 5968);
+    *(_DWORD *)(v1 + 24892) = *(_DWORD *)(v1 + 5972);
+    v27 = *(_DWORD *)(v1 + 6680);
+    v28 = *(_DWORD *)(v1 + 6684);
+    *(_DWORD *)(v1 + 24912) = v27;
+    *(_DWORD *)(v1 + 24916) = v28;
+    if ( v27 )
+    {
+      CString::CString(&amp;v121);
+      LOBYTE(v128) = 4;
+      v29 = sub_41CD70(100, 1);
+      CString::operator_(&amp;v121, v29);
+      sub_41CEC0(v121, 120);
+      LOBYTE(v128) = 1;
+      CString::_CString(&amp;v121);
+    }
+    if ( *(_DWORD *)(v1 + 24916) )
+    {
+      CString::CString(&amp;v122);
+      LOBYTE(v128) = 5;
+      v30 = sub_41CD70(100, 1);
+      CString::operator_(&amp;v122, v30);
+      sub_41CEC0(v122, 120);
+      LOBYTE(v128) = 1;
+      CString::_CString(&amp;v122);
+    }
+    *(_BYTE *)(v1 + 24820) = *(_DWORD *)(v1 + 28316) != 0;
+    if ( CWnd::IsDlgButtonChecked(v1 + 8476, 1198) )
+    {
+      v31 = *(void **)(v1 + 25276);
+      *(_BYTE *)(v1 + 24815) = 1;
+      memcpy(v31, *(const void **)(v1 + 8984), 0x100u);
+    }
+    if ( CWnd::GetWindowTextLengthA(v1 + 24152) &lt;= 63 )
+      v32 = CWnd::GetWindowTextLengthA(v1 + 24152);
+    else
+      v32 = 63;
+    *(_DWORD *)(v1 + 27456) = v32;
+    CWnd::GetWindowTextA(v1 + 24152, v1 + 27464, v32 + 1);
+    if ( CWnd::GetWindowTextLengthA(v1 + 24088) &lt;= 63 )
+      v33 = CWnd::GetWindowTextLengthA(v1 + 24088);
+    else
+      v33 = 63;
+    *(_DWORD *)(v1 + 27460) = v33;
+    CWnd::GetWindowTextA(v1 + 24088, v1 + 27720, v33 + 1);
+    if ( *(_DWORD *)(v1 + 28340) )
+    {
+      v34 = *(_DWORD *)(v1 + 28424);
+      v35 = *(const void **)(v1 + 28436);
+      *(_DWORD *)(v1 + 28340) = 0;
+      *(_DWORD *)(v1 + 25000) = v34;
+      v36 = *(void **)(v1 + 25268);
+    }
+    else
+    {
+      if ( SendMessageA(*(HWND *)(v1 + 584), 0xF0u, 0, 0) == 1 )
+      {
+        sub_436340(1);
+        sub_436A40(1);
+        sub_4362F0(v1);
+      }
+      sub_4331E0((void *)v1);
+      v37 = *(_DWORD *)(v1 + 28420);
+      if ( v37 )
+        *(_DWORD *)(v1 + 25000) = *(_DWORD *)(v1 + 28396) + v37;
+      else
+        *(_DWORD *)(v1 + 25000) = *(_DWORD *)(v1 + 28416);
+      v38 = *(_DWORD *)(v1 + 25000) + 511;
+      v41 = WORD2(v38) &amp; 0x1FF;
+      LODWORD(v38) = (v41 + (signed int)v38) &gt;&gt; 9 &lt;&lt; 9;
+      *(_DWORD *)(v1 + 25000) = v38;
+      v39 = *(void **)(v1 + 25268);
+      v40 = v38;
+      LOBYTE(v41) = dword_49A34C;
+      BYTE1(v41) = dword_49A34C;
+      LODWORD(v38) = v41 &lt;&lt; 16;
+      LOWORD(v38) = v41;
+      memset32(v39, v38, v40 &gt;&gt; 2);
+      v42 = (int)((char *)v39 + 4 * (v40 &gt;&gt; 2));
+      for ( i = v40 &amp; 3; i; --i )
+        *(_BYTE *)v42++ = v41;
+      memcpy(*(void **)(v1 + 25268), *(const void **)(v1 + 28428), *(_DWORD *)(v1 + 28416));
+      v34 = *(_DWORD *)(v1 + 28420);
+      v35 = *(const void **)(v1 + 28432);
+      v36 = (void *)(*(_DWORD *)(v1 + 28396) + *(_DWORD *)(v1 + 25268));
+    }
+    memcpy(v36, v35, v34);
+    if ( !*(_BYTE *)(v1 + 24809) )
+    {
+      if ( *(_BYTE *)(v1 + 24817) )
+      {
+        v44 = (void *)(*(_DWORD *)(v1 + 24896) + *(_DWORD *)(v1 + 25268));
+        v45 = *(_DWORD *)(v1 + 24904);
+        v46 = *(_DWORD *)(v1 + 24904) &gt;&gt; 2;
+        memset(v44, -1, 4 * v46);
+        v47 = (int)((char *)v44 + 4 * v46);
+        for ( j = v45 &amp; 3; j; --j )
+          *(_BYTE *)v47++ = -1;
+      }
+      if ( *(_BYTE *)(v1 + 24818) )
+      {
+        v49 = (void *)(*(_DWORD *)(v1 + 24900) + *(_DWORD *)(v1 + 25268));
+        v50 = *(_DWORD *)(v1 + 24908);
+        v51 = *(_DWORD *)(v1 + 24908) &gt;&gt; 2;
+        memset(v49, -1, 4 * v51);
+        v52 = (int)((char *)v49 + 4 * v51);
+        for ( k = v50 &amp; 3; k; --k )
+          *(_BYTE *)v52++ = -1;
+      }
+      if ( *(_BYTE *)(v1 + 27414) )
+      {
+        v54 = *(_DWORD *)(v1 + 25268) + *(_DWORD *)(v1 + 27438);
+        *(_DWORD *)v54 = -1;
+        *(_WORD *)(v54 + 4) = -1;
+        *(_BYTE *)(v54 + 6) = -1;
+      }
+      if ( *(_BYTE *)(v1 + 27415) )
+      {
+        v55 = *(_DWORD *)(v1 + 25268) + *(_DWORD *)(v1 + 27442);
+        *(_DWORD *)v55 = -1;
+        *(_WORD *)(v55 + 4) = -1;
+        *(_BYTE *)(v55 + 6) = -1;
+      }
+      if ( *(_BYTE *)(v1 + 27416) )
+      {
+        v56 = *(_DWORD *)(v1 + 25268) + *(_DWORD *)(v1 + 27446);
+        *(_DWORD *)v56 = -1;
+        *(_WORD *)(v56 + 4) = -1;
+        *(_BYTE *)(v56 + 6) = -1;
+      }
+      if ( *(_BYTE *)(v1 + 27417) )
+      {
+        v57 = *(_DWORD *)(v1 + 25268) + *(_DWORD *)(v1 + 27450);
+        *(_DWORD *)v57 = -1;
+        *(_WORD *)(v57 + 4) = -1;
+        *(_BYTE *)(v57 + 6) = -1;
+      }
+    }
+    sub_455610(&amp;v126);
+    LOBYTE(v128) = 6;
+    sub_455690((LPCSTR)0x99, 1, (int)&amp;dword_49A350);
+    v58 = (const void *)sub_455960("res11.bin");
+    v59 = v58;
+    v60 = v58;
+    v61 = GetProcessHeap();
+    v62 = HeapSize(v61, 0, v60);
+    memcpy(*(void **)(v1 + 25304), v59, v62);
+    *(_DWORD *)(v1 + 25308) = v62;
+    v63 = (const void *)sub_455960("res18.bin");
+    v64 = v63;
+    v65 = v63;
+    v66 = GetProcessHeap();
+    v67 = HeapSize(v66, 0, v65);
+    v68 = v67;
+    memcpy(*(void **)(v1 + 25312), v64, v67);
+    *(_DWORD *)(v1 + 25316) = v67;
+    v69 = *(_DWORD *)(v1 + 24968);
+    if ( v69 == 7 )
+    {
+      v117 = (int)"res11.bin";
+      *(_DWORD *)(v1 + 25040) = 62828;
+      *(_DWORD *)(v1 + 25044) = 62540;
+      *(_DWORD *)(v1 + 25048) = 62668;
+      *(_DWORD *)(v1 + 25052) = 62539;
+      *(_DWORD *)(v1 + 25056) = 62667;
+      *(_DWORD *)(v1 + 25060) = 62537;
+      *(_DWORD *)(v1 + 25064) = 62665;
+      *(_DWORD *)(v1 + 25068) = 62828;
+      *(_DWORD *)(v1 + 25072) = 62828;
+LABEL_71:
+      v70 = (const void *)sub_455960(v117);
+      v71 = GetProcessHeap();
+      v68 = HeapSize(v71, 0, v70);
+      memcpy(*(void **)(v1 + 25296), v70, v68);
+      *(_DWORD *)(v1 + 25300) = v68;
+      goto LABEL_102;
+    }
+    if ( v69 == 6 )
+    {
+      v72 = 0;
+      do
+        *(_BYTE *)(*(_DWORD *)(v1 + 25296) + v72++) = sub_42DCA0(0);
+      while ( v72 &lt; 0x10000 );
+      v73 = (const void *)sub_455960("res2.bin");
+      v74 = v73;
+      v75 = v73;
+      v76 = GetProcessHeap();
+      v77 = HeapSize(v76, 0, v75);
+      sub_416DC0(v74, *(_DWORD *)(v1 + 25296), v77, 1);
+      v78 = *(_DWORD *)(v1 + 25040);
+      switch ( v78 )
+      {
+        case 62825:
+          *(_DWORD *)(v1 + 25044) = 62829;
+          v79 = (const void *)sub_455960("res30.bin");
+          a1 = v79;
+          v80 = GetProcessHeap();
+          v81 = HeapSize(v80, 0, v79);
+          sub_416DC0(a1, *(_DWORD *)(v1 + 25296) + 54272, v81, 1);
+          v82 = v81 + 54272;
+          break;
+        case 62829:
+          *(_DWORD *)(v1 + 25044) = 62825;
+          v83 = (const void *)sub_455960("res30.bin");
+          a1 = v83;
+          v84 = GetProcessHeap();
+          v85 = HeapSize(v84, 0, v83);
+          sub_416DC0(a1, *(_DWORD *)(v1 + 25296) + 54272, v85, 1);
+          v82 = v85 + 54272;
+          break;
+        case 62826:
+          v86 = (const void *)sub_455960("res31.bin");
+          a1 = v86;
+          v87 = GetProcessHeap();
+          v88 = HeapSize(v87, 0, v86);
+          sub_416DC0(a1, *(_DWORD *)(v1 + 25296) + 57344, v88, 1);
+          v82 = v88 + 57344;
+          break;
+        case 62537:
+          *(_DWORD *)(v1 + 25044) = 62665;
+          v89 = (const void *)sub_455960("res6.bin");
+          a1 = v89;
+          v90 = GetProcessHeap();
+          v91 = HeapSize(v90, 0, v89);
+          sub_416DC0(a1, *(_DWORD *)(v1 + 25296) + 57344, v91, 1);
+          v82 = v91 + 57344;
+          break;
+        default:
+          v82 = 256;
+          memset(*(void **)(v1 + 25296), -1, 0x100u);
+          *(_DWORD *)(v1 + 25044) = *(_DWORD *)(v1 + 25040) - 1;
+          *(_DWORD *)(v1 + 25048) = *(_DWORD *)(v1 + 25040) - 2;
+          *(_DWORD *)(v1 + 25052) = *(_DWORD *)(v1 + 25040) - 3;
+          *(_DWORD *)(v1 + 25056) = *(_DWORD *)(v1 + 25040) - 4;
+          *(_DWORD *)(v1 + 25060) = *(_DWORD *)(v1 + 25040) - 5;
+          *(_DWORD *)(v1 + 25064) = *(_DWORD *)(v1 + 25040) - 6;
+          *(_DWORD *)(v1 + 25068) = *(_DWORD *)(v1 + 25040) - 7;
+          break;
+      }
+      sub_416CF0(*(_DWORD *)(v1 + 25296), *(_DWORD *)(v1 + 25296), v82, 1);
+      *(_DWORD *)(v1 + 25300) = v82;
+    }
+    else
+    {
+      if ( v69 == 4 )
+      {
+        v92 = dword_468BA0[8 * *(_DWORD *)(v1 + 25032)];
+        switch ( ((unsigned int)dword_468BA0[8 * *(_DWORD *)(v1 + 25032)] &gt;&gt; 14) &amp; 0xFF )
+        {
+          case 1u:
+          case 2u:
+          case 3u:
+          case 4u:
+          case 5u:
+          case 6u:
+          case 0x10u:
+          case 0x11u:
+            v117 = (int)"res12.bin";
+            break;
+          case 7u:
+          case 8u:
+          case 0x12u:
+          case 0x13u:
+            v117 = (int)"res13.bin";
+            break;
+          case 9u:
+          case 0xAu:
+          case 0xBu:
+          case 0xCu:
+          case 0xDu:
+          case 0xEu:
+          case 0x14u:
+          case 0x15u:
+          case 0x16u:
+          case 0x17u:
+          case 0x18u:
+          case 0x19u:
+            v117 = (int)"res14.bin";
+            break;
+          case 0x38u:
+          case 0x39u:
+          case 0x3Au:
+          case 0x3Bu:
+          case 0x3Du:
+          case 0x3Eu:
+            v117 = (int)"res55.bin";
+            break;
+          case 0x40u:
+            v117 = (int)"res56.bin";
+            break;
+          case 0x20u:
+          case 0x21u:
+            if ( (dword_468BA0[8 * *(_DWORD *)(v1 + 25032)] &amp; 0x700) != 512 )
+              goto LABEL_94;
+            v117 = (int)"res15.bin";
+            break;
+          default:
+LABEL_94:
+            if ( (v92 &amp; 0x700) == 1024 )
+              v117 = (int)"res26.bin";
+            else
+              v117 = (int)"res16.bin";
+            break;
+        }
+        goto LABEL_71;
+      }
+      if ( v69 != 8 )
+      {
+        v93 = *(_DWORD *)(v1 + 25040);
+        if ( v93 == 62825 )
+        {
+          *(_DWORD *)(v1 + 25044) = 62829;
+        }
+        else
+        {
+          if ( v93 == 62829 )
+            *(_DWORD *)(v1 + 25044) = 62825;
+        }
+      }
+    }
+LABEL_102:
+    LOBYTE(v128) = 1;
+    sub_455660(&amp;v126, v68);
+    if ( v123 == 1 )
+    {
+      v94 = sub_4132C0(v1 + 24784);
+    }
+    else
+    {
+      v95 = v1 + 24784;
+      if ( v123 == 2 )
+        v94 = sub_412770(v95);
+      else
+        v94 = sub_413F00(v95);
+    }
+    a1 = (const void *)v94;
+    if ( v94 )
+      goto LABEL_127;
+    sub_41BCD0(1);
+    if ( SendMessageA(*(HWND *)(v1 + 6136), 0xF0u, 0, 0) == 1 )
+      sub_41C950(v1 + 6016);
+    if ( SendMessageA(*(HWND *)(v1 + 6072), 0xF0u, 0, 0) == 1 )
+      sub_41C950(v1 + 6000);
+    sub_41BCD0(0);
+    sub_439650(v1);
+    v96 = *(_DWORD *)(v1 + 28408) + 1;
+    *(_DWORD *)(v1 + 28408) = v96;
+    CString::Format(&amp;Str, "%d", v96);
+    CWnd::SetWindowTextA(v1 + 1576, Str);
+    if ( *(_DWORD *)(v1 + 28348) != 3 )
+      goto LABEL_127;
+    *(_BYTE *)(v1 + 24807) = 1;
+    v97 = 2 * (5 * SendMessageA(*(HWND *)(v1 + 2120), 0x147u, 0, 0) + 5);
+    v98 = "\r\n%d鏃笘;
+    if ( !dword_4A65AC )
+      v98 = "\r\nRepeat after %d secs .";
+    sub_432EE0(v1, v98, v97 / 10);
+    v99 = v97;
+    v100 = v97 - 1;
+    if ( v99 )
+    {
+      do
+      {
+        if ( !*(_BYTE *)(v1 + 24807) )
+          break;
+        if ( !(v100 % 5) )
+          sub_432EE0(v1, ".", v118);
+        Sleep(0x64u);
+        v101 = v100--;
+      }
+      while ( v101 );
+    }
+    if ( v123 )
+    {
+      v102 = "\r\n脹;
+      if ( !dword_4A65AC )
+        v102 = "\r\nWaiting for USB device ...";
+      sub_432EE0(v1, v102, v118);
+      if ( SendMessageA(*(HWND *)(v1 + 2376), 0x147u, 0, 0) != 255 )
+        break;
+    }
+LABEL_126:
+    if ( !*(_BYTE *)(v1 + 24807) )
+      goto LABEL_127;
+  }
+  while ( *(_BYTE *)(v1 + 24807) )
+  {
+    if ( SendMessageA(*(HWND *)(v1 + 2376), 0x147u, 0, 0) == 255 )
+      goto LABEL_126;
+  }
+LABEL_127:
+  if ( *(_DWORD *)(v1 + 28348) == 1 &amp;&amp; *(_DWORD *)(v1 + 25032) != *(_DWORD *)(v1 + 28392) )
+  {
+    v103 = 0;
+    v104 = *(HWND *)(v1 + 2184);
+    lParam = *(_WORD *)(v1 + 25036) | (*(_WORD *)(v1 + 25092) &lt;&lt; 16);
+    if ( SendMessageA(v104, 0x146u, 0, 0) &gt; 0 )
+    {
+      do
+      {
+        v105 = SendMessageA(*(HWND *)(v1 + 2184), 0x150u, v103, 0);
+        if ( lParam == v105 )
+          break;
+        ++v103;
+      }
+      while ( (signed int)v103 &lt; SendMessageA(*(HWND *)(v1 + 2184), 0x146u, 0, 0) );
+    }
+    if ( v103 != SendMessageA(*(HWND *)(v1 + 2184), 0x146u, 0, 0)
+      &amp;&amp; v103 != SendMessageA(*(HWND *)(v1 + 2184), 0x147u, 0, 0) )
+    {
+      SendMessageA(*(HWND *)(v1 + 2184), 0x14Eu, v103, 0);
+      v106 = GetParent(*(HWND *)(v1 + 2184));
+      v107 = CWnd::FromHandle(v106);
+      lParam = *(_DWORD *)(v1 + 2184);
+      v108 = CWnd::GetDlgCtrlID(v1 + 2152);
+      SendMessageA(*(HWND *)(v107 + 32), 0x111u, v108 | 0x10000, lParam);
+    }
+  }
+  if ( CWnd::IsDlgButtonChecked(v1 + 12580, 1193) &amp;&amp; *(_DWORD *)(v1 + 12676) == -1 )
+  {
+    v109 = *(HWND *)(v1 + 2504);
+    v110 = 0;
+    v126 = 8;
+    if ( SendMessageA(v109, 0x1304u, 0, 0) &gt; 0 )
+    {
+      do
+      {
+        SendMessageA(*(HWND *)(v1 + 2504), 0x1305u, v110, (LPARAM)&amp;v126);
+        if ( v127 == 2 )
+          break;
+        ++v110;
+      }
+      while ( (signed int)v110 &lt; SendMessageA(*(HWND *)(v1 + 2504), 0x1304u, 0, 0) );
+    }
+    if ( v110 != SendMessageA(*(HWND *)(v1 + 2504), 0x1304u, 0, 0)
+      &amp;&amp; v110 != SendMessageA(*(HWND *)(v1 + 2504), 0x130Bu, 0, 0) )
+    {
+      SendMessageA(*(HWND *)(v1 + 2504), 0x130Cu, v110, 0);
+      v111 = GetParent(*(HWND *)(v1 + 2504));
+      v112 = CWnd::FromHandle(v111);
+      lParam = *(_DWORD *)(v1 + 2504);
+      v113 = CWnd::GetDlgCtrlID(v1 + 2472);
+      SendMessageA(*(HWND *)(v112 + 32), 0x111u, v113 | 0x10000, lParam);
+    }
+    sub_439650(v1);
+    SendMessageA(*(HWND *)(v1 + 12612), 0x111u, 0x453u, 0);
+  }
+  CWnd::ShowWindow(v1 + 1896, 1);
+  CWnd::ShowWindow(v1 + 2728, 0);
+  sub_432F80(0);
+  if ( !a1 &amp;&amp; *(_DWORD *)(v1 + 28304) )
+  {
+    Sleep(0x7D0u);
+    *(_DWORD *)(v1 + 28304) = 0;
+    SendMessageA(*(HWND *)(v1 + 2184), 0x14Eu, *(_DWORD *)(v1 + 28388), 0);
+    sub_43CC00(v1);
+    v114 = v1 + 28288;
+    v115 = v1 + 3120;
+    *(_DWORD *)v115 = *(_DWORD *)v114;
+    *(_DWORD *)(v115 + 4) = *(_DWORD *)(v114 + 4);
+    *(_DWORD *)(v115 + 8) = *(_DWORD *)(v114 + 8);
+    *(_DWORD *)(v115 + 12) = *(_DWORD *)(v114 + 12);
+    sub_422640(0);
+    CString::operator_(dword_4A6684 + 28460, dword_4A6684 + 28452);
+    CString::operator_(dword_4A6684 + 28464, dword_4A6684 + 28456);
+    sub_436340(1);
+    sub_436A40(1);
+  }
+  LOBYTE(v128) = 0;
+  CString::_CString(&amp;v120);
+  v128 = -1;
+  CString::_CString(&amp;Str);
+  return 0;
+}
+</pre>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

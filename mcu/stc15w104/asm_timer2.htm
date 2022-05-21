@@ -1,0 +1,120 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>STC15W104 &gt;&gt; Assembly</h3>
+<p><b>Timer2</b></p>
+<hr size="1">
+<p>
+Timer2只有一種模式，就是自動載入的16Bit計數、計時模式，最大可以從0數到65536，當數到65536時，則觸發Timer2計時中斷<br>
+<img style="border:0px" src="asm_timer2/2.jpg" class="maxSize"><br><br>
+
+暫存器如下：<br>
+<img style="border:0px" src="asm_timer2/1.jpg" class="maxSize"><br><br>
+
+設定步驟：<br>
+1. AUXR(0x8e)的Bit2(T2x12, 1T、12T)<br>
+2. AUXR的Timer2計時模式(T2_CT=0)<br>
+3. 設定TL2、TH2(1T, 0.09us, 11.0592MHz)<br>
+4. 設定T2R<br>
+5. 設定ET2、EA<br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+  led set p3.2
+  t2h set 0xd6
+  t2l set 0xd7
+  ie2 set 0xaf
+
+  .org 0x00
+  jmp start
+
+  .org 0x63
+  jmp t2_handle
+
+  .org 0x100
+start:
+  orl auxr, #04h
+  mov tl2, #0h
+  mov th2, #0h
+  clr a
+  clr led
+  orl auxr, #10h
+  orl ie2, #4
+  setb ea
+  jmp $
+
+t2_handle:
+  djnz acc, nothing
+  cpl led
+nothing:
+  reti
+  .end
+</pre>
+<p>
+P.S. 1T，(0.09us * 65536 * 255) ~= 1.5s<br><br>
+
+編譯程式：
+</p>
+<pre>
+$ mcu8051ide --compile main.s
+</pre><br>
+
+<p>
+完成<br>
+<img src="asm_led/1.jpg" class="maxSize"><br>
+<img src="asm_led/2.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,705 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>MS-DOS Device Driver >> Assembly >> Basic</h3>
+<p><b>I/O Request Packet(IRP)</b></p>
+<hr size="1">
+<p>
+DOS系統決定要呼叫驅動程式做事情時，會採取兩個階段的呼叫動作，而這兩個階段的關連就是依靠ES:BX的資料(IRP)，Strategy Callback副程式必須先把這個IRP保存起來，等到Interrupt Callback副程式被呼叫時，再去存取該IRP的資料。
+</p>
+
+<p>
+司徒使用一個Command 0(Initialization)說明一下處理流程：<br>
+Step 1. 系統將Command 0的IRP資料位址儲存在ES:BX<br>
+Step 2. 系統呼叫驅動程式的Strategy Callback副程式<br>
+Step 3. 驅動程式儲存IRP的位址<br>
+Step 4. 系統呼叫驅動程式的Interrupt Callback副程式<br>
+Step 5. 驅動程式從IRP得知這是一個Command 0的命令<br>
+Step 6. 驅動程式跳到本身處理Command 0的副程式去處理<br>
+Step 7. 驅動程式處理完後並返回控制權給DOS系統
+</p>
+
+<p>
+每個IRP都是經由Header和Data Structure這兩個部份組合而成，Header的Structure是固定的格式，而Data Structure的部份，則會因IRP的不同而有所改變，意思就是Data Structure的欄位不是固定的，有些IRP甚至沒有Data Structure的欄位。
+</p>
+
+<p>
+為了更容易瞭解，司徒使用Command 0(Initialization)的IRP解說一下：
+</p>
+
+<pre class="brush:cpp">
+CMD0_IRP struc
+ Header db size IRP_HEADER dup(?)
+ Data   db size CMD0_DATA dup(?) 
+CMD0_IRP ends
+</pre>
+
+<p>
+從上面的Structure可以看出，IRP是由Header和Data兩個部份組合而成，Header的部份是固定的Structure，如下表示：
+</p>
+
+<pre class="brush:cpp">
+IRP_HEADER struc
+ Length    db ?
+ UnitCode  db ?
+ Command   db ?
+ Status    dw ?
+ Reserved1 dd ?
+ Reserved2 dd ?
+IRP_HEADER ends
+</pre>
+<p>
+<b>Length</b>說明IRP Header的資料長度<br>
+<b>UnitCode</b>代表設備的順序號碼，例如：磁碟機有兩部，第一部就是0<br>
+<b>Command</b>說明要處理的命令
+</p>
+
+<table>
+  <thead>
+    <tr align="center">
+      <th>Command</th>
+      <th>DOS</th>
+      <th>Driver</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>0</td>
+      <td>2.0+</td>
+      <td>Char and Block</td>
+      <td>Initialization</td>
+    </tr>
+    <tr>
+      <td>1</td>
+      <td>2.0+</td>
+      <td>Block</td>
+      <td>Media Check</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>2.0+</td>
+      <td>Block</td>
+      <td>Get BIOS Parameter Block</td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td>2.0+</td>
+      <td>Char and Block</td>
+      <td>IOCTL</td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td>2.0+</td>
+      <td>Char and Block</td>
+      <td>Input</td>
+    </tr>
+    <tr>
+      <td>5</td>
+      <td>2.0+</td>
+      <td>Char</td>
+      <td>Nondestructive Input</td>
+    </tr>
+    <tr>
+      <td>6</td>
+      <td>2.0+</td>
+      <td>Char</td>
+      <td>Input Status</td>
+    </tr>
+    <tr>
+      <td>7</td>
+      <td>2.0+</td>
+      <td>Char</td>
+      <td>Input Flush</td>
+    </tr>
+    <tr>
+      <td>8</td>
+      <td>2.0+</td>
+      <td>Char and Block</td>
+      <td>Output</td>
+    </tr>
+    <tr>
+      <td>9</td>
+      <td>2.0+</td>
+      <td>Char and Block</td>
+      <td>Output With Verify</td>
+    </tr>
+    <tr>
+      <td>10</td>
+      <td>2.0+</td>
+      <td>Char</td>
+      <td>Output Status</td>
+    </tr>
+    <tr>
+      <td>11</td>
+      <td>2.0+</td>
+      <td>Char</td>
+      <td>Output Flush</td>
+    </tr>
+    <tr>
+      <td>12</td>
+      <td>2.0+</td>
+      <td>Char and Block</td>
+      <td>IOCTL Output</td>
+    </tr>
+    <tr>
+      <td>13</td>
+      <td>3.0+</td>
+      <td>Char and Block</td>
+      <td>Open</td>
+    </tr>
+    <tr>
+      <td>14</td>
+      <td>3.0+</td>
+      <td>Char and Block</td>
+      <td>Close</td>
+    </tr>
+    <tr>
+      <td>15</td>
+      <td>3.0+</td>
+      <td>Block</td>
+      <td>Removable Media</td>
+    </tr>
+    <tr>
+      <td>16</td>
+      <td>3.0+</td>
+      <td>Char</td>
+      <td>Output Til Busy</td>
+    </tr>
+    <tr>
+      <td>17</td>
+      <td>3.2+</td>
+      <td>Char and Block</td>
+      <td>Undefined</td>
+    </tr>
+    <tr>
+      <td>18</td>
+      <td>3.2+</td>
+      <td>Char and Block</td>
+      <td>Undefined</td>
+    </tr>
+    <tr>
+      <td>19</td>
+      <td>3.2+<hr/>3.3+</td>
+      <td>Block<hr/>Char and Block</td>
+      <td>Generic IOCTL</td>
+    </tr>
+    <tr>
+      <td>20</td>
+      <td>3.2+</td>
+      <td>Char and Block</td>
+      <td>Undefined</td>
+    </tr>
+    <tr>
+      <td>21</td>
+      <td>3.2+</td>
+      <td>Char and Block</td>
+      <td>Undefined</td>
+    </tr>
+    <tr>
+      <td>22</td>
+      <td>3.2+</td>
+      <td>Char and Block</td>
+      <td>Undefined</td>
+    </tr>
+    <tr>
+      <td>23</td>
+      <td>3.2+</td>
+      <td>Block</td>
+      <td>Get Logical Device</td>
+    </tr>
+    <tr>
+      <td>24</td>
+      <td>3.2+</td>
+      <td>Block</td>
+      <td>Get Logical Device</td>
+    </tr>
+    <tr>
+      <td>25</td>
+      <td>5.0+</td>
+      <td>Char and Block</td>
+      <td>IOCTL Query</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>
+<b>Status</b>是驅動程式回傳給系統的狀態，如下表：
+</p>
+
+<table>
+  <thead>
+    <tr align="center">
+      <th>Bit15</th>
+      <th>Bit14~Bit10</th>
+      <th>Bit9</th>
+      <th>Bit8</th>
+      <th>Bit7~Bit0</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr align="center">
+      <td>Error</td>
+      <td>Reserved</td>
+      <td>Busy</td>
+      <td>Done</td>
+      <td align="left">Error Code<br>
+      0 (Write protect violation)<br>
+      1 (Unknown unit)<br>
+      2 (Drive not ready)<br>
+      3 (Unknown command)<br>
+      4 (CRC error)<br>
+      5 (Bad drive request structure length)<br>
+      6 (Seek error)<br>
+      7 (Unknown media)<br>
+      8 (Sector not found)<br>
+      9 (Printer out of paper)<br>
+      10 (Write fault)<br>
+      11 (Read fault)<br>
+      12 (General failure)<br>
+      13 (Reserved)<br>
+      14 (Reserved)<br>
+      15 (Invalid disk change)<br>
+      </th>
+    </tr>
+  </tbody>
+</table>
+
+<p>
+<b>Reserved1</b>和<b>Reserved2</b>則是保留欄位
+</p>
+
+<p>
+Data Structure的部份則因IRP的不同而有所差異，Command 0的Data Structure如下表示：
+</p>
+
+<pre class="brush:cpp">
+CMD0_DATA struc
+ UnitNum       db ?
+ BreakOffset   dw ?
+ BreakSegment  dw ?
+ BPBOffset     dw ?
+ BPBSegment    dw ?
+ FirstDrive    db ?
+CMD0_DATA ends
+</pre>
+
+<p>
+經由上面的解說，使用者應該對IRP有了基本的認知。
+</p>
+
+<p>
+接著司徒針對那25個Command依序列出它們的IRP Structure，基本上，這部份使用者可先跳過，等之後需要使用該Command時，再回頭來參考即可。
+</p>
+
+<p>
+<b>Command 0: Initialization</b><br>
+初始化設定的Command，在驅動程式被載入到記憶體之後，系統會馬上傳送這個Command給驅動程式，這是驅動程式唯一可以做初始化的Command，而且使用者必須記得一點，只有該Command可以執行DOS的系統服務常式(0x01~0x0c, 0x30)
+</p>
+
+<pre class="brush:cpp">
+CMD0_IRP struc
+ Header db size IRP_HEADER dup(?)
+ Data   db size CMD0_DATA dup(?) 
+CMD0_IRP ends
+
+CMD0_DATA struc
+ UnitNum       db ?
+ BreakOffset   dw ?
+ BreakSegment  dw ?
+ BPBOffset     dw ?
+ BPBSegment    dw ?
+ FirstDrive    db ?
+CMD0_DATA ends
+</pre>
+ 
+<p>
+<b>Command 1: Media Check</b><br>
+這個命令是DOS在存取所有磁碟機前，都會先執行的命令，用以確認是否目錄或FAT資料有被更改過
+</p>
+
+<pre class="brush:cpp">
+CMD1_IRP struc
+ Header db size IRP_HEADER dup(?)
+ Data   db size CMD1_DATA dup(?) 
+CMD1_IRP ends
+
+CMD1_DATA struc
+  MediaDescriptor db ?
+  RetStatus       db ?
+CMD1_DATA ends
+</pre>
+
+<p>
+<b>Command 2: Get BPB Parameter</b><br>
+這個命令用於取得磁碟機的BPB資料
+</p>
+
+<pre class="brush:cpp">
+CMD2_IRP struc
+ Header db size IRP_HEADER dup(?)
+ Data   db size CMD2_DATA dup(?) 
+CMD2_IRP ends
+
+CMD2_DATA struc
+ MediaDescriptor db ?
+ BPBArrayOffset  dw ?
+ BPBArraySegment dw ?
+ BPBInfoOffset   dw ?
+ BPBInfoSegment  dw ?
+CMD2_DATA ends
+</pre>
+
+<p>
+<b>Command 3: IOCTL Input</b><br>
+Input Output Control(IOCTL)命令是應用程式用於跟驅動程式做為溝通傳輸的命令，所以會有Input跟Output兩種方向，DOS的系統呼叫常式44H就是用於此目的，驅動程式想要提供IOCTL命令給應用程式呼叫時，檔頭資訊中的Attribute第14位元(SUPPORT IOCTL)，必須先設定為1
+</p>
+
+<pre class="brush:cpp">
+CMD3_IRP struc
+ Header db size IRP_HEADER dup(?)
+ Data   db size CMD3_DATA dup(?) 
+CMD3_IRP ends
+
+CMD3_DATA struc
+ MediaDescriptor db ?
+ BufferOffset    dw ?
+ BufferSegment   dw ?
+ Count           dw ?
+ StartSectorNum  dw ?
+CMD3_DATA ends
+</pre>
+
+<p>
+<b>Command 4: Input</b><br>
+從驅動程式讀取資料
+</p>
+
+<pre class="brush:cpp">
+CMD4_IRP struc
+ Header db size IRP_HEADER dup(?)
+ Data   db size CMD4_DATA dup(?) 
+CMD4_IRP ends
+
+CMD4_DATA struc
+ MediaDescriptor db ?
+ BufferOffset    dw ?
+ BufferSegment   dw ?
+ Count           dw ?
+ StartSectorNum  dw ?
+ VolumeIDOffset  dw ?
+ VolumeIDSegment dw ?
+ StartSector32   dd ?
+CMD4_DATA ends
+</pre>
+ 
+<p>
+<b>Command 5: Nondestructive Input</b><br>
+應用程式可以使用DOS的系統呼叫常式0B取得Input Buffer裡面的資料，但是不清除Input Buffer，如果沒有資料在Input Buffer，則設定IRP Header的Status狀態(Busy=1)
+</p>
+
+<pre class="brush:cpp">
+CMD5_IRP struc
+ Header db size IRP_HEADER dup(?)
+ Data   db size CMD5_DATA dup(?) 
+CMD5_IRP ends
+
+CMD5_DATA struc
+ Buffer db ?
+CMD5_DATA ends
+</pre>
+
+<p>
+<b>Command 6: Input Status</b><br>
+取得Input Buffer的狀態，如果Input Buffer有資料，則設定IRP Header的Status狀態(Busy=0)，反之則設定Busy=1，設定值是跟Nondestructive Input相反
+</p>
+
+<pre class="brush:cpp">
+CMD6_IRP struc
+ Header db size IRP_HEADER dup(?)
+CMD6_IRP ends
+</pre>
+
+<p>
+<b>Command 7: Input Flush</b><br>
+清除驅動程式的Input Buffer
+</p>
+
+<pre class="brush:cpp">
+CMD7_IRP struc
+ Header db size IRP_HEADER dup(?)
+CMD7_IRP ends
+</pre>
+
+<p>
+<b>Command 8: Output</b><br>
+傳送資料給驅動程式
+</p>
+
+<pre class="brush:cpp">
+CMD8_IRP struc
+ Header db size IRP_HEADER dup(?)
+ Data   db size CMD8_DATA dup(?)
+CMD8_IRP ends
+
+CMD8_DATA struc
+ MediaDescriptor db ?
+ BufferOffset    dw ?
+ BufferSegment   dw ?
+ Count           dw ?
+ StartSectorNum  dw ?
+ VolumeIDOffset  dw ?
+ VolumeIDSegment dw ?
+ StartSector32   dd ?
+CMD8_DATA ends
+</pre>
+
+<p>
+<b>Command 9: Output with Verify</b><br>
+基本上，這個命令跟Command 8是一樣的，差別僅在於Verify這個功能，DOS的VERIFY旗標若被ON時，該命令才會被呼叫到，該命令能夠讓驅動程式讀回剛剛被寫出的資料，用以確保資料的正確性
+</p>
+
+<pre class="brush:cpp">
+CMD9_IRP struc
+ Header db size IRP_HEADER dup(?)
+ Data   db size CMD9_DATA dup(?)
+CMD9_IRP ends
+
+CMD9_DATA struc
+ MediaDescriptor db ?
+ BufferOffset    dw ?
+ BufferSegment   dw ?
+ Count           dw ?
+ StartSectorNum  dw ?
+ VolumeIDOffset  dw ?
+ VolumeIDSegment dw ?
+ StartSector32   dd ?
+CMD9_DATA ends
+</pre>
+
+<p>
+<b>Command 10: Output Status</b><br>
+此命令用以得知驅動程式的設備輸出狀態，如：印表機，假設印表機的輸出緩衝區有字元等待列印，則此命令可以得知緩衝區的狀態(透過IRP Header的Busy Status狀態得知)
+</p>
+
+<pre class="brush:cpp">
+CMD10_IRP struc
+ Header db size IRP_HEADER dup(?)
+CMD10_IRP ends
+</pre>
+
+<p>
+<b>Command 11: Output Flush</b><br>
+清除Output Bufferi
+</p>
+
+<pre class="brush:cpp">
+CMD11_IRP struc
+ Header db size IRP_HEADER dup(?)
+CMD11_IRP ends
+</pre>
+
+<p>
+<b>Command 12: IOCTL Output</b><br>
+IOCTL的Ouput輸出(到驅動程式)，驅動程式如要提供IOCTL命令給應用程式呼叫時，檔頭資訊中的Attribute第14位元(SUPPORT IOCTL)，必須先設定為1
+</p>
+
+<pre class="brush:cpp">
+CMD12_IRP struc
+ Header db size IRP_HEADER dup(?)
+ Data   db size CMD12_DATA dup(?)
+CMD12_IRP ends
+
+CMD12_DATA struc
+ MediaDescriptor db ?
+ BufferOffset    dw ?
+ BufferSegment   dw ?
+ Count           dw ?
+ StartSectorNum  dw ?
+CMD12_DATA ends
+</pre>
+
+<p>
+<b>Command 13: Open</b><br>
+該命令就是當應用程式開啟該驅動程式時，DOS會透過此命令呼叫該驅動程式，至於應用程式如何知道它要開啟該驅動程式的名稱為何呢？答案就是驅動程式的檔頭資訊，在檔頭資訊中，有一個DriverName的欄位，該欄位就是代表該驅動程式的名稱，應用程式只要使用該名稱開啟即可，不過大家還是要注意一點，想要支援此功能，檔頭資訊中的Attribute第11位元(支援OPEN/CLOSE/REMOVABLE MEDIA設備)，必須先設定為1
+</p>
+
+<pre class="brush:cpp">
+CMD13_IRP struc
+ Header db size IRP_HEADER dup(?)
+CMD13_IRP ends
+</pre>
+
+<p>
+<b>Command 14: Close</b><br>
+該命令就是用來關閉剛剛使用Open命令開啟的驅動程式，想要支援此功能，該驅動程式的檔頭資訊中的Attribute第11位元(支援OPEN/CLOSE/REMOVABLE MEDIA設備)，必須先設定為1
+</p>
+
+<pre class="brush:cpp">
+CMD14_IRP struc
+ Header db size IRP_HEADER dup(?)
+CMD14_IRP ends
+</pre>
+
+<p>
+<b>Command 15: Removable Media</b><br>
+這個命令提供磁片是否可以更換的訊息給應用程式，應用程式可以使用DOS系統服務常式44H來詢問磁片是否可更換(08H)，想要支援此功能，檔頭資訊中的Attribute第11位元(支援OPEN/CLOSE/REMOVABLE MEDIA設備)，必須先設定為1，驅動程式回應在IRP Header的Status欄位(Busy)
+</p>
+
+<pre class="brush:cpp">
+CMD15_IRP struc
+ Header db size IRP_HEADER dup(?)
+CMD15_IRP ends
+</pre>
+
+<p>
+<b>Command 16: Output til Busy</b><br>
+輸出字元並等待所有字元寫完或設備發出Busy信號為止
+</p>
+
+<pre class="brush:cpp">
+CMD16_IRP struc
+ Header db size IRP_HEADER dup(?)
+ Data   db size CMD16_DATA dup(?)
+CMD16_IRP ends
+
+CMD16_DATA struc
+ MediaDescriptor db ?
+ BufferOffset    dw ?
+ BufferSegment   dw ?
+ Count           dw ?
+CMD16_DATA ends
+</pre>
+
+<p>
+<b>Command 19: Generic IOCTL</b><br>
+這個IOCTL命令跟IOCTL Output命令是類似的觀念，差別僅在於此命令是以控制碼的觀念傳輸給驅動程式，一般應用程式可以使用DOS系統服務常式44H並指定使用Generic IOCTL(0DH)，驅動程式想要提供此命令給應用程式呼叫時，檔頭資訊中的Attribute第6位元(GENERIC IOCTL)，必須先設定為1
+</p>
+
+<pre class="brush:cpp">
+CMD19_IRP struc
+ Header db size IRP_HEADER dup(?)
+ Data   db size CMD19_DATA dup(?)
+CMD19_IRP ends
+
+CMD19_DATA struc
+ Major         db ?
+ Minor         db ?
+ SI            dw ?
+ DI            dw ?
+ PacketOffset  dw ?
+ PacketSegment dw ?
+CMD19_DATA ends
+</pre>
+
+<p>
+<b>Command 23: Get Logical Device</b><br>
+取得邏輯設備的資料
+</p>
+
+<pre class="brush:cpp">
+CMD23_IRP struc
+ Header db size IRP_HEADER dup(?)
+ Data   db size CMD23_DATA dup(?)
+CMD23_IRP ends
+
+CMD23_DATA struc
+ IO        db ?
+ Command   db ?
+ RetStatus dw ?
+ Reserved  dd ?
+CMD23_DATA ends
+</pre>
+
+<p>
+<b>Command 24: Set Logical Device</b><br>
+設定邏輯設備的資料
+</p>
+
+<pre class="brush:cpp">
+CMD24_IRP struc
+ Header db size IRP_HEADER dup(?)
+ Data   db size CMD24_DATA dup(?)
+CMD24_IRP ends
+
+CMD24_DATA struc
+ IO        db ?
+ Command   db ?
+ RetStatus dw ?
+ Reserved  dd ?
+CMD24_DATA ends
+</pre>
+
+<p>
+<b>Command 25: IOCTL Query</b><br>
+該命令用來詢問驅動程式是否支援某些IOCTL，一般應用程式可以呼叫DOS的系統服務常式4401H和4411H要求驅動程式執行此要求，要使用該命令功能時，檔案標頭的Attribute第7位元必須被設定為1
+</p>
+
+<pre class="brush:cpp">
+CMD25_IRP struc
+ Header db size IRP_HEADER dup(?)
+ Data   db size CMD25_DATA dup(?)
+CMD25_IRP ends
+
+CMD25_DATA struc
+ Major         db ?
+ Minor         db ?
+ SI            dw ?
+ DI            dw ?
+ PacketOffset  dw ?
+ PacketSegment dw ?
+CMD25_DATA ends
+</pre>
+
+<p>
+<br><a href="../../driver.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,139 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>ATtiny13 &gt;&gt; Assembly</h3>
+<p><b>Self-Programming the Flash</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://www.avrfreaks.net/forum/self-programming-tiny13-solved">self-programming-tiny13-solved</a><br><br>
+
+Program Flash的操作都是以Page為單位，一個Page是16 Words(32 Bytes)，Z(r32:r30)暫存器是位址，r1:r0則是Word的資料，唯一要注意的地方是，填寫的位址是0x00開始<br>
+<img src="asm_flash/2.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+  .equ SPMCSR,  0x37
+  
+  .org 0x0000
+  rjmp main
+  
+  .org 0x0020
+main:
+  rcall program_flash
+  
+loop:
+  rjmp loop
+ 
+program_flash:
+  ; erase
+  ldi r30, 0x00
+  ldi r31, 0x01
+  ldi r16, 0x03
+  out SPMCSR, r16
+  spm
+
+  ; fill (0x100: 0x50, 0xa0, 0x5a, 0xa1...)
+  ldi r30, 0x00
+  ldi r31, 0x00
+  ldi r18, 0x50
+  ldi r19, 0xa0
+  ldi r17, 16
+0:
+  mov r0, r18
+  mov r1, r19
+  ldi r16, 0x01
+  out SPMCSR, r16
+  spm
+  inc r18
+  inc r19
+  inc r30
+  inc r30
+  dec r17
+  tst r17
+  brne 0b
+
+  ; write
+  ldi r30, 0x00
+  ldi r31, 0x01
+  ldi r16, 0x05
+  out SPMCSR, r16
+  spm
+  ret
+</pre><br>
+
+<p>
+編譯和燒錄
+</p>
+<pre>
+$ avr-as -mmcu=attiny13 -o main.o main.s
+$ avr-ld -o main.elf main.o
+$ avr-objcopy --output-target=ihex main.elf main.ihex
+$ sudo avrdude -c usbasp -p t13 -B 1024 -U flash:w:main.ihex:i
+</pre><br>
+
+<p>
+接著讀取Flash
+</p>
+<pre>
+$ sudo avrdude -c usbasp -p t13 -B 1024 -U flash:r:flash.bin:r
+</pre><br>
+
+<p>
+完成<br>
+<img src="asm_flash/1.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

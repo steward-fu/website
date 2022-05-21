@@ -1,0 +1,224 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>BeagleBone Green Wireless</h3>
+<p><b>Build All</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://eewiki.net/display/linuxonarm/BeagleBone+Black">BeagleBone+Black</a><br><br>
+
+Toolchain
+</p>
+<pre>
+$ cd ~/Downloads
+$ wget -c https://releases.linaro.org/components/toolchain/binaries/6.3-2017.05/arm-linux-gnueabihf/gcc-linaro-6.3.1-2017.05-x86_64_arm-linux-gnueabihf.tar.xz
+$ tar xf gcc-linaro-6.3.1-2017.05-x86_64_arm-linux-gnueabihf.tar.xz
+$ export CC=`pwd`/gcc-linaro-6.3.1-2017.05-x86_64_arm-linux-gnueabihf/bin/arm-linux-gnueabihf-
+</pre><br>
+
+<p>
+UBoot
+</p>
+<pre>
+$ cd ~/Downloads
+$ git clone https://github.com/u-boot/u-boot
+$ cd u-boot/
+$ git checkout v2017.09-rc2 -b tmp
+$ wget -c https://rcn-ee.com/repos/git/u-boot-patches/v2017.09-rc2/0001-am335x_evm-uEnv.txt-bootz-n-fixes.patch
+$ wget -c https://rcn-ee.com/repos/git/u-boot-patches/v2017.09-rc2/0002-U-Boot-BeagleBone-Cape-Manager.patch
+$ patch -p1 &lt; 0001-am335x_evm-uEnv.txt-bootz-n-fixes.patch
+$ patch -p1 &lt; 0002-U-Boot-BeagleBone-Cape-Manager.patch
+$ make ARCH=arm CROSS_COMPILE=${CC} distclean
+$ make ARCH=arm CROSS_COMPILE=${CC} am335x_evm_defconfig
+$ make ARCH=arm CROSS_COMPILE=${CC}
+</pre><br>
+
+<p>
+Kernel 4.12
+</p>
+<pre>
+$ cd ~/Downloads
+$ git clone https://github.com/RobertCNelson/bb-kernel
+$ cd bb-kernel/
+$ git checkout origin/am33x-v4.12 -b tmp
+$ ./build_kernel.sh
+</pre><br>
+
+<p>
+RootFS(debian:temppwd, root:root)
+</p>
+<pre>
+$ cd ~/Downloads
+$ wget -c https://rcn-ee.com/rootfs/eewiki/minfs/debian-9.1-minimal-armhf-2017-08-08.tar.xz
+$ xz -d debian-9.1-minimal-armhf-2017-08-08.tar.xz
+$ tar xvf debian-9.1-minimal-armhf-2017-08-08.tar
+</pre><br>
+
+<p>
+MicroSD
+</p>
+<pre>
+Partion 1(BOOT): fat32
+Partion 2(RootFS): ext4
+P.S. reformat fat32 in Windows OS
+</pre><br>
+
+<p>
+Prepare system
+</p>
+<pre>
+$ cp ~/Downloads/u-boot/MLO /media/steward/BOOT/
+$ cp ~/Downloads/u-boot/u-boot.img /media/steward/BOOT/
+$ sudo mkdir /media/steward/rootfs/boot/
+$ sudo vim /media/steward/rootfs/boot/uEnv.txt
+  ##This will work with: Angstrom's 2013.06.20 u-boot. 
+  uname_r=4.12.11-bone3
+  loadaddr=0x82000000
+  fdtaddr=0x88000000
+  rdaddr=0x88080000  
+  initrd_high=0xffffffff
+  fdt_high=0xffffffff
+  #for single partitions:
+  mmcroot=/dev/mmcblk0p1
+  loadximage=load mmc 0:1 ${loadaddr} /boot/vmlinuz-${uname_r}
+  loadxfdt=load mmc 0:1 ${fdtaddr} /boot/dtbs/${uname_r}/${fdtfile}
+  loadxrd=load mmc 0:1 ${rdaddr} /boot/initrd.img-${uname_r}; setenv rdsize ${filesize}
+  loaduEnvtxt=load mmc 0:1 ${loadaddr} /boot/uEnv.txt ; env import -t ${loadaddr} ${filesize};
+  loadall=run loaduEnvtxt; run loadximage; run loadxfdt;
+  mmcargs=setenv bootargs console=tty0 console=${console} ${optargs} ${cape_disable} ${cape_enable} root=${mmcroot} rootfstype=${mmcrootfstype} ${cmdline}
+  uenvcmd=run loadall; run mmcargs; bootz ${loadaddr} - ${fdtaddr};
+
+$ sudo tar xvfp ~/Downloads/debian-9.1-minimal-armhf-2017-08-08/armhf-rootfs-debian-stretch.tar -C /media/steward/rootfs/
+$ sudo cp ~/Downloads/bb-kernel/deploy/4.12.11-bone3.zImage /media/steward/rootfs/boot/vmlinuz-4.12.11-bone3
+$ sudo mkdir -p /media/steward/rootfs/boot/dtbs/4.12.11-bone3
+$ sudo tar xvf ~/Downloads/bb-kernel/deploy/4.12.11-bone3-dtbs.tar.gz -C /media/steward/rootfs/boot/dtbs/4.12.11-bone3/
+$ sudo tar xvf ~/Downloads/bb-kernel/deploy/4.12.11-bone3-modules.tar.gz -C /media/steward/rootfs/
+</pre><br>
+
+<p>
+1. 插入SDCard到BBGW<br>
+2. 按住Boot Button<br>
+3. 插入USB電源開機
+</p>
+<pre>
+U-Boot SPL 2017.03-00002-gd12b1519b4 (Mar 14 2017 - 10:28:26)
+Trying to boot from MMC1
+
+
+U-Boot 2017.03-00002-gd12b1519b4 (Mar 14 2017 - 10:28:26 -0500), Build: jenkins-github_Bootloader-Builder-532
+
+CPU  : AM335X-GP rev 2.1
+I2C:   ready
+DRAM:  512 MiB
+Reset Source: Power-on reset has occurred.
+MMC:   OMAP SD/MMC: 0, OMAP SD/MMC: 1
+Using default environment
+
+&lt;ethaddr&gt; not set. Validating first E-fuse MAC
+BeagleBone Black:
+Model: SeeedStudio BeagleBone Green Wireless:
+BeagleBone: cape eeprom: i2c_probe: 0x54:
+BeagleBone: cape eeprom: i2c_probe: 0x55:
+BeagleBone: cape eeprom: i2c_probe: 0x56:
+BeagleBone: cape eeprom: i2c_probe: 0x57:
+Net:   eth0: MII MODE
+Could not get PHY for cpsw: addr 0
+cpsw
+Press SPACE to abort autoboot in 2 seconds
+board_name=[A335BNLT] ...
+board_rev=[GW1A] ...
+switch to partitions #0, OK
+mmc0 is current device
+SD/MMC found on device 0
+** Bad device 0:2 0x82000000 **
+** Bad device 0:2 0x82000000 **
+switch to partitions #0, OK
+mmc0 is current device
+Scanning mmc 0:1...
+gpio: pin 56 (gpio 56) value is 0
+gpio: pin 55 (gpio 55) value is 0
+gpio: pin 54 (gpio 54) value is 0
+gpio: pin 53 (gpio 53) value is 1
+switch to partitions #0, OK
+mmc0 is current device
+gpio: pin 54 (gpio 54) value is 1
+Checking for: /uEnv.txt ...
+Checking for: /boot.scr ...
+Checking for: /boot/boot.scr ...
+Checking for: /boot/uEnv.txt ...
+gpio: pin 55 (gpio 55) value is 1
+806 bytes read in 22 ms (35.2 KiB/s)
+Loaded environment from /boot/uEnv.txt
+Checking if uname_r is set in /boot/uEnv.txt...
+gpio: pin 56 (gpio 56) value is 1
+Running uname_boot ...
+loading /boot/vmlinuz-4.12.11-bone3 ...
+8213504 bytes read in 539 ms (14.5 MiB/s)
+loading /boot/dtbs/4.12.11-bone3/am335x-bonegreen-wireless.dtb ...
+54663 bytes read in 64 ms (834 KiB/s)
+uboot_overlays: add [enable_uboot_overlays=1] to /boot/uEnv.txt to enable...
+debug: [console=ttyO0,115200n8 root=/dev/mmcblk0p2 ro rootfstype=ext4 rootwait] ...
+debug: [bootz 0x82000000 - 0x88000000] ...
+## Flattened Device Tree blob at 88000000
+   Booting using the fdt blob at 0x88000000
+   Using Device Tree in place at 88000000, end 88010586
+
+Starting kernel ...
+</pre>
+<p>
+開機的地方是從mmc1(eMMC則是mmc2)開始。
+</p>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

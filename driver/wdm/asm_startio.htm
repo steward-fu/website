@@ -1,0 +1,310 @@
+<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Windows Driver Model &gt;&gt; Assembly</h3>
+<p><b>StartIO</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="http://four-f.narod.ru/">Four-F</a><br>
+2. <a href="https://github.com/steward-fu/wdm">Source Code</a><br><br>
+
+StartIO提供一個序列化的機制，讓使用者可以依照順序處理IRP，這個機制對於某些只能序列執行的硬體相當有幫助，省去用軟體實現序列化的程式碼，使用的步驟：<br>
+1. IoMarkIrpPending()<br>
+2. IoStartNextPacket()<br><br>
+
+main.asm
+</p>
+<pre class="brush:asm">
+.386p
+.model flat, stdcall
+option casemap:none
+ 
+include c:\masm32\include\w2k\ntstatus.inc
+include c:\masm32\include\w2k\ntddk.inc
+include c:\masm32\include\w2k\ntoskrnl.inc
+include c:\masm32\include\w2k\ntddkbd.inc
+include c:\masm32\Macros\Strings.mac
+includelib c:\masm32\lib\wxp\i386\ntoskrnl.lib
+
+public DriverEntry
+
+OurDeviceExtension struct
+  pNextDev PDEVICE_OBJECT ?
+  szBuffer BYTE 255 dup(?)
+OurDeviceExtension ends
+
+.const
+DEV_NAME word "\","D","e","v","i","c","e","\","M","y","D","r","i","v","e","r",0
+SYM_NAME word "\","D","o","s","D","e","v","i","c","e","s","\","M","y","D","r","i","v","e","r",0
+
+.code
+StartIo proc pOurDevice:PDEVICE_OBJECT, pIrp:PIRP
+  local pdx:PTR OurDeviceExtension
+  local dwLen:DWORD
+  local pBuf:DWORD
+  
+  mov eax, pOurDevice
+  push (DEVICE_OBJECT PTR [eax]).DeviceExtension
+  pop pdx
+  
+  mov eax, pIrp
+  push (_IRP PTR [eax]).AssociatedIrp.SystemBuffer
+  pop pBuf
+  
+  IoGetCurrentIrpStackLocation pIrp
+  movzx eax, (IO_STACK_LOCATION PTR [eax]).MajorFunction
+  .if eax == IRP_MJ_WRITE
+    invoke DbgPrint, $CTA0("StartIo, IRP_MJ_WRITE")
+    IoGetCurrentIrpStackLocation pIrp
+    Push (IO_STACK_LOCATION PTR [eax]).Parameters.Write._Length
+    pop dwLen
+    
+    mov eax, pdx
+    invoke memcpy, addr (OurDeviceExtension PTR [eax]).szBuffer, pBuf, dwLen
+    invoke DbgPrint, $CTA0("Buffer: %s, Length: %d"), pBuf, dwLen
+  .elseif eax == IRP_MJ_READ
+    invoke DbgPrint, $CTA0("StartIo, IRP_MJ_READ")
+    mov eax, pdx
+    invoke strlen, addr (OurDeviceExtension PTR [eax]).szBuffer
+    inc eax
+    push eax
+    pop dwLen
+    
+    mov eax, pdx
+    invoke memcpy, pBuf, addr (OurDeviceExtension PTR [eax]).szBuffer, dwLen
+  .endif
+  
+  mov eax, pIrp
+  mov (_IRP PTR [eax]).IoStatus.Status, STATUS_SUCCESS
+  push dwLen
+  pop (_IRP PTR [eax]).IoStatus.Information
+  fastcall IofCompleteRequest, pIrp, IO_NO_INCREMENT
+  invoke IoStartNextPacket, pOurDevice, FALSE
+  mov eax, STATUS_SUCCESS
+  ret
+StartIo endp
+
+IrpFile proc pOurDevice:PDEVICE_OBJECT, pIrp:PIRP
+  IoGetCurrentIrpStackLocation pIrp
+  movzx eax, (IO_STACK_LOCATION PTR [eax]).MajorFunction
+  .if (eax == IRP_MJ_CREATE) || (eax == IRP_MJ_CLOSE) 
+    .if (eax == IRP_MJ_CREATE)
+      invoke DbgPrint, $CTA0("IRP_MJ_CREATE")
+    .else
+      invoke DbgPrint, $CTA0("IRP_MJ_CLOSE")
+    .endif
+    mov eax, pIrp
+    and (_IRP PTR [eax]).IoStatus.Information, 0
+    mov (_IRP PTR [eax]).IoStatus.Status, STATUS_SUCCESS
+    fastcall IofCompleteRequest, pIrp, IO_NO_INCREMENT
+    mov eax, STATUS_SUCCESS
+  .elseif (eax == IRP_MJ_READ) || (eax == IRP_MJ_WRITE)
+    .if (eax == IRP_MJ_READ)
+      invoke DbgPrint, $CTA0("IrpFile, IRP_MJ_READ")
+    .else
+      invoke DbgPrint, $CTA0("IrpFile, IRP_MJ_WRITE")
+    .endif
+    IoGetCurrentIrpStackLocation pIrp
+    IoMarkIrpPending pIrp
+    invoke IoStartPacket, pOurDevice, pIrp, 0, NULL
+    mov eax, STATUS_PENDING
+  .endif
+  ret
+IrpFile endp
+
+IrpPnp proc pDevObj:PDEVICE_OBJECT, pIrp:PIRP
+  local pdx:PTR OurDeviceExtension
+  local szSymName:UNICODE_STRING
+
+  mov eax, pDevObj
+  push (DEVICE_OBJECT PTR [eax]).DeviceExtension
+  pop pdx
+   
+  IoGetCurrentIrpStackLocation pIrp
+  movzx eax, (IO_STACK_LOCATION PTR [eax]).MinorFunction
+  .if eax == IRP_MN_START_DEVICE
+    mov eax, pIrp
+    mov (_IRP PTR [eax]).IoStatus.Status, STATUS_SUCCESS
+  .elseif eax == IRP_MN_REMOVE_DEVICE
+    invoke RtlInitUnicodeString, addr szSymName, offset SYM_NAME
+    invoke IoDeleteSymbolicLink, addr szSymName     
+    mov eax, pIrp
+    mov (_IRP PTR [eax]).IoStatus.Status, STATUS_SUCCESS
+
+    mov eax, pdx
+    invoke IoDetachDevice, (OurDeviceExtension PTR [eax]).pNextDev
+    invoke IoDeleteDevice, pDevObj
+  .endif
+  IoSkipCurrentIrpStackLocation pIrp
+
+  mov eax, pdx
+  invoke IoCallDriver, (OurDeviceExtension PTR [eax]).pNextDev, pIrp
+  ret
+IrpPnp endp
+
+AddDevice proc pOurDriver:PDRIVER_OBJECT, pPhyDevice:PDEVICE_OBJECT
+  local pOurDevice:PDEVICE_OBJECT
+  local suDevName:UNICODE_STRING
+  local szSymName:UNICODE_STRING
+
+  invoke RtlInitUnicodeString, addr suDevName, offset DEV_NAME
+  invoke RtlInitUnicodeString, addr szSymName, offset SYM_NAME
+  invoke IoCreateDevice, pOurDriver, sizeof OurDeviceExtension, addr suDevName, FILE_DEVICE_UNKNOWN, 0, FALSE, addr pOurDevice
+  .if eax == STATUS_SUCCESS
+    invoke IoAttachDeviceToDeviceStack, pOurDevice, pPhyDevice
+    .if eax != NULL
+      push eax
+      mov eax, pOurDevice
+      mov eax, (DEVICE_OBJECT PTR [eax]).DeviceExtension
+      pop (OurDeviceExtension PTR [eax]).pNextDev
+
+      mov eax, pOurDevice
+      or (DEVICE_OBJECT PTR [eax]).Flags, DO_BUFFERED_IO
+      and (DEVICE_OBJECT PTR [eax]).Flags, not DO_DEVICE_INITIALIZING
+      invoke IoCreateSymbolicLink, addr szSymName, addr suDevName
+    .endif
+  .endif
+  ret
+AddDevice endp
+
+Unload proc pOurDriver:PDRIVER_OBJECT
+  ret
+Unload endp
+
+DriverEntry proc pOurDriver:PDRIVER_OBJECT, pOurRegistry:PUNICODE_STRING
+  mov eax, pOurDriver
+  mov (DRIVER_OBJECT PTR [eax]).MajorFunction[IRP_MJ_PNP    * (sizeof PVOID)], offset IrpPnp
+  mov (DRIVER_OBJECT PTR [eax]).MajorFunction[IRP_MJ_CREATE * (sizeof PVOID)], offset IrpFile
+  mov (DRIVER_OBJECT PTR [eax]).MajorFunction[IRP_MJ_CLOSE  * (sizeof PVOID)], offset IrpFile
+  mov (DRIVER_OBJECT PTR [eax]).MajorFunction[IRP_MJ_WRITE  * (sizeof PVOID)], offset IrpFile
+  mov (DRIVER_OBJECT PTR [eax]).MajorFunction[IRP_MJ_READ   * (sizeof PVOID)], offset IrpFile
+  mov (DRIVER_OBJECT PTR [eax]).DriverStartIo, offset StartIo
+  mov (DRIVER_OBJECT PTR [eax]).DriverUnload, offset Unload
+  mov eax, (DRIVER_OBJECT PTR [eax]).DriverExtension
+  mov (DRIVER_EXTENSION PTR [eax]).AddDevice, AddDevice
+  mov eax, STATUS_SUCCESS
+  ret
+DriverEntry endp
+end DriverEntry
+.end
+</pre>
+<p>
+<b>IrpFile()</b>IRP_MJ_READ和IRP_MJ_WRITE使用StartIO方式處理<br><br>
+
+app.asm
+</p>
+<pre class="brush:asm">
+.386p
+.model flat, stdcall
+option casemap:none
+
+include c:\masm32\include\windows.inc
+include c:\masm32\include\masm32.inc
+include c:\masm32\include\user32.inc
+include c:\masm32\include\msvcrt.inc
+include c:\masm32\Macros\Strings.mac
+include c:\masm32\include\kernel32.inc
+
+includelib c:\masm32\lib\user32.lib
+includelib c:\masm32\lib\masm32.lib
+includelib c:\masm32\lib\msvcrt.lib
+includelib c:\masm32\lib\kernel32.lib
+
+.const
+DEV_NAME  db "\\.\MyDriver",0
+ERR_OPEN  db "failed to open mydriver",10,13,0
+MSG_SEND  db "I am error",0
+MSG_WRITE db "WR: %s",10,13,0
+MSG_READ  db "RD: %s",10,13,0
+MSG_LEN   db "Length: %d",10,13,0
+
+.data?
+hFile    dd ?
+dwRet    dd ?
+szBuffer db 256 dup(?)
+
+.code
+start:
+  invoke CreateFile, offset DEV_NAME, GENERIC_READ or GENERIC_WRITE, FILE_SHARE_READ, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0
+  .if eax == INVALID_HANDLE_VALUE
+    invoke crt_printf, offset ERR_OPEN
+    invoke ExitProcess, -1
+  .endif
+
+  mov hFile, eax
+  invoke wsprintf, offset szBuffer, offset MSG_SEND
+  invoke StrLen, offset szBuffer
+  inc eax
+  mov dwRet, eax
+  invoke crt_printf, offset MSG_WRITE, offset szBuffer
+  invoke crt_printf, offset MSG_LEN, dwRet
+  invoke WriteFile, hFile, offset szBuffer, dwRet, offset dwRet, 0
+  invoke crt_memset, offset szBuffer, 0, 255
+  invoke ReadFile, hFile, offset szBuffer, 255, offset dwRet, 0
+  invoke crt_printf, offset MSG_READ, offset szBuffer
+  invoke crt_printf, offset MSG_LEN, dwRet
+  invoke CloseHandle, hFile
+  invoke ExitProcess, 0
+
+end start
+</pre><br>
+
+<p>
+結果<br>
+<img src="asm_startio/1.jpg" class="maxSize"><br>
+<img src="asm_startio/2.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../driver.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

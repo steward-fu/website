@@ -1,0 +1,133 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Netwalker PC-Z1</h3>
+<p><b>Build Android 4.0.3</b></p>
+<hr size="1">
+<p>
+編譯步驟：<br>
+1. Download android source
+</p>
+<pre>
+$ export ANDROID_ROOT=/home/kanamaru/ics-netwalker
+$ mkdir -p $ANDROID_ROOT
+$ cd $ANDROID_ROOT
+$ repo init -u https://android.googlesource.com/platform/manifest -b android-4.0.3_r1.1
+$ repo sync -j8
+</pre>
+
+<p>
+2. Download kernel source
+</p>
+<pre>
+$ cd $ANDROID_ROOT
+$ wget http://netbook-remix.archive.canonical.com/updates/pool/public/l/linux-fsl-imx51/linux-fsl-imx51_2.6.28-15.50fsl1araneo19.tar.gz
+$ tar zxf linux-fsl-imx51_2.6.28-15.50fsl1araneo19.tar.gz
+</pre>
+
+<p>
+3. Apply androidzaurus patch
+</p>
+<pre>
+$ cd $ANDROID_ROOT
+$ wget https://github.com/androidzaurus/droidwalker/archive/master.zip
+$ unzip master.zip
+$ tar zxf androidzaurus-droidwalker-61b2290.tar.gz
+$ cd jaunty-arm
+$ patch -p1 &lt; ../androidzaurus-droidwalker-61b2290/diff-araneo-android-2.6.28.patch
+$ patch -p1 &lt; ../androidzaurus-droidwalker-61b2290/disable_double_buffering.patch
+$ patch -p1 &lt; ../androidzaurus-droidwalker-61b2290/fbmem_8m.patch
+$ patch -p1 &lt; ../androidzaurus-droidwalker-61b2290/build-wifi-defconfig.patch
+</pre>
+
+<p>
+4. Apply another patch
+</p>
+<pre>
+$ cd $ANDROID_ROOT
+$ wget http://brain.cc.kogakuin.ac.jp/research/files/ics/device_tk-netwalker-ics4.0.3-20120102.tgz
+$ tar zxf device_tk-netwalker-ics4.0.3-20120102.tgz
+$ $ANDROID_ROOT/device/tk/netwalker/patch/tk_patch.sh
+</pre>
+
+<p>
+5. Build kernel
+</p>
+<pre>
+$ cd $ANDROID_ROOT/jaunty-arm
+$ export ARCH=arm
+$ export CROSS_COMPILE=$ANDROID_ROOT/prebuilt/linux-x86/toolchain/arm-eabi-4.4.0/bin/arm-eabi-
+$ export PATH=$ANDROID_ROOT/prebuilt/linux-x86/toolchain/arm-eabi-4.4.0/bin:$PATH
+$ make netwalker_android_defconfig
+$ make zImage modules
+</pre>
+
+<p>
+6. Build android
+</p>
+<pre>
+$ cd $ANDROID_ROOT/
+$ export ARCH=arm
+$ export CROSS_COMPILE=$ANDROID_ROOT/prebuilt/linux-x86/toolchain/arm-eabi-4.4.0/bin/arm-eabi-
+$ export PATH=$PATH:$ANDROID_ROOT/prebuilt/linux-x86/toolchain/arm-eabi-4.4.0/bin
+$ source build/envsetup.sh
+$ lunch full_netwalker-eng
+$ make -j8
+$ $ANDROID_ROOT/device/tk/netwalker/image/netwalker-image.sh
+</pre>
+<p>
+P.S. 結果將存放在<b>$ANDROID_ROOT/device/tk/netwalker/image/ics</b>
+</p>
+
+<p>
+<br><a href="../../umpc.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

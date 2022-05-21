@@ -1,0 +1,155 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>S3C44B0X</h3>
+<p><b>如何使用J-Link GDB Server和IDA Pro除錯程式</b></p>
+<hr size="1">
+<p>
+main.s
+</p>
+<pre class="brush:asm">
+  .equiv PCONG, 0x1d20040
+  .equiv PDATG, 0x1d20044
+  .equiv PUPG,  0x1d20048
+  .equiv WTCON, 0x1d30000
+
+  .text
+  .global _start
+_start:    b reset
+_undef:    b .
+_swi:      b .
+_pabort:   b .
+_dabort:   b .
+_reserved: b .
+_irq:      b .
+_fiq:      b .
+
+reset:
+  ldr r0, =WTCON
+  ldr r1, =0
+  str r1, [r0]
+
+  ldr r0, =PCONG
+  ldr r1, =(1 &lt;&lt; 10)
+  str r1, [r0]
+
+  ldr r0, =PDATG
+loop:
+  eor r1, #(1 &lt;&lt; 5)
+  str r1, [r0]
+  ldr r2, =50000
+1:
+  subs r2, #1
+  bne 1b
+  b loop
+  .end
+</pre><br>
+
+<p>
+main.ld
+</p>
+<pre>
+MEMORY {
+  flash : ORIGIN = 0, LENGTH = 2M
+}
+
+SECTIONS {
+  text : {
+    *(.text)
+  } &gt; flash
+}
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ arm-none-eabi-as -ggdb -mcpu=arm7 -o main.o main.s
+$ arm-none-eabi-ld -T main.ld -o main.elf main.o
+$ arm-none-eabi-objcopy -O binary main.elf main.bin
+</pre><br>
+
+<p>
+開啟J-Flash並且載入main.bin(位址0x0000)<br>
+<img src="jlink_gdb/1.jpg" class="maxsize"><br><br>
+
+F4(Erase Chip)<br>
+<img src="jlink_gdb/2.jpg" class="maxsize"><br><br>
+
+F5(Program)<br>
+<img src="jlink_gdb/3.jpg" class="maxsize"><br><br>
+
+開啟J-Link GDB Server(<b>Init registers</b>記得勾選)<br>
+<img src="jlink_gdb/4.jpg" class="maxsize"><br><br>
+
+選擇S3C44B0X<br>
+<img src="jlink_gdb/5.jpg" class="maxsize"><br><br>
+
+Listening on TCP/IP port 2331<br>
+<img src="jlink_gdb/6.jpg" class="maxsize"><br><br>
+
+IDA Pro載入main.bin<br>
+<img src="jlink_gdb/7.jpg" class="maxsize"><br><br>
+
+按下F9並且選擇<b>Remote GDB debugger</b><br>
+<img src="jlink_gdb/8.jpg" class="maxsize"><br><br>
+
+按下F9並且輸入<b>Listening Port 2331</b><br>
+<img src="jlink_gdb/9.jpg" class="maxsize"><br><br>
+
+接著就可以開始使用IDA Pro除錯程式<br>
+<img src="jlink_gdb/10.jpg" class="maxsize">
+</p>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

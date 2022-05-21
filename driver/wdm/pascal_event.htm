@@ -1,0 +1,182 @@
+<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushPas.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Windows Driver Model &gt;&gt; Pascal &gt;&gt; Synchronization</h3>
+<p><b>Event</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://github.com/steward-fu/wdm">Source Code</a><br><br>
+
+Event依照其名字就可以知道，它是一種等待事件觸發的同步機制，司徒在此範例使用最基本的用法，由一個Thread設定Event，其餘Thread則是等待該Event被觸發，在Event的用法上，除了可以手動設定(NotificationEvent)之外，也可以設定成自動Reset機制(SynchronizationEvent)，詳細部份可以參考<a href="https://docs.microsoft.com/en-us/windows-hardware/drivers/ddi/wdm/nf-wdm-keinitializeevent">MSDN</a>，使用步驟如下：<br>
+1. KeInitializeEvent()<br>
+2. KeWaitForSingleObject()<br>
+3. KeSetEvent()<br><br>
+
+main.pas
+</p>
+<pre class="brush:pas">
+unit main;
+
+interface
+  uses
+    DDDK;
+    
+  const
+    MAX_THREAD = 3;
+    DEV_NAME = '\Device\MyDriver';
+    SYM_NAME = '\DosDevices\MyDriver';
+
+  function _DriverEntry(pOurDriver:PDRIVER_OBJECT; pOurRegistry:PUNICODE_STRING):NTSTATUS; stdcall;
+
+implementation
+var
+  myEvent: KEVENT;
+  pNextDevice: PDEVICE_OBJECT;
+
+procedure MyThread(pParam:Pointer); stdcall;
+var
+  tt: LARGE_INTEGER;
+ 
+begin
+  case(ULONG(pParam)) of
+  0:
+    begin
+      tt.HighPart:= tt.HighPart or -1;
+      tt.LowPart:= ULONG(-10000000);
+      DbgPrint('Thread%d, Sleeping', [ULONG(pParam)]);
+      KeDelayExecutionThread(KernelMode, FALSE, @tt);
+      DbgPrint('Thread%d, SetEvent', [ULONG(pParam)]);
+      KeSetEvent(@myEvent, IO_NO_INCREMENT, FALSE);
+    end;
+  else
+    begin
+      DbgPrint('Thread%d, Waiting', [ULONG(pParam)]);
+      KeWaitForSingleObject(@myEvent, Executive, KernelMode, FALSE, Nil);
+      DbgPrint('Thread%d, Complete', [ULONG(pParam)]);
+    end;
+  end;
+  PsTerminateSystemThread(STATUS_SUCCESS);
+end;
+
+procedure Unload(pOurDriver:PDRIVER_OBJECT); stdcall;
+begin
+end;
+
+function IrpPnp(pOurDevice:PDEVICE_OBJECT; pIrp:PIRP):NTSTATUS; stdcall;
+var
+  psk: PIO_STACK_LOCATION;
+  suSymName: UNICODE_STRING;
+  
+begin
+  psk:= IoGetCurrentIrpStackLocation(pIrp);
+  if psk^.MinorFunction = IRP_MN_REMOVE_DEVICE then
+  begin
+    RtlInitUnicodeString(@suSymName, SYM_NAME);
+    IoDetachDevice(pNextDevice);
+    IoDeleteDevice(pOurDevice);
+    IoDeleteSymbolicLink(@suSymName);
+  end;
+  IoSkipCurrentIrpStackLocation(pIrp);
+  Result:= IoCallDriver(pNextDevice, pIrp);
+end;
+
+function AddDevice(pOurDriver:PDRIVER_OBJECT; pPhyDevice:PDEVICE_OBJECT):NTSTATUS; stdcall;
+var
+  suDevName: UNICODE_STRING;
+  suSymName: UNICODE_STRING;
+  pOurDevice: PDEVICE_OBJECT;
+  
+begin
+  RtlInitUnicodeString(@suDevName, DEV_NAME);
+  RtlInitUnicodeString(@suSymName, SYM_NAME);
+  IoCreateDevice(pOurDriver, 0, @suDevName, FILE_DEVICE_UNKNOWN, 0, FALSE, pOurDevice);
+  pNextDevice:= IoAttachDeviceToDeviceStack(pOurDevice, pPhyDevice);
+  pOurDevice^.Flags:= pOurDevice^.Flags or DO_BUFFERED_IO;
+  pOurDevice^.Flags:= pOurDevice^.Flags and not DO_DEVICE_INITIALIZING;
+  Result:= IoCreateSymbolicLink(@suSymName, @suDevName);
+end;
+
+function _DriverEntry(pOurDriver:PDRIVER_OBJECT; pOurRegistry:PUNICODE_STRING):NTSTATUS; stdcall;
+var
+  cc: ULONG;
+  hThread: Handle;
+  status: NTSTATUS;
+
+begin
+  pOurDriver^.MajorFunction[IRP_MJ_PNP]:= @IrpPnp;
+  pOurDriver^.DriverExtension^.AddDevice:=@AddDevice;
+  pOurDriver^.DriverUnload:=@Unload;
+
+  KeInitializeEvent(@myEvent, NotificationEvent, FALSE);
+  for cc:=0 to (MAX_THREAD-1) do
+  begin
+    status:= PsCreateSystemThread(@hThread, THREAD_ALL_ACCESS, Nil, Handle(-1), Nil, MyThread, Pointer(cc));
+    if NT_SUCCESS(status) then
+    begin
+      ZwClose(hThread);
+    end;
+  end;
+  Result:=STATUS_SUCCESS;
+end;
+end.
+</pre>
+<p>
+<b>DriverEntry()</b>產生3個Thread，第一個Thread延遲一秒後設定Event，其餘Thread做等待的動作<br><br>
+
+結果<br>
+<img src="cpp_event/1.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../driver.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

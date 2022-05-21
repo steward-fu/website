@@ -1,0 +1,204 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>RG300</h3>
+<p><b>移植FCEUX(支援振動)</b></p>
+<hr size="1">
+<p>
+目前司徒先移植FCEUX模擬器，讓其可以支援振動功能，思路相當簡單，只要在模擬器開始執行時，Remap Memory並且初始化馬達的狀態，接著判斷是否有對0x4009 CPU Register做設定，藉此控制馬達的狀態，如下程式：
+</p>
+<pre class="brush:cpp">
+diff -Naur old/src/drivers/dingux-sdl/dingoo.cpp new/src/drivers/dingux-sdl/dingoo.cpp
+--- old/src/drivers/dingux-sdl/dingoo.cpp  2019-05-07 16:32:59.613981947 +0800
++++ new/src/drivers/dingux-sdl/dingoo.cpp  2019-07-21 14:36:09.526862599 +0800
+@@ -3,6 +3,7 @@
+ #include &lt;signal.h&gt;
+ #include &lt;sys/time.h&gt;
+ #include &lt;sys/stat.h&gt;
++#include &lt;sys/ioctl.h&gt;
+ #include &lt;string.h&gt;
+ #include &lt;strings.h&gt;
+ #include &lt;errno.h&gt;
+@@ -12,6 +13,10 @@
+ #include &lt;fstream&gt;
+ #include &lt;limits.h&gt;
+ #include &lt;math.h&gt;
++#include &lt;unistd.h&gt;
++#include &lt;fcntl.h&gt;
++#include &lt;fcntl.h&gt;
++#include &lt;sys/mman.h&gt;
+ 
+ #include "main.h"
+ #include "throttle.h"
+@@ -533,6 +538,8 @@
+ #ifdef WIN32
+ #undef main
+ #endif
++int motordev=-1;
++volatile unsigned char* motorreg=NULL;
+ int main(int argc, char *argv[]) {
+ 
+   int error;
+@@ -552,12 +559,19 @@
+ 
+   // Initialize the configuration system
+   g_config = InitConfig();
+-
+   if (!g_config) {
+     SDL_Quit();
+     return -1;
+   }
+ 
++  motordev = open("/dev/mem", O_RDWR);
++  if(motordev &lt; 0){ 
++    printf("failed to open /dev/mem\n");
++    return -1; 
++  }
++  motorreg  = (volatile unsigned char*)mmap(0, 4096, PROT_READ | PROT_WRITE, MAP_SHARED, motordev, 0x10010000);
++  printf("mem ptr: 0x%x\n", motorreg);
++
+   // Initialize the fceu320 gui
+   FCEUGUI_Init(NULL);
+ 
+@@ -812,10 +826,16 @@
+   DoFun(frameskip);
+ 
+   CloseGame();
++  
++  if(motordev &gt; 0){
++    motorreg[0x418]|= 4;
++    munmap((void*)motorreg, 4096);
++    close(motordev);
++  }
+ 
+   // exit the infrastructure
+   FCEUI_Kill();
+   return 0;
+ }
+  
+ static int save_screenshot() {
+diff -Naur old/src/drivers/dingux-sdl/input.cpp new/src/drivers/dingux-sdl/input.cpp
+--- old/src/drivers/dingux-sdl/input.cpp  2019-05-07 16:32:59.613981947 +0800
++++ new/src/drivers/dingux-sdl/input.cpp  2019-07-21 14:34:09.506770980 +0800
+@@ -18,6 +18,7 @@
+  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+  */
+ 
++#include &lt;sys/ioctl.h&gt;
+ #include &lt;string.h&gt;
+ #include &lt;stdio.h&gt;
+ 
+@@ -56,6 +57,7 @@
+ static int InputType[NUM_INPUT_DEVICES];
+ static int cspec = 0;
+ 
++extern volatile unsigned char* motorreg;
+ extern int gametype;
+ 
+ static bool MenuRequested = false;
+@@ -651,11 +653,13 @@
+             }
+             break;
+         case SDL_KEYDOWN:
+-            if (event.key.keysym.sym == DINGOO_MENU)
++            if (event.key.keysym.sym == DINGOO_MENU) {
+                 // Because a KEYUP is sent straight after the KEYDOWN for the
+                 // Power switch, SDL_GetKeyState will not ever see this.
+                 // Keep a record of it.
+                 MenuRequested = true;
++                motorreg[0x418]|= 4;
++             }
+             break;
+         default:
+             // do nothing
+diff -Naur old/src/x6502.cpp new/src/x6502.cpp
+--- old/src/x6502.cpp  2019-05-07 16:32:59.657981754 +0800
++++ new/src/x6502.cpp  2019-07-21 14:32:16.186684476 +0800
+@@ -17,7 +17,9 @@
+  * along with this program; if not, write to the Free Software
+  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+  */
+-
++#include &lt;sys/ioctl.h&gt;
++#include &lt;unistd.h&gt;
++#include &lt;fcntl.h&gt;
+ #include "types.h"
+ #include "x6502.h"
+ #include "fceu.h"
+@@ -325,10 +327,21 @@
+ #define LD_IX(op)  {unsigned int A; uint8 x; GetIX(A); x=RdMem(A); op; break;}
+ #define LD_IY(op)  {unsigned int A; uint8 x; GetIYRD(A); x=RdMem(A); op; break;}
+ 
++extern volatile unsigned char* motorreg;
++void do_rumble(unsigned char val)
++{
++  if(val){
++    motorreg[0x414]|= 4;
++  }
++  else{
++    motorreg[0x418]|= 4;
++  }
++}
++
+ #define ST_ZP(r)  {uint8 A; GetZP(A); WrRAM(A,r); break;}
+ #define ST_ZPX(r)  {uint8 A; GetZPI(A,_X); WrRAM(A,r); break;}
+ #define ST_ZPY(r)  {uint8 A; GetZPI(A,_Y); WrRAM(A,r); break;}
+-#define ST_AB(r)  {unsigned int A; GetAB(A); WrMem(A,r); break;}
++#define ST_AB(r)  {unsigned int A; GetAB(A); if(A == 0x4009){do_rumble(r); }else{WrMem(A,r);}  break;}
+ #define ST_ABI(reg,r)  {unsigned int A; GetABIWR(A,reg); WrMem(A,r); break; }
+ #define ST_ABX(r)  ST_ABI(_X,r)
+ #define ST_ABY(r)  ST_ABI(_Y,r)
+</pre><br>
+
+<p>
+<br><a href="../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

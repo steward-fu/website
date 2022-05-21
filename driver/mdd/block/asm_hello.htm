@@ -1,0 +1,211 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../../header.js"></script>
+<div id="page">
+<h3>MS-DOS Device Driver >> Assembly >> Advanced >> Block</h3>
+<p><b>Hello, world!</b></p>
+<hr size="1">
+<p>
+[Github] <a href="https://github.com/steward-fu/gh_driver.git">https://github.com/steward-fu/gh_driver.git</a>
+</p>
+
+<p>
+作為第一個Block驅動程式的範例，司徒一樣使用傳統的<b>Hello, world!</b>作為教學，而程式碼其實跟Char驅動程式幾乎是一樣，差別僅在於檔頭的宣告不一樣。
+</p>
+
+<p>
+編輯程式：<br>
+新增c:\main.asm
+</p>
+
+<pre class="brush:cpp">
+;//===========================================================================
+;// Copyright (c) 2016 by Steward Fu
+;// All rights reserved
+;//===========================================================================
+cseg segment para public 'code'
+ BlkHello proc far
+  assume cs:cseg, es:cseg, ds:cseg
+ Header:
+  NextDriver  dd -1
+  Attribute   dw 0000h
+  Strategy    dw MyStrategy
+  Interrupt   dw MyInterrupt
+  DriverName  db 'BlkHello'
+
+  RhOffset    dw ?
+  RhSegment   dw ?
+  bootmsg     db 'Steward MS-DOS Driver Tutorial, Hello, world!', 0dh, 0ah, '$'
+  CmdTable    dw Init
+
+ MyStrategy:
+  mov cs:RhSegment, es
+  mov cs:RhOffset, bx
+  ret
+
+ MyInterrupt:
+  cld
+  push ds
+  push es
+  push ax
+  push bx
+  push cx
+  push dx
+  push di
+  push si
+
+  mov al, es:[bx]+2
+  cmp al, 0
+  jnz SkipCurRequest
+  rol al, 1
+  lea di, CmdTable
+  mov ah, 0
+  add di, ax
+  jmp word ptr[di]
+
+ Init:
+  lea dx, bootmsg
+  mov ah, 9
+  int 21h
+  lea ax, Exit
+  mov es:[bx]+0eh, ax
+  push cs
+  pop ax
+  mov es:[bx]+10h, ax
+  mov es:word ptr 3[bx], 0100h
+  jmp CompleteCmd
+
+ SkipCurRequest:
+  mov es:word ptr 3[bx], 8103h
+  jmp CompleteCmd
+
+ CompleteCmd:
+  mov bx, cs:RhOffset
+  mov es, cs:RhSegment
+  pop si
+  pop di
+  pop dx
+  pop cx
+  pop bx
+  pop ax
+  pop es
+  pop ds
+  ret
+
+ Exit:
+ BlkHello endp
+cseg ends
+end
+</pre>
+
+<p>
+程式就跟Char驅動程式一樣，收到Command 0時，印出輸出訊息
+</p>
+
+<p> 
+接著使用如下指令將main.asm放到DOS Image裡面：
+</p>
+
+<pre>
+$ sudo fdisk -lu msdos.img
+Disk msdos.img: 41 MB, 41803776 bytes
+16 heads, 63 sectors/track, 81 cylinders, total 81648 sectors
+Units = sectors of 1 * 512 = 512 bytes
+
+    Device Boot      Start         End      Blocks  Id System
+    msdos.img1   *          63       81647       40792+  6 FAT16
+
+$ sudo losetup -o $((63*512)) /dev/loop0
+$ sudo mount /dev/loop0 /mnt
+$ sudo cp main.asm /mnt
+$ sudo umount /mnt
+$ sudo losetup -d /dev/loop0
+</pre>
+
+<p>
+編譯程式：<br>
+接著使用Bochs進入DOS系統，將編譯的路徑加到<b>c:\config.sys</b>中<br>
+<img src="../char/asm_hello/1.jpg" class="maxSize">
+</p>
+
+<p>
+接著使用如下指令編譯
+</p>
+
+<pre>
+c:\> masm main.asm
+c:\> link main.obj
+c:\> exe2bin main.exe
+</pre>
+
+<p>
+安裝程式：<br>
+將<b>device=c:\main.bin</b>加到<b>c:\config.sys</b>的最後一行<br>
+<img src="../char/asm_hello/2.jpg" class="maxSize">
+</p>
+
+<p>
+接著將pause加到autoexec.bat的最後一行，避免開機訊息過多而看不到驅動程式的文字<br>
+<img src="../char/asm_hello/3.jpg" class="maxSize">
+</p>
+
+<p>
+最後使用shutdown指令重開機即可看到訊息<br>
+<img src="asm_hello/1.jpg" class="maxSize">
+</p>
+
+<p>
+使用<b>mem /d | more</b>指令查看剛剛載入的驅動程式，發現並沒有BlkHello驅動程式的名稱，這是因為掛載Block驅動程式等同於掛載DISK一樣，當系統無法正確取得該裝置的資訊時，便會無法掛載成功。
+</p>
+
+<p>
+<br><a href="../../../driver.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

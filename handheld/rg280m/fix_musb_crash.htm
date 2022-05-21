@@ -1,0 +1,147 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>RG280M</h3>
+<p><b>解決"Kernel panic jz_musb_interrupt"問題</b></p>
+<hr size="1">
+<p>
+問題如下：
+</p>
+<pre>
+CPU 0 Unable to handle kernel paging request at virtual address 0000002c, epc == 80299dc8, ra == 80299dc0
+Oops[#1]:
+CPU: 0 PID: 0 Comm: swapper Not tainted 3.12.1-lrgo #40
+task: 8051dd50 ti: 80514000 task.ti: 80514000
+$ 0   : 00000000 10000c00 00000000 00000087
+$ 4   : 8c7b2010 00000001 8c08cf10 00200000
+$ 8   : b0001008 2326dfcb 000000ad 00000000
+$12   : 00000000 00000000 00000007 8046c468
+$16   : 00000009 00000091 8c7b2010 00000000
+$20   : 00000091 8c08ce90 00000001 8c7ca300
+$24   : 00000067 80018054                  
+$28   : 80514000 80515ce8 80540000 80299dc0
+Hi    : 00000000
+Lo    : 3b9aca00
+epc   : 80299dc8 musb_interrupt+0x648/0x974
+    Not tainted
+ra    : 80299dc0 musb_interrupt+0x640/0x974
+Status: 10000c02        KERNEL EXL 
+Cause : 00800008
+BadVA : 0000002c
+PrId  : 2ed1024f (Ingenic JZRISC)
+Modules linked in:
+Process swapper (pid: 0, threadinfo=80514000, task=8051dd50, tls=00000000)
+Stack : 00000054 80528360 80520000 00000001 00000000 00000000 80540000 8006fba4
+          00000000 00000000 00000000 00000015 805265d8 80520000 80514000 00000000
+          8c7ca300 8029fe84 80515d90 8007718c 80515d98 8007718c 00000000 8006fab0
+          00000001 00000000 00000001 00000000 80540000 805316b0 805265d8 80540000
+          804c7370 80540000 00000001 80514000 00000000 00000041 b3410000 8006fcf8
+          ...
+Call Trace:
+[&lt;80299dc8&gt;] musb_interrupt+0x648/0x974
+[&lt;8029fe84&gt;] jz_musb_interrupt+0x54/0xa4
+[&lt;8006fab0&gt;] handle_irq_event_percpu+0x58/0x268
+[&lt;8006fcf8&gt;] handle_irq_event+0x38/0x60
+[&lt;80072bd8&gt;] handle_level_irq+0x90/0x110
+[&lt;8006f2dc&gt;] generic_handle_irq+0x3c/0x54
+[&lt;8001831c&gt;] do_IRQ+0x18/0x2c
+[&lt;800164d0&gt;] ret_from_irq+0x0/0x4
+[&lt;8006f268&gt;] cpu_startup_entry+0xfc/0x134
+[&lt;805448f8&gt;] start_kernel+0x360/0x380
+
+
+Code: 02402021  8ea2000c  96430f84 &lt;8c42002c&gt; 7c4200c0  7c430004  a6430f84  8e420f84  30420001 
+---[ end trace d1a9c488d7e5e4bf ]---
+Kernel panic - not syncing: Fatal exception in interrupt
+</pre><br>
+
+<p>
+解法(drivers/usb/musb/jz4770.c)
+</p>
+<pre class="brush:cpp">
+static irqreturn_t jz_musb_interrupt(int irq, void *__hci)
+{
+  unsigned long flags;
+  struct musb *musb = __hci;
+
+  irqreturn_t rv, rv_dma, rv_usb;
+  rv = rv_dma = rv_usb = IRQ_NONE;
+
+  spin_lock_irqsave(&amp;musb-&gt;lock, flags);
+
+#if defined(CONFIG_USB_INVENTRA_DMA)
+  if(musb-&gt;b_dma_share_usb_irq){
+    rv_dma = musb_call_dma_controller_irq(irq, musb);
+  }
+#endif
+
+  musb-&gt;int_usb = musb_readb(musb-&gt;mregs, MUSB_INTRUSB);
+  musb-&gt;int_tx = musb_readw(musb-&gt;mregs, MUSB_INTRTX);
+  musb-&gt;int_rx = musb_readw(musb-&gt;mregs, MUSB_INTRRX);
+
+  if((musb-&gt;int_usb &amp; MUSB_INTR_BABBLE) == 0){ 
+    if(musb-&gt;int_usb || musb-&gt;int_tx || musb-&gt;int_rx){
+      rv_usb = musb_interrupt(musb);
+    }   
+  }
+
+  spin_unlock_irqrestore(&amp;musb-&gt;lock, flags);
+
+  rv = (rv_dma == IRQ_HANDLED || rv_usb == IRQ_HANDLED) ? IRQ_HANDLED : IRQ_NONE;
+  return rv; 
+}
+
+</pre><br>
+
+<p>
+<br><a href="../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

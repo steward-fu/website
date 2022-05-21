@@ -1,0 +1,95 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../../header.js"></script>
+<div id="page">
+<h3>GPD Win 上蓋鋁合金版 &gt;&gt; Debian 9.0</h3>
+<p><b>支援SDCard 128GB</b></p>
+<hr size="1">
+<p>
+司徒目前測試了許多Linux發行版本(Arch Linux、Debian、Ubuntu等系統)，發現只要SDCard容量大於32GB，都無法被偵測到，而剛好司徒的SDCard容量都是128GB，加上GPD Win掌機的Flash只有64GB容量，如果沒有SDCard的協助，那還真是英雄無用武之地，因此，如果司徒想要讓GPD Win跑Linux系統，那麽這個問題就是首先必須解決的問題，於是司徒經過多次測試Kernel後，發現有一個Workaround的方式可以解決無法偵測SDCard 128GB的問題，修複方式如下所示。<br><br>
+
+drivers/mmc/core/sd.c +778
+</p>
+<pre class="brush:cpp">
+  err = mmc_send_app_op_cond(host, ocr, rocr);
+  if (err)
+    return err; 
+
+  /*
+   * In case CCS and S18A in the response is set, start Signal Voltage
+   * Switch procedure. SPI mode doesn't support CMD11.
+   */
+  /*
+  if (!mmc_host_is_spi(host) &amp;&amp; rocr &amp;&amp;
+     ((*rocr &amp; 0x41000000) == 0x41000000)) {
+    err = mmc_set_uhs_voltage(host, pocr);
+    if (err == -EAGAIN) {
+      retries--;
+      goto try_again;
+    } else if (err) {
+      retries = 0; 
+      goto try_again;
+    }    
+  }
+  */
+
+  err = mmc_send_cid(host, cid);
+  return err; 
+}
+</pre>
+<p>
+P.S. 不要改變電壓成1.8V即可，因為改成1.8V後，SDCard的電源會被關閉，Rebuild Kernel後就可以支援SDCard 128GB
+</p>
+
+<p>
+<br><a href="../../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,137 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Miyoo &gt;&gt; Assembly</h3>
+<p><b>Watchdog</b></p>
+<hr size="1">
+<p>
+參考資料：<br>
+1. <a href="https://github.com/steward-fu/mcu-pdf/tree/master/f1c100s">pdf</a><br>
+2. <a href="http://nano.lichee.pro/">lichee</a><br>
+3. <a href="https://mangopi.org/mangopi_r">mangopi_r</a><br>
+4. <a href="https://www.allwinnertech.com/index.php?c=product&a=index&pid=4">allwinner</a><br><br>
+
+Work Flow<br>
+<img src="../../mcu/f1c100s/asm_wdt/1.jpg" class="maxSize"><br><br>
+
+暫存器<br>
+<img src="../../mcu/f1c100s/asm_wdt/2.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+  .global _start
+  
+  .equiv GPIO_BASE,  0x01c20800 
+  .equiv TIMER_BASE, 0x01c20c00
+  
+  .equiv PA,        (0x24 * 0)
+  .equiv PORT_CFG0, 0x00
+  .equiv PORT_DATA, 0x10
+  
+  .equiv WDOG_IRQ_EN_REG,  0xa0
+  .equiv WDOG_IRQ_STA_REG, 0xa4
+  .equiv WDOG_CTRL_REG,    0xb0
+  .equiv WDOG_CFG_REG,     0xb4
+  .equiv WDOG_MODE_REG,    0xb8
+  
+  .arm
+  .text
+_start:
+  .long 0xea000016
+  .byte 'e', 'G', 'O', 'N', '.', 'B', 'T', '0'
+  .long 0, __spl_size
+  .byte 'S', 'P', 'L', 2
+  .long 0, 0
+  .long 0, 0, 0, 0, 0, 0, 0, 0
+  .long 0, 0, 0, 0, 0, 0, 0, 0
+     
+_vector:
+  b reset
+  b .
+  b .
+  b .
+  b .
+  b .
+  b .
+  b .
+     
+reset:
+  ldr r0, =GPIO_BASE
+  ldr r1, =0x10
+  str r1, [r0, #(PA + PORT_CFG0)]
+  ldr r1, =0x02
+  str r1, [r0, #(PA + PORT_DATA)]
+  
+  ldr r0, =TIMER_BASE
+  ldr r1, =(0xa57 &lt;&lt; 1) | 1
+  str r1, [r0, #WDOG_CTRL_REG]
+  ldr r1, =1
+  str r1, [r0, #WDOG_CFG_REG]
+  ldr r1, =(1 &lt;&lt; 4) | 1
+  str r1, [r0, #WDOG_MODE_REG]
+0:
+  nop
+  b 0b
+  .end
+</pre>
+<p>
+P.S. 點亮LED後，等待Watchdog(1秒)去重啟系統，達到閃爍LED的效果<br><br>
+
+完成<br>
+<img src="asm_led/1.jpg" class="maxSize"><br>
+<img src="asm_led/2.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

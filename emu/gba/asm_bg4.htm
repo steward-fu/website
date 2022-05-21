@@ -1,0 +1,129 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Game Boy Advance &gt;&gt; Assembly</h3>
+<p><b>BG Mode 4(bitmap)</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://github.com/steward-fu/gba/releases/tag/v1.1">doc</a><br>
+2. <a href="http://www.coranac.com/tonc/text/toc.htm">tonc</a><br>
+3. <a href="https://patater.com/gbaguy/gbaasm.htm">gbaasm</a><br>
+3. <a href="https://wii.leseratte10.de/devkitPro/">devkitPro</a><br>
+4. <a href="https://github.com/devkitPro/devkitarm-crtls">devkitarm-crtls</a><br>
+5. <a href="http://kylehalladay.com/blog/tutorial/gba/2017/04/11/GBA-By-Example-3.html">GBA-By-Example-3</a><br>
+6. <a href="https://devkitpro.org/index.php">devkitPro website</a><br>
+7. <a href="https://gist.github.com/JShorthouse/bfe49cdfad126e9163d9cb30fd3bf3c2">Compiling GBA programs on Linux with GCC</a><br><br>
+
+<b>BG Mode 4</b>支援bitmap(每一個像素點的顏色，由使用者指定)，固定使用<b>BG2CNT</b><br>
+<img src="asm_bg3/1.jpg" class="maxSize"><br><br>
+
+每一個像素點的顏色由<b>1Byte</b>表示(256種顏色的索引)，像素填充的起始位址是<b>0x6000000</b><br>
+<img src="asm_bg4/1.jpg" class="maxSize"><br><br>
+
+2 frame buffers<br>
+<img src="asm_bg4/2.jpg" class="maxSize"><br><br>
+
+BG Mode對應的解析度<br>
+<img src="asm_bg0/9.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+  .equ DISPCNT,     0x4000000
+  .equ BG2CNT,      0x400000c
+  .equ PALETTE_RAM, 0x5000000
+  .equ VRAM,        0x6000000
+ 
+  .global main
+       
+  .arm
+  .text
+main:
+  ldr r0, =DISPCNT
+  ldr r1, =0x404
+  strh r1, [r0]
+   
+  ldr r0, =BG2CNT
+  ldr r1, =0x0000
+  strh r1, [r0]
+   
+  ldr r0, =PALETTE_RAM
+  ldr r1, =palette
+  ldr r2, =4
+1:
+  ldrh r3, [r1], #2
+  strh r3, [r0], #2
+  subs r2, r2, #1
+  bne 1b
+     
+  ldr r0, =VRAM
+  ldr r1, =0x03020100
+  str r1, [r0]
+  
+2:
+  b 2b
+   
+palette:
+  .2byte 0x0000, 0x001f, 0x03e0, 0x7c00
+</pre><br>
+
+<p>
+完成<br>
+<img src="asm_bg4/3.jpg" class="maxSize"><br>
+<img src="asm_bg4/4.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../emu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

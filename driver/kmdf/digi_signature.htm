@@ -1,0 +1,102 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Kernel Mode Driver Framework</h3>
+<p><b>淺談Digital Signature、Timestamp、Certificate</b></p>
+<hr size="1">
+<p>
+參考資料：<br>
+1. <a href="https://en.wikipedia.org/wiki/Timestamp">timestamp</a><br>
+2. <a href="https://www.catalog.update.microsoft.com/search.aspx?q=kb4474419">kb4474419</a><br>
+3. <a href="https://www.catalog.update.microsoft.com/search.aspx?q=kb4490628">kb4490628</a><br>
+4. <a href="https://www.catalog.update.microsoft.com/search.aspx?q=KB4493730">KB4493730</a><br>
+5. <a href="https://support.microsoft.com/en-us/topic/2019-sha-2-code-signing-support-requirement-for-windows-and-wsus-64d1c82d-31ee-c273-3930-69a4cde8e64f">sha2-signing</a><br>
+6. <a href="https://en.wikipedia.org/wiki/Digital_signature">digital signature</a><br>
+7. <a href="https://en.wikipedia.org/wiki/Certificate_authority">certificate authority</a><br>
+8. <a href="https://www.sysadmins.lv/blog-en/digital-signatures.aspx">digital signatures and timestamps</a><br>
+9. <a href="https://docs.microsoft.com/en-us/windows-hardware/drivers/install/cross-certificates-for-kernel-mode-code-signing">cross-certificates-for-kernel-mode-code-signing</a><br><br>
+
+由於Microsoft已經公告Cross-Signing將停止支援，因此，像<b>DigiCert Assured ID Root CA</b>的到期日期是2021/04/15，如果目前驅動程式Signing是使用<b>DigiCert Assured ID Root CA</b>的Certificate或者由<b>DigiCert Assured ID Root CA</b>發的Cerificate，在2021/04/15之後，驅動程式必須改成給Microsoft做Signing的動作(跑WHQL流程)，否則將會遇到驅動程式無法安裝的問題，正確說法應該是，驅動程式以後都必須跑WHQL流程，不過，如果是在2021/04/15日以前做Cross-Signing的動作且Timestamp有效，都是屬於有效期內Signing的，因此，可以繼續使用，不會有安裝問題，直到ROOT CA到期，值得注意的是，在Win7系統上，新的Microsoft簽章必須放在第一個欄位(一個驅動程式可以有多個簽章)，因為Win7只認得第一個欄位的簽章<br><br>
+
+說到這裡，司徒剛好提一下另一個問題，那就是SHA1的問題，由於Microsoft已經停止SHA1的支援，因此，新的的驅動程式(應該是2021/1/1以後)只會看到一個SHA256的資訊，在WinXP、Win7、WinServer 2008會有支援的問題，也就是這三個舊系統不認識SHA256這種東西，所以驅動程式無法安裝使用，目前Microsoft有提供Win7、WinServer 2008的KB修復(KB4474419、KB4490628)，安裝這兩個KB之後，Win7、WinServer 2008就可以安裝SHA256 Singing的驅動程式，至於WinXP系統，由於WinXP本身就不檢查，因此，安裝SHA256 Signing的驅動程式不會有問題，另外，由於KB4474419會檢查MBR相關資訊，如果遇到無法安裝KB問題時，記得直接重新安裝Win7系統比較快，如果是使用Dual Signing的驅動程式，則需要確認SHA1 Timestamp部份，是否使用SHA256 Timestamp，如果是使用SHA256 Timestamp，舊系統(假如沒有上KB)一樣無法安裝使用驅動程式<br><br>
+
+Timestamp：時間戳，字串或編碼資訊用於辨識記錄下來的時間日期<br>
+Certificate：數位憑證，由認證機構(Certificate Authority, CA)發放<br>
+Digital Signature：數位簽章，用於鑑別數位資訊的方法<br><br>
+
+驅動程式的數位簽章包含數位憑證、時間戳兩部份，如下圖(ftdibus.sys)：<br>
+<img src="digi_signature/1.jpg" class="maxSize"><br><br>
+
+數位憑證來源是<b>Future Technology Devices International Ltd</b>，時間戳則是<b>Monday, August 21, 2017 5:52:50 AM</b><br>
+<img src="digi_signature/2.jpg" class="maxSize"><br><br>
+
+數位憑證關係，可以看到發證源頭(ROOT CA)是VeriSign<br>
+<img src="digi_signature/3.jpg" class="maxSize"><br><br>
+
+有效期限是到11/18/2018<br>
+<img src="digi_signature/4.jpg" class="maxSize"><br><br>
+
+使用SignTool檢查一下驅動程式<br>
+<img src="digi_signature/6.jpg" class="maxSize"><br>
+發現驅動程式是有效的，也就是可以正常安裝使用，雖然使用期限已到，不過，由於Timestamp有效，因此，都可以一直使用，直到ROOT CA到期(VeriSign到期)才無法繼續使用<br><br>
+
+數位憑證、時間戳是附加到原本檔案的內容，如下圖：<br>
+<img src="digi_signature/5.jpg" class="maxSize"><br>
+當數位憑證使用期限過期時(非Revoke)，則會檢查Timestamp是否有效，用來確保此驅動程式是在有效的期限內做Signing的，如果沒有Timestamp，則此驅動程式屬於無效(也就是無法正常安裝)，這也是Timestamp省去Re-signing的好處，而司徒稍早提到的SHA256問題，雖然目前很多公司使用Dual Signing的方式用來兼容SHA1和SHA256，不過當<b>Timestamp Authority(TSA)</b>只有SHA256時(也就是使用SHA256時)，舊系統如果沒有上SHA256 KB時，還是一樣認不得，也就是無法正常安裝驅動程式<br><br>
+
+Lifecycle<br>
+<img src="digi_signature/7.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../driver.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

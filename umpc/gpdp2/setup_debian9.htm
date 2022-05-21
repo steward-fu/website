@@ -1,0 +1,116 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>GPD Pocket 2</h3>
+<p><b>安裝系統(Debian 9)</b></p>
+<hr size="1">
+<p>
+1. 下載並安裝<a href="http://cdimage.debian.org/mirror/cdimage/archive/9.4.0/amd64/iso-cd/debian-9.4.0-amd64-xfce-CD-1.iso">Debian 9</a><br>
+2. 安裝Wifi驅動
+</p>
+<pre>
+$ sudo apt-get install kernel-package firmware-intel-sound pulseaudio firmware-iwlwifi -y
+</pre><br>
+
+<p>
+3. Fix Touchscreen
+</p>
+<pre>
+$ sudo vim /etc/udev/rules.d/90-goodix-touchscreen.rules
+  ACTION=="add|change", KERNEL=="event[0-9]*", ATTRS{name}=="Goodix Capacitive TouchScreen", ENV{LIBINPUT_CALIBRATION_MATRIX}="0 1 0 -1 0 1"
+</pre><br>
+
+<p>
+4. Build Kernel 5.2.0(修復聲音以及亮度調整)
+</p>
+<pre>
+$ cd
+$ wget https://github.com/torvalds/linux/archive/v5.2.tar.gz
+$ tar xvf v5.2.tar.gz
+$ cd linux-5.2
+$ cp /boot/config-$(uname -r) .config
+$ make menuconfig
+$ make -j8
+$ make modules
+$ sudo make modules_install
+$ sudo make install
+</pre><br>
+
+<p>
+5. Fix Tearing
+</p>
+<pre>
+$ sudo mkdir -p /etc/X11/xorg.conf.d
+$ sudo vim /etc/X11/xorg.conf.d/20-intel.conf
+  Section "Device"
+    Identifier  "Intel Graphics"
+    Driver      "intel"
+    Option      "TearFree" "true"
+  EndSection
+</pre><br>
+
+<p>
+6. 最佳DPI設定<br>
+Settings &gt; Appearance &gt; Fonts &gt; DPI &gt; 150<br>
+Settings &gt; Window Manager &gt; Style &gt; Default-hdpi<br>
+Settings &gt; Settings Manager &gt; Settings Editor &gt; xsettings &gt; Gtk &gt; IconSizes
+</p>
+<pre>
+gtk-large-toolbar=48,48:gtk-small-toolbar=48,48:gtk-menu=48,48:gtk-dialog=48,48:gtk-button=48,48:gtk-dnd=48,48
+</pre>
+<p>
+Settings &gt; Settings Manager &gt; Settings Editor &gt; xfce4-panel &gt; size &gt; 48
+</p>
+
+<p>
+<br><a href="../../umpc.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

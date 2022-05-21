@@ -1,0 +1,119 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Linux Device Driver &gt;&gt; Assembly (MIPS)</h3>
+<p><b>開發環境</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://github.com/steward-fu/mt7688/releases/tag/v1.0">mt7688</a><br><br>
+
+為了一虧Assembly的美貌，司徒最後決定把MIPS Assembly也納入Linux Driver教學的一部分，畢竟Assembly還是司徒比較喜愛的開發語言，從更底層看到的東西，將會有別於一般使用C/C++開發的東西，為了了解底層運作，學習Assembly還是有其必要，而目前坊間有許多MIPS開發板可以選擇，使用者可以選擇自己喜愛的開發板使用，司徒目前使用如下開發板<br>
+<img src="mips_asm_setup/1.jpg" class="maxSize"><br>
+如果是購買原廠開發板，可以發現，它有兩種型號，<b>Smart 7688</b>以及<b>Smart7688 Duo</b>，差別在於多了一顆Atmega32，目前司徒沒有使用它，因此，使用者也可以選擇使用Smart 7688開發板<br><br>
+
+接著需要一條USB轉UART傳輸線，目前司徒使用PL2303傳輸線：<br>
+<img src="arm_asm_setup/2.jpg" class="maxSize"><br><br>
+
+接著連接開發板與UART
+</p>
+<table>
+<tr><th>Smart 7688 Duo</th><th>PL2303</th></tr>
+<tr><td>GND</td><td>黑線</td></tr>
+<tr><td>P9</td><td>綠線</td></tr>
+<tr><td>P8</td><td>白線</td></tr>
+</table>
+<p>
+<img src="mips_asm_setup/2.jpg" class="maxSize"><br><br>
+
+接著為了避免發生驅動無法掛載的問題，需要自己編譯一次Kernel
+</p>
+<pre>
+$ cd ~/Downloads/
+$ wget https://github.com/steward-fu/mt7688/releases/download/v1.0/toolchain.tar.gz
+$ tar xvf toolchain.tar.gz
+$ sudo mv mt7688 /opt/
+
+$ wget https://github.com/steward-fu/mt7688/releases/download/v1.0/kernel.tar.gz
+$ tar xvf kernel.tar.gz
+$ cd kernel
+$ ./run.sh
+</pre><br>
+
+<p>
+接著更新系統，步驟如下：<br>
+1. 準備USB隨身碟並且格式化成FAT32<br>
+2. 複製編譯後的lks7688.img到USB隨身碟<br>
+3. 插入USB隨身碟到Smart 7688 Duo的USB host port<br>
+<img src="mips_asm_setup/3.jpg" class="maxSize"><br>
+4. 按住WiFi按鈕<br>
+5. 接上USB電源<br> 
+6. 5秒後鬆開WiFi按鈕(第一次WiFi LED滅時)<br><br>
+
+更新完成後，使用minicom(<b>baudrate 57600bps</b>)就可以看到如下資訊：
+</p>
+<pre>
+Welcome to MT7688
+mt7688 login:
+</pre>
+<p>
+P.S. 輸入root即可進入系統<br><br>
+
+接著查看一下Kernel號碼以及編譯者的資訊，如果沒有問題，那代表開發環境已經準備好了
+</p>
+<pre>
+# cat /proc/version
+  Linux version 5.4.83 (steward@debian) (gcc version 7.4.0 (Buildroot 2019.02.4)) #3 Fri Dec 18 19:59:00 EST 2020
+</pre><br>
+
+<br><a href="../../driver.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

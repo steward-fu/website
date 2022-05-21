@@ -1,0 +1,130 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Linux Device Driver &gt;&gt; C/C++</h3>
+<p><b>request_irq</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://github.com/steward-fu/ldd">Source Code</a><br><br>
+
+中斷本身是一種高優先權處理的機制，一旦硬體中斷觸發後，系統會馬上跳到使用者設定的Callback副程式執行，在中斷副程式中，不應該執行太過耗時的程式，否則將拖垮系統效能，這是由於Context Switch優先級一般會比中斷來得低，在中斷副程式尚未將權限交回給系統時，系統無法做Context Switch(單核心系統)<br><br>
+
+使用步驟：<br>
+1. gpio_to_irq()<br>
+2. request_irq()<br>
+3. free_irq()<br>
+request_irq()其實就是呼叫request_threaded_irq()，只是bottom-half傳入NULL<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;linux/init.h&gt;
+#include &lt;linux/device.h&gt;
+#include &lt;linux/module.h&gt;
+#include &lt;linux/delay.h&gt;
+#include &lt;linux/kernel.h&gt;
+#include &lt;linux/errno.h&gt;
+#include &lt;linux/mm.h&gt;
+#include &lt;linux/gpio.h&gt;
+#include &lt;linux/interrupt.h&gt;
+
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("Steward Fu");
+MODULE_DESCRIPTION("Linux Driver");
+ 
+#define BUTTON 27
+
+static irqreturn_t irq_handler(int irq, void *arg)
+{
+  printk("%s\n", __func__);
+  return IRQ_HANDLED;
+}
+
+int ldd_init(void)
+{
+  int irq=0;
+
+  irq = gpio_to_irq(BUTTON);
+  if(request_irq(irq, irq_handler, IRQF_TRIGGER_RISING, "gpio_irq", NULL)){
+    printk("%s, failed to request irq(%d)\n", __func__, irq);
+  }
+  return 0;
+}
+ 
+void ldd_exit(void)
+{
+  int irq=0;
+  
+  irq = gpio_to_irq(BUTTON);
+  free_irq(irq, NULL);
+}
+ 
+module_init(ldd_init);
+module_exit(ldd_exit);
+</pre>
+<p>
+<b>ldd_init</b>: 設定中斷並且使用上緣觸發方式(IRQF_TRIGGER_RISING)<br>
+<b>irq_handler</b>: 輸出中斷訊息<br>
+<b>ldd_exit</b>: 釋放中斷<br><br>
+
+完成<br>
+<img src="cpp_gpio_input/3.jpg" class="maxSize"><br>
+<img src="cpp_gpio_input/4.jpg" class="maxSize">
+</p>
+<pre>
+# irq_handler
+</pre><br>
+
+<p>
+<br><a href="../../driver.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

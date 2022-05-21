@@ -1,0 +1,136 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Windows Driver Model</h3>
+<p><b>Multi-core上的DISPATCH_LEVEL</b></p>
+<hr size="1">
+<p>
+Lucas同事最近又開始假認真了！剛好Spencer也來插花，於是再度激起研究討論的熱誠，遇到的問題如下：<br>
+<b>在多核CPU上，如果有一個Thread或Function位於DISPATCH_LEVEL時，其餘CPU在幹嘛？</b><br><br>
+
+寫過驅動程式的使用者都知道，於DISPATCH_LEVEL(軟體最高LEVEL)時，不會發生Context Switch且也不能存取Pageable Memory，因此，按理推斷，在多核CPU下，其餘CPU理應被Block住才是，不是嗎？不然為何無法做Context Switch？或者其餘CPU只能處理<b>IRQ>=DISPATCH_LEVEL</b>的Thread？還是其餘CPU正常處理其餘(包含PASSIVE_LEVEL)的Thread？<br><br>
+
+說實話，司徒覺得其它CPU應該被Block住，否則Context Switch是可以發生的，當然這個Block不是說OS已經掛點，因為OS還是會受硬體IRQ觸發，畢竟硬體的IRQ還是高於軟體的IRQ，但是顯然這個觀念僅適用於單核CPU，在過往的驅動程式相關書籍中，也幾乎不提及多核CPU下的實際運作情形為何，畢竟Windows OS還不是全部開源，要摸清這些細節也不是那麼容易，因此，司徒寫了一個Legacy Driver做測試，這個Driver會創造出30個Thread，每個Thread進入後，提高IRQ至DISPATCH_LEVEL，然後透過DbgPrint()列印字串，接著降回原本IRQ LEVEL(PASSIV_LEVE)，迴圈次數為20，避免系統GUI無法運作，程式碼如下所示。<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;ntddk.h&gt;
+
+VOID ThreadRoutine(PVOID pParam)
+{
+  KIRQL oldIrql;
+  ULONG id=pParam;
+  ULONG loop=20, cnt=0;
+
+  DbgPrint("ID(%d): current process: %s", id, (char*)((ULONG)IoGetCurrentProcess() + 0x174));
+  while(loop--){
+    KeRaiseIrql(DISPATCH_LEVEL, &amp;oldIrql);
+    DbgPrint("ID:%d(1)\n", id);
+    for(cnt=0; cnt&lt;100000000; cnt++);
+    DbgPrint("ID:%d(2)\n", id);
+    for(cnt=0; cnt&lt;100000000; cnt++);
+    DbgPrint("ID:%d(3)\n", id);
+    for(cnt=0; cnt&lt;100000000; cnt++);
+    DbgPrint("ID:%d(4)\n", id);
+    for(cnt=0; cnt&lt;100000000; cnt++);
+    DbgPrint("ID:%d(5)\n", id);
+    for(cnt=0; cnt&lt;100000000; cnt++);
+    KeLowerIrql(oldIrql);
+  }
+  PsTerminateSystemThread(STATUS_SUCCESS);
+}
+
+void Unload(PDRIVER_OBJECT pDriverObj)
+{
+  if(pDriverObj-&gt;DeviceObject != NULL){
+    IoDeleteDevice(pDriverObj-&gt;DeviceObject);
+  }
+}
+
+NTSTATUS DriverEntry(PDRIVER_OBJECT pDriverObj, PUNICODE_STRING pRegPath)
+{
+  ULONG x;
+  NTSTATUS status;
+  ULONG hThread;
+  
+  PDEVICE_OBJECT pFunObj=NULL;
+  UNICODE_STRING usDeviceName;
+
+  RtlInitUnicodeString(&amp;usDeviceName, L"\\Device\\Test");
+  IoCreateDevice(pDriverObj, 0, &amp;usDeviceName, FILE_DEVICE_UNKNOWN, 0, FALSE, &amp;pFunObj);
+  pDriverObj-&gt;DriverUnload = Unload;
+ 
+  for(x=0; x&lt;30; x++){
+    PsCreateSystemThread(&amp;hThread, THREAD_ALL_ACCESS, NULL, -1, NULL, ThreadRoutine, x);
+  }
+  return STATUS_SUCCESS;
+}
+</pre><br>
+
+<p>
+測試於WinXP 32Bit、Intel四核CPU<br>
+<img src="multi-core_dispatch_level/1.jpg" class="maxSize"><br><br>
+
+測試於VirtualBox(WinXP 32Bit)、四顆Processor CPU<br>
+<img src="multi-core_dispatch_level/2.jpg" class="maxSize"><br>
+經由上面的測試可以發現，列印的字串可以被插入(於Intel CPU上)，也就代表每顆CPU都是各自運作，不受其它顆CPU影響，同時，提高至DISPATCH_LEVEL時，僅當下CPU無法做Context Switch，其餘CPU都是可以繼續執行PASSIVE_LEVEL的事情，也不須等待其它CPU變回PASSIVE_LEVEL，而上面的測試也發現，在VirtualBox虛擬機下，多核CPU的實作還是跟真實CPU(Intel)有些為不同，當然，經由測試也發現，原本在單核CPU會發生的Dead Lock事件，於多核CPU環境下，有機會消失，因此，遵照Microsoft的規範撰寫驅動程式，基本上可以說是保證沒問題，畢竟那是基於單核CPU的基礎，但是，絕對會發生的問題，目前看來有可能不一樣了！<br><br>
+
+結論：<br>
+1. VirtualBox實作多核CPU，仍然是基於Queue的順序概念實做。<br>
+2. 只有當下該顆CPU處於DISPATCH_LEVEL，該顆CPU無法做Context Switch，但是其餘CPU正常運作，也可以正常執行PASSIVE_LEVEL的Thread。<br>
+最後，Spencer猜測OS為何不在多核CPU下做Memory Swap的動作，可能的原因是Cost太高！
+</p>
+
+<p>
+<br><a href="../../driver.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

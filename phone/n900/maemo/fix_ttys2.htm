@@ -1,0 +1,275 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../../header.js"></script>
+<div id="page">
+<h3>Nokia N900 &gt;&gt; Maemo</h3>
+<p><b>解決/dev/ttyS2無法使用的問題</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://lore.kernel.org/patchwork/patch/171865/">kernel_patch_171865</a><br><br>
+
+雖然在Maemo系統下有USB Host功能可以使用，不過缺點則是UART(/dev/ttyS2)無法使用，而Native Debian系統下，則是UART(/dev/ttyO2)可以使用，但是USB Host無法使用，原因是驅動程式的問題，雖然司徒更喜愛Native Debian系統，畢竟可以直接使用Debian的套件，對於開發者來說，還是一大吸引特色，不過在Native Debian系統下，還是有很多不完善的地方，如：過於耗電(150mA, Idle)、USB Host無法使用、Camera無法使用、Display架構過於耗CPU資源，而最讓司徒頭痛就是耗電問題，因為150mA的耗電速度，大約是一小時10%(原廠電池)，因此，這讓司徒又重新安裝回Maemo系統(據說待機可以讓CPU運作於0Hz)，加上司徒目前已經可以解除root 256MB的容量限制，因此，司徒只要把Maemo的UART(/dev/ttyS2)問題解決後，基於Maemo系統的N900就可以成為一台真正實用的開發機器，而經過多次努力移植以及測試後，司徒發現其實只要修改一個小判斷就可以讓Maemo系統支援<b>/dev/ttyS2</b>，不需要重新移植OMAP UART驅動。<br><br>
+
+司徒一開始使用Patch方式添加，發現只有兩個地方需要修改<b>arch/arm/mach-omap2/serial.c</b>以及<b>drivers/omap-serial.c</b>，雖然有一些redefine問題，不過手動修復後，tty依然沒有添加新的<b>/dev/ttyOx</b>，於是司徒往回翻舊版Kernel，發現omap-serial.c是在Kernel 2.6.37新增，於是直接使用2.6.37 omap-serial.c，結果還是無法使用，於是開始找問題，發現omap-serial.c的probe()沒有被呼叫，於是查看<b>arch/arm/mach-omap2/serial.c</b>的添加是否有問題
+</p>
+<pre class="brush:cpp">
+void __init omap_serial_init(void)
+{
+  int i;
+  const struct omap_uart_config *info;
+  char name[16];
+
+  /*
+   * Make sure the serial ports are muxed on at this point.
+   * You have to mux them off in device drivers later on
+   * if not needed.
+   */
+
+  info = omap_get_config(OMAP_TAG_UART, struct omap_uart_config);
+
+  if (info == NULL)
+    return;
+
+  for (i = 0; i &lt; OMAP_MAX_NR_PORTS; i++) {
+    struct plat_serial8250_port *p = serial_platform_data + i;
+    struct omap_uart_state *uart = &amp;omap_uart[i];
+
+    if (!(info-&gt;enabled_uarts &amp; (1 &lt;&lt; i))) {
+      p-&gt;membase = NULL;
+      p-&gt;mapbase = 0;
+      continue;
+    }
+</pre>
+<p>
+info->enabled_uarts拿到的uart flag都是disabled，於是往回找omap_get_config()
+</p>
+<pre class="brush:cpp">
+const void *__omap_get_config(u16 tag, size_t len, int nr)
+{
+  return get_config(tag, len, nr, NULL);
+}
+EXPORT_SYMBOL(__omap_get_config);
+</pre>
+<p>
+P.S. 位於arch/arm/plat-omap/common.c<br><br>
+
+往回找到get_config()
+</p>
+<pre class="brush:cpp">
+static const void *get_config(u16 tag, size_t len, int skip, size_t *len_out)
+{
+  struct omap_board_config_kernel *kinfo = NULL;
+  int i;
+
+#ifdef CONFIG_OMAP_BOOT_TAG
+  struct omap_board_config_entry *info = NULL;
+
+  if (omap_bootloader_tag_len &gt; 4)
+    info = (struct omap_board_config_entry *) omap_bootloader_tag;
+  while (info != NULL) {
+    u8 *next;
+
+    if (info-&gt;tag == tag) {
+      if (skip == 0)
+        break;
+      skip--;
+    }
+
+    if ((info-&gt;len &amp; 0x03) != 0) {
+      /* We bail out to avoid an alignment fault */
+      printk(KERN_ERR "OMAP peripheral config: Length (%d) not word-aligned (tag %04x)\n",
+             info-&gt;len, info-&gt;tag);
+      return NULL;
+    }
+    next = (u8 *) info + sizeof(*info) + info-&gt;len;
+    if (next &gt;= omap_bootloader_tag + omap_bootloader_tag_len)
+      info = NULL;
+    else
+      info = (struct omap_board_config_entry *) next;
+  }
+  if (info != NULL) {
+    /* Check the length as a lame attempt to check for
+     * binary inconsistency. */
+    if (len != NO_LENGTH_CHECK) {
+      /* Word-align len */
+      if (len &amp; 0x03)
+        len = (len + 3) &amp; ~0x03;
+      if (info-&gt;len != len) {
+        printk(KERN_ERR "OMAP peripheral config: Length mismatch with tag %x (want %d, got %d)\n",
+               tag, len, info-&gt;len);
+        return NULL;
+      }
+    }
+    if (len_out != NULL)
+      *len_out = info-&gt;len;
+    return info-&gt;data;
+  }
+#endif
+  /* Try to find the config from the board-specific structures
+   * in the kernel. */
+  for (i = 0; i &lt; omap_board_config_size; i++) {
+    if (omap_board_config[i].tag == tag) {
+      if (skip == 0) {
+        kinfo = &amp;omap_board_config[i];
+        break;
+      } else {
+        skip--;
+      }
+    }
+  }
+  if (kinfo == NULL)
+    return NULL;
+  return kinfo-&gt;data;
+}
+</pre><br>
+
+<p>
+接著看一下omap_board_config
+</p>
+<pre class="brush:cpp">
+static struct omap_uart_config rx51_uart_config = { 
+  .enabled_uarts  = ((1 &lt;&lt; 0) | (1 &lt;&lt; 1) | (1 &lt;&lt; 2)),
+};
+</pre>
+<p>
+P.S. 位於arch/arm/mach-omap2/board-rx51.c<br><br>
+
+從這個結構來看UART1、UART2、UART3應該都是被Enabled才是，怎會到omap_serial_init()就變成Disabled呢？於是埋了一些資訊Debug，這才發現CONFIG_OMAP_BOOT_TAG是被定義的，由UBoot傳入參數，這時司徒突然想起ITEM_OMAPTAG這個東西，原來是從那裡傳入，而列印後，發現UART確實被Disabled，於是司徒直接修改get_config()，只要是UART Tag(OMAP_TAG_UART)就直接讀取Kernel定義的Flag
+</p>
+<pre class="brush:cpp">
+static const void *get_config(u16 tag, size_t len, int skip, size_t *len_out)
+{
+  struct omap_board_config_kernel *kinfo = NULL;
+  int i;
+
+#ifdef CONFIG_OMAP_BOOT_TAG
+  if(tag != OMAP_TAG_UART){
+    struct omap_board_config_entry *info = NULL;
+
+    if (omap_bootloader_tag_len &gt; 4)
+      info = (struct omap_board_config_entry *) omap_bootloader_tag;
+    while (info != NULL) {
+      u8 *next;
+
+      if (info-&gt;tag == tag) {
+        if (skip == 0)
+          break;
+        skip--;
+      }
+
+      if ((info-&gt;len &amp; 0x03) != 0) {
+        /* We bail out to avoid an alignment fault */
+        printk(KERN_ERR "OMAP peripheral config: Length (%d) not word-aligned (tag %04x)\n",
+               info-&gt;len, info-&gt;tag);
+        return NULL;
+      }
+      next = (u8 *) info + sizeof(*info) + info-&gt;len;
+      if (next &gt;= omap_bootloader_tag + omap_bootloader_tag_len)
+        info = NULL;
+      else
+        info = (struct omap_board_config_entry *) next;
+    }
+    if (info != NULL) {
+      /* Check the length as a lame attempt to check for
+       * binary inconsistency. */
+      if (len != NO_LENGTH_CHECK) {
+        /* Word-align len */
+        if (len &amp; 0x03)
+          len = (len + 3) &amp; ~0x03;
+        if (info-&gt;len != len) {
+          printk(KERN_ERR "OMAP peripheral config: Length mismatch with tag %x (want %d, got %d)\n",
+                 tag, len, info-&gt;len);
+          return NULL;
+        }
+      }
+      if (len_out != NULL)
+        *len_out = info-&gt;len;
+      return info-&gt;data;
+    }
+  }
+#endif
+  /* Try to find the config from the board-specific structures
+   * in the kernel. */
+  for (i = 0; i &lt; omap_board_config_size; i++) {
+    if (omap_board_config[i].tag == tag) {
+      if (skip == 0) {
+        kinfo = &amp;omap_board_config[i];
+        break;
+      } else {
+        skip--;
+      }
+    }
+  }
+  if (kinfo == NULL)
+    return NULL;
+  return kinfo-&gt;data;
+}
+</pre>
+<p>
+重新編譯zImage後，就可以使用/dev/ttyS2
+</p>
+<pre>
+$ dmesg | grep serial
+  [65435.071594] serial8250.0: ttyS0 at MMIO 0x4806a000 (irq = 72) is a ST16654
+  [65435.092071] serial8250.0: ttyS1 at MMIO 0x4806c000 (irq = 73) is a ST16654
+  [65435.112548] serial8250.0: ttyS2 at MMIO 0x49020000 (irq = 74) is a ST16654 
+</pre><br>
+
+<br>
+感動<br>
+<img src="fix_ttys2/1.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../../phone.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

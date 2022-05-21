@@ -1,0 +1,106 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../../header.js"></script>
+<div id="page">
+<h3>Nokia N900 &gt;&gt; Sbox</h3>
+<p><b>移植fceu 0.98.13</b></p>
+<hr size="1">
+<p>
+目前Maemo系統上的FCEU版本是0.98.13，不過移植該版本的作者並沒有將程式碼上傳到Repository，所幸FCEU 0.98.13版還可以從網路上下載，因此，司徒花了一些時間測試修改，發現改動的地方不大，使用者可以參考如下的說明步驟。
+</p>
+<pre class="brush:cpp">
+--- fceu-0.98.13/configure
++++ fceu-0.98.13_port_src/configure
+@@ -5132,7 +5132,7 @@
+   USE_SEXYAL_FALSE=
+ fi
+-  $as_echo "#define USE_SEXYAL 1" &gt;&gt;confdefs.h
++  #$as_echo "#define USE_SEXYAL 1" &gt;&gt;confdefs.h
+ fi
+@@ -5438,7 +5438,7 @@
+ fi
+-
++C80x86_FALSE='#'
+ if expr match "$target_cpu" 'i.86' &gt; /dev/null; then
+   $as_echo "#define C80x86 1" &gt;&gt;confdefs.h
+
+--- fceu-0.98.13/src/drivers/pc/sdl-sound.c
++++ fceu-0.98.13_port_src/src/drivers/pc/sdl-sound.c
+@@ -266,10 +268,11 @@
+   return(0);
+  }
+ 
++ soundrate = 44100;
+  spec.freq = soundrate;
+  spec.format = AUDIO_S16SYS;
+  spec.channels = 1;
+- spec.samples = 256;
++ spec.samples = 1024;
+  spec.callback = fillaudio;
+  spec.userdata = 0;
+ 
+@@ -278,12 +281,14 @@
+  BufferSize -= spec.samples * 2;    /* SDL uses at least double-buffering, so
+                multiply by 2. */
++ BufferSize = 8192;
+  if(BufferSize &lt; spec.samples) BufferSize = spec.samples;
+ 
+  Buffer = malloc(sizeof(int) * BufferSize);
+  BufferRead = BufferWrite = BufferIn = 0;
+ 
+- //printf("SDL Size: %d, Internal size: %d\n",spec.samples,BufferSize);
++ printf("SDL Size: %d, Internal size: %d, Freq: %d\n",
++  spec.samples, BufferSize, soundrate);
+</pre><br>
+
+<p>
+<br><a href="../../../phone.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

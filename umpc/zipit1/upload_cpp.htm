@@ -1,0 +1,501 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Zipit Z1</h3>
+<p><b>Upload程式(C/C++)</b></p>
+<hr size="1">
+<p>
+程式碼(Windows)如下：
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;assert.h&gt;
+#include &lt;string.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;assert.h&gt;
+#define verify assert
+#include &lt;windows.h&gt;
+#include &lt;conio.h&gt;
+
+HANDLE OpenSerial(int iPort)
+{
+  char szPort[32];
+  
+  sprintf(szPort, "COM%d", iPort);
+  return CreateFile(szPort, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+}
+
+void CloseSerial(HANDLE hSerial)
+{
+  CloseHandle(hSerial);
+}
+
+bool SetCommDefaultsPart1(HANDLE hSerial, int baud)
+{
+  DCB dcb;
+
+  memset(&amp;dcb, 0, sizeof(DCB));
+  dcb.DCBlength = sizeof(DCB);
+  dcb.fBinary = TRUE;
+  dcb.fParity = TRUE;
+  dcb.BaudRate = baud;
+  dcb.ByteSize = 8;
+  dcb.Parity = NOPARITY;
+  dcb.StopBits = ONESTOPBIT;
+  dcb.fOutxDsrFlow = FALSE;
+  dcb.fDtrControl = DTR_CONTROL_ENABLE;
+  dcb.fOutxCtsFlow = FALSE;
+  dcb.fRtsControl = RTS_CONTROL_ENABLE;
+  dcb.fInX = dcb.fOutX = FALSE;
+
+  if(!SetCommState(hSerial, &amp;dcb)){
+    return false;
+  }
+  return true;
+}
+
+bool SetCommDefaults(HANDLE hSerial)
+{
+  if(!SetCommDefaultsPart1(hSerial, CBR_9600)){
+    return false;
+  }
+
+  COMMTIMEOUTS to;
+  memset(&amp;to, 0, sizeof(to));
+  to.ReadIntervalTimeout = MAXDWORD;
+  if(!SetCommTimeouts(hSerial, &amp;to)){
+    return false;
+  }
+  PurgeComm(hSerial, PURGE_TXABORT | PURGE_RXABORT | PURGE_TXCLEAR | PURGE_RXCLEAR);
+  return true;
+}
+
+bool SetBaud(HANDLE hSerial, int baud)
+{
+  if(!SetCommDefaultsPart1(hSerial, baud)){
+    return false;
+  }
+  PurgeComm(hSerial, PURGE_TXABORT | PURGE_RXABORT | PURGE_TXCLEAR | PURGE_RXCLEAR);
+  return true;
+}
+
+void PurgeSerial(HANDLE hSerial)
+{
+  while(1){
+    BYTE b;
+    DWORD cbRead;
+    if(!ReadFile(hSerial, &amp;b, 1, &amp;cbRead, NULL)){
+      fprintf(stderr, "FATAL: Purge failed for serial port\n");
+      exit(-1);
+    }
+    if(cbRead == 0){
+      break;
+    }
+  }
+}
+
+bool PeekSerialByte(HANDLE hSerial, BYTE&amp; bRet)
+{
+  DWORD cbRead;
+  
+  if(!ReadFile(hSerial, &amp;bRet, 1, &amp;cbRead, NULL)){
+    fprintf(stderr, "FATAL: ReadFile failed for serial port\n");
+    exit(-1);
+  }
+  if(cbRead == 1){
+    return true;
+  }
+  return false;
+}
+
+void SendSerialBytes(HANDLE hSerial, const BYTE* pb, int cb)
+{
+  DWORD cbWrite;
+  if(!WriteFile(hSerial, pb, cb, &amp;cbWrite, NULL) || cbWrite != cb){
+    fprintf(stderr, "FATAL: WriteFile failed for serial port\n");
+    exit(-1);
+  }
+}
+
+void PrUsage(void)
+{
+  printf("usage: upl -# file.bin\n");
+  printf("  -# = port number [COM1 default]\n");
+  exit(-1);
+}
+
+bool LoadFile(const char* szInFile, byte* pbImage, int cbImage)
+{
+  FILE* pfIn = fopen(szInFile, "rb");
+  if(pfIn == NULL){
+    fprintf(stderr, "FATAL: can't open input file '%s'\n", szInFile);
+    return false;
+  }
+  fseek(pfIn, 0, SEEK_END);
+  int cbFile = ftell(pfIn);
+  fseek(pfIn, 0, SEEK_SET);
+
+  if(cbFile &lt; cbImage){
+    fclose(pfIn);
+    fprintf(stderr, "FATAL: input file '%s' wrong size\n", szInFile);
+    fprintf(stderr, "\t %d bytes (%d bytes expected)\n", cbFile, cbImage);
+    return false;
+  }
+  
+  if(cbFile &gt; cbImage){
+    printf("uploading %d bytes of %d byte file\n", cbImage, cbFile);
+  }
+
+  if(fread(pbImage, cbImage, 1, pfIn) != 1){
+    fclose(pfIn);
+    fprintf(stderr, "FATAL: read error on input file '%s'\n", szInFile);
+    return false;
+  }
+
+  if(cbFile &gt; cbImage){
+    int cbExtra = cbFile - cbImage;
+    byte* pbExtra = new byte[cbExtra];
+    assert(fread(pbExtra, cbExtra, 1, pfIn) == 1);
+    int nErr = 0;
+    for(int i=0; i&lt;cbExtra; i++){
+      if(pbExtra[i] != 0){
+        nErr++;
+      }
+    }
+
+    delete [] pbExtra;
+    if(nErr &gt; 0){
+      fclose(pfIn);
+      fprintf(stderr, "FATAL: non-zero data at end of input file '%s'\n", szInFile);
+      return false;
+    }
+  }
+  fclose(pfIn);
+  return true;
+}
+  
+FILE* g_pfLog = NULL;
+bool EchoSerial(HANDLE hSerial)
+{
+  BYTE b;
+  if(!PeekSerialByte(hSerial, b)){
+    return false;
+  }
+  if(b &gt;= 0x20 &amp;&amp; b &lt; 0x7f){
+    printf("%c", b);
+  }
+  else if(b == 0xD || b == 0xA){
+    printf("%c", b);
+  }
+  else{
+    printf("$%02x$", b);
+  }
+  
+  if(g_pfLog != NULL){
+    fputc((char)b, g_pfLog);
+  }
+  return true;
+}
+
+void EchoSerialTilEmpty(HANDLE hSerial, int nDelay)
+{
+  for(int iTry=0; iTry&lt;10; iTry++){
+    while(EchoSerial(hSerial));
+    Sleep(nDelay);
+    if(!EchoSerial(hSerial)){
+      break;
+    }
+  }
+}
+
+BYTE* LoadFile(const char* szFile, long&amp; cbRet)
+{
+  FILE* pf = fopen(szFile, "rb");
+  
+  if(pf == NULL){
+    return NULL;
+  }
+  fseek(pf, 0, SEEK_END);
+  cbRet = ftell(pf);
+  fseek(pf, 0, SEEK_SET);
+  byte* pbFile = new byte[cbRet];
+  assert(fread(pbFile, cbRet, 1, pf) == 1);
+  fclose(pf);
+  return pbFile;
+}
+
+BYTE CalcChecksum(const BYTE* pb, long cb)
+{
+  BYTE csum = 0;
+  
+  while(cb--){
+    csum += *pb++;
+  }
+  return csum;
+}
+
+bool UploadFile(HANDLE hSerial, const char* szFile, BYTE chCmd)
+{
+  long cbFile;
+  byte* pbFile = LoadFile(szFile, cbFile);
+  
+  if(pbFile == NULL){
+    printf("No %s to upload!\n", szFile);
+    return false;
+  }
+  assert(cbFile &gt; 0);
+  printf("//Uploading %ld bytes from %s\n", cbFile, szFile);
+  SendSerialBytes(hSerial, &amp;chCmd, 1);
+  SendSerialBytes(hSerial, (BYTE*)&amp;cbFile, 4);
+  Sleep(250);
+
+  //BLOCK: ZPM should reply with "BEG:xxxxxxxx" where xxxxxxxx = hex length
+  {
+    char reply[4+8+1];
+    reply[4+8] = '\0';
+    DWORD cbRead;
+    long cbAck;
+    
+    if(!ReadFile(hSerial, reply, sizeof(reply)-1, &amp;cbRead, NULL) ||
+      cbRead != sizeof(reply)-1 ||
+      memcmp(reply, "BEG:", 4) != 0 ||
+      sscanf(reply+4, "%08lX", &amp;cbAck) != 1 ||
+      cbAck != cbFile)
+    {
+      printf("Zipit is not responding - not ready to upload\n");
+      printf("\t'%s'\n", reply);
+      delete [] pbFile;
+      return false;
+    }
+  }
+  SendSerialBytes(hSerial, pbFile, cbFile);
+
+  BYTE csum = CalcChecksum(pbFile, cbFile);
+  delete [] pbFile;
+  Sleep(500);
+
+  //BLOCK: ZPM should reply with "END:xx" where xx = hex checksum
+  {
+    char reply[4+2+1];
+    reply[4+2] = '\0';
+    DWORD cbRead;
+    BYTE csumAck;
+    
+    if(!ReadFile(hSerial, reply, sizeof(reply)-1, &amp;cbRead, NULL) ||
+      cbRead != sizeof(reply)-1 ||
+      memcmp(reply, "END:", 4) != 0 ||
+      sscanf(reply+4, "%02X", &amp;csumAck) != 1)
+    {
+      printf("Zipit did not upload properly\n");
+      return false;
+    }
+    
+    if(csumAck != csum){
+      printf("Zipit uploaded incorrectly - checksum mismatch\n");
+      return false;
+    }
+  }
+    
+  printf("// done upload\n");
+  return true;
+}
+
+bool GrabFile(HANDLE hSerial, const char* szFile, long cbGrab, BYTE chCmd)
+{
+  byte* pbGrab = new byte[cbGrab];
+  
+  assert(cbGrab &gt; 0);
+  printf("//Grabbing %ld bytes from ROM - store in %s\n", cbGrab, szFile);
+
+  // send command byte, 'R'
+  SendSerialBytes(hSerial, &amp;chCmd, 1);
+  int cbSoFar = 0;
+  while (cbSoFar &lt; cbGrab){
+    DWORD cbRead = 0;
+    if(!ReadFile(hSerial, &amp;pbGrab[cbSoFar], cbGrab-cbSoFar, &amp;cbRead, NULL) || cbRead &lt;= 0){
+      printf("-");
+      Sleep(50);
+      continue;
+    }
+    printf("+");
+    assert(cbRead &gt; 0);
+    cbSoFar += cbRead;
+  }
+
+  FILE* pf = fopen(szFile, "wb");
+  verify(pf != NULL);
+  verify(fwrite(pbGrab, cbGrab, 1, pf) == 1);
+  verify(fclose(pf) == 0);
+
+  delete [] pbGrab;
+  return true;
+}
+
+BYTE g_rgbImage[2*1024];
+int main(int argc, char* argv[])
+{
+  int iPort = 1;  // default COM1
+  const char* szInputSource;
+  
+  if(argc == 3 &amp;&amp; argv[1][0] == '-'){
+    iPort = atoi(&amp;argv[1][1]);
+    szInputSource = argv[2];
+  }
+  else if(argc == 2){
+    szInputSource = argv[1];
+  }
+  else{
+    PrUsage();
+  }
+  assert(iPort &gt; 0);
+
+  int cbImage = 2*1024;
+  if(!LoadFile(szInputSource, g_rgbImage, cbImage)){
+    return -1;
+  }
+
+  HANDLE hSerial = OpenSerial(iPort);
+  if(hSerial == (HANDLE)-1){
+    fprintf(stderr, "Failed to open serial port COM%d\n", iPort);
+    exit(-1);
+  }
+
+  if(!SetCommDefaults(hSerial)){
+    fprintf(stderr, "Failed to set COM%d to 9600 baud\n", iPort);
+    CloseSerial(hSerial);
+    return -1;
+  }
+  printf("Connected\n");
+  printf("Turn on the Zipit (press button, wait for green, release)\n");
+  printf("  Wait 10 seconds, then press any key to start transfer\n");
+  printf("  (DBG pin must be grounded)\n");
+
+  int nSkip = 0;
+  BYTE bIgnore;
+  while(PeekSerialByte(hSerial, bIgnore)){
+    nSkip++;
+  }
+  
+  if(nSkip &gt; 0){
+    printf("Skipping %d left over data bytes\n");
+  }
+
+  while(_kbhit() == 0){
+    Sleep(100);
+  }
+  _getch(); // eat the character
+
+  printf("Transfering bootstrap program\n");
+  SendSerialBytes(hSerial, g_rgbImage, cbImage);
+  printf("Transfer complete\n");
+
+  Sleep(100);
+  printf("Switch to 57.6kbps\n");
+  if(!SetBaud(hSerial, 57600)){
+    printf("SET BAUD RATE ERROR!\n");
+    return -1;
+  }
+
+#if 0
+  g_pfLog = fopen("log.txt", "at"); // save session
+#endif
+
+  printf("Echo + upload commands\n");
+  printf("\tDecide what to upload\n");
+  printf("\t'A' - allrom.bin upload (2MB)\n");
+  printf("\t'a' - loader.bin upload (8K max)\n");
+  printf("\t'k' - zimage.dat upload (581K max)\n");
+  printf("\t'u' - ramdisk.gz upload (1.5MB max)\n");
+  printf("\tFollow changes with 'WYes' to write\n");
+  printf("\tOther commands\n");
+  printf("\t'R' - grab ROM\n");
+  while(1){
+    while(EchoSerial(hSerial));
+    if(_kbhit()){
+      BYTE b = _getch();
+      if(b == 'u'){
+        UploadFile(hSerial, "ramdisk.gz", b); // -&gt; ramdisk.gz
+      }
+      else if(b == 'k'){
+        UploadFile(hSerial, "zimage.dat", b); // -&gt; kernel.gz
+      }
+      else if(b == 'a'){
+        UploadFile(hSerial, "loader.bin", b); // -&gt; start of ROM image
+      }
+      else if(b == 'A'){
+        UploadFile(hSerial, "allrom.bin", b); // -&gt; start of ROM image
+      }
+      else if(b == 'R'){
+        GrabFile(hSerial, "grabrom.bin", 2*1024*1024, b);
+        printf("// grab done -- I hope...\n");
+      }
+      else if(b == 'Q'){
+        printf("// done echo mode\n");
+        break;
+      }
+      else{
+        SendSerialBytes(hSerial, &amp;b, 1);
+      }
+    }
+    Sleep(50);  // don't be a total CPU pig
+  }
+  if(g_pfLog != NULL){
+    fclose(g_pfLog);
+  }
+  g_pfLog = NULL;
+  return 0;
+}
+</pre><br>
+
+<p>
+<br><br><a href="../../umpc.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,318 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../../header.js"></script>
+<div id="page">
+<h3>Nokia N900 &gt;&gt; Native Debian &gt;&gt; Kernel 5.3.0</h3>
+<p><b>實做Lock Key功能(Kernel)</b></p>
+<hr size="1">
+<p>
+雖然可以使用xbindkeys方式實現，但是，缺點就是關閉屏幕的速度太慢，因此，司徒只好使用修改驅動程式，藉此實現Lock Key的功能，關閉屏幕就不會因CPU Usage而變慢，程式如下：
+</p>
+<pre class="brush:cpp">
+diff -Naur old/gpio_keys.c new/gpio_keys.c
+--- old/gpio_keys.c	2019-11-20 14:08:09.002930484 +0800
++++ new/gpio_keys.c	2019-11-20 14:17:09.421705901 +0800
+@@ -1,13 +1,13 @@
+-// SPDX-License-Identifier: GPL-2.0-only
+ /*
++ * SPDX-License-Identifier: GPL-2.0-only
+  * Driver for keys on GPIO lines capable of generating interrupts.
+  *
+  * Copyright 2005 Phil Blundell
+  * Copyright 2010, 2011 David Jander &lt;david@protonic.nl&gt;
++ * Copyright 2019 Steward Fu &lt;steward.fu@gmail.com&gt;
+  */
+ 
+ #include &lt;linux/module.h&gt;
+-
+ #include &lt;linux/init.h&gt;
+ #include &lt;linux/fs.h&gt;
+ #include &lt;linux/interrupt.h&gt;
+@@ -29,6 +29,12 @@
+ #include &lt;linux/spinlock.h&gt;
+ #include &lt;dt-bindings/input/gpio-keys.h&gt;
+ 
++#define LOCK_KEY 152
++int gpio_keys_lock=0;
++extern int twl4030_pwrbutton_lock;
++EXPORT_SYMBOL(gpio_keys_lock);
++int set_mylcd(int level);
++
+ struct gpio_button_data {
+ 	const struct gpio_keys_button *button;
+ 	struct input_dev *input;
+@@ -361,7 +367,8 @@
+ 	const struct gpio_keys_button *button = bdata-&gt;button;
+ 	struct input_dev *input = bdata-&gt;input;
+ 	unsigned int type = button-&gt;type ?: EV_KEY;
+-	int state;
++	int state, code, value;
++  static int pre_value=0, lcd=0;
+ 
+ 	state = gpiod_get_value_cansleep(bdata-&gt;gpiod);
+ 	if (state &lt; 0) {
+@@ -371,12 +378,29 @@
+ 	}
+ 
+ 	if (type == EV_ABS) {
+-		if (state)
+-			input_event(input, type, button-&gt;code, button-&gt;value);
+-	} else {
+-		input_event(input, type, *bdata-&gt;code, state);
+-	}
+-	input_sync(input);
++		if (state) {
++      code = button-&gt;code;
++      value = button-&gt;value;
++    }
++	} 
++  else {
++    code = *bdata-&gt;code;
++    value = state;
++	}
++
++  if ((code == LOCK_KEY) &amp;&amp; (pre_value == 1) &amp;&amp; (value == 0)) {
++    gpio_keys_lock = !gpio_keys_lock;
++    if (gpio_keys_lock) {
++      lcd = set_mylcd(0);
++    }
++    else {
++      set_mylcd(lcd);
++    }
++  }
++  pre_value = value;
++
++  input_event(input, type, code, value);
++  input_sync(input);
+ }
+ 
+ static void gpio_keys_gpio_work_func(struct work_struct *work)
+@@ -386,16 +410,26 @@
+ 
+ 	gpio_keys_gpio_report_event(bdata);
+ 
+-	if (bdata-&gt;button-&gt;wakeup)
+-		pm_relax(bdata-&gt;input-&gt;dev.parent);
++  if (bdata-&gt;button-&gt;wakeup) {
++    pm_relax(bdata-&gt;input-&gt;dev.parent);
++  }
+ }
+ 
+ static irqreturn_t gpio_keys_gpio_isr(int irq, void *dev_id)
+ {
+ 	struct gpio_button_data *bdata = dev_id;
++  const struct gpio_keys_button *button = bdata-&gt;button;
+ 
+ 	BUG_ON(irq != bdata-&gt;irq);
+ 
++  if (twl4030_pwrbutton_lock) {
++	  return IRQ_HANDLED;
++  }
++
++  if ((gpio_keys_lock) &amp;&amp; (button-&gt;code != LOCK_KEY)) {
++	  return IRQ_HANDLED;
++  }
++
+ 	if (bdata-&gt;button-&gt;wakeup) {
+ 		const struct gpio_keys_button *button = bdata-&gt;button;
+ 
+@@ -647,15 +681,16 @@
+ 
+ static void gpio_keys_report_state(struct gpio_keys_drvdata *ddata)
+ {
++  int i;
+ 	struct input_dev *input = ddata-&gt;input;
+-	int i;
+ 
+ 	for (i = 0; i &lt; ddata-&gt;pdata-&gt;nbuttons; i++) {
+ 		struct gpio_button_data *bdata = &amp;ddata-&gt;data[i];
+-		if (bdata-&gt;gpiod)
+-			gpio_keys_gpio_report_event(bdata);
++		if (bdata-&gt;gpiod) {
++  	  gpio_keys_gpio_report_event(bdata);
++    }
+ 	}
+-	input_sync(input);
++  input_sync(input);
+ }
+ 
+ static int gpio_keys_open(struct input_dev *input)
+diff -Naur old/panel-sony-acx565akm.c new/panel-sony-acx565akm.c
+--- old/panel-sony-acx565akm.c	2019-11-20 14:08:38.214850327 +0800
++++ new/panel-sony-acx565akm.c	2019-11-20 14:17:31.341664421 +0800
+@@ -52,6 +52,9 @@
+ #define MIPID_VER_LS041Y3		4
+ #define MIPID_VER_L4F00311		8
+ #define MIPID_VER_ACX565AKM		9
++	
++static struct panel_drv_data *mylcd;
++int set_mylcd(int level);
+ 
+ struct panel_drv_data {
+ 	struct omap_dss_device	dssdev;
+@@ -333,6 +336,13 @@
+ 	return bv;
+ }
+ 
++int set_mylcd(int level)
++{
++  int ret = acx565akm_get_actual_brightness(mylcd);
++  acx565akm_set_brightness(mylcd, level);
++  return ret;
++}
++EXPORT_SYMBOL(set_mylcd);
+ 
+ static int acx565akm_bl_update_status(struct backlight_device *dev)
+ {
+@@ -849,6 +859,7 @@
+ 		goto err_reg;
+ 	}
+ 
++  mylcd = ddata;
+ 	return 0;
+ 
+ err_reg:
+diff -Naur old/twl4030_keypad.c new/twl4030_keypad.c
+--- old/twl4030_keypad.c	2019-11-20 14:08:13.906916875 +0800
++++ new/twl4030_keypad.c	2019-11-20 14:17:18.817688068 +0800
+@@ -4,6 +4,7 @@
+  *
+  * Copyright (C) 2007 Texas Instruments, Inc.
+  * Copyright (C) 2008 Nokia Corporation
++ * Copyright (C) 2019 Steward Fu &lt;steward.fu@gmail.com&gt;
+  *
+  * Code re-written for 2430SDP by:
+  * Syed Mohammed Khasim &lt;x0khasim@ti.com&gt;
+@@ -44,6 +45,9 @@
+ #define TWL4030_ROW_SHIFT	4
+ #define TWL4030_KEYMAP_SIZE	(TWL4030_MAX_ROWS &lt;&lt; TWL4030_ROW_SHIFT)
+ 
++extern int gpio_keys_lock;
++extern int twl4030_pwrbutton_lock;
++
+ struct twl4030_keypad {
+ 	unsigned short	keymap[TWL4030_KEYMAP_SIZE];
+ 	u16		kp_state[TWL4030_MAX_ROWS];
+@@ -231,7 +235,7 @@
+ 			code = MATRIX_SCAN_CODE(row, col, TWL4030_ROW_SHIFT);
+ 			input_event(input, EV_MSC, MSC_SCAN, code);
+ 			input_report_key(input, kp-&gt;keymap[code],
+-					 new_state[row] &amp; (1 &lt;&lt; col));
++				new_state[row] &amp; (1 &lt;&lt; col));
+ 		}
+ 		kp-&gt;kp_state[row] = new_state[row];
+ 	}
+@@ -246,9 +250,17 @@
+ 	struct twl4030_keypad *kp = _kp;
+ 	u8 reg;
+ 	int ret;
++  
++  if (twl4030_pwrbutton_lock) {
++	  return IRQ_HANDLED;
++  }
+ 
+ 	/* Read &amp; Clear TWL4030 pending interrupt */
+ 	ret = twl4030_kpread(kp, &amp;reg, KEYP_ISR1, 1);
++  
++  if (gpio_keys_lock) {
++	  return IRQ_HANDLED;
++  }
+ 
+ 	/*
+ 	 * Release all keys if I2C has gone bad or
+diff -Naur old/twl4030-pwrbutton.c new/twl4030-pwrbutton.c
+--- old/twl4030-pwrbutton.c	2019-11-20 14:08:02.750947929 +0800
++++ new/twl4030-pwrbutton.c	2019-11-20 14:16:58.997725780 +0800
+@@ -2,6 +2,7 @@
+  * twl4030-pwrbutton.c - TWL4030 Power Button Input Driver
+  *
+  * Copyright (C) 2008-2009 Nokia Corporation
++ * Copyright (C) 2019 Steward Fu &lt;steward.fu@gmail.com&gt;
+  *
+  * Written by Peter De Schrijver &lt;peter.de-schrijver@nokia.com&gt;
+  * Several fixes by Felipe Balbi &lt;felipe.balbi@nokia.com&gt;
+@@ -30,18 +31,27 @@
+ #include &lt;linux/mfd/twl.h&gt;
+ 
+ #define PWR_PWRON_IRQ (1 &lt;&lt; 0)
+-
+ #define STS_HW_CONDITIONS 0xf
+ 
++int twl4030_pwrbutton_lock=0;
++EXPORT_SYMBOL(twl4030_pwrbutton_lock);
++
+ static irqreturn_t powerbutton_irq(int irq, void *_pwr)
+ {
+ 	struct input_dev *pwr = _pwr;
+ 	int err;
+ 	u8 value;
++  static int pre_value=0;
+ 
+ 	err = twl_i2c_read_u8(TWL_MODULE_PM_MASTER, &amp;value, STS_HW_CONDITIONS);
+ 	if (!err)  {
+ 		pm_wakeup_event(pwr-&gt;dev.parent, 0);
++    value&amp;= PWR_PWRON_IRQ;
++    if ((pre_value == 1) &amp;&amp; (value == 0)) {
++      twl4030_pwrbutton_lock = !twl4030_pwrbutton_lock;
++    }
++    pre_value = value;
++
+ 		input_report_key(pwr, KEY_POWER, value &amp; PWR_PWRON_IRQ);
+ 		input_sync(pwr);
+ 	} else {
+</pre>
+<p>
+P.S. 或者將LOCK_KEY改成10就可以在關上屏幕時，關閉背光亮度。
+</p>
+
+<p>
+<br><a href="../../../phone.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

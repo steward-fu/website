@@ -1,0 +1,265 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>PMP V &gt;&gt; Assembly</h3>
+<p><b>PLL</b></p>
+<hr size="1">
+<p>
+main.s
+</p>
+<pre class="brush:asm">
+  .equiv zero,  $0
+  .equiv at,    $1
+  .equiv v0,    $2
+  .equiv v1,    $3
+  .equiv a0,    $4
+  .equiv a1,    $5
+  .equiv a2,    $6
+  .equiv a3,    $7
+  .equiv t0,    $8
+  .equiv t1,    $9
+  .equiv t2,    $10
+  .equiv t3,    $11
+  .equiv t4,    $12
+  .equiv t5,    $13
+  .equiv t6,    $14
+  .equiv t7,    $15
+  .equiv s0,    $16
+  .equiv s1,    $17
+  .equiv s2,    $18
+  .equiv s3,    $19
+  .equiv s4,    $20
+  .equiv s5,    $21
+  .equiv s6,    $22
+  .equiv s7,    $23
+  .equiv t8,    $24
+  .equiv t9,    $25
+  .equiv k0,    $26
+  .equiv k1,    $27
+  .equiv gp,    $28
+  .equiv sp,    $29
+  .equiv fp,    $30
+  .equiv ra,    $31
+
+  .equiv CPCCR,   0xb0000000
+  .equiv CPPCR,   0xb0000010
+  .equiv CLKGR,   0xb0000020
+  .equiv UHCCDR,  0xb000006c
+  .equiv URBR0,   0xb0030000
+  .equiv UDLLR0,  0xb0030000
+  .equiv UDLHR0,  0xb0030004
+  .equiv UIER0,   0xb0030004
+  .equiv UFCR0,   0xb0030008
+  .equiv ULCR0,   0xb003000c
+  .equiv ULSR0,   0xb0030014
+  .equiv ISR0,    0xb0030020
+  .equiv PCFUNS,  0xb0010244
+  .equiv PCTRGC,  0xb0010278
+  .equiv PCSELS,  0xb0010254
+
+  .globl _start
+  .set noreorder
+  .text
+.ifdef STAGE2
+  .word 0x555555ff
+  .word 0x55555555
+  .byte 0xff
+  .byte 0xff
+  .byte 0xff
+  .byte 0x00
+.endif
+_start:
+  nop
+  li v0, 0x00400004 # disable interrupt
+  mtc0 v0, $12
+  li v1, 0x00800000 # clear cause content
+  mtc0 v1, $13
+  li sp, 0x80004000
+  jal uart_init
+  nop
+  jal delay
+  li a0, 100
+  jal uart_char
+  li a0, '0'
+  jal pll_init
+  nop
+  jal uart_char
+  li a0, '1'
+  nop
+end: 
+  b end
+
+pll_init:
+  li v0, 6
+  sw v0, UHCCDR
+  li v0, 0x40222220
+  sw v0, CPCCR
+  li v0, 0x1d000120
+  sw v0, CPPCR
+  lw v0, CPCCR
+  ori v0, 0x40
+  sw v0, CPCCR
+0:
+  lw v0, CPPCR
+  andi v0, 0x400
+  beqz v0, 0b
+  nop
+  jr ra
+  nop
+
+uart_init:
+  li v0, 0x1000
+  sw v0, PCFUNS
+  sw v0, PCTRGC
+  sw v0, PCSELS
+  lw v0, CLKGR
+  li v1, 0xfffffffe
+  and v0, v1
+  sw v0, CLKGR
+  sb zero, UIER0
+  li v0, 0xef
+  sb v0, UFCR0
+  li v0, 0xfc
+  sb v0, ISR0
+  li v0, 0x03
+  sb v0, ULCR0
+  lbu v0, ULCR0
+  ori v0, 0x80
+  sb v0, ULCR0
+  sb zero, UDLHR0
+  li v0, 0x0d
+  sb v0, UDLLR0 # 57600bps
+  lbu v0, ULCR0
+  li v1, 0x7f
+  and v0, v1
+  sb v0, ULCR0
+  li v0, 0x17
+  sb v0, UFCR0
+  jr ra
+  nop
+
+uart_char:
+  sb a0, URBR0
+0:
+  lbu v0, ULSR0
+  andi v0, 0x60
+  li v1, 0x60
+  bne v0, v1, 0b
+  nop
+  jr ra
+  nop
+
+delay:
+  li v0, 180
+  mul a0, v0
+0:
+  bnez a0, 0b
+  addiu a0, -1
+  jr ra
+  nop
+
+</pre><br>
+
+<p>
+main.ld
+</p>
+<pre>
+OUTPUT_ARCH(mips)
+ENTRY(_start)
+
+MEMORY
+{
+  low8k  : ORIGIN = 0x80000000 , LENGTH = 0x2000
+  high8k  : ORIGIN = 0x80002000 , LENGTH = 0x2000
+}
+
+SECTIONS
+{
+  .text : {
+    *(.text.1)
+    *(.text.0)
+  } &gt; low8k
+
+  .data : {
+    . = ALIGN(4);
+    *(.rodata*) *(.data*) *(.scommon*) *(.reginfo*)
+  } &gt; low8k
+
+  .bss : {
+    . = ALIGN(4);
+    _bss_start = ABSOLUTE(.);
+    *(.sbss*) *(.bss*)
+    . = ALIGN(4);
+    _bss_end = ABSOLUTE(.);
+  } &gt; high8k
+
+  __stack = 0x80004000;
+}
+</pre><br>
+
+<p>
+Makefile
+</p>
+<pre>
+all:
+  mipsel-linux-as -o main.o main.s --defsym=STAGE1=1
+  mipsel-linux-ld -T main.ld -o main.elf main.o
+  mipsel-linux-objcopy -O binary main.elf stage1.bin
+
+clean:
+  rm -rf main.o main.elf main.bin stage1.bin
+</pre><br>
+
+<p>
+<br><a href="../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

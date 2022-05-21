@@ -1,0 +1,136 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>OpenCV &gt;&gt; C/C++</h3>
+<p><b>fast line detector</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://docs.opencv.org/master/examples.html">example</a><br>
+2. <a href="https://docs.opencv.org/master/df/ded/group__ximgproc__fast__line__detector.html#gaa9636e5033cd2939ec50810f2b2bd853">createFastLineDetector</a><br><br>
+
+prototype
+</p>
+<pre class="brush:cpp">
+Ptr&lt;FastLineDetector&gt; cv::ximgproc::createFastLineDetector(
+  int _length_threshold = 10,
+  float _distance_threshold = 1.414213562f,
+  double _canny_th1 = 50.0,
+  double _canny_th2 = 50.0,
+  int _canny_aperture_size = 3,
+  bool _do_merge = false);
+</pre><br>
+<p>
+main.cpp
+</p>
+<pre class="brush:cpp">
+#include &lt;iostream&gt;
+#include &lt;opencv2/imgproc.hpp&gt;
+#include &lt;opencv2/ximgproc.hpp&gt;
+#include &lt;opencv2/imgcodecs.hpp&gt;
+#include &lt;opencv2/highgui.hpp&gt;
+#include &lt;opencv2/imgproc/imgproc.hpp&gt;
+ 
+using namespace std;
+using namespace cv;
+using namespace cv::ximgproc;
+ 
+int main(int argc, char** argv)
+{
+  Mat image = imread("main.jpg", IMREAD_GRAYSCALE);
+  if(image.empty()){
+    printf("failed to load image\n");
+    return -1;
+  }
+  
+  Ptr&lt;FastLineDetector&gt; fld = createFastLineDetector();
+  vector&lt;Vec4f&gt; lines_fld;
+  lines_fld.clear();
+  fld-&gt;detect(image, lines_fld);
+
+  Mat line_image_fld(image);
+  fld-&gt;drawSegments(line_image_fld, lines_fld);
+  imshow("FLD result", line_image_fld);
+  waitKey();
+  return 0;
+}
+</pre><br>
+
+<p>
+CMakeLists.txt
+</p>
+<pre>
+cmake_minimum_required(VERSION 2.8)
+project(main)
+find_package(OpenCV REQUIRED)
+include_directories(${OpenCV_INCLUDE_DIRS})
+add_executable(main main.cpp)
+target_link_libraries(main ${OpenCV_LIBS})
+</pre><br>
+
+<p>
+編譯並且執行
+</p>
+<pre>
+$ cmake .
+$ make
+$ ./main
+</pre><br>
+
+<p>
+完成<br>
+<img src="cpp_fld/1.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../program.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,449 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../../header.js"></script>
+<div id="page">
+<h3>Nokia N900 &gt;&gt; Sbox</h3>
+<p><b>移植fceu-gui</b></p>
+<hr size="1">
+<p>
+目前N900可以下載的NES(FC)模擬器有iNES和FCEU兩個，其中只有iNES有支援中文檔名選取，不過iNES使用系統預設的檔案選取對話盒，選取的效能相當差，檔案數量多時，效能真是差到無法想像；而FCEU的選取效能也沒有好到那哪去，因此，司徒打算尋找更好的解決方式，而在使用過gpsp-gui後，司徒已經有了一個目標，那就是移植gpsp-gui，最後，司徒花了一些的時間移植並重新編譯測試，最終完成移植，步驟如下說明。<br><br>
+
+iNES可以支援中文檔名，不過選取效能很差，加上預設視窗並非全螢幕，而且無法重新對應按鍵，整體的體驗相當差<br>
+<img src="port_fceu_gui-ex/1.jpg" class="maxSize"><br><br>
+
+雖然FCEU-GUI不支援中文檔名，不過預設視窗是全螢幕視窗，爽度還是比較好一些<br>
+<img src="port_fceu_gui-ex/2.jpg" class="maxSize"><br><br>
+
+司徒移植的FCEU-GUI Ex，支援中文檔名以及相當好的選取效能<br>
+<img src="port_fceu_gui-ex/3.jpg" class="maxSize"><br><br>
+
+為何司徒會使用gpspmgui呢？因為在N900上，gpspmgui算是司徒使用過的介面中，擁有最佳的檔案選取介面，字體夠大、圖示夠美、捲動速度夠快以及介面夠簡單等優點，其中以<b>捲動速度夠快</b>最讓司徒滿意，因此，成為司徒的移植首選，目前司徒移植的gpspmgui版本是3.1.6-1版，這個版本是司徒從Maemo Repository取得的最新版程式，使用者也可以使用如下指令編譯測試：
+</p>
+<pre>
+$ cd
+$ wget https://github.com/steward-fu/n900/releases/download/v1.1/gpspmgui-3.1.6.7z
+$ 7zr x gpspmgui-3.1.6.7z
+$ cd gpspmgui-3.1.6
+$ qmake
+$ make
+</pre>
+<p>
+基本上，編譯的結果必須是成功的，這樣才可以繼續做移植的工作。<br><br>
+
+修改的檔案：
+<pre class="brush:cpp">
++++ fceuguiex-0.0.1/src/coredialog.cpp
+--- gpspmgui-3.1.6/src/coredialog.cpp
+void CoreDialog::load()
+{
+  // 隱藏Miscellaneous Label(Core configuration)
++ ui-&gt;miscLabel-&gt;hide();
+
+  // 隱藏Accelerometer Box(Core configuration)
++ ui-&gt;accelerometerBox-&gt;hide();
+ 
+  // 隱藏Autopause Box(Core configuration)
++ ui-&gt;autopauseBox-&gt;hide();
+ 
+  // 刪除Sound buffer Button(Core configuration)相關資源
++ //ui-&gt;soundBufferButton-&gt;setPickSelector(selector);
+- ui-&gt;soundBufferButton-&gt;setPickSelector(selector);
+ 
+  // 支援原始、等比放大和全螢幕顯示
++ //model-&gt;appendRow(new QStandardItem(tr("Original")));
++ //model-&gt;appendRow(new QStandardItem(tr("Scale to fit")));
++ //model-&gt;appendRow(new QStandardItem(tr("Fit entire screen")));
+- model-&gt;appendRow(new QStandardItem(tr("Double")));
+- model-&gt;appendRow(new QStandardItem(tr("Triple")));
+  
+  // 只支援Scanlines和TV Blur效果
++ model-&gt;appendRow(new QStandardItem(tr("Scanlines")));
++ model-&gt;appendRow(new QStandardItem(tr("TV Blur")));
++ //model-&gt;appendRow(new QStandardItem(tr("Eagle2x")));
+- model-&gt;appendRow(new QStandardItem(tr("Scale2x")));
+- model-&gt;appendRow(new QStandardItem(tr("Scale3x")));
+- model-&gt;appendRow(new QStandardItem(tr("Eagle2x")));
+  
+  // 隱藏Frameskip type Button(Core configuration)
++ ui-&gt;frameskipTypeButton-&gt;hide();
+ 
+  // 隱藏Frameskip value Button(Core configuration)
++ ui-&gt;frameskipValueButton-&gt;hide();
+ 
+  // 隱藏Ransom skip Button(Core configuration) 
++ ui-&gt;frameskipRandomBox-&gt;hide();
+ 
+  // 隱藏Execute before Edit(Core configuration)
++ ui-&gt;beforeEdit-&gt;hide();
+ 
+  // 隱藏Execute after Edit(Core configuration)
++ ui-&gt;afterEdit-&gt;hide();
+
+  // 隱藏Custom commands Label(Core configuration)
++ ui-&gt;commandsLabel-&gt;hide();
+}
+ 
+void CoreDialog::save()
+{
+  // 刪除Sound buffer Button(Core configuration)相關資源
++ //config-&gt;soundBuffer     = static_cast&lt;QMaemo5ListPickSelector*&gt;(ui-&gt;soundBufferButton-&gt;pickSelector())-&gt;currentIndex();
+- config-&gt;soundBuffer     = static_cast&lt;QMaemo5ListPickSelector*&gt;(ui-&gt;soundBufferButton-&gt;pickSelector())-&gt;currentIndex();
+}
+
++++ fceuguiex-0.0.1/src/coredialog.ui
+--- gpspmgui-3.1.6/src/coredialog.ui
+  // 展開Disable sound Button(Core configuration)
++ &lt;item row="3" column="0" colspan="2"&gt;
+- &lt;item row="3" column="0"&gt;
+          
+  // 刪除Sound buffer Button(Core configuration)相關資源
+- &lt;/property&gt;
+- &lt;/widget&gt;
+- &lt;/item&gt;
+- &lt;item row="3" column="1"&gt;
+- &lt;widget class="QMaemo5ValueButton" name="soundBufferButton"&gt;
+- &lt;property name="text"&gt;
+- &lt;string&gt;Sound buffer&lt;/string&gt;
+- &lt;/property&gt;
+- &lt;property name="valueLayout"&gt;
+- &lt;enum&gt;QMaemo5ValueButton::ValueUnderTextCentered&lt;/enum&gt;
+
++++ fceuguiex-0.0.1/src/gpspmgui.pro<br>
+--- gpspmgui-3.1.6/src/gpspmgui.pro
+// 修改輸出檔名
++ TARGET = fceuguiex
+- TARGET = gpspmgui
+
++++ fceuguiex-0.0.1/src/keysconfig.cpp<br>
+--- gpspmgui-3.1.6/src/keysconfig.cpp
+
+// 修改按鍵配置
+const char* KeysConfig::name[] = {
++ "RapidA",
++ "RapidB",
+- "L",
+- "R",
+- "LeftUp",
+- "RightUp",
+- "LeftDown",
+- "RightDown",
+- "LoadState",
+- "SaveState",
+- "FastForward",
+- "ShowFPS",
+- "Quit",
+- "Pause"
+};
+ 
+// 修改按鍵顯示名稱 
+const char* KeysConfig::displayName[] = {
++ "Rapid A",
++ "Rapid B",
+- "L",
+- "R",
+- "Left - Up",
+- "Right - Up",
+- "Left - Down",
+- "Right - Down",
+- "Load State",
+- "Save State",
+- "Fast Forward",
+- "Show FPS",
+- "Quit",
+- "Pause"
+};
+
++++ fceuguiex-0.0.1/src/keysconfig.h
+--- gpspmgui-3.1.6/src/keysconfig.h
+class KeysConfig : public AbstractConfig
+{
+ // 修改按鍵數量
+ enum {
++ RapidA,
++ RapidB,
+- L,
+- R,
+- Left_Up,
+- Right_Up,
+- Left_Down,
+- Right_Down,
+- LoadState,
+- SaveState,
+- FastForward,
+- ShowFPS,
+- Quit,
+- Pause,
+};
+
++++ fceuguiex-0.0.1/src/keysdialog.h
+--- gpspmgui-3.1.6/src/keysdialog.h
+ // 新增需要的Widget Include File
++ #include &lt;QMessageBox&gt;
++ #include &lt;QString&gt;
++ #include &lt;QProcess&gt;
++ #include &lt;QDir&gt;
++ #include &lt;QFile&gt;
++ #include &lt;QTextStream&gt;
+
++++ fceuguiex-0.0.1/src/launchdialog.cpp
+--- gpspmgui-3.1.6/src/launchdialog.cpp
+LaunchDialog::LaunchDialog(QFileInfo romFile, QIcon cover, QWidget *parent) : QDialog(parent), ui(new Ui::LaunchDialog)
+{
+ // 隱藏Core configuration和Keys configuration
++ ui-&gt;coreConfigButton-&gt;hide();
++ ui-&gt;keysConfigButton-&gt;hide();
+ 
+ // 隱藏Custom settings和Custom keys Buttons
++ ui-&gt;customCoreBox-&gt;hide();
++ ui-&gt;customKeysBox-&gt;hide();
+}
+ 
+void LaunchDialog::configureKeys()
+{
+  // 不使用鍵盤配置(使用FCEU自帶的鍵盤配置)
++ //(new KeysDialog(&amp;keysConfig, this))-&gt;exec();
+- (new KeysDialog(&amp;keysConfig, this))-&gt;exec();
+}
+
++++ fceuguiex-0.0.1/src/launcher.cpp
+--- gpspmgui-3.1.6/src/launcher.cpp
+void Launcher::launch()
+{
+  // /opt/fceu/fceu -fs x -efxfs x -gg 0 -sound x romFile
++ cmd &lt;&lt; Path::emuExe();
++ cmd &lt;&lt; "-fs" &lt;&lt; QString::number(coreConfig-&gt;scale ? 1:0);
+  // 原始螢幕、等比放大和全螢幕768x480
++ if(coreConfig-&gt;scale == 0){
++  cmd &lt;&lt; "-xscalefs 1";
++  cmd &lt;&lt; "-yscalefs 1";
++ }
++ else if(coreConfig-&gt;scale == 1){
++  cmd &lt;&lt; "-xscalefs 2";
++  cmd &lt;&lt; "-yscalefs 2";
++ }
++ else{
++  cmd &lt;&lt; "-xscalefs 3";
++  cmd &lt;&lt; "-yscalefs 2";
++ }
++ cmd &lt;&lt; "-efxfs" &lt;&lt; QString::number(coreConfig-&gt;filter);
++ cmd &lt;&lt; "-gg 0 -bpp 16";
++ if(coreConfig-&gt;soundDisabled){
++  cmd &lt;&lt; "-sound 0";
++ }
++ else{
++  cmd &lt;&lt; "-sound 1";
++ }
++ cmd &lt;&lt; quote(romFile);
+- cmd &lt;&lt; Path::emuExe() &lt;&lt; quote(romFile) &lt;&lt; "--keys" &lt;&lt; keysFilePath;
+- if (coreConfig-&gt;accelerometer)      cmd &lt;&lt; "--accelerometer";
+- cmd &lt;&lt; "--accelerometer-deadzone" &lt;&lt; QString::number(accelerometerConfig-&gt;deadzone);
+- cmd &lt;&lt; "--accelerometer-pitch"    &lt;&lt; QString::number(accelerometerConfig-&gt;pitch);
+- cmd &lt;&lt; "--accelerometer-roll"     &lt;&lt; QString::number(accelerometerConfig-&gt;roll);
+- if (accelerometerConfig-&gt;calibrate) cmd &lt;&lt; "--accelerometer-calibrate";
+- if (coreConfig-&gt;autopause)          cmd &lt;&lt; "--autopause";
+- cmd &lt;&lt; "--scale"           &lt;&lt; QString::number(coreConfig-&gt;scale);
+- cmd &lt;&lt; "--filter"          &lt;&lt; QString::number(coreConfig-&gt;filter);
+- cmd &lt;&lt; "--frameskip-type"  &lt;&lt; QString::number(coreConfig-&gt;frameskipType);
+- cmd &lt;&lt; "--frameskip-value" &lt;&lt; QString::number(coreConfig-&gt;frameskipValue);
+- if (coreConfig-&gt;frameskipRandom)    cmd &lt;&lt; "--random-frameskip";
+- if (coreConfig-&gt;soundDisabled)      cmd &lt;&lt; "--no-sound";
+- cmd &lt;&lt; "--sound-buffer"    &lt;&lt; QString::number(coreConfig-&gt;soundBuffer);
+}
+
++++ fceuguiex-0.0.1/src/launcher.h
+--- gpspmgui-3.1.6/src/launcher.h
+  // Debug用的MessageBox
++ #include &lt;QMessageBox&gt;
+
++++ fceuguiex-0.0.1/src/main.cpp
+--- gpspmgui-3.1.6/src/main.cpp
+int main(int argc, char  *argv[])
+{
+  // 設定專案名稱
++ QApplication::setOrganizationName("fceuguiex");
++ QApplication::setApplicationName("fceuguiex");
++ QApplication::setApplicationVersion("1");
+- QApplication::setOrganizationName("gpspmgui");
+- QApplication::setApplicationName("gpspmgui");
+- QApplication::setApplicationVersion("3");
+}
+
++++ fceuguiex-0.0.1/src/mainwindow.cpp
+--- gpspmgui-3.1.6/src/mainwindow.cpp
+MainWindow::MainWindow() : ui(new Ui::MainWindow)
+{
+  // 刪除Accelerometer相關資源
++ //connect(ui->accelerometerAction, SIGNAL(triggered()), this, SLOT(openAccelerometerDialog()));
+- connect(ui->accelerometerAction, SIGNAL(triggered()), this, SLOT(openAccelerometerDialog()));
+}
+ 
+void MainWindow::listRoms()
+{
+  // 設定支援的副檔名
++ QStringList filters = QStringList() &lt;&lt; "*.nes";
+- QStringList filters = QStringList() &lt;&lt; "*.gba" &lt;&lt; "*.zip";
+}
+ 
+void MainWindow::openFile()
+{
+  // 設定支援的副檔名
++ QString romFile = QFileDialog::getOpenFileName(this, tr("Select ROM"), Path::romDir(), tr("NES ROMs (*.nes)"));
+- QString romFile = QFileDialog::getOpenFileName(this, tr("Select ROM"), Path::romDir(), tr("GBA ROMs (*.gba *.zip)"));
+}
+ 
+void MainWindow::openKeysDialog()
+{
+  // 不使用鍵盤配置(使用FCEU自帶的鍵盤配置)
++ //KeysConfig config(Path::cfgFile());
+- KeysConfig config(Path::cfgFile());
+ 
++ //(new KeysDialog(&amp;config, this))->exec();
+- (new KeysDialog(&amp;config, this))->exec();
+
+  // opt/fceu/fceu -inputcfg gamepad1 dummy
++ //QDir().mkpath(Path::emuDir());
++ //config.write(Path::emuDir() - "keys");
++ QString launchFilePath="/home/user/.config/fceuguiex/keylaunch";
++ QFile launchFile(launchFilePath);
++ launchFile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate);
++ QTextStream(&amp;launchFile)
++ &lt;&lt; "#!/bin/sh"                               &lt;&lt; "\n"
++ &lt;&lt; "/opt/fceu/fceu -inputcfg gamepad1 dummy" &lt;&lt; "\n";
++ launchFile.close();
++ launchFile.setPermissions(launchFile.permissions() | QFile::ExeOwner);
++ QProcess::startDetached(launchFilePath);
+- QDir().mkpath(Path::emuDir());
+- config.write(Path::emuDir() - "keys");
+}
+
++++ fceuguiex-0.0.1/src/mainwindow.ui
+--- gpspmgui-3.1.6/src/mainwindow.ui
+  // 移除Accelerometer Button
+- &lt;addaction name="accelerometerAction"/&gt;
+
+- &lt;/property&gt;
+- &lt;/action&gt;
+- &lt;action name="accelerometerAction"&gt;
+- &lt;property name="text"&gt;
+- &lt;string&gt;Accelerometer&lt;/string&gt;
+
++++ fceuguiex-0.0.1/src/path.h
+--- gpspmgui-3.1.6/src/path.h
+static QString emuDir()
+{
+  // 修改配置檔位置
++ return (path.isEmpty() ? getenv("HOME") - QString("/.config") : path) - "/fceuguiex/";
+- return (path.isEmpty() ? getenv("HOME") - QString("/.config") : path) - "/gpspm/";
+}
+ 
+static QString emuRoot()
+{
+  // 修改成FCEU路徑
++ return "/opt/fceu/";
+- return "/opt/gpspm/";
+}
+ 
+static QString emuExe()
+{
+  // 修改成FCEU
++ return emuRoot() - "fceu";
+- return emuRoot() - "gpspm";
+}
+
++++ fceuguiex-0.0.1/src/settingsdialog.cpp
+--- gpspmgui-3.1.6/src/settingsdialog.cpp
+SettingsDialog::SettingsDialog(QWidget *parent) : QDialog(parent), ui(new Ui::SettingsDialog)
+{
+  // 隱藏BIOS Button
++ ui-&gt;biosButton-&gt;hide();
++ ui-&gt;biosClearButton-&gt;hide();
+}
+
++++ fceuguiex-0.0.1/src/src.pro
+--- gpspmgui-3.1.6/src/src.pro
+ // 修改專案名稱
++ TARGET = fceuguiex
+- TARGET = gpspmgui
+</pre>
+<p>
+接著覆蓋掉fceu-gui.sh並執行fceu-gui程式即可<br><br>
+
+執行後，直接列出遊戲列表<br>
+<img src="port_fceu_gui-ex/4.jpg" class="maxSize"><br><br>
+
+四個主選單設定<br>
+<img src="port_fceu_gui-ex/5.jpg" class="maxSize"><br><br>
+
+General settings的設定內容<br>
+<img src="port_fceu_gui-ex/6.jpg" class="maxSize"><br><br>
+
+Core settings的設定內容<br>
+<img src="port_fceu_gui-ex/7.jpg" class="maxSize"><br><br>
+
+支援原始解析度、等比放大和全螢幕<br>
+<img src="port_fceu_gui-ex/8.jpg" class="maxSize"><br><br>
+
+支援的顯示效果<br>
+<img src="port_fceu_gui-ex/9.jpg" class="maxSize"><br><br>
+
+原始解析度<br>
+<img src="port_fceu_gui-ex/10.jpg" class="maxSize"><br><br>
+
+等比放大<br>
+<img src="port_fceu_gui-ex/11.jpg" class="maxSize"><br><br>
+
+全螢幕<br>
+<img src="port_fceu_gui-ex/12.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../../phone.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

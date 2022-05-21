@@ -1,0 +1,140 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Nokia N900</h3>
+<p><b>連接USB RJ-45網卡(QF9700)</b></p>
+<hr size="1">
+<p>
+N900支援USB Host模式(需使用Power Kernel)，使用者可以很方便連接USB網卡，雖然大部份的Linux Kernel，預設都有支援市面上常見的USB網卡，不過剛好司徒購買的這款QF9700 USB網卡，Power Kernel並沒有支援，因此，司徒只好自己手動編譯掛載，為了編譯QF9700驅動程式，使用者需要先下載Power Kernel程式碼(請參考司徒的其它文章)，準備好後，使用如下方式編譯：
+</p>
+<pre>
+$ cd
+$ wget https://github.com/steward-fu/n900/releases/download/v1.1/qf9700.7z
+$ 7za x qf9700.7z
+$ cd qf9700
+$ make
+  Building QF9700 USB2NET chip driver...
+  make[1]: Entering directory `/home/user/Scratchbox/usr/src/kernel-src-n900_power-2.6.28'
+    CC [M]  /home/user/Scratchbox/usr/src/gh_n900_qf9700/qf9700.o
+    Building modules, stage 2.
+    MODPOST 1 modules
+    CC      /home/user/Scratchbox/usr/src/gh_n900_qf9700/qf9700.mod.o
+    LD [M]  /home/user/Scratchbox/usr/src/gh_n900_qf9700/qf9700.ko
+  make[1]: Leaving directory `/home/user/Scratchbox/usr/src/kernel-src-n900_power-2.6.28'
+</pre>
+
+<p>
+Makefile裡面的KERNEL_DIR變數，請指定到Power Kernel的所在位置。<br><br>
+
+主角登場(QF9700 USB轉RJ-45網卡)<br>
+<img src="qf9700/1.jpg" class="maxSize"><br><br>
+
+背面照<br>
+<img src="qf9700/2.jpg" class="maxSize"><br><br>
+
+接著使用USB Mode程式切換成USB Host模式(請參考司徒的其它文章)並插入QF9700 USB轉RJ-45網卡<br>
+<img src="qf9700/3.jpg" class="maxSize"><br><br>
+
+接著掛載剛剛編譯完的QF9700 Driver
+</p>
+<pre>
+$ uname -r
+  2.6.28.10-power53
+
+$ sudo modprobe mii
+$ sudo modprobe usbnet
+$ sudo insmod qf9700.ko
+$ dmesg
+  [100823.770294] usb 1-1: New USB device found, idVendor=1a40, idProduct=0101
+  [100823.770294] usb 1-1: New USB device strings: Mfr=0, Product=1, SerialNumber=0
+  [100823.770324] usb 1-1: Product: USB 2.0 Hub
+  [100823.770355] hub 1-0:1.0: state 7 ports 1 chg 0000 evt 0002
+  [100823.770385] hub 1-0:1.0: port 1 enable change, status 00000503
+  [100823.867889] hub 1-1:1.0: port 1: status 0101 change 0001
+  [100823.969390] hub 1-1:1.0: state 7 ports 4 chg 0002 evt 0000
+  [100823.969543] hub 1-1:1.0: port 1, status 0101, change 0000, 12 Mb/s
+  [100824.055328] usb 1-1.1: new full speed USB device using musb_hdrc and address 7
+  [100824.166534] usb 1-1.1: default language 0x0409
+  [100824.167633] usb 1-1.1: uevent
+  [100824.167785] usb 1-1.1: usb_probe_device
+  [100824.167785] usb 1-1.1: configuration #1 chosen from 1 choice
+  [100824.168518] usb 1-1.1: adding 1-1.1:1.0 (config #1, interface 0)
+  [100824.168701] usb 1-1.1:1.0: uevent
+  [100824.169616] drivers/usb/core/inode.c: creating file '007'
+  [100824.169982] usb 1-1.1: New USB device found, idVendor=0fe6, idProduct=9700
+  [100824.170013] usb 1-1.1: New USB device strings: Mfr=0, Product=2, SerialNumber=0
+  [100824.170013] usb 1-1.1: Product: USB 2.0 10/100M Ethernet Adaptor
+  [100827.256713] qf9700 1-1.1:1.0: usb_probe_interface
+  [100827.256744] qf9700 1-1.1:1.0: usb_probe_interface - got id
+  [100827.368865] eth0: register 'qf9700' at usb-musb_hdrc-1.1, QF9700 USB Ethernet, 00:e0:4c:53:44:58
+  [100827.378540] usbcore: registered new interface driver qf9700
+  [100827.429840] usbcore: registered new interface driver dm9601
+</pre><br>
+
+<p>
+最後使用DHCP取得IP位址
+</p>
+<pre>
+$ sudo udhcpc
+  udhcpc (v0.9.9-pre) started
+  Sending discover...
+  Sending select for 172.16.215.176...
+  Lease of 172.16.215.176 obtained, lease time 259200
+  /etc/udhcpc/default.script: exec: line 7: /etc/udhcpc/default.zeroconf.dhcpup: not found
+  Resetting default routes
+  adding dns 8.8.8.8
+</pre><br>
+
+<p>
+<p><a href="../../phone.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

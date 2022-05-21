@@ -1,0 +1,256 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Game &amp; Watch: Super Mario Bros. &gt;&gt; Assembly</h3>
+<p><b>PLL (CPU 444MHz)</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://www.st.com/resource/en/reference_manual/dm00463927-stm32h7a37b3-and-stm32h7b0-value-line-advanced-armbased-32bit-mcus-stmicroelectronics.pdf">pm_pdf</a><br>
+2. <a href="https://www.st.com/resource/en/datasheet/stm32h7b0vb.pdf">ds_pdf</a><br>
+3. <a href="https://github.com/ghidraninja/game-and-watch-backup">game-and-watch-backup</a><br>
+4. <a href="https://github.com/ghidraninja/game-and-watch-flashloader">game-and-watch-flashloader</a><br><br>
+
+PLL架構圖，CPU固定使用pll1_p_ck<br>
+<img src="asm_pll/5.jpg" class="maxSize"><br><br>
+
+CPU頻率計算方式(<b>Game &amp; Watch</b>沒有外部石英震盪器，不過，可以使用內部HSI 64MHz)
+</p>
+<pre>
+PLL1 = (((HSI / HSIDIV) / DIVM1) * DIVN1) / DIVP1
+
+HSI = 64MHz
+HSIDIV = 1
+DIVM1 = 16
+DIVN1 = 222
+DIVP1 = 2
+
+PLL1 = (((64MHz / 1) / 16) * 222) / 2 = 444MHz
+</pre>
+<p>
+<img src="asm_pll/18.jpg" class="maxSize"><br><br>
+
+規格書說明CPU最高頻率是280MHz<br>
+<img src="asm_pll/6.jpg" class="maxSize"><br><br>
+
+PWR_CR3 LDOEN=1<br>
+<img src="asm_pll/1.jpg" class="maxSize"><br><br>
+
+PWR_VOS=3(SCALE0)<br>
+<img src="asm_pll/2.jpg" class="maxSize"><br><br>
+
+PWR_CSR1 ACTVOSRDY旗標判斷<br>
+<img src="asm_pll/3.jpg" class="maxSize"><br><br>
+
+FLASH_ACR LATENCY=7<br>
+<img src="asm_pll/4.jpg" class="maxSize"><br><br>
+
+HSION=1<br>
+<img src="asm_pll/7.jpg" class="maxSize"><br><br>
+
+MCO2SEL=3(PLL1)、MCO2PRE=15、SW=3(PLL)，利用PC-9(MCO2)輸出確認頻率<br>
+<img src="asm_pll/8.jpg" class="maxSize"><br><br>
+
+CDCPRE=4(DIV_2)、CDPPRE=4(DIV_2)、HPRE=8(DIV_2)<br>
+<img src="asm_pll/9.jpg" class="maxSize"><br><br>
+
+CDPPRE2=4(DIV_2)、CDPPRE1=4(DIV_2)<br>
+<img src="asm_pll/10.jpg" class="maxSize"><br><br>
+
+SRDPPRE=4(DIV_2)<br>
+<img src="asm_pll/11.jpg" class="maxSize"><br><br>
+
+DIVM1=16、PLLSRC=0(HSI)<br>
+<img src="asm_pll/12.jpg" class="maxSize"><br><br>
+
+DIVR1EN=1、DIVQ1EN=1、DIVP1EN=1、PLL1RGE=2(4~8MHz)<br>
+<img src="asm_pll/13.jpg" class="maxSize"><br><br>
+
+DIVR1=1、DIVQ1=1、DIVP1=1、DIVN1=222<br>
+<img src="asm_pll/14.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+  .equiv PORTC_BASE,    0x58020800
+  .equiv PORTE_BASE,    0x58021000
+  .equiv GPIO_MODER,    0x0000
+  .equiv GPIO_ODR,      0x0014
+ 
+  .equiv RCC_BASE,      0x58024400
+  .equiv RCC_CR,        0x0000
+  .equiv RCC_CFGR,      0x0010
+  .equiv RCC_CDCFGR1,   0x0018
+  .equiv RCC_CDCFGR2,   0x001c
+  .equiv RCC_SRDCFGR,   0x0020
+  .equiv RCC_PLLCKSELR, 0x0028
+  .equiv RCC_PLLCFGR,   0x002c
+  .equiv RCC_PLL1DIVR,  0x0030
+  .equiv RCC_PLL1FRACR, 0x0034
+  .equiv RCC_AHB4ENR,   0x0140
+  .equiv RCC_APB4ENR,   0x0154
+
+  .equiv PWR_BASE,      0x58024800
+  .equiv PWR_CSR1,      0x0004
+  .equiv PWR_CR3,       0x000c
+  .equiv PWR_SRDCR,     0x0018
+
+  .equiv FLASH_BASE,    0x52002000
+  .equiv FLASH_ACR,     0x0000
+
+  .thumb
+  .cpu cortex-m7
+  .syntax unified
+ 
+  .global _start
+ 
+  .text
+  .org 0x0000
+_start:
+  .word 0x20020000
+  .word reset
+ 
+  .org 0x0100
+  .thumb_func
+reset:
+  ldr r0, =PWR_BASE
+  ldr r1, [r0, #PWR_CR3]
+  orr r1, #2
+  str r1, [r0, #PWR_CR3]
+0:
+  ldr r1, [r0, #PWR_CSR1]
+  tst r1, #(1 &lt;&lt; 13)
+  beq 0b
+  ldr r1, [r0, #PWR_SRDCR]
+  orr r1, #(1 &lt;&lt; 15) | (1 &lt;&lt; 14)
+  str r1, [r0, #PWR_SRDCR]
+0:
+  ldr r1, [r0, #PWR_SRDCR]
+  tst r1, #(1 &lt;&lt; 13)
+  beq 0b
+
+  ldr r0, =FLASH_BASE
+  ldr r1, [r0, #FLASH_ACR]
+  bic r1, #0xf
+  orr r1, #7
+  str r1, [r0, #FLASH_ACR]
+
+  ldr r0, =RCC_BASE
+  ldr r1, =0x00419000 + (16 &lt;&lt; 4)
+  str r1, [r0, #RCC_PLLCKSELR]
+  ldr r1, =0x01ff0d58
+  str r1, [r0, #RCC_PLLCFGR]
+  ldr r1, =0x01010200 + 221
+  str r1, [r0, #RCC_PLL1DIVR]
+  ldr r1, =0x00000040
+  str r1, [r0, #RCC_CDCFGR1]
+  ldr r1, =0x00000440
+  str r1, [r0, #RCC_CDCFGR2]
+  ldr r1, =0x00000040
+  str r1, [r0, #RCC_SRDCFGR]
+
+  ldr r1, [r0, #RCC_CR]
+  ldr r1, =0x03004025
+  str r1, [r0, #RCC_CR]
+0:
+  ldr r1, [r0, #RCC_CR]
+  tst r1, #(1 &lt;&lt; 25)
+  beq 0b
+
+  ldr r1, [r0, #RCC_CFGR]
+  bic r1, #0xfe000000
+  orr r1, #0x7e000000
+  orr r1, #3
+  str r1, [r0, #RCC_CFGR]
+0:
+  ldr r1, [r0, #RCC_CFGR]
+  tst r1, #(3 &lt;&lt; 3)
+  beq 0b
+
+  ldr r1, [r0, #RCC_AHB4ENR]
+  orr r1, #(1 &lt;&lt; 4) | (1 &lt;&lt; 2)
+  str r1, [r0, #RCC_AHB4ENR]
+ 
+  ldr r0, =PORTC_BASE
+  ldr r1, =(2 &lt;&lt; 18)
+  str r1, [r0, #GPIO_MODER]
+ 
+  ldr r0, =PORTE_BASE
+  ldr r1, =(1 &lt;&lt; 22)
+  str r1, [r0, #GPIO_MODER]
+  ldr r1, =(0 &lt;&lt; 11)
+  str r1, [r0, #GPIO_ODR]
+ 
+0:
+  eor r1, #(1 &lt;&lt; 11)
+  str r1, [r0, #GPIO_ODR]
+  ldr r2, =0x01000000
+1:
+  subs r2, #1
+  bne 1b
+  b 0b
+  .end
+</pre><br>
+<p>
+使用示波器量測MCO2輸出<br>
+<img src="asm_pll/16.jpg" class="maxSize"><br><br>
+
+PC-9腳位是MCO2輸出<br>
+<img src="asm_pll/17.jpg" class="maxSize"><br><br>
+
+PLL = 29.6802MHz * 15 = 445.203MHz<br>
+<img src="asm_pll/15.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,177 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>STC15W104 &gt;&gt; Assembly</h3>
+<p><b>EEPROM</b></p>
+<hr size="1">
+<p>
+STC15W104本身配置有1K Bytes的EEPROM，算一算STC-MCU還是很良心，竟然配置EEPROM給使用者使用，不過比較遺憾的是STC15W104並沒有辦法自己修改自己的Flash Program，這個功能只有在IAP系列的IC才可以使用，不然司徒還真想寫一個精簡的Bootloader給STC15W104使用，畢竟目前stcgal還無法支援STC15W104燒錄，所以司徒想在N900上面開發的想法，似乎破功，而若要使用逆向去搞，還真的需要一些時間，不過至少目前先把EEPROM功能用好，再慢慢來移植一些好玩的東西。<br><br>
+
+跟EEPROM有關的暫存器如下<br>
+<img style="border:0px" src="asm_eeprom/1.jpg" class="maxSize"><br>
+P.S. 在寫入EEPROM資料前，必須先做Erase的動作，而EEPROM動作後，記得Disable IAP功能。<br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+  led       set p3.2
+  uart_tx   set p3.1
+  iap_data  set 0c2h
+  iap_addrh set 0c3h
+  iap_addrl set 0c4h
+  iap_cmd   set 0c5h
+  iap_trig  set 0c6h
+  iap_contr set 0c7h
+ 
+  .org 0h
+  jmp _start
+     
+  .org 100h
+_start:
+  setb led
+  mov r0, #00h
+  mov r1, #00h
+  call eeprom_erase
+  mov r0, #00h
+  mov r1, #00h
+  mov r2, #55h
+  call eeprom_write
+  mov r0, #00h
+  mov r1, #00h
+  call eeprom_read
+  call uart_send
+  clr led
+  jmp $
+
+eeprom_disable:
+  mov iap_contr, #00h
+  mov iap_cmd, #00h
+  mov iap_trig, #00h
+  mov iap_addrh, #80h
+  mov iap_addrl, #00h
+  ret
+
+eeprom_erase:
+  mov iap_addrh, r1
+  mov iap_addrl, r0
+  mov iap_contr, #83h
+  mov iap_cmd, #3
+  mov iap_trig, #5ah
+  mov iap_trig, #0a5h
+  nop
+  call eeprom_disable
+  ret
+
+eeprom_read:
+  clr iap_data
+  mov iap_addrh, r1
+  mov iap_addrl, r0
+  mov iap_contr, #83h
+  mov iap_cmd, #1
+  mov iap_trig, #5ah
+  mov iap_trig, #0a5h
+  nop
+  mov a, iap_data
+  call eeprom_disable
+  ret
+
+eeprom_write:
+  mov iap_data, r2
+  mov iap_addrh, r1
+  mov iap_addrl, r0
+  mov iap_contr, #83h
+  mov iap_cmd, #2
+  mov iap_trig, #5ah
+  mov iap_trig, #0a5h
+  nop
+  call eeprom_disable
+  ret
+
+uart_send:
+  mov r0, #8
+  clr uart_tx
+  mov r1, #44
+  djnz r1, $
+u0:
+  rrc a
+  jc u1
+  clr uart_tx
+  sjmp u2
+u1:
+  setb uart_tx
+u2:
+  mov r1, #44
+  djnz r1, $
+  djnz r0, u0
+  setb uart_tx
+  mov r1, #44
+  djnz r1, $
+  ret
+  .end
+
+</pre><br>
+
+<p>
+編譯程式：
+</p>
+<pre>
+$ mcu8051ide --compile main.s
+</pre><br>
+
+<p>
+完成<br>
+<img src="asm_eeprom/2.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

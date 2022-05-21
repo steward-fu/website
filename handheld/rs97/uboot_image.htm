@@ -1,0 +1,186 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>RetroGame</h3>
+<p><b>如何替換UBoot圖片</b></p>
+<hr size="1">
+<p>
+Uboot開機顯示圖片如下所示：<br>
+<img src="uboot_image/3.jpg" class="maxSize"><br>
+雖然官方並沒有開放UBoot程式碼，不過，為了可以換掉開機圖片，司徒想到一個可以使用trial and error的方式，定位出位該圖片的位置，那就是依序將Binary資料當作Pixel顯示，藉此定位出該圖片位置。<br><br>
+
+show_bin.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;sys/mman.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;errno.h&gt;
+#include &lt;termios.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;SDL.h&gt;
+#include &lt;SDL_image.h&gt;
+#include &lt;SDL_ttf.h&gt;
+
+uint16_t buf[10 * 1024 * 1024]={0};
+
+int main(int argc, char* argv[])
+{
+  SDL_Init(SDL_INIT_VIDEO);
+  SDL_ShowCursor(0);
+  SDL_Surface *screen = SDL_SetVideoMode(320, 800, 16, SDL_SWSURFACE);
+  
+  int fd = open(argv[1], O_RDONLY);
+  long len = read(fd, buf, sizeof(buf));
+  close(fd);
+
+  // uboot image: 176148
+  long index=0;
+  for(int c=0; c&lt;len/(320*800*2); c++){
+    uint16_t *p = screen-&gt;pixels;
+    for(int y=0; y&lt;320; y++){
+      for(int x=0; x&lt;800; x++){
+        *p++ = buf[index++];
+      }
+    }
+    SDL_Flip(screen);
+    SDL_Delay(3000);
+  }
+  SDL_Quit();
+  return 0;    
+}
+</pre><br>
+
+<p>
+編譯程式
+</p>
+<pre>
+$ gcc show_bin.c -g -o show_bin -lSDL_image -lSDL -lSDL_ttf -I/usr/include/SDL
+$ sudo dd if=/dev/sdx of=head.img bs=1M count=8
+$ ./show_bin head.img
+</pre><br>
+
+<p>
+Uboot image offset: 176148<br>
+<img src="uboot_image/1.jpg" class="maxSize"><br>
+接著寫一個Image轉Hex的程式，替換自己喜愛的圖片，使用的方式也很簡單，經由SDL載入圖片(這樣就不用煩惱PNG/JPEG Library相容問題)，然後把Pixel像素存成檔案，最終透過dd指令，把存好的檔案覆蓋回原本MicroSD，Image轉Hex程式如下所示。<br><br>
+
+img2hex.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;sys/mman.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;errno.h&gt;
+#include &lt;termios.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;SDL.h&gt;
+#include &lt;SDL_image.h&gt;
+#include &lt;SDL_ttf.h&gt;
+
+uint16_t buf[320*480*2]={0};
+
+int main(int argc, char* argv[])
+{
+  SDL_Init(SDL_INIT_VIDEO);
+  SDL_ShowCursor(0);
+  SDL_Surface *screen = SDL_SetVideoMode(320, 480, 16, SDL_SWSURFACE);
+
+  SDL_Surface* img = IMG_Load(argv[1]);
+  SDL_Surface *p = SDL_ConvertSurface(img, screen-&gt;format, 0);
+  SDL_SoftStretch(p, NULL, screen, NULL);
+  SDL_FreeSurface(img);
+  SDL_FreeSurface(p);
+  SDL_Flip(screen);
+  
+  long index=0;
+  uint16_t *px = screen-&gt;pixels;
+  for(int y=0; y&lt;320; y++){
+    for(int x=0; x&lt;480; x++){
+      buf[index++] = *px++;
+    }
+  }
+
+  int fd = open("hex.bin", O_CREAT | O_WRONLY, S_IRUSR);
+  long len = write(fd, buf, 320*480*2);
+  close(fd);
+
+  SDL_Delay(3000);
+  SDL_Quit();
+  return 0;    
+}
+</pre><br>
+
+<p>
+編譯程式
+</p>
+<pre>
+$ gcc img2hex.c -g -o img2hex -lSDL_image -lSDL -lSDL_ttf -I/usr/include/SDL
+$ ./img2hex xxx.jpg
+$ sudo dd if=hex.bin of=/dev/sdx bs=1 seek=176148 conv=notrunc
+</pre><br>
+
+<p>
+替換後，開機的第一張UBoot圖片就是使用者更換的圖片，當然，充電圖片也是可以換的，方法如上面的步驟。<br>
+<img src="uboot_image/2.jpg" class="maxSize"><br>
+P.S. 第二張圖片是從Kernel顯示的，因此，必須解壓縮uImage才可以替換。
+</p>
+
+<br><a href="../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,186 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../../../header.js"></script>
+<div id="page">
+<h3>Gemini PDA 4G &gt;&gt; Android &gt;&gt; Termux</h3>
+<p><b>使用openocd燒錄STM32F103</b></p>
+<hr size="1">
+<p>
+led.S
+</p>
+<pre class="brush:asm">
+  .thumb
+  .syntax unified
+  .equ GPIOC_CRH,   0x40011004
+  .equ GPIOC_ODR,   0x4001100c
+  .equ RCC_APB2ENR, 0x40021018
+  .equ STACKINIT,   0x20005000
+  .equ LEDDELAY,    800000
+ 
+  .global _start
+  .section .text
+  .org 0x0
+  .word STACKINIT
+  .word _start
+ 
+  .org 0x100
+  .thumb_func
+_start:
+  ldr r6, =RCC_APB2ENR
+  mov r0, 0x10
+  str r0, [r6]
+  ldr r6, =GPIOC_CRH
+  ldr r0, =0x44344444
+  str r0, [r6]
+  mov r2, 0
+  mov r3, 0x2000
+  ldr r6, =GPIOC_ODR
+loop:
+  str r2, [r6]
+  ldr r1, =LEDDELAY
+delay1:
+  subs r1, 1
+  bne delay1
+  str r3, [r6]
+  ldr r1, =LEDDELAY
+delay2:
+  subs r1, 1
+  bne delay2
+  b loop
+</pre><br>
+
+<p>
+led.ld
+</p>
+<pre>
+SECTIONS
+{
+  . = 0x0;
+  .text : 
+  {
+    *(.text)
+  }
+  .data : 
+  {
+    *(.data)
+    *(.rom)
+  }
+  . = 0x20000000;
+  .ram : { *(.ram) }
+ 
+  .bss : 
+  {
+    *(.bss)
+    *(.ram)
+  }
+}
+</pre><br>
+
+<p>
+Makefile
+</p>
+<pre>
+all:
+  arm-none-eabi-as -mcpu=cortex-m3 -mthumb -mthumb-interwork -o led.o led.S
+  arm-none-eabi-ld -T led.ld -o led.elf led.o
+  arm-none-eabi-objcopy -O binary led.elf led.bin
+clean:
+  rm -rf led.o
+  rm -rf led.elf
+  rm -rf led.bin
+</pre><br>
+
+<p> 
+編譯(Linux Deploy)
+</p>
+<pre>
+$ make
+  arm-none-eabi-as -mcpu=cortex-m3 -mthumb -mthumb-interwork -o led.o led.S
+  arm-none-eabi-ld -T led.ld -o led.elf led.o
+  arm-none-eabi-objcopy -O binary led.elf led.bin
+</pre><br>
+
+<p>
+接腳：
+</p>
+<table>
+<tr><th>ST-Link V2</th><th>STM32</th></tr>
+<tr><td>GND</td><td>GND</td></tr>
+<tr><td>3.3V</td><td>3.3V</td></tr>
+<tr><td>SWCLK</td><td>SWCLK</td></tr>
+<tr><td>SWDIO</td><td>SWDIO</td></tr>
+</table>
+<p>
+<img src="openocd/1.jpg" class="maxSize"><br><br>
+
+燒錄
+</p>
+<pre>
+$ tsudo openocd -f /data/data/com.termux/files/usr/share/openocd/scripts/interface/stlink-v2.cfg -f /data/data/com.termux/files/usr/share/openocd/scripts/target/stm32f1x.cfg
+
+$ telnet localhost 4444
+> halt
+> flash erase_sector 0 0 0
+> flash write_bank 0 /data/data/com.termux/files/home/led.bin 0
+> reset init
+> resume 
+</pre><br>
+
+<p>
+完成<br>
+<img src="openocd/2.jpg" class="maxSize"><br>
+<img src="openocd/3.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../../../phone.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

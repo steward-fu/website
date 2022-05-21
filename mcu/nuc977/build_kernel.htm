@@ -1,0 +1,209 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>NUC977</h3>
+<p><b>build kernel</b></p>
+<hr size="1">
+<p>
+編譯步驟
+</p>
+<pre>
+$ cd
+$ wget https://github.com/steward-fu/nuc977/releases/download/v1.0/toolchain.tar.gz
+$ tar xvf toolchain.tar.gz
+$ sudo mv toolchain /opt/nuc977
+$ export PATH=$PATH:/opt/nuc977/usr/bin
+
+$ wget https://github.com/steward-fu/nuc977/releases/download/v1.0/kernel.tar.gz
+$ tar xvf kernel.tar.gz
+$ cd kernel
+$ make ARCH=arm nuc977_defconfig
+$ vim arch/arm/boot/Makefile +51
+  #cp $@   ../image/970image
+  #zip ../image/970image.zip ../image/970image
+
+$ vim arch/arm/boot/Makefile +85
+  #cp $@   ../image/970uimage
+
+$ make ARCH=arm menuconfig
+</pre>
+
+<p>
+<img src="build_kernel/1.jpg" class="maxSize">
+</p>
+<pre>
+$ ARCH=arm make uImage -j4
+</pre><br>
+
+<p>
+燒錄後
+</p>
+<pre>
+U-Boot 2013.04-rc2 (Jan 04 2021 - 21:19:03)
+
+CPU: NUC977
+DRAM:  64 MiB
+NAND:  No NAND device found!!!
+NAND Flash not found !
+0 MiB
+MMC:   mmc: 0
+SF: Detected W25Q128 with page size 4 KiB, total 16 MiB
+In:    serial
+Out:   serial
+Err:   serial
+Net:   emac
+Hit any key to stop autoboot:  0
+SF: Detected W25Q128 with page size 4 KiB, total 16 MiB
+## Booting kernel from Legacy Image at 00007fc0 ...
+   Image Name:   Linux-3.10.101
+   Image Type:   ARM Linux Kernel Image (uncompressed)
+   Data Size:    1819536 Bytes = 1.7 MiB
+   Load Address: 00008000
+   Entry Point:  00008000
+   Verifying Checksum ... OK
+SF: Detected W25Q128 with page size 4 KiB, total 16 MiB
+SF: DeviceBooting Linux on physical CPU 0x0
+Initializing cgroup subsys cpuset
+Initializing cgroup subsys cpu
+Initializing cgroup subsys cpuacct
+Linux version 3.10.101 (steward@debian) (gcc version 4.3.4 (GCC) ) #1 PREEMPT Mon Jan 4 22:04:37 EST 2021
+CPU: ARM926EJ-S [41069265] revision 5 (ARMv5TEJ), cr=00053177
+CPU: VIVT data cache, VIVT instruction cache
+Machine: NUC970
+Memory policy: ECC disabled, Data cache writeback
+Built 1 zonelists in Zone order, mobility grouping on.  Total pages: 16256
+Kernel command line: root=/dev/ram0 console=ttyS0,115200n8 rdinit=/sbin/init mem=64M
+PID hash table entries: 256 (order: -2, 1024 bytes)
+Dentry cache hash table entries: 8192 (order: 3, 32768 bytes)
+Inode-cache hash table entries: 4096 (order: 2, 16384 bytes)
+Memory: 64MB = 64MB total
+Memory: 61036k/61036k available, 4500k reserved, 0K highmem
+Virtual kernel memory layout:
+    vector  : 0xffff0000 - 0xffff1000   (   4 kB)
+    fixmap  : 0xfff00000 - 0xfffe0000   ( 896 kB)
+    vmalloc : 0xc4800000 - 0xff000000   ( 936 MB)
+    lowmem  : 0xc0000000 - 0xc4000000   (  64 MB)
+    modules : 0xbf000000 - 0xc0000000   (  16 MB)
+      .text : 0xc0008000 - 0xc0346f94   (3324 kB)
+      .init : 0xc0347000 - 0xc03655f0   ( 122 kB)
+      .data : 0xc0366000 - 0xc0399660   ( 206 kB)
+       .bss : 0xc0399660 - 0xc03c9550   ( 192 kB)
+SLUB: HWalign=32, Order=0-3, MinObjects=0, CPUs=1, Nodes=1
+Preemptible hierarchical RCU implementation.
+NR_IRQS:625
+sched_clock: 32 bits at 100 Hz, resolution 10000000ns, wraps every 4294967286ms
+Console: colour dummy device 80x30
+console [ttyS0] enabled
+Calibrating delay loop... 148.88 BogoMIPS (lpj=744448)
+pid_max: default: 32768 minimum: 301
+Mount-cache hash table entries: 512
+Initializing cgroup subsys devices
+Initializing cgroup subsys freezer
+Initializing cgroup subsys perf_event
+CPU: Testing write buffer coherency: ok
+Setting up static identity map for 0xc02a0ca0 - 0xc02a0cdc
+devtmpfs: initialized
+pinctrl core: initialized pinctrl subsystem
+NET: Registered protocol family 16
+DMA: preallocated 256 KiB pool for atomic coherent allocations
+bio: create slab <bio-0> at 0
+SCSI subsystem initialized
+usbcore: registered new interface driver usbfs
+usbcore: registered new interface driver hub
+usbcore: registered new device driver usb
+cfg80211: Calling CRDA to update world regulatory domain
+Switching to clocksource nuc970-timer1
+NET: Registered protocol family 2
+TCP established hash table entries: 512 (order: 0, 4096 bytes)
+TCP bind hash table entries: 512 (order: -1, 2048 bytes)
+TCP: Hash tables configured (established 512 bind 512)
+TCP: reno registered
+UDP hash table entries: 256 (order: 0, 4096 bytes)
+UDP-Lite hash table entries: 256 (order: 0, 4096 bytes)
+NET: Registered protocol family 1
+NetWinder Floating Point Emulator V0.97 (double precision)
+ROMFS MTD (C) 2007 Red Hat, Inc.
+msgmni has been set to 119
+Block layer SCSI generic (bsg) driver version 0.4 loaded (major 254)
+io scheduler noop registered
+io scheduler deadline registered
+io scheduler cfq registered (default)
+nuc970-uart.0: ttyS0 at I/O 0x0 (irq = 36) is a NUC970
+brd: module loaded
+libphy: nuc970_rmii0: probed
+nuc970-emac0 nuc970-emac0: phy_find_first() failed
+nuc970-emac0 nuc970-emac0: nuc970_mii_setup err
+ehci_hcd: USB 2.0 'Enhanced' Host Controller (EHCI) Driver
+nuc970-ehci nuc970-ehci: Nuvoton NUC970 EHCI Host Controller
+nuc970-ehci nuc970-ehci: new USB bus registered, assigned bus number 1
+nuc970-ehci nuc970-ehci: irq 23, io mem 0xb0005000
+nuc970-ehci nuc970-ehci: USB 2.0 started, EHCI 0.95
+hub 1-0:1.0: USB hub found
+hub 1-0:1.0: 2 ports detected
+ohci_hcd: USB 1.1 'Open' Host Controller (OHCI) Driver
+nuc970-ohci nuc970-ohci: Nuvoton NUC970 OHCI Host Controller
+nuc970-ohci nuc970-ohci: new USB bus registered, assigned bus number 2
+nuc970-ohci nuc970-ohci: irq 24, io mem 0xb0007000
+hub 2-0:1.0: USB hub found
+hub 2-0:1.0: 2 ports detected
+usbcore: registered new interface driver usb-storage
+TCP: cubic registered
+NET: Registered protocol family 17
+List of all partitions:
+No filesystem could mount root, tried:  vfat msdos romfs
+Kernel panic - not syncing: VFS: Unable to mount root fs on unknown-block(1,0)
+CPU: 0 PID: 1 Comm: swapper Not tainted 3.10.101 #1
+</pre><br>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

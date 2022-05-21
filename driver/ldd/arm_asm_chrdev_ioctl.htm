@@ -1,0 +1,312 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Linux Device Driver &gt;&gt; Assembly (ARM) &gt;&gt; chrdev</h3>
+<p><b>ioctl</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://github.com/steward-fu/ldd">Source Code</a><br><br>
+
+User Application除了使用read()、write()跟驅動程式傳遞資料之外，也可以使用以控制為主的ioctl()去跟驅動程式做交互設定的動作，作法只要添加unlocked_ioctl的Callback副程式即可<br><br>
+
+ldd.S
+</p>
+<pre class="brush:asm">
+.global init_module
+.global cleanup_module
+
+.section .modinfo, "ae"
+__UNIQUE_ID_0: .asciz "license=GPL"
+__UNIQUE_ID_1: .asciz "author=Steward Fu"
+__UNIQUE_ID_2: .asciz "description=Linux Driver"
+
+.equ cdev.kobj,  0
+.equ cdev.owner, 36
+.equ cdev.ops,   40
+.equ cdev.list,  44
+.equ cdev.dev,   52
+.equ cdev.count, 56
+ 
+.struct 0
+cdev_s:
+  c0: .struct . + 36
+  c1: .struct . + 4
+  c2: .struct . + 4
+  c3: .struct . + 8
+  c4: .struct . + 4
+  c5: .struct . + 4
+cdev_e:
+cdev_l = cdev_e - cdev_s
+
+.equ file_operations.owner,             0
+.equ file_operations.llseek,            4
+.equ file_operations.read,              8
+.equ file_operations.write,             12
+.equ file_operations.read_iter,         16
+.equ file_operations.write_iter,        20
+.equ file_operations.iterate,           24
+.equ file_operations.iterate_shared,    28
+.equ file_operations.poll,              32
+.equ file_operations.unlocked_ioctl,    36
+.equ file_operations.compat_ioctl,      40
+.equ file_operations.mmap,              44
+.equ file_operations.open,              48
+.equ file_operations.flush,             52
+.equ file_operations.release,           56
+.equ file_operations.fsync,             60
+.equ file_operations.fasync,            64
+.equ file_operations.lock,              68
+.equ file_operations.sendpage,          72
+.equ file_operations.get_unmapped_area, 76
+.equ file_operations.check_flags,       80
+.equ file_operations.setfl,             84
+.equ file_operations.flock,             88
+.equ file_operations.splice_write,      92
+.equ file_operations.splice_read,       96
+.equ file_operations.setlease,          100
+.equ file_operations.fallocate,         104
+.equ file_operations.show_fdinfo,       108
+.equ file_operations.mmap_capabilities, 112
+.equ file_operations.copy_file_range,   116
+.equ file_operations.clone_file_range,  120
+.equ file_operations.dedupe_file_range, 124
+
+.struct 0
+file_operations_s:
+  i0: .struct . + 4
+  i1: .struct . + 4
+  i2: .struct . + 4
+  i3: .struct . + 4
+  i4: .struct . + 4
+  i5: .struct . + 4
+  i6: .struct . + 4
+  i7: .struct . + 4
+  i8: .struct . + 4
+  i9: .struct . + 4
+  i10: .struct . + 4
+  i11: .struct . + 4
+  i12: .struct . + 4
+  i13: .struct . + 4
+  i14: .struct . + 4
+  i15: .struct . + 4
+  i16: .struct . + 4
+  i17: .struct . + 4
+  i18: .struct . + 4
+  i19: .struct . + 4
+  i20: .struct . + 4
+  i21: .struct . + 4
+  i22: .struct . + 4
+  i23: .struct . + 4
+  i24: .struct . + 4
+  i25: .struct . + 4
+  i26: .struct . + 4
+  i27: .struct . + 4
+  i28: .struct . + 4
+  i29: .struct . + 4
+  i30: .struct . + 4
+  i31: .struct . + 4
+file_operations_e:
+file_operations_l = file_operations_e - file_operations_s
+
+.section .data
+base:      .dcb 4
+mycdev:    .space cdev_l
+myfops:    .space file_operations_l
+chr_name:  .asciz "myfile"
+open_msg:  .asciz "myopen\n"
+ioctl_msg: .asciz "myioctl, 0x%x\n"
+close_msg: .asciz "myclose\n"
+myclass:   .dcb 4
+
+.align 2
+.section .text
+myopen:
+  push {lr}
+  ldr r0, =open_msg
+  bl printk
+  mov r0, #0
+  pop {pc}
+
+myioctl:
+  push {lr}
+  ldr r0, =ioctl_msg
+  bl printk
+  mov r0, #0
+  pop {pc}
+
+myclose:
+  push {lr}
+  ldr r0, =close_msg
+  bl printk
+  mov r0, #0
+  pop {pc}
+
+init_module:
+  push {r4, r5, lr}
+
+  ldr r0, =myfops
+  add r1, r0, #file_operations.open
+  ldr r2, =myopen
+  str r2, [r1]
+  add r1, r0, #file_operations.unlocked_ioctl
+  ldr r2, =myioctl
+  str r2, [r1]
+  add r1, r0, #file_operations.release
+  ldr r2, =myclose
+  str r2, [r1]
+
+  ldr r0, =base
+  mov r1, #0
+  mov r2, #1
+  ldr r3, =chr_name
+  bl alloc_chrdev_region
+  ldr r4, =base
+
+  mov r0, #0
+  ldr r1, =chr_name
+  ldr r2, =myclass
+  bl __class_create
+  ldr r1, =myclass
+  str r0, [r1]
+
+  mov r1, #0
+  ldr r2, [r4]
+  mov r3, #0
+  ldr r5, =chr_name
+  push {r5}
+  bl device_create
+  pop {r5}
+
+  ldr r0, =mycdev
+  ldr r1, =myfops
+  bl cdev_init
+
+  ldr r0, =mycdev
+  ldr r1, [r4]
+  mov r2, #1
+  bl cdev_add
+
+  mov r0, #0
+  pop {r4, r5, pc}
+
+cleanup_module:
+  push {lr}
+  ldr r0, =myclass
+  ldr r0, [r0]
+  ldr r1, =base
+  ldr r1, [r1]
+  bl device_destroy
+
+  ldr r0, =mycdev
+  bl cdev_del
+
+  ldr r0, =myclass
+  ldr r0, [r0]
+  bl class_destroy
+
+  ldr r0, =base
+  ldr r0, [r0]
+  mov r1, #1
+  bl unregister_chrdev_region
+  pop {pc}
+.end
+</pre>
+<p>
+<b>init_module</b>: 建立字元驅動程式<br>
+<b>myopen</b>: 僅列印字串<br>
+<b>myioctl</b>: 僅列印字串<br>
+<b>myclose</b>: 僅列印字串<br>
+<b>cleanup_module</b>: 刪除字元驅動程式<br><br>
+
+app.S
+</p>
+<pre class="brush:asm">
+.global main
+
+.section .data
+dev_name: .asciz "/dev/myfile"
+
+.align 2
+.section .text
+main:
+  push {r4, lr}
+  ldr r0, =dev_name
+  mov r1, #2
+  bl open
+  mov r4, r0
+
+  ldr r1, =0xc0050000
+  mov r2, #0
+  bl ioctl
+
+  mov r0, r4
+  bl close
+
+  mov r0, #0
+  pop {r4, pc}
+</pre><br>
+
+<p>
+測試
+</p>
+<pre>
+# insmod /boot/main.ko
+# /boot/app
+  myopen
+  myioctl, 0xc0050000
+  myclose
+</pre><br>
+
+<p>
+<br><a href="../../driver.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

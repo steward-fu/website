@@ -1,0 +1,120 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../../../header.js"></script>
+<div id="page">
+<h3>Pandora 1GHz &gt;&gt; Debian Mark2</h3>
+<p><b>build kicad 4.0.1</b></p>
+<hr size="1">
+<p>
+為何司徒會想編譯KiCAD呢？因為Debian 8(Jessie)安裝的KiCAD是<b>0.20140622+bzr4027-3</b>，這個版本的KiCAD尚未支援新的Footprint格式(<b>.kicad_mod</b>)，而司徒需要的Footprint，如：QFN16，官方Github上的Footprint則是<b>.kicad_mod</b>格式，因此，為了節省開發時間並可以使用更多官方的Footprint Library，司徒只好手動編譯KiCAD軟體。<br><br>
+
+在編譯KiCAD之前，請先手動編譯OpenSSL，然後還需要掛載一個SWAP空間(建議4GB)，如果使用者本身己經有SWAP Partition並且是2GB以上的空間，就不需新增掛載SWAP空間，否則在編譯KiCAD時，會遇到<b>virtua memory exhausted: cannot allocate memory</b>的錯誤訊息。<br><br>
+
+手動掛載SWAP檔案(4GB)：
+</p>
+
+<pre>
+$ sudo dd if=/dev/zero of=swapfile bs=1M count=4000
+$ sudo mkswap swapfile
+$ sudo swapon swapfile
+$ sudo cat /proc/meminfo
+...
+SwapTotal:       3926012 kB
+SwapFree:        3885592 kB
+...
+</pre><br>
+
+<p>
+編譯KiCAD(編譯過程需要連上網路)：
+</p>
+<pre>
+$ wget http://pkgs.fedoraproject.org/repo/pkgs/kicad/kicad-4.0.1.tar.xz/e85e9ab6ba7736377a31cfecc8aca4a6/kicad-4.0.1.tar.xz
+$ tar xf kicad-4.0.1.tar.xz
+$ cd kicad-4.0.1
+</pre>
+
+<p>
+或者使用Github
+</p>
+
+<pre>
+$ git clone https://github.com/KiCad/kicad-source-mirror.git
+$ cd kicad-source-mirror
+</pre><br>
+
+<p>
+接著編譯KiCAD
+</p>
+
+<pre>
+$ sudo apt-get install libssl-dev libboost1.55-all-dev libboost-context1.55-dev libboost-thread1.55-dev libboost-system1.55-dev
+$ mkdir -p build/release
+$ cd build/release
+$ cmake -DCMAKE_BUILD_TYPE=Release -DKICAD_SCRIPTING=ON -DKICAD_SCRIPTING_MODULES=ON -DKICAD_SCRIPTING_WXPYTHON=ON ../../
+$ make
+$ sudo make install
+</pre>
+
+<p>
+P.S. 編譯KiCAD需要安裝許多套件，這些套件在cmake階段都會提示，使用者依照缺少的安裝即可<br><br>
+
+如果使用者不想手動編譯KiCAD，也可以透過jessie-backports安裝kicad(4.0.2+dfsg1-2~bpo8+1-1)，這個版本的KiCAD就有支援新的<b>.kicad_mod</b>元件格式
+</p>
+
+<pre>
+$ sudo apt-get update
+$ sudo apt-get install kicad-common=4.0.2+dfsg1-2~bpo8+1-1 kicad=4.0.2+dfsg1-2~bpo8+1-1
+</pre><br>
+
+<p>
+<br><a href="../../../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

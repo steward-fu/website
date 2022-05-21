@@ -1,0 +1,345 @@
+<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Windows Driver Model &gt;&gt; C/C++</h3>
+<p><b>Cancel-Safe IRP Queue(CSQ)</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://github.com/steward-fu/wdm">Source Code</a><br>
+2. <a href="https://docs.microsoft.com/zh-tw/windows-hardware/drivers/kernel/cancel-safe-irp-queues">cancel-safe-irp-queues</a><br><br>
+
+Cancel-Safe IRP Queues(CSQ)是Microsoft提供的一個Cancel框架，這個框架概念就是讓使用者只專注在Cancel的資料處理上，而不是Cancel的同步處理上，畢竟每個人做出來的Cancel同步機制可能不同，但是原理是一樣的，因此，Microsoft提供了一個專門框架給驅動程式使用並且建議使用這個框架處理Cancel Irp，下圖是說明的圖片：<br>
+<img src="asm_csq/1.jpg" class="maxSize"><br>
+對於CSQ細節有興趣的使用者可以參考上面的參考資訊，而設定的Callback如下所示：<br>
+1. CsqInsertIrp<br>
+2. CsqRemoveIrp<br>
+3. CsqPeekNextIrp<br>
+4. CsqAcquireLock<br>
+5. CsqReleaseLock<br>
+6. CsqCompleteCanceledIrp<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;wdm.h&gt;
+
+#define IOCTL_QUEUE   CTL_CODE(FILE_DEVICE_UNKNOWN, 0x800, METHOD_BUFFERED, FILE_ANY_ACCESS)
+#define IOCTL_PROCESS CTL_CODE(FILE_DEVICE_UNKNOWN, 0x801, METHOD_BUFFERED, FILE_ANY_ACCESS)
+
+#define DEV_NAME L"\\Device\\MyDriver"
+#define SYM_NAME L"\\DosDevices\\MyDriver"
+
+KDPC stDPC={0};
+IO_CSQ stCsq={0};
+KTIMER stTime={0};
+KSPIN_LOCK stLock={0};
+LIST_ENTRY stQueue={0};
+PDEVICE_OBJECT pNextDevice=NULL;
+
+VOID CsqInsertIrp(struct _IO_CSQ *pCsq, PIRP pIrp)
+{
+  DbgPrint("CsqInsertIrp");
+  InsertTailList(&amp;stQueue, &amp;pIrp-&gt;Tail.Overlay.ListEntry);
+}
+
+VOID CsqRemoveIrp(PIO_CSQ pCsq, PIRP pIrp)
+{
+  UNREFERENCED_PARAMETER(pCsq);
+  DbgPrint("CsqRemoveIrp");
+  RemoveEntryList(&amp;pIrp-&gt;Tail.Overlay.ListEntry);
+}
+
+VOID CsqCompleteCanceledIrp(PIO_CSQ pCsq, PIRP pIrp)
+{
+  UNREFERENCED_PARAMETER(pCsq);
+  DbgPrint("CsqCompleteCanceledIrp");
+  pIrp-&gt;IoStatus.Status = STATUS_CANCELLED;
+  pIrp-&gt;IoStatus.Information = 0;
+  IoCompleteRequest(pIrp, IO_NO_INCREMENT);
+}
+
+PIRP CsqPeekNextIrp(PIO_CSQ pCsq, PIRP pIrp, PVOID PeekContext)
+{
+  PIRP pNextIrp=NULL;
+  PLIST_ENTRY pList=NULL;
+  PLIST_ENTRY pNext=NULL;
+  PIO_STACK_LOCATION psk=NULL;
+  
+  pList = &amp;stQueue;
+  if(pIrp == NULL){
+    pNext = pList-&gt;Flink;
+  }
+  else{
+    pNext = pIrp-&gt;Tail.Overlay.ListEntry.Flink;
+  }
+
+  while(pNext != pList){
+    pNextIrp = CONTAINING_RECORD(pNext, IRP, Tail.Overlay.ListEntry);
+    psk = IoGetCurrentIrpStackLocation(pNextIrp);
+    if(PeekContext){
+      if(psk-&gt;FileObject == (PFILE_OBJECT)PeekContext){
+        break;
+      }
+    }
+    else{
+      break;
+    }
+    pNextIrp = NULL;
+    pNext = pNext-&gt;Flink;
+  }
+  return pNextIrp;
+}
+
+VOID CsqAcquireLock(PIO_CSQ pCsq, KIRQL *pIrql)
+{
+  DbgPrint("CsqAcquireLock");
+  KeAcquireSpinLock(&amp;stLock, pIrql);
+}
+
+VOID CsqReleaseLock(PIO_CSQ pCsq, KIRQL pIrql)
+{
+  if(pIrql == DISPATCH_LEVEL){
+    KeReleaseSpinLockFromDpcLevel(&amp;stLock);
+    DbgPrint("CsqReleaseLock at DPC level");
+  }
+  else{
+    KeReleaseSpinLock(&amp;stLock, pIrql);
+    DbgPrint("CsqReleaseLock at Passive level");
+  }
+}
+
+VOID OnTimer(struct _KDPC *Dpc, PVOID DeferredContext, PVOID SystemArgument1, PVOID SystemArgument2)
+{
+  PIRP pIrp;
+  PLIST_ENTRY plist;
+  if(IsListEmpty(&amp;stQueue) == TRUE){
+    KeCancelTimer(&amp;stTime);
+    DbgPrint("Finish");
+  }
+  else{
+    plist = RemoveHeadList(&amp;stQueue);
+    pIrp = CONTAINING_RECORD(plist, IRP, Tail.Overlay.ListEntry);
+    if(pIrp-&gt;Cancel != TRUE){
+      pIrp-&gt;IoStatus.Status = STATUS_SUCCESS;
+      pIrp-&gt;IoStatus.Information = 0;
+      IoCompleteRequest(pIrp, IO_NO_INCREMENT);
+      DbgPrint("Complete Irp");
+    }
+    else{
+      pIrp-&gt;CancelRoutine = NULL;
+      pIrp-&gt;IoStatus.Status = STATUS_CANCELLED;
+      pIrp-&gt;IoStatus.Information = 0;
+      IoCompleteRequest(pIrp, IO_NO_INCREMENT);
+      DbgPrint("Cancel Irp");
+    }
+  }
+}
+
+NTSTATUS AddDevice(PDRIVER_OBJECT pOurDriver, PDEVICE_OBJECT pPhyDevice)
+{
+  PDEVICE_OBJECT pOurDevice=NULL;
+  UNICODE_STRING usDeviceName;
+  UNICODE_STRING usSymboName;
+
+  RtlInitUnicodeString(&amp;usDeviceName, DEV_NAME);
+  IoCreateDevice(pOurDriver, 0, &amp;usDeviceName, FILE_DEVICE_UNKNOWN, 0, FALSE, &amp;pOurDevice);
+  RtlInitUnicodeString(&amp;usSymboName, SYM_NAME);
+  IoCreateSymbolicLink(&amp;usSymboName, &amp;usDeviceName);
+  pNextDevice = IoAttachDeviceToDeviceStack(pOurDevice, pPhyDevice);
+  pOurDevice-&gt;Flags&amp;= ~DO_DEVICE_INITIALIZING;
+  pOurDevice-&gt;Flags|= DO_BUFFERED_IO;
+  
+  InitializeListHead(&amp;stQueue);
+  KeInitializeSpinLock(&amp;stLock);
+  KeInitializeTimer(&amp;stTime);
+  KeInitializeDpc(&amp;stDPC, OnTimer, pOurDevice);
+  IoCsqInitialize(&amp;stCsq, CsqInsertIrp, CsqRemoveIrp, CsqPeekNextIrp, CsqAcquireLock, CsqReleaseLock, CsqCompleteCanceledIrp);
+  return STATUS_SUCCESS;
+}
+
+void Unload(PDRIVER_OBJECT pOurDriver)
+{
+  pOurDriver = pOurDriver;
+}
+
+NTSTATUS IrpPnp(PDEVICE_OBJECT pOurDevice, PIRP pIrp)
+{
+  PIO_STACK_LOCATION psk = IoGetCurrentIrpStackLocation(pIrp);
+  UNICODE_STRING usSymboName;
+
+  if(psk-&gt;MinorFunction == IRP_MN_REMOVE_DEVICE){
+    RtlInitUnicodeString(&amp;usSymboName, SYM_NAME);
+    IoDeleteSymbolicLink(&amp;usSymboName);
+    IoDetachDevice(pNextDevice);
+    IoDeleteDevice(pOurDevice);
+  }
+  IoSkipCurrentIrpStackLocation(pIrp);
+  return IoCallDriver(pNextDevice, pIrp);
+}
+
+NTSTATUS IrpIOCTL(PDEVICE_OBJECT pOurDevice, PIRP pIrp)
+{
+  LARGE_INTEGER stTimePeriod;
+  PIO_STACK_LOCATION psk = IoGetCurrentIrpStackLocation(pIrp);
+
+  switch(psk-&gt;Parameters.DeviceIoControl.IoControlCode){
+  case IOCTL_QUEUE:
+    DbgPrint("IOCTL_QUEUE");
+    IoCsqInsertIrp(&amp;stCsq, pIrp, NULL);
+    return STATUS_PENDING;
+  case IOCTL_PROCESS:
+    DbgPrint("IOCTL_PROCESS");
+    stTimePeriod.HighPart|= -1;
+    stTimePeriod.LowPart = -1000000;
+    KeSetTimerEx(&amp;stTime, stTimePeriod, 1000, &amp;stDPC);
+    break;
+  }
+  pIrp-&gt;IoStatus.Information = 0;
+  pIrp-&gt;IoStatus.Status = STATUS_SUCCESS;
+  IoCompleteRequest(pIrp, IO_NO_INCREMENT);
+  return STATUS_SUCCESS;
+}
+
+NTSTATUS IrpFile(PDEVICE_OBJECT pOurDevice, PIRP pIrp)
+{
+  PIO_STACK_LOCATION psk = IoGetCurrentIrpStackLocation(pIrp);
+
+  switch(psk-&gt;MajorFunction){
+  case IRP_MJ_CREATE:
+    DbgPrint("IRP_MJ_CREATE");
+    break;
+  case IRP_MJ_CLOSE:
+    DbgPrint("IRP_MJ_CLOSE");
+    break;
+  }
+  IoCompleteRequest(pIrp, IO_NO_INCREMENT);
+  return STATUS_SUCCESS;
+}
+
+NTSTATUS DriverEntry(PDRIVER_OBJECT pOurDriver, PUNICODE_STRING pOurRegistry)
+{
+  pOurDriver-&gt;MajorFunction[IRP_MJ_PNP] = IrpPnp;
+  pOurDriver-&gt;MajorFunction[IRP_MJ_CREATE] =
+  pOurDriver-&gt;MajorFunction[IRP_MJ_CLOSE] = IrpFile;
+  pOurDriver-&gt;MajorFunction[IRP_MJ_DEVICE_CONTROL] = IrpIOCTL;
+  pOurDriver-&gt;DriverExtension-&gt;AddDevice = AddDevice;
+  pOurDriver-&gt;DriverUnload = Unload;
+  return STATUS_SUCCESS;
+}
+</pre>
+<p>
+<b>AddDevice()</b>初始化List、DPC Timer和CSQ的Callback<br>
+<b>IrpIOCTL()</b>IOCTL_QUEUE把Irp加入List，IOCTL_PROCESS開始處理Irp<br>
+<b>OnTimer()</b>定時查看是否有需要處理的Irp<br>
+<b>CsqReleaseLock()</b>同步CSQ Irp用<br>
+<b>CsqAcquireLock()</b>同步CSQ Irp用<br>
+<b>CsqPeekNextIrp()</b>需要手動移除CSQ Irp時使用，目前沒有使用到<br>
+<b>CsqCompleteCanceledIrp</b>處理Cancel Irp用<br>
+<b>CsqRemoveIrp()</b>Irp被CSQ移除時呼叫<br>
+<b>CsqInsertIrp()</b>Irp被加入到CSQ時呼叫<br><br>
+
+app.c
+</p>
+<pre class="brush:cpp">
+#define INITGUID
+#include &lt;windows.h&gt;
+#include &lt;winioctl.h&gt;
+#include &lt;strsafe.h&gt;
+#include &lt;setupapi.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+ 
+#define IOCTL_QUEUE   CTL_CODE(FILE_DEVICE_UNKNOWN, 0x800, METHOD_BUFFERED, FILE_ANY_ACCESS)
+#define IOCTL_PROCESS CTL_CODE(FILE_DEVICE_UNKNOWN, 0x801, METHOD_BUFFERED, FILE_ANY_ACCESS)
+ 
+int __cdecl main(int argc, char* argv[])
+{
+  int i=0;
+  DWORD dwRet = 0;
+  HANDLE hFile = NULL;
+  OVERLAPPED ov[3]={0};
+ 
+  hFile = CreateFile("\\\\.\\MyDriver", GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_FLAG_OVERLAPPED | FILE_ATTRIBUTE_NORMAL, NULL);
+  if (hFile == INVALID_HANDLE_VALUE) {
+    printf("failed to open mydriver\n");
+    return -1;
+  }
+  for(i=0; i&lt;3; i++){
+    memset(&amp;ov[i], 0, sizeof(ov[i]));
+    ov[i].hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+    printf("queue event\n");
+    DeviceIoControl(hFile, IOCTL_QUEUE, NULL, 0, NULL, 0, &amp;dwRet, &amp;ov[i]);
+  }
+  printf("process all of events\n");
+  DeviceIoControl(hFile, IOCTL_PROCESS, NULL, 0, NULL, 0, &amp;dwRet, NULL);
+  Sleep(1000);
+  CancelIo(hFile);
+  for(i=0; i&lt;3; i++){
+    WaitForSingleObject(ov[i].hEvent, INFINITE);
+    CloseHandle(ov[i].hEvent);
+    printf("wait complete\n");
+  }
+  CloseHandle(hFile);
+  return 0;
+}
+</pre><br>
+
+<p>
+結果<br>
+<img src="asm_csq/2.jpg" class="maxSize"><br>
+<img src="asm_csq/3.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../driver.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

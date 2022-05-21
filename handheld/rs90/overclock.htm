@@ -1,0 +1,199 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>RetroMini</h3>
+<p><b>超頻改造</b></p>
+<hr size="1">
+<p>
+司徒看了一下JZ4725B手冊，發現有兩個電壓應該是跟超頻有關聯，那就是VDDPLL和VDDCORE<br>
+<img src="overclock/1.jpg" class="maxSize"><br>
+<img src="overclock/2.jpg" class="maxSize"><br><br>
+
+君正在手冊上寫建議電壓是1.8V，不過最大電壓則是寫上2.5V，這...，你是叫司徒操你的意思嗎？<br>
+<img src="overclock/3.jpg" class="maxSize"><br><br>
+
+司徒確認一下RetroMini(RS90)的電壓腳位，都是連接到VCORE_1_8V<br>
+<img src="overclock/4.jpg" class="maxSize"><br>
+<img src="overclock/5.jpg" class="maxSize"><br><br>
+
+VCORE_1_8V則是由WD1011EA驅動<br>
+<img src="overclock/6.jpg" class="maxSize"><br><br>
+
+司徒翻了一下手冊，找出電壓計算公式<br>
+<img src="overclock/7.jpg" class="maxSize"><br><br>
+
+目前是200K和100K電阻，換算電壓則是：<b>0.6 * (1 + (200K / 100K)) = 1.8V</b><br>
+<img src="overclock/8.jpg" class="maxSize"><br><br>
+
+果然是精密電阻<br>
+<img src="overclock/9.jpg" class="maxSize"><br><br>
+
+司徒手上剛好有7.5K和2.7K電阻，換算電壓則是：<b>0.6 * (1 + (7.5K / 2.7K)) = 2.27V</b><br>
+<img src="overclock/10.jpg" class="maxSize"><br><br>
+
+換裝完畢<br>
+<img src="overclock/11.jpg" class="maxSize"><br><br>
+
+測量到的電壓則是2.25V<br>
+<img src="overclock/12.jpg" class="maxSize"><br><br>
+
+接著，司徒發現系統上沒有<b>/dev/mem</b>，這...<br>
+<img src="overclock/13.jpg" class="maxSize"><br><br>
+
+而且超頻選項只有到456MHz，這...<br>
+<img src="overclock/14.jpg" class="maxSize"><br><br>
+
+於是，司徒抓了OpenDingux Kernel 5.1.0並且加入<b>/dev/mem</b>的支援<br>
+<img src="overclock/15.jpg" class="maxSize"><br><br>
+
+但是，更新Kernel後，發現USB有問題，司徒無法登入RS90操作，於是司徒又補上RNDIS的配置<br>
+<img src="overclock/16.jpg" class="maxSize"><br><br>
+
+萬事具備只欠東風<br>
+<img src="overclock/17.jpg" class="maxSize"><br><br>
+
+接著司徒查了一下PLL Register<br>
+<img src="overclock/21.jpg" class="maxSize"><br><br>
+
+CPU頻率的公式：<b>(12MHz * (M + 2)) / (N + 2)</b><br>
+<img src="overclock/22.jpg" class="maxSize"><br><br>
+
+君正自己都說可以到500MHz...<br>
+<img src="overclock/23.jpg" class="maxSize"><br><br>
+
+接著，司徒使用Snes9x4D模擬器並且把頻率設定到456MHz<br>
+<img src="overclock/18.jpg" class="maxSize"><br><br>
+
+雖然Snes9x4D沒有關閉FrameSkip的選項，不過，還是勉強可以當作一個比較基準，CPU=456MHz時，FPS=21<br>
+<img src="overclock/19.jpg" class="maxSize"><br><br>
+
+超頻程式
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;sys/mman.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;time.h&gt;
+ 
+int main(int argc, char* argv[])
+{
+  int fd = open("/dev/mem", O_RDWR);
+  if(fd &lt; 0){
+    printf("failed to open /dev/mem\n");
+    return -1;
+  }
+  
+  uint32_t M=0, N=0;
+  uint8_t *mem = mmap(0, 4096, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0x10000000);
+  if(mem == NULL){
+    close(fd);
+    printf("failed to mmap memory\n");
+    return -1;
+  }
+  printf("MEM: 0x%08x\n", mem);
+  printf("Cur CPCCR: 0x%08x\n", *((uint32_t*)(mem + 0x00)));
+  printf("Cur CPPCR: 0x%08x\n", *((uint32_t*)(mem + 0x10)));
+  printf("Cur CPPSR: 0x%08x\n", *((uint32_t*)(mem + 0x14)));
+
+  // (12MHz * (84 + 2)) / (0 + 2) = 516MHz
+  M = 84;
+  N = 0;
+  *((uint32_t*)(mem + 0x10)) = (M &lt;&lt; 23) | (N &lt; 18) | 0x00000520;
+  printf("New CPCCR: 0x%08x\n", *((uint32_t*)(mem + 0x00)));
+  printf("New CPPCR: 0x%08x\n", *((uint32_t*)(mem + 0x10)));
+  printf("New CPPSR: 0x%08x\n", *((uint32_t*)(mem + 0x14)));
+
+  munmap(mem, 4096);
+  close(fd);
+  return 0;
+}
+</pre><br>
+
+<p>
+登入RS90後，啟動超頻程式，CPU從456MHz超頻到516MHz<br>
+<img src="overclock/24.jpg" class="maxSize"><br>
+P.S. 司徒測試後，發現516MHz是最大極限<br><br>
+
+CPU=516MHz時，FPS=30<br>
+<img src="overclock/20.jpg" class="maxSize"><br><br>
+
+或許是電壓不足，導致CPU卡在516MHz，於是進階超頻登場，司徒使用4.7K和1.5K電阻，換算電壓則是：<b>0.6 * (1 + (4.7K / 1.5K)) = 2.48V</b><br>
+<img src="overclock/26.jpg" class="maxSize"><br><br>
+
+量測到的電壓是2.45V，不過，CPU頻率依舊卡在516MHz<br>
+<img src="overclock/27.jpg" class="maxSize"><br><br>
+
+司徒心想，超級賽亞人也是慢慢變身，才達到終極型態，因此，可能又是電壓不足的原因造成，於是，442K和120K電阻登場，換算電壓則是：<b>0.6 * (1 + (442K / 120K)) = 2.81V</b><br>
+<img src="overclock/29.jpg" class="maxSize"><br><br>
+
+量測到的電壓是2.84V，不過，CPU頻率依舊卡在516MHz<br>
+<img src="overclock/30.jpg" class="maxSize"><br><br>
+
+雖然從目前測試到的數據顯示，JZ4725B最高的CPU頻率就是516MHz，不過，司徒好奇，如果電壓再繼續加上去呢？搞不好，它真的可以變身成最強型態...，於是，442K和105K電阻登場，換算電壓則是：<b>0.6 * (1 + (442K / 105K)) = 3.13V</b><br>
+<img src="overclock/32.jpg" class="maxSize"><br><br>
+
+
+量測到的電壓是3.21V，不過，CPU頻率依舊卡在516MHz，因此，JZ4725B的最高CPU頻率應該就是516MHz<br>
+<img src="overclock/33.jpg" class="maxSize"><br><br>
+
+最後，司徒派出二姐量測溫度，發現MIPS果然沒有ARM來得激情...<br>
+<img src="overclock/31.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

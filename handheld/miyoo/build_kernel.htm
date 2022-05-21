@@ -1,0 +1,241 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Miyoo</h3>
+<p><b>build kernel 4.14.0</b></p>
+<hr size="1">
+<p>
+編譯步驟如下：
+</p>
+<pre>
+$ cd
+$ wget https://github.com/steward-fu/miyoo/releases/download/v1.2/kernel.7z
+$ 7za x kernel.7z
+$ cd kernel
+$ make ARCH=arm CROSS_COMPILE=arm-linux- miyoo_defconfig
+$ make ARCH=arm CROSS_COMPILE=arm-linux- clean
+$ make ARCH=arm CROSS_COMPILE=arm-linux- -j8
+</pre><br>
+
+<p>
+燒錄到SPI Flash
+</p>
+<pre>
+sudo sunxi-fel -p spiflash-write 1048576 arch/arm/boot/dts/suniv-f1c500s-miyoo.dtb
+sudo sunxi-fel -p spiflash-write 1114112 arch/arm/boot/zImage
+</pre><br>
+
+<p>
+完成
+</p>
+<pre>
+U-Boot SPL 2018.01-gfcaa41c-dirty (Dec 18 2018 - 17:21:52)
+DRAM: 32 MiB
+Trying to boot from MMC1
+Card did not respond to voltage select!
+mmc_init: -95, time 22
+spl: mmc init failed with error: -95
+Trying to boot from sunxi SPI
+
+
+U-Boot 2018.01-gfcaa41c-dirty (Dec 18 2018 - 17:21:52 +0800) for Miyoo handheld
+
+CPU:   Allwinner F Series (SUNIV)
+Model: Miyoo Handheld
+DRAM:  32 MiB
+MMC:   SUNXI SD/MMC: 0
+SF: Detected w25q64cv with page size 256 Bytes, erase size 4 KiB, total 8 MiB
+*** Warning - bad CRC, using default environment
+
+In:    serial@1c25400
+Out:   serial@1c25400
+Err:   serial@1c25400
+Net:   No ethernet found.
+starting USB...
+No controllers found
+Hit any key to stop autoboot:  0 
+SF: Detected w25q64cv with page size 256 Bytes, erase size 4 KiB, total 8 MiB
+device 0 offset 0x100000, size 0x4000
+SF: 16384 bytes @ 0x100000 Read: OK
+device 0 offset 0x110000, size 0x400000
+SF: 4194304 bytes @ 0x110000 Read: OK
+## Flattened Device Tree blob at 80c00000
+   Booting using the fdt blob at 0x80c00000
+   Loading Device Tree to 816fb000, end 816ffdd7 ... OK
+
+Starting kernel ...
+
+[    0.000000] Booting Linux on physical CPU 0x0
+[    0.000000] Linux version 4.14.0-miyoo (steward@debian) (gcc version 6.3.0 20170516 (Debian 6.3.0-18)) #1 Tue Dec 18 17:48:10 CST 2018
+[    0.000000] CPU: ARM926EJ-S [41069265] revision 5 (ARMv5TEJ), cr=0005317f
+[    0.000000] CPU: VIVT data cache, VIVT instruction cache
+[    0.000000] OF: fdt: Machine model: Miyoo Handheld
+[    0.000000] Memory policy: Data cache writeback
+[    0.000000] random: fast init done
+[    0.000000] Built 1 zonelists, mobility grouping on.  Total pages: 8128
+[    0.000000] Kernel command line: console=ttyS1,115200 earlyprintk panic=5 rootwait root=/dev/mmcblk0p2 earlyprintk rw rootfstype=ext4
+[    0.000000] PID hash table entries: 128 (order: -3, 512 bytes)
+[    0.000000] Dentry cache hash table entries: 4096 (order: 2, 16384 bytes)
+[    0.000000] Inode-cache hash table entries: 2048 (order: 1, 8192 bytes)
+[    0.000000] Memory: 22680K/32768K available (6144K kernel code, 208K rwdata, 1356K rodata, 1024K init, 248K bss, 10088K reserved, 0K cma-reserved, 0K highmem)
+[    0.000000] Virtual kernel memory layout:
+[    0.000000]     vector  : 0xffff0000 - 0xffff1000   (   4 kB)
+[    0.000000]     fixmap  : 0xffc00000 - 0xfff00000   (3072 kB)
+[    0.000000]     vmalloc : 0xc2800000 - 0xff800000   ( 976 MB)
+[    0.000000]     lowmem  : 0xc0000000 - 0xc2000000   (  32 MB)
+[    0.000000]     pkmap   : 0xbfe00000 - 0xc0000000   (   2 MB)
+[    0.000000]     modules : 0xbf000000 - 0xbfe00000   (  14 MB)
+[    0.000000]       .text : 0xc0008000 - 0xc0700000   (7136 kB)
+[    0.000000]       .init : 0xc0900000 - 0xc0a00000   (1024 kB)
+[    0.000000]       .data : 0xc0a00000 - 0xc0a34120   ( 209 kB)
+[    0.000000]        .bss : 0xc0a392ec - 0xc0a77684   ( 249 kB)
+[    0.000000] SLUB: HWalign=32, Order=0-3, MinObjects=0, CPUs=1, Nodes=1
+[    0.000000] NR_IRQS: 16, nr_irqs: 16, preallocated irqs: 16
+[    0.000045] sched_clock: 32 bits at 24MHz, resolution 41ns, wraps every 89478484971ns
+[    0.000111] clocksource: timer: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 79635851949 ns
+[    0.000612] Console: colour dummy device 80x30
+[    0.000700] Calibrating delay loop... 203.16 BogoMIPS (lpj=1015808)
+[    0.070235] pid_max: default: 32768 minimum: 301
+[    0.070575] Mount-cache hash table entries: 1024 (order: 0, 4096 bytes)
+[    0.070625] Mountpoint-cache hash table entries: 1024 (order: 0, 4096 bytes)
+[    0.072032] CPU: Testing write buffer coherency: ok
+[    0.073616] Setting up static identity map for 0x80100000 - 0x80100058
+[    0.076036] devtmpfs: initialized
+[    0.082683] clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 19112604462750000 ns
+[    0.082751] futex hash table entries: 256 (order: -1, 3072 bytes)
+[    0.083002] pinctrl core: initialized pinctrl subsystem
+[    0.084983] NET: Registered protocol family 16
+[    0.086478] DMA: preallocated 256 KiB pool for atomic coherent allocations
+[    0.088334] cpuidle: using governor menu
+[    0.112352] SCSI subsystem initialized
+[    0.112674] usbcore: registered new interface driver usbfs
+[    0.112828] usbcore: registered new interface driver hub
+[    0.113029] usbcore: registered new device driver usb
+[    0.113457] pps_core: LinuxPPS API ver. 1 registered
+[    0.113490] pps_core: Software ver. 5.3.6 - Copyright 2005-2007 Rodolfo Giometti <giometti@linux.it>
+[    0.113556] PTP clock support registered
+[    0.114005] Advanced Linux Sound Architecture Driver Initialized.
+[    0.117082] clocksource: Switched to clocksource timer
+[    0.142919] NET: Registered protocol family 2
+[    0.144326] TCP established hash table entries: 1024 (order: 0, 4096 bytes)
+[    0.144408] TCP bind hash table entries: 1024 (order: 0, 4096 bytes)
+[    0.144461] TCP: Hash tables configured (established 1024 bind 1024)
+[    0.144719] UDP hash table entries: 256 (order: 0, 4096 bytes)
+[    0.144784] UDP-Lite hash table entries: 256 (order: 0, 4096 bytes)
+[    0.145224] NET: Registered protocol family 1
+[    0.146196] RPC: Registered named UNIX socket transport module.
+[    0.146239] RPC: Registered udp transport module.
+[    0.146258] RPC: Registered tcp transport module.
+[    0.146276] RPC: Registered tcp NFSv4.1 backchannel transport module.
+[    0.147568] NetWinder Floating Point Emulator V0.97 (double precision)
+[    0.149342] Initialise system trusted keyrings
+[    0.149903] workingset: timestamp_bits=30 max_order=13 bucket_order=0
+[    0.166835] NFS: Registering the id_resolver key type
+[    0.166948] Key type id_resolver registered
+[    0.166975] Key type id_legacy registered
+[    0.179655] Key type asymmetric registered
+[    0.179699] Asymmetric key parser 'x509' registered
+[    0.179910] Block layer SCSI generic (bsg) driver version 0.4 loaded (major 251)
+[    0.179944] io scheduler noop registered
+[    0.179963] io scheduler deadline registered
+[    0.180678] io scheduler cfq registered (default)
+[    0.180714] io scheduler mq-deadline registered
+[    0.180734] io scheduler kyber registered
+[    0.181794] sun4i-usb-phy 1c13400.phy: Couldn't request ID GPIO
+[    0.191602] suniv-pinctrl 1c20800.pinctrl: initialized sunXi PIO driver
+[    0.360150] Serial: 8250/16550 driver, 8 ports, IRQ sharing disabled
+[    0.386849] 1c25000.serial: ttyS0 at MMIO 0x1c25000 (irq = 22, base_baud = 6250000) is a 16550A
+[    0.409521] 1c25400.serial: ttyS1 at MMIO 0x1c25400 (irq = 23, base_baud = 6250000) is a 16550A
+[    0.888614] console [ttyS1] enabled
+[    0.897880] SCSI Media Changer driver v0.25 
+[    0.903405] ehci_hcd: USB 2.0 'Enhanced' Host Controller (EHCI) Driver
+[    0.910059] ehci-platform: EHCI generic platform driver
+[    0.915534] ohci_hcd: USB 1.1 'Open' Host Controller (OHCI) Driver
+[    0.921833] ohci-platform: OHCI generic platform driver
+[    0.927483] usbcore: registered new interface driver usb-storage
+[    0.933932] musb-sunxi 1c13000.usb: Invalid or missing 'dr_mode' property
+[    0.940872] musb-sunxi: probe of 1c13000.usb failed with error -22
+[    0.947427] i2c /dev entries driver
+[    1.007216] sunxi-mmc 1c0f000.mmc: base:0xc2857000 irq:18
+[    1.014616] usbcore: registered new interface driver usbhid
+[    1.020319] usbhid: USB HID core driver
+[    1.041735] NET: Registered protocol family 17
+[    1.046422] Key type dns_resolver registered
+[    1.053273] Loading compiled-in X.509 certificates
+[    1.069711] ALSA device list:
+[    1.072713]   #0: Loopback 1
+[    1.076766] Waiting for root device /dev/mmcblk0p2...
+[    1.205248] mmc0: host does not support reading read-only switch, assuming write-enable
+[    1.218208] mmc0: new high speed SDHC card at address aaaa
+[    1.224727] mmcblk0: mmc0:aaaa SU04G 3.69 GiB 
+[    1.244690]  mmcblk0: p1 p2
+[    1.319973] EXT4-fs (mmcblk0p2): recovery complete
+[    1.328649] EXT4-fs (mmcblk0p2): mounted filesystem with ordered data mode. Opts: (null)
+[    1.336847] VFS: Mounted root (ext4 filesystem) on device 179:2.
+[    1.346585] devtmpfs: mounted
+[    1.354094] Freeing unused kernel memory: 1024K
+[    1.740520] EXT4-fs (mmcblk0p2): re-mounted. Opts: data=ordered
+Starting logging: OK
+Initializing random number generator... done.
+/ # uname -r
+4.14.0-miyoo
+</pre><br>
+
+<p>
+完成<br>
+<img src="build_kernel/1.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

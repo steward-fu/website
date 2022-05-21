@@ -1,0 +1,117 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>MinGW &gt;&gt; OpenCV</h3>
+<p><b>解決"error: recursive_mutex in namespace std does not name a type"問題</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://github.com/tpoechtrager/wclang/issues/37">issues</a><br>
+2. <a href="https://stackoverflow.com/questions/14191566/c-mutex-in-namespace-std-does-not-name-a-type">c-mutex-in-namespace-std-does-not-name-a-type</a><br><br>
+
+問題如下：
+</p>
+<pre>
+In file included from opencv-4.3.0/modules/core/src/precomp.hpp:49:0,
+                 from opencv-4.3.0/modules/core/src/algorithm.cpp:43:
+opencv-4.3.0/modules/core/include/opencv2/core/utility.hpp:714:14: error: ‘recursive_mutex’ in namespace ‘std’ does not name a type
+ typedef std::recursive_mutex Mutex;
+              ^~~~~~~~~~~~~~~
+opencv-4.3.0/modules/core/include/opencv2/core/utility.hpp:715:25: error: ‘Mutex’ is not a member of ‘cv’
+ typedef std::lock_guard&lt;cv::Mutex&gt; AutoLock;
+                         ^~
+opencv-4.3.0/modules/core/include/opencv2/core/utility.hpp:715:25: error: ‘Mutex’ is not a member of ‘cv’
+opencv-4.3.0/modules/core/include/opencv2/core/utility.hpp:715:34: error: template argument 1 is invalid
+ typedef std::lock_guard&lt;cv::Mutex&gt; AutoLock;
+                                  ^
+In file included from opencv-4.3.0/modules/core/src/algorithm.cpp:43:0:
+opencv-4.3.0/modules/core/src/precomp.hpp:365:5: error: ‘Mutex’ in namespace ‘cv’ does not name a type
+ cv::Mutex&&amp; getInitializationMutex();
+     ^~~~~
+modules/core/CMakeFiles/opencv_core.dir/build.make:109: recipe for target 'modules/core/CMakeFiles/opencv_core.dir/src/algorithm.cpp.o' failed
+make[2]: *** [modules/core/CMakeFiles/opencv_core.dir/src/algorithm.cpp.o] Error 1
+CMakeFiles/Makefile2:1839: recipe for target 'modules/core/CMakeFiles/opencv_core.dir/all' failed
+make[1]: *** [modules/core/CMakeFiles/opencv_core.dir/all] Error 2
+Makefile:182: recipe for target 'all' failed
+make: *** [all] Error 2
+</pre><br>
+
+<p>
+解法如下(執行如下命令切換成支援posix的編譯器)：
+</p>
+<pre>
+$ sudo update-alternatives --config x86_64-w64-mingw32-gcc
+  There are 2 choices for the alternative x86_64-w64-mingw32-gcc (providing /usr/bin/x86_64-w64-mingw32-gcc).
+
+    Selection    Path                                   Priority   Status
+  ------------------------------------------------------------
+    0            /usr/bin/x86_64-w64-mingw32-gcc-win32   60        auto mode
+  * 1            /usr/bin/x86_64-w64-mingw32-gcc-posix   30        manual mode
+    2            /usr/bin/x86_64-w64-mingw32-gcc-win32   60        manual mode
+
+  Press &lt;enter&gt; to keep the current choice[*], or type selection number:
+
+$ sudo update-alternatives --config x86_64-w64-mingw32-g++
+  There are 2 choices for the alternative x86_64-w64-mingw32-g++ (providing /usr/bin/x86_64-w64-mingw32-g++).
+
+    Selection    Path                                   Priority   Status
+  ------------------------------------------------------------
+    0            /usr/bin/x86_64-w64-mingw32-g++-win32   60        auto mode
+  * 1            /usr/bin/x86_64-w64-mingw32-g++-posix   30        manual mode
+    2            /usr/bin/x86_64-w64-mingw32-g++-win32   60        manual mode
+
+  Press &lt;enter&gt; to keep the current choice[*], or type selection number:
+</pre><br>
+
+<p>
+<br><a href="../../program.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,103 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../../../header.js"></script>
+<div id="page">
+<h3>Gemini PDA 4G &gt;&gt; Android &gt;&gt; Termux</h3>
+<p><b>build sdcc 3.8.0</b></p>
+<hr size="1">
+<p>
+必須先自己編譯安裝gputils(支援PIC14、PIC16)和libboost(SDCC需要)
+</p>
+<pre>
+$ cd
+$ wget https://sourceforge.net/projects/sdcc/files/sdcc/3.8.0/sdcc-src-3.8.0.tar.bz2/download -O sdcc.tar.bz2
+$ tar xvf sdcc.tar.bz2
+$ cd sdcc-3.8.0
+$ ./configure --prefix=$PREFIX
+$ make
+  make[4]: *** [Makefile:477: build/ds390/libfloat.lib] Segmentation fault
+
+$ cd device/lib/mcs51/
+$ make
+  ../../../bin/sdar -rcD ../build//mcs51.lib crtstart.rel crtxinit.rel crtxclear.rel crtclear.rel
+  crtpagesfr.rel crtbank.rel crtcall.rel crtxstack.rel crtxpush.rel crtxpushr0.rel crtxpop.rel
+  crtxpopr0.rel gptr_cmp.rel
+  make: *** [Makefile:40: ../build//mcs51.lib] Segmentation fault
+  make: *** Deleting file '../build//mcs51.lib'
+
+$ ltrace ../../../bin/sdar -rcD test.lib crtstart.rel
+  ...
+  fopen64("test.lib", "r")                         = 0x71d3a13018
+  fileno(0xffffffffd3a13018 <no return ...>
+  --- SIGSEGV (Segmentation fault) ---
+  unexpected breakpoint at 0x71d40547f8
+  --- SIGSEGV (Segmentation fault) ---
+  +++ killed by SIGSEGV +++
+
+$ cd 
+$ cd sdcc-3.8.0
+$ vim support/sdbinutils/bfd/configure +15860
+  #for ac_func in ftello ftello64 fseeko fseeko64 fopen64
+  for ac_func in ftello fseeko
+
+$ make distclean
+$ ./configure --prefix=$PREFIX
+$ make
+$ make install
+$ sdcc --version
+  SDCC : mcs51/z80/z180/r2k/r3ka/gbz80/tlcs90/ds390/pic16/pic14/TININative/ds400/hc08/s08/stm8 3.8.0 #10562 (Linux)
+  published under GNU General Public License (GPL)
+</pre><br>
+
+<p>
+<br><a href="../../../../phone.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,186 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Linux Device Driver &gt;&gt; Assembly (ARM)</h3>
+<p><b>mod_timer</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://github.com/steward-fu/ldd">Source Code</a><br><br>
+
+Timer是一種Callback機制，提供使用者設定片段時間後觸發的方式，Timer有區分一次性或者週期性，Linux Kernel提供的mod_timer()是屬於一次性，而計算片段時間則是使用jiffies計算，jiffies是一個Global變數，該變數用來紀錄時間的中斷次數(從開機後)，可以搭配msecs_to_jiffies()計算出需要的時間間隔<br><br>
+
+使用步驟：<br>
+1. init_timer_key()<br>
+2. mod_timer()<br>
+3. del_timer()<br><br>
+
+ldd.S
+</p>
+<pre class="brush:asm">
+.global init_module
+.global cleanup_module
+
+.equ USR3_LED, ((32 * 1) + 24)
+.equ PERIOD,   (300 / 4)
+
+.equ timer_list.entry,    0
+.equ timer_list.expires,  8
+.equ timer_list.function, 12
+.equ timer_list.data,     16
+.equ timer_list.flags,    20
+
+.struct 0
+timer_list_s:
+  i0: .struct . + 8
+  i1: .struct . + 4
+  i2: .struct . + 4
+  i3: .struct . + 4
+  i4: .struct . + 4
+timer_list_e:
+timer_list_l = timer_list_e - timer_list_s
+
+.section .modinfo, "ae"
+__UNIQUE_ID_0: .asciz "license=GPL"
+__UNIQUE_ID_1: .asciz "author=Steward Fu"
+__UNIQUE_ID_2: .asciz "description=Linux Driver"
+
+.section .data
+led_name:  .asciz "USR3"
+led_state: .dcb 4
+gpio_desc: .dcb 4
+timer:     .space timer_list_l
+
+.align 2
+.section .text
+timer_handler:
+  push {lr}
+  ldr r0, =gpio_desc
+  ldr r0, [r0]
+  ldr r2, =led_state
+  ldr r1, [r2]
+  eor r1, #1
+  str r1, [r2]
+  bl gpiod_set_raw_value
+  
+  ldr r0, =timer
+  ldr r1, =jiffies
+  ldr r1, [r1]
+  add r1, #PERIOD
+  bl mod_timer
+  pop {pc}
+
+init_module:
+  push {r4, lr}
+
+  mov r0, #USR3_LED
+  ldr r1, =led_name
+  bl gpio_request
+
+  mov r0, #USR3_LED
+  bl gpio_to_desc
+  mov r4, r0
+  ldr r1, =gpio_desc
+  str r4, [r1]
+
+  mov r0, r4
+  mov r1, #1
+  bl gpiod_direction_output_raw
+
+  ldr r0, =timer
+  mov r1, #0
+  mov r2, #0
+  mov r3, #0
+  bl init_timer_key
+
+  ldr r0, =timer
+  add r0, #timer_list.function
+  ldr r1, =timer_handler
+  str r1, [r0]
+
+  ldr r0, =timer
+  add r0, #timer_list.data
+  mov r1, #0
+  str r1, [r0]
+
+  ldr r0, =timer
+  ldr r2, =jiffies
+  ldr r1, [r2]
+  add r1, #PERIOD
+  ldr r3, =timer_handler
+  bl mod_timer
+
+  mov r0, #0
+  pop {r4, pc}
+
+cleanup_module:
+  push {lr}
+  ldr r0, =timer
+  bl del_timer
+  mov r0, #USR3_LED
+  bl gpio_free
+  pop {pc}
+.end
+</pre>
+<p>
+<b>init_module</b>: 設定GPIO以及Timer，msecs_to_jiffies()設定的內容，司徒直接使用常數設定<br>
+<b>timer_handler</b>: 閃爍LED之外，由於mod_timer()是屬於一次性，因此，只要再次設定就可以變成週期性Timer<br>
+<b>cleanup_module</b>: 刪除GPIO以及Timer資源<br><br>
+
+完成<br>
+<img src="cpp_gpio_output/2.jpg" class="maxSize"><br>
+<img src="cpp_gpio_output/3.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../driver.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

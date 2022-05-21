@@ -1,0 +1,220 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>STM32F103 &gt;&gt; Assembly</h3>
+<p><b>LED</b></p>
+<hr size="1">
+<p>
+參考資料：<br>
+1. <a href="https://www.st.com/resource/en/reference_manual/cd00171190-stm32f101xx-stm32f102xx-stm32f103xx-stm32f105xx-and-stm32f107xx-advanced-arm-based-32-bit-mcus-stmicroelectronics.pdf">pdf</a><br><br>
+
+RCC_APB2ENR暫存器，需要開啟GPIO-C的Clock<br>
+<img src="asm_led/1.jpg" class="maxSize"><br><br>
+
+LED位置是PC13，設定成Output 50MHz<br>
+<img src="asm_led/2.jpg" class="maxSize"><br><br>
+
+輸出資料<br>
+<img src="asm_led/3.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+  .thumb
+  .cpu cortex-m3
+  .syntax unified
+  
+  .equ GPIOC_CRL,   0x40011000
+  .equ GPIOC_CRH,   0x40011004
+  .equ GPIOC_IDR,   0x40011008
+  .equ GPIOC_ODR,   0x4001100c
+  .equ GPIOC_BSRR,  0x40011010
+  .equ GPIOC_BRR,   0x40011014
+  .equ GPIOC_LCKR,  0x40011018
+  .equ RCC_APB2ENR, 0x40021018
+ 
+  .equ STACKINIT,   0x20005000
+   
+  .global _start
+  .section .text
+  .org 0x0
+  .word STACKINIT
+  .word _start
+ 
+  .org 0x100
+  .align 2
+  .thumb_func
+_start:
+  ldr r0, =0x00000010
+  ldr r1, =RCC_APB2ENR
+  str r0, [r1]
+
+  ldr r0, =GPIOC_CRH
+  ldr r1, =(3 &lt;&lt; 20)
+  str r1, [r0]
+
+  ldr r2, =GPIOC_ODR
+  ldr r3, =(1 &lt;&lt; 13)
+loop:
+  str r3, [r2]
+  eor r3, (1 &lt;&lt; 13)
+  ldr r0, =50
+  bl delay
+  b loop
+ 
+  .align 2
+  .thumb_func
+delay:
+  push {lr}
+0:
+  ldr r1, =8000
+1:
+  sub r1, #1
+  cmp r1, #0
+  bne 1b
+  sub r0, #1
+  cmp r0, #0
+  bne 0b
+  pop {pc} 
+  .end
+</pre><br>
+
+<p>
+main.ld
+</p>
+<pre>
+MEMORY {
+  RAM (xrw) : ORIGIN = 0x20000000, LENGTH = 20K
+  FLASH (rx) : ORIGIN = 0x8000000, LENGTH = 128K
+}
+ 
+SECTIONS {
+  .text : { 
+    *(.text)
+  } >FLASH
+   
+  .bss : { 
+    *(.bss)
+  } >RAM
+ 
+  .data : { 
+    *(.data)
+  } >RAM
+}
+</pre><br>
+
+<p>
+Makefile
+</p>
+<pre>
+all:
+  arm-none-eabi-as -ggdb -mcpu=cortex-m3 -mthumb -mthumb-interwork -o main.o main.s
+  arm-none-eabi-ld -T main.ld -o main.elf main.o
+  arm-none-eabi-objcopy -O binary main.elf main.bin
+ 
+flash:
+  sudo openocd -f /usr/local/share/openocd/scripts/interface/stlink.cfg -f /usr/local/share/openocd/scripts/target/stm32f1x.cfg -c "program main.bin reset exit 0x8000000"
+ 
+debug:
+  sudo openocd -f /usr/local/share/openocd/scripts/interface/stlink-v2.cfg -f /usr/local/share/openocd/scripts/target/stm32f1x.cfg -c "program main.bin halt 0x8000000"
+ 
+clean:
+  rm -rf main.o main.elf main.bin
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ make
+  arm-none-eabi-as -ggdb -mcpu=cortex-m3 -mthumb -mthumb-interwork -o main.o main.s
+  arm-none-eabi-ld -T main.ld -o main.elf main.o
+  arm-none-eabi-objcopy -O binary main.elf main.bin
+</pre><br>
+
+<p>
+燒錄
+</p>
+<pre>
+$ make flash
+  sudo openocd -f /usr/local/share/openocd/scripts/interface/stlink.cfg -f /usr/local/share/openocd/scripts/target/stm32f1x.cfg -c "program main.bin reset exit 0x8000000"
+  Open On-Chip Debugger 0.11.0-rc1+dev-00010-gc69b4deae-dirty (2020-12-27-01:20)
+  Licensed under GNU GPL v2
+  For bug reports, read
+    http://openocd.org/doc/doxygen/bugs.html
+  Info : auto-selecting first available session transport "hla_swd". To override use 'transport select <transport>'.
+  Info : The selected transport took over low-level target control. The results might differ compared to plain JTAG/SWD
+  Info : clock speed 1000 kHz
+  Info : STLINK V2J17S4 (API v2) VID:PID 0483:3748
+  Info : Target voltage: 3.195294
+  Info : stm32f1x.cpu: hardware has 6 breakpoints, 4 watchpoints
+  Info : starting gdb server for stm32f1x.cpu on 3333
+  Info : Listening on port 3333 for gdb connections
+  target halted due to debug-request, current mode: Thread
+  xPSR: 0x01000000 pc: 0x08000100 msp: 0x20005000
+  ** Programming Started **
+  Info : device id = 0x20036410
+  Info : flash size = 128kbytes
+  ** Programming Finished **
+  ** Resetting Target **
+  shutdown command invoked
+</pre><br>
+
+<p>
+完成<br>
+<img src="asm_led/4.jpg" class="maxSize"><br>
+<img src="asm_led/5.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

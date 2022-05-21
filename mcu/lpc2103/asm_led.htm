@@ -1,0 +1,201 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>LPC2103 &gt;&gt; Assembly</h3>
+<p><b>LED</b></p>
+<hr size="1">
+<p>
+參考資料：<br>
+1. <a href="https://www.keil.com/dd/docs/datashts/philips/user_manual_lpc2101_2102_2103.pdf">pdf</a><br><br>
+
+暫存器<br>
+<img src="asm_led/3.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+  .equ IODIR, 0xe0028008
+  .equ IOCLR, 0xe002800c
+  .equ IOSET, 0xe0028004
+
+  .text
+  .align 2
+  .global _start
+_start:    b reset
+_undef:    b .
+_swi:      b .
+_pabort:   b .
+_dabort:   b .
+_reserved: b .
+_irq:      b .
+_fiq:      b .
+ 
+reset:
+  ldr r0, =IODIR
+  ldr r1, =(1 &lt;&lt; 22)
+  str r1, [r0]
+loop:
+  ldr r0, =IOCLR
+  ldr r1, =(1 &lt;&lt; 22)
+  str r1, [r0]
+  ldr r4, =50000
+1:
+  nop
+  subs r4, r4, #1
+  bne 1b
+  ldr r0, =IOSET
+  ldr r1, =(1 &lt;&lt; 22)
+  str r1, [r0]
+  ldr r4, =50000
+1:
+  nop
+  subs r4, r4, #1
+  bne 1b
+  b loop
+  .end
+</pre><br>
+
+<p>
+main.ld
+</p>
+<pre>
+MEMORY {
+  flash : ORIGIN = 0, LENGTH = 32K
+  ram : ORIGIN = 0x40000000, LENGTH = 8K
+}
+
+__stack_end__ = 0x40000000 + 8K - 4;
+SECTIONS {
+  . = 0;
+  startup : { *(.startup)} &gt;flash
+  prog : {
+    *(.text)
+    *(.rodata)
+    *(.rodata*)
+    *(.glue_7)
+    *(.glue_7t)
+  } &gt;flash
+  __end_of_text__ = .;
+  .data : {
+    __data_beg__ = .;
+    __data_beg_src__ = __end_of_text__;
+    *(.data)
+    __data_end__ = .;
+  } &gt;ram AT&gt;flash
+  .bss : {
+    __bss_beg__ = .;
+    *(.bss)
+  } &gt;ram
+  . = ALIGN(32 / 8);
+}
+. = ALIGN(32 / 8);
+_end = .;
+_bss_end__ = . ; __bss_end__ = . ; __end__ = . ;
+</pre><br>
+
+<p>
+Makefile
+</p>
+<pre>
+all:
+  arm-none-eabi-as -ggdb -mcpu=arm7 -o main.o main.s
+  arm-none-eabi-ld -T main.ld -o main.elf main.o
+  arm-none-eabi-objcopy -O ihex main.elf main.ihx
+  packihx main.ihx > main.hex
+
+flash:
+  sudo lpc21isp -wipe -control  -verify -debug2 ./main.hex /dev/ttyUSB0 9600 12000
+
+clean:
+  rm -rf main.ihx main.hex main.o main.elf
+</pre><br>
+
+<p>
+編譯、燒錄
+</p>
+<pre>
+$ make
+  arm-none-eabi-as -ggdb -mcpu=arm7 -o main.o main.s
+  arm-none-eabi-ld -T main.ld -o main.elf main.o
+  arm-none-eabi-objcopy -O ihex main.elf main.ihx
+  packihx main.ihx > main.hex
+  packihx: read 10 lines, wrote 10: OK.
+
+$ make flash
+  sudo lpc21isp -wipe -control  -verify -debug2 ./main.hex /dev/ttyUSB0 9600 12000
+  Verify after copy RAM to Flash.
+  lpc21isp version 1.97
+  File ./main.hex:
+    loaded...
+    converted to binary format...
+    image size : 136
+  Image size : 136
+  Synchronizing (ESC to abort). OK
+  Read bootcode version: 21
+  2
+  Read part ID: LPC2103, 32 kiB FLASH / 8 kiB SRAM (0x0004FF11)
+  Will start programming at Sector 1 if possible, and conclude with Sector 0 to ensure that checksum is written last.
+  Wiping Device. OK
+  Sector 0: ......
+  Download Finished and Verified correct... taking 1 seconds
+  Now launching the brand new code
+</pre><br>
+
+<p>
+完成<br>
+<img src="asm_led/1.jpg" class="maxSize"><br>
+<img src="asm_led/2.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,112 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>病毒樣本分析</h3>
+<p><b>如何製作TLS PE檔案</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://gclxry.com/article/tls-callback/">tls-callback</a><br>
+2. <a href="https://stackoverflow.com/questions/14538159/about-tls-callback-in-windows">about-tls-callback-in-windows</a><br><br>
+
+TLS(Thread-local storage)的callback是一個比較特別的EntryPoint，此EntryPoint執行的時間，會比main()來得更早，也就是當使者執行PE檔案時，TLS EntryPoint會先被跑起來，接著才是main()，因此，是很多早期病毒使用的技巧之一，司徒今天使用一個簡單範例，說明如何製作這樣的執行檔案<br><br>
+
+main.cpp
+</p>
+<pre class="brush:cpp">
+#include "stdafx.h"
+#include &lt;windows.h&gt;
+
+#pragma comment(linker, "/INCLUDE:__tls_used")
+
+void NTAPI tls(PVOID module, DWORD reason, PVOID reserved)
+{
+  switch(reason){
+  case DLL_PROCESS_ATTACH:
+    MessageBox(NULL, "Run from TLS (DLL_PROCESS_ATTACH)", "Info", MB_OK);
+    break;
+  case DLL_THREAD_ATTACH:
+    MessageBox(NULL, "Run from TLS (DLL_THREAD_ATTACH)", "Info", MB_OK);
+    break;
+  case DLL_THREAD_DETACH:
+    MessageBox(NULL, "Run from TLS (DLL_THREAD_DETACH)", "Info", MB_OK);
+    break;
+  case DLL_PROCESS_DETACH:
+    MessageBox(NULL, "Run from TLS (DLL_PROCESS_DETACH)", "Info", MB_OK);
+    break;
+  }
+}
+
+#pragma data_seg(".CRT$XLB")
+PIMAGE_TLS_CALLBACK p_thread_callback_base = tls;
+#pragma data_seg()
+
+int main(int argc, char** argv)
+{
+  MessageBox(NULL, "Run from Main", "Info", MB_OK);
+  return 0;
+}
+</pre>
+<p>
+P.S. 使用VisualStudio編譯<br><br>
+
+完成<br>
+<img src="tls/1.jpg" class="maxSize"><br><br>
+
+TLS EntryPoint<br>
+<img src="tls/2.jpg" class="maxSize"><br>
+<img src="tls/3.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../reverse.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

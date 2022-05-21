@@ -1,0 +1,207 @@
+<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Kernel Mode Driver Framework &gt;&gt; C/C++ (PNP) &gt;&gt; Timer</h3>
+<p><b>DPC</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://github.com/steward-fu/kmdf">Source Code</a><br><br>
+
+由於I/O Timer的Timer間隔固定為一秒，如果使用者想要可以彈性設定的Timer間隔，則需要使用DPC Timer，使用的步驟：<br>
+1. KeInitializeTimer()<br>
+2. KeInitializeDpc()<br>
+3. KeSetTimer()<br>
+4. KeCancelTimer()<br><br>
+
+DPC Timer如果使用KeSetTimer()做設定時，其Timer為一次性，也就是Callback僅會被呼叫一次，如果要使用週期性Timer，則需要改用KeSetTimerEx()，KeSetTimerEx()宣告如下：
+</p>
+<pre class="brush:cpp">
+BOOLEAN KeSetTimerEx(PKTIMER Timer, LARGE_INTEGER DueTime, LONG Period, PKDPC Dpc);
+</pre>
+<p>
+DueTime是第一次Timer的間隔，之後的間隔則使用Period數值。<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;ntddk.h&gt;
+#include &lt;wdf.h&gt;
+
+#define DEV_NAME L"\\Device\\MyDriver"
+#define SYM_NAME L"\\DosDevices\\MyDriver"
+
+#define IOCTL_START CTL_CODE(FILE_DEVICE_UNKNOWN, 0x800, METHOD_BUFFERED, FILE_ANY_ACCESS)
+#define IOCTL_STOP  CTL_CODE(FILE_DEVICE_UNKNOWN, 0x801, METHOD_BUFFERED, FILE_ANY_ACCESS)
+
+KDPC dpc;
+KTIMER obj;
+ULONG cnt=0;
+PDEVICE_OBJECT pDevice;
+
+VOID OnTimer(struct _KDPC *Dpc, PVOID DeferredContext, PVOID SystemArgument1, PVOID SystemArgument2)
+{
+  cnt+= 1;
+  DbgPrint("DpcTimer: %d\n", cnt);
+}
+ 
+void IrpFileCreate(WDFDEVICE Device, WDFREQUEST Request, WDFFILEOBJECT FileObject)
+{  
+  DbgPrint("IrpFieCreate");
+  WdfRequestComplete(Request, STATUS_SUCCESS);
+}
+
+void IrpFileClose(WDFFILEOBJECT FileObject)
+{
+  DbgPrint("IrpFieClose");
+}
+
+void IrpIOCTL(WDFQUEUE Queue, WDFREQUEST Request, size_t OutputBufferLength, size_t InputBufferLength, ULONG IoControlCode)
+{
+  LARGE_INTEGER tt;
+  
+  switch(IoControlCode){
+  case IOCTL_START:
+    DbgPrint("IOCTL_START");
+    cnt = 0;
+    tt.HighPart|= -1;
+    tt.LowPart = (ULONG)-10000000;
+    KeSetTimerEx(&amp;obj, tt, 1000, &amp;dpc);
+    break;
+  case IOCTL_STOP:
+    DbgPrint("IOCTL_STOP");
+    KeCancelTimer(&amp;obj);
+    break;
+  }
+  WdfRequestComplete(Request, STATUS_SUCCESS);
+}
+
+NTSTATUS AddDevice(WDFDRIVER Driver, PWDFDEVICE_INIT pDeviceInit)
+{
+  WDFDEVICE device;
+  UNICODE_STRING suDevName;
+  UNICODE_STRING szSymName;
+  WDF_FILEOBJECT_CONFIG file_cfg;
+  WDF_IO_QUEUE_CONFIG ioqueue_cfg;
+  
+  RtlInitUnicodeString(&amp;suDevName, DEV_NAME);
+  RtlInitUnicodeString(&amp;szSymName, SYM_NAME);
+  WdfDeviceInitAssignName(pDeviceInit, &amp;suDevName);
+  
+  WdfDeviceInitSetIoType(pDeviceInit, WdfDeviceIoBuffered);
+  WDF_FILEOBJECT_CONFIG_INIT(&amp;file_cfg, IrpFileCreate, IrpFileClose, NULL);
+  WdfDeviceInitSetFileObjectConfig(pDeviceInit, &amp;file_cfg, WDF_NO_OBJECT_ATTRIBUTES);
+  WdfDeviceCreate(&amp;pDeviceInit, WDF_NO_OBJECT_ATTRIBUTES, &amp;device);
+  WdfDeviceCreateSymbolicLink(device, &amp;szSymName);
+  
+  pDevice = WdfDeviceWdmGetDeviceObject(device);
+  KeInitializeTimer(&amp;obj);
+  KeInitializeDpc(&amp;dpc, OnTimer, pDevice);
+  WDF_IO_QUEUE_CONFIG_INIT_DEFAULT_QUEUE(&amp;ioqueue_cfg, WdfIoQueueDispatchSequential);
+  ioqueue_cfg.EvtIoDeviceControl = IrpIOCTL;
+  return WdfIoQueueCreate(device, &amp;ioqueue_cfg, WDF_NO_OBJECT_ATTRIBUTES, WDF_NO_HANDLE);
+}
+
+NTSTATUS DriverEntry(PDRIVER_OBJECT pOurDriver, PUNICODE_STRING pRegistry)
+{
+  WDF_DRIVER_CONFIG config;
+
+  WDF_DRIVER_CONFIG_INIT(&amp;config, AddDevice);
+  return WdfDriverCreate(pOurDriver, pRegistry, WDF_NO_OBJECT_ATTRIBUTES, &amp;config, WDF_NO_HANDLE);
+}
+</pre>
+<p>
+<b>AddDevice()</b>初始化Timer以及DPC Object<br>
+<b>IrpIOCTL()</b>啟動或停止DPC Timer<br>
+<b>OnTimer()</b>僅列印訊息，其餘事情不做<br><br>
+
+app.c
+</p>
+<pre class="brush:cpp">
+#define INITGUID
+#include &lt;windows.h&gt;
+#include &lt;winioctl.h&gt;
+#include &lt;strsafe.h&gt;
+#include &lt;setupapi.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+#define IOCTL_START CTL_CODE(FILE_DEVICE_UNKNOWN, 0x800, METHOD_BUFFERED, FILE_ANY_ACCESS)
+#define IOCTL_STOP  CTL_CODE(FILE_DEVICE_UNKNOWN, 0x801, METHOD_BUFFERED, FILE_ANY_ACCESS)
+
+int __cdecl main(int argc, char* argv[])
+{
+  HANDLE hFile = NULL;
+  DWORD dwRet = 0;
+
+  hFile = CreateFile("\\\\.\\MyDriver", GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+  if (hFile == INVALID_HANDLE_VALUE) {
+    printf("failed to open mydriver\n");
+    return -1;
+  }
+  DeviceIoControl(hFile, IOCTL_START, NULL, 0, NULL, 0, &amp;dwRet, NULL);
+  Sleep(3000);
+  DeviceIoControl(hFile, IOCTL_STOP, NULL, 0, NULL, 0, &amp;dwRet, NULL);
+  CloseHandle(hFile);
+  return 0;
+}
+</pre><br>
+
+<p>
+結果<br>
+<img src="asm_pnp_timer-dpc/2.jpg" class="maxSize"><br>
+<img src="asm_pnp_timer-dpc/1.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../driver.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

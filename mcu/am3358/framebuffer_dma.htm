@@ -1,0 +1,856 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>BeagleBone Green Wireless &gt;&gt; C/C++</h3>
+<p><b>移植Framebuffer顯示驅動程式(DMA)</b></p>
+<hr size="1">
+<p>
+arch/arm/boot/dts/am335x-bonegreen-wireless.dts
+</p>
+<pre>
+  am33xx_pinmux: pinmux@44e10800 {
+    pinctrl-names = "default";
+    pinctrl-0 = &lt;&amp;gpio_keys_s0 &amp;lcd_pins_s0&gt;
+    ...
+
+    lcd_pins_s0: lcd_pins_s0 {
+      pinctrl-single,pins = &lt;
+        0xa0 0x00  /* lcd_data0.lcd_data0, OUTPUT | MODE0 */
+        0xa4 0x00  /* lcd_data1.lcd_data1, OUTPUT | MODE0 */
+        0xa8 0x00  /* lcd_data2.lcd_data2, OUTPUT | MODE0 */
+        0xac 0x00  /* lcd_data3.lcd_data3, OUTPUT | MODE0 */
+        0xb0 0x00  /* lcd_data4.lcd_data4, OUTPUT | MODE0 */
+        0xb4 0x00  /* lcd_data5.lcd_data5, OUTPUT | MODE0 */
+        0xb8 0x00  /* lcd_data6.lcd_data6, OUTPUT | MODE0 */
+        0xbc 0x00  /* lcd_data7.lcd_data7, OUTPUT | MODE0 */
+        0xc0 0x00  /* lcd_data8.lcd_data8, OUTPUT | MODE0 */
+        0xc4 0x00  /* lcd_data9.lcd_data9, OUTPUT | MODE0 */
+        0xc8 0x00  /* lcd_data10.lcd_data10, OUTPUT | MODE0 */
+        0xcc 0x00  /* lcd_data11.lcd_data11, OUTPUT | MODE0 */
+        0xd0 0x00  /* lcd_data12.lcd_data12, OUTPUT | MODE0 */
+        0xd4 0x00  /* lcd_data13.lcd_data13, OUTPUT | MODE0 */
+        0xd8 0x00  /* lcd_data14.lcd_data14, OUTPUT | MODE0 */
+        0xdc 0x00  /* lcd_data15.lcd_data15, OUTPUT | MODE0 */
+        0xe0 0x00  /* lcd_vsync.lcd_vsync, OUTPUT | MODE0 */
+        0xe4 0x00  /* lcd_hsync.lcd_hsync, OUTPUT | MODE0 */
+        0xe8 0x00  /* lcd_pclk.lcd_pclk, OUTPUT | MODE0 */
+        0xec 0x00  /* lcd_ac_bias_en.lcd_ac_bias_en, OUTPUT | MODE0 */
+      &gt;;
+    };
+</pre><br>
+
+<p>
+arch/arm/boot/dts/am33xx.dtsi
+</p>
+<pre>
+  ocp {
+    ...
+    rtc@44e3e000 {
+      compatible = "ti,am335x-rtc";
+      reg = &lt;0x44e3e000 0x1000&gt;;
+      interrupts = &lt;75 76&gt;;
+      ti,hwmods = "rtc";
+    };
+
+    lcdc: lcdc@4830e000 {
+      compatible = "ti,am3352-lcdc", "ti,am335x-lcdc";
+      reg = &lt;0x4830e000 0x1000&gt;;
+      interrupts = &lt;36&gt;;
+      status = "disabled";
+      ti,hwmods = "lcdc";
+    };
+</pre><br>
+
+<p>
+drivers/video/Kconfig
+</p>
+<pre>
+config FB_AM335X
+  tristate "AM335x Framebuffer support"
+  depends on FB &amp;&amp; SOC_AM33XX
+  select FB_CFB_FILLRECT
+  select FB_CFB_COPYAREA
+  select FB_CFB_IMAGEBLIT
+  select FB_CFB_REV_PIXELS_IN_BYTE
+  ---help---
+    This is the frame buffer device driver for the TI LCD controller
+    found on AM335x SoCs.
+    If unsure, say N.
+</pre><br>
+
+<p>
+drivers/video/Makefile
+</p>
+<pre>
+obj-$(CONFIG_FB_AM335X) += am335x-fb.o
+</pre><br>
+
+<p>
+drivers/video/am335x-fb.c
+</p>
+<pre class="brush:cpp">
+/*
+ * Copyright (C) 2008-2009 MontaVista Software Inc.
+ * Copyright (C) 2008-2009 Texas Instruments Inc
+ * Copyright (C) 2017 Steward Fu &lt;steward.fu@gmail.com&gt;
+ *
+ * AM335x framebuffer driver for ILI9335 SLCD panel
+ *
+ * Based on the LCD driver for TI Avalanche processors written by
+ * Ajay Singh and Shalom Hai.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option)any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ */
+#include &lt;linux/module.h&gt;
+#include &lt;linux/kernel.h&gt;
+#include &lt;linux/fb.h&gt;
+#include &lt;linux/dma-mapping.h&gt;
+#include &lt;linux/device.h&gt;
+#include &lt;linux/platform_device.h&gt;
+#include &lt;linux/uaccess.h&gt;
+#include &lt;linux/pm_runtime.h&gt;
+#include &lt;linux/interrupt.h&gt;
+#include &lt;linux/wait.h&gt;
+#include &lt;linux/clk.h&gt;
+#include &lt;linux/cpufreq.h&gt;
+#include &lt;linux/console.h&gt;
+#include &lt;linux/spinlock.h&gt;
+#include &lt;linux/slab.h&gt;
+#include &lt;linux/delay.h&gt;
+#include &lt;linux/lcm.h&gt;
+#include &lt;linux/clk-provider.h&gt;
+#include &lt;video/of_display_timing.h&gt;
+#include &lt;linux/gpio.h&gt;
+#include &lt;asm/div64.h&gt;
+
+#define DRIVER_NAME "am335x_lcdc"
+
+#define do_request(pin, name) \
+  if(gpio_request(pin, name) &lt; 0){ \
+    printk("failed to request gpio: %s\n", name); \
+  } \
+  else{ \
+    printk("request successfully for gpio: %s\n", name); \
+    gpio_direction_output(pin, 1); \
+  }
+
+#define PALETTE_SIZE          256
+
+#define ILI9335_SLCD_D17      77
+#define ILI9335_SLCD_D16      76
+#define ILI9335_SLCD_D15      75
+#define ILI9335_SLCD_D14      74
+#define ILI9335_SLCD_D13      73
+#define ILI9335_SLCD_D12      72
+#define ILI9335_SLCD_D11      71
+#define ILI9335_SLCD_D10      70
+#define ILI9335_SLCD_RS       86
+#define ILI9335_SLCD_CS       89
+#define ILI9335_SLCD_RD       88
+#define ILI9335_SLCD_WR       87
+#define ILI9335_SLCD_RST      20
+
+#define PID                   0x0
+#define CTRL                  0x4
+#define LIDD_CTRL             0xC
+#define LIDD_CS0_CONF         0x10
+#define LIDD_CS0_ADDR         0x14
+#define LIDD_CS0_DATA         0x18
+#define LIDD_CS1_CONF         0x1C
+#define LIDD_CS1_ADDR         0x20
+#define LIDD_CS1_DATA         0x24
+#define RASTER_CTRL           0x28
+#define RASTER_TIMING_0       0x2C
+#define RASTER_TIMING_1       0x30
+#define RASTER_TIMING_2       0x34
+#define RASTER_SUBPANEL       0x38
+#define RASTER_SUBPANEL2      0x3C
+#define LCDDMA_CTRL           0x40
+#define LCDDMA_FB0_BASE       0x44
+#define LCDDMA_FB0_CEILING    0x48
+#define LCDDMA_FB1_BASE       0x4C
+#define LCDDMA_FB1_CEILING    0x50
+#define SYSCONFIG             0x54
+#define IRQSTATUS_RAW         0x58
+#define IRQSTATUS             0x5C
+#define IRQENABLE_SET         0x60
+#define IRQENABLE_CLEAR       0x64
+#define CLKC_ENABLE           0x6C
+#define CLKC_RESET            0x70
+
+struct am335x_fb_par {
+  struct device *dev;
+
+  resource_size_t p_palette_base;
+  unsigned char *v_palette_base;
+
+  dma_addr_t vram_phys;
+  unsigned long vram_size;
+  void *vram_virt;
+
+  dma_addr_t lram_phys;
+  unsigned long lram_size;
+  void *lram_virt;
+
+  unsigned int dma_start;
+  unsigned int dma_end;
+
+  int irq;
+  u32 pseudo_palette[16];
+  struct fb_videomode mode;
+  unsigned int bpp;
+};
+
+static struct resource *lcdc_regs;
+static void __iomem *am335x_fb_reg_base;
+static struct fb_var_screeninfo am335x_fb_var;
+static struct fb_fix_screeninfo am335x_fb_fix = {
+  .id = "AM335x FB",
+  .type = FB_TYPE_PACKED_PIXELS,
+  .type_aux = 0,
+  .visual = FB_VISUAL_PSEUDOCOLOR,
+  .xpanstep = 0,
+  .ypanstep = 1,
+  .ywrapstep = 0,
+  .accel = FB_ACCEL_NONE
+};
+
+static void ili9335_send_data(unsigned int val)
+{
+  iowrite32(0xff &amp; (val &gt;&gt; 8), am335x_fb_reg_base + LIDD_CS0_DATA);
+  iowrite32(0xff &amp; val, am335x_fb_reg_base + LIDD_CS0_DATA);
+}
+ 
+static void ili9335_send_command(unsigned int val)
+{
+  iowrite32(0xff &amp; (val &gt;&gt; 8), am335x_fb_reg_base + LIDD_CS0_ADDR);
+  iowrite32(0xff &amp; val, am335x_fb_reg_base + LIDD_CS0_ADDR);
+}
+ 
+static void ili9335_send_register(unsigned int cmd, unsigned int data)
+{
+  ili9335_send_command(cmd);
+  ili9335_send_data(data);
+}
+ 
+static void ili9335_init(void)
+{
+  gpio_set_value(ILI9335_SLCD_RST, 1);
+  mdelay(100);
+  gpio_set_value(ILI9335_SLCD_RST, 0);
+  mdelay(100);  
+  gpio_set_value(ILI9335_SLCD_RST, 1);
+  mdelay(100);
+ 
+  ili9335_send_register(0x0001, 0x0100);
+  ili9335_send_register(0x0002, 0x0200);
+  ili9335_send_register(0x0003, 0x1018);
+  ili9335_send_register(0x0008, 0x0202);
+  ili9335_send_register(0x0009, 0x0000);
+  ili9335_send_register(0x000A, 0x0000);
+  ili9335_send_register(0x000C, 0x0000);
+  ili9335_send_register(0x000D, 0x0000);
+  ili9335_send_register(0x0060, 0x2700);  
+  ili9335_send_register(0x0061, 0x0000);
+  ili9335_send_register(0x006A, 0x0000);
+  mdelay(10);
+  ili9335_send_register(0x0010, 0x1490);
+  ili9335_send_register(0x0011, 0x0227);
+  mdelay(80);
+  ili9335_send_register(0x0012, 0x000c);
+  mdelay(10);
+  ili9335_send_register(0x0013, 0x1000);
+  ili9335_send_register(0x0029, 0x000b);
+  ili9335_send_register(0x002b, 0x000b);
+  mdelay(10);
+  ili9335_send_register(0x0020, 0x0000);
+  ili9335_send_register(0x0021, 0x0000);
+   
+  ili9335_send_register(0x0030, 0x0000);
+  ili9335_send_register(0x0031, 0x0406);
+  ili9335_send_register(0x0032, 0x0002);
+  ili9335_send_register(0x0035, 0x0402);
+  ili9335_send_register(0x0036, 0x0004);
+  ili9335_send_register(0x0037, 0x0507);
+  ili9335_send_register(0x0038, 0x0103);
+  ili9335_send_register(0x0039, 0x0707);
+  ili9335_send_register(0x003c, 0x0204);
+  ili9335_send_register(0x003d, 0x0004);
+   
+  ili9335_send_register(0x0050, 0x0000);
+  ili9335_send_register(0x0051, 0x00ef);
+  ili9335_send_register(0x0052, 0x0000);
+  ili9335_send_register(0x0053, 0x013f);
+ 
+  mdelay(10);
+  ili9335_send_register(0x0007, 0x0133);  
+  ili9335_send_command(0x22);
+}
+
+#define CNVT_TOHW(val, width) ((((val) &lt;&lt; (width)) + 0x7FFF - (val)) &gt;&gt; 16)
+static int fb_setcolreg(unsigned regno, unsigned red, unsigned green, unsigned blue, unsigned transp, struct fb_info *info)
+{
+  u_short pal;
+  int update_hw = 0;
+  struct am335x_fb_par *par = info-&gt;par;
+  unsigned short *palette = (unsigned short*) par-&gt;v_palette_base;
+
+  if(regno &gt; 255){
+    return 1;
+  }
+
+  if(info-&gt;fix.visual == FB_VISUAL_DIRECTCOLOR){
+    return 1;
+  }
+
+  if(info-&gt;var.bits_per_pixel &gt; 16){
+    return -EINVAL;
+  }
+
+  switch(info-&gt;fix.visual){
+  case FB_VISUAL_TRUECOLOR:
+    red = CNVT_TOHW(red, info-&gt;var.red.length);
+    blue = CNVT_TOHW(blue, info-&gt;var.blue.length);
+    green = CNVT_TOHW(green, info-&gt;var.green.length);
+    break;
+  case FB_VISUAL_PSEUDOCOLOR:
+    switch(info-&gt;var.bits_per_pixel){
+    case 4:
+      if(regno &gt; 15){
+        return -EINVAL;
+      }
+
+      if(info-&gt;var.grayscale){
+        pal = regno;
+      } 
+      else{
+        red &gt;&gt;= 4;
+        green &gt;&gt;= 8;
+        blue &gt;&gt;= 12;
+
+        pal = red &amp; 0x0f00;
+        pal|= green &amp; 0x00f0;
+        pal|= blue &amp; 0x000f;
+      }
+
+      if(regno == 0){
+        pal |= 0x2000;
+      }
+      palette[regno] = pal;
+      break;
+
+    case 8:
+      red &gt;&gt;= 4;
+      blue &gt;&gt;= 12;
+      green &gt;&gt;= 8;
+
+      pal = (red &amp; 0x0f00);
+      pal|= (green &amp; 0x00f0);
+      pal|= (blue &amp; 0x000f);
+
+      if(palette[regno] != pal){
+        update_hw = 1;
+        palette[regno] = pal;
+      }
+      break;
+    }
+    break;
+  }
+
+  if(info-&gt;fix.visual == FB_VISUAL_TRUECOLOR){
+    u32 v;
+
+    if(regno &gt; 15){
+      return -EINVAL;
+    }
+
+    v = (red &lt;&lt; info-&gt;var.red.offset) | (green &lt;&lt; info-&gt;var.green.offset) | (blue &lt;&lt; info-&gt;var.blue.offset);
+    switch(info-&gt;var.bits_per_pixel){
+    case 16:
+      ((u16*)(info-&gt;pseudo_palette))[regno] = v;
+      break;
+    case 24:
+    case 32:
+      ((u32*)(info-&gt;pseudo_palette))[regno] = v;
+      break;
+    }
+    if(palette[0] != 0x4000){
+      update_hw = 1;
+      palette[0] = 0x4000;
+    }
+  }
+  return 0;
+}
+#undef CNVT_TOHW
+
+static int fb_check_var(struct fb_var_screeninfo *var, struct fb_info *info)
+{
+  int err = 0;
+  int bpp = var-&gt;bits_per_pixel &gt;&gt; 3;
+  struct am335x_fb_par *par = info-&gt;par;
+  unsigned long line_size = var-&gt;xres_virtual * bpp;
+
+  if(var-&gt;bits_per_pixel &gt; 16){
+    return -EINVAL;
+  }
+
+  printk("%s, xres:%d, yres:%d, bpp:%d\n", __func__, var-&gt;xres, var-&gt;yres, var-&gt;bits_per_pixel);
+  switch(var-&gt;bits_per_pixel){
+  case 1:
+  case 8:
+    var-&gt;red.offset = 0;
+    var-&gt;red.length = 8;
+    var-&gt;green.offset = 0;
+    var-&gt;green.length = 8;
+    var-&gt;blue.offset = 0;
+    var-&gt;blue.length = 8;
+    var-&gt;transp.offset = 0;
+    var-&gt;transp.length = 0;
+    var-&gt;nonstd = 0;
+    break;
+  case 4:
+    var-&gt;red.offset = 0;
+    var-&gt;red.length = 4;
+    var-&gt;green.offset = 0;
+    var-&gt;green.length = 4;
+    var-&gt;blue.offset = 0;
+    var-&gt;blue.length = 4;
+    var-&gt;transp.offset = 0;
+    var-&gt;transp.length = 0;
+    var-&gt;nonstd = FB_NONSTD_REV_PIX_IN_B;
+    break;
+  case 16:
+    var-&gt;red.offset = 11;
+    var-&gt;red.length = 5;
+    var-&gt;green.offset = 5;
+    var-&gt;green.length = 6;
+    var-&gt;blue.offset = 0;
+    var-&gt;blue.length = 5;
+    var-&gt;transp.offset = 0;
+    var-&gt;transp.length = 0;
+    var-&gt;nonstd = 0;
+    break;
+  case 24:
+    var-&gt;red.offset = 16;
+    var-&gt;red.length = 8;
+    var-&gt;green.offset = 8;
+    var-&gt;green.length = 8;
+    var-&gt;blue.offset = 0;
+    var-&gt;blue.length = 8;
+    var-&gt;nonstd = 0;
+    break;
+  case 32:
+    var-&gt;transp.offset = 24;
+    var-&gt;transp.length = 8;
+    var-&gt;red.offset = 16;
+    var-&gt;red.length = 8;
+    var-&gt;green.offset = 8;
+    var-&gt;green.length = 8;
+    var-&gt;blue.offset = 0;
+    var-&gt;blue.length = 8;
+    var-&gt;nonstd = 0;
+    break;
+  default:
+    err = -EINVAL;
+  }
+
+  var-&gt;red.msb_right = 0;
+  var-&gt;green.msb_right = 0;
+  var-&gt;blue.msb_right = 0;
+  var-&gt;transp.msb_right = 0;
+  if(line_size * var-&gt;yres_virtual &gt; par-&gt;vram_size){
+    var-&gt;yres_virtual = par-&gt;vram_size / line_size;
+  }
+  if(var-&gt;yres &gt; var-&gt;yres_virtual){
+    var-&gt;yres = var-&gt;yres_virtual;
+  }
+  if(var-&gt;xres &gt; var-&gt;xres_virtual){
+    var-&gt;xres = var-&gt;xres_virtual;
+  }
+  if(var-&gt;xres + var-&gt;xoffset &gt; var-&gt;xres_virtual){
+    var-&gt;xoffset = var-&gt;xres_virtual - var-&gt;xres;
+  }
+  if(var-&gt;yres + var-&gt;yoffset &gt; var-&gt;yres_virtual){
+    var-&gt;yoffset = var-&gt;yres_virtual - var-&gt;yres;
+  }
+  return err;
+}
+
+static int fb_remove(struct platform_device *dev)
+{
+  struct fb_info *info = dev_get_drvdata(&amp;dev-&gt;dev);
+
+  if(info){
+    struct am335x_fb_par *par = info-&gt;par;
+    unregister_framebuffer(info);
+    fb_dealloc_cmap(&amp;info-&gt;cmap);
+    dma_free_coherent(NULL, PALETTE_SIZE, par-&gt;v_palette_base, par-&gt;p_palette_base);
+    dma_free_coherent(NULL, par-&gt;vram_size, par-&gt;vram_virt, par-&gt;vram_phys);
+    dma_free_coherent(NULL, par-&gt;lram_size, par-&gt;lram_virt, par-&gt;lram_phys);
+    pm_runtime_put_sync(&amp;dev-&gt;dev);
+    pm_runtime_disable(&amp;dev-&gt;dev);
+    framebuffer_release(info);
+  }
+  return 0;
+}
+
+static int am335xfb_set_par(struct fb_info *info)
+{
+  struct am335x_fb_par *par = info-&gt;par;
+  
+  fb_var_to_videomode(&amp;par-&gt;mode, &amp;info-&gt;var);
+  printk("%s, xres:%d, yres:%d, bpp:%d\n", __func__, info-&gt;var.xres, info-&gt;var.yres, info-&gt;var.bits_per_pixel);
+
+  par-&gt;bpp = info-&gt;var.bits_per_pixel;
+  info-&gt;fix.visual = (par-&gt;bpp &lt;= 8) ? FB_VISUAL_PSEUDOCOLOR : FB_VISUAL_TRUECOLOR;
+  info-&gt;fix.line_length = (par-&gt;mode.xres * par-&gt;bpp) / 8;
+  par-&gt;dma_start = info-&gt;fix.smem_start + info-&gt;var.yoffset * info-&gt;fix.line_length + info-&gt;var.xoffset * info-&gt;var.bits_per_pixel / 8;
+  par-&gt;dma_end = par-&gt;dma_start + info-&gt;var.yres * info-&gt;fix.line_length - 1;
+  return 0;
+}
+
+static struct fb_ops am335x_fb_ops = {
+  .owner = THIS_MODULE,
+  .fb_check_var = fb_check_var,
+  .fb_set_par = am335xfb_set_par,
+  .fb_setcolreg = fb_setcolreg,
+  .fb_fillrect = cfb_fillrect,
+  .fb_copyarea = cfb_copyarea,
+  .fb_imageblit = cfb_imageblit,
+};
+
+static irqreturn_t lcdc_irq_handler(int irq, void *arg)
+{
+  unsigned int stat=0;
+  struct am335x_fb_par *par = (struct am335x_fb_par*)arg;
+
+  stat = ioread32(am335x_fb_reg_base + IRQSTATUS);
+  if((stat &amp; 0x04) || (stat &amp; 0x20)) {
+    printk("%s, LCDC sync lost or underflow error occured\nNot sure what to do...\n", __func__);
+    iowrite32(stat, am335x_fb_reg_base + IRQSTATUS);
+  }
+  else{
+    iowrite32(0x00000003, am335x_fb_reg_base + LIDD_CTRL);
+    iowrite32(stat, am335x_fb_reg_base + IRQSTATUS);
+    ili9335_send_command(0x22);
+    {
+      unsigned long i, num=320*240;
+      uint16_t *src = par-&gt;vram_virt;
+      uint16_t *dst = par-&gt;lram_virt;
+      for(i=0; i&lt;num; i++){
+        *dst++ = 0xff &amp; (*src &gt;&gt; 8);
+        *dst++ = 0xff &amp; (*src &gt;&gt; 0);
+        src+= 1;
+      }
+    }
+    iowrite32(0x00000103, am335x_fb_reg_base + LIDD_CTRL);
+  }
+  return IRQ_HANDLED;
+}
+
+static int fb_probe(struct platform_device *device)
+{
+  int ret;
+  unsigned long ulcm;
+  struct am335x_lcdc_platform_data *fb_pdata = device-&gt;dev.platform_data;
+  struct fb_videomode *lcdc_info;
+  struct fb_info *am335x_fb_info;
+  struct clk *fb_clk = NULL;
+  struct am335x_fb_par *par;
+
+  if((fb_pdata == NULL) &amp;&amp; (!device-&gt;dev.of_node)){
+    dev_err(&amp;device-&gt;dev, "can not get platform data\n");
+    return -ENOENT;
+  }
+
+  lcdc_info = devm_kzalloc(&amp;device-&gt;dev, sizeof(struct fb_videomode), GFP_KERNEL);
+  if(lcdc_info == NULL){
+    return -ENODEV;
+  }
+  lcdc_info-&gt;name = "320x240";
+  lcdc_info-&gt;xres = 320;
+  lcdc_info-&gt;yres = 240;
+  lcdc_info-&gt;vmode = FB_VMODE_NONINTERLACED;
+  lcdc_regs = platform_get_resource(device, IORESOURCE_MEM, 0);
+  am335x_fb_reg_base = devm_request_and_ioremap(&amp;device-&gt;dev, lcdc_regs);
+  if(!am335x_fb_reg_base){
+    dev_err(&amp;device-&gt;dev, "memory resource setup failed\n");
+    return -EADDRNOTAVAIL;
+  }
+
+  fb_clk = devm_clk_get(&amp;device-&gt;dev, "fck");
+  if(IS_ERR(fb_clk)){
+    dev_err(&amp;device-&gt;dev, "can not get device clock\n");
+    return -ENODEV;
+  }
+  ret = clk_set_rate(fb_clk, 100000000);
+  if(IS_ERR(fb_clk)){
+    dev_err(&amp;device-&gt;dev, "can not set device clock\n");
+    return -ENODEV;
+  }
+  pm_runtime_enable(&amp;device-&gt;dev);
+  pm_runtime_get_sync(&amp;device-&gt;dev);
+  
+  printk("%s, lidd pid: 0x%x\n", __func__, ioread32(am335x_fb_reg_base + PID));
+  iowrite32(0x00000007, am335x_fb_reg_base + CLKC_ENABLE);
+  iowrite32(0x00000400, am335x_fb_reg_base + CTRL); // 100MHz/4
+  iowrite32(0x00000003, am335x_fb_reg_base + LIDD_CTRL); // LiDD
+  iowrite32(0x08221044, am335x_fb_reg_base + LIDD_CS0_CONF);
+  do_request(ILI9335_SLCD_RST, "slcd_reset");
+ 
+  am335x_fb_info = framebuffer_alloc(sizeof(struct am335x_fb_par), &amp;device-&gt;dev);
+  if(!am335x_fb_info){
+    dev_dbg(&amp;device-&gt;dev, "memory allocation failed for fb_info\n");
+    ret = -ENOMEM;
+    goto err_pm_runtime_disable;
+  }
+
+  par = am335x_fb_info-&gt;par;
+  par-&gt;dev = &amp;device-&gt;dev;
+  par-&gt;bpp = 16;
+  
+  fb_videomode_to_var(&amp;am335x_fb_var, lcdc_info);
+  ili9335_init();
+  printk("%s, xres: %d, yres:%d, bpp:%d\n", __func__, lcdc_info-&gt;xres, lcdc_info-&gt;yres, par-&gt;bpp);
+
+  par-&gt;vram_size = lcdc_info-&gt;xres * lcdc_info-&gt;yres * par-&gt;bpp;
+  ulcm = lcm((lcdc_info-&gt;xres * par-&gt;bpp)/8, PAGE_SIZE);
+  par-&gt;vram_size = roundup(par-&gt;vram_size/8, ulcm);
+  par-&gt;vram_size = par-&gt;vram_size;
+  par-&gt;vram_virt = dma_alloc_coherent(NULL, par-&gt;vram_size, (resource_size_t*) &amp;par-&gt;vram_phys, GFP_KERNEL | GFP_DMA);
+  if(!par-&gt;vram_virt){
+    dev_err(&amp;device-&gt;dev, "GLCD: kmalloc for frame buffer(ram) failed\n");
+    ret = -EINVAL;
+    goto err_release_fb;
+  }
+
+  par-&gt;lram_size = (320*240*2*2); // fixed size for ili9335 panel
+  par-&gt;lram_virt = dma_alloc_coherent(NULL, par-&gt;lram_size, (resource_size_t*) &amp;par-&gt;lram_phys, GFP_KERNEL | GFP_DMA);
+  if(!par-&gt;lram_virt){
+    dev_err(&amp;device-&gt;dev, "GLCD: kmalloc for frame buffer(slcd) failed\n");
+    ret = -EINVAL;
+    goto err_release_fb;
+  }
+  memset(par-&gt;lram_virt, 0, par-&gt;lram_size);
+  am335x_fb_info-&gt;screen_base = (char __iomem*) par-&gt;vram_virt;
+  am335x_fb_fix.smem_start    = par-&gt;vram_phys;
+  am335x_fb_fix.smem_len      = par-&gt;vram_size;
+  am335x_fb_fix.line_length   = (lcdc_info-&gt;xres * par-&gt;bpp) / 8;
+
+  par-&gt;dma_start = par-&gt;vram_phys;
+  par-&gt;dma_end = par-&gt;dma_start + par-&gt;vram_size - 1;
+
+  par-&gt;v_palette_base = dma_alloc_coherent(NULL, PALETTE_SIZE, (resource_size_t*) &amp;par-&gt;p_palette_base, GFP_KERNEL | GFP_DMA);
+  if(!par-&gt;v_palette_base){
+    dev_err(&amp;device-&gt;dev, "GLCD: kmalloc for palette buffer failed\n");
+    ret = -EINVAL;
+    goto err_release_fb_mem;
+  }
+  memset(par-&gt;v_palette_base, 0, PALETTE_SIZE);
+
+  par-&gt;irq = platform_get_irq(device, 0);
+  if(par-&gt;irq &lt; 0){
+    ret = -ENOENT;
+    goto err_release_pl_mem;
+  }
+
+  am335x_fb_var.grayscale = 0;
+  am335x_fb_var.bits_per_pixel = par-&gt;bpp;
+
+  am335x_fb_info-&gt;flags = FBINFO_FLAG_DEFAULT;
+  am335x_fb_info-&gt;fix = am335x_fb_fix;
+  am335x_fb_info-&gt;var = am335x_fb_var;
+  am335x_fb_info-&gt;fbops = &amp;am335x_fb_ops;
+  am335x_fb_info-&gt;pseudo_palette = par-&gt;pseudo_palette;
+  am335x_fb_info-&gt;fix.visual = (am335x_fb_info-&gt;var.bits_per_pixel &lt;= 8) ? FB_VISUAL_PSEUDOCOLOR : FB_VISUAL_TRUECOLOR;
+
+  ret = fb_alloc_cmap(&amp;am335x_fb_info-&gt;cmap, PALETTE_SIZE, 0);
+  if(ret){
+    goto err_release_pl_mem;
+  }
+  am335x_fb_info-&gt;cmap.len = 32;
+
+  am335x_fb_var.activate = FB_ACTIVATE_FORCE;
+  fb_set_var(am335x_fb_info, &amp;am335x_fb_var);
+  dev_set_drvdata(&amp;device-&gt;dev, am335x_fb_info);
+
+  if(register_framebuffer(am335x_fb_info) &lt; 0){
+    dev_err(&amp;device-&gt;dev, "GLCD: Frame Buffer Registration Failed!\n");
+    ret = -EINVAL;
+    goto err_dealloc_cmap;
+  }
+
+  iowrite32(0x00000010, am335x_fb_reg_base + LCDDMA_CTRL); // Burst=2, 1 frame
+  iowrite32(0x00000025, am335x_fb_reg_base + IRQENABLE_SET);
+  iowrite32(par-&gt;lram_phys, am335x_fb_reg_base + LCDDMA_FB0_BASE);
+  iowrite32(par-&gt;lram_phys + par-&gt;lram_size - 1, am335x_fb_reg_base + LCDDMA_FB0_CEILING);
+  ret = devm_request_irq(&amp;device-&gt;dev, par-&gt;irq, lcdc_irq_handler, 0, DRIVER_NAME, par);
+  if(ret){
+    goto irq_freq;
+  }
+  iowrite32(0x00000103, am335x_fb_reg_base + LIDD_CTRL); // 8080 Interface, DMA
+  
+  fb_prepare_logo(am335x_fb_info, 0);
+  fb_show_logo(am335x_fb_info, 0);
+  return 0;
+
+irq_freq:
+  unregister_framebuffer(am335x_fb_info);
+
+err_dealloc_cmap:
+  fb_dealloc_cmap(&amp;am335x_fb_info-&gt;cmap);
+
+err_release_pl_mem:
+  dma_free_coherent(NULL, PALETTE_SIZE, par-&gt;v_palette_base, par-&gt;p_palette_base);
+
+err_release_fb_mem:
+  dma_free_coherent(NULL, par-&gt;vram_size, par-&gt;vram_virt, par-&gt;vram_phys);
+
+err_release_fb:
+  framebuffer_release(am335x_fb_info);
+
+err_pm_runtime_disable:
+  pm_runtime_put_sync(&amp;device-&gt;dev);
+  pm_runtime_disable(&amp;device-&gt;dev);
+
+  return ret;
+}
+
+#ifdef CONFIG_PM
+static int fb_suspend(struct platform_device *dev, pm_message_t state)
+{
+  struct fb_info *info = platform_get_drvdata(dev);
+
+  console_lock();
+  fb_set_suspend(info, 1);
+  pm_runtime_put_sync(&amp;dev-&gt;dev);
+  console_unlock();
+  return 0;
+}
+
+static int fb_resume(struct platform_device *dev)
+{
+  struct fb_info *info = platform_get_drvdata(dev);
+
+  console_lock();
+  pm_runtime_get_sync(&amp;dev-&gt;dev);
+  fb_set_suspend(info, 0);
+  console_unlock();
+  return 0;
+}
+
+#else
+
+#define fb_suspend NULL
+#define fb_resume NULL
+
+#endif
+
+static const struct of_device_id am335x_fb_of_match[] = {
+  {.compatible = "ti,am335x-lcdc", },
+  {},
+};
+MODULE_DEVICE_TABLE(of, am335x_fb_of_match);
+
+static struct platform_driver am335x_fb_driver = {
+  .probe = fb_probe,
+  .remove = fb_remove,
+  .suspend = fb_suspend,
+  .resume = fb_resume,
+  .driver = {
+    .name = DRIVER_NAME,
+    .owner = THIS_MODULE,
+    .of_match_table = of_match_ptr(am335x_fb_of_match),
+  },
+};
+
+static int __init am335x_fb_init(void)
+{
+  return platform_driver_register(&amp;am335x_fb_driver);
+}
+
+static void __exit am335x_fb_cleanup(void)
+{
+  platform_driver_unregister(&amp;am335x_fb_driver);
+}
+
+module_init(am335x_fb_init);
+module_exit(am335x_fb_cleanup);
+
+MODULE_DESCRIPTION("AM335x framebuffer driver for ILI9335 SLCD panel");
+MODULE_AUTHOR("Steward Fu &lt;steward.fu@gmail.com&gt;");
+MODULE_LICENSE("GPL");
+</pre><br>
+
+<p>
+Device Drivers &gt; Graphics support &gt; Support for frame buffer devices<br>
+<img src="framebuffer_polling/2.jpg" class="maxSize"><br><br>
+
+完成<br>
+<img src="framebuffer_dma/1.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

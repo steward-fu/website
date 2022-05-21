@@ -1,0 +1,120 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../../../header.js"></script>
+<div id="page">
+<h3>Pandora 1GHz &gt;&gt; Debian Mark2</h3>
+<p><b>架設Scratchbox環境</b></p>
+<hr size="1">
+<p>
+最快的chroot製作方式就是從SuperZaxxon系統複製，然後再進行客制化，如下步驟：
+</p>
+<pre>
+$ su
+# opkg install mtd-utils
+# ubiattach -m 4 -d 0
+# mount -t ubifs /dev/ubi0_0 /mnt
+# ubiattach -m 3 -d 1
+# mount -t ubifs /dev/ubi1_0 /mnt/boot
+# cp -a /mnt /sbox
+# chown xxx:xxx /sbox
+# ubidetach -m 3
+# ubidetach -m 4
+# umount /mnt/boot
+# umount /mnt
+</pre>
+<p>
+P.S. xxx是使用者名字<br><br>
+
+接著寫一個簡單的chroot script，方便login
+</p>
+
+<pre>
+$ sudo vim /sbox/login
+</pre>
+<pre class="brush:cpp">
+#!/bin/sh
+if [ `whoami` != "root" ];then
+ echo "Run me as root"
+ exit 1
+fi
+
+MYPATH=`dirname $0`
+mount -o bind /proc "$MYPATH/proc"
+mount -o bind /sys "$MYPATH/sys"
+mount -o bind /dev "$MYPATH/dev"
+mount -o bind /dev/pts "$MYPATH/dev/pts"
+chroot "$MYPATH" /bin/bash -c 'su - xxx'
+umount "$MYPATH/dev/pts"
+umount "$MYPATH/dev"
+umount "$MYPATH/sys"
+umount "$MYPATH/proc"
+</pre>
+<p>
+P.S. xxx是使用者名字<br><br>
+
+接著就可以login並開始安裝套件，打照一個簡單的開發環境
+</p>
+
+<pre>
+$ sudo /sbox/login
+sbox:~$ sudo vim /etc/resolv.conf
+  nameserver 8.8.8.8
+
+sbox:~$ sudo opkg update
+sbox:~$ sudo opkg install gcc gcc-symlinks make binutils-dev cpp cpp-symlinks 
+sbox:~$ sudo opkg install g++ g++-symlinks libstdc++-dev git u-boot-mkimage
+sbox:~$ sudo opkg install libsdl-1.2-dev libsdl-image-1.2-dev libsdl-gfx-dev libsdl-net-1.2-dev libsdl-ttf-2.0-dev libgles-omap3-dev
+</pre><br>
+
+<p>
+<br><a href="../../../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

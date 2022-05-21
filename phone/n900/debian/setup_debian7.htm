@@ -1,0 +1,312 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../../scripts/shBrushBash.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../../header.js"></script>
+<div id="page">
+<h3>Nokia N900 &gt;&gt; Easy Debian</h3>
+<p><b>架設環境(Debian 7)</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="http://qole.org/files/debian_wheezy4sulu_armel.img.lzma">debian_wheezy4sulu_armel.img.lzma</a><br><br>
+
+感謝Pali以及社群的協助下，讓N900可以chroot到Debian下，該chroot跟Android chroot的最大差別在於，N900的chroot是使用Xephyr進行GUI操作；而Android的chroot則是使用vncserver的操作方式，加上N900的觸控螢幕是電阻觸控，因此，整體的體驗，N900還是比Android來的好，雖然Pali已經有幫使用者建立EasyDebian套件，不過該EasyDebian套件將本機<b>/home/user</b>也綁定到chroot下，加上目前使用的Desktop Environment是LXDE，使用者如要更改成XFCE4時，則需要到更改到EasyDebian腳本，但是EasyDebian的腳本寫的有點複雜，因此，司徒基於EasyDebian腳本，改寫一個比較適合、容易瞭解的腳本，並且列出一些常用的套件供使用者參考。<br><br>
+
+司徒習慣將Image放到內部Flash，用以加快存取速度，而且不是用單一檔案的方式(xxx.ext2.img)，因為單一檔案需要預留空間，除了浪費空間以外，遇到空間不足時，更是相當麻煩，因此建議使用者可以將<b>/home</b>分區加大，用來存放該Image資料。<br><br>
+
+接著到該Image資料夾下，建立chroot腳本
+</p>
+<pre>
+$ vim login
+</pre>
+<pre class="brush:bash">
+#!/bin/sh
+CHMODE=$1
+CHUSER=$2
+CHROOT=`dirname $0`
+
+_usage(){
+ echo "Usage: login [cli|lxde|xfce4] [root|user]"
+}
+
+_mount(){
+ sudo mount -o bind /sys           "$CHROOT/sys"
+ sudo mount -o bind /proc          "$CHROOT/proc"
+ sudo mount -o bind /dev           "$CHROOT/dev"
+ sudo mount -t devpts none         "$CHROOT/dev/pts"
+ sudo mount -o bind /dev/shm       "$CHROOT/dev/shm"
+ sudo mount -o bind /var/tmp       "$CHROOT/var/tmp"
+ sudo mount -o bind /var/run/pulse "$CHROOT/var/run/pulse"
+ sudo mount -o bind /var/run/dbus  "$CHROOT/var/run/dbus"
+ sudo mount -o bind /var/lib/dbus  "$CHROOT/var/lib/dbus"
+ sudo mount /dev/mmcblk0p1         "$CHROOT/home/user/MyDocs"
+}
+
+_umount(){
+ sudo umount "$CHROOT/var/lib/dbus"
+ sudo umount "$CHROOT/var/run/dbus"
+ sudo umount "$CHROOT/var/run/pulse"
+ sudo umount "$CHROOT/var/tmp"
+ sudo umount "$CHROOT/dev/shm"
+ sudo umount "$CHROOT/dev/pts"
+ sudo umount "$CHROOT/dev" &amp;&gt; /dev/null
+ sudo mount -o bind /dev "$CHROOT/dev"
+ sudo umount "$CHROOT/dev"
+ sudo umount "$CHROOT/proc"
+ sudo umount "$CHROOT/sys"
+ sudo umount "$CHROOT/home/user/MyDocs"
+}
+
+if [ `whoami` == "root" ] ; then
+ echo "Run me as user"
+ exit 1
+fi
+
+if [ "$CHMODE" != "cli" ] &amp;&amp; [ "$CHMODE" != "lxde" ] &amp;&amp; [ "$CHMODE" != "xfce4" ] ; then
+ _usage
+ exit 2
+fi
+
+if [ "$CHUSER" != "root" ] &amp;&amp; [ "$CHUSER" != "user" ] ; then
+ _usage
+ exit 
+fi
+
+_umount &amp;&gt; /dev/null
+_mount
+
+export GTK_MODULES=libgtkstylus.so
+if [ "x$DISPLAY" = x ] ; then
+ export DISPLAY=:0.0
+fi
+
+if [ "x$GTK_MODULES" = x ] ; then
+ export GTK_MODULES=libgtkstylus.so
+fi
+
+if [ "$CHMODE" = "cli" ] ; then
+ sudo chroot $CHROOT su - "$CHUSER"
+ _umount
+ exit 0
+fi
+
+if [ "$CHMODE" = "lxde" ] ; then
+ if [ ! -f "$CHROOT/usr/bin/startlxde1" ] ; then
+  echo "Not found LXDE installed"
+  exit 4
+ fi
+fi
+
+if [ "$CHMODE" = "xfce4" ] ; then
+ if [ ! -f "$CHROOT/usr/bin/startxfce41" ] ; then
+  echo "Not found XFCE4 installed"
+  exit 4
+ fi
+fi
+
+export DISPLAY=:0
+sudo chroot $CHROOT su - "$CHUSER" -c 'echo "chroot is now open"'
+sudo chroot $CHROOT su - "$CHUSER" -c '/usr/bin/Xephyr :1 -screen 800x480 -br -ac' &amp;
+while [ "x$PARWIN" = "x" ] ; do
+ export PARWIN=`wmctrl -l | grep -i "N/A Xephyr" | awk '{print $1}'`
+done
+sudo chroot $CHROOT su - "$CHUSER" -c "DISPLAY=:1 habak -mf /usr/share/fonts/truetype/DroidSans-Bold.ttf -ht 'Welcome to Debian7'"
+DISPLAY=:0 ; sudo wmctrl -i -r $PARWIN -T 'Debian7'
+sudo wmctrl -i -r $PARWIN -b toggle,fullscreen
+zenity --display=:0 --info --title="Information" --text="Welcome to Debian7. This window is needed to gain keyboard focus in LXDE." &amp;
+while [ "x$TWOWIN" = "x" ] ; do
+ export TWOWIN=`wmctrl -l | grep -i Information | awk '{print $1}'`
+done
+sudo chroot $CHROOT su root -c "/sbin/qobi-wmhint-fix $PARWIN"
+sudo chroot $CHROOT su "$CHUSER" -c "/usr/bin/xbindkeys"
+if [ "$CHMODE" = "xfce4" ] ; then
+ sudo chroot $CHROOT su - "$CHUSER" -c "/usr/bin/startxfce41"
+else
+ sudo chroot $CHROOT su - "$CHUSER" -c "/usr/bin/startlxde1"
+fi
+sudo killall Xephyr
+export DISPLAY=:0
+_umount
+exit 0
+</pre><br>
+
+<p>
+鍵盤配置可以直接從Pali的Debian5 Image(假設位於<b>/xxx/Debian5/</b>)複製過來
+</p>
+<pre class="brush:bash">
+$ sudo cp -a /xxx/Debian5/usr/share/X11/xkb usr/share/X11/xkb
+$ sudo cp -a /xxx/Debian5/home/user/.config home/user/
+$ sudo cp /xxx/Debian5/home/user/.gtkrc-2.0 home/user/
+</pre><br>
+
+<p>
+接著修改repository清單
+</p>
+<pre>
+$ sudo vim /etc/apt/sources.list
+</pre>
+<pre class="brush:bash">
+deb http://archive.debian.org/debian lenny main contrib non-free
+deb http://http.us.debian.org/debian squeeze main contrib non-free
+deb http://security.us.debian.org/ squeeze/updates main contrib non-free
+deb-src http://http.us.debian.org/debian squeeze main contrib non-free
+deb http://http.us.debian.org/debian wheezy main contrib non-free
+deb http://http.us.debian.org/debian wheezy-backports main contrib non-free
+deb http://security.us.debian.org/ wheezy/updates main contrib non-free
+deb-src http://http.us.debian.org/debian wheezy main contrib non-free
+</pre><br>
+
+<p>
+由於N900的觸控只能模擬滑鼠左鍵，因此，司徒使用xbindkeys和xdotool套件，製作出可以模擬滑鼠移動(Ctrl + 鍵盤方向鍵)、滑鼠左鍵(Shift + 鍵盤左鍵)、滑鼠右鍵(Shift + 鍵盤右鍵)
+</p>
+<pre>
+$ vim /home/user/.xbindkeysrc
+</pre>
+<pre class="brush:bash">
+"wmctrl -r :ACTIVE: -b toggle,fullscreen"
+ m:0x81 + c:33
+
+"xdotool click 3"
+ Shift + Right
+"xdotool click 1"
+ Shift + Left
+"xdotool click 4"
+ Shift + Up
+"xdotool click 5"
+ Shift + Down
+
+"xdotool key Tab"
+ Control + Up
+
+"xdotool mousemove_relative 50 0"
+ Control + Right
+"xdotool mousemove_relative -- -50 0"
+ Control + Left
+#"xdotool mousemove_relative 0 -50"
+# Control + Up
+#"xdotool mousemove_relative 0 50"
+# Control + Down
+</pre><br>
+
+<p>
+完成後，就可以開始使用chroot腳本，首先使用如下指令切到CLI介面：
+</p>
+<pre>
+$ sudo sh login cli user
+</pre>
+<p>
+<img src="setup_debian7/1.jpg" class="maxSize"><br><br>
+
+如要切到LXDE介面，可以使用如下指令：
+</p>
+<pre>
+$ sudo sh login lxde user
+</pre>
+<p>
+<img src="setup_debian7/15.jpg" class="maxSize"><br><br>
+
+由於LXDE是屬於另一個Display，一般情況下是無法取得鍵盤的控制權，因此可以透過zenity視窗，讓使用者點選按鈕，藉此方式取得鍵盤控制權<br>
+<img src="setup_debian7/2.jpg" class="maxSize"><br><br>
+
+Debian 7主畫面<br>
+<img src="setup_debian7/3.jpg" class="maxSize"><br><br>
+
+Terminator：司徒最愛使用的Terminal<br>
+<img src="setup_debian7/4.jpg" class="maxSize"><br><br>
+
+Blender：模型繪圖軟體<br>
+Wings3D：模型繪圖軟體<br>
+FreeCAD：模型繪圖軟體<br>
+OpenSCAD：模型繪圖軟體<br>
+GIMP：超好用的圖片編輯軟體<br>
+<img src="setup_debian7/5.jpg" class="maxSize"><br><br>
+
+LibreOffice：好用的Office軟體<br>
+<img src="setup_debian7/6.jpg" class="maxSize"><br><br>
+
+MonoDevelop：C#開發環境<br>
+Bless HEX：好用的HEX編輯軟體<br>
+Bluefish：好用的網頁編輯軟體<br>
+Fritzing：相當可愛的PCB繪圖軟體<br>
+Qt Creator：相當不錯的Qt開發環境<br>
+Anjuta IDE：相當不錯的IDE開發環境<br>
+CodeBlocks IDE：相當不錯的IDE開發環境<br>
+<img src="setup_debian7/7.jpg" class="maxSize"><br><br>
+
+不建議在chroot中播放音樂<br>
+<img src="setup_debian7/8.jpg" class="maxSize"><br><br>
+
+LXTerminal：LXDE附屬的Terminal<br>
+<img src="setup_debian7/9.jpg" class="maxSize"><br><br>
+
+SCIM：司徒常用的scim-pinyin輸入法<br>
+<img src="setup_debian7/10.jpg" class="maxSize"><br><br>
+
+登出畫面<br>
+<img src="setup_debian7/11.jpg" class="maxSize"><br><br>
+
+由於司徒同時安裝LXDE和XFCE4，而且腳本也有針對XFCE4改寫，因此，可以使用如下指令進入XFCE4
+</p>
+<pre>
+$ sudo sh login xfce4 user
+</pre>
+<p>
+<img src="setup_debian7/12.jpg" class="maxSize"><br><br>
+
+XFCE4的開始列是位於上面<br>
+<img src="setup_debian7/13.jpg" class="maxSize"><br><br>
+
+登出畫面<br>
+<img src="setup_debian7/14.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../../phone.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,131 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>GPD MicroPC &gt;&gt; Debian 10</h3>
+<p><b>安裝系統</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://gitlab.com/runout/gpd-micropc">gpd-micropc</a><br>
+2. <a href="https://github.com/joshskidmore/gpd-micropc-arch-guide">gpd-micropc-arch-guide</a><br><br>
+
+安裝步驟：<br>
+1. 下載<a href="https://cdimage.debian.org/debian-cd/current/amd64/iso-dvd/debian-10.1.0-amd64-DVD-1.iso">Debian 10</a>並且製作USB開機碟<br>
+2. 準備USB鍵盤(因為安裝階段無法使用GPD MicroPC的鍵盤)<br>
+3. 開機並且按下F7，選擇從USB開機<br>
+3. 手動設定IP<br>
+4. 安裝到選擇套件時，記得選擇<b>SSH Server</b>，因為安裝後，開機無畫面，需要SSH登入更新Kernel<br>
+<img src="setup_debian10/1.jpg" class="maxSize"><br><br>
+
+5. 登入SHH後，執行如下命令：
+</p>
+<pre>
+$ cd
+$ sudo apt install build-essential linux-source bc kmod cpio flex cpio libncurses-dev libelf-dev libssl-dev rsync
+$ sudo apt install firmware-linux firmware-iwlwifi firmware-realtek thermald
+$ cd /lib/firmware/i915/
+$ sudo wget https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/tree/i915/bxt_huc_ver01_8_2893.bin
+$ sudo wget https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/tree/i915/icl_dmc_ver1_07.bin
+$ sudo apt install arandr xserver-xorg-video-intel x11-xserver-utils
+
+$ cd ~
+$ wget https://github.com/torvalds/linux/archive/v5.3.tar.gz
+$ cd linux-5.3
+$ cp -a /boot/config-$(uname -r) .config 
+$ make menuconfig
+$ make -j`nproc` bindeb-pkg 
+  No rule to make target 'debian/certs/xxx@debian.org.cert.pem', needed by 'certs/x509_certificate_list'
+
+$ vim .config
+  # CONFIG_SYSTEM_TRUSTED_KEYS="debian/certs/debian-uefi-certs.pem"
+
+$ dpkg -i ../linux-image-5.3.0_5.3.0-1_amd64.deb
+
+$ sudo vim /etc/default/grub
+  GRUB_CMDLINE_LINUX_DEFAULT="quiet fbcon=rotate:1"
+
+$ sudo update-grub
+$ sudo vim /etc/lightdm/lightdm.conf
+  [Seat:*]
+  greeter-setup-script=/etc/lightdm/greeter_setup.sh
+
+$ sudo vim /etc/lightdm/greeter_setup.sh
+  #!/bin/bash
+  xrandr -o right
+  exit 0
+
+$ sudo chmod +x /etc/lightdm/greeter_setup.sh
+$ sudo vim /etc/rc.local
+  #!/bin/sh
+  echo "30" >/sys/class/backlight/intel_backlight/brightness
+  exit 0
+
+$ sudo vim /etc/initramfs-tools/modules
+  battery
+
+$ sudo update-initramfs -u
+$ sudo vim /usr/share/pulseaudio/alsa-mixer/paths/analog-output-headphones.conf
+  [Element Front]
+  ; switch = mute
+  switch = off
+
+$ sudo reboot
+</pre><br>
+
+<p>
+完成<br>
+<img src="setup_debian10/2.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../umpc.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

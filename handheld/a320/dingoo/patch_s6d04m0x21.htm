@@ -1,0 +1,1090 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../../header.js"></script>
+<div id="page">
+<h3>Dingoo A320 &gt;&gt; Dingoo</h3>
+<p><b>Patch ILI9338.DL(支援S6D04M0X21)</b></p>
+<hr size="1">
+<p>
+雖然司徒之前已經幫A320掌機替換過IPS屏，但是替換的屏是2.6吋IPS ILI9340，而原本A320掌機的屏幕則是2.8吋，當初選擇2.6吋的原因是找不到37Pin 2.8吋IPS屏，因此，只好將就使用，如今已經可以從淘寶網找到2.8吋IPS屏，於是司徒再度燃起換屏的興致，只是此次換屏的過程可說是相當幸苦，因爲除了一開始點不亮之外，最後還遇到Binary Patch空間不足的問題，因爲這個屏需要更多初始化指令，雖然過程一波三折，不過最後還是成功完成這個任務，於是司徒整理成此篇文章，分享給有需要的人。<br><br>
+
+DL檔案的檔頭如下：<br>
+<img src="patch_ili9340/1.jpg" class="maxSize"><br>
+根據Dingoo SDK的說明檔案，這種檔頭分成如下幾種區塊：
+</p>
+
+<pre class="brush:cpp">
+CCDL, IMPT, EXPT, RAWD, [ERPT], [&lt;null&gt;]
+</pre><br>
+
+<p>
+每個區塊的長度為32 Bytes且格式如下：
+</p>
+<pre class="brush:cpp">
+char name[4];
+uint32_t ident;
+uint32_t offset;
+uint32_t size;
+</pre><br>
+
+<p>
+經由上面的格式，可以知道PRAW Offset是0x2b0(size=0x2788)，因此可以使用如下指令取出Binary並且反組譯:
+</p>
+
+<pre>
+$ dd if=ILI9338.DL of=ILI9338.bin bs=1 skip=696
+$ mipsel-linux-objdump -b binary -m mips -D ILI9338.bin &gt; ILI9338.dis
+</pre><br>
+
+<p>
+根據Dingux的驅動程式(drivers/video/jz4740_slcd.h)，ILI9338的LCD初使化片段指令如下：
+</p>
+
+<pre class="brush:cpp">
+Mcupanel_Command(0x11);
+mdelay(100);
+Mcupanel_Command(0xCB);
+Mcupanel_Data(0x01);
+Mcupanel_Command(0xC0);
+Mcupanel_Data(0x26);
+Mcupanel_Data(0x01);
+...
+</pre><br>
+
+<p>
+經由上面的初使化程式，可以找到如下反組譯的位置：
+</p>
+
+<pre class="brush:cpp">
+ROM:0000199Cg      li      $gp, 0xFFFFE664
+ROM:000019A4g      addu    $gp, $t9
+ROM:000019A8g      addiu   $sp, -0x20
+ROM:000019ACg      sw      $gp, 0x10($sp)
+ROM:000019B0g      li      $a0, 0x11
+ROM:000019B4g      sw      $ra, 0x1C($sp)
+ROM:000019B8g      sw      $gp, 0x18($sp)
+ROM:000019BCg      lw      $t9, 0x2360($gp)
+ROM:000019C0g      jalr    $t9
+ROM:000019C4g      nop
+ROM:000019C8g      lw      $gp, 0x10($sp)
+ROM:000019CCg      li      $a0, 0x64  # 'd'
+ROM:000019D0g      lw      $t9, 0x238C($gp)
+ROM:000019D4g      jalr    $t9
+ROM:000019D8g      nop
+ROM:000019DCg      lw      $gp, 0x10($sp)
+ROM:000019E0g      li      $a0, 0xCB  # '
+ROM:000019E4g      lw      $t9, 0x2360($gp)
+ROM:000019E8g      jalr    $t9
+ROM:000019ECg      nop
+ROM:000019F0g      lw      $gp, 0x10($sp)
+ROM:000019F4g      li      $a0, 1
+ROM:000019F8g      lw      $t9, 0x2400($gp)
+ROM:000019FCg      jalr    $t9
+ROM:00001A00g      nop
+ROM:00001A04g      lw      $gp, 0x10($sp)
+ROM:00001A08g      li      $a0, 0xC0  # '
+ROM:00001A0Cg      lw      $t9, 0x2360($gp)
+ROM:00001A10g      jalr    $t9
+ROM:00001A14g      nop
+ROM:00001A18g      lw      $gp, 0x10($sp)
+ROM:00001A1Cg      li      $a0, 0x27  # '''
+ROM:00001A20g      lw      $t9, 0x2400($gp)
+ROM:00001A24g      jalr    $t9
+ROM:00001A28g      nop
+ROM:00001A2Cg      lw      $gp, 0x10($sp)
+ROM:00001A30g      li      $a0, 9
+ROM:00001A34g      lw      $t9, 0x2400($gp)
+ROM:00001A38g      jalr    $t9
+ROM:00001A3Cg      nop
+ROM:00001A40g      lw      $gp, 0x10($sp)
+ROM:00001A44g      li      $a0, 0xC1  # '
+ROM:00001A48g      lw      $t9, 0x2360($gp)
+ROM:00001A4Cg      jalr    $t9
+ROM:00001A50g      nop
+ROM:00001A54g      lw      $gp, 0x10($sp)
+ROM:00001A58g      li      $a0, 0x10
+ROM:00001A5Cg      lw      $t9, 0x2400($gp)
+ROM:00001A60g      jalr    $t9
+ROM:00001A64g      nop
+ROM:00001A68g      lw      $gp, 0x10($sp)
+ROM:00001A6Cg      li      $a0, 0xB6  # '
+ROM:00001A70g      lw      $t9, 0x2360($gp)
+ROM:00001A74g      jalr    $t9
+ROM:00001A78g      nop
+ROM:00001A7Cg      lw      $gp, 0x10($sp)
+ROM:00001A80g      li      $a0, 0xA
+ROM:00001A84g      lw      $t9, 0x2400($gp)
+ROM:00001A88g      jalr    $t9
+ROM:00001A8Cg      nop
+ROM:00001A90g      lw      $gp, 0x10($sp)
+ROM:00001A94g      li      $a0, 2
+ROM:00001A98g      lw      $t9, 0x2400($gp)
+ROM:00001A9Cg      jalr    $t9
+ROM:00001AA0g      nop
+ROM:00001AA4g      lw      $gp, 0x10($sp)
+ROM:00001AA8g      li      $a0, 0x26  # '&'
+ROM:00001AACg      lw      $t9, 0x2360($gp)
+ROM:00001AB0g      jalr    $t9
+ROM:00001AB4g      nop
+ROM:00001AB8g      lw      $gp, 0x10($sp)
+ROM:00001ABCg      li      $a0, 1
+ROM:00001AC0g      lw      $t9, 0x2400($gp)
+ROM:00001AC4g      jalr    $t9
+ROM:00001AC8g      nop
+ROM:00001ACCg      lw      $gp, 0x10($sp)
+ROM:00001AD0g      li      $a0, 0xE0  # '
+ROM:00001AD4g      lw      $t9, 0x2360($gp)
+ROM:00001AD8g      jalr    $t9
+ROM:00001ADCg      nop
+ROM:00001AE0g      lw      $gp, 0x10($sp)
+ROM:00001AE4g      li      $a0, 0xF
+ROM:00001AE8g      lw      $t9, 0x2400($gp)
+ROM:00001AECg      jalr    $t9
+ROM:00001AF0g      nop
+ROM:00001AF4g      lw      $gp, 0x10($sp)
+ROM:00001AF8g      li      $a0, 0x3F  # '?'
+ROM:00001AFCg      lw      $t9, 0x2400($gp)
+ROM:00001B00g      jalr    $t9
+ROM:00001B04g      nop
+ROM:00001B08g      lw      $gp, 0x10($sp)
+ROM:00001B0Cg      li      $a0, 0x3F  # '?'
+ROM:00001B10g      lw      $t9, 0x2400($gp)
+ROM:00001B14g      jalr    $t9
+ROM:00001B18g      nop
+ROM:00001B1Cg      lw      $gp, 0x10($sp)
+ROM:00001B20g      li      $a0, 2
+ROM:00001B24g      lw      $t9, 0x2400($gp)
+ROM:00001B28g      jalr    $t9
+ROM:00001B2Cg      nop
+ROM:00001B30g      lw      $gp, 0x10($sp)
+ROM:00001B34g      li      $a0, 4
+ROM:00001B38g      lw      $t9, 0x2400($gp)
+ROM:00001B3Cg      jalr    $t9
+ROM:00001B40g      nop
+ROM:00001B44g      lw      $gp, 0x10($sp)
+ROM:00001B48g      li      $a0, 5
+ROM:00001B4Cg      lw      $t9, 0x2400($gp)
+ROM:00001B50g      jalr    $t9
+ROM:00001B54g      nop
+ROM:00001B58g      lw      $gp, 0x10($sp)
+ROM:00001B5Cg      li      $a0, 0x49  # 'I'
+ROM:00001B60g      lw      $t9, 0x2400($gp)
+ROM:00001B64g      jalr    $t9
+ROM:00001B68g      nop
+ROM:00001B6Cg      lw      $gp, 0x10($sp)
+ROM:00001B70g      li      $a0, 0x75  # 'u'
+ROM:00001B74g      lw      $t9, 0x2400($gp)
+ROM:00001B78g      jalr    $t9
+ROM:00001B7Cg      nop
+ROM:00001B80g      lw      $gp, 0x10($sp)
+ROM:00001B84g      li      $a0, 0x20  # ' '
+ROM:00001B88g      lw      $t9, 0x2400($gp)
+ROM:00001B8Cg      jalr    $t9
+ROM:00001B90g      nop
+ROM:00001B94g      lw      $gp, 0x10($sp)
+ROM:00001B98g      li      $a0, 8
+ROM:00001B9Cg      lw      $t9, 0x2400($gp)
+ROM:00001BA0g      jalr    $t9
+ROM:00001BA4g      nop
+ROM:00001BA8g      lw      $gp, 0x10($sp)
+ROM:00001BACg      li      $a0, 0x14
+ROM:00001BB0g      lw      $t9, 0x2400($gp)
+ROM:00001BB4g      jalr    $t9
+ROM:00001BB8g      nop
+ROM:00001BBCg      lw      $gp, 0x10($sp)
+ROM:00001BC0g      li      $a0, 0xC
+ROM:00001BC4g      lw      $t9, 0x2400($gp)
+ROM:00001BC8g      jalr    $t9
+ROM:00001BCCg      nop
+ROM:00001BD0g      lw      $gp, 0x10($sp)
+ROM:00001BD4g      li      $a0, 0x15
+ROM:00001BD8g      lw      $t9, 0x2400($gp)
+ROM:00001BDCg      jalr    $t9
+ROM:00001BE0g      nop
+ROM:00001BE4g      lw      $gp, 0x10($sp)
+ROM:00001BE8g      li      $a0, 0xE
+ROM:00001BECg      lw      $t9, 0x2400($gp)
+ROM:00001BF0g      jalr    $t9
+ROM:00001BF4g      nop
+ROM:00001BF8g      lw      $gp, 0x10($sp)
+ROM:00001BFCg      li      $a0, 0
+ROM:00001C00g      lw      $t9, 0x2400($gp)
+ROM:00001C04g      jalr    $t9
+ROM:00001C08g      nop
+ROM:00001C0Cg      lw      $gp, 0x10($sp)
+ROM:00001C10g      li      $a0, 0xE1  # '
+ROM:00001C14g      lw      $t9, 0x2360($gp)
+ROM:00001C18g      jalr    $t9
+ROM:00001C1Cg      nop
+ROM:00001C20g      lw      $gp, 0x10($sp)
+ROM:00001C24g      li      $a0, 0
+ROM:00001C28g      lw      $t9, 0x2400($gp)
+ROM:00001C2Cg      jalr    $t9
+ROM:00001C30g      nop
+ROM:00001C34g      lw      $gp, 0x10($sp)
+ROM:00001C38g      li      $a0, 0
+ROM:00001C3Cg      lw      $t9, 0x2400($gp)
+ROM:00001C40g      jalr    $t9
+ROM:00001C44g      nop
+ROM:00001C48g      lw      $gp, 0x10($sp)
+ROM:00001C4Cg      li      $a0, 0
+ROM:00001C50g      lw      $t9, 0x2400($gp)
+ROM:00001C54g      jalr    $t9
+ROM:00001C58g      nop
+ROM:00001C5Cg      lw      $gp, 0x10($sp)
+ROM:00001C60g      li      $a0, 0xC
+ROM:00001C64g      lw      $t9, 0x2400($gp)
+ROM:00001C68g      jalr    $t9
+ROM:00001C6Cg      nop
+ROM:00001C70g      lw      $gp, 0x10($sp)
+ROM:00001C74g      li      $a0, 0x1A
+ROM:00001C78g      lw      $t9, 0x2400($gp)
+ROM:00001C7Cg      jalr    $t9
+ROM:00001C80g      nop
+ROM:00001C84g      lw      $gp, 0x10($sp)
+ROM:00001C88g      li      $a0, 0xD
+ROM:00001C8Cg      lw      $t9, 0x2400($gp)
+ROM:00001C90g      jalr    $t9
+ROM:00001C94g      nop
+ROM:00001C98g      lw      $gp, 0x10($sp)
+ROM:00001C9Cg      li      $a0, 0x3A  # ':'
+ROM:00001CA0g      lw      $t9, 0x2400($gp)
+ROM:00001CA4g      jalr    $t9
+ROM:00001CA8g      nop
+ROM:00001CACg      lw      $gp, 0x10($sp)
+ROM:00001CB0g      li      $a0, 0x8A  # '
+ROM:00001CB4g      lw      $t9, 0x2400($gp)
+ROM:00001CB8g      jalr    $t9
+ROM:00001CBCg      nop
+ROM:00001CC0g      lw      $gp, 0x10($sp)
+ROM:00001CC4g      li      $a0, 0x40  # '@'
+ROM:00001CC8g      lw      $t9, 0x2400($gp)
+ROM:00001CCCg      jalr    $t9
+ROM:00001CD0g      nop
+ROM:00001CD4g      lw      $gp, 0x10($sp)
+ROM:00001CD8g      li      $a0, 8
+ROM:00001CDCg      lw      $t9, 0x2400($gp)
+ROM:00001CE0g      jalr    $t9
+ROM:00001CE4g      nop
+ROM:00001CE8g      lw      $gp, 0x10($sp)
+ROM:00001CECg      li      $a0, 0x11
+ROM:00001CF0g      lw      $t9, 0x2400($gp)
+ROM:00001CF4g      jalr    $t9
+ROM:00001CF8g      nop
+ROM:00001CFCg      lw      $gp, 0x10($sp)
+ROM:00001D00g      li      $a0, 0xF
+ROM:00001D04g      lw      $t9, 0x2400($gp)
+ROM:00001D08g      jalr    $t9
+ROM:00001D0Cg      nop
+ROM:00001D10g      lw      $gp, 0x10($sp)
+ROM:00001D14g      li      $a0, 0x3F  # '?'
+ROM:00001D18g      lw      $t9, 0x2400($gp)
+ROM:00001D1Cg      jalr    $t9
+ROM:00001D20g      nop
+ROM:00001D24g      lw      $gp, 0x10($sp)
+ROM:00001D28g      li      $a0, 0x3F  # '?'
+ROM:00001D2Cg      lw      $t9, 0x2400($gp)
+ROM:00001D30g      jalr    $t9
+ROM:00001D34g      nop
+ROM:00001D38g      lw      $gp, 0x10($sp)
+ROM:00001D3Cg      li      $a0, 0xF
+ROM:00001D40g      lw      $t9, 0x2400($gp)
+ROM:00001D44g      jalr    $t9
+ROM:00001D48g      nop
+ROM:00001D4Cg      lw      $gp, 0x10($sp)
+ROM:00001D50g      li      $a0, 0x2A  # '*'
+ROM:00001D54g      lw      $t9, 0x2360($gp)
+ROM:00001D58g      jalr    $t9
+ROM:00001D5Cg      nop
+ROM:00001D60g      lw      $gp, 0x10($sp)
+ROM:00001D64g      move    $a0, $zero
+ROM:00001D68g      lw      $t9, 0x2400($gp)
+ROM:00001D6Cg      jalr    $t9
+ROM:00001D70g      nop
+ROM:00001D74g      lw      $gp, 0x10($sp)
+ROM:00001D78g      move    $a0, $zero
+ROM:00001D7Cg      lw      $t9, 0x2400($gp)
+ROM:00001D80g      jalr    $t9
+ROM:00001D84g      nop
+ROM:00001D88g      lw      $gp, 0x10($sp)
+ROM:00001D8Cg      li      $a0, 1
+ROM:00001D90g      lw      $t9, 0x2400($gp)
+ROM:00001D94g      jalr    $t9
+ROM:00001D98g      nop
+ROM:00001D9Cg      lw      $gp, 0x10($sp)
+ROM:00001DA0g      li      $a0, 0x3F  # '?'
+ROM:00001DA4g      lw      $t9, 0x2400($gp)
+ROM:00001DA8g      jalr    $t9
+ROM:00001DACg      nop
+ROM:00001DB0g      lw      $gp, 0x10($sp)
+ROM:00001DB4g      li      $a0, 0x2B  # '+'
+ROM:00001DB8g      lw      $t9, 0x2360($gp)
+ROM:00001DBCg      jalr    $t9
+ROM:00001DC0g      nop
+ROM:00001DC4g      lw      $gp, 0x10($sp)
+ROM:00001DC8g      move    $a0, $zero
+ROM:00001DCCg      lw      $t9, 0x2400($gp)
+ROM:00001DD0g      jalr    $t9
+ROM:00001DD4g      nop
+ROM:00001DD8g      lw      $gp, 0x10($sp)
+ROM:00001DDCg      move    $a0, $zero
+ROM:00001DE0g      lw      $t9, 0x2400($gp)
+ROM:00001DE4g      jalr    $t9
+ROM:00001DE8g      nop
+ROM:00001DECg      lw      $gp, 0x10($sp)
+ROM:00001DF0g      move    $a0, $zero
+ROM:00001DF4g      lw      $t9, 0x2400($gp)
+ROM:00001DF8g      jalr    $t9
+ROM:00001DFCg      nop
+ROM:00001E00g      lw      $gp, 0x10($sp)
+ROM:00001E04g      li      $a0, 0xEF  # '
+ROM:00001E08g      lw      $t9, 0x2400($gp)
+ROM:00001E0Cg      jalr    $t9
+ROM:00001E10g      nop
+ROM:00001E14g      lw      $gp, 0x10($sp)
+ROM:00001E18g      li      $a0, 0x36  # '6'
+ROM:00001E1Cg      lw      $t9, 0x2360($gp)
+ROM:00001E20g      jalr    $t9
+ROM:00001E24g      nop
+ROM:00001E28g      lw      $gp, 0x10($sp)
+ROM:00001E2Cg      li      $a0, 0xE8  # '
+ROM:00001E30g      lw      $t9, 0x2400($gp)
+ROM:00001E34g      jalr    $t9
+ROM:00001E38g      nop
+ROM:00001E3Cg      lw      $gp, 0x10($sp)
+ROM:00001E40g      li      $a0, 0x3A  # ':'
+ROM:00001E44g      lw      $t9, 0x2360($gp)
+ROM:00001E48g      jalr    $t9
+ROM:00001E4Cg      nop
+ROM:00001E50g      lw      $gp, 0x10($sp)
+ROM:00001E54g      li      $a0, 5
+ROM:00001E58g      lw      $t9, 0x2400($gp)
+ROM:00001E5Cg      jalr    $t9
+ROM:00001E60g      nop
+ROM:00001E64g      lw      $gp, 0x10($sp)
+ROM:00001E68g      li      $a0, 0x29  # ')'
+ROM:00001E6Cg      lw      $t9, 0x2360($gp)
+ROM:00001E70g      jalr    $t9
+ROM:00001E74g      nop
+ROM:00001E78g      lw      $gp, 0x10($sp)
+ROM:00001E7Cg      li      $a0, 0x2C  # ','
+ROM:00001E80g      lw      $t9, 0x2360($gp)
+ROM:00001E84g      jalr    $t9
+ROM:00001E88g      nop
+ROM:00001E8Cg      lw      $gp, 0x10($sp)
+ROM:00001E90g      lw      $ra, 0x1C($sp)
+ROM:00001E94g      jr      $ra
+ROM:00001E98g      addiu   $sp, 0x20
+</pre><br>
+
+<p>
+接著移植賣家提供的初始化程式到OpenDingux jz4740_slcd.h
+</p>
+
+<pre class="brush:cpp">
+mdelay(120); 
+Mcupanel_Command(0x0001); 
+Mcupanel_Command(0x00f0); 
+Mcupanel_Data(0x005a); 
+Mcupanel_Data(0x005a); 
+Mcupanel_Command(0x00f3); 
+Mcupanel_Data(0x0000); 
+Mcupanel_Command(0x00ff); 
+Mcupanel_Data(0x0030); 
+Mcupanel_Data(0x0000); 
+Mcupanel_Data(0x0000); 
+Mcupanel_Data(0x0040); 
+Mcupanel_Command(0x0011); 
+Mcupanel_Command(0x00f3); 
+Mcupanel_Data(0x0001); 
+Mcupanel_Data(0x0026); 
+Mcupanel_Data(0x0026); 
+Mcupanel_Data(0x0007); 
+Mcupanel_Data(0x0011); 
+Mcupanel_Data(0x0057); 
+Mcupanel_Data(0x0057); 
+Mcupanel_Data(0x002c); 
+Mcupanel_Command(0x00f4); 
+Mcupanel_Data(0x0060); 
+Mcupanel_Data(0x0060); 
+Mcupanel_Data(0x006F); 
+Mcupanel_Data(0x006F); 
+Mcupanel_Data(0x0044); 
+Mcupanel_Command(0x00f5); 
+Mcupanel_Data(0x0012); 
+Mcupanel_Data(0x0011); 
+Mcupanel_Data(0x0003); 
+Mcupanel_Data(0x00f0); 
+Mcupanel_Data(0x0030); 
+Mcupanel_Data(0x001f); 
+Mcupanel_Command(0x00f3); 
+Mcupanel_Data(0x0003); 
+Mcupanel_Command(0x00ff); 
+Mcupanel_Data(0x0030); 
+Mcupanel_Data(0x0000); 
+Mcupanel_Data(0x0000); 
+Mcupanel_Data(0x0070); 
+Mcupanel_Command(0x00f3); 
+Mcupanel_Data(0x000f); 
+Mcupanel_Command(0x00ff); 
+Mcupanel_Data(0x0030); 
+Mcupanel_Data(0x0000); 
+Mcupanel_Data(0x0000); 
+Mcupanel_Data(0x0078); 
+Mcupanel_Command(0x00f3); 
+Mcupanel_Data(0x001f); 
+Mcupanel_Command(0x00ff); 
+Mcupanel_Data(0x0000); 
+Mcupanel_Data(0x0000); 
+Mcupanel_Data(0x0000); 
+Mcupanel_Data(0x0078); 
+Mcupanel_Command(0x00f3); 
+Mcupanel_Data(0x001f); 
+Mcupanel_Command(0x00f3); 
+Mcupanel_Data(0x00ff); 
+Mcupanel_Data(0x0026); 
+Mcupanel_Data(0x0026); 
+Mcupanel_Data(0x0007); 
+Mcupanel_Data(0x0055); 
+Mcupanel_Data(0x0057); 
+Mcupanel_Data(0x0057); 
+Mcupanel_Data(0x002c); 
+Mcupanel_Command(0x0011); 
+Mcupanel_Command(0x00f2); 
+Mcupanel_Data(0x0013); 
+Mcupanel_Data(0x0013); 
+Mcupanel_Data(0x0001); 
+Mcupanel_Data(0x0008); 
+Mcupanel_Data(0x0008); 
+Mcupanel_Data(0x0008); 
+Mcupanel_Data(0x0008); 
+Mcupanel_Data(0x0010); 
+Mcupanel_Data(0x0000); 
+Mcupanel_Data(0x0010); 
+Mcupanel_Data(0x0010); 
+Mcupanel_Command(0x00fd); 
+Mcupanel_Data(0x0055); 
+Mcupanel_Command(0x0035); 
+Mcupanel_Data(0x0000); 
+Mcupanel_Command(0x0036); 
+Mcupanel_Data(0x0028); 
+Mcupanel_Command(0x003a); 
+Mcupanel_Data(0x0055); 
+Mcupanel_Command(0x00fe); 
+Mcupanel_Data(0x0016); 
+Mcupanel_Data(0x0016); 
+Mcupanel_Data(0x0028); 
+Mcupanel_Data(0x0000); 
+Mcupanel_Data(0x0000); 
+Mcupanel_Data(0x0006); 
+Mcupanel_Command(0x00f6); 
+Mcupanel_Data(0x0010); 
+Mcupanel_Data(0x0080); 
+Mcupanel_Data(0x0000); 
+Mcupanel_Data(0x0010); 
+Mcupanel_Command(0x0051); 
+Mcupanel_Data(0x00ff); 
+Mcupanel_Command(0x0053); 
+Mcupanel_Data(0x0000); 
+Mcupanel_Command(0x0055); 
+Mcupanel_Data(0x0000); 
+Mcupanel_Command(0x005e); 
+Mcupanel_Data(0x0000); 
+Mcupanel_Command(0x00ca); 
+Mcupanel_Data(0x0080); 
+Mcupanel_Data(0x0080); 
+Mcupanel_Data(0x0020); 
+Mcupanel_Command(0x00cb); 
+Mcupanel_Data(0x0001); 
+Mcupanel_Command(0x00f7); 
+Mcupanel_Data(0x0092); 
+Mcupanel_Data(0x001a); 
+Mcupanel_Data(0x001e); 
+Mcupanel_Data(0x001a); 
+Mcupanel_Data(0x001d); 
+Mcupanel_Data(0x001d); 
+Mcupanel_Data(0x001e); 
+Mcupanel_Data(0x0026); 
+Mcupanel_Data(0x001c); 
+Mcupanel_Data(0x001c); 
+Mcupanel_Data(0x0024); 
+Mcupanel_Data(0x001b); 
+Mcupanel_Data(0x0009); 
+Mcupanel_Data(0x0011); 
+Mcupanel_Data(0x0018); 
+Mcupanel_Command(0x00f8); 
+Mcupanel_Data(0x001a); 
+Mcupanel_Data(0x0000); 
+Mcupanel_Data(0x001e); 
+Mcupanel_Data(0x001a); 
+Mcupanel_Data(0x001d); 
+Mcupanel_Data(0x001a); 
+Mcupanel_Data(0x001d); 
+Mcupanel_Data(0x0024); 
+Mcupanel_Data(0x001e); 
+Mcupanel_Data(0x001f); 
+Mcupanel_Data(0x0027); 
+Mcupanel_Data(0x001e); 
+Mcupanel_Data(0x000a); 
+Mcupanel_Data(0x0011); 
+Mcupanel_Data(0x0011); 
+Mcupanel_Command(0x00f9); 
+Mcupanel_Data(0x0086); 
+Mcupanel_Data(0x001a); 
+Mcupanel_Data(0x0010); 
+Mcupanel_Data(0x0010); 
+Mcupanel_Data(0x001d); 
+Mcupanel_Data(0x001b); 
+Mcupanel_Data(0x001f); 
+Mcupanel_Data(0x0027); 
+Mcupanel_Data(0x001b); 
+Mcupanel_Data(0x001f); 
+Mcupanel_Data(0x0027); 
+Mcupanel_Data(0x001e); 
+Mcupanel_Data(0x000a); 
+Mcupanel_Data(0x0011); 
+Mcupanel_Data(0x0018); 
+Mcupanel_Command(0x00fa); 
+Mcupanel_Data(0x001a); 
+Mcupanel_Data(0x0000); 
+Mcupanel_Data(0x001e); 
+Mcupanel_Data(0x001a); 
+Mcupanel_Data(0x001d); 
+Mcupanel_Data(0x001a); 
+Mcupanel_Data(0x001d); 
+Mcupanel_Data(0x0024); 
+Mcupanel_Data(0x001e); 
+Mcupanel_Data(0x001f); 
+Mcupanel_Data(0x0027); 
+Mcupanel_Data(0x001e); 
+Mcupanel_Data(0x000a); 
+Mcupanel_Data(0x0011); 
+Mcupanel_Data(0x0011); 
+Mcupanel_Command(0x00fb); 
+Mcupanel_Data(0x0080); 
+Mcupanel_Data(0x001a); 
+Mcupanel_Data(0x001e); 
+Mcupanel_Data(0x001a); 
+Mcupanel_Data(0x001d); 
+Mcupanel_Data(0x001b); 
+Mcupanel_Data(0x001e); 
+Mcupanel_Data(0x0026); 
+Mcupanel_Data(0x0017); 
+Mcupanel_Data(0x001a); 
+Mcupanel_Data(0x001d); 
+Mcupanel_Data(0x0014); 
+Mcupanel_Data(0x0000); 
+Mcupanel_Data(0x0011); 
+Mcupanel_Data(0x0018); 
+Mcupanel_Command(0x00fc); 
+Mcupanel_Data(0x001a); 
+Mcupanel_Data(0x0000); 
+Mcupanel_Data(0x001e); 
+Mcupanel_Data(0x001a); 
+Mcupanel_Data(0x001d); 
+Mcupanel_Data(0x001a); 
+Mcupanel_Data(0x001d); 
+Mcupanel_Data(0x0024); 
+Mcupanel_Data(0x001e); 
+Mcupanel_Data(0x001f); 
+Mcupanel_Data(0x0027); 
+Mcupanel_Data(0x001e); 
+Mcupanel_Data(0x000a); 
+Mcupanel_Data(0x0011); 
+Mcupanel_Data(0x0011); 
+Mcupanel_Command(0x002a); 
+Mcupanel_Data(0x0000); 
+Mcupanel_Data(0x0000); 
+Mcupanel_Data(0x0001); 
+Mcupanel_Data(0x003f); 
+Mcupanel_Command(0x002b); 
+Mcupanel_Data(0x0000); 
+Mcupanel_Data(0x0000); 
+Mcupanel_Data(0x0000); 
+Mcupanel_Data(0x00ef); 
+Mcupanel_Command(0x0029); 
+Mcupanel_Command(0x002c); 
+</pre><br>
+
+<p>
+接著是最難的地方，因為這個屏需要更多的指令，所以沒有足夠的空間做Binary Patch，因此，司徒必須找尋其它沒有使用到的空間來填充需要的指令，加上A320掌機沒有比較方便的除錯方式，因此，司徒花了相當多的時間測試，最終完成Binary Patch，Patch後的Assembly內容如下：
+</p>
+
+<pre class="brush:cpp">
+ROM:0000199Cg      li      $gp, 0xFFFFE664
+ROM:000019A4g      addu    $gp, $t9
+ROM:000019A8g      addiu   $sp, -0x24
+ROM:000019ACg      sw      $gp, 0x10($sp)
+ROM:000019B0g      li      $a0, 0xA0  # '
+ROM:000019B4g      sw      $ra, 0x1C($sp)
+ROM:000019B8g      sw      $gp, 0x18($sp)
+ROM:000019BCg      lw      $t9, 0x238C($gp)
+ROM:000019C0g      jalr    $t9
+ROM:000019C4g      nop
+ROM:000019C8g      li      $t0, 0x1A20
+ROM:000019CC
+ROM:000019CC loc_19CC:g                     # CODE XREF: ROM:00001A10j
+ROM:000019CCg      lw      $gp, 0x10($sp)
+ROM:000019D0g      add     $t1, $t0, $gp
+ROM:000019D4g      lw      $t1, 0($t1)
+ROM:000019D8g      addi    $t0, 4
+ROM:000019DCg      sw      $t0, 0x20($sp)
+ROM:000019E0g      andi    $a0, $t1, 0xFF
+ROM:000019E4g      andi    $t1, 0x8000
+ROM:000019E8g      bnez    $t1, loc_19FC
+ROM:000019ECg      lw      $t9, 0x2400($gp)
+ROM:000019F0g      jalr    $t9
+ROM:000019F4g      nop
+ROM:000019F8g      b       loc_1A08
+ROM:000019FC
+ROM:000019FC loc_19FC:g                     # CODE XREF: ROM:000019E8j
+ROM:000019FCg      lw      $t9, 0x2360($gp)
+ROM:00001A00g      jalr    $t9
+ROM:00001A04g      nop
+ROM:00001A08
+ROM:00001A08 loc_1A08:g                     # CODE XREF: ROM:000019F8j
+ROM:00001A08g      lw      $t0, 0x20($sp)
+ROM:00001A0Cg      slti    $t1, $t0, 0x1D94
+ROM:00001A10g      bnez    $t1, loc_19CC
+ROM:00001A14g      nop
+ROM:00001A18g      b       loc_1E88
+ROM:00001A1Cg      nop
+ROM:00001A1C  # ---------------------------------------------------------------------------
+ROM:00001A20g      .word 0x8001
+ROM:00001A24g      .word 0x80F0
+ROM:00001A28g      .word 0x5A
+ROM:00001A2Cg      .word 0x5A
+ROM:00001A30g      .word 0x80F3
+ROM:00001A34g      .word 0
+ROM:00001A38g      .word 0x80FF
+ROM:00001A3Cg      .word 0x30
+ROM:00001A40g      .word 0
+ROM:00001A44g      .word 0
+ROM:00001A48g      .word 0x40
+ROM:00001A4Cg      .word 0x8011
+ROM:00001A50g      .word 0x80F3
+ROM:00001A54g      .word 1
+ROM:00001A58g      .word 0x26
+ROM:00001A5Cg      .word 0x26
+ROM:00001A60g      .word 7
+ROM:00001A64g      .word 0x11
+ROM:00001A68g      .word 0x57
+ROM:00001A6Cg      .word 0x57
+ROM:00001A70g      .word 0x2C
+ROM:00001A74g      .word 0x80F4
+ROM:00001A78g      .word 0x60
+ROM:00001A7Cg      .word 0x60
+ROM:00001A80g      .word 0x6F
+ROM:00001A84g      .word 0x6F
+ROM:00001A88g      .word 0x44
+ROM:00001A8Cg      .word 0x80F5
+ROM:00001A90g      .word 0x12
+ROM:00001A94g      .word 0x11
+ROM:00001A98g      .word 3
+ROM:00001A9Cg      .word 0xF0
+ROM:00001AA0g      .word 0x30
+ROM:00001AA4g      .word 0x1F
+ROM:00001AA8g      .word 0x80F3
+ROM:00001AACg      .word 3
+ROM:00001AB0g      .word 0x80FF
+ROM:00001AB4g      .word 0x30
+ROM:00001AB8g      .word 0
+ROM:00001ABCg      .word 0
+ROM:00001AC0g      .word 0x70
+ROM:00001AC4g      .word 0x80F3
+ROM:00001AC8g      .word 0xF
+ROM:00001ACCg      .word 0x80FF
+ROM:00001AD0g      .word 0x30
+ROM:00001AD4g      .word 0
+ROM:00001AD8g      .word 0
+ROM:00001ADCg      .word 0x78
+ROM:00001AE0g      .word 0x80F3
+ROM:00001AE4g      .word 0x1F
+ROM:00001AE8g      .word 0x80FF
+ROM:00001AECg      .word 0
+ROM:00001AF0g      .word 0
+ROM:00001AF4g      .word 0
+ROM:00001AF8g      .word 0x78
+ROM:00001AFCg      .word 0x80F3
+ROM:00001B00g      .word 0x1F
+ROM:00001B04g      .word 0x80F3
+ROM:00001B08g      .word 0xFF
+ROM:00001B0Cg      .word 0x26
+ROM:00001B10g      .word 0x26
+ROM:00001B14g      .word 7
+ROM:00001B18g      .word 0x55
+ROM:00001B1Cg      .word 0x57
+ROM:00001B20g      .word 0x57
+ROM:00001B24g      .word 0x2C
+ROM:00001B28g      .word 0x8011
+ROM:00001B2Cg      .word 0x80F2
+ROM:00001B30g      .word 0x13
+ROM:00001B34g      .word 0x13
+ROM:00001B38g      .word 1
+ROM:00001B3Cg      .word 8
+ROM:00001B40g      .word 8
+ROM:00001B44g      .word 8
+ROM:00001B48g      .word 8
+ROM:00001B4Cg      .word 0x10
+ROM:00001B50g      .word 0
+ROM:00001B54g      .word 0x10
+ROM:00001B58g      .word 0x10
+ROM:00001B5Cg      .word 0x80FD
+ROM:00001B60g      .word 0x55
+ROM:00001B64g      .word 0x8035
+ROM:00001B68g      .word 0
+ROM:00001B6Cg      .word 0x8036
+ROM:00001B70g      .word 0x28
+ROM:00001B74g      .word 0x803A
+ROM:00001B78g      .word 0x55
+ROM:00001B7Cg      .word 0x80FE
+ROM:00001B80g      .word 0x16
+ROM:00001B84g      .word 0x16
+ROM:00001B88g      .word 0x28
+ROM:00001B8Cg      .word 0
+ROM:00001B90g      .word 0
+ROM:00001B94g      .word 6
+ROM:00001B98g      .word 0x80F6
+ROM:00001B9Cg      .word 0x10
+ROM:00001BA0g      .word 0x80
+ROM:00001BA4g      .word 0
+ROM:00001BA8g      .word 0x10
+ROM:00001BACg      .word 0x8051
+ROM:00001BB0g      .word 0xFF
+ROM:00001BB4g      .word 0x8053
+ROM:00001BB8g      .word 0
+ROM:00001BBCg      .word 0x8055
+ROM:00001BC0g      .word 0
+ROM:00001BC4g      .word 0x805E
+ROM:00001BC8g      .word 0
+ROM:00001BCCg      .word 0x80CA
+ROM:00001BD0g      .word 0x80
+ROM:00001BD4g      .word 0x80
+ROM:00001BD8g      .word 0x20
+ROM:00001BDCg      .word 0x80CB
+ROM:00001BE0g      .word 1
+ROM:00001BE4g      .word 0x80F7
+ROM:00001BE8g      .word 0x92
+ROM:00001BECg      .word 0x1A
+ROM:00001BF0g      .word 0x1E
+ROM:00001BF4g      .word 0x1A
+ROM:00001BF8g      .word 0x1D
+ROM:00001BFCg      .word 0x1D
+ROM:00001C00g      .word 0x1E
+ROM:00001C04g      .word 0x26
+ROM:00001C08g      .word 0x1C
+ROM:00001C0Cg      .word 0x1C
+ROM:00001C10g      .word 0x24
+ROM:00001C14g      .word 0x1B
+ROM:00001C18g      .word 9
+ROM:00001C1Cg      .word 0x11
+ROM:00001C20g      .word 0x18
+ROM:00001C24g      .word 0x80F8
+ROM:00001C28g      .word 0x1A
+ROM:00001C2Cg      .word 0
+ROM:00001C30g      .word 0x1E
+ROM:00001C34g      .word 0x1A
+ROM:00001C38g      .word 0x1D
+ROM:00001C3Cg      .word 0x1A
+ROM:00001C40g      .word 0x1D
+ROM:00001C44g      .word 0x24
+ROM:00001C48g      .word 0x1E
+ROM:00001C4Cg      .word 0x1F
+ROM:00001C50g      .word 0x27
+ROM:00001C54g      .word 0x1E
+ROM:00001C58g      .word 0xA
+ROM:00001C5Cg      .word 0x11
+ROM:00001C60g      .word 0x11
+ROM:00001C64g      .word 0x80F9
+ROM:00001C68g      .word 0x86
+ROM:00001C6Cg      .word 0x1A
+ROM:00001C70g      .word 0x10
+ROM:00001C74g      .word 0x10
+ROM:00001C78g      .word 0x1D
+ROM:00001C7Cg      .word 0x1B
+ROM:00001C80g      .word 0x1F
+ROM:00001C84g      .word 0x27
+ROM:00001C88g      .word 0x1B
+ROM:00001C8Cg      .word 0x1F
+ROM:00001C90g      .word 0x27
+ROM:00001C94g      .word 0x1E
+ROM:00001C98g      .word 0xA
+ROM:00001C9Cg      .word 0x11
+ROM:00001CA0g      .word 0x18
+ROM:00001CA4g      .word 0x80FA
+ROM:00001CA8g      .word 0x1A
+ROM:00001CACg      .word 0
+ROM:00001CB0g      .word 0x1E
+ROM:00001CB4g      .word 0x1A
+ROM:00001CB8g      .word 0x1D
+ROM:00001CBCg      .word 0x1A
+ROM:00001CC0g      .word 0x1D
+ROM:00001CC4g      .word 0x24
+ROM:00001CC8g      .word 0x1E
+ROM:00001CCCg      .word 0x1F
+ROM:00001CD0g      .word 0x27
+ROM:00001CD4g      .word 0x1E
+ROM:00001CD8g      .word 0xA
+ROM:00001CDCg      .word 0x11
+ROM:00001CE0g      .word 0x11
+ROM:00001CE4g      .word 0x80FB
+ROM:00001CE8g      .word 0x80
+ROM:00001CECg      .word 0x1A
+ROM:00001CF0g      .word 0x1E
+ROM:00001CF4g      .word 0x1A
+ROM:00001CF8g      .word 0x1D
+ROM:00001CFCg      .word 0x1B
+ROM:00001D00g      .word 0x1E
+ROM:00001D04g      .word 0x26
+ROM:00001D08g      .word 0x17
+ROM:00001D0Cg      .word 0x1A
+ROM:00001D10g      .word 0x1D
+ROM:00001D14g      .word 0x14
+ROM:00001D18g      .word 0
+ROM:00001D1Cg      .word 0x11
+ROM:00001D20g      .word 0x18
+ROM:00001D24g      .word 0x80FC
+ROM:00001D28g      .word 0x1A
+ROM:00001D2Cg      .word 0
+ROM:00001D30g      .word 0x1E
+ROM:00001D34g      .word 0x1A
+ROM:00001D38g      .word 0x1D
+ROM:00001D3Cg      .word 0x1A
+ROM:00001D40g      .word 0x1D
+ROM:00001D44g      .word 0x24
+ROM:00001D48g      .word 0x1E
+ROM:00001D4Cg      .word 0x1F
+ROM:00001D50g      .word 0x27
+ROM:00001D54g      .word 0x1E
+ROM:00001D58g      .word 0xA
+ROM:00001D5Cg      .word 0x11
+ROM:00001D60g      .word 0x11
+ROM:00001D64g      .word 0x802A
+ROM:00001D68g      .word 0
+ROM:00001D6Cg      .word 0
+ROM:00001D70g      .word 1
+ROM:00001D74g      .word 0x3F
+ROM:00001D78g      .word 0x802B
+ROM:00001D7Cg      .word 0
+ROM:00001D80g      .word 0
+ROM:00001D84g      .word 0
+ROM:00001D88g      .word 0xEF
+ROM:00001D8Cg      .word 0x8029
+ROM:00001D90g      .word 0x802C
+ROM:00001D94g      .word 0
+ROM:00001D98g      .word 0
+ROM:00001D9Cg      .word 0
+ROM:00001DA0g      .word 0
+ROM:00001DA4g      .word 0
+ROM:00001DA8g      .word 0
+ROM:00001DACg      .word 0
+ROM:00001DB0g      .word 0
+ROM:00001DB4g      .word 0
+ROM:00001DB8g      .word 0
+ROM:00001DBCg      .word 0
+ROM:00001DC0g      .word 0
+ROM:00001DC4g      .word 0
+ROM:00001DC8g      .word 0
+ROM:00001DCCg      .word 0
+ROM:00001DD0g      .word 0
+ROM:00001DD4g      .word 0
+ROM:00001DD8g      .word 0
+ROM:00001DDCg      .word 0
+ROM:00001DE0g      .word 0
+ROM:00001DE4g      .word 0
+ROM:00001DE8g      .word 0
+ROM:00001DECg      .word 0
+ROM:00001DF0g      .word 0
+ROM:00001DF4g      .word 0
+ROM:00001DF8g      .word 0
+ROM:00001DFCg      .word 0
+ROM:00001E00g      .word 0
+ROM:00001E04g      .word 0
+ROM:00001E08g      .word 0
+ROM:00001E0Cg      .word 0
+ROM:00001E10g      .word 0
+ROM:00001E14g      .word 0
+ROM:00001E18g      .word 0
+ROM:00001E1Cg      .word 0
+ROM:00001E20g      .word 0
+ROM:00001E24g      .word 0
+ROM:00001E28g      .word 0
+ROM:00001E2Cg      .word 0
+ROM:00001E30g      .word 0
+ROM:00001E34g      .word 0
+ROM:00001E38g      .word 0
+ROM:00001E3Cg      .word 0
+ROM:00001E40g      .word 0
+ROM:00001E44g      .word 0
+ROM:00001E48g      .word 0
+ROM:00001E4Cg      .word 0
+ROM:00001E50g      .word 0
+ROM:00001E54g      .word 0
+ROM:00001E58g      .word 0
+ROM:00001E5Cg      .word 0
+ROM:00001E60g      .word 0
+ROM:00001E64g      .word 0
+ROM:00001E68g      .word 0
+ROM:00001E6Cg      .word 0
+ROM:00001E70g      .word 0
+ROM:00001E74g      .word 0
+ROM:00001E78g      .word 0
+ROM:00001E7Cg      .word 0
+ROM:00001E80g      .word 0
+ROM:00001E84g      .word 0
+ROM:00001E88  # ---------------------------------------------------------------------------
+ROM:00001E88 loc_1E88:g                     # CODE XREF: ROM:00001A18j
+ROM:00001E88g      nop
+ROM:00001E8Cg      lw      $gp, 0x10($sp)
+ROM:00001E90g      lw      $ra, 0x1C($sp)
+ROM:00001E94g      jr      $ra
+ROM:00001E98g      addiu   $sp, 0x24
+</pre><br>
+
+<p>
+Patch後的Binary內容
+</p>
+
+<pre class="brush:cpp">
+0001c50: 01000224 00001c3c 64e69c27 21e09903  ...$...&lt;d..'!...
+0001c60: dcffbd27 1000bcaf a0000424 1c00bfaf  ...'.......$....
+0001c70: 1800bcaf 8c23998f 09f82003 00000000  .....#.... .....
+0001c80: 201a0824 1000bc8f 20481c01 0000298d   ..$.... H....).
+0001c90: 04000821 2000a8af ff002431 00802931  ...! .....$1..)1
+0001ca0: 04002015 0024998f 09f92003 00000000  .. ..$.... .....
+0001cb0: 03000010 6023998f 09f82003 00000000  ....`#.... .....
+0001cc0: 2000a88f 941d0929 eeff2015 00000000   ......).. .....
+0001cd0: 1b010010 00000000 01800000 f0800000  ................
+0001ce0: 5a000000 5a000000 f3800000 00000000  Z...Z...........
+0001cf0: ff800000 30000000 00000000 00000000  ....0...........
+0001d00: 40000000 11800000 f3800000 01000000  @...............
+0001d10: 26000000 26000000 07000000 11000000  &amp;...&amp;...........
+0001d20: 57000000 57000000 2c000000 f4800000  W...W...,.......
+0001d30: 60000000 60000000 6f000000 6f000000  `...`...o...o...
+0001d40: 44000000 f5800000 12000000 11000000  D...............
+0001d50: 03000000 f0000000 30000000 1f000000  ........0.......
+0001d60: f3800000 03000000 ff800000 30000000  ............0...
+0001d70: 00000000 00000000 70000000 f3800000  ........p.......
+0001d80: 0f000000 ff800000 30000000 00000000  ........0.......
+0001d90: 00000000 78000000 f3800000 1f000000  ....x...........
+0001da0: ff800000 00000000 00000000 00000000  ................
+0001db0: 78000000 f3800000 1f000000 f3800000  x...............
+0001dc0: ff000000 26000000 26000000 07000000  ....&amp;...&amp;.......
+0001dd0: 55000000 57000000 57000000 2c000000  U...W...W...,...
+0001de0: 11800000 f2800000 13000000 13000000  ................
+0001df0: 01000000 08000000 08000000 08000000  ................
+0001e00: 08000000 10000000 00000000 10000000  ................
+0001e10: 10000000 fd800000 55000000 35800000  ........U...5...
+0001e20: 00000000 36800000 e8000000 3a800000  ....6...(...:...
+0001e30: 55000000 fe800000 16000000 16000000  U...............
+0001e40: 28000000 00000000 00000000 06000000  (...............
+0001e50: f6800000 10000000 80000000 00000000  ................
+0001e60: 10000000 51800000 ff000000 53800000  ....Q.......S...
+0001e70: 00000000 55800000 00000000 5e800000  ....U.......^...
+0001e80: 00000000 ca800000 80000000 80000000  ................
+0001e90: 20000000 cb800000 01000000 f7800000   ...............
+0001ea0: 92000000 1a000000 1e000000 1a000000  ................
+0001eb0: 1d000000 1d000000 1e000000 26000000  ............&amp;...
+0001ec0: 1c000000 1c000000 24000000 1b000000  ........$.......
+0001ed0: 09000000 11000000 18000000 f8800000  ................
+0001ee0: 1a000000 00000000 1e000000 1a000000  ................
+0001ef0: 1d000000 1a000000 1d000000 24000000  ............$...
+0001f00: 1e000000 1f000000 27000000 1e000000  ........'.......
+0001f10: 0a000000 11000000 11000000 f9800000  ................
+0001f20: 86000000 1a000000 10000000 10000000  ................
+0001f30: 1d000000 1b000000 1f000000 27000000  ............'...
+0001f40: 1b000000 1f000000 27000000 1e000000  ........'.......
+0001f50: 0a000000 11000000 18000000 fa800000  ................
+0001f60: 1a000000 00000000 1e000000 1a000000  ................
+0001f70: 1d000000 1a000000 1d000000 24000000  ............$...
+0001f80: 1e000000 1f000000 27000000 1e000000  ........'.......
+0001f90: 0a000000 11000000 11000000 fb800000  ................
+0001fa0: 80000000 1a000000 1e000000 1a000000  ................
+0001fb0: 1d000000 1b000000 1e000000 26000000  ............&amp;...
+0001fc0: 17000000 1a000000 1d000000 14000000  ................
+0001fd0: 00000000 11000000 18000000 fc800000  ................
+0001fe0: 1a000000 00000000 1e000000 1a000000  ................
+0001ff0: 1d000000 1a000000 1d000000 24000000  ............$...
+0002000: 1e000000 1f000000 27000000 1e000000  ........'.......
+0002010: 0a000000 11000000 11000000 2a800000  ............*...
+0002020: 00000000 00000000 01000000 3f000000  ............?...
+0002030: 2b800000 00000000 00000000 00000000  +...............
+0002040: ef000000 29800000 2c800000 00000000  ....)...,.......
+0002050: 00000000 00000000 00000000 00000000  ................
+0002060: 00000000 00000000 00000000 00000000  ................
+0002070: 00000000 00000000 00000000 00000000  ................
+0002080: 00000000 00000000 00000000 00000000  ................
+0002090: 00000000 00000000 00000000 00000000  ................
+00020a0: 00000000 00000000 00000000 00000000  ................
+00020b0: 00000000 00000000 00000000 00000000  ................
+00020c0: 00000000 00000000 00000000 00000000  ................
+00020d0: 00000000 00000000 00000000 00000000  ................
+00020e0: 00000000 00000000 00000000 00000000  ................
+00020f0: 00000000 00000000 00000000 00000000  ................
+0002100: 00000000 00000000 00000000 00000000  ................
+0002110: 00000000 00000000 00000000 00000000  ................
+0002120: 00000000 00000000 00000000 00000000  ................
+0002130: 00000000 00000000 00000000 00000000  ................
+0002140: 00000000 1000bc8f 1c00bf8f 0800e003  ................
+0002150: 2400bd27 00000000 f8ffbd27 0000bcaf  $..'.......'....
+...
+00023c0: 00000000 00000000 4c43445f 53364430  ........LCD_S6D0
+00023d0: 344d3058 32312020 20200000 41333230  4M0X21    ..A320
+</pre><br>
+
+<p>
+完成<br>
+<img src="patch_s6d04m0x21/1.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

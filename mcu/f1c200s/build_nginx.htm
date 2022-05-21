@@ -1,0 +1,194 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>F1C200S</h3>
+<p><b>Build Nginx</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://www.cnblogs.com/schips/p/poring_nginx_on_arm_linux.html">poring_nginx_on_arm_linux</a><br><br>
+
+如下：
+</p>
+<pre>
+#!/bin/sh
+BASE=`pwd`
+BUILD_HOST=arm-linux
+ZLIB=zlib-1.2.11
+OPENSSL=openssl-1.0.2t
+PCRE=pcre-8.30
+NGINX=nginx-1.17.6
+FIN_INSTALL=/usr/${NGINX}
+
+make_dirs() {
+    cd ${BASE}
+    mkdir  compressed  install  source -p
+
+}
+
+tget () { #try wget
+    filename=`basename $1`
+    echo "Downloading [${filename}]..."
+    if [ ! -f ${filename} ];then
+        wget $1
+    fi
+
+    echo "[OK] Downloaded [${filename}] "
+}
+
+download_package () {
+    cd ${BASE}/compressed
+    #下载包
+    tget https://www.zlib.net/${ZLIB}.tar.gz
+    tget https://www.openssl.org/source/${OPENSSL}.tar.gz
+    # 注意地址
+    tget https://jaist.dl.sourceforge.net/project/pcre/pcre/8.30/${PCRE}.tar.bz2
+    tget http://mirrors.sohu.com/nginx/${NGINX}.tar.gz
+}
+
+tar_package () {
+    cd ${BASE}/compressed
+    ls * > /tmp/list.txt
+    for TAR in `cat /tmp/list.txt`
+    do
+        tar -xf $TAR -C  ../source
+    done
+    rm -rf /tmp/list.txt
+}
+
+
+pre_configure_nginx () {
+    cd ${BASE}/source/${NGINX}
+    # auto/cc/name
+    sed -r -i "/ngx_feature_run=yes/ s/.*/\tngx_feature_run=no/g" auto/cc/name
+    sed -r -i "/exit 1/ s/.*//1" auto/cc/name
+
+    # auto/types/sizeof
+    sed -r -i "/ngx_size=`$NGX_AUTOTEST`/ s/.*/\tngx_size=4/g" auto/types/sizeof
+    #
+    sed -r -i "/PCRE_CONF_OPT=/ s/.*/PCRE_CONF_OPT=--host=${BUILD_HOST}/g" auto/options
+}
+
+
+configure_nginx () {
+    cd ${BASE}/source/${NGINX}
+    BUILD=`pwd`
+    ./configure \
+    --builddir=${BUILD} \
+    --prefix=${FIN_INSTALL} \
+    --with-http_mp4_module \
+    --with-http_ssl_module \
+    --without-http_upstream_zone_module \
+    --with-openssl-opt=os/compiler:${BUILD_HOST}-gcc \
+    --with-cc=${BUILD_HOST}-gcc \
+    --with-cpp=${BUILD_HOST}-g++ \
+    --with-ld-opt=-lpthread \
+    --with-cc-opt='-D_FILE_OFFSET_BITS=64 -D__USE_FILE_OFFSET64' \
+    --with-pcre=${BASE}/source/${PCRE} \
+    --with-openssl=${BASE}/source/${OPENSSL} \
+    --with-zlib=${BASE}/source/${ZLIB} \
+    --with-http_v2_module && echo "${FIN_INSTALL} with ${BUILD_HOST}" > ccinfo
+}
+
+pre_make_nginx () {
+    cd ${BASE}/source/${NGINX}
+
+    # 屏蔽nginx 的configure信息
+    HEAD_FILE=`find . -name "ngx_auto_config.h"`
+    DEL_LINE=`sed -n "/NGX_CONFIGURE/="  ${HEAD_FILE}`
+        sed -i "${DEL_LINE}d" ${HEAD_FILE}
+    echo "#undef NGX_CONFIGURE " >> ${HEAD_FILE}
+    echo "#define NGX_CONFIGURE \"./configure\"" >> ${HEAD_FILE}
+    
+    echo "#ifndef NGX_SYS_NERR" >> ${HEAD_FILE}
+    echo "#define NGX_SYS_NERR 132" >> ${HEAD_FILE}
+    echo "#endif" >> ${HEAD_FILE}
+
+    echo "#ifndef NGX_HAVE_SYSVSHM" >> ${HEAD_FILE}
+    echo "#define NGX_HAVE_SYSVSHM 1" >> ${HEAD_FILE}
+    echo "#endif" >> ${HEAD_FILE}
+
+    # 删除makefile 多余的几行
+
+    DEL_LINE=`sed -n "/build\:/="  Makefile  | awk 'END {print}'`
+    # 因为是有 2 行，删除以后文件会发生变化
+    sed -i "${DEL_LINE}d" Makefile
+    sed -i "${DEL_LINE}d" Makefile
+
+    DEL_LINE=`sed -n "/install\:/="  Makefile  | awk 'END {print}'`
+    sed -i "${DEL_LINE}d" Makefile
+    sed -i "${DEL_LINE}d" Makefile
+
+    DEL_LINE=`sed -n "/modules\:/="  Makefile  | awk 'END {print}'`
+    sed -i "${DEL_LINE}d" Makefile
+    sed -i "${DEL_LINE}d" Makefile
+}
+
+make_nginx () {
+    cd ${BASE}/source/${NGINX}
+    make -j4 && sudo make install && sudo mv ccinfo ${FIN_INSTALL}/ccinfo
+    cp ${FIN_INSTALL} ${BASE}/install/ -vr
+    sudo rm ${FIN_INSTALL} -r
+}
+sudo ls
+make_dirs
+download_package
+tar_package
+pre_configure_nginx
+configure_nginx
+pre_make_nginx
+make_nginx
+</pre><br>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,130 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Windows Driver Model</h3>
+<p><b>如何在User Mode開啟"\Device\"下的驅動程式(非Symbolic Link)</b></p>
+<hr size="1">
+<p>
+同事Lucas最近又開始假認真了！因此，我又要開始陪他玩了，他最近在研究是否有機會可以直接開啟<b>\Device\</b>底下的驅動程式，而不需要透過Symbolic Link的方式開啟，雖然一般使用者都會使用CreateFile()並且傳入Symbolic Link("\\.\")作為開啟裝置的路徑，但是，如果使用者想要在User Mode開啟<b>\Device\</b>底下的驅動程式，是否有機會呢？答案是可行的，可以參考如下網址：<br>
+1. <a href="https://www.exploit-db.com/exploits/37052/">37052</a><br>
+2. <a href="https://msdn.microsoft.com/en-us/library/windows/desktop/aa365247(v=vs.85).aspx">aa365247(v=vs.85)</a><br>
+3. <a href="https://googleprojectzero.blogspot.tw/2016/02/the-definitive-guide-on-win32-to-nt.html">the-definitive-guide-on-win32-to-nt</a><br><br>
+
+程式碼如下所示：
+</p>
+<pre class="brush:cpp">
+#include &lt;windows.h&gt;
+#include &lt;winternl.h&gt;
+#include &lt;stdio.h&gt;
+#pragma comment(lib, "ntdll.lib")
+
+void WINAPI RtlInitUnicodeString( PUNICODE_STRING target, LPCWSTR source )
+{
+  if((target-&gt;Buffer = (LPWSTR)source)){
+    target-&gt;Length = wcslen(source) * sizeof(WCHAR);
+    target-&gt;MaximumLength = target-&gt;Length + sizeof(WCHAR);
+  }
+  else{
+    target-&gt;Length = target-&gt;MaximumLength = 0;
+  }
+}
+
+int __cdecl main(int argc, CHAR* argv[])
+{
+  typedef NTSTATUS (__stdcall *NT_OPEN_FILE)(PHANDLE FileHandle, ACCESS_MASK DesiredAccess, POBJECT_ATTRIBUTES ObjectAttributes, PIO_STATUS_BLOCK IoStatusBlock, ULONG ShareAccess, ULONG OpenOptions);
+  NT_OPEN_FILE NtOpenFileStruct;
+
+  PVOID Info;
+  HMODULE hModule = LoadLibrary("ntdll.dll");
+  NtOpenFileStruct = (NT_OPEN_FILE)GetProcAddress(hModule, "NtOpenFile");
+  if(NtOpenFileStruct == NULL){
+    return -1;
+  }
+  
+  HANDLE hCF = CreateFile("\\Device\\CNG", MAXIMUM_ALLOWED, FILE_SHARE_READ|FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
+  printf("CreateFile(\"\\Device\\CNG\"): (handle:0x%X, err:0x%x)\n", hCF, GetLastError());
+  if(hCF != (HANDLE)-1){
+    CloseHandle(hCF);
+  }
+
+  UNICODE_STRING filename;
+  RtlInitUnicodeString(&amp;filename, L"\\Device\\CNG");
+
+  OBJECT_ATTRIBUTES obja;
+  obja.Attributes = 0x40;
+  obja.ObjectName = &amp;filename;
+  obja.Length = 0x18;
+  obja.RootDirectory = NULL;
+  obja.SecurityDescriptor = NULL;
+  obja.SecurityQualityOfService = NULL;
+
+  IO_STATUS_BLOCK iostatusblock;
+  HANDLE hCNG = NULL;
+  NTSTATUS stat = NtOpenFileStruct(&amp;hCNG, 0x100001, &amp;obja, &amp;iostatusblock, 7, 0x20);
+  printf("NtOpenFileStruct(\"\\Device\\CNG\"): (status:0x%x)\n", stat);
+  if(stat == 0){
+    CloseHandle(hCNG);
+  }
+  return 0;
+}
+</pre><br>
+
+<p>
+結果<br>
+<img src="open_device/1.jpg" class="maxSize"><br>
+<img src="open_device/2.jpg" class="maxSize"><br>
+<img src="open_device/3.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../driver.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

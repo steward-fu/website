@@ -1,0 +1,82 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>CM3354</h3>
+<p><b>解決"VFS: Cannot open root device "mmcblk0p2" or unknown-block"</b></p>
+<hr size="1">
+<p>
+如果使用者的rootfs是放在SDCard的話，在Kernel啟動的過程可能會遇到如下問題：
+</p>
+<pre>
+[    1.581573] mmc0: host does not support reading read-only switch. assuming write-enable.
+[    1.593841] mmc0: new high speed SD card at address e624
+[    1.600067] mmcblk0: mmc0:e624 SU02G 1.84 GiB
+[    2.972686] mmcblk0: error -84 transferring data, sector 0, nr 8, cmd response 0x900, card status 0xb00
+[    2.982543] mmcblk0: retrying using single block read
+[    2.993041] mmcblk0: error -84 transferring data, sector 4, nr 4, cmd response 0x900, card status 0x0
+[    3.002685] end_request: I/O error, dev mmcblk0, sector 4
+[    3.011505] Buffer I/O error on device mmcblk0, logical block 0
+[    3.019653]  mmcblk0: unable to read partition table
+[    3.079772] VFS: Cannot open root device "mmcblk0p2" or unknown-block(179,2)
+[    3.087158] Please append a correct "root=" boot option; here are the available partitions:
+</pre><br>
+
+<p>
+解法很簡單，只要再Kernel的.config檔案中，把開機的選項加入<b>boot_delay=32  rootdelay=10 rootwait</b>，然後重新編譯即可。
+</p>
+<pre>
+CONFIG_CMDLINE="root=/dev/mmcblk0p2 boot_delay=32  rootdelay=10 rootwait console=ttyO0,115200"
+</pre><br>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

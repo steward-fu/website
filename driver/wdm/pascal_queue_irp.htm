@@ -1,0 +1,312 @@
+<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushPas.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Windows Driver Model &gt;&gt; Pascal</h3>
+<p><b>Queue IRP</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://github.com/steward-fu/wdm">Source Code</a><br>
+2. <a href="http://www.delphibasics.info/home/delphibasicsprojects/delphidriverdevelopmentkit">delphidriverdevelopmentkit</a><br><br>
+
+驅動程式作為User Application跟硬體的溝通橋樑，最常遇到的問題就是硬體處理速度不夠快，導致驅動程式需要等待硬體完成後，再繼續處理下一筆資料，但是驅動程式如果要跟User Application溝通這些同步事情，會產生額外的等待時間，因此，為了達到比較好的處理效能，一般驅動程式做會Queue Irp的動作，讓處理的間隔可以縮到最小，這也是這篇教學要說明的東西，教導使用者一些Queue Irp的基本觀念和作法。<br><br>
+
+首先要知道的就是，儲存Irp的地方在哪？在Windows驅動程式裡，可以使用List作為儲存媒介(使用者也可以使用其它方式儲存)，使用步驟相當簡單，如下所示：<br>
+1. InitializeListHead()<br>
+2. InsertHeadList()<br>
+3. IsListEmpty()<br>
+4. RemoveHeadList()<br>
+首先初始化List(<b>InitializeListHead()</b>)，接著插入(<b>InsertHeadList()</b>)需要儲存的資料，接著判斷List是否還有資料(<b>IsListEmpty()</b>)，假如還有資料，則取出(<b>RemoveHeadList()</b>)處裡<br><br>
+
+Irp是處裡資料的最小單位，一個Irp通常代表處理一筆資料的訊息，因此，當硬體來不及處理資料時，驅動程式需要做Pending Irp的動作，讓User Application知道這筆資料稍後處理，Pending Irp的步驟如下：<br>
+1. IoMarkIrpPending()<br>
+2. IoCompleteRequest(STATUS_PENDING)<br>
+回傳Pending，告知I/O Manager，這筆Irp資料先Pending一下，稍後處理<br><br>
+
+接著就是User Application如何知道資料是否處理完畢或者被Pending了呢？在CreateFile()時，如果沒有用FILE_FLAG_OVERLAPPED，則代表每一筆資料都是必須完成才會回傳，此種寫法也稱為Blocking方式，如：呼叫WriteFile()後，必須等待驅動程式完成該Irp才會繼續往下，否則呼叫WriteFile()後，會卡在這個Win32 API，相反地，如果CreateFile()使用FILE_FLAG_OVERLAPPED，而呼叫WriteFile()時，驅動程式回傳Pending，則WriteFile()會馬上回傳ERROR_IO_PENDING，告知User Application，該筆資料驅動程式會稍後處裡，此種寫法也稱為Non-Blocking方式，那如何得知該筆資料處理完畢了呢？當使用Non-Blocking寫法，會在WriteFile()傳入一個OVERLAPPED參數，該參數裡面有一個Event，用來告知是否已經處理完畢了。<br><br>
+
+Queue IRP流程:<br>
+1. InsertHeadList()<br>
+2. IoMarkIrpPending()<br>
+3. IoCompleteRequest(STATUS_PENDING)<br>
+4. IsListEmpty()<br>
+5. RemoveHeadList()<br>
+6. IoCompleteRequest(STATUS_SUCCESS)<br><br>
+
+main.pas
+</p>
+<pre class="brush:pas">
+unit main;
+
+interface
+  uses
+    DDDK;
+    
+  const
+    DEV_NAME = '\Device\MyDriver';
+    SYM_NAME = '\DosDevices\MyDriver';
+    IOCTL_QUEUE = (FILE_DEVICE_UNKNOWN shl 16) or (FILE_ANY_ACCESS shl 14) or ($800 shl 2) or (METHOD_BUFFERED);
+    IOCTL_PROCESS = (FILE_DEVICE_UNKNOWN shl 16) or (FILE_ANY_ACCESS shl 14) or ($801 shl 2) or (METHOD_BUFFERED);
+
+  function _DriverEntry(pOurDriver:PDRIVER_OBJECT; pOurRegistry:PUNICODE_STRING):NTSTATUS; stdcall;
+
+implementation
+var
+  dpc: TKDpc;
+  obj: KTIMER;
+  queue: LIST_ENTRY;
+  pNextDevice: PDEVICE_OBJECT;
+
+procedure OnTimer(Dpc:KDPC; DeferredContext:Pointer; SystemArgument1:Pointer; SystemArgument2:Pointer); stdcall;
+var
+  irp: PIRP;
+  plist: PLIST_ENTRY;
+   
+begin
+  if IsListEmpty(@queue) = True then
+  begin
+    KeCancelTimer(@obj);
+    DbgPrint('Finish', []);
+  end
+  else
+  begin
+    plist:= RemoveHeadList(@queue);
+     
+    // CONTAINING_RECORD(IRP.Tail.Overlay.ListEntry)
+    irp:= Pointer(Integer(plist) - 88);
+    irp^.IoStatus.Status:= STATUS_SUCCESS;
+    irp^.IoStatus.Information:= 0;
+    IoCompleteRequest(irp, IO_NO_INCREMENT);
+    DbgPrint('Complete Irp', []);
+  end;
+end;
+
+procedure Unload(pOurDriver:PDRIVER_OBJECT); stdcall;
+begin
+end;
+
+function IrpFile(pOurDevice:PDEVICE_OBJECT; pIrp:PIRP):NTSTATUS; stdcall;
+var
+  psk: PIO_STACK_LOCATION;
+  
+begin
+  psk:= IoGetCurrentIrpStackLocation(pIrp);
+  case psk^.MajorFunction of
+  IRP_MJ_CREATE:
+    DbgPrint('IRP_MJ_CREATE', []);
+  IRP_MJ_CLOSE:
+    DbgPrint('IRP_MJ_CLOSE', []);
+  end;
+  
+  Result:= STATUS_SUCCESS;
+  pIrp^.IoStatus.Status:= Result;
+  pIrp^.IoStatus.Information:= 0;
+  IoCompleteRequest(pIrp, IO_NO_INCREMENT);
+end;
+
+function IrpIOCTL(pOurDevice:PDeviceObject; pIrp:PIrp):NTSTATUS; stdcall;
+var
+  code: ULONG;
+  tt: LARGE_INTEGER;
+  psk: PIO_STACK_LOCATION;
+   
+begin
+  psk:= IoGetCurrentIrpStackLocation(pIrp);
+  code:= psk^.Parameters.DeviceIoControl.IoControlCode;
+  case code of
+  IOCTL_QUEUE:
+    begin
+      DbgPrint('IOCTL_QUEUE', []);
+      InsertHeadList(@queue, @pIrp^.Tail.Overlay.s1.ListEntry);
+      IoMarkIrpPending(pIrp);
+      Result:= STATUS_PENDING;
+      exit
+    end;
+  IOCTL_PROCESS:
+    begin
+      DbgPrint('IOCTL_PROCESS', []);
+      tt.HighPart:= tt.HighPart or -1;
+      tt.LowPart:= ULONG(-10000000);
+      KeSetTimerEx(@obj, tt.LowPart, tt.HighPart, 1000, @dpc);
+    end;
+  end;
+   
+  Result:= STATUS_SUCCESS;
+  pIrp^.IoStatus.Information:= 0;
+  pIrp^.IoStatus.Status:= Result;
+  IoCompleteRequest(pIrp, IO_NO_INCREMENT);
+end;
+
+function IrpPnp(pOurDevice:PDEVICE_OBJECT; pIrp:PIRP):NTSTATUS; stdcall;
+var
+  psk: PIO_STACK_LOCATION;
+  suSymName: UNICODE_STRING;
+  
+begin
+  psk:= IoGetCurrentIrpStackLocation(pIrp);
+  if psk^.MinorFunction = IRP_MN_REMOVE_DEVICE then
+  begin
+    RtlInitUnicodeString(@suSymName, SYM_NAME);
+    IoDetachDevice(pNextDevice);
+    IoDeleteDevice(pOurDevice);
+    IoDeleteSymbolicLink(@suSymName);
+  end;
+  IoSkipCurrentIrpStackLocation(pIrp);
+  Result:= IoCallDriver(pNextDevice, pIrp);
+end;
+
+function AddDevice(pOurDriver:PDRIVER_OBJECT; pPhyDevice:PDEVICE_OBJECT):NTSTATUS; stdcall;
+var
+  suDevName: UNICODE_STRING;
+  suSymName: UNICODE_STRING;
+  pOurDevice: PDEVICE_OBJECT;
+  
+begin
+  RtlInitUnicodeString(@suDevName, DEV_NAME);
+  RtlInitUnicodeString(@suSymName, SYM_NAME);
+  IoCreateDevice(pOurDriver, 0, @suDevName, FILE_DEVICE_UNKNOWN, 0, FALSE, pOurDevice);
+  pNextDevice:= IoAttachDeviceToDeviceStack(pOurDevice, pPhyDevice);
+  pOurDevice^.Flags:= pOurDevice^.Flags or DO_BUFFERED_IO;
+  pOurDevice^.Flags:= pOurDevice^.Flags and not DO_DEVICE_INITIALIZING;
+  InitializeListHead(@queue);
+  KeInitializeTimer(@obj);
+  KeInitializeDpc(@dpc, OnTimer, pOurDevice);
+  Result:= IoCreateSymbolicLink(@suSymName, @suDevName);
+end;
+
+function _DriverEntry(pOurDriver:PDRIVER_OBJECT; pOurRegistry:PUNICODE_STRING):NTSTATUS; stdcall;
+begin
+  pOurDriver^.MajorFunction[IRP_MJ_PNP]:= @IrpPnp;
+  pOurDriver^.MajorFunction[IRP_MJ_CREATE]:= @IrpFile;
+  pOurDriver^.MajorFunction[IRP_MJ_CLOSE]:= @IrpFile;
+  pOurDriver^.MajorFunction[IRP_MJ_DEVICE_CONTROL] := @IrpIOCTL;
+  pOurDriver^.DriverExtension^.AddDevice:=@AddDevice;
+  pOurDriver^.DriverUnload:=@Unload;
+  Result:=STATUS_SUCCESS;
+end;
+end.
+</pre>
+<p>
+<b>AddDevice()</b>初始List以及DPC Timer，DPC Timer用來定期確認List是否還有資料需要處理，當然，使用Thread檢查或許更恰當些<br>
+<b>IrpIOCTL()</b>IOCTL_QUEUE代表該IOCTL會被Queue起來，稍後處理，而當收到IOCTL_PROCESS時，則啟動DPC Timer開始處理那些被Queue起來的Irp<br>
+<b>OnTimer()</b>處理Queue裡面的Irp<br><br>
+
+app.pas
+</p>
+<pre class="brush:pas">
+program main;
+
+{$APPTYPE CONSOLE}
+
+uses
+  Windows,
+  Messages,
+  SysUtils,
+  Variants,
+  Classes,
+  Graphics,
+  Controls,
+  Forms,
+  DIALOGS;
+
+const
+  METHOD_BUFFERED = 0;
+  METHOD_IN_DIRECT = 1;
+  METHOD_OUT_DIRECT = 2;
+  METHOD_NEITHER = 3;
+  FILE_ANY_ACCESS = 0;
+  FILE_DEVICE_UNKNOWN = $22;
+  IOCTL_QUEUE = (FILE_DEVICE_UNKNOWN shl 16) or (FILE_ANY_ACCESS shl 14) or ($800 shl 2) or (METHOD_BUFFERED);
+  IOCTL_PROCESS = (FILE_DEVICE_UNKNOWN shl 16) or (FILE_ANY_ACCESS shl 14) or ($801 shl 2) or (METHOD_BUFFERED);
+
+var
+  fd: DWORD;
+  ret: DWORD;
+  cnt: DWORD;
+  ov: array [0..2] of OVERLAPPED;
+  
+begin
+  fd:= CreateFile('\\.\MyDriver', GENERIC_READ or GENERIC_WRITE, FILE_SHARE_READ, Nil, OPEN_EXISTING, FILE_FLAG_OVERLAPPED or FILE_ATTRIBUTE_NORMAL, 0);
+  if (fd &lt;&gt; INVALID_HANDLE_VALUE) then
+  begin
+    for cnt:= 0 to 2 do
+    begin
+      ov[cnt].hEvent:= CreateEvent(Nil, TRUE, FALSE, Nil);
+      WriteLn(Output, 'queue event');
+      DeviceIoControl(fd, IOCTL_QUEUE, Nil, 0, Nil, 0, ret, @ov[cnt]);
+    end;
+    
+    WriteLn(Output, 'process all of events');
+    DeviceIoControl(fd, IOCTL_PROCESS, Nil, 0, Nil, 0, ret, Nil);
+    for cnt:= 0 to 2 do
+    begin
+      WaitForSingleObject(ov[cnt].hEvent, INFINITE);
+      CloseHandle(ov[cnt].hEvent);
+      WriteLn(Output, 'wait complete');
+    end;
+    CloseHandle(fd);
+  end else
+  begin
+    WriteLn(Output, 'failed to open mydriver');
+  end;
+end.
+</pre><br>
+
+<p>
+結果<br>
+<img src="asm_queue_irp/1.jpg" class="maxSize"><br>
+<img src="asm_queue_irp/2.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../driver.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

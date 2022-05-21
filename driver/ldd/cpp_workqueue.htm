@@ -1,0 +1,134 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Linux Device Driver &gt;&gt; C/C++</h3>
+<p><b>workqueue</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://github.com/steward-fu/ldd">Source Code</a><br><br>
+
+在延遲中斷處理機制上，workqueue是另一個可以使用的方式，workqueue是執行在低優先級別上，因此，可以讓Context Switch繼續執行，意味著使用者可以在workqueue裡面呼叫sleep()相關的函式，這也是跟softirq、tasklet最大的差別，因此，workqueue是相當適合應用在耗時處理的場合<br><br>
+
+使用步驟：<br>
+1. alloc_workqueue()<br>
+2. INIT_WORK()<br>
+3. queue_work()<br>
+4. destroy_workqueue()<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;linux/init.h&gt;
+#include &lt;linux/device.h&gt;
+#include &lt;linux/module.h&gt;
+#include &lt;linux/delay.h&gt;
+#include &lt;linux/kernel.h&gt;
+#include &lt;linux/errno.h&gt;
+#include &lt;linux/mm.h&gt;
+#include &lt;linux/gpio.h&gt;
+#include &lt;linux/interrupt.h&gt;
+
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("Steward Fu");
+MODULE_DESCRIPTION("Linux Driver");
+ 
+#define BUTTON 27
+
+struct work_struct mywork={0};
+struct workqueue_struct *myworkqueue=NULL;
+
+static void workqueue_handler(struct work_struct *work)
+{
+  printk("%s\n", __func__);
+}
+
+static irqreturn_t irq_handler(int irq, void *arg)
+{
+  queue_work(myworkqueue, &amp;mywork);
+  return IRQ_HANDLED;
+}
+
+int ldd_init(void)
+{
+  myworkqueue = alloc_workqueue("myworkqueue", 0, 0);
+  INIT_WORK(&amp;mywork, workqueue_handler);
+  request_irq(gpio_to_irq(BUTTON), irq_handler, IRQF_TRIGGER_RISING, "gpio_irq", NULL);
+  return 0;
+}
+ 
+void ldd_exit(void)
+{
+  free_irq(gpio_to_irq(BUTTON), NULL);
+  destroy_workqueue(myworkqueue);
+}
+ 
+module_init(ldd_init);
+module_exit(ldd_exit);
+</pre>
+<p>
+<b>ldd_init</b>: 設定GPIO中斷以及workqueue延遲處理副程式<br>
+<b>irq_handler</b>: 安排一個workqueue延遲處理<br>
+<b>workqueue_handler</b>: 列印字串<br>
+<b>ldd_exit</b>: 釋放中斷資源以及刪除workqueue<br><br>
+
+完成<br>
+<img src="cpp_gpio_input/3.jpg" class="maxSize"><br>
+<img src="cpp_gpio_input/4.jpg" class="maxSize">
+</p>
+<pre>
+# workqueue_handler
+</pre><br>
+
+<p>
+<br><a href="../../driver.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

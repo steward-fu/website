@@ -1,0 +1,120 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>GNU &gt;&gt; C/C++</h3>
+<p><b>GetPrivateProfileString</b></p>
+<hr size="1">
+<p>
+main.c
+</p>
+<pre class="brush:cpp">
+int GetPrivateProfileString(const char *title, const char *key, char* retbuf, const char *filename)
+{
+  FILE *fp;
+  char *temp;
+  char line[255]={0};
+  char buffer[255]={0};
+  int ch, i=0, flag=0;
+
+  if((fp = fopen(filename, "r")) == NULL){
+    printf("open file(%s) [error]\n", filename);
+    return -EINVAL;
+  }
+
+  while(!feof(fp)){
+    ch = fgetc(fp);
+    if(ch == EOF){
+      break;
+    }
+
+    line[i++] = ch;
+    if(ch != '\n'){
+      continue;
+    }
+
+    line[--i] = '\0';
+    i = 0;
+    temp = strchr(line, '=');
+    if((temp != NULL) &amp;&amp; (flag == 1)){
+      if(strstr(line, key) != NULL){
+        strcpy(retbuf, temp + 1);
+        fclose(fp);
+        return 0;
+      }
+    }
+    else{
+      strcpy(buffer, "[");
+      strcat(buffer, title);
+      strcat(buffer, "]");
+      if(strncmp(buffer, line, strlen(buffer)) == 0){
+        flag = 1;
+      }
+    }
+  }
+  fclose(fp);
+  return -EINVAL;
+}
+
+int main(int argc, char*argv[])
+{
+  char buffer[255]={0};
+
+  if(GetPrivateProfileString("basic", "log", buffer, "config.ini") == 0){
+    printf("Result: %s\n", buffer);
+  }
+  return 0;
+}
+</pre><br>
+
+<p>
+<br><a href="../../program.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
