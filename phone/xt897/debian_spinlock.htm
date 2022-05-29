@@ -112,27 +112,16 @@ drivers/tty/vt/vt.c
 
 Workaround：
 </p>
-<pre>
-2487,2488c2487
-&lt;    //static DEFINE_SPINLOCK(printing_lock);
-&lt;     static int lock=0;
----
-&gt;    static DEFINE_SPINLOCK(printing_lock);
-2497,2501c2496,2497
-&lt;     if (lock)
-&lt;         return;
-&lt;     lock = 1;
-&lt;    //if (!spin_trylock(&amp;printing_lock))
-&lt;       //return;
----
-&gt;    if (!spin_trylock(&amp;printing_lock))
-&gt;       return;
-2576,2577c2572
-&lt;     lock = 0;
-&lt;    //spin_unlock(&amp;printing_lock);
----
-&gt;    spin_unlock(&amp;printing_lock);
-</pre><br>
+<pre class="brush:cpp">
+DEFINE_SEMAPHORE(msm_fb_pan_sem);
+static int msm_fb_pan_idle(struct msm_fb_data_type *mfd)
+{
+    return 0;
+}
+</pre>
+<p>
+P.S. 由於fbcon有太多地方需要修改，司徒最後決定直接修改msm_fb_pan_idle()，VSYNC部份，之後可以添加FBIO_WAITFORVSYNC支援
+</p>
 
 <p>
 <br><a href="../../phone.htm">返回上一頁</a>
