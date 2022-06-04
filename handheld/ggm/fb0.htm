@@ -1,0 +1,116 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Game Gear Micro</h3>
+<p><b>FrameBuffer架構</b></p>
+<hr size="1">
+<p>
+司徒發覺有必要先把FrameBuffer的東西紀錄下來，當作以後的參考資料，因為GGM的屏是一個很奇耙的設計，解析度是240x240，但是，顯示區域則是240x195，為此，司徒在FrameBuffer驅動做了一些處理，從下圖司徒畫的圖可以看到，F1C100S的TCON0是以240x240做更新處理，DEBE則使用4個Layers做處理，解析度都是240x240，資料輸出給屏的機制是使用TE中斷腳位觸發，因此，保證從F1C100S給的資料不會有Buffer覆蓋問題(閃屏)，但是，最後回報給User Application則是240x195<br>
+<img src="fb0/1.jpg" class="maxSize"><br><br>
+
+為何是以240x195回報給User Application呢？因為，有效顯示區域只有240x195，為了不讓User Application花費多餘力氣處理偏移問題，這也是為何Linux Logo可以正確顯示在GGM屏幕顯示區域的原因，因此，SDL程式可以直接使用240x195製作
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;SDL.h&gt;
+ 
+int main(int argc, char** argv)
+{
+  SDL_Rect rt={0};
+  SDL_Surface* screen;
+ 
+  SDL_Init(SDL_INIT_VIDEO);
+  screen = SDL_SetVideoMode(240, 195, 16, SDL_SWSURFACE);
+ 
+  SDL_FillRect(screen, &amp;screen-&gt;clip_rect, SDL_MapRGB(screen-&gt;format, 0xff, 0x00, 0x00));
+ 
+  rt.x = 50;
+  rt.y = 50;
+  rt.w = 30;
+  rt.h = 30;
+  SDL_FillRect(screen, &amp;rt, SDL_MapRGB(screen-&gt;format, 0x00, 0xff, 0x00));
+ 
+  rt.x = 100;
+  rt.y = 100;
+  rt.w = 50;
+  rt.h = 80;
+  SDL_FillRect(screen, &amp;rt, SDL_MapRGB(screen-&gt;format, 0x00, 0x00, 0xff));
+   
+  SDL_Flip(screen);
+  SDL_Delay(3000);
+  SDL_Quit();
+  return 0;
+}
+</pre><br>
+
+<p>
+編譯好的程式還需要設定如下3個環境變數：
+</p>
+<pre>
+# export SDL_NOMOUSE=1
+# export SDL_FB_BROKEN_MODES=1
+# export SDL_VIDEODRIVER=fbcon
+</pre>
+<p>
+SDL_NOMOUSE：不需要檢查滑鼠<br>
+SDL_FB_BROKEN_MODES：將240x195解析度加入預設清單<br>
+SDL_VIDEODRIVER：顯示驅動使用FrameBuffer<br><br>
+
+完成<br>
+<img src="fb0/2.jpg" class="maxSize"><br>
+P.S. 對於需要Double Buffer或者Quadruple Buffer則需要自己做Map
+</p>
+
+<p>
+<br><a href="../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
