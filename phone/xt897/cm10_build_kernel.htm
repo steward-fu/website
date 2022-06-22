@@ -48,15 +48,37 @@
 <p><b>build kernel 3.0.101</b></p>
 <hr size="1">
 <p>
-步驟如下(使用Linux Deploy配置Debian Wheezy環境)：
+步驟如下：
 </p>
 <pre>
 $ cd
+$ wget https://github.com/steward-fu/xt897/releases/download/v1.0/gcc-4.9.tar.gz
+$ tar xvf gcc-4.9.tar.gz
+$ sudo mv gcc-4.9 /opt
+$ export PATH=/opt/gcc-4.9/bin:$PATH
+$ arm-linux-gnueabihf-gcc -v
+  gcc version 4.9.4 (Linaro GCC 4.9-2017.01)
+
 $ wget https://github.com/steward-fu/xt897/releases/download/v1.0/cm10.2_kernel.tar.gz
+$ wget https://github.com/steward-fu/xt897/releases/download/v1.0/cm10.2_kernel_config
 $ tar xvf cm10.2_kernel.tar.gz
 $ cd kernel
-$ zcat /proc/config.gz > .config
-$ make
+$ cp ../cm10.2_kernel_config .config
+$ ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- make zImage -j4
+    net/sunrpc/svcauth_unix.c:610:2: warning: ‘gids’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+    error, forbidden warning: svcauth_unix.c:610
+
+$ vim net/sunrpc/svcauth_unix.c +582
+    int gids=0;
+
+$ ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- make zImage -j4
+    include/linux/sunrpc/cache.h:272:2: warning: ‘rv’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+    error, forbidden warning: cache.h:272
+
+$ vim include/linux/sunrpc/cache.h +264
+    int rv=0;
+
+$ ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- make zImage -j4
 </pre><br>
 
 <p>
