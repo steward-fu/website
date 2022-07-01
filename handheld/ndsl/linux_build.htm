@@ -1,0 +1,189 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Nintendo DS Lite &gt;&gt; Linux</h3>
+<p><b>build all</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://github.com/ipwndev/DSLinux">DSLinux</a><br><br>
+
+步驟如下：
+</p>
+<pre>
+$ cd
+$ wget https://github.com/steward-fu/ndsl/releases/download/v1.0/dslinux-toolchain-2008-01-24-i686.tbz
+$ tar xvf dslinux-toolchain-2008-01-24-i686.tbz
+$ sudo mv dslinux-toolchain-2008-01-24-i686 /opt/dslinux/
+$ export PATH=$PATH:/opt/dslinux/bin/
+
+$ git clone https://github.com/ipwndev/DSLinux
+$ cd DSLinux
+$ vim Makefile +297
+    linux%_only:
+
+$ make menuconfig
+$ ARCH=arm CROSS_COMPILE=arm-linux-elf- make -C linux-2.6.x/ vmlinux
+    make: Entering directory '/home/steward/Downloads/DSLinux/linux-2.6.x'
+      CHK     include/linux/version.h
+      UPD     include/linux/version.h
+    /home/steward/Downloads/DSLinux/linux-2.6.x/Makefile:450: *** mixed implicit and normal rules: deprecated syntax
+    make[1]: *** No rule to make target 'silentoldconfig'.  Stop.
+    make: *** [Makefile:495: include/linux/autoconf.h] Error 2
+    make: Leaving directory '/home/steward/Downloads/DSLinux/linux-2.6.x'
+
+$ vim linux-2.6.x/Makefile +450
+    %config: scripts_basic outputmakefile FORCE
+
+$ ARCH=arm CROSS_COMPILE=arm-linux-elf- make -C linux-2.6.x/ vmlinux
+$ cd linux-2.6.x
+$ ln -s vmlinux linux
+$ cd ..
+$ make
+    could not open nls.texi: No such file or directory
+    make[6]: *** [Makefile:836: ABOUT-NLS] Error 1
+    make[6]: Leaving directory '/home/steward/Downloads/DSLinux/lib/gettext/src/gettext-runtime'
+
+$ touch lib/gettext/src/gettext-runtime/nls.texi
+$ make
+    ../../libtool: line 747: : warning: cannot infer operation mode without MODE-ARGS: command not found
+    ../../libtool: line 5325: : you must specify a MODE: command not found
+    ../../libtool: line 5326: Try ` --help' for more information.: command not found
+
+$ vim lib/Makefile +114
+    #dir_$(CONFIG_LIB_AUDIOFILE) += audiofile
+    #dir_$(CONFIG_LIB_AUDIOFILE_FORCE) += audiofile
+
+$ make
+    /opt/dslinux/bin/../lib/gcc/arm-linux-elf/4.0.4/../../../../arm-linux-elf/bin/ld.real: cannot find -lTinyGLU
+
+$ rm -rf user/TinySDGL/lib
+$ mkdir -p user/TinySDGL/lib/
+$ make
+    make[3]: Entering directory '/home/steward/Downloads/DSLinux/user/cmatrix/src'
+    cd . &amp;&amp; /home/steward/Downloads/DSLinux/user/cmatrix/src/missing aclocal-1.4
+    WARNING: `aclocal-1.4' is needed, and you do not seem to have it handy on your
+             system.  You might have modified some files without having the
+             proper tools for further handling them.  Check the `README' file,
+             it often tells you about the needed prerequirements for installing
+             this package.  You may also peek at any GNU archive site, in case
+             some other package would contain this missing `aclocal-1.4' program.
+    make[3]: *** [Makefile:126: aclocal.m4] Error 1
+    make[3]: Leaving directory '/home/steward/Downloads/DSLinux/user/cmatrix/src'
+    make[2]: *** [Makefile:8: .compiled] Error 2
+    make[2]: Leaving directory '/home/steward/Downloads/DSLinux/user/cmatrix'
+    make[1]: *** [Makefile:450: cmatrix] Error 2
+    make[1]: Leaving directory '/home/steward/Downloads/DSLinux/user'
+    make: *** [Makefile:311: subdirs] Error 1
+
+$ vim user/cmatrix/src/Makefile +43
+    ACLOCAL = /home/steward/Downloads/DSLinux/user/cmatrix/src/missing aclocal
+    AUTOCONF = autoconf
+    AUTOMAKE = /home/steward/Downloads/DSLinux/user/cmatrix/src/missing automake
+
+$ make
+    coreutils.texi:12127: @itemx must follow @item
+    coreutils.texi:12141: @itemx must follow @item
+    coreutils.texi:4183: warning: node next `comm invocation' in menu `ptx invocation' and in sectioning `tsort invocation' differ
+    coreutils.texi:4226: warning: node prev `tsort invocation' in menu `ptx invocation' and in sectioning `comm invocation' differ
+    coreutils.texi:4342: warning: node `ptx invocation' is next for `tsort background' in sectioning but not in menu
+    coreutils.texi:4380: warning: node `tsort invocation' is next for `ptx invocation' in menu but not in sectioning
+    coreutils.texi:4380: warning: node prev `ptx invocation' in menu `comm invocation' and in sectioning `tsort background' differ
+    coreutils.texi:8677: warning: node next `chown invocation' in menu `touch invocation' and in sectioning `chgrp invocation' differ
+    coreutils.texi:8677: warning: node `chmod invocation' is prev for `chown invocation' in menu but not in sectioning
+    coreutils.texi:8890: warning: node `chown invocation' is prev for `chgrp invocation' in sectioning but not in menu
+    coreutils.texi:9008: warning: node next `chmod invocation' in menu `chown invocation' and in sectioning `touch invocation' differ
+    coreutils.texi:9107: warning: node prev `touch invocation' in menu `chown invocation' and in sectioning `chmod invocation' differ
+    make[4]: *** [Makefile:449: coreutils.info] Error 1
+    make[4]: Leaving directory '/home/steward/Downloads/DSLinux/user/coreutils/src/doc'
+    make[3]: *** [Makefile:493: all-recursive] Error 1
+    make[3]: Leaving directory '/home/steward/Downloads/DSLinux/user/coreutils/src'
+    make[2]: *** [Makefile:15: .compiled] Error 2
+    make[2]: Leaving directory '/home/steward/Downloads/DSLinux/user/coreutils'
+    make[1]: *** [Makefile:450: coreutils] Error 2
+    make[1]: Leaving directory '/home/steward/Downloads/DSLinux/user'
+    make: *** [Makefile:311: subdirs] Error 1
+
+$ mv user/coreutils/src/doc/coreutils.texi /tmp
+$ touch user/coreutils/src/doc/coreutils.texi
+$ make
+    /opt/dslinux/bin/../lib/gcc/arm-linux-elf/4.0.4/../../../../arm-linux-elf/bin/ld.real: cannot find -laudiofile
+    collect2: ld returned 1 exit status
+    make[5]: *** [Makefile:604: esdcat] Error 1
+    make[5]: Leaving directory '/home/steward/Downloads/DSLinux/user/esd/src'
+    make[4]: *** [Makefile:832: all-recursive] Error 1
+    make[4]: Leaving directory '/home/steward/Downloads/DSLinux/user/esd/src'
+    make[3]: *** [Makefile:450: all] Error 2
+    make[3]: Leaving directory '/home/steward/Downloads/DSLinux/user/esd/src'
+    make[2]: *** [Makefile:19: .compiled] Error 2
+    make[2]: Leaving directory '/home/steward/Downloads/DSLinux/user/esd'
+    make[1]: *** [Makefile:450: esd] Error 2
+    make[1]: Leaving directory '/home/steward/Downloads/DSLinux/user'
+    make: *** [Makefile:311: subdirs] Error 1
+
+$ vim user/Makefile
+    118     #dir_$(CONFIG_USER_ESD)              += esd
+    204     #dir_$(CONFIG_USER_LINKS_LINKS)      += links
+    276     #dir_$(CONFIG_USER_PIXIL)            += pixil
+    281     #dir_$(CONFIG_USER_PLAYTZX_PLAYTZX)  += playtzx
+    411     #dir_$(CONFIG_USER_TMSNC)            += tmsnc
+    429     #dir_$(CONFIG_USER_WARP)             += warp
+
+$ make
+</pre>
+<p>
+P.S. images/dslinux.nds
+</p>
+
+<p>
+<br><a href="../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
