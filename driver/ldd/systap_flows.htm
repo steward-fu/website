@@ -1,0 +1,287 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Linux Device Driver &gt;&gt; SystemTap</h3>
+<p><b> 解析oneshot執行流程</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://sourceware.org/systemtap/SystemTap_Beginners_Guide/index.html">document</a><br>
+2. <a href="https://sourceware.org/systemtap/ftp/releases/">source code</a><br><br>
+
+main.stp
+</p>
+<pre class="brush:cpp">
+probe oneshot
+{
+    printf("hello, world!\n")
+}
+</pre><br>
+
+<p>
+編譯成C語言
+</p>
+<pre>
+$ stap main.stp -p3 > main.c
+</pre><br>
+
+<p>
+module_init() <b>runtime/linux/runtime.h</b>
+</p>
+<pre class="brush:cpp">
+int init_module (void)
+{
+    int rc;
+    /* With deliberate hash-collision-inducing data conceivably fed to
+     stap, it is beneficial to add some runtime-random value to the
+     map hash. */
+    get_random_bytes(&amp;stap_hash_seed, sizeof (stap_hash_seed));
+    rc = systemtap_kernel_module_init();
+    if (rc)
+        return rc;
+    rc = _stp_transport_init();
+    if (rc)
+        systemtap_kernel_module_exit();
+    return rc;
+}
+</pre>
+<p>
+SystemTap的init_module()會呼叫systemtap_kernel_module_init()，這個副程式是包含在main.stp編譯出來的*.ko檔案裡面<br><br>
+
+systemtap_kernel_module_init() <b>main.c</b>
+</p>
+<pre class="brush:cpp">
+static int systemtap_kernel_module_init (void)
+{
+    int rc = 0;
+    int i=0, j=0;
+    if (rc) {
+        goto out;
+    }
+out:
+    return rc;
+}
+</pre><br>
+<p>
+_stp_transport_init() <b>runtime/transport/transport.c</b>
+</p>
+<pre class="brush:cpp">
+/**
+ * _stp_transport_init() is called from the module initialization.
+ *   It does the bare minimum to exchange commands with staprun
+ */
+static int _stp_transport_init(void)
+{
+    ...
+    /* create control channel */
+    ret = _stp_register_ctl_channel();
+    if (ret &lt; 0)
+        goto err1;
+    ...
+}
+</pre>
+<p>
+由init_module()呼叫的第二個副程式是_stp_transport_init()，主要用來初始化SystemTap相關fs<br><br>
+
+_stp_register_ctl_channel() <b>runtime/transport/control.c</b>
+</p>
+<pre class="brush:cpp">
+static int _stp_register_ctl_channel(void)
+{
+    ...
+    if (_stp_register_ctl_channel_fs() != 0) // procfs or debugfs decision time
+        goto err0;
+    ...
+}
+</pre><br>
+
+<p>
+_stp_register_ctl_channel_fs() <b>runtime/transport/transport.c</b>
+</p>
+<pre class="brush:cpp">
+static int _stp_register_ctl_channel_fs(void)
+{
+    ...
+    if (procfs_p)
+        return _stp_procfs_register_ctl_channel_fs();
+    ...
+}
+</pre>
+<p>
+_stp_procfs_register_ctl_channel_fs()用來註冊staprun需要使用的fs<br><br>
+
+_stp_procfs_register_ctl_channel_fs() <b>runtime/transport/procfs.c</b>
+</p>
+<pre class="brush:cpp">
+static int _stp_procfs_register_ctl_channel_fs(void)
+{
+    ...
+#ifdef STAPCONF_PROC_OPS
+    de = proc_create(".cmd", 0600, _stp_procfs_module_dir, &_stp_ctl_proc_ops_cmd);
+#else
+    de = proc_create(".cmd", 0600, _stp_procfs_module_dir, &_stp_ctl_fops_cmd);
+#endif
+    ...
+}
+</pre><br>
+
+<p>
+_stp_ctl_fops_cmd <b>runtime/transport/control.c</b>
+</p>
+<pre class="brush:cpp">
+static struct file_operations _stp_ctl_fops_cmd = {
+    .owner = THIS_MODULE,
+    .read = _stp_ctl_read_cmd,
+    .write = _stp_ctl_write_cmd,
+    .open = _stp_ctl_open_cmd,
+    .release = _stp_ctl_close_cmd,
+    .poll = _stp_ctl_poll_cmd
+};
+#ifdef STAPCONF_PROC_OPS
+static struct proc_ops _stp_ctl_proc_ops_cmd = {
+    .proc_read = _stp_ctl_read_cmd,
+    .proc_write = _stp_ctl_write_cmd,
+    .proc_open = _stp_ctl_open_cmd,
+    .proc_release = _stp_ctl_close_cmd,
+    .proc_poll = _stp_ctl_poll_cmd
+};
+#endif
+</pre><br>
+
+<p>
+_stp_ctl_write_cmd() <b>runtime/transport/control.c</b>
+</p>
+<pre class="brush:cpp">
+static ssize_t _stp_ctl_write_cmd(struct file *file, const char __user *buf, size_t count, loff_t *ppos)
+{
+    ...
+    switch (type) {
+    case STP_START:
+    {
+        static struct _stp_msg_start st;
+        if (count &lt; sizeof(st)) {
+            rc = 0; // ?
+            goto out;
+        }
+        if (copy_from_user(&amp;st, buf, sizeof(st))) {
+            rc = -EFAULT;
+            goto out;
+        }
+        _stp_handle_start(&st);
+    }
+    break;
+    ...
+}
+</pre><br>
+
+<p>
+_stp_handle_start() <b>runtime/transport/transport.c</b>
+</p>
+<pre class="brush:cpp">
+static void _stp_handle_start(struct _stp_msg_start *st)
+{
+    ...
+    st->res = systemtap_module_init();
+    ...
+}
+</pre><br>
+
+<p>
+systemtap_module_init() <b>main.c</b>
+</p>
+<pre class="brush:cpp">
+static int systemtap_module_init (void)
+{
+    ...
+    for (i=0; i&lt;1; i++) {
+        struct stap_be_probe* stp = &amp;stap_be_probes[i];
+        if (stp->type == 0)
+            enter_be_probe(stp); /* rc = 0 */
+    }
+    ...
+}
+</pre><br>
+
+<p>
+stap_be_probe <b>main.c</b>
+</p>
+<pre class="brush:cpp">
+static struct stap_be_probe {
+    const struct stap_probe * const probe;
+    int state, type;
+} stap_be_probes[] = {
+    { .probe=(&amp;stap_probes[0]), .state=STAP_SESSION_STARTING, .type=0 },
+};
+
+static struct stap_probe stap_probes[] = {
+  STAP_PROBE_INIT(0, &amp;probe_6334, "begin", "oneshot", "main.stp:1:7", " from: oneshot from: oneshot"),
+};
+</pre><br>
+
+<p>
+probe_6334 <b>main.c</b>
+</p>
+<pre class="brush:cpp">
+static void probe_6334(struct context * __restrict__ c)
+{
+    ...
+    _stp_print("hello, world!\n");
+    ...
+}
+</pre>
+<p>
+STP_START是由staprun發起
+</p>
+
+<p>
+<br><a href="../../driver.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
