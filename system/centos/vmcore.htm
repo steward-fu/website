@@ -1,0 +1,216 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>CentOS</h3>
+<p><b>vmcore分析</b></p>
+<hr size="1">
+<p>
+需要subscript才能取得debuginfo套件
+</p>
+<pre>
+# subscription-manager clean
+# subscription-manager register --force --auto-attach --username xxx --password xxx
+# subscription-manager repos --enable=rhel-8-for-x86_64-baseos-debug-rpms
+# yum install -y kernel-debuginfo-4.18.0-193.14.3.el8_2.x86_64
+</pre><br>
+
+<p>
+載入vmcore
+</p>
+<pre>
+# crash /usr/lib/debug/lib/modules/4.18.0-193.14.3.el8_2.x86_64/vmlinux vmcore_filename
+</pre><br>
+
+<p>
+backtrace
+</p>
+<pre>
+crash&gt; bt
+    PID: 60228  TASK: ffff91396df00000  CPU: 5   COMMAND: "kworker/5:1"
+     #0 [ffffa481e3ee7b60] machine_kexec at ffffffff9e859a5e
+     #1 [ffffa481e3ee7bb8] __crash_kexec at ffffffff9e9591fd
+     #2 [ffffa481e3ee7c80] crash_kexec at ffffffff9e95a0dd
+     #3 [ffffa481e3ee7c98] oops_end at ffffffff9e821edd
+     #4 [ffffa481e3ee7cb8] no_context at ffffffff9e86872e
+     #5 [ffffa481e3ee7d10] do_page_fault at ffffffff9e869262
+     #6 [ffffa481e3ee7d40] page_fault at ffffffff9f20120e
+        [exception RIP: memcg_deactivate_kmem_caches+105]
+        RIP: ffffffff9ea44109  RSP: ffffa481e3ee7df8  RFLAGS: 00010206
+        RAX: ffff913975db8000  RBX: 0000000000000005  RCX: ffff913258c1aba8
+        RDX: ffff91396df00000  RSI: ffff913975fd8000  RDI: ffffffff9fad18c0
+        RBP: ffff912a87d77e00   R8: 0000000000000008   R9: 0000796f72747365
+        R10: 8080808080808080  R11: 0000000000000010  R12: ffff913975fd8000
+        R13: 0000000000000013  R14: ffff913223634000  R15: ffff913975db8098
+        ORIG_RAX: ffffffffffffffff  CS: 0010  SS: 0018
+     #7 [ffffa481e3ee7e28] memcg_offline_kmem at ffffffff9eaab986
+     #8 [ffffa481e3ee7e48] mem_cgroup_css_offline at ffffffff9eaad792
+     #9 [ffffa481e3ee7e80] css_killed_work_fn at ffffffff9e95f59d
+    #10 [ffffa481e3ee7e98] process_one_work at ffffffff9e8ce7d7
+    #11 [ffffa481e3ee7ed8] worker_thread at ffffffff9e8ceef0
+    #12 [ffffa481e3ee7f10] kthread at ffffffff9e8d4802
+    #13 [ffffa481e3ee7f50] ret_from_fork at ffffffff9f200255
+</pre><br>
+
+<p>
+disassemble
+</p>
+<pre>
+crash&gt; dis -l memcg_deactivate_kmem_caches+105
+    /usr/src/debug/kernel-4.18.0-193.14.3.el8_2/linux-4.18.0-193.14.3.el8_2.x86_64/mm/slab_common.c: 770
+    0xffffffff9ea44109 &lt;memcg_deactivate_kmem_caches+105&gt;:  cmpq   $0x0,0x110(%rbx)
+</pre><br>
+
+<p>
+/usr/src/debug/kernel-4.18.0-193.14.3.el8_2/linux-4.18.0-193.14.3.el8_2.x86_64/mm/slab_common.c +770
+</p>
+<pre class="brush:cpp">
+static void kmemcg_cache_deactivate(struct kmem_cache *s)
+{
+        if (WARN_ON_ONCE(is_root_cache(s)))
+                return;
+</pre><br>
+
+<p>
+is_root_cache()
+</p>
+<pre class="brush:cpp">
+static inline bool is_root_cache(struct kmem_cache *s)
+{
+	return !s-&gt;memcg_params || s-&gt;memcg_params-&gt;is_root_cache;
+}
+</pre><br>
+<p>
+kmem_cache address
+</p>
+<pre>
+crash&gt; bt -FFls
+#6 [ffffa481e3ee7d40] page_fault+30 at ffffffff9f20120e
+    /usr/src/debug/kernel-4.18.0-193.14.3.el8_2/linux-4.18.0-193.14.3.el8_2.x86_64/arch/x86/entry/entry_64.S: 1164
+    [exception RIP: memcg_deactivate_kmem_caches+105]
+    RIP: ffffffff9ea44109  RSP: ffffa481e3ee7df8  RFLAGS: 00010206
+    RAX: ffff913975db8000  RBX: 0000000000000005  RCX: ffff913258c1aba8
+    RDX: ffff91396df00000  RSI: ffff913975fd8000  RDI: ffffffff9fad18c0
+    RBP: ffff912a87d77e00   R8: 0000000000000008   R9: 0000796f72747365
+    R10: 8080808080808080  R11: 0000000000000010  R12: ffff913975fd8000
+    R13: 0000000000000013  R14: ffff913223634000  R15: ffff913975db8098
+    ORIG_RAX: ffffffffffffffff  CS: 0010  SS: 0018
+    /usr/src/debug/kernel-4.18.0-193.14.3.el8_2/linux-4.18.0-193.14.3.el8_2.x86_64/mm/slab_common.c: 770
+    ffffa481e3ee7d48: [ffff913975db8098:kmalloc-2k] [ffff913223634000:kmalloc-4k]
+    ffffa481e3ee7d58: 0000000000000013 [ffff913975fd8000:kmalloc-4k]
+    ffffa481e3ee7d68: [ffff912a87d77e00:kmem_cache] 0000000000000005
+    ffffa481e3ee7d78: 0000000000000010 8080808080808080
+    ffffa481e3ee7d88: 0000796f72747365 0000000000000008
+    ffffa481e3ee7d98: [ffff913975db8000:kmalloc-2k] [ffff913258c1aba8:kmalloc-4k]
+    ffffa481e3ee7da8: [ffff91396df00000:task_struct] [ffff913975fd8000:kmalloc-4k]
+    ffffa481e3ee7db8: slab_mutex       ffffffffffffffff
+    ffffa481e3ee7dc8: memcg_deactivate_kmem_caches+105 0000000000000010
+    ffffa481e3ee7dd8: 0000000000010206 ffffa481e3ee7df8
+    ffffa481e3ee7de8: 0000000000000018 memcg_deactivate_kmem_caches+59
+    ffffa481e3ee7df8: [ffff913223634000:kmalloc-4k] [ffff913975fd8000:kmalloc-4k]
+    ffffa481e3ee7e08: [ffff913223634b18:kmalloc-4k] [ffff913223634000:kmalloc-4k]
+    ffffa481e3ee7e18: [ffff913223634b28:kmalloc-4k] [ffff913223634b18:kmalloc-4k]
+    ffffa481e3ee7e28: memcg_offline_kmem+54
+</pre>
+<p>
+<b>bt -FFls | grep -Eo 'ffff.{12}:kmem_cache'</b><br><br>
+
+kmem_cache struct
+</p>
+<pre>
+crash&gt; struct kmem_cache
+    struct kmem_cache {
+        struct kmem_cache_cpu *cpu_slab;
+        slab_flags_t flags;
+        unsigned long min_partial;
+        unsigned int size;
+        unsigned int object_size;
+        unsigned int offset;
+        unsigned int cpu_partial;
+        struct kmem_cache_order_objects oo;
+        struct kmem_cache_order_objects max;
+        struct kmem_cache_order_objects min;
+        gfp_t allocflags;
+        int refcount;
+        void (*ctor)(void *);
+        unsigned int inuse;
+        unsigned int align;
+        unsigned int red_left_pad;
+        const char *name;
+        struct list_head list;
+        struct kobject kobj;
+        struct work_struct kobj_remove_work;
+        struct memcg_cache_params memcg_params;
+        unsigned int max_attr_size;
+        struct kset *memcg_kset;
+        unsigned int remote_node_defrag_ratio;
+        unsigned int *random_seq;
+        unsigned int useroffset;
+        unsigned int usersize;
+        struct kmem_cache_node *node[1024];
+    }
+    SIZE: 8680
+</pre><br>
+
+<p>
+root cause
+</p>
+<pre>
+crash&gt; struct kmem_cache.memcg_params.root_cache ffff912a87d77e00
+    memcg_params.root_cache = 0x0,
+
+crash&gt; struct kmem_cache.name ffff912a87d77e00
+    name = 0xffffffff9f8ba6df "file_lock_cache"
+</pre><br>
+
+<p>
+<br><a href="../../system.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
