@@ -1,0 +1,207 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Linux Device Driver &gt;&gt; SystemTap</h3>
+<p><b>oneshot、begin的差異</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://segmentfault.com/a/1190000019602980">spacewander</a><br><br>
+
+main.stp
+</p>
+<pre class="brush:cpp">
+probe oneshot
+{
+    printf("=== oneshot ===\n");
+}
+
+probe begin
+{
+    printf("=== begin ===\n");
+}
+
+probe end 
+{
+    printf("=== end ===\n");
+}
+</pre><br>
+
+<p>
+執行
+</p>
+<pre>
+$ sudo stap main.stp
+    === oneshot ===
+    === end ===
+</pre>
+<p>
+為何begin沒有被執行到？<br><br>
+
+經由轉換成C語言，可以發現，oneshot和begin都是屬於同一個state和type，因此，誰先出現誰就先被執行
+</p>
+<pre class="brush:cpp">
+static struct stap_probe stap_probes[] = {
+  STAP_PROBE_INIT(0, &amp;probe_6362, "begin", "oneshot", "main.stp:1:7", " from: oneshot from: oneshot"),
+  STAP_PROBE_INIT(1, &amp;probe_6363, "begin", "begin", "main.stp:6:1", " from: begin"),
+  STAP_PROBE_INIT(2, &amp;probe_6364, "end", "end", "main.stp:11:1", " from: end"),
+};
+
+static struct stap_be_probe {
+  const struct stap_probe * const probe;
+  int state, type;
+} stap_be_probes[] = {
+  { .probe=(&amp;stap_probes[0]), .state=STAP_SESSION_STARTING, .type=0 },
+  { .probe=(&amp;stap_probes[1]), .state=STAP_SESSION_STARTING, .type=0 },
+  { .probe=(&amp;stap_probes[2]), .state=STAP_SESSION_STOPPING, .type=1 },
+};
+</pre><br>
+
+<p>
+oneshot
+</p>
+<pre class="brush:cpp">
+static void probe_6362 (struct context * __restrict__ c)
+{
+  __label__ deref_fault;
+  __label__ out;
+  struct probe_6362_locals * __restrict__ l = &amp; c-&gt;probe_locals.probe_6362;
+  (void) l;
+  if (c-&gt;actionremaining &lt; 2) { c-&gt;last_error = "MAXACTION exceeded"; goto out; }
+  {
+    (void)
+    ({
+      _stp_print ("=== oneshot ===\n");
+    });
+
+    (void)
+    ({
+      c-&gt;last_stmt = "identifier 'exit' at /usr/local/share/systemtap/tapset/oneshot.stp:4:3";
+      function___global_exit__overload_0(c);
+      if (unlikely(c-&gt;last_error || c-&gt;aborted)) goto out;
+      (void) 0;
+    });
+
+  }
+deref_fault: __attribute__((unused));
+out:
+  _stp_print_flush();
+}
+</pre>
+<p>
+P.S. function___global_exit__overload_0()<br><br>
+
+begin
+</p>
+<pre class="brush:cpp">
+static void probe_6363 (struct context * __restrict__ c)
+{
+  __label__ deref_fault;
+  __label__ out;
+  struct probe_6363_locals * __restrict__ l = &amp; c-&gt;probe_locals.probe_6363;
+  (void) l;
+  if (c-&gt;actionremaining &lt; 1) { c-&gt;last_error = "MAXACTION exceeded"; goto out; }
+  (void)
+  ({
+    _stp_print ("=== begin ===\n");
+  });
+deref_fault: __attribute__((unused));
+out:
+  _stp_print_flush();
+}
+</pre><br>
+
+<p>
+oneshot和begin的差異就是，oneshot會呼叫function___global_exit__overload_0()，進而呼叫_stp_exit()結束執行，這也是為何oneshot執行後，程式直接結束的原因
+</p>
+<pre class="brush:cpp">
+static void function___global_exit__overload_0(struct context* __restrict__ c)
+{
+    ...
+    atomic_set(session_state(), STAP_SESSION_STOPPING);
+    _stp_exit();
+    ...
+}
+</pre><br>
+<p>
+重新改寫位置
+</p>
+<pre class="brush:cpp">
+probe begin
+{
+    printf("=== begin ===\n");
+}
+
+probe oneshot
+{
+    printf("=== oneshot ===\n");
+}
+
+probe end
+{
+    printf("=== end ===\n");
+}
+</pre><br>
+
+<p>
+執行
+</p>
+<pre>
+$ sudo stap main.stp
+    === begin ===
+    === oneshot ===
+    === end ===
+</pre><br>
+
+<p>
+<br><a href="../../driver.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
