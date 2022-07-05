@@ -119,11 +119,40 @@ is_root_cache()
 <pre class="brush:cpp">
 static inline bool is_root_cache(struct kmem_cache *s)
 {
-	return !s-&gt;memcg_params || s-&gt;memcg_params-&gt;is_root_cache;
+        return !s-&gt;memcg_params || s-&gt;memcg_params-&gt;is_root_cache;
 }
 </pre><br>
+
 <p>
-kmem_cache address
+kmemcg_cache_deactivate()是由memcg_deactivate_kmem_caches()呼叫
+</p>
+<pre class="brush:cpp">
+void memcg_deactivate_kmem_caches(struct mem_cgroup *memcg,
+                                  struct mem_cgroup *parent)
+{
+        int idx;
+        struct memcg_cache_array *arr;
+        struct kmem_cache *s, *c;
+        unsigned int nr_reparented;
+
+        idx = memcg_cache_id(memcg);
+
+        get_online_cpus();
+        get_online_mems();
+
+        mutex_lock(&amp;slab_mutex);
+        list_for_each_entry(s, &amp;slab_root_caches, root_caches_node) {
+                arr = rcu_dereference_protected(s-&gt;memcg_params.memcg_caches,
+                                                lockdep_is_held(&amp;slab_mutex));
+                c = arr-&gt;entries[idx];
+                if (!c)
+                        continue;
+
+                kmemcg_cache_deactivate(c);
+</pre><br>
+
+<p>
+call stack
 </p>
 <pre>
 crash&gt; bt -FFls
@@ -195,15 +224,78 @@ crash&gt; struct kmem_cache
 </pre><br>
 
 <p>
-root cause
+memcg_params offset (0x110)
 </p>
 <pre>
-crash&gt; struct kmem_cache.memcg_params.root_cache ffff912a87d77e00
-    memcg_params.root_cache = 0x0,
-
-crash&gt; struct kmem_cache.name ffff912a87d77e00
-    name = 0xffffffff9f8ba6df "file_lock_cache"
+crash&gt; struct -ox kmem_cache
+    struct kmem_cache {
+         [0x0] struct kmem_cache_cpu *cpu_slab;
+         [0x8] slab_flags_t flags;
+        [0x10] unsigned long min_partial;
+        [0x18] unsigned int size;
+        [0x1c] unsigned int object_size;
+        [0x20] unsigned int offset;
+        [0x24] unsigned int cpu_partial;
+        [0x28] struct kmem_cache_order_objects oo;
+        [0x2c] struct kmem_cache_order_objects max;
+        [0x30] struct kmem_cache_order_objects min;
+        [0x34] gfp_t allocflags;
+        [0x38] int refcount;
+        [0x40] void (*ctor)(void *);
+        [0x48] unsigned int inuse;
+        [0x4c] unsigned int align;
+        [0x50] unsigned int red_left_pad;
+        [0x58] const char *name;
+        [0x60] struct list_head list;
+        [0x70] struct kobject kobj;
+        [0xd0] struct work_struct kobj_remove_work;
+       [0x110] struct memcg_cache_params memcg_params;
+       [0x1c0] unsigned int max_attr_size;
+       [0x1c8] struct kset *memcg_kset;
+       [0x1d0] unsigned int remote_node_defrag_ratio;
+       [0x1d8] unsigned int *random_seq;
+       [0x1e0] unsigned int useroffset;
+       [0x1e4] unsigned int usersize;
+       [0x1e8] struct kmem_cache_node *node[1024];
+    }
+    SIZE: 0x21e8
 </pre><br>
+
+<p>
+disassemble memcg_deactivate_kmem_caches
+</p>
+<pre>
+crash&gt; dis -x memcg_deactivate_kmem_caches
+    0xffffffff9ea440a0 &lt;memcg_deactivate_kmem_caches&gt;:      nopl   0x0(%rax,%rax,1) [FTRACE NOP]
+    0xffffffff9ea440a5 &lt;memcg_deactivate_kmem_caches+0x5&gt;:  push   %r15
+    0xffffffff9ea440a7 &lt;memcg_deactivate_kmem_caches+0x7&gt;:  push   %r14
+    0xffffffff9ea440a9 &lt;memcg_deactivate_kmem_caches+0x9&gt;:  mov    %rdi,%r14
+    0xffffffff9ea440ac &lt;memcg_deactivate_kmem_caches+0xc&gt;:  push   %r13
+    0xffffffff9ea440ae &lt;memcg_deactivate_kmem_caches+0xe&gt;:  push   %r12
+    0xffffffff9ea440b0 &lt;memcg_deactivate_kmem_caches+0x10&gt;: mov    %rsi,%r12
+    0xffffffff9ea440b3 &lt;memcg_deactivate_kmem_caches+0x13&gt;: push   %rbp
+    0xffffffff9ea440b4 &lt;memcg_deactivate_kmem_caches+0x14&gt;: push   %rbx
+    0xffffffff9ea440b5 &lt;memcg_deactivate_kmem_caches+0x15&gt;: test   %rdi,%rdi
+    0xffffffff9ea440b8 &lt;memcg_deactivate_kmem_caches+0x18&gt;: je     0xffffffff9ea442a1 &lt;memcg_deactivate_kmem_caches+0x201&gt;
+    0xffffffff9ea440be &lt;memcg_deactivate_kmem_caches+0x1e&gt;: movslq 0x9c8(%rdi),%r13
+    0xffffffff9ea440c5 &lt;memcg_deactivate_kmem_caches+0x25&gt;: callq  0xffffffff9e8b2310 &lt;cpus_read_lock&gt;
+    0xffffffff9ea440ca &lt;memcg_deactivate_kmem_caches+0x2a&gt;: callq  0xffffffff9ea98fd0 &lt;get_online_mems&gt;
+    0xffffffff9ea440cf &lt;memcg_deactivate_kmem_caches+0x2f&gt;: mov    $0xffffffff9fad18c0,%rdi
+    0xffffffff9ea440d6 &lt;memcg_deactivate_kmem_caches+0x36&gt;: callq  0xffffffff9f092380 &lt;mutex_lock&gt;
+    0xffffffff9ea440db &lt;memcg_deactivate_kmem_caches+0x3b&gt;: mov    0x108d75e(%rip),%rax        # 0xffffffff9fad1840
+    0xffffffff9ea440e2 &lt;memcg_deactivate_kmem_caches+0x42&gt;: lea    -0x120(%rax),%rbp
+    0xffffffff9ea440e9 &lt;memcg_deactivate_kmem_caches+0x49&gt;: cmp    $0xffffffff9fad1840,%rax
+    0xffffffff9ea440ef &lt;memcg_deactivate_kmem_caches+0x4f&gt;: je     0xffffffff9ea44197 &lt;memcg_deactivate_kmem_caches+0xf7&gt;
+    0xffffffff9ea440f5 &lt;memcg_deactivate_kmem_caches+0x55&gt;: mov    0x118(%rbp),%rax
+    0xffffffff9ea440fc &lt;memcg_deactivate_kmem_caches+0x5c&gt;: lea    (%rax,%r13,8),%r15
+    0xffffffff9ea44100 &lt;memcg_deactivate_kmem_caches+0x60&gt;: mov    0x10(%r15),%rbx
+    0xffffffff9ea44104 &lt;memcg_deactivate_kmem_caches+0x64&gt;: test   %rbx,%rbx
+    0xffffffff9ea44107 &lt;memcg_deactivate_kmem_caches+0x67&gt;: je     0xffffffff9ea4417d &lt;memcg_deactivate_kmem_caches+0xdd&gt;
+    0xffffffff9ea44109 &lt;memcg_deactivate_kmem_caches+0x69&gt;: cmpq   $0x0,0x110(%rbx)
+</pre>
+<p>
+P.S. root cause: kmem_cache=(rbx)0000000000000005, memcg_params=rbx+0x100
+</p>
 
 <p>
 <br><a href="../../system.htm">返回上一頁</a>
