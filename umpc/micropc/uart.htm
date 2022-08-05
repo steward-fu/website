@@ -168,7 +168,84 @@ difference(){
 <img src="uart/15.jpg" class="maxSize"><br><br>
 
 完成<br>
-<img src="uart/16.jpg" class="maxSize">
+<img src="uart/16.jpg" class="maxSize"><br><br>
+
+為了漂亮的外觀，司徒決定重新改造，從原本公座改成母座，接腳只留下VCC、RXD、TXD、GND四根腳位<br>
+<img src="uart/21.jpg" class="maxSize"><br><br>
+
+漂亮的母座<br>
+<img src="uart/22.jpg" class="maxSize"><br><br>
+
+PCB固定回去<br>
+<img src="uart/23.jpg" class="maxSize"><br><br>
+
+OpenSCAD
+</p>
+<pre class="brush:scad">
+$fn = 30;
+  
+module meniscus(h=10, r=1){
+  difference(){
+    translate([r/2+0.1, r/2+0.1, 0]){
+      cube([r+0.2, r+0.1, h+0.2], center=true);
+    }
+    cylinder(h=h+0.2, r=r, center=true);
+  }
+}
+  
+module cube_round_corner(w=10, h=10, z=10, r=1){
+  difference(){
+    cube([w, h, z], center=true);
+    translate([(w/2)-r, (h/2)-r]){
+      rotate(0){  
+        meniscus(z, r);
+      }
+    }
+    translate([(-w/2)+r, (h/2)-r]){
+      rotate(90){
+        meniscus(z, r);
+      }
+    }
+    translate([(-w/2)+r, (-h/2)+r]){
+      rotate(180){
+        meniscus(z, r);
+      }
+    }
+    translate([(w/2)-r, (-h/2)+r]){
+      rotate(270){
+        meniscus(z, r);
+      }
+    }
+  }
+}
+ 
+ 
+difference(){
+  union(){
+    translate([0, 2.5, 0]){
+      cube_round_corner(w=16, h=7, z=2, r=2.5);
+    }
+    cube_round_corner(w=18, h=7, z=2, r=2.5);
+    translate([0, 1.25, 0]){
+      cube_round_corner(w=31, h=6, z=2, r=3);
+    }
+  }
+   
+  translate([-6, 3.2, -1]){
+    cube([12, 10, 2]);
+  }
+}
+</pre><br>
+
+<p>
+預覽<br>
+<img src="uart/26.jpg" class="maxSize"><br><br>
+
+使用3D印表機列印<br>
+<img src="uart/24.jpg" class="maxSize"><br><br>
+
+完美<br>
+<img src="uart/25.jpg" class="maxSize">
 </p>
 
 <p>
