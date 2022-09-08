@@ -1,0 +1,214 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>MT7688 &gt;&gt; Assembly</h3>
+<p><b>LED</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://github.com/steward-fu/mt7688-duo/releases/tag/v1.0">GitHub</a><br><br>
+
+橘色LED位於WLED_N<br>
+<img src="asm_led/1.jpg" class="maxSize"><br><br>
+
+MT7688AN的WLED_N是GPIO-44<br>
+<img src="asm_led/2.jpg" class="maxSize"><br><br>
+
+WLED_N腳位可以配置成一般GPIO使用<br>
+<img src="asm_led/3.jpg" class="maxSize"><br>
+<img src="asm_led/4.jpg" class="maxSize"><br><br>
+
+GPIO方向設定<br>
+<img src="asm_led/5.jpg" class="maxSize"><br><br>
+
+GPIO資料<br>
+<img src="asm_led/6.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .extern _start
+    .set noreorder
+
+    .section .init
+_start:
+    b hw_reset
+    nop
+    b sw_reset
+    nop
+
+    .text
+hw_reset:
+sw_reset:
+    li $8, 0xb0000064
+    li $9, 0x55555555
+    sw $9, 0($8)
+    nop
+
+    li $8, 0xb0000604
+    li $9, 0x0000ffff
+    sw $9, 0($8)
+    nop
+
+loop:
+    li $8, 0xb0000624
+    li $9, 0xffffffff
+    sw $9, 0($8)
+    nop
+
+    li $8, 5000
+0:
+    addi $8, $8, -1
+    bnez $8, 0b
+    nop
+
+    li $8, 0xb0000624
+    li $9, 0x00000000
+    sw $9, 0($8)
+    nop
+
+    li $8, 5000
+0:
+    addi $8, $8, -1
+    bnez $8, 0b
+    nop
+
+    j loop
+    nop
+</pre><br>
+
+<p>
+main.ld
+</p>
+<pre>
+OUTPUT_FORMAT("elf32-tradlittlemips", "elf32-tradbigmips", "elf32-tradlittlemips")
+OUTPUT_ARCH(mips)
+ENTRY(_start)
+
+SECTIONS
+{
+    ENTRY(_start)
+    . = 0x0000;
+    .init : { *(.init) }
+    . = 0x0400;
+    .text : { *(.text) }
+    .data : { *(.data) }
+    .bss  : { *(.bss) }
+}
+</pre><br>
+
+<p>
+Makefile
+</p>
+<pre>
+all:
+    mipsel-linux-as -o main.o main.s
+    mipsel-linux-ld -T main.ld -o main.elf main.o
+    mipsel-linux-objcopy -O binary main.elf main.bin
+
+clean:
+    rm -rf main.bin main.o main.elf
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ export PATH=$PATH:/opt/buildroot-gcc342/bin/
+$ make
+    mipsel-linux-as -o main.o main.s
+    mipsel-linux-ld -T main.ld -o main.elf main.o
+    mipsel-linux-objcopy -O binary main.elf main.bin
+</pre><br>
+
+<p>
+開發板<br>
+<img src="asm_led/7.jpg" class="maxSize"><br><br>
+
+CH341A燒錄器，第一腳位位置如下：<br>
+<img src="asm_led/8.jpg" class="maxSize"><br><br>
+
+連接SPI腳位<br>
+<img src="asm_led/9.jpg" class="maxSize"><br><br>
+
+開啟NeoProgrammer<br>
+<img src="asm_led/10.jpg" class="maxSize"><br><br>
+
+按住MPU Reset按鍵不放<br>
+<img src="asm_led/11.jpg" class="maxSize"><br><br>
+
+按下<b>檢測</b>按鈕，選擇MX25L25735E，接著按下<b>選擇IC</b>按鈕<br>
+<img src="asm_led/12.jpg" class="maxSize"><br><br>
+
+按下<b>Ctrl + O</b>並且載入main.bin<br>
+<img src="asm_led/13.jpg" class="maxSize"><br><br>
+
+記得將<b>清空</b>選項打勾<br>
+<img src="asm_led/14.jpg" class="maxSize"><br><br>
+
+按下<b>燒錄</b>按鈕並且鬆開MPU Reset<br>
+<img src="asm_led/15.jpg" class="maxSize"><br><br>
+
+燒錄中<br>
+<img src="asm_led/16.jpg" class="maxSize"><br><br>
+
+完成<br>
+<img src="asm_led/17.jpg" class="maxSize"><br><br>
+
+接著重新上電源即可<br>
+<img src="asm_led/18.jpg" class="maxSize"><br>
+<img src="asm_led/19.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
