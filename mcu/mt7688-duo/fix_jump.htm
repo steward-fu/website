@@ -45,11 +45,12 @@
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
 <h3>MT7688</h3>
-<p><b>神奇的XOR問題(rs、rt不能是同一組)</b></p>
+<p><b>Branch、Jump指令的差異</b></p>
 <hr size="1">
 <p>
 參考資訊：<br>
-1. <a href="https://www.cs.cornell.edu/courses/cs3410/2008fa/MIPS_Vol2.pdf">MIPS_Vol2</a><br><br>
+1. <a href="https://www.cs.cornell.edu/courses/cs3410/2008fa/MIPS_Vol2.pdf">MIPS_Vol2</a><br>
+2. <a href="https://stackoverflow.com/questions/7877407/jump-instruction-in-mips-assembly">jump-instruction-in-mips-assembly</a><br><br>
 
 main.s
 </p>
@@ -84,43 +85,36 @@ loop:
 <p>
 上面這段程式，看起來並沒有問題，只是將$9的第12位元做XOR運算，然後輸出設定LED，但是，實際上是無法正確執行，LED無法閃爍<br><br>
 
-程式碼改成如下就可以正確執行：
+Linker Script
 </p>
-<pre class="brush:asm">
-    .extern _start
-    .set noreorder
- 
-    .section .init
-_start:
-    b reset
- 
-    .text
-reset:
-    li $8, 0xb0000604
-    li $9, (1 &lt;&lt; (44 - 32))
-    sw $9, 0($8)
- 
-loop:
-    li $8, 0xb0000624
-    xori $9, $10, (1 &lt;&lt; (44 -32))
-    move $10, $9
-    sw $9, 0($8)
- 
-    li $8, 5000
-0:
-    addi $8, -1
-    bnez $8, 0b
-    nop
-    
-    j loop
-    nop
-</pre>
-<p>
-使用不同的rs、rt之後，XOR就可以運作<br><br>
+<pre>
+OUTPUT_FORMAT("elf32-tradlittlemips", "elf32-tradbigmips", "elf32-tradlittlemips")
+OUTPUT_ARCH(mips)
+ENTRY(_start)
 
-為此，司徒翻了一下MIPS手冊，手冊並沒有限制rs、rt不能是同一組暫存器<br>
-<img src="fix_xor/1.jpg" class="maxSize"><br>
-司徒目前只有在MT7688(MIPS 24KEc)上測試，才發現有一個XOR問題，因此，建議以後使用MIPS Assembly時，XOR記得把rs、rt錯開，避免類似的坑洞
+SECTIONS
+{
+    ENTRY(_start)
+    . = 0x0000;
+    .init : { *(.init) }
+    . = 0x0400;
+    .text : { *(.text) }
+    .data : { *(.data) }
+    .bss  : { *(.bss) }
+}
+</pre><br>
+<p>
+使用IDA Pro查看時，因為記憶體載入使用預設0x00000000，因此，看不出問題<br>
+<img src="fix_jump/1.jpg" class="maxSize"><br><br>
+
+改成MT7688預設的執行位址(從SPI執行)0xBC000000，就可以知道為何程式無法正常執行，因為它跳轉到0xB0000410<br>
+<img src="fix_jump/2.jpg" class="maxSize"><br>
+J(Jump)指令使用的絕對位址，因此，當Linker Script是從0x0400開始時，編譯後，被計算出來的位址就會是錯的<br><br>
+
+解法：<br>
+1. 修改Linker Script的記憶體位址<br>
+2. 改成B(Branch)指令，因為Branch指令是使用相對位址方式計算<br>
+3. 在執行Jump指令時，加上偏移位址
 </p>
 
 <p>
