@@ -1,0 +1,196 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>FC3000</h3>
+<p><b>解決eduke32詭異的crash問題</b></p>
+<hr size="1">
+<p>
+Crash Log
+</p>
+<pre>
+Thread 1 "eduke32" received signal SIGSEGV, Segmentation fault.
+0xb6e25e68 in memset () from /lib//libc.so.0
+(gdb) bt
+#0  0xb6e25e68 in memset () from /lib//libc.so.0
+#1  0x001e1e68 in decodeframe (
+    srcP=0xb4df2bc6 "((\v\v\026!\342Ƴ\001\263\263\263\001\263\001\361\241_,,\017`\032\032!\026(",
+    dstP=0x1d229bb &lt;error: Cannot access memory at address 0x1d229bb&gt;)
+    at source/jmact/animlib.c:180
+#2  0x001e212c in renderframe (framenumber=0, pagepointer=0xb4df0b78)
+    at source/jmact/animlib.c:239
+#3  0x001e2198 in drawframe (framenumber=0) at source/jmact/animlib.c:253
+#4  0x001e2a98 in ANIM_DrawFrame (framenumber=1) at source/jmact/animlib.c:330
+#5  0x000cf2d0 in G_PlayAnim (fn=0x26a658 "logo.anm", t=5 '\005')
+    at source/anim.c:261
+#6  0x0006bccc in G_DisplayLogo () at source/game.c:8668
+#7  0x0007055c in app_main (argc=1, argv=0xbeedbdf4) at source/game.c:9960
+#8  0x00250f20 in main (argc=1, argv=0xbeedbdf4) at src/sdlayer.c:208
+</pre><br>
+
+<p>
+Crash位置在第11行
+</p>
+<pre class="brush:cpp">
+static void decodeframe(uint8_t * srcP, uint8_t * dstP)
+{
+    do
+    {
+        int32_t count=*srcP++;
+
+        if (!count) /* Short RLE */
+        {
+            int32_t color = *(srcP+1);
+            count = *(uint8_t *)((srcP += sizeof(int16_t)) - sizeof(int16_t));
+            Bmemset((dstP += count) - count, color, count);
+            continue;
+        }
+        else if ((count &amp; 0x80) == 0) /* Short copy */
+        {
+            Bmemcpy((dstP += count) - count, (srcP += count) - count, count);
+            continue;
+        }
+        else if ((count &amp;= ~0x80) &gt; 0) /* short skip */
+        {
+            dstP += count;
+            continue;
+        }
+
+        /* long op */
+        count = B_LITTLE16(*((uint16_t *)((srcP += sizeof(int16_t)) - sizeof(int16_t))));
+
+        if (!count) /* stop sign */
+            return;
+        else if ((count &amp; 0x8000) == 0) /* long skip */
+        {
+            dstP += count;
+            continue;
+        }
+        else if ((count &amp;= ~0x8000) &amp; 0x4000) /* long RLE */
+        {
+            int32_t color = *srcP++;
+            count &amp;= ~0x4000;
+            Bmemset((dstP += count) - count, color, count);
+            continue;
+        }
+
+        /* long copy */
+        Bmemcpy((dstP += count) - count, (srcP += count) - count, count);
+    }
+    while (1);
+}
+</pre><br>
+
+<p>
+但是仔細追查後，發現有問題是這行
+</p>
+<pre class="brush:cpp">
+count = B_LITTLE16(*((uint16_t *)((srcP += sizeof(int16_t)) - sizeof(int16_t))));
+</pre><br>
+
+<p>
+改寫比較容易看懂的程式
+</p>
+<pre class="brush:cpp">
+count = B_LITTLE16(*(uint16_t *)srcP);
+srcP += sizeof(int16_t);
+</pre><br>
+
+<p>
+GDB看了一下
+</p>
+<pre>
+count = B_LITTLE16(*((uint16_t *)((srcP += sizeof(int16_t)) - sizeof(int16_t))));
+
+(gdb) p/x count
+$2 = 0x9d80
+
+(gdb) x/16x srcP-4
+0xb4dc9b81:     0x8000  0xd99d  0x0000  0x2605  0x2d80  0x00c1  0x2605  0x2826
+0xb4dc9b91:     0x280b  0x0600  0x0b0b  0x0b16  0x1a16  0x1a0b  0x0b1a  0x0b1a
+</pre>
+<p>
+srcP的位址是0xb4dc9b83，所以<b>*(uint_16_t*)srcP</b>應該是拿到0xd99d，但是結果竟然是0x9d80<br><br>
+
+司徒也不知道為何LDRH是取低位址的值(0xb4dc9b83 ~ 0xb4dc9b82)，而不是高位址的值(0xb4dc9b84 ~ 0xb4dc9b83)
+</p>
+<pre>
+(gdb) stepi
+   0x001e1f08 &lt;+304&gt;:   sub     r3, r3, #2
+=&gt; 0x001e1f0c &lt;+308&gt;:   ldrh    r3, [r3]
+   0x001e1f10 &lt;+312&gt;:   str     r3, [r11, #-8]
+   0x001e1f14 &lt;+316&gt;:   ldr     r3, [r11, #-8]
+
+(gdb) info r
+r3             0xb4dc9b83       3034356611
+
+(gdb) stepi
+   0x001e1f08 &lt;+304&gt;:   sub     r3, r3, #2
+   0x001e1f0c &lt;+308&gt;:   ldrh    r3, [r3]
+=&gt; 0x001e1f10 &lt;+312&gt;:   str     r3, [r11, #-8]
+   0x001e1f14 &lt;+316&gt;:   ldr     r3, [r11, #-8]
+
+(gdb) info r
+r3             0x9d80   40320
+</pre><br>
+
+<p>
+因此，使用一個workaround的方式修掉
+</p>
+<pre class="brush:cpp">
+//count = B_LITTLE16(*((uint16_t *)((srcP += sizeof(int16_t)) - sizeof(int16_t))));
+count = B_LITTLE16(srcP[0] + (((uint16_t)srcP[1]) &lt;&lt; 8));
+srcP += sizeof(int16_t);
+</pre><br>
+
+<p>
+<br><a href="../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
