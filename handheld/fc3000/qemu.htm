@@ -1,0 +1,99 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>FC3000</h3>
+<p><b>QEMU環境</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://github.com/steward-fu/kernel/tree/f1c100s_fc3000_linux-4.14.0_qemu">Kernel Source</a><br>
+2. <a href="https://github.com/steward-fu/fc3000/releases/download/v1.0/fc3000-qemu_20220929.7z">Prebuilt QEMU</a><br><br>
+
+司徒花了一些時間將FC3000搬到QEMU環境跑，這個QEMU環境是基於QEMU versatilepb (ARM926EJS)，屬於軟體兼容運作，因此，無法在這個環境去操作F1C100S底層的暫存器，如果是基於SDL開發的話，這是一個相當適合的開發環境，因為可以很方便的使用dbg去debug程式<br>
+<img src="qemu/1.jpg" class="maxSize"><br><br>
+
+執行方式：
+</p>
+<pre>
+$ cd
+$ wget https://github.com/steward-fu/fc3000/releases/download/v1.0/fc3000-qemu_20220929.7z
+$ 7za x fc3000-qemu_20220929.7z
+$ ./run.sh
+</pre>
+<p>
+<img style="border:0px" src="qemu/2.jpg" class="maxSize"><br><br>
+
+如果要debug程式，記得在<b>/etc/main</b>前面加上sleep，然後重新打包rootfs.img<br>
+<img src="qemu/3.jpg" class="maxSize"><br><br>
+
+使用gdb debug<br>
+<img style="border:0px" src="qemu/4.jpg" class="maxSize"><br><br>
+
+如果把程式碼放到sd.img，可以更方便debug<br>
+<img style="border:0px" src="qemu/5.jpg" class="maxSize"><br><br>
+
+解壓縮rootfs.img
+</p>
+<pre>
+$ zcat rootfs.img | cpio -idvm
+</pre><br>
+
+<p>
+重新打包rootfs.img
+</p>
+<pre>
+$ sudo find . | sudo cpio -o -H newc | gzip -9 > ../rootfs.img
+</pre><br>
+
+<p>
+<br><a href="../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
