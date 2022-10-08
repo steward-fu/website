@@ -1,0 +1,120 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>MT7688 &gt;&gt; Assembly</h3>
+<p><b>Button</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://github.com/steward-fu/mt7688/releases/tag/v1.0">GitHub</a><br><br>
+
+WIFI RESET按鍵是連接到WDT_RST_N<br>
+<img src="asm_btn/1.jpg" class="maxSize"><br><br>
+
+WDT_RST_N腳位是GPIO-38<br>
+<img src="../mt7688-duo/asm_btn/2.jpg" class="maxSize"><br><br>
+
+WDT_MODE可以設定WDT_RST_N腳位模式<br>
+<img src="../mt7688-duo/asm_btn/3.jpg" class="maxSize"><br>
+<img src="../mt7688-duo/asm_btn/4.jpg" class="maxSize"><br><br>
+
+GPIO方向設定<br>
+<img src="../mt7688-duo/asm_led/5.jpg" class="maxSize"><br><br>
+
+GPIO資料<br>
+<img src="../mt7688-duo/asm_led/6.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .extern _start
+    .set noreorder
+
+    .equiv GPIO1_MODE,  0xb0000060
+    .equiv GPIO_CTRL_1, 0xb0000604
+    .equiv GPIO_DATA_1, 0xb0000624
+    .equiv WDT_MODE,    14
+    .equiv LED,         (44 - 32)
+
+    .text
+_start:
+    b reset
+
+    .org 0x400
+reset:
+    li $8, GPIO1_MODE
+    lw $9, 0($8)
+    or $9, (1 &lt;&lt; WDT_MODE)
+    sw $9, 0($8)
+
+    li $8, GPIO_CTRL_1
+    li $9, (1 &lt;&lt; LED)
+    sw $9, 0($8)
+    
+loop:
+    li $8, GPIO_DATA_1
+    lw $9, 0($8)
+    sll $9, 6
+    sw $9, 0($8)
+    b loop
+    nop
+</pre><br>
+
+<p>
+完成<br>
+<img src="asm_btn/2.jpg" class="maxSize"><br>
+<img src="asm_btn/3.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
