@@ -1,0 +1,102 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Linux Device Driver</h3>
+<p><b>解決"error: test_attr__enabled undeclared"問題</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://github.com/nevermosby/linux-bpf-learning/blob/master/bpf/perf-sys.h">perf-sys.h</a><br><br>
+問題：
+</p>
+<pre>
+# make M=samples/bpf
+    make -C /usr/src/linux-source-4.19/samples/bpf/../../tools/lib/bpf/ RM='rm -rf' LDFLAGS= srctree=/usr/src/linux-source-4.19/samples/bpf/../../ O=
+    Warning: Kernel ABI header at 'tools/include/uapi/linux/bpf.h' differs from latest version at 'include/uapi/linux/bpf.h'
+    Warning: Kernel ABI header at 'tools/include/uapi/linux/netlink.h' differs from latest version at 'include/uapi/linux/netlink.h'
+      HOSTCC  samples/bpf/bpf_load.o
+    In file included from ./tools/perf/perf-sys.h:9,
+                     from samples/bpf/bpf_load.c:29:
+    ./tools/perf/perf-sys.h: In function ‘sys_perf_event_open’:
+    ./tools/perf/perf-sys.h:68:15: error: ‘test_attr__enabled’ undeclared (first use in this function)
+      if (unlikely(test_attr__enabled))
+                   ^~~~~~~~~~~~~~~~~~
+    ./tools/include/linux/compiler.h:74:43: note: in definition of macro ‘unlikely’
+     # define unlikely(x)  __builtin_expect(!!(x), 0)
+                                               ^
+    ./tools/perf/perf-sys.h:68:15: note: each undeclared identifier is reported only once for each function it appears in
+      if (unlikely(test_attr__enabled))
+                   ^~~~~~~~~~~~~~~~~~
+    ./tools/include/linux/compiler.h:74:43: note: in definition of macro ‘unlikely’
+     # define unlikely(x)  __builtin_expect(!!(x), 0)
+                                               ^
+    In file included from samples/bpf/bpf_load.c:29:
+    ./tools/perf/perf-sys.h:69:3: warning: implicit declaration of function ‘test_attr__open’ [-Wimplicit-function-declaration]
+       test_attr__open(attr, pid, cpu, fd, group_fd, flags);
+       ^~~~~~~~~~~~~~~
+    make[1]: *** [scripts/Makefile.host:107: samples/bpf/bpf_load.o] Error 1
+    make: *** [Makefile:1564: _module_samples/bpf] Error 2
+</pre><br>
+
+<p>
+解法(tools/perf/perf-sys.h)：
+</p>
+<pre>
+67  #ifdef HAVE_ATTR_TEST
+68      //if (unlikely(test_attr__enabled))
+69      //test_attr__open(attr, pid, cpu, fd, group_fd, flags);
+70  #endif
+</pre><br>
+
+<p>
+<br><a href="../../driver.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
