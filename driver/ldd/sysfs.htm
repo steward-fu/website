@@ -56,31 +56,36 @@
 <pre class="brush:cpp">
 static ssize_t test_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
-  uint32_t ret = 0x1234;
-
-  return sprintf(buf, "%d\n", ret);
+    return sprintf(buf, "%d\n", 0x1234);
 }
 
 static ssize_t test_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
-  int rc=-1;
-  uint32_t v=0;
+    int rc = -1;
+    unsigned long v = 0;
 
-  rc = kstrtoul(buf, 0, &amp;v);
-  if (rc){
-    return rc;
-  }
+    rc = kstrtoul(buf, 0, &amp;v);
+    if (rc) {
+        return rc;
+    }
 
-  // v = 0x1234
-  return count;
+    printk("set value: %ld\n", v);
+    return count;
 }
 static DEVICE_ATTR_RW(test);
 
 static int xxx_probe(struct platform_device *pdev)
 {
-  ...
-  device_create_file(&amp;pdev->dev, &dev_attr_test);
-  ...
+    // ...
+    device_create_file(&amp;pdev-&gt;dev, &amp;dev_attr_test);
+    // ...
+}
+
+static int xxx_remove(struct platform_device *pdev)
+{
+    // ...
+    device_remove_file(&amp;pdev-&gt;dev, &amp;dev_attr_test);
+    // ...
 }
 </pre><br>
 
