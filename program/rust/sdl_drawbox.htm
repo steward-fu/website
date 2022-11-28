@@ -1,0 +1,186 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Rust &gt;&gt; SDL v1.2</h3>
+<p><b>Draw Box</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://github.com/steward-fu/sdl-v1.2_in_rust/blob/master/src/sdl-demo/main.rs">rust-sdl</a><br><br>
+
+main.rs
+</p>
+<pre class="brush:cpp">
+extern crate libc;
+
+use libc::types::os::arch::c95::c_schar;
+use libc::{c_void, c_uint, c_int, c_float, c_uchar, uint8_t, uint16_t, uint32_t, int16_t, int8_t, int32_t};
+
+pub const SDL_INIT_VIDEO : uint32_t = 0x00000020;
+pub const SDL_SWSURFACE  : uint32_t = 0x00000000;
+pub const SDL_HWSURFACE  : uint32_t = 0x00000001;
+
+pub struct SDL_Rect {
+    pub x: i16,
+    pub y: i16,
+    pub w: u16,
+    pub h: u16
+}
+
+pub struct SDL_Color {
+    pub r: uint8_t,
+    pub g: uint8_t,
+    pub b: uint8_t,
+    pub unused: uint8_t
+}
+
+pub struct SDL_Palette {
+    pub ncolors: c_int,
+    pub colors: *mut SDL_Color,
+}
+
+pub struct SDL_PixelFormat {
+    pub palette: *mut SDL_Palette,
+    pub BitsPerPixel: uint8_t,
+    pub BytesPerPixel: uint8_t,
+    pub Rloss: uint8_t,
+    pub Gloss: uint8_t,
+    pub Bloss: uint8_t,
+    pub Aloss: uint8_t,
+    pub Rshift: uint8_t,
+    pub Gshift: uint8_t,
+    pub Bshift: uint8_t,
+    pub Ashift: uint8_t,
+    pub Rmask: uint32_t,
+    pub Gmask: uint32_t,
+    pub Bmask: uint32_t,
+    pub Amask: uint32_t,
+    pub colorkey: uint32_t,
+    pub alpha: uint8_t,
+}
+
+pub struct SDL_Surface {
+    pub flags: uint32_t,
+    pub format: *mut SDL_PixelFormat,
+    pub w: c_int,
+    pub h: c_int,
+    pub pitch: uint16_t,
+    pub pixels: *mut c_void,
+    pub offset: c_int,
+    pub hwdata: *mut c_void,
+    pub clip_rect: SDL_Rect,
+    pub unused1: uint32_t,
+    pub locked: uint32_t,
+    pub map: *mut c_void,
+    pub format_version: c_uint,
+    pub refcount: c_int
+}
+    
+#[link(name="SDL")]
+#[link(name="SDL_gfx")]
+extern {
+    fn SDL_Quit();
+    fn SDL_Delay(flags: uint32_t);
+    fn SDL_Init(flags: uint32_t) -&gt; c_int;
+    fn SDL_Flip(screen: *mut SDL_Surface) -&gt; c_int;
+    fn SDL_InitSubSystem(flags: uint32_t) -&gt; c_int;
+    fn SDL_FillRect(dst: *mut SDL_Surface, dstrect: *mut SDL_Rect, color: uint32_t) -&gt; c_int;
+    fn SDL_SetVideoMode(width: c_int, height: c_int, bpp: c_int, flags: uint32_t) -&gt; *mut SDL_Surface;
+    fn stringRGBA(dst: *mut SDL_Surface, x: int16_t, y: int16_t, s: *const str, r: uint8_t, g: uint8_t, b: uint8_t, a: uint8_t) -&gt; c_int;
+    fn boxRGBA(dst: *mut SDL_Surface, x1: int16_t, y1: int16_t, x2: int16_t, y2: int16_t, r: uint8_t, g: uint8_t, b: uint8_t, a: uint8_t) -&gt; c_int;
+}
+
+fn main() {
+    let mut screen;
+
+    unsafe {
+        SDL_Init(SDL_INIT_VIDEO);
+        screen = SDL_SetVideoMode(320, 240, 32, SDL_HWSURFACE);
+        boxRGBA(screen, 50, 100, 100, 150, 0xff, 0x00, 0x00, 0xff);
+        SDL_Flip(screen);
+        SDL_Delay(3000);
+        SDL_Quit();
+    }
+}
+</pre><br>
+
+<p>
+Cargo.toml
+</p>
+<pre>
+[package]
+name = "main"
+version = "0.0.1"
+authors = ["Steward-Fu &lt;steward.fu@gmail.com&gt;"]
+
+[[bin]]
+name = "main"
+path = "main.rs"
+
+[dependencies]
+libc = "0.1"
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ cargo build
+$ cargo run
+</pre>
+<p>
+<img src="sdl_drawbox/1.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../program.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
