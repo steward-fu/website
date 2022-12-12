@@ -18,10 +18,10 @@
  typeof(require) != 'undefined' ? SyntaxHighlighter = require('shCore').SyntaxHighlighter : null;
 
   function Brush() {
-    var my_constant = 'Solution Vec';
-    var my_keyword =  'pub if else Some while for fn impl return in let None mut';
-    var my_type = 'int Option Box ListNode';
-    var my_function = 'sort_list main push pop sort as_mut unwrap len println as_ref is_none new';
+    var my_constant = 'Solution Vec vec';
+    var my_keyword =  'pub if else Some while for fn impl as return in let None mut';
+    var my_type = 'int Option Box ListNode usize i32 u32';
+    var my_function = 'sort_list main push pop sort as_mut unwrap len println as_ref is_none new sort_array';
 
     this.regexList = [
       {regex: /^ *#.*/gm, css: 'my_preprocessor'},
