@@ -1,0 +1,134 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Nintendo DS Lite</h3>
+<p><b>解決"failed to open input file: /opt/devkitpro//libnds/default.elf"問題</b></p>
+<hr size="1">
+<p>
+問題如下：
+</p>
+<pre>
+linking audio_modes.elf
+/opt/devkitpro/devkitARM/lib/gcc/arm-none-eabi/12.2.0/../../../../arm-none-eabi/bin/ld: warning: nds-examples/audio/maxmod/audio_modes/audio_modes.elf has a LOAD segment with RWX permissions
+/opt/devkitpro/devkitARM/lib/gcc/arm-none-eabi/12.2.0/../../../../arm-none-eabi/bin/ld: warning: nds-examples/audio/maxmod/audio_modes/audio_modes.elf has a LOAD segment with RWX permissions
+ndstool -c nds-examples/audio/maxmod/audio_modes/audio_modes.nds -9 nds-examples/audio/maxmod/audio_modes/audio_modes.elf -b /opt/devkitpro//libnds/icon.bmp "audio_modes;built with devkitARM;http://devkitpro.org" 
+Nintendo DS rom tool 2.2.0 - Dec 15 2022
+by Rafael Vuijk, Dave Murphy, Alexei Karpenko
+failed to open input file: '/opt/devkitpro//libnds/default.elf'
+make[4]: *** [/opt/devkitpro/devkitARM//ds_rules:38: nds-examples/audio/maxmod/audio_modes/audio_modes.nds] Error 1
+make[3]: *** [Makefile:114: build] Error 2
+make[3]: Leaving directory 'nds-examples/audio/maxmod/audio_modes'
+make[2]: *** [Makefile:3: all] Error 1
+make[2]: Leaving directory 'nds-examples/audio/maxmod'
+make[1]: *** [Makefile:3: all] Error 1
+make[1]: Leaving directory 'nds-examples/audio'
+make: *** [Makefile:13: examples] Error 1
+</pre><br>
+
+<p>
+因為ndstool有一個預設的ARM7 EFL路徑(default.elf)
+</p>
+<pre class="brush:cpp">
+/*
+ * GetDefaultArm7
+ * Retrieves the path to the default homebrew ARM7 component
+ */
+void GetDefaultArm7(char* buffer, size_t size)
+{
+    char *devkitProPATH;
+    devkitProPATH = getenv("DEVKITPRO");
+
+    #ifdef __WIN32__
+    // convert to standard windows path
+    if ( devkitProPATH &amp;&amp; devkitProPATH[0] == '/' ) {
+        devkitProPATH[0] = devkitProPATH[1];
+        devkitProPATH[1] = ':';
+    }
+    #endif
+
+    if (!devkitProPATH) {
+        fprintf(stderr,"No arm7 specified and DEVKITPRO missing from environment!\n");
+        exit(1);
+    }
+
+    strncpy(buffer, devkitProPATH, size);
+    strncat(buffer, "/libnds/default.elf", size);
+}
+</pre><br>
+
+<p>
+但是預設的ds_rules(<b>/opt/devkitpro/devkitARM/ds_rules</b>)卻只有ARM9路徑
+</p>
+<pre>
+36 #---------------------------------------------------------------------------------
+37 %.nds: %.elf
+38     ndstool -c $@ -9 $&lt; -b $(GAME_ICON) "$(GAME_TITLE);$(GAME_SUBTITLE1);$(GAME_SUBTITLE2)" $(_ADDFILES)
+39     $(SILENTMSG) built ... $(notdir $@)
+</pre><br>
+
+<p>
+因此，只要添加ARM7路徑(<b>-7 $&lt;</b>)就可以
+</p>
+<pre>
+36 #---------------------------------------------------------------------------------
+37 %.nds: %.elf
+38     ndstool -c $@ -9 $&lt; -7 $&lt; -b $(GAME_ICON) "$(GAME_TITLE);$(GAME_SUBTITLE1);$(GAME_SUBTITLE2)" $(_ADDFILES)
+39     $(SILENTMSG) built ... $(notdir $@)
+</pre><br>
+
+<p>
+</p>
+
+<p>
+<br><a href="../../emu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

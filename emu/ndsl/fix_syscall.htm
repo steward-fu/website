@@ -46,22 +46,51 @@
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
 <h3>Nintendo DS Lite</h3>
-<p><b>general-tools</b></p>
+<p><b>解決"initSystem.c: error: __SYSCALL declared as function returning a function"問題</b></p>
 <hr size="1">
 <p>
-步驟如下：
+問題如下：
 </p>
 <pre>
-$ cd
-$ git clone https://github.com/devkitPro/general-tools
-$ cd general-tools
-$ ./autogen.sh
-$ ./configure
-$ make
-$ sudo make install
+libnds/arm9/../source/arm9/system/initSystem.c:51:5: error: '__SYSCALL' declared as function returning a function
+   51 | int __SYSCALL(gettod_r)(struct _reent *ptr, struct timeval *tp, struct timezone *tz) {
+      |     ^~~~~~~~~
+libnds/arm9/../source/arm9/system/initSystem.c: In function '__SYSCALL':
+libnds/arm9/../source/arm9/system/initSystem.c:51:5: warning: type of 'gettod_r' defaults to 'int' [-Wimplicit-int]
+libnds/arm9/../source/arm9/system/initSystem.c:54:13: error: 'tp' undeclared (first use in this function); did you mean 'tm'?
+   54 |         if (tp != NULL) {
+      |             ^~
+      |             tm
+libnds/arm9/../source/arm9/system/initSystem.c:54:13: note: each undeclared identifier is reported only once for each function it appears in
+libnds/arm9/../source/arm9/system/initSystem.c:58:13: error: 'tz' undeclared (first use in this function); did you mean 'tm'?
+   58 |         if (tz != NULL) {
+      |             ^~
+      |             tm
+libnds/arm9/../source/arm9/system/initSystem.c: At top level:
+libnds/arm9/../source/arm9/system/initSystem.c:68:6: error: '__SYSCALL' declared as function returning a function
+   68 | void __SYSCALL(exit)(int rc) {
+      |      ^~~~~~~~~
+libnds/arm9/../source/arm9/system/initSystem.c:68:6: error: redefinition of '__SYSCALL'
+libnds/arm9/../source/arm9/system/initSystem.c:51:5: note: previous definition of '__SYSCALL' with type 'int()'
+   51 | int __SYSCALL(gettod_r)(struct _reent *ptr, struct timeval *tp, struct timezone *tz) {
+      |     ^~~~~~~~~
+libnds/arm9/../source/arm9/system/initSystem.c: In function '__SYSCALL':
+libnds/arm9/../source/arm9/system/initSystem.c:68:6: warning: type of 'exit' defaults to 'int' [-Wimplicit-int]
+   68 | void __SYSCALL(exit)(int rc) {
+      |      ^~~~~~~~~
+libnds/arm9/../source/arm9/system/initSystem.c:70:23: error: 'rc' undeclared (first use in this function)
+   70 |         __libnds_exit(rc);
+      |                       ^~
+libnds/arm9/../source/arm9/system/initSystem.c:71:1: warning: control reaches end of non-void function [-Wreturn-type]
+   71 | }
+      | ^
+make[2]: *** [/opt/devkitpro/devkitARM//base_rules:85: initSystem.o] Error 1
+make[1]: *** [Makefile:116: release] Error 2
+make[1]: Leaving directory 'libnds/arm9'
+make: *** [Makefile:22: release] Error 1
 </pre>
 <p>
-P.S. 假如沒有編譯安裝general-tools，之後編譯程式時，將會遇到<b>/bin/sh: bin2s: command not found</b>錯誤
+解法：重新編譯安裝devkitpro
 </p>
 
 <p>
