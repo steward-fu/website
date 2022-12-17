@@ -1,0 +1,130 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Nintendo DS Lite &gt;&gt; C/C++</h3>
+<p><b>hello, world!</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://libnds.devkitpro.org/index.html">libnds doc</a><br><br>
+
+說明：
+</p>
+<table>
+<tr><th>API</th><th>Description</th></tr>
+<tr><td>PrintConsole* consoleDemoInit(void)</td><td>Initialize the console to a default state for prototyping</td></tr>
+<tr><td>void swiWaitForVBlank(void)</td><td>Waits for a vertical blank interrupt</td></tr>
+</table><br>
+
+<p>
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;nds.h&gt;
+#include &lt;stdio.h&gt;
+
+int main(void)
+{
+    int cc = 0;
+
+    consoleDemoInit();
+    printf("hello, world!");
+    for (cc = 0; cc &lt; 180; cc++) {
+        swiWaitForVBlank();
+    }
+    return 0;
+}
+</pre><br>
+
+<p>
+Makefile
+</p>
+<pre>
+include $(DEVKITARM)/ds_rules
+
+all:
+    arm-none-eabi-gcc -march=armv5te -mtune=arm946e-s -fomit-frame-pointer -ffast-math -mthumb -mthumb-interwork -I/opt/devkitpro/libnds/include -DARM9 -c main.c -o main.o
+    arm-none-eabi-gcc  -specs=ds_arm9.specs -g -mthumb -mthumb-interwork main.o -L/opt/devkitpro/libnds/lib -lnds9 -o main.elf
+    ndstool -c main.nds -9 main.elf -b /opt/devkitpro/libnds/icon.bmp "devkitARM"
+
+clean:
+    rm -rf main.o main.elf main.nds
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ sudo docker run --rm -it -v $(pwd):/source nds-env /bin/bash
+
+root@6c3df7e9daba:/source# make
+    arm-none-eabi-gcc -march=armv5te -mtune=arm946e-s -fomit-frame-pointer -ffast-math -mthumb -mthumb-interwork -I/opt/devkitpro/libnds/include -DARM9 -c main.c -o main.o
+    arm-none-eabi-gcc  -specs=ds_arm9.specs -g -mthumb -mthumb-interwork main.o -L/opt/devkitpro/libnds/lib -lnds9 -o main.elf
+    ndstool -c main.nds -9 main.elf -b /opt/devkitpro/libnds/icon.bmp "devkitARM"
+    Nintendo DS rom tool 2.1.2 - Jun 30 2020
+    by Rafael Vuijk, Dave Murphy, Alexei Karpenko
+
+root@6c3df7e9daba:/source# exit
+    exit
+
+$ desmume main.nds
+</pre><br>
+
+<p>
+完成<br>
+<img src="cpp_hello/1.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../emu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
