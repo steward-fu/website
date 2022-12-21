@@ -1,0 +1,121 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Nintendo 3DS &gt;&gt; C/C++</h3>
+<p><b>Software Keyboard</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://libctru.devkitpro.org/index.html">libctru doc</a><br>
+2. <a href="https://github.com/devkitPro/3ds-examples">3ds-examples</a><br><br>
+
+說明：
+</p>
+<table>
+<tr><th>API</th><th>Description</th></tr>
+<tr><td>void swkbdInit(SwkbdState *swkbd, SwkbdType type, int numButtons, int maxTextLength)</td><td>Initializes software keyboard status</td></tr>
+<tr><td>void swkbdSetInitialText(SwkbdState *swkbd, const char *text)</td><td>Sets the initial text that a software keyboard will display on launch</td></tr>
+<tr><td>void swkbdSetHintText(SwkbdState *swkbd, const char *text)</td><td>Sets the hint text of a software keyboard (that is, the help text that is displayed when the textbox is empty)</td></tr>
+<tr><td>void swkbdSetButton(SwkbdState *swkbd, SwkbdButton button, const char *text, bool submit)</td><td>Configures a dialog button in a software keyboard</td></tr>
+<tr><td>void swkbdSetFeatures(SwkbdState *swkbd, u32 features)</td><td>Specifies which special features are enabled in a software keyboard</td></tr>
+<tr><td>SwkbdButton swkbdInputText(SwkbdState *swkbd, char *buf, size_t bufsize)</td><td>Launches a software keyboard in order to input text</td></tr>
+</table><br>
+
+<p>
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;3ds.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+
+int main(void)
+{
+    char mybuf[255] = {0};
+    SwkbdState swkbd = {0};
+    SwkbdButton button = SWKBD_BUTTON_NONE;
+        
+    gfxInitDefault();
+    consoleInit(GFX_TOP, NULL);
+
+    swkbdInit(&amp;swkbd, SWKBD_TYPE_NORMAL, 3, -1);
+    swkbdSetInitialText(&amp;swkbd, mybuf);
+    swkbdSetHintText(&amp;swkbd, "Please input your text");
+    swkbdSetButton(&amp;swkbd, SWKBD_BUTTON_LEFT, "No", false);
+    swkbdSetButton(&amp;swkbd, SWKBD_BUTTON_MIDDLE, " ", true);
+    swkbdSetButton(&amp;swkbd, SWKBD_BUTTON_RIGHT, "Yes", true);
+    swkbdSetFeatures(&amp;swkbd, SWKBD_PREDICTIVE_INPUT);
+
+    button = swkbdInputText(&amp;swkbd, mybuf, sizeof(mybuf));
+    if (button != SWKBD_BUTTON_NONE) {
+        printf("Text: %s\n", mybuf);
+    } 
+
+    gfxFlushBuffers();
+    gfxSwapBuffers();
+    gspWaitForVBlank();
+    svcSleepThread(3000000000LL);
+    gfxExit();
+    return 0;
+}
+</pre><br>
+
+<p>
+完成<br>
+<img src="cpp_kbd/1.jpg" class="maxSize"><br>
+<img src="cpp_kbd/2.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../emu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
