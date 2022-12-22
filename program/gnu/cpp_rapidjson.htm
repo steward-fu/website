@@ -60,20 +60,26 @@ main.cpp
 #include &lt;rapidjson/pointer.h&gt;
 #include &lt;rapidjson/stringbuffer.h&gt;
 #include &lt;iostream&gt;
-
+ 
 using namespace rapidjson;
-
+ 
 int main(int argc, char **argv)
 {
     Document jsondoc;
     Value arr(kArrayType);
+    Value tmp(kArrayType);
     Value obj(kObjectType);
 
-    Pointer("/a1").Set(obj, "1", jsondoc.GetAllocator());
-    Pointer("/a2/c1").Set(obj, "2", jsondoc.GetAllocator());
+    Pointer("/r0/s0").Set(obj, "1", jsondoc.GetAllocator());
     arr.PushBack(obj, jsondoc.GetAllocator());
-    Pointer("/tags").Set(jsondoc, arr);
+    
+    tmp.PushBack("1", jsondoc.GetAllocator());
+    tmp.PushBack("2", jsondoc.GetAllocator());
+    Pointer("/r1").Set(obj, tmp, jsondoc.GetAllocator());
+    arr.PushBack(obj, jsondoc.GetAllocator());
 
+    Pointer("/tags").Set(jsondoc, arr);
+ 
     StringBuffer sb;
     Writer&lt;StringBuffer&gt; writer(sb);
     jsondoc.Accept(writer);
@@ -101,17 +107,22 @@ $ sudo make install
 $ cd
 $ g++ main.cpp -o test
 $ ./test | jq
+{
+  "tags": [
     {
-      "tags": [
-        {
-          "a1": "1",
-          "a2": {
-            "c1": "2"
-          }
-        }
+      "r0": {
+        "s0": "1"
+      }
+    },
+    {
+      "r1": [
+        "1",
+        "2"
       ]
     }
-</pre>
+  ]
+}
+</pre><br>
 
 <p>
 <br><a href="../../program.htm">返回上一頁</a>
