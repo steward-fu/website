@@ -1,0 +1,152 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Nintendo 3DS &gt;&gt; C/C++</h3>
+<p><b>Streaming</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://libctru.devkitpro.org/index.html">libctru doc</a><br>
+2. <a href="https://github.com/devkitPro/3ds-examples">3ds-examples</a><br><br>
+
+說明：
+</p>
+<table>
+<tr><th>API</th></tr>
+<tr><td>Result DSP_FlushDataCache(const void *address, u32 size)</td></tr>
+<tr><td>void* linearAlloc(size_t size)</td></tr>
+<tr><td>Result ndspInit(void)</td></tr>
+<tr><td>void ndspSetOutputMode(ndspOutputMode mode)</td></tr>
+<tr><td>void ndspChnSetInterp(int id, ndspInterpType type)</td></tr>
+<tr><td>void ndspChnSetRate(int id, float rate)</td></tr>
+<tr><td>void ndspChnSetFormat(int id, u16 format)</td></tr>
+<tr><td>void ndspChnSetMix(int id, float mix[12])</td></tr>
+<tr><td>void ndspChnWaveBufAdd(int id, ndspWaveBuf *buf)</td></tr>
+<tr><td>void ndspExit(void)</td></tr>
+<tr><td>void linearFree(void* mem)</td></tr>
+</table><br>
+
+<p>
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;math.h&gt;
+#include &lt;3ds.h&gt;
+
+#define SAMPLERATE      22050
+#define SAMPLESPERBUF   (SAMPLERATE / 30)
+#define BYTESPERSAMPLE  4
+
+void fill_buffer(void *audioBuffer, size_t offset, size_t size, int frequency)
+{
+    u32 *dest = (u32*)audioBuffer;
+
+    for (int i = 0; i &lt; size; i++) {
+        s16 sample = INT16_MAX * sin(frequency * (2 * M_PI) * (offset + i) / SAMPLERATE);
+        dest[i] = (sample &lt;&lt; 16) | (sample &amp; 0xffff);
+    }
+    DSP_FlushDataCache(audioBuffer, size);
+}
+
+int main(void)
+{
+    int note = 4;
+    bool fillBlock = false;
+    u32 *audioBuffer = NULL;
+    size_t stream_offset = 0;
+    float vol[12] = {1.0, 1.0};
+    ndspWaveBuf waveBuf[2] = {0};
+
+    gfxInitDefault();
+    audioBuffer = (u32*)linearAlloc(SAMPLESPERBUF * BYTESPERSAMPLE * 2);
+
+    ndspInit();
+    ndspSetOutputMode(NDSP_OUTPUT_STEREO);
+    ndspChnSetInterp(0, NDSP_INTERP_LINEAR);
+    ndspChnSetRate(0, SAMPLERATE);
+    ndspChnSetFormat(0, NDSP_FORMAT_STEREO_PCM16);
+    ndspChnSetMix(0, vol);
+
+    waveBuf[0].data_vaddr = &amp;audioBuffer[0];
+    waveBuf[0].nsamples = SAMPLESPERBUF;
+    waveBuf[1].data_vaddr = &amp;audioBuffer[SAMPLESPERBUF];
+    waveBuf[1].nsamples = SAMPLESPERBUF;
+    ndspChnWaveBufAdd(0, &amp;waveBuf[0]);
+    ndspChnWaveBufAdd(0, &amp;waveBuf[1]);
+
+    while(aptMainLoop()) {
+        gfxSwapBuffers();
+        gfxFlushBuffers();
+        gspWaitForVBlank();
+
+        if (waveBuf[fillBlock].status == NDSP_WBUF_DONE) {
+            fill_buffer(waveBuf[fillBlock].data_pcm16, stream_offset, waveBuf[fillBlock].nsamples, 440);
+            ndspChnWaveBufAdd(0, &amp;waveBuf[fillBlock]);
+            stream_offset += waveBuf[fillBlock].nsamples;
+            fillBlock = !fillBlock;
+        }
+    }
+
+    ndspExit();
+    linearFree(audioBuffer);
+    gfxExit();
+    return 0;
+}
+</pre><br>
+
+<p>
+<br><a href="../../emu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
