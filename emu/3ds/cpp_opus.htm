@@ -1,0 +1,182 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Nintendo 3DS &gt;&gt; C/C++</h3>
+<p><b>Audio (Opus)</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://libctru.devkitpro.org/index.html">libctru doc</a><br>
+2. <a href="https://github.com/devkitPro/3ds-examples">3ds-examples</a><br><br>
+
+說明：
+</p>
+<table>
+<tr><th>API</th></tr>
+<tr><td>int op_read_stereo(OggOpusFile *_of, opus_int16 *_pcm, int _buf_size)</td></tr>
+<tr><td>void LightEvent_Signal(LightEvent *event)</td></tr>
+<tr><td>void LightEvent_Init(LightEvent *event, ResetType reset_type)</td></tr>
+<tr><td>OggOpusFile *op_open_file(const char *_path, int *_error)</td></tr>
+<tr><td>void ndspChnReset(int id)</td></tr>
+<tr><td>void ndspSetCallback(ndspCallback callback, void *data)</td></tr>
+<tr><td>void LightEvent_Wait(LightEvent *event)</td></tr>
+<tr><td>void LightEvent_Signal(LightEvent *event)</td></tr>
+<tr><td>void ndspChnReset(int id)</td></tr>
+<tr><td>void op_free(OggOpusFile *_of)</td></tr>
+</table><br>
+
+<p>
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;string.h&gt;
+#include &lt;3ds.h&gt;
+#include &lt;opusfile.h&gt;
+
+#define ARRAY_SIZE(x)   (sizeof(x) / sizeof((x)[0]))
+#define SAMPLE_RATE     48000
+#define SAMPLE_BUF      (SAMPLE_RATE * 120 / 1000)
+#define CHANNEL         2
+#define WAVEBUF_SIZE    (SAMPLE_BUF * CHANNEL * sizeof(int16_t))
+
+LightEvent event = {0};
+int16_t *audio_buffer = NULL;
+ndspWaveBuf wave_buffer[3]= {0};
+
+bool fillBuffer(OggOpusFile *opusFile, ndspWaveBuf *waveBuf)
+{
+    int totalSamples = 0;
+    while (totalSamples &lt; SAMPLE_BUF) {
+        int16_t *buffer = waveBuf-&gt;data_pcm16 + (totalSamples * CHANNEL);
+        const size_t bufferSize = (SAMPLE_BUF - totalSamples) * CHANNEL;
+        const int samples = op_read_stereo(opusFile, buffer, bufferSize);
+        if (samples &lt;= 0) {
+            break;
+        }
+        totalSamples += samples;
+    }
+
+    if (totalSamples == 0) {
+        return false;
+    }
+
+    waveBuf-&gt;nsamples = totalSamples;
+    ndspChnWaveBufAdd(0, waveBuf);
+    DSP_FlushDataCache(waveBuf-&gt;data_pcm16, totalSamples * CHANNEL * sizeof(int16_t));
+    return true;
+}
+
+void audioCallback(void *const argv)
+{
+    LightEvent_Signal(&amp;event);
+}
+
+int main(void)
+{
+    int rc = 0, i = 0;
+
+    gfxInitDefault();
+    LightEvent_Init(&amp;event, RESET_ONESHOT);
+
+    OggOpusFile *opusFile = op_open_file("sdmc:/3ds/main.opus", &amp;rc);
+    const size_t bufferSize = WAVEBUF_SIZE * ARRAY_SIZE(wave_buffer);
+    audio_buffer = (int16_t*)linearAlloc(bufferSize);
+    if (!audio_buffer) {
+        return 0;
+    }
+
+    memset(&amp;wave_buffer, 0, sizeof(wave_buffer));
+    int16_t *buffer = audio_buffer;
+    for (i = 0; i &lt; ARRAY_SIZE(wave_buffer); i++) {
+        wave_buffer[i].data_vaddr = buffer;
+        wave_buffer[i].status = NDSP_WBUF_DONE;
+        buffer += WAVEBUF_SIZE / sizeof(buffer[0]);
+    }
+
+    ndspInit();
+    ndspChnReset(0);
+    ndspSetOutputMode(NDSP_OUTPUT_STEREO);
+    ndspChnSetInterp(0, NDSP_INTERP_POLYPHASE);
+    ndspChnSetRate(0, SAMPLE_RATE);
+    ndspChnSetFormat(0, NDSP_FORMAT_STEREO_PCM16);
+    ndspSetCallback(audioCallback, NULL);
+
+    while (aptMainLoop()) {
+        for (i = 0; i &lt; ARRAY_SIZE(wave_buffer); i++) {
+            if (wave_buffer[i].status != NDSP_WBUF_DONE) {
+                continue;
+            }
+            
+            if (!fillBuffer(opusFile, &amp;wave_buffer[i])) {
+                break;
+            }
+        }
+        LightEvent_Wait(&amp;event);
+    }
+    LightEvent_Signal(&amp;event);
+
+    ndspChnReset(0);
+    linearFree(audio_buffer);
+    ndspExit();
+    op_free(opusFile);
+    gfxExit();
+    return 0;
+}
+</pre><br>
+
+<p>
+<br><a href="../../emu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
