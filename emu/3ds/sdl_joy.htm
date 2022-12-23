@@ -1,0 +1,133 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Nintendo 3DS &gt;&gt; C/C++ &gt;&gt; SDL v1.2</h3>
+<p><b>Joystick</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://libctru.devkitpro.org/index.html">libctru doc</a><br>
+2. <a href="https://github.com/devkitPro/3ds-examples">3ds-examples</a><br>
+3. <a href="https://github.com/nop90/SDL-3DS/blob/master/SDL-1.2.15/src/joystick/n3ds/SDL_sysjoystick.c">SDL_sysjoystick</a><br><br>
+
+說明：
+</p>
+<table>
+<tr><th>API</th></tr>
+<tr><td>int SDL_NumJoysticks(void)</td></tr>
+<tr><td>SDL_Joystick* SDL_JoystickOpen(int device_index)</td></tr>
+<tr><td>int SDL_PollEvent(SDL_Event *event)</td></tr>
+<tr><td>void SDL_JoystickClose(SDL_Joystick *joystick)</td></tr>
+</table><br>
+
+<p>
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;3ds.h&gt;
+#include &lt;SDL.h&gt;
+#include &lt;SDL_gfxPrimitives.h&gt;
+
+int main(void)
+{
+    char buf[255] = {0};
+    SDL_Event event = {0};
+    SDL_Joystick *joy = NULL;
+    SDL_Surface *screen = NULL;
+
+    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK);
+    screen = SDL_SetVideoMode(400, 240, 16, SDL_HWSURFACE);
+    SDL_FillRect(screen, &amp;screen-&gt;clip_rect, SDL_MapRGB(screen-&gt;format, 0x00, 0x00, 0x00));
+    SDL_Flip(screen);
+
+    int num = SDL_NumJoysticks();
+    if (num &gt; 0) {
+        joy = SDL_JoystickOpen(0);
+    }
+    while (1) {
+        if (SDL_PollEvent(&amp;event)) {
+            if (event.type == SDL_JOYAXISMOTION) {
+                SDL_FillRect(screen, &amp;screen-&gt;clip_rect, SDL_MapRGB(screen-&gt;format, 0x00, 0x00, 0x00));
+                sprintf(buf, "axis: %d, value: %d", event.jaxis.axis, event.jaxis.value);
+                stringRGBA(screen, 100, 100, buf, 0xff, 0xff, 0xff, 0xff);
+                SDL_Flip(screen);
+            }
+            if ((event.type == SDL_JOYBUTTONDOWN) || (event.type == SDL_JOYBUTTONUP)) {
+                SDL_FillRect(screen, &amp;screen-&gt;clip_rect, SDL_MapRGB(screen-&gt;format, 0x00, 0x00, 0x00));
+                sprintf(buf, "button: %d, state: %d", event.jbutton.button, event.jbutton.state);
+                stringRGBA(screen, 100, 100, buf, 0xff, 0xff, 0xff, 0xff);
+                SDL_Flip(screen);
+            }
+        }
+        SDL_Delay(100);
+    }
+
+    if (joy) {
+        SDL_JoystickClose(joy);
+    }
+    SDL_Quit();
+    return 0;
+}
+</pre>
+<p>
+P.S. 目前無法從SDL去取得DPad、Touch的輸入狀態<br><br>
+
+完成<br>
+<img src="sdl_joy/1.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../emu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
