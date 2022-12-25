@@ -46,7 +46,7 @@
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
 <h3>Nintendo 3DS &gt;&gt; C/C++ &gt;&gt; GPU</h3>
-<p><b>Fill Color</b></p>
+<p><b>Screen Tearing Test</b></p>
 <hr size="1">
 <p>
 參考資訊：<br>
@@ -54,24 +54,6 @@
 2. <a href="https://libctru.devkitpro.org/index.html">libctru doc</a><br>
 3. <a href="https://github.com/devkitPro/3ds-examples">3ds-examples</a><br><br>
 
-說明：
-</p>
-<table>
-<tr><th>API</th></tr>
-<tr><td>bool C3D_Init(size_t cmdBufSize)</td></tr>
-<tr><td>bool C3D_FrameBegin(u8 flags)</td></tr>
-<tr><td>void C3D_FrameEnd(u8 flags)</td></tr>
-<tr><td>void C3D_Fini(void)</td></tr>
-<tr><td>bool C2D_Init(size_t maxObjects)</td></tr>
-<tr><td>void C2D_Prepare(void)</td></tr>
-<tr><td>C3D_RenderTarget* C2D_CreateScreenTarget(gfxScreen_t screen, gfx3dSide_t side)</td></tr>
-<tr><td>C2D_CONSTEXPR u32 C2D_Color32(u8 r, u8 g, u8 b, u8 a)</td></tr>
-<tr><td>void C2D_TargetClear(C3D_RenderTarget *target, u32 color)</td></tr>
-<tr><td>void C2D_SceneBegin(C3D_RenderTarget *target)</td></tr>
-<tr><td>void C2D_Fini(void)</td></tr>
-</table><br>
-
-<p>
 main.c
 </p>
 <pre class="brush:cpp">
@@ -87,12 +69,18 @@ int main(void)
     C2D_Init(C2D_DEFAULT_MAX_OBJECTS);
     C2D_Prepare();
     C3D_RenderTarget* top = C2D_CreateScreenTarget(GFX_TOP, GFX_LEFT);
- 
-    C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
-    C2D_TargetClear(top, C2D_Color32(0xff, 0x00, 0x00, 0xff));
-    C2D_SceneBegin(top);
-    C3D_FrameEnd(0);
-     
+
+    u32 c = 0, col[] = {
+        C2D_Color32(0xff, 0x00, 0x00, 0xff),
+        C2D_Color32(0x00, 0xff, 0x00, 0xff),
+        C2D_Color32(0x00, 0x00, 0xff, 0xff)};
+
+    while (aptMainLoop()) {
+        C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
+        C2D_TargetClear(top, col[c++ % 3]);
+        C2D_SceneBegin(top);
+        C3D_FrameEnd(0);
+    }
     C2D_Fini();
     C3D_Fini();
  
@@ -129,7 +117,7 @@ $ citra main.3dsx
 
 <p>
 完成<br>
-<img src="gpu_fill/1.jpg" class="maxSize">
+<img src="sdl_screentearingtest/1.jpg" class="maxSize">
 </p>
 
 <p>
