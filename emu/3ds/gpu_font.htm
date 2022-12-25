@@ -70,10 +70,11 @@
 <tr><td>void C2D_SceneBegin(C3D_RenderTarget *target)</td></tr>
 <tr><td>C2D_Font C2D_FontLoad(const char *filename)</td></tr>
 <tr><td>C2D_TextBuf C2D_TextBufNew(size_t maxGlyphs)</td></tr>
-<tr><td>const char *C2D_TextParse(C2D_Text *text, C2D_TextBuf buf, const char *str)</td></tr>
+<tr><td>const char *C2D_TextFontParse(C2D_Text *text, C2D_Font font, C2D_TextBuf buf, const char *str)</td></tr>
 <tr><td>void C2D_TextOptimize(const C2D_Text *text)</td></tr>
 <tr><td>void C2D_DrawText(const C2D_Text *text, u32 flags, float x, float y, float z, float scaleX, float scaleY, ...)</td></tr>
 <tr><td>void C2D_TextBufDelete(C2D_TextBuf buf)</td></tr>
+<tr><td>void C2D_FontFree(C2D_Font font)</td></tr>
 <tr><td>void C2D_Fini(void)</td></tr>
 </table><br>
 
@@ -94,18 +95,19 @@ int main(void)
     C2D_Prepare();
     C3D_RenderTarget* top = C2D_CreateScreenTarget(GFX_TOP, GFX_LEFT);
  
-    C2D_Font font = C2D_FontLoad("sdmc:/3ds/font.ttf");
-    C2D_TextBuf dynamicBuffer = C2D_TextBufNew(255);
     C2D_Text dynamicText = {0};
-    C2D_TextParse(&amp;dynamicText, dynamicBuffer, "3ds 測試");
+    C2D_Font font = C2D_FontLoad("sdmc:/3ds/font.bcfnt");
+    C2D_TextBuf dynamicBuffer = C2D_TextBufNew(255);
+    C2D_TextFontParse(&amp;dynamicText, font, dynamicBuffer, "3ds Testing");
     C2D_TextOptimize(&amp;dynamicText);
  
     C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
     C2D_TargetClear(top, C2D_Color32(0x00, 0x00, 0x00, 0xff));
     C2D_SceneBegin(top);
-    C2D_DrawText(&amp;dynamicText, C2D_WithColor, 50, 50, 0, 1.5f, 1.5f, C2D_Color32(0x00, 0xff, 0x00, 0xff));
+    C2D_DrawText(&amp;dynamicText, C2D_WithColor, 50, 50, 0, 1, 1, C2D_Color32(0x00, 0xff, 0x00, 0xff));
     C3D_FrameEnd(0);
-     
+
+    C2D_FontFree(font);
     C2D_TextBufDelete(dynamicBuffer);
     C2D_Fini();
     C3D_Fini();
@@ -114,9 +116,9 @@ int main(void)
     gfxExit();
     return 0;
 }
-</pre><br>
-
+</pre>
 <p>
+P.S. bcfnt字型可以透過<b>/opt/devkitpro/tools/bin/mkbcfnt</b>工具轉換<br><br>
 Makefile
 </p>
 <pre>
