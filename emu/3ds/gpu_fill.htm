@@ -1,0 +1,142 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Nintendo 3DS &gt;&gt; C/C++ &gt;&gt; GPU</h3>
+<p><b>Fill Color</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://libctru.devkitpro.org/index.html">libctru doc</a><br>
+2. <a href="https://github.com/devkitPro/3ds-examples">3ds-examples</a><br><br>
+
+說明：
+</p>
+<table>
+<tr><th>API</th></tr>
+<tr><td>bool C3D_Init(size_t cmdBufSize)</td></tr>
+<tr><td>bool C3D_FrameBegin(u8 flags)</td></tr>
+<tr><td>void C3D_FrameEnd(u8 flags)</td></tr>
+<tr><td>void C3D_Fini(void)</td></tr>
+<tr><td>bool C2D_Init(size_t maxObjects)</td></tr>
+<tr><td>void C2D_Prepare(void)</td></tr>
+<tr><td>C3D_RenderTarget* C2D_CreateScreenTarget(gfxScreen_t screen, gfx3dSide_t side)</td></tr>
+<tr><td>C2D_CONSTEXPR u32 C2D_Color32(u8 r, u8 g, u8 b, u8 a)</td></tr>
+<tr><td>void C2D_TargetClear(C3D_RenderTarget *target, u32 color)</td></tr>
+<tr><td>void C2D_SceneBegin(C3D_RenderTarget *target)</td></tr>
+<tr><td>void C2D_Fini(void)</td></tr>
+</table><br>
+
+<p>
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;citro2d.h&gt;
+#include &lt;string.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+ 
+int main(void)
+{
+    gfxInitDefault();
+    C3D_Init(C3D_DEFAULT_CMDBUF_SIZE);
+    C2D_Init(C2D_DEFAULT_MAX_OBJECTS);
+    C2D_Prepare();
+    C3D_RenderTarget* top = C2D_CreateScreenTarget(GFX_TOP, GFX_LEFT);
+ 
+    C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
+    C2D_TargetClear(top, C2D_Color32(0xff, 0x00, 0x00, 0xff));
+    C2D_SceneBegin(top);
+    C3D_FrameEnd(0);
+     
+    C2D_Fini();
+    C3D_Fini();
+ 
+    svcSleepThread(3000000000LL);
+    gfxExit();
+    return 0;
+}
+</pre><br>
+
+<p>
+Makefile
+</p>
+<pre>
+include $(DEVKITARM)/3ds_rules
+
+all:
+    arm-none-eabi-gcc -mword-relocations -ffunction-sections -march=armv6k -mtune=mpcore -mfloat-abi=hard -mtp=soft -I/opt/devkitpro/libctru/include -I/opt/devkitpro/portlibs/3ds/include/ -I/opt/devkitpro/portlibs/3ds/include/opus/ -I/opt/devkitpro/portlibs/3ds/include/SDL -D__3DS__ -c main.c -o main.o 
+    arm-none-eabi-gcc -specs=3dsx.specs -march=armv6k -mtune=mpcore -mfloat-abi=hard -mtp=soft main.o -L/opt/devkitpro/portlibs/3ds/lib -lopusfile -logg -lopus -L/opt/devkitpro/libctru/lib -lSDL_image -lSDL_mixer -lSDL_ttf -lSDL_gfx -lSDL -lfreetype -lbz2 -lpng -ljpeg -lz -lcitro2d -lcitro3d -lctru -lm -lstdc++ -o main.elf
+    smdhtool --create "main" "devkitARM" "steward" /opt/devkitpro/libctru/default_icon.png main.smdh
+    3dsxtool main.elf main.3dsx --smdh=main.smdh
+
+clean:
+    rm -rf main.o main.elf main.3dsx main.smdh
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ sudo docker run --rm -it -v $(pwd):/source nds-env /bin/bash
+root@c18881035cba:/source# make &amp;&amp; exit
+$ citra main.3dsx
+</pre><br>
+
+<p>
+完成<br>
+<img src="gpu_fill/1.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../emu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
