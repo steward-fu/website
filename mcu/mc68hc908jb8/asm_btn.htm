@@ -45,7 +45,7 @@
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
 <h3>(MCU M68HC08) MC68HC908JB8 &gt;&gt; Assembly</h3>
-<p><b>LED</b></p>
+<p><b>Button</b></p>
 <hr size="1">
 <p>
 參考資訊：<br>
@@ -55,17 +55,23 @@
 4. <a href="https://www.nxp.com/docs/en/data-sheet/MC68HC908JB8.pdf">mc68hc908jb8</a><br>
 5. <a href="https://hackaday.io/project/167952-semyon/log/169905-blink-with-sdas">blink-with-sdas</a><br><br>
 
-DDRA<br>
-<img src="asm_led/1.jpg" class="maxSize"><br><br>
+PTE<br>
+<img src="asm_btn/1.jpg" class="maxSize"><br><br>
 
-PTA<br>
-<img src="asm_led/2.jpg" class="maxSize"><br><br>
+DDRE<br>
+<img src="asm_btn/2.jpg" class="maxSize"><br><br>
+
+配置提昇電阻<br>
+<img src="asm_btn/3.jpg" class="maxSize"><br><br>
 
 main.asm
 </p>
 <pre class="brush:asm">
     PTA  .equ 0x00
     DDRA .equ 0x04
+    PTE  .equ 0x08
+    DDRE .equ 0x09
+    POCR .equ 0x1d
 
     .module main
     .optsdcc -mhc08
@@ -76,70 +82,28 @@ main.asm
 
     .area cseg (abs, code)
     .org 0xdc00
-
 main:
+    lda #0x10
+    sta POCR
+
     lda #0x02
     sta DDRA
 
+    lda #0x00
+    sta DDRE
 loop:
-    eor #0x02
+    lda PTE
+    lsra
+    lsra
+    lsra
     sta PTA
-
-    ldhx #0xffff
-d0:
-    aix #-1
-    cphx #0x0000
-    bne d0
-
     jmp loop
 </pre><br>
 
 <p>
-Makefile
-</p>
-<pre>
-all:
-    sdas6808 -los main.asm
-    sdld -s main
-
-flash:
-    bl08 -c /dev/ttyUSB0 -b 9600 -t jb8 -x 12 -f -g reset main.s19
-
-clean:
-    rm -rf main.lst  main.rel  main.s19  main.sym
-</pre><br>
-<p>
-連接好UART並且按下Reset<br>
-<img src="asm_led/3.jpg" class="maxSize"><br><br>
-
-編譯、燒錄
-</p>
-<pre>
-$ make
-    sdas6808 -los main.asm
-    sdld -s main
-    ASlink &gt;&gt; -s
-    ASlink &gt;&gt; main
-
-$ make flash
-    bl08 -c /dev/ttyUSB0 -b 9600 -t jb8 -x 12 -f -g reset main.s19
-    bl08 - MC68HC908 Bootloader - version 1.0.0.0
-    Reading S-records
-    Line ignored: S9030000FC
-
-    S-record data address 00FFFE size 000002
-    S-record data address 00DC00 size 000017
-
-    Mass erase
-    Program FFFE - FFFF .
-    Program DC00 - DC16 .
-    Execute code from DC00
-</pre><br>
-
-<p>
 完成<br>
-<img src="asm_led/4.jpg" class="maxSize"><br>
-<img src="asm_led/5.jpg" class="maxSize">
+<img src="asm_btn/4.jpg" class="maxSize"><br>
+<img src="asm_btn/5.jpg" class="maxSize">
 </p>
 
 <p>
