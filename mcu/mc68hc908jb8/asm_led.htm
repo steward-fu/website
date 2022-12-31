@@ -1,0 +1,154 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>(MCU M68HC08) MC68HC908JB8 &gt;&gt; Assembly</h3>
+<p><b>LED</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://github.com/ixaxaar/sdcc/blob/master/sdas/doc/asmlnk.txt">asmlnk</a><br>
+2. <a href="https://www.nxp.com/files-static/microcontrollers/doc/ref_manual/HCS08RMV1.pdf">hcs08rmv1</a><br>
+3. <a href="https://www.sparetimelabs.com/funwith08/funwith08.php">funwith08</a><br>
+4. <a href="https://www.nxp.com/docs/en/data-sheet/MC68HC908JB8.pdf">mc68hc908jb8</a><br>
+5. <a href="https://hackaday.io/project/167952-semyon/log/169905-blink-with-sdas">blink-with-sdas</a><br><br>
+
+DDRA<br>
+<img src="asm_led/1.jpg" class="maxSize"><br><br>
+
+PTA<br>
+<img src="asm_led/2.jpg" class="maxSize"><br><br>
+
+main.asm
+</p>
+<pre class="brush:asm">
+    PTA  .equ 0x00
+    DDRA .equ 0x04
+
+    .module main
+    .optsdcc -mhc08
+
+    .area codeivt (abs)
+    .org 0xfffe
+    .dw main
+
+    .area cseg (abs, code)
+    .org 0xdc00
+
+main:
+    lda #0x02
+    sta DDRA
+
+loop:
+    eor #0x02
+    sta PTA
+
+    ldhx #0xffff
+d0:
+    aix #-1
+    cphx #0x0000
+    bne d0
+
+    jmp loop
+</pre><br>
+
+<p>
+Makefile
+</p>
+<pre>
+all:
+    sdas6808 -los main.asm
+    sdld -s main
+
+flash:
+    bl08 -c /dev/ttyUSB0 -b 9600 -t jb8 -x 12 -f -g reset main.s19
+
+clean:
+    rm -rf main.lst  main.rel  main.s19  main.sym
+</pre><br>
+<p>
+連接好UART並且按下Reset<br>
+<img src="asm_led/3.jpg" class="maxSize"><br><br>
+
+編譯、燒錄
+</p>
+<pre>
+$ make
+    sdas6808 -los main.asm
+    sdld -s main
+    ASlink &gt;&gt; -s
+    ASlink &gt;&gt; main
+
+$ make flash
+    bl08 -c /dev/ttyUSB0 -b 9600 -t jb8 -x 12 -f -g reset main.s19
+    bl08 - MC68HC908 Bootloader - version 1.0.0.0
+    Reading S-records
+    Line ignored: S9030000FC
+
+    S-record data address 00FFFE size 000002
+    S-record data address 00DC00 size 000017
+
+    Mass erase
+    Program FFFE - FFFF .
+    Program DC00 - DC16 .
+    Execute code from DC00
+</pre><br>
+
+<p>
+完成<br>
+<img src="asm_led/4.jpg" class="maxSize"><br>
+<img src="asm_led/5.jpg" class="maxSize"><br><br>
+</p>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
+
