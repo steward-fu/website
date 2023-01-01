@@ -1,0 +1,130 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushRust.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Rust</h3>
+<p><b>SQLx</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://gitee.com/naylor_personal/rust-actix/tree/master/workspace/db">gitee</a><br>
+2. <a href="https://ithelp.ithome.com.tw/articles/10272280">ithome</a><br><br>
+
+安裝SQLite
+</p>
+<pre>
+$ sudo apt-get install sqlite sqlitebrowser -y
+</pre><br>
+
+<p>
+建立Database
+</p>
+<pre>
+export DATABASE_URL="sqlite:test.db"
+
+$ cd
+$ sqlx migrate add test
+$ vim vim migrations/xxx_test.sql
+    -- Add migration script here
+    CREATE TABLE account (
+         name TEXT PRIMARY KEY,
+         password TEXT NOT NULL
+    );
+
+$ sqlx db create
+$ sqlx migrate run 
+$ sqlitebrowser test.db
+</pre>
+<p>
+<img src="sqlx/1.jpg" class="maxSize"><br><br>
+
+Rust
+</p>
+<pre>
+$ cargo new hello
+$ cp test.db hello
+$ cd hello
+$ cat Cargo.toml 
+    [package]
+    name = "hello"
+    version = "0.1.0"
+    edition = "2021"
+
+    [dependencies]
+    sqlx = { version = "0.5.7", features = [ "runtime-tokio-rustls", "sqlite" ] }
+    tokio = { version = "1.12.0", features = ["full"] }
+    anyhow = "1.0"
+    futures = "0.3"
+
+$ cat src/main.rs 
+    use sqlx::sqlite::SqlitePool;
+
+    #[tokio::main]
+    async fn main() -&gt; anyhow::Result&lt;()&gt; {
+        let pool = SqlitePool::connect("sqlite:test.db").await?;
+        
+        let user : &amp;str = "test";
+        let pass : &amp;str = "1234";
+        let _add = sqlx::query!(r#"insert into account(name, password) values($1, $2)"#, user, pass,).fetch_all(&amp;pool).await?;
+        Ok(())
+    }
+
+$ cargo build
+$ cargo run
+$ sqlitebrowser test.db
+</pre>
+<p>
+<img src="sqlx/2.jpg" class="maxSize"><br><br>
+</p>
+
+<p>
+<br><a href="../../program.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
