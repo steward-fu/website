@@ -1,0 +1,142 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushRust.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Rust</h3>
+<p><b>Web Server (Form)</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="http://bzz.wallizard.com:8081/share/books/RUST/Programming%20Rust%202nd%20Edition.pdf">rust</a><br><br>
+
+產生樣板
+</p>
+<pre>
+$ cargo new hello
+</pre><br>
+
+<p>
+Cargo.toml
+</p>
+<pre>
+[package]
+name = "hello"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+actix-web = "1.0.8"
+serde = { version = "1.0", features = ["derive"] }
+</pre><br>
+
+<p>
+src/main.rs
+</p>
+<pre class="brush:rust">
+use serde::Deserialize;
+use actix_web::{web, App, HttpResponse, HttpServer};
+
+#[derive(Deserialize)]
+struct MyStruct {
+    v1: u64,
+    v2: u64,
+}
+
+fn main() {
+    let server = HttpServer::new(|| {
+        App::new()
+            .route("/", web::get().to(get_index))
+            .route("/test", web::post().to(post_test))
+    });
+
+    server
+        .bind("127.0.0.1:3000").expect("error binding server to address")
+        .run().expect("error running server");
+}
+
+fn get_index()-&gt;HttpResponse {
+    HttpResponse::Ok()
+        .content_type("text/html")
+        .body(r#"
+              &lt;title&gt;Input Test&lt;/title&gt;
+              &lt;form action = "/test" method = "post"&gt;
+              &lt;input type = "text" name = "v1" /&gt;
+              &lt;input type = "text" name = "v2" /&gt;&lt;button type = "submit"&gt;
+                  Send&lt;/button&gt;&lt;/form&gt;
+              "#,
+        )
+}
+
+fn post_test(form: web::Form&lt;MyStruct&gt;) -&gt; HttpResponse {
+    let response = format!("v1:{}&lt;br&gt;v2:{}\r\n", form.v1, form.v2);
+ 
+    HttpResponse::Ok()
+        .content_type("text/html")
+        .body(response)
+}
+</pre><br>
+
+<p>
+執行
+</p>
+<pre>
+$ cd hello
+$ cargo run
+</pre><br>
+<p>
+開啟網頁並且輸入<b>http://127.0.0.1:3000</b><br>
+<img src="webform/1.jpg" class="maxSize"><br>
+<img src="webform/2.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../program.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
