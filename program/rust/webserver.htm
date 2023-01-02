@@ -51,40 +51,54 @@
 參考資訊：<br>
 1. <a href="https://www.readfog.com/a/1673773161454342144">readfog</a><br><br>
 
-Rust
+產生樣板
 </p>
 <pre>
 $ cargo new hello
+</pre><br>
+
+<p>
+Cargo.toml
+</p>
+<pre>
+[package]
+name = "hello"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+axum = "0"
+tokio = { version = "1", default-features = false, features = ["macros", "rt-multi-thread"] }
+</pre><br>
+
+<p>
+src/main.rs
+</p>
+<pre class="brush:rust">
+use std::net::SocketAddr;
+use axum::{response::Html, routing::get, Router};
+
+#[tokio::main]
+async fn main() {
+    let app = Router::new().route("/", get(handler));
+    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+
+    axum::Server::bind(&amp;addr)
+        .serve(app.into_make_service())
+        .await
+        .unwrap();
+}
+
+async fn handler() -&gt; Html&lt;&amp;'static str&gt; {
+    Html("&lt;h1&gt;Hello, world!&lt;/h1&gt;")
+}
+</pre><br>
+
+<p>
+執行
+</p>
+<pre>
 $ cd hello
-$ cat Cargo.toml
-    [package]
-    name = "hello"
-    version = "0.1.0"
-    edition = "2021"
-
-    [dependencies]
-    axum = "0"
-    tokio = { version = "1", default-features = false, features = ["macros", "rt-multi-thread"] }
-
-$ cat src/main.rs 
-    use std::net::SocketAddr;
-    use axum::{response::Html, routing::get, Router};
-
-    #[tokio::main]
-    async fn main() {
-        let app = Router::new().route("/", get(handler));
-        let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
-        axum::Server::bind(&amp;addr)
-            .serve(app.into_make_service())
-            .await
-            .unwrap();
-    }
-
-    async fn handler() -&gt; Html&lt;&amp;'static str&gt; {
-        Html("&lt;h1&gt;Hello, world!&lt;/h1&gt;")
-    }
-
-$ cargo build
 $ cargo run
 </pre><br>
 <p>
