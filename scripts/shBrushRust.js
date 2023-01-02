@@ -20,8 +20,8 @@
   function Brush() {
     var my_constant = 'TEST';
     var my_keyword =  'pub if use struct else Some while async for fn impl as return in let None mut static';
-    var my_type = 'serde actix_web web u64 MyStruct App HttpResponse HttpServer Deserialize int Option Html Box ListNode usize i32 u32 std net SocketAddr Router axum Server str Solution Vec vec';
-    var my_function = 'get sort_list main push pop to post get_index post_test run expect Ok content_type body Form format sort as_mut unwrap len println route handler from bind serve await into_make_service as_ref is_none new sort_array';
+    var my_type = 'sqlx anyhow Result sqlite SqlitePool serde actix_web web u64 MyStruct App HttpResponse HttpServer Deserialize int Option Html Box ListNode usize i32 u32 std net SocketAddr Router axum Server str Solution Vec vec';
+    var my_function = 'get connect query fetch_all sort_list main push pop to post get_index post_test run expect Ok content_type body Form format sort as_mut unwrap len println route handler from bind serve await into_make_service as_ref is_none new sort_array';
 
     this.regexList = [
       {regex: /^ *#.*/gm, css: 'my_preprocessor'},

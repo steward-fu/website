@@ -62,11 +62,11 @@ $ sudo apt-get install sqlite sqlitebrowser -y
 建立Database
 </p>
 <pre>
-export DATABASE_URL="sqlite:test.db"
+$ export DATABASE_URL="sqlite:test.db"
 
 $ cd
 $ sqlx migrate add test
-$ vim vim migrations/xxx_test.sql
+$ vim migrations/xxx_test.sql
     -- Add migration script here
     CREATE TABLE account (
          name TEXT PRIMARY KEY,
@@ -80,38 +80,51 @@ $ sqlitebrowser test.db
 <p>
 <img src="sqlx/1.jpg" class="maxSize"><br><br>
 
-Rust
+產生樣板
 </p>
 <pre>
 $ cargo new hello
 $ cp test.db hello
 $ cd hello
-$ cat Cargo.toml 
-    [package]
-    name = "hello"
-    version = "0.1.0"
-    edition = "2021"
+</pre><br>
 
-    [dependencies]
-    sqlx = { version = "0.5.7", features = [ "runtime-tokio-rustls", "sqlite" ] }
-    tokio = { version = "1.12.0", features = ["full"] }
-    anyhow = "1.0"
-    futures = "0.3"
+<p>
+Cargo.toml
+</p>
+<pre>
+[package]
+name = "hello"
+version = "0.1.0"
+edition = "2021"
 
-$ cat src/main.rs 
-    use sqlx::sqlite::SqlitePool;
+[dependencies]
+sqlx = { version = "0.5.7", features = [ "runtime-tokio-rustls", "sqlite" ] }
+tokio = { version = "1.12.0", features = ["full"] }
+anyhow = "1.0"
+futures = "0.3"
+</pre><br>
 
-    #[tokio::main]
-    async fn main() -&gt; anyhow::Result&lt;()&gt; {
-        let pool = SqlitePool::connect("sqlite:test.db").await?;
-        
-        let user : &amp;str = "test";
-        let pass : &amp;str = "1234";
-        let _add = sqlx::query!(r#"insert into account(name, password) values($1, $2)"#, user, pass,).fetch_all(&amp;pool).await?;
-        Ok(())
-    }
+<p>
+src/main.rs
+</p>
+<pre class="brush:rust">
+use sqlx::sqlite::SqlitePool;
 
-$ cargo build
+#[tokio::main]
+async fn main() -&gt; anyhow::Result&lt;()&gt; {
+    let pool = SqlitePool::connect("sqlite:test.db").await?;
+    
+    let user : &amp;str = "test";
+    let pass : &amp;str = "1234";
+    let _add = sqlx::query!(r#"insert into account(name, password) values($1, $2)"#, user, pass).fetch_all(&amp;pool).await?;
+    Ok(())
+}
+</pre><br>
+
+<p>
+執行
+</p>
+<pre>
 $ cargo run
 $ sqlitebrowser test.db
 </pre>
