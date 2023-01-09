@@ -1,0 +1,140 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushRust.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Rust</h3>
+<p><b>PI - Monte Carlo (Parallelism)</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://github.com/quambene/rust-concurrency">rust-concurrency</a><br>
+2. <a href="https://www.soroushjp.com/2015/02/07/go-concurrency-is-not-parallelism-real-world-lessons-with-monte-carlo-simulations/">go-concurrency-is-not-parallelism-real-world-lessons-with-monte-carlo-simulations</a><br><br>
+
+產生樣板
+</p>
+<pre>
+$ cargo new hello
+$ cd hello
+</pre><br>
+
+<p>
+Cargo.toml
+</p>
+<pre>
+[package]
+name = "hello"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+rand = "0.8"
+</pre><br>
+
+<p>
+src/main.rs
+</p>
+<pre class="brush:rust">
+use rand::Rng;
+use std::thread;
+
+fn _pi(samples : u32) -&gt; f64 {
+    let mut inside : u32 = 0;
+    let mut rng = rand::thread_rng();
+
+    for _ in 0..samples {
+        let x : f64 = (rng.gen::&lt;u32&gt;() as f64) / f64::from(u32::MAX);
+        let y : f64 = (rng.gen::&lt;u32&gt;() as f64) / f64::from(u32::MAX);
+
+        if ((x * x) + (y * y)) &lt; 1.0 {
+            inside = inside + 1;
+        }
+    }
+
+    if inside &gt; 0 {
+        return (f64::from(inside) / f64::from(samples)) * 4.0;
+    }
+    return 0.0;
+}
+
+fn main() {
+    let mut handles = Vec::new();
+
+    for i in 2..=8 {
+        let s = u32::pow(10, i);
+        let handle = thread::spawn(move || {
+            println!("Our value of Pi after {} runs: {}", s, _pi(s));
+        });
+        handles.push(handle);
+    }
+
+    for handle in handles {
+        handle.join().unwrap();
+    }
+}
+</pre><br>
+
+<p>
+執行
+</p>
+<pre>
+$ cargo run
+    Our value of Pi after 1000 runs: 3.136
+    Our value of Pi after 100 runs: 2.88
+    Our value of Pi after 10000 runs: 3.1136
+    Our value of Pi after 100000 runs: 3.14588
+    Our value of Pi after 1000000 runs: 3.142252
+    Our value of Pi after 10000000 runs: 3.1424932
+    Our value of Pi after 100000000 runs: 3.1419658
+</pre><br>
+
+<p>
+<br><a href="../../program.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
