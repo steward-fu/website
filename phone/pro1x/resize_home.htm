@@ -1,0 +1,124 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>F(x)tec Pro1 X &gt;&gt; Sailfish</h3>
+<p><b>如何擴展home.img空間成256GB</b></p>
+<hr size="1">
+<p>
+參考資料：<br>
+1. <a href="https://community.fxtec.com/topic/3609-pro1x-with-sailfishos/page/4/">fxtec</a><br>
+2. <a href="https://github.com/sailfish-on-fxtecpro1/droid-config-halium-qx1050/issues/16">issue</a><br><br>
+
+home.img預設只有80GB，但是，司徒購買的Pro1 X是256GB，因此，找了一下網路資料，發現可以使用如下方式擴展到最大空間：
+</p>
+<pre>
+$ mkdir /tmp/test
+$ sudo mount -o rw /dev/block/sda13 /tmp/test/
+$ devel-su
+# cd /tmp/test
+# rm ./halium-rootfs/etc/sailfish-device-encryption-community/config.ini
+# vim ./halium-rootfs/etc/sailfish-device-encryption-community/devices.ini
+    size_mb=204800
+
+# rm ./halium-rootfs/home.img
+# exit
+$ cd
+$ sudo umount /tmp/test
+$ sudo reboot
+</pre><br>
+
+<p>
+重新開機後
+</p>
+<pre>
+[defaultuser@Pro1-X ~]$ df -h
+Filesystem                Size      Used Available Use% Mounted on
+udev                      2.7G      1.1M      2.7G   0% /dev
+tmpfs                   768.2M     11.1M    757.0M   1% /run
+/dev/sda13              221.3G     14.4G    196.9G   7% /userdata
+/dev/sda13              221.3G     14.4G    196.9G   7% /
+/dev/loop0              447.7M    447.6M         0 100% /var/lib/lxc/android/rootfs
+/dev/loop0              447.7M    447.6M         0 100% /android/system
+/dev/loop0              447.7M    447.6M         0 100% /android
+/dev/sda13              221.3G     14.4G    196.9G   7% /android/data
+/dev/sda13              221.3G     14.4G    196.9G   7% /android/cache
+tmpfs                     3.8G         0      3.8G   0% /dev/shm
+tmpfs                     3.8G         0      3.8G   0% /sys/fs/cgroup
+/dev/mapper/vendor_a    550.8M    549.1M         0 100% /android/vendor
+tmpfs                     3.8G         0      3.8G   0% /mnt
+tmpfs                     3.8G         0      3.8G   0% /android/apex
+/dev/loop0              447.7M    447.6M         0 100% /android/apex/com.android.runtime
+/dev/loop0              447.7M    447.6M         0 100% /android/apex/com.android.art
+/dev/mapper/system_ext_a
+                        304.4M    303.4M         0 100% /system_ext
+/dev/sda11               11.5M    200.0K     10.8M   2% /metadata
+tmpfs                     3.8G      4.0K      3.8G   0% /tmp
+/dev/sda2                27.0M      1.3M     24.8M   5% /mnt/vendor/persist
+/dev/sde4               179.9M    105.6M     74.3M  59% /android/vendor/firmware_mnt
+/dev/sde9                27.5M     13.9M     13.0M  52% /android/vendor/dsp
+/dev/sde5                64.0M    928.0K     63.0M   1% /android/vendor/bt_firmware
+/dev/sda13              221.3G     14.4G    196.9G   7% /android/vendor/etc/init/hw/init.qcom.usb.rc
+/dev/sda13              221.3G     14.4G    196.9G   7% /android/vendor/etc/init/hw/init.qcom.rc
+/dev/sda13              221.3G     14.4G    196.9G   7% /android/vendor/lib64/libqti-perfd-client.so
+/dev/sda13              221.3G     14.4G    196.9G   7% /android/vendor/bin/vndservicemanager
+udev                      2.7G      1.1M      2.7G   0% /android/vendor/etc/init/init.time_daemon.rc
+/dev/mapper/home_encrypted
+                        195.8G    239.6M    193.6G   0% /home
+tmpfs                   768.2M    392.0K    767.8M   0% /run/user/100000
+/dev/mmcblk0p1          234.6G      7.0G    225.3G   3% /run/media/defaultuser/571057d1-4612-4058-81ab-bb391872c948
+tmpfs                   768.2M     11.1M    757.0M   1% /run/firejail/dbus
+</pre><br>
+
+<p>
+<br><a href="../../phone.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
