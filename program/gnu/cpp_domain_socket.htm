@@ -51,37 +51,37 @@
 參考資訊：<br>
 1. <a href="https://troydhanson.github.io/network/Unix_domain_sockets.html">unix_domain_sockets</a><br><br>
 
-domain socket不需要使用port且透過filesystem機制傳輸<br><br>
+domain socket不需要使用port且是透過filesystem機制做傳輸<br><br>
 
 server.c
 </p>
 <pre class="brush:cpp">
 #include &lt;stdio.h&gt;
-#include &lt;unistd.h&gt;
+#include &lt;stdlib.h&gt;
 #include &lt;sys/socket.h&gt;
 #include &lt;sys/un.h&gt;
-#include &lt;stdlib.h&gt;
+#include &lt;unistd.h&gt;
 
 int main(int argc, char *argv[])
 {
-  int fd=-1, cl=0;
-  char buf[255]={0};
-  struct sockaddr_un addr={0};
-  const char *path = "./domain_socket";
+    int fd = -1, cl = 0;
+    char buf[255] = {0};
+    struct sockaddr_un addr = {0};
+    const char *path = "./domain_socket";
 
-  unlink(path);
-  fd = socket(AF_UNIX, SOCK_STREAM, 0);
-  addr.sun_family = AF_UNIX;
-  strcpy(addr.sun_path, path);
-  bind(fd, (struct sockaddr*)&amp;addr, sizeof(addr));
-  listen(fd, 5);
+    unlink(path);
+    fd = socket(AF_UNIX, SOCK_STREAM, 0);
+    addr.sun_family = AF_UNIX;
+    strcpy(addr.sun_path, path);
+    bind(fd, (struct sockaddr *)&amp;addr, sizeof(addr));
+    listen(fd, 5);
 
-  cl = accept(fd, NULL, NULL);
-  while(read(cl, buf, sizeof(buf))){
-    printf("read: \"%s\"\n", buf);
-  }
-  close(cl);
-  return 0;
+    cl = accept(fd, NULL, NULL);
+    while (read(cl, buf, sizeof(buf))) {
+        printf("read: \"%s\"\n", buf);
+    }
+    close(cl);
+    return 0;
 }
 </pre><br>
 
@@ -89,25 +89,25 @@ int main(int argc, char *argv[])
 client.c
 </p>
 <pre class="brush:cpp">
-#include &lt;sys/socket.h&gt;
-#include &lt;sys/un.h&gt;
 #include &lt;stdio.h&gt;
 #include &lt;stdlib.h&gt;
+#include &lt;sys/socket.h&gt;
+#include &lt;sys/un.h&gt;
 #include &lt;unistd.h&gt;
 
 int main(int argc, char *argv[])
 {
-  int fd=-1;
-  char buf[255]={"I am error !"};
-  struct sockaddr_un addr={0};
+    int fd = -1;
+    char buf[255] = {"I am error !"};
+    struct sockaddr_un addr = {0};
 
-  fd = socket(AF_UNIX, SOCK_STREAM, 0);
-  addr.sun_family = AF_UNIX;
-  strcpy(addr.sun_path, "./domain_socket");
-  connect(fd, (struct sockaddr*)&amp;addr, sizeof(addr));
-  write(fd, buf, strlen(buf));
-  close(fd);
-  return 0;
+    fd = socket(AF_UNIX, SOCK_STREAM, 0);
+    addr.sun_family = AF_UNIX;
+    strcpy(addr.sun_path, "./domain_socket");
+    connect(fd, (struct sockaddr *)&amp;addr, sizeof(addr));
+    write(fd, buf, strlen(buf));
+    close(fd);
+    return 0;
 }
 </pre><br>
 
@@ -118,13 +118,13 @@ int main(int argc, char *argv[])
 $ gcc server.c -o server
 $ gcc client.c -o client
 
-$ ./server&
+$ ./server&amp;
 
 $ ls -al ./domain_socket
-  srwxr-xr-x 1 steward steward 0 Dec  1 01:21 domain_socket
+    srwxr-xr-x 1 steward steward 0 Dec  1 01:21 domain_socket
 
 $ ./client
-  read: "I am error !"
+    read: "I am error !"
 </pre>
 
 <p>
