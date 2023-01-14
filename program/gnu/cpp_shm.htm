@@ -51,51 +51,51 @@
 參考資訊：<br>
 1. <a href="https://stackoverflow.com/questions/26500476/shmget-for-ipc-in-linux">shmget-for-ipc-in-linux</a><br><br>
 
-s.c
+server.c
 </p>
 <pre class="brush:cpp">
 #include &lt;stdio.h&gt;
 #include &lt;stdlib.h&gt;
 #include &lt;string.h&gt;
-#include &lt;unistd.h&gt;
 #include &lt;sys/shm.h&gt;
 #include &lt;sys/time.h&gt;
+#include &lt;unistd.h&gt;
 
 int main(int argc, char **argv)
 {
-  int id=0;
-  char *p=NULL;
+    int id = 0;
+    char *p = NULL;
 
-  id = shmget(9999, 1024, IPC_CREAT | 0666);
-  p = shmat(id, NULL, 0);
-  strcpy(p, "ipc test\n");
-  usleep(1000000);
-  shmdt(p);
-  printf("s:%d\n", shmctl(id, IPC_RMID, 0));
-  return 0;
+    id = shmget(9999, 1024, IPC_CREAT | 0666);
+    p = shmat(id, NULL, 0);
+    strcpy(p, "ipc test\n");
+    usleep(1000000);
+    shmdt(p);
+    printf("server:%d\n", shmctl(id, IPC_RMID, 0));
+    return 0;
 }
 </pre><br>
 
 <p>
-c.c
+client.c
 </p>
 <pre class="brush:cpp">
 #include &lt;stdio.h&gt;
 #include &lt;sys/shm.h&gt;
 
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
-  int id=0;
-  char *p=NULL;
-  
-  id = shmget(9999, 1024, IPC_CREAT | 0666);
-  p = shmat(id, NULL, 0);
-  for(p; *p; p++){
-    printf("%c", *p);
-  }
-  shmdt(p);
-  printf("c:%d\n", shmctl(id, IPC_RMID, 0));
-  return 0;
+    int id = 0;
+    char *p = NULL;
+
+    id = shmget(9999, 1024, IPC_CREAT | 0666);
+    p = shmat(id, NULL, 0);
+    for (p; *p; p++) {
+        printf("%c", *p);
+    }
+    shmdt(p);
+    printf("client:%d\n", shmctl(id, IPC_RMID, 0));
+    return 0;
 }
 </pre><br>
 
@@ -103,13 +103,11 @@ int main(int argc, char** argv)
 編譯、執行
 </p>
 <pre>
-$ gcc s.c -o s
-$ gcc c.c -o c
-$ ./s&
-$ ./c
-  ipc test
-  c:0
-  s:-1
+$ gcc server.c -o server
+$ ./server &amp; ./client 
+    [1] 1729
+    client:0
+    server:0
 </pre><br>
 
 <p>

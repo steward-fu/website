@@ -51,81 +51,79 @@
 main.c
 </p>
 <pre class="brush:cpp">
-#include &lt;linux/types.h&gt;
-#include &lt;linux/input.h&gt;
-#include &lt;linux/hidraw.h&gt;
-#include &lt;sys/ioctl.h&gt;
-#include &lt;sys/types.h&gt;
-#include &lt;sys/stat.h&gt;
-#include &lt;fcntl.h&gt;
-#include &lt;unistd.h&gt;
-#include &lt;stdio.h&gt;
-#include &lt;string.h&gt;
-#include &lt;stdlib.h&gt;
 #include &lt;stdint.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
 #include &lt;errno.h&gt;
 #include &lt;time.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;sys/ioctl.h&gt;
+#include &lt;sys/stat.h&gt;
 #include &lt;sys/time.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;linux/hidraw.h&gt;
+#include &lt;linux/input.h&gt;
+#include &lt;linux/types.h&gt;
 
 static uint32_t get_ticks(void)
 {
-  struct timeval tv={0};
-  static struct timeval init_tv={0};
+    struct timeval tv = {0};
+    static struct timeval init_tv = {0};
 
-  gettimeofday(&amp;tv, 0);
-  if(init_tv.tv_sec == 0){
-    init_tv = tv;
-  }
-  return ((tv.tv_sec - init_tv.tv_sec) * 1000000) + tv.tv_usec - init_tv.tv_usec;
+    gettimeofday(&amp;tv, 0);
+    if (init_tv.tv_sec == 0) {
+        init_tv = tv;
+    }
+    return ((tv.tv_sec - init_tv.tv_sec) * 1000000) + tv.tv_usec -
+           init_tv.tv_usec;
 }
 
 int main(int argc, char **argv)
 {
-  uint8_t buf[255]={0};
-  struct hidraw_devinfo info={0};
-  int fd=-1, x=0, r=0, desc_size=0;
-  struct hidraw_report_descriptor rpt_desc={0};
- 
-  fd = open("/dev/hidraw3", O_RDWR);
-  if(fd &lt; 0){
-    printf("failed to open device\n");
-    return -1;
-  }
- 
-  ioctl(fd, HIDIOCGRDESCSIZE, &amp;desc_size);
-  rpt_desc.size = desc_size;
-  ioctl(fd, HIDIOCGRDESC, &amp;rpt_desc);
-  ioctl(fd, HIDIOCGRAWNAME(sizeof(buf)), buf);
-  ioctl(fd, HIDIOCGRAWPHYS(sizeof(buf)), buf);
-  ioctl(fd, HIDIOCGRAWINFO, &amp;info);
- 
-  buf[0] = 0x9;
-  buf[1] = 0xff;
-  buf[2] = 0xff;
-  buf[3] = 0xff;
-  ioctl(fd, HIDIOCSFEATURE(4), buf);
- 
-  buf[0] = 0x9;
-  ioctl(fd, HIDIOCGFEATURE(sizeof(buf)), buf);
+    uint8_t buf[255] = {0};
+    struct hidraw_devinfo info = {0};
+    int fd = -1, x = 0, r = 0, desc_size = 0;
+    struct hidraw_report_descriptor rpt_desc = {0};
 
-  get_ticks();
-  for(x=0; x&lt;1000; x++){
-    r = read(fd, buf, 64);
-    if(r == 64){
-      for(int x=0; x&lt;64; x++){
-        printf("%04d, ", (uint8_t)buf[x]);
-      }
-      printf("\n");
+    fd = open("/dev/hidraw3", O_RDWR);
+    if (fd &lt; 0) {
+        printf("failed to open device\n");
+        return -1;
     }
-  }
-  printf("elapsed time: %dus\n", get_ticks());
-  close(fd);
-  return 0;
+
+    ioctl(fd, HIDIOCGRDESCSIZE, &amp;desc_size);
+    rpt_desc.size = desc_size;
+    ioctl(fd, HIDIOCGRDESC, &amp;rpt_desc);
+    ioctl(fd, HIDIOCGRAWNAME(sizeof(buf)), buf);
+    ioctl(fd, HIDIOCGRAWPHYS(sizeof(buf)), buf);
+    ioctl(fd, HIDIOCGRAWINFO, &amp;info);
+
+    buf[0] = 0x9;
+    buf[1] = 0xff;
+    buf[2] = 0xff;
+    buf[3] = 0xff;
+    ioctl(fd, HIDIOCSFEATURE(4), buf);
+
+    buf[0] = 0x9;
+    ioctl(fd, HIDIOCGFEATURE(sizeof(buf)), buf);
+
+    get_ticks();
+    for (x = 0; x &lt; 1000; x++) {
+        r = read(fd, buf, 64);
+        if (r == 64) {
+            for (int x = 0; x &lt; 64; x++) {
+                printf("%04d, ", (uint8_t)buf[x]);
+            }
+            printf("\n");
+        }
+    }
+    printf("elapsed time: %dus\n", get_ticks());
+    close(fd);
+    return 0;
 }
-</pre>
-<p>
-P.S. <b>/dev/hidraw3</b>會因為環境而不同
-</p>
+</pre><br>
 
 <p>
 <br><a href="../../program.htm">返回上一頁</a>

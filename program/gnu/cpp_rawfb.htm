@@ -54,63 +54,37 @@
 main.c
 </p>
 <pre class="brush:cpp">
-#include &lt;stdint.h&gt;
-#include &lt;stdlib.h&gt;
-#include &lt;unistd.h&gt;
-#include &lt;stdio.h&gt;
 #include &lt;fcntl.h&gt;
 #include &lt;linux/fb.h&gt;
-#include &lt;sys/mman.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
 #include &lt;sys/ioctl.h&gt;
+#include &lt;sys/mman.h&gt;
+#include &lt;unistd.h&gt;
 
-#define DBG printf
-
-int flip_screen(void)
+int main(int argc, char **argv)
 {
-  int fbfd=0;
-  int x=0, y=0;
-  uint16_t* fbp=0;
-  uint32_t size=0;
-  struct fb_var_screeninfo vinfo={0};
-  struct fb_fix_screeninfo finfo={0};
+    int fd = 0;
+    int x = 0, y = 0;
+    uint16_t *fbp = 0;
+    uint32_t size = 0;
+    struct fb_var_screeninfo vinfo = {0};
+    struct fb_fix_screeninfo finfo = {0};
 
-  fbfd = open("/dev/fb0", O_RDWR);
-  if(fbfd == -1){
-    DBG("failed to open framebuffer\n");
-    return -1;
-  }
-
-  if(ioctl(fbfd, FBIOGET_FSCREENINFO, &amp;finfo) == -1){
-    DBG("failed to read fb fscreen information\n");
-    return -1;
-  }
-
-  if(ioctl(fbfd, FBIOGET_VSCREENINFO, &amp;vinfo) == -1) {
-    DBG("failed to read fb vscreen information\n");
-    return -1;
-  }
-
-  size = vinfo.xres * vinfo.yres * vinfo.bits_per_pixel / 8;
-  fbp = (uint16_t*)mmap(0, size, PROT_READ | PROT_WRITE, MAP_SHARED, fbfd, 0);
-  if(fbp == NULL){
-    DBG("failed map framebuffer memory\n");
-    return -1;
-  }
-  DBG("%dx%d %dbpp\n", vinfo.xres, vinfo.yres, vinfo.bits_per_pixel);
-
-  for(y=0; y&lt;240; y++){
-    for(x=0; x&lt;320; x++){
-      *fbp++ = 0xf800;
+    fd = open("/dev/fb0", O_RDWR);
+    ioctl(fd, FBIOGET_FSCREENINFO, &amp;finfo);
+    ioctl(fd, FBIOGET_VSCREENINFO, &amp;vinfo);
+    size = vinfo.xres * vinfo.yres * vinfo.bits_per_pixel / 8;
+    fbp = (uint16_t*)mmap(0, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    for (y = 0; y &lt; 240; y++) {
+        for (x = 0; x &lt; 320; x++) {
+            *fbp++ = 0xf800;
+        }
     }
-  }
-  munmap(fbp, size);
-  close(fbfd);
-  return 0;
-}
-
-int main(int argc, char** argv)
-{
-  return flip_screen();
+    munmap(fbp, size);
+    close(fd);
+    return 0;
 }
 </pre><br>
 
