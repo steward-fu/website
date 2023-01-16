@@ -51,49 +51,49 @@
 main.s
 </p>
 <pre class="brush:asm">
-  .macro invoke func:req, args:vararg
-    .ifnb \args
-      argc = 0
-      .irp param, \args
-        argc = argc + 1
-      .endr
-      argrc = argc
-      .rept argc
-        argrc = argrc - 1
-        argc = 0
-        .irp param, \args
-          .if argrc == argc
-            .if argrc == 0
-              mov r0, \param
-            .elseif argrc == 1
-              mov r1, \param
-            .elseif argrc == 2
-              mov r2, \param
-            .elseif argrc == 3
-              mov r3, \param
-            .else
-              mov r4, \param
-              push {r4}
-            .endif
-          .endif
-          argc = argc + 1
-        .endr
-      .endr
-    .endif
-    bl \func
-  .endm
+    .macro invoke func:req, args:vararg
+        .ifnb \args
+            argc = 0
+            .irp param, \args
+                argc = argc + 1
+            .endr
+            argrc = argc
+            .rept argc
+                argrc = argrc - 1
+                argc = 0
+                .irp param, \args
+                    .if argrc == argc
+                        .if argrc == 0
+                            mov r0, \param
+                        .elseif argrc == 1
+                            mov r1, \param
+                        .elseif argrc == 2
+                            mov r2, \param
+                        .elseif argrc == 3
+                            mov r3, \param
+                        .else
+                            mov r4, \param
+                            push {r4}
+                        .endif
+                    .endif
+                    argc = argc + 1
+                .endr
+            .endr
+        .endif
+        bl \func
+    .endm
 
-  .equ SDL_INIT_VIDEO,  0x20
-  .equ SDL_HWSURFACE,   0X01
+    .equ SDL_INIT_VIDEO, 0x20
+    .equ SDL_HWSURFACE,  0X01
 
-  .global main
+    .global main
   
-  .text
+    .text
 main:
-  invoke SDL_Init, $SDL_INIT_VIDEO
-  invoke SDL_SetVideoMode, $320, $240, $32, $SDL_HWSURFACE
-  invoke SDL_Quit
-  ret
+    invoke SDL_Init, $SDL_INIT_VIDEO
+    invoke SDL_SetVideoMode, $320, $240, $32, $SDL_HWSURFACE
+    invoke SDL_Quit
+    ret
 </pre><br>
 
 <p>

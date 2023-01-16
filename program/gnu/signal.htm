@@ -51,7 +51,7 @@
 如下：
 </p>
 <table>
-  <tr><th>Number</th><th>Signal Name</th><th>Function</th></tr>
+  <tr><th>Number</th><th>Name</th><th>Function</th></tr>
   <tr><td>1</td><td>SIGHUP</td><td>Hangup detected on controlling terminal or death of controlling process</td></tr>
   <tr><td>2</td><td>SIGINT</td><td>Interrupt from keyboard (Ctrl+c)</td></tr>
   <tr><td>3</td><td>SIGQUIT</td><td>Quit from keyboard</td></tr>
@@ -94,22 +94,23 @@ main.c
 #include &lt;signal.h&gt;
 #include &lt;stdio.h&gt;
 
-int exit_loop = 0;
+volatile int exit_loop = 0;
+
 void callback(int sig)
 {
-  printf("User break\n");
-  signal(SIGINT, SIG_DFL);
-  exit_loop = 1;
+    printf("User break\n");
+    signal(SIGINT, SIG_DFL);
+    exit_loop = 1;
 }
 
-int main(int argc, char* argv[])
+int main(int argc, char *argv[])
 {
-  signal(SIGINT, callback);
+    signal(SIGINT, callback);
 
-  printf("wait user break...\n");
-  while(exit_loop == 0);
-  printf("exit program\n");
-  return 0;
+    printf("wait user break...\n");
+    while (exit_loop == 0);
+    printf("exit program\n");
+    return 0;
 }
 </pre><br>
 
@@ -118,7 +119,10 @@ int main(int argc, char* argv[])
 </p>
 <pre>
 $ gcc main.c -o main
-$ ./main
+$ ./main 
+    wait user break...
+    ^C User break
+    exit program
 </pre><br>
 
 <p>

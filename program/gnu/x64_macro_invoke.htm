@@ -51,42 +51,42 @@
 main.s
 </p>
 <pre class="brush:asm">
-  .macro invoke func:req, args:vararg
-    .ifnb \args
-      argc = 0
-      .irp param, \args
-        .if argc == 0
-          mov \param, %rdi
-        .elseif argc == 1
-          mov \param, %rsi
-        .elseif argc == 2
-          mov \param, %rdx
-        .elseif argc == 3
-          mov \param, %rcx
-        .elseif argc == 4
-          mov \param, %r8
-        .elseif argc == 5
-          mov \param, %r9
-        .else
-          push \prarm
+    .macro invoke func:req, args:vararg
+        .ifnb \args
+            argc = 0
+            .irp param, \args
+                .if argc == 0
+                    mov \param, %rdi
+                .elseif argc == 1
+                    mov \param, %rsi
+                .elseif argc == 2
+                    mov \param, %rdx
+                .elseif argc == 3
+                    mov \param, %rcx
+                .elseif argc == 4
+                    mov \param, %r8
+                .elseif argc == 5
+                    mov \param, %r9
+                .else
+                    push \prarm
+                .endif
+                argc = argc + 1
+            .endr
         .endif
-        argc = argc + 1
-      .endr
-    .endif
-    call \func
-  .endm
+        call \func
+    .endm
 
-  .equ SDL_INIT_VIDEO,  0x20
-  .equ SDL_HWSURFACE,   0X01
+    .equ SDL_INIT_VIDEO, 0x20
+    .equ SDL_HWSURFACE,  0X01
 
-  .global main
+    .global main
 
-  .text
+    .text
 main:
-  invoke SDL_Init, $SDL_INIT_VIDEO
-  invoke SDL_SetVideoMode, $320, $240, $32, $SDL_HWSURFACE
-  invoke SDL_Quit
-  ret
+    invoke SDL_Init, $SDL_INIT_VIDEO
+    invoke SDL_SetVideoMode, $320, $240, $32, $SDL_HWSURFACE
+    invoke SDL_Quit
+    ret
 </pre><br>
 
 <p>
