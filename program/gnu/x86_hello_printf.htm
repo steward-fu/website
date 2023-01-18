@@ -44,8 +44,8 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>GNU &gt;&gt; Assembly (x64)</h3>
-<p><b>hello, world! (int 0x80)</b></p>
+<h3>GNU &gt;&gt; Assembly (x86)</h3>
+<p><b>hello, world! (printf)</b></p>
 <hr size="1">
 <p>
 參考資訊：<br>
@@ -54,36 +54,31 @@
 main.s
 </p>
 <pre class="brush:asm">
-    .global _start
-    
+    .global main
+    .extern printf
+ 
     .data
-msg: .ascii "hello, world!\n"
-len = . - msg
+msg: .asciz "hello, world!\n"
  
     .text
-_start:
-    mov $1, %rax
-    mov $1, %rbx
-    mov $msg, %rcx
-    mov $len, %rdx
-    int $0x80
+main:
+    push %ebp
+    mov %esp, %ebp
+   
+    push $msg
+    call printf 
+    xor %eax, %eax
 
-    mov $60, %rax
-    mov $0, %rbx
-    int $0x80
+    mov %ebp, %esp
+    pop %ebp
+    ret
 </pre><br>
-
-<table>
-<tr><th>NR</th><th>syscall name</th><th>rax</th><th>arg0(rdi)</th><th>arg1(rsi)</th><th>arg2(rdx)</th></tr>
-<tr><td>1</td><td>write</td><td>1</td><td>unsigned int fd</td><td>const char *buf</td><td>size_t count</td></tr>
-<tr><td>60</td><td>exit</td><td>60</td><td>int error_code</td><td></td><td></td></tr>
-</table><br>
 
 <p>
 編譯、執行
 </p>
 <pre>
-$ gcc main.s -o main.o -nostdlib
+$ gcc main.o -o main
 $ ./main
     hello, world!
 </pre><br>

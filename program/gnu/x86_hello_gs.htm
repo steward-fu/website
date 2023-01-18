@@ -44,60 +44,53 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>GNU &gt;&gt; Assembly (ARM)</h3>
-<p><b>invoke</b></p>
+<h3>GNU &gt;&gt; Assembly (x86)</h3>
+<p><b>hello, world! (gs)</b></p>
 <hr size="1">
 <p>
+參考資訊：<br>
+1. <a href="https://chromium.googlesource.com/chromiumos/docs/+/master/constants/syscalls.md#arm-32_bit_EABI">syscall</a><br>
+2. <a href="https://reverseengineering.stackexchange.com/questions/2869/how-to-use-sysenter-under-linux">how-to-use-sysenter-under-linux</a><br><br>
+
 main.s
 </p>
 <pre class="brush:asm">
-    .macro invoke func:req, args:vararg
-        .ifnb \args
-            argc = 0
-            .irp param, \args
-                argc = argc + 1
-            .endr
-            argrc = argc
-            .rept argc
-                argrc = argrc - 1
-                argc = 0
-                .irp param, \args
-                    .if argrc == argc
-                        .if argrc == 0
-                            mov r0, \param
-                        .elseif argrc == 1
-                            mov r1, \param
-                        .elseif argrc == 2
-                            mov r2, \param
-                        .elseif argrc == 3
-                            mov r3, \param
-                        .else
-                            mov r4, \param
-                            push {r4}
-                        .endif
-                    .endif
-                    argc = argc + 1
-                .endr
-            .endr
-        .endif
-        bl \func
-    .endm
-
-    .equ SDL_INIT_VIDEO, 0x20
-    .equ SDL_HWSURFACE,  0X01
-
     .global main
-  
+ 
+    .data
+msg: .ascii "hello, world!\n"
+len = . - msg
+ 
     .text
 main:
-    invoke SDL_Init, $SDL_INIT_VIDEO
-    invoke SDL_SetVideoMode, $320, $240, $32, $SDL_HWSURFACE
-    invoke SDL_Quit
-    ret
+    mov $4, %eax
+    mov $1, %ebx
+    mov $msg, %ecx
+    mov $len, %edx
+    call *%gs:0x10
+   
+    mov $1, %eax
+    mov $0, %ebx
+    call *%gs:0x10
+</pre><br>
+
+<table>
+<tr><th>NR</th><th>syscall name</th><th>r7</th><th>arg0(r0)</th><th>arg1(r1)</th><th>arg2(r2)</th></tr>
+<tr><td>1</td><td>exit</td><td>1</td><td>int error_code</td><td></td><td></td></tr>
+<tr><td>4</td><td>write</td><td>4</td><td>unsigned int fd</td><td>const char *buf</td><td>size_t count</td></tr>
+</table><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ gcc main.s -o main
+$ ./main
+    hello, world!
 </pre><br>
 
 <p>
-<br><a href="../../system.htm">返回上一頁</a>
+<br><a href="../../program.htm">返回上一頁</a>
 </p>
 
 </div>
