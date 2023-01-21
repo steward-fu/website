@@ -44,49 +44,42 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>GNU &gt;&gt; Assembly (ARM 64)</h3>
-<p><b>hello, world! (svc)</b></p>
+<h3>GNU &gt;&gt; Assembly (RISC-V 64)</h3>
+<p><b>hello, world! (printf)</b></p>
 <hr size="1">
 <p>
 參考資訊：<br>
-1. <a href="https://github.com/matja/asm-examples/blob/master/aarch64/hello.aarch64.linux.syscall.gas.asm">hello</a><br>
-2. <a href="https://chromium.googlesource.com/chromiumos/docs/+/HEAD/constants/syscalls.md">syscall</a><br><br>
-
+1. <a href="https://chromium.googlesource.com/chromiumos/docs/+/HEAD/constants/syscalls.md">syscall</a><br>
+2. <a href="https://teaching.basilico.di.unimi.it/lib/exe/fetch.php/pub/debian-mips-tutorial.pdf">debian-mips-tutorial</a><br><br>
 
 main.s
 </p>
 <pre class="brush:asm">
-    .global _start
-
+    .global main
+    .extern printf
+ 
     .data
 msg: .asciz "hello, world!\n"
-len = . - msg
-
+ 
     .text
-_start:
-    mov x8, #64
-    mov x0, #1
-    ldr x1, =msg
-    ldr x2, =len
-    svc #0
-
-    mov x8, #93
-    mov x0, #0
-    svc #0
+main:
+    add sp, sp, -4
+    sw ra, 0(sp)
+ 
+    la a0, msg
+    jal printf
+ 
+    lw ra, 0(sp)
+    add sp, sp, 4
+    jr ra
 </pre><br>
-
-<table>
-<tr><th>NR</th><th>syscall name</th><th>x8</th><th>arg0(x0)</th><th>arg1(x1)</th><th>arg2(x2)</th></tr>
-<tr><td>64</td><td>write</td><td>4</td><td>unsigned int fd</td><td>const char *buf</td><td>size_t count</td></tr>
-<tr><td>93</td><td>exit</td><td>1</td><td>int error_code</td><td></td><td></td></tr>
-</table><br>
 
 <p>
 編譯、執行
 </p> 
 <pre>
-$ aarch64-linux-gnu-gcc main.s -o main -nostdlib -static
-$ qemu-aarch64 ./main
+$ riscv64-linux-gnu-gcc main.s -o main -static
+$ qemu-riscv64 ./main
     hello, world!
 </pre><br>
 
