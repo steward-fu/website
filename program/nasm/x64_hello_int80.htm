@@ -44,40 +44,49 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>NASM &gt;&gt; Assembly (x64)</h3>
+<h3>Netwide Assembler (NASM) &gt;&gt; Assembly (x64)</h3>
 <p><b>hello, world! (int 0x80)</b></p>
 <hr size="1">
 <p>
+參考資訊：<br>
+1. <a href="https://chromium.googlesource.com/chromiumos/docs/+/HEAD/constants/syscalls.md">syscall</a><br><br>
+
 main.s
 </p>
 <pre class="brush:asm">
-  global _start
-  
-  section .text
-_start:
-  mov rdx, msg_len
-  mov rcx, msg
-  mov rbx, 1
-  mov rax, 4
-  int 0x80
-    
-  mov rbx, 0
-  mov rax, 1
-  int 0x80
-  
-  section .data
+    global _start
+
+    section .data
 msg: db "hello, world!", 10
-msg_len: equ $ - msg
+len: equ $ - msg
+
+    section .text
+_start:
+    mov rax, 1
+    mov rbx, 1
+    mov rcx, msg
+    mov rdx, len
+    int 0x80
+     
+    mov rax, 60
+    mov rbx, 0
+    int 0x80
 </pre><br>
+
+<table>
+<tr><th>NR</th><th>syscall name</th><th>rax</th><th>arg0(rbx)</th><th>arg1(rcx)</th><th>arg2(rdx)</th></tr>
+<tr><td>1</td><td>write</td><td>1</td><td>unsigned int fd</td><td>const char *buf</td><td>size_t count</td></tr>
+<tr><td>60</td><td>exit</td><td>60</td><td>int error_code</td><td></td><td></td></tr>
+</table><br>
 
 <p>
 編譯、執行
 </p>
 <pre>
-$ nasm -felf64 main.s
-$ ld main.o -o main
-$ ./main 
-  hello, world!
+$ nasm -f elf64 main.s
+$ x86_64-linux-gnu-gcc main.o -o main -nostdlib -static
+$ qemu-x86_64 ./main
+    hello, world!
 </pre><br>
 
 <p>

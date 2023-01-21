@@ -29,7 +29,7 @@
   <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
   
   <script type="text/javascript" src="../../scripts/shCore.js"></script>
-  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
 
   <!-- Conditional comment to apply opacity fix for IE #content background.
        Invalid CSS, but can be removed without harming design -->
@@ -44,15 +44,44 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>NASM</h3>
-<p><b>如何使用ld連結printf</b></p>
+<h3>Netwide Assembler (NASM) &gt;&gt; Assembly (x64)</h3>
+<p><b>hello, world! (printf)</b></p>
 <hr size="1">
 <p>
-步驟如下：
+參考資訊：<br>
+1. <a href="https://chromium.googlesource.com/chromiumos/docs/+/HEAD/constants/syscalls.md">syscall</a><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    global main
+    extern printf
+  
+    section .data
+msg: db "hello, world!", 10, 0
+  
+    section .text
+main:
+    push rbp
+    mov rbp, rsp
+    
+    mov rdi, msg
+    call printf
+    xor rdi, rdi
+ 
+    mov rsp, rbp
+    pop rbp
+    ret
+</pre><br>
+
+<p>
+編譯、執行
 </p>
 <pre>
-$ nasm -felf32 main.s -o main.o
-$ ld -melf_i386 main.o -o main -static --start-group libc.a libgcc.a libgcc_eh.a --end-group
+$ nasm -f elf64 main.s
+$ x86_64-linux-gnu-gcc main.o -o main -static
+$ qemu-x86_64 ./main
+    hello, world!
 </pre><br>
 
 <p>
