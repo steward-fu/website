@@ -29,7 +29,7 @@
   <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
   
   <script type="text/javascript" src="../../scripts/shCore.js"></script>
-  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
 
   <!-- Conditional comment to apply opacity fix for IE #content background.
        Invalid CSS, but can be removed without harming design -->
@@ -44,18 +44,68 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>Netwide Assembler (NASM) &gt;&gt; Assembly (x86)</h3>
-<p><b>安装環境</b></p>
+<h3>Yasm &gt;&gt; Assembly (x86)</h3>
+<p><b>hello, world! (sysenter)</b></p>
 <hr size="1">
 <p>
 參考資訊：<br>
-1. <a href="https://www.nasm.us/">nasm</a><br><br>
+1. <a href="https://chromium.googlesource.com/chromiumos/docs/+/HEAD/constants/syscalls.md">syscall</a><br>
+2. <a href="https://reverseengineering.stackexchange.com/questions/2869/how-to-use-sysenter-under-linux">how-to-use-sysenter-under-linux</a><br><br>
 
-步驟如下：
+main.s
+</p>
+<pre class="brush:asm">
+    global _start
+   
+    section .data
+msg: db 'hello, world!', 10
+len: equ $ - msg
+   
+    section .text
+_start:
+    push ebp
+    mov ebp, esp
+
+    mov eax, 4
+    mov ebx, 1
+    mov ecx, msg
+    mov edx, len
+    push ret
+    push ecx
+    push edx
+    push ebp
+    mov ebp, esp
+    sysenter
+ 
+ret:
+    mov eax, 1
+    mov ebx, 0
+    push ret
+    push ecx
+    push edx
+    push ebp
+    mov ebp, esp
+    sysenter
+</pre><br>
+
+<table>
+<tr><th>NR</th><th>syscall name</th><th>eax</th><th>arg0(ebx)</th><th>arg1(ecx)</th><th>arg2(edx)</th></tr>
+<tr><td>1</td><td>exit</td><td>1</td><td>int error_code</td><td></td><td></td></tr>
+<tr><td>4</td><td>write</td><td>4</td><td>unsigned int fd</td><td>const char *buf</td><td>size_t count</td></tr>
+</table><br>
+
+<p>
+編譯、執行
 </p>
 <pre>
-$ sudo apt-get install nasm -y
-</pre><br>
+$ yasm -f elf32 main.s
+$ gcc -m32 main.o -o main -nostdlib
+$ ./main 
+    hello, world!
+</pre>
+<p>
+P.S. 於Debian x64環境測試
+</p>
 
 <p>
 <br><a href="../../program.htm">返回上一頁</a>

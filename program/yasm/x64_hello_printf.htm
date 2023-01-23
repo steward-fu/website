@@ -29,7 +29,7 @@
   <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
   
   <script type="text/javascript" src="../../scripts/shCore.js"></script>
-  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
 
   <!-- Conditional comment to apply opacity fix for IE #content background.
        Invalid CSS, but can be removed without harming design -->
@@ -44,17 +44,44 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>Netwide Assembler (NASM) &gt;&gt; Assembly (x86)</h3>
-<p><b>安装環境</b></p>
+<h3>Yasm &gt;&gt; Assembly (x64)</h3>
+<p><b>hello, world! (printf)</b></p>
 <hr size="1">
 <p>
 參考資訊：<br>
-1. <a href="https://www.nasm.us/">nasm</a><br><br>
+1. <a href="https://chromium.googlesource.com/chromiumos/docs/+/HEAD/constants/syscalls.md">syscall</a><br><br>
 
-步驟如下：
+main.s
+</p>
+<pre class="brush:asm">
+    global main
+    extern printf
+  
+    section .data
+msg: db "hello, world!", 10, 0
+  
+    section .text
+main:
+    push rbp
+    mov rbp, rsp
+    
+    mov rdi, msg
+    call printf
+    xor rdi, rdi
+ 
+    mov rsp, rbp
+    pop rbp
+    ret
+</pre><br>
+
+<p>
+編譯、執行
 </p>
 <pre>
-$ sudo apt-get install nasm -y
+$ yasm -f elf64 main.s
+$ x86_64-linux-gnu-gcc main.o -o main -static
+$ qemu-x86_64 ./main
+    hello, world!
 </pre><br>
 
 <p>
