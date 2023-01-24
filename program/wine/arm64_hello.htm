@@ -29,7 +29,7 @@
   <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
   
   <script type="text/javascript" src="../../scripts/shCore.js"></script>
-  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
 
   <!-- Conditional comment to apply opacity fix for IE #content background.
        Invalid CSS, but can be removed without harming design -->
@@ -44,7 +44,7 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>Wine &gt;&gt; C/C++</h3>
+<h3>Wine &gt;&gt; Assembly (ARM 64)</h3>
 <p><b>hello, world!</b></p>
 <hr size="1">
 <p>
@@ -60,24 +60,35 @@
 </table><br>
 
 <p>
-main.c
+main.s
 </p>
-<pre class="brush:cpp">
-#include &lt;windows.h&gt;
+<pre class="brush:asm">
+    .global WinMain
+    .extern MessageBoxA
 
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
-                   LPSTR lpCmdLine, int nCmdShow)
-{
-    MessageBox(NULL, "hello, world!", "main", MB_OK);
-    return 0;
-}
+    .data
+title: .asciz "main"
+content: .asciz "hello, world!"
+
+    .text
+WinMain:
+    stp x29, x30, [sp, #-0x10]!
+
+    mov x0, 0
+    ldr x1, =content
+    ldr x2, =title
+    mov x3, 0
+    bl MessageBoxA
+
+    ldp x29, x30, [sp], #0x10
+    ret
 </pre><br>
 
 <p>
 編譯、執行
 </p>
 <pre>
-$ winegcc main.c -o main
+$ winegcc main.s -o main
 $ wine ./main.exe
 </pre>
 <p>
