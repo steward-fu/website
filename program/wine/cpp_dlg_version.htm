@@ -1,0 +1,161 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Wine &gt;&gt; C/C++ &gt;&gt; Dialog</h3>
+<p><b>VersionInfo</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="http://winapi.freetechsecrets.com/win32/">win32</a><br>
+2. <a href="https://www-user.tu-chemnitz.de/~heha/petzold/ch05d.htm">petzold</a><br>
+3. <a href="http://www.winprog.org/tutorial/">tutorial</a><br>
+4. <a href="https://github.com/gammasoft71/Examples_Win32">examples_win32</a><br><br>
+
+Windows PE執行檔案可以內嵌Version資訊，在Windows系統下，只要在檔案上方按下滑鼠右鍵，選擇<b>內容</b>即可查看，而這個Version內容就是透過Resource編譯連結。<br><br>
+
+說明：
+</p>
+<table>
+<tr><th>API</th></tr>
+<tr><td>DWORD GetModuleFileName(HMODULE hModule, LPTSTR lpFilename, DWORD nSize);</td></tr>
+<tr><td>DWORD GetFileVersionInfoSize(LPTSTR lptstrFilename, LPDWORD lpdwHandle);</td></tr>
+<tr><td>BOOL GetFileVersionInfo(LPTSTR lptstrFilename, DWORD dwHandle, DWORD dwLen, LPVOID lpData);</td></tr>
+<tr><td>BOOL VerQueryValue(const LPVOID pBlock, LPTSTR lpSubBlock, LPVOID *lplpBuffer, PUINT puLen);</td></tr>
+</table><br>
+
+<p>
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;commctrl.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+#include &lt;windows.h&gt;
+
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
+                   LPSTR lpCmdLine, int nCmdShow)
+{
+    char exeName[255] = {0};
+    GetModuleFileName(NULL, exeName, sizeof(exeName));
+
+    DWORD vHandle = 0;
+    DWORD vSize = GetFileVersionInfoSize(exeName, &amp;vHandle);
+
+    char *vData = malloc(vSize);
+    GetFileVersionInfo(exeName, vHandle, vSize, vData);
+
+    DWORD vLen = 0;
+    char *vName = NULL;
+    VerQueryValue(vData, "\\StringFileInfo\\000004b0\\CompanyName",
+                  (LPVOID*)&amp;vName, &amp;vLen);
+
+    MessageBox(NULL, vName, "main", MB_OK);
+    free(vData);
+    return 0;
+}
+</pre><br>
+
+<p>
+main.rc
+</p>
+<pre>
+#include &lt;windows.h&gt;
+
+LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
+#pragma code_page(65001)
+
+VS_VERSION_INFO VERSIONINFO
+    FILEVERSION     0x1000
+    PRODUCTVERSION  0x1000
+    FILEFLAGSMASK   0x0000
+    FILEOS          VOS_NT
+    FILETYPE        VFT_APP
+    FILESUBTYPE     VFT2_UNKNOWN
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "000004b0"
+        BEGIN
+            VALUE "CompanyName",        "test"
+            VALUE "FileDescription",    "test"
+            VALUE "FileVersion",        "1.0.0"
+            VALUE "InternalName",       "test"
+            VALUE "LegalCopyright",     "test"
+            VALUE "LegalTrademarks1",   "test"
+            VALUE "LegalTrademarks2",   "test"
+            VALUE "OriginalFilename",   "test"
+            VALUE "ProductName",        "test"
+            VALUE "ProductVersion",     "1.0.0"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x000, 1200
+    END
+END
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ x86_64-w64-mingw32-windres main.rc -o main.res
+$ winegcc main.c main.res -lversion -o main
+$ wine ./main.exe
+</pre>
+<p>
+<img style="border:0px" src="cpp_dlg_version/1.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../program.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
