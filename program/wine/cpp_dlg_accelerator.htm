@@ -44,8 +44,8 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>Wine &gt;&gt; C/C++ &gt;&gt; Dialog &gt;&gt; Menu</h3>
-<p><b>CreateMenu</b></p>
+<h3>Wine &gt;&gt; C/C++ &gt;&gt; Dialog</h3>
+<p><b>Accelerator</b></p>
 <hr size="1">
 <p>
 參考資訊：<br>
@@ -58,8 +58,9 @@
 </p>
 <table>
 <tr><th>API</th></tr>
-<tr><td>HMENU CreateMenu(VOID)</td></tr>
-<tr><td>BOOL AppendMenu(HMENU hMenu, UINT uFlags, UINT uIDNewItem, LPCTSTR lpNewItem);</td></tr>
+<tr><td>HACCEL LoadAccelerators(HINSTANCE hInstance, LPCTSTR lpTableName);</td></tr>
+<tr><td>int TranslateAccelerator(HWND hWnd, HACCEL hAccTable, LPMSG lpMsg);</td></tr>
+<tr><td>BOOL TranslateMessage(CONST MSG *lpMsg);</td></tr>
 </table><br>
 
 <p>
@@ -67,8 +68,7 @@ main.c
 </p>
 <pre class="brush:cpp">
 #include &lt;windows.h&gt;
-
-#define IDM_EXIT 101
+#include "resources.h"
 
 HWND hWin = NULL;
 WNDPROC defWndProc = NULL;
@@ -84,7 +84,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         return 0;
     case WM_COMMAND:
         switch (LOWORD(wParam)) {
-        case IDM_EXIT:
+        case IDA_EXIT:
             DestroyWindow(hWnd);
             break;
         }
@@ -100,17 +100,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
                         NULL, NULL, NULL, NULL);
     defWndProc =
         (WNDPROC)SetWindowLongPtr(hWin, GWLP_WNDPROC, (long int)WndProc);
-
-    HMENU hMenu = CreateMenu();
-    HMENU hSubMenu = CreateMenu();
-    AppendMenu(hSubMenu, MF_STRING, IDM_EXIT, "Exit");
-    AppendMenu(hMenu, MF_POPUP, (UINT_PTR)hSubMenu, "File");
-    SetMenu(hWin, hMenu);
+    HACCEL hAcc = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDA_MAIN));
     ShowWindow(hWin, SW_SHOW);
 
     MSG msg = {0};
     while (GetMessage(&amp;msg, NULL, 0, 0)) {
-        DispatchMessage(&amp;msg);
+        if (TranslateAccelerator(hWin, hAcc, &amp;msg) == 0) {
+            TranslateMessage(&amp;msg);
+            DispatchMessage(&amp;msg);
+        }
     }
     ExitProcess(0);
     return 0;
@@ -118,14 +116,36 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 </pre><br>
 
 <p>
+main.rc
+</p>
+<pre>
+#include &lt;windows.h&gt;
+#include "resources.h"
+
+IDA_MAIN ACCELERATORS
+BEGIN
+    "B", IDA_EXIT, VIRTKEY, CONTROL, SHIFT
+END
+</pre><br>
+
+<p>
+resource.h
+</p>
+<pre>
+#define IDA_MAIN 101
+#define IDA_EXIT 102
+</pre><br>
+
+<p>
 編譯、執行
 </p>
 <pre>
-$ winegcc main.c -o main
+$ x86_64-w64-mingw32-windres main.rc -o main.res
+$ winegcc main.c main.res -o main
 $ wine ./main.exe
 </pre>
 <p>
-<img style="border:0px" src="cpp_dlg_menu/1.jpg" class="maxSize">
+<img style="border:0px" src="cpp_dlg_accelerator/1.jpg" class="maxSize">
 </p>
 
 <p>
