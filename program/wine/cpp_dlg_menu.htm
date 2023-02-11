@@ -45,7 +45,7 @@
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
 <h3>Wine &gt;&gt; C/C++ &gt;&gt; Dialog</h3>
-<p><b>Chord</b></p>
+<p><b>Menu (Resource)</b></p>
 <hr size="1">
 <p>
 參考資訊：<br>
@@ -54,14 +54,11 @@
 3. <a href="http://www.winprog.org/tutorial/">tutorial</a><br>
 4. <a href="https://github.com/gammasoft71/Examples_Win32">examples_win32</a><br><br>
 
-Chord使用方式如下：<br>
-<img src="cpp_dlg_chord/2.jpg" class="maxSize"><br><br>
-
 說明：
 </p>
 <table>
 <tr><th>API</th></tr>
-<tr><td>BOOL Chord(HDC hdc, int nLeftRect, int nTopRect, int nRightRect, int nBottomRect, int nXRadial1, int nYRadial1, int nXRadial2, int nYRadial2);</td></tr>
+<tr><td>HMENU LoadMenu(HINSTANCE hInstance, LPCTSTR lpMenuName);</td></tr>
 </table><br>
 
 <p>
@@ -69,6 +66,7 @@ main.c
 </p>
 <pre class="brush:cpp">
 #include &lt;windows.h&gt;
+#include "resources.h"
 
 HWND hWin = NULL;
 WNDPROC defWndProc = NULL;
@@ -82,17 +80,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     case WM_DESTROY:
         PostQuitMessage(0);
         return 0;
-    case WM_PAINT:
-        PAINTSTRUCT ps = {0};
-        HDC hdc = BeginPaint(hWnd, &amp;ps);
-        HPEN pen = CreatePen(PS_SOLID, 3, RGB(0xff, 0x00, 0x00));
-        HBRUSH brush = CreateSolidBrush(RGB(0x00, 0xff, 0x00));
-        SelectObject(hdc, pen);
-        SelectObject(hdc, brush);
-        Chord(hdc, 10, 10, 200, 200, 0, 0, 200, 100);
-        EndPaint(hWnd, &amp;ps);
-        DeleteObject(pen);
-        DeleteObject(brush);
+    case WM_COMMAND:
+        switch (LOWORD(wParam)) {
+        case IDM_EXIT:
+            DestroyWindow(hWnd);
+            return 0;
+        }
         break;
     }
     return CallWindowProc(defWndProc, hWnd, uMsg, wParam, lParam);
@@ -101,8 +94,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
                    LPSTR lpCmdLine, int nCmdShow)
 {
+    HMENU hMenu = LoadMenu(hInstance, MAKEINTRESOURCE(IDM_MAIN));
     hWin = CreateWindow(WC_DIALOG, "main", WS_OVERLAPPEDWINDOW, 0, 0, 300, 300,
-                        NULL, NULL, NULL, NULL);
+                        NULL, hMenu, NULL, NULL);
     defWndProc =
         (WNDPROC)SetWindowLongPtr(hWin, GWLP_WNDPROC, (long int)WndProc);
     ShowWindow(hWin, SW_SHOW);
@@ -115,15 +109,41 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     return 0;
 }
 </pre><br>
+
+<p>
+main.rc
+</p>
+<pre>
+#include &lt;windows.h&gt;
+#include "resources.h"
+
+IDM_MAIN MENU DISCARDABLE
+BEGIN
+    POPUP "File"
+    BEGIN
+        MENUITEM "Exit", IDM_EXIT
+    END
+END
+</pre><br>
+
+<p>
+resource.h
+</p>
+<pre>
+#define IDM_MAIN 101
+#define IDM_EXIT 102
+</pre><br>
+
 <p>
 編譯、執行
 </p>
 <pre>
-$ winegcc main.c -o main -lgdi32
+$ x86_64-w64-mingw32-windres main.rc -o main.res
+$ winegcc main.c main.res -o main
 $ wine ./main.exe
 </pre>
 <p>
-<img style="border:0px" src="cpp_dlg_chord/1.jpg" class="maxSize">
+<img style="border:0px" src="cpp_dlg_menu/1.jpg" class="maxSize">
 </p>
 
 <p>
