@@ -45,7 +45,7 @@
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
 <h3>Wine &gt;&gt; C/C++ &gt;&gt; Dialog &gt;&gt; Menu</h3>
-<p><b>System Menu</b></p>
+<p><b>TrackPopupMenu</b></p>
 <hr size="1">
 <p>
 參考資訊：<br>
@@ -58,7 +58,7 @@
 </p>
 <table>
 <tr><th>API</th></tr>
-<tr><td>HMENU GetSystemMenu(HWND hWnd, BOOL bRevert);</td></tr>
+<tr><td>BOOL TrackPopupMenu(HMENU hMenu, UINT uFlags, int x, int y, int nReserved, HWND hWnd, CONST RECT *prcRect);</td></tr>
 </table><br>
 
 <p>
@@ -74,6 +74,9 @@ WNDPROC defWndProc = NULL;
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+    POINT stPos = {0};
+    HMENU hMenu = NULL;
+
     switch (uMsg) {
     case WM_CLOSE:
         DestroyWindow(hWnd);
@@ -81,11 +84,17 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     case WM_DESTROY:
         PostQuitMessage(0);
         return 0;
-    case WM_SYSCOMMAND:
+    case WM_RBUTTONDOWN:
+        hMenu = CreateMenu();
+        AppendMenu(hMenu, MF_STRING, IDM_EXIT, "Exit");
+        GetCursorPos(&amp;stPos);
+        TrackPopupMenu(hMenu, TPM_LEFTALIGN, stPos.x, stPos.y, 0, hWnd, NULL);
+        return 0;
+    case WM_COMMAND:
         switch (LOWORD(wParam)) {
         case IDM_EXIT:
             DestroyWindow(hWnd);
-            return 0;
+            break;
         }
         return 0;
     }
@@ -100,9 +109,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     defWndProc =
         (WNDPROC)SetWindowLongPtr(hWin, GWLP_WNDPROC, (long int)WndProc);
     ShowWindow(hWin, SW_SHOW);
-
-    HMENU hMenu = GetSystemMenu(hWin, 0);
-    AppendMenu(hMenu, MF_STRING, IDM_EXIT, "MyExit");
 
     MSG msg = {0};
     while (GetMessage(&amp;msg, NULL, 0, 0)) {
@@ -121,8 +127,7 @@ $ winegcc main.c -o main
 $ wine ./main.exe
 </pre>
 <p>
-<img style="border:0px" src="cpp_dlg_sysmenu/1.jpg" class="maxSize"><br>
-<img style="border:0px" src="cpp_dlg_sysmenu/2.jpg" class="maxSize">
+<img style="border:0px" src="cpp_dlg_trackmenu/1.jpg" class="maxSize">
 </p>
 
 <p>
