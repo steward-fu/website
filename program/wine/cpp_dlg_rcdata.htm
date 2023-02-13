@@ -58,7 +58,17 @@
 </p>
 <table>
 <tr><th>API</th></tr>
-<tr><td>HACCEL LoadAccelerators(HINSTANCE hInstance, LPCTSTR lpTableName);</td></tr>
+<tr><td>HRSRC FindResource(HMODULE hModule, LPCSTR lpName, LPCSTR lpType);</td></tr>
+<tr><td>HGLOBAL LoadResource(HMODULE hModule, HRSRC hResInfo);</td></tr>
+<tr><td>LPVOID LockResource(HGLOBAL hResData);</td></tr>
+<tr><td>DWORD SizeofResource(HMODULE hModule, HRSRC hResInfo);</td></tr>
+<tr><td>HGLOBAL GlobalAlloc(UINT uFlags, SIZE_T dwBytes);</td></tr>
+<tr><td>LPVOID GlobalLock(HGLOBAL hMem);</td></tr>
+<tr><td>HANDLE CreateFileA(LPCSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode, LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes, HANDLE hTemplateFile);</td></tr>
+<tr><td>BOOL WriteFile(HANDLE hFile, LPCVOID lpBuffer, DWORD nNumberOfBytesToWrite, LPDWORD lpNumberOfBytesWritten, LPOVERLAPPED lpOverlapped);</td></tr>
+<tr><td>BOOL CloseHandle(HANDLE hObject);</td></tr>
+<tr><td>BOOL GlobalUnlock(HGLOBAL hMem);</td></tr>
+<tr><td>HGLOBAL GlobalFree(HGLOBAL hMem);</td></tr>
 </table><br>
 
 <p>
@@ -74,14 +84,14 @@ void DropFile(HINSTANCE hInstance, DWORD dwID, TCHAR *pResType,
               TCHAR *pFileName)
 {
     DWORD dwRet = 0;
-    HRSRC resource = FindResource(hInstance, MAKEINTRESOURCE(dwID), pResType);
-    HGLOBAL hRSC = LoadResource(hInstance, resource);
-    LPVOID lpResBuffer = (unsigned char *)LockResource(hRSC);
+    HRSRC hRes = FindResource(hInstance, MAKEINTRESOURCE(dwID), pResType);
+    HGLOBAL hRsc = LoadResource(hInstance, hRes);
+    LPVOID lpRsc = (unsigned char *)LockResource(hRsc);
 
-    DWORD dwFileSize = SizeofResource(hInstance, resource);
+    DWORD dwFileSize = SizeofResource(hInstance, hRes);
     HGLOBAL hGlobal = GlobalAlloc(GMEM_MOVEABLE, dwFileSize);
     LPVOID pvData = GlobalLock(hGlobal);
-    memcpy(pvData, lpResBuffer, dwFileSize);
+    memcpy(pvData, lpRsc, dwFileSize);
     HANDLE hFile = CreateFile(pFileName, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,
                               FILE_ATTRIBUTE_NORMAL, NULL);
     WriteFile(hFile, pvData, dwFileSize, &amp;dwRet, NULL);
