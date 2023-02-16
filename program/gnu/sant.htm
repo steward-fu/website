@@ -1,0 +1,155 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>GNU</h3>
+<p><b>-fsanitize=address</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://hanpfei.github.io/2019/05/19/AddressSanitizer_on_linux/">AddressSanitizer_on_linux</a><br>
+2. <a href="https://stackoverflow.com/questions/37970758/how-to-use-addresssanitizer-with-gcc">how-to-use-addresssanitizer-with-gcc</a><br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;malloc.h&gt;
+
+int main(void)
+{
+    int *p = malloc(sizeof(int));
+    free(p);
+
+    *p = 1000;
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯、執行(沒有fsanitize)
+</p>
+<pre>
+$ gcc main.c -o main -ggdb
+$ ./main
+</pre><br>
+
+<p>
+編譯、執行(使用fsanitize)
+</p>
+<pre>
+$ gcc main.c -o main -fsanitize=address -ggdb
+$ ./main
+    =================================================================
+    ==31640==ERROR: AddressSanitizer: heap-use-after-free on address 0x602000000010 at pc 0x56107942f1ce bp 0x7ffe55b42ba0 sp 0x7ffe55b42b98
+    WRITE of size 4 at 0x602000000010 thread T0
+        #0 0x56107942f1cd in main /home/steward/Downloads/main.c:10
+        #1 0x7f10e314509a in __libc_start_main ../csu/libc-start.c:308
+        #2 0x56107942f0b9 in _start (/home/steward/Downloads/main+0x10b9)
+
+    0x602000000010 is located 0 bytes inside of 4-byte region [0x602000000010,0x602000000014)
+    freed by thread T0 here:
+        #0 0x7f10e33c9fb0 in __interceptor_free (/lib/x86_64-linux-gnu/libasan.so.5+0xe8fb0)
+        #1 0x56107942f196 in main /home/steward/Downloads/main.c:8
+        #2 0x7f10e314509a in __libc_start_main ../csu/libc-start.c:308
+
+    previously allocated by thread T0 here:
+        #0 0x7f10e33ca330 in __interceptor_malloc (/lib/x86_64-linux-gnu/libasan.so.5+0xe9330)
+        #1 0x56107942f186 in main /home/steward/Downloads/main.c:7
+        #2 0x7f10e314509a in __libc_start_main ../csu/libc-start.c:308
+
+    SUMMARY: AddressSanitizer: heap-use-after-free /home/steward/Downloads/main.c:10 in main
+    Shadow bytes around the buggy address:
+      0x0c047fff7fb0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+      0x0c047fff7fc0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+      0x0c047fff7fd0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+      0x0c047fff7fe0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+      0x0c047fff7ff0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+    =&gt;0x0c047fff8000: fa fa[fd]fa fa fa fa fa fa fa fa fa fa fa fa fa
+      0x0c047fff8010: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+      0x0c047fff8020: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+      0x0c047fff8030: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+      0x0c047fff8040: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+      0x0c047fff8050: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+    Shadow byte legend (one shadow byte represents 8 application bytes):
+      Addressable:           00
+      Partially addressable: 01 02 03 04 05 06 07
+      Heap left redzone:       fa
+      Freed heap region:       fd
+      Stack left redzone:      f1
+      Stack mid redzone:       f2
+      Stack right redzone:     f3
+      Stack after return:      f5
+      Stack use after scope:   f8
+      Global redzone:          f9
+      Global init order:       f6
+      Poisoned by user:        f7
+      Container overflow:      fc
+      Array cookie:            ac
+      Intra object redzone:    bb
+      ASan internal:           fe
+      Left alloca redzone:     ca
+      Right alloca redzone:    cb
+    ==31640==ABORTING
+</pre><br>
+
+<p>
+沒有fsanitize<br>
+<img src="sant/1.jpg" class="maxSize"><br><br>
+
+使用fsanitize<br>
+<img src="sant/2.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../program.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
