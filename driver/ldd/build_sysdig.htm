@@ -1,0 +1,107 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Linux Device Driver</h3>
+<p><b>build sysdig</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://github.com/draios/sysdig">sysdig</a><br>
+2. <a href="https://sysdig.com/blog/sysdig-contributes-falco-kernel-ebpf-cncf/">sysdig-contributes-falco-kernel-ebpf-cncf</a><br>
+3. <a href="https://cizixs.com/2017/04/27/sysdig-for-linux-system-monitor-and-analysis/">sysdig-for-linux-system-monitor-and-analysis</a><br><br>
+
+sysdig是透過kernel driver達到監控資源的方式，因此，在使用sysdig前，必須要編譯安裝sysdig的driver(scap.ko)，步驟如下：
+</p>
+<pre>
+$ cd
+$ git clone https://github.com/draios/sysdig
+$ mkdir sysdig/build
+$ cd sysdig/build
+$ cmake ..
+$ make -j4
+$ sudo make install
+$ sudo insmod ./driver/scap.ko
+$ sudo sysdig
+    310936 05:47:50.298406593 1 xfce4-terminal (1830.1830) &gt; poll fds=4:e1 5:u1 7:u1 11:u3 12:f3 14:f3 timeout=22
+    310937 05:47:50.298407722 1 xfce4-terminal (1830.1830) &lt; poll res=2 fds=4:e1 14:f1
+    310939 05:47:50.298408271 1 xfce4-terminal (1830.1830) &gt; read fd=4(&lt;e&gt;) size=16
+    310940 05:47:50.298408657 1 xfce4-terminal (1830.1830) &lt; read res=8 data=........
+    310941 05:47:50.298409570 1 xfce4-terminal (1830.1830) &gt; write fd=4(&lt;e&gt;) size=8
+    310942 05:47:50.298409873 1 xfce4-terminal (1830.1830) &lt; write res=8 data=........
+</pre><br>
+
+<p>
+sysdig輸出的格式如下：
+</p>
+<pre>
+%evt.num %evt.outputtime %evt.cpu %proc.name (%thread.tid) %evt.dir %evt.type %evt.info
+</pre><br>
+
+<p>
+可以透過過濾條件讓sysdig輸出感興趣的事件，如下：
+</p>
+<pre>
+$ sudo sysdig fd.name contains /etc
+    4253 05:52:43.260255982 2 ThreadPoolForeg (1945.27889) &lt; openat fd=54(&lt;f&gt;/etc/hosts) dirfd=-100(AT_FDCWD) name=/etc/hosts flags=4097(O_RDONLY|O_CLOEXEC) mode=0 dev=801 ino=6032616
+    4254 05:52:43.260260595 2 ThreadPoolForeg (1945.27889) &gt; lseek fd=54(&lt;f&gt;/etc/hosts) offset=0 whence=1
+    4255 05:52:43.260262271 2 ThreadPoolForeg (1945.27889) &lt; lseek res=0
+    4256 05:52:43.260264389 2 ThreadPoolForeg (1945.27889) &gt; fstat fd=54(&lt;f&gt;/etc/hosts)
+    4257 05:52:43.260265484 2 ThreadPoolForeg (1945.27889) &lt; fstat res=0
+    4258 05:52:43.260267313 2 ThreadPoolForeg (1945.27889) &gt; read fd=54(&lt;f&gt;/etc/hosts) size=4096
+    4259 05:52:43.260271951 2 ThreadPoolForeg (1945.27889) &lt; read res=216 data=127.0.0.1.localhost debian.127.0.0.1 NAMENODE.silence.com NAMENODE..# The follow
+    4260 05:52:43.260281277 2 ThreadPoolForeg (1945.27889) &gt; lseek fd=54(&lt;f&gt;/etc/hosts) offset=0 whence=1
+    4261 05:52:43.260281886 2 ThreadPoolForeg (1945.27889) &lt; lseek res=216
+</pre><br>
+
+<p>
+<br><a href="../../driver.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
