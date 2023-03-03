@@ -54,51 +54,44 @@
 main.asm
 </p>
 <pre class="brush:asm">
-.386 
-.model flat,stdcall 
-option casemap:none 
+    .386
+    .model flat,stdcall
+    option casemap:none
 
-include    c:\masm32\include\windows.inc 
-include    c:\masm32\include\kernel32.inc 
-include    c:\masm32\include\user32.inc 
+include c:\masm32\include\windows.inc
+include c:\masm32\include\kernel32.inc
+include c:\masm32\include\user32.inc
+
 includelib c:\masm32\lib\user32.lib
-includelib c:\masm32\lib\kernel32.lib 
+includelib c:\masm32\lib\kernel32.lib
 
-.data 
-caption db "Info",0 
-text    db "Hello, world!",0
+    .data
+caption db "main",0
+content db "Hello, world!",0
 
-.code 
-start: 
-    invoke MessageBox, NULL, addr text, addr caption, MB_OK 
-    invoke ExitProcess, NULL 
+    .code
+start:
+    invoke MessageBox, NULL, offset content, offset caption, MB_OK
+    invoke ExitProcess, NULL
 end start
 </pre><br>
-
-<p>
-指令說明
-</p>
-<table>
-  <tr><th class="right">.386</th><td>使用80386指令</td></tr>
-  <tr><th class="right">.model flat,stdcall</th><td>記憶體模式為flat，calling convention使用stdcall</td></tr>
-  <tr><th class="right">option casemap:none</th><td>區分大小寫</td></tr>
-  <tr><th class="right">include</th><td>使用的header檔案(MSDN會說明Win32 API需要那些Header)</td></tr>
-  <tr><th class="right">includelib</th><td>使用的library檔案(MSDN會說明Win32 API需要那些Library)</td></tr>
-  <tr><th class="right">.data</th><td>初始化的資料區段</td></tr>
-  <tr><th class="right">.code</th><td>程式區段</td></tr>
-  <tr><th class="right">invoke</th><td>等同於push + call</td></tr>
-</table><br>
 
 <p>
 Makefile
 </p>
 <pre>
+export WINEPREFIX=/home/user/.wine_amd64
+
+TARGET=main
+MYWINE=box86 wine
+MASM32=/home/user/.wine_amd64/drive_c/masm32
+
 all:
-    wine ml /c /coff /Cp main.asm
-    wine link /SUBSYSTEM:WINDOWS /LIBPATH:c:\masm32\lib main.obj
+    ${MYWINE} ${MASM32}/bin/ml.exe /c /coff /nologo ${TARGET}.asm
+    ${MYWINE} ${MASM32}/bin/link.exe /SUBSYSTEM:WINDOWS /MERGE:.rdata=.text ${TARGET}.obj
 
 clean:
-    rm -rf main.obj
+    rm -rf ${TARGET}.exe ${TARGET}.obj
 </pre><br>
 
 <p>
@@ -106,10 +99,10 @@ clean:
 </p>
 <pre>
 $ make
-$ wine ./main.exe
+$ WINEPREFIX=/home/user/.wine_amd64 box86 wine main.exe
 </pre>
 <p>
-<img src="x86_hello/1.jpg" class="maxSize">
+<img src="hello/1.jpg" class="maxSize">
 </p>
 
 <p>
