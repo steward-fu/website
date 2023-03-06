@@ -44,7 +44,7 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>MASM32 &gt;&gt; Assembly (x86) &gt;&gt; Dialog</h3>
+<h3>MASM32 &gt;&gt; Dialog</h3>
 <p><b>Window</b></p>
 <hr size="1">
 <p>
@@ -144,57 +144,6 @@ $ make run
 </pre>
 <p>
 <img style="border:0px" src="dlg_window/1.jpg" class="maxSize"><br><br>
-
-如果連預設的視窗訊息都不處理，如下程式：
-</p>
-<pre class="brush:asm">
-    .386
-    .model flat,stdcall
-    option casemap:none
-
-include c:\masm32\include\windows.inc
-include c:\masm32\include\kernel32.inc
-include c:\masm32\include\user32.inc
-
-includelib c:\masm32\lib\user32.lib
-includelib c:\masm32\lib\kernel32.lib
-
-    WinMain proto :DWORD, :DWORD, :DWORD, :DWORD
-
-    .data
-szCaption   db "main",0
-CommandLine dd 0
-hInstance   dd 0
-
-    .code
-start:
-    invoke GetModuleHandle, NULL
-    mov hInstance, eax
-
-    invoke GetCommandLine
-    mov CommandLine, eax
-
-    invoke WinMain, hInstance, NULL,CommandLine, SW_SHOWDEFAULT
-    invoke ExitProcess, eax
-
-WinMain proc hInst:DWORD, hPrevInst:DWORD, CmdLine:DWORD, CmdShow:DWORD
-    local msg:MSG
-
-    invoke CreateWindowEx, WS_EX_LEFT, WC_DIALOG, offset szCaption, 
-        WS_OVERLAPPEDWINDOW or WS_VISIBLE, 0, 0, 300, 300, 
-        NULL, NULL, NULL, NULL
-
-@@:
-    nop
-    jmp @b
-    ret
-WinMain endp
-end start
-</pre><br>
-
-<p>
-視窗將無法得到適當的處理，導致顯示有問題<br>
-<img style="border:0px" src="dlg_window/2.jpg" class="maxSize">
 </p>
 
 <p>
