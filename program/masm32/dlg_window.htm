@@ -68,24 +68,12 @@ include c:\masm32\include\user32.inc
 includelib c:\masm32\lib\user32.lib
 includelib c:\masm32\lib\kernel32.lib
 
-    WinMain proto :DWORD, :DWORD, :DWORD, :DWORD
-
     .data
 szCaption   db "main",0
 CommandLine dd 0
 hInstance   dd 0
 
     .code
-start:
-    invoke GetModuleHandle, NULL
-    mov hInstance, eax
-
-    invoke GetCommandLine
-    mov CommandLine, eax
-
-    invoke WinMain, hInstance, NULL,CommandLine, SW_SHOWDEFAULT
-    invoke ExitProcess, eax
-
 WinMain proc hInst:DWORD, hPrevInst:DWORD, CmdLine:DWORD, CmdShow:DWORD
     local msg:MSG
 
@@ -102,19 +90,28 @@ WinMain proc hInst:DWORD, hPrevInst:DWORD, CmdLine:DWORD, CmdShow:DWORD
     mov eax, msg.wParam
     ret
 WinMain endp
+
+start:
+    invoke GetModuleHandle, NULL
+    mov hInstance, eax
+
+    invoke GetCommandLine
+    mov CommandLine, eax
+
+    invoke WinMain, hInstance, NULL,CommandLine, SW_SHOWDEFAULT
+    invoke ExitProcess, eax
 end start
 </pre>
 <p>
-<b>Line 21~25</b>：一般習慣是在程式進入時，保存Instance、CommandLine的內容<br>
-<b>Line 27</b>：呼叫自定義的WinMain()，模擬C語言的WinMain()，當然也可以把內容都寫在start()裡面<br>
-<b>Line 29</b>：退出Process並且釋放相關資源<br>
-<b>Line 30~45</b>：proc、endp用來定義Procedure的區間<br>
-<b>Line 33~34</b>：在建立Windows視窗時，需要指定對應的Class，如：Edit、Button，除了可以使用系統預設的Class之外，也可以註冊自定義的Class，上面例子使用的WC_DIALOG，就是系統預設定義的Dialog Class，WS_OVERLAPPEDWINDOW代表視窗有標題、最大化、最小化的按鈕，WS_VISIBLE是建立一個可視化的視窗<br>
-<b>Line 36</b>：暫時性的Label，不需要指定名稱，適合小範圍的應用，但需要搭配@f、@b使用<br>
-<b>Line 37</b>：從Queue提取Message(包含視窗、系統事件)，addr用來計算local變數的位址，offset則是global變數位址<br>
-<b>Line 39</b>：@f(forward)代表會跳到下一個@@位置(Line 42)<br>
-<b>Line 40</b>：分發Message到處理視窗事件的副程式，由於目前的Dialog視窗並沒有對應的處理副程式，因此，無法處理任何Message，包含關閉視窗的Message，所以執行後，必須使用kill命令強制關閉該視窗<br>
-<b>Line 41</b>：@b(back)代表會跳到上一個@@位置(Line 36)<br><br>
+<b>Line 18~33</b>：proc、endp用來定義Procedure的區間<br>
+<b>Line 21~22</b>：在建立Windows視窗時，需要指定對應的Class，如：Edit、Button，除了可以使用系統預設的Class之外，也可以註冊自定義的Class，上面例子使用的WC_DIALOG，就是系統預設定義的Dialog Class，WS_OVERLAPPEDWINDOW代表視窗有標題、最大化、最小化的按鈕，WS_VISIBLE是建立一個可視化的視窗<br>
+<b>Line 24</b>：暫時性的Label，不需要指定名稱，適合小範圍的應用，但需要搭配@f、@b使用<br>
+<b>Line 25</b>：從Queue提取Message(包含視窗、系統事件)，addr用來計算local變數的位址，offset則是global變數位址<br>
+<b>Line 27</b>：@f(forward)代表會跳到下一個@@位置(Line 30)<br>
+<b>Line 28</b>：分發Message到處理視窗事件的副程式，由於目前的Dialog視窗並沒有對應的處理副程式，因此，無法處理任何Message，包含關閉視窗的Message，所以執行後，必須使用kill命令強制關閉該視窗<br>
+<b>Line 29</b>：@b(back)代表會跳到上一個@@位置(Line 24)<br>
+<b>Line 36~40</b>：一般習慣是在程式進入時，保存Instance、CommandLine的內容<br>
+<b>Line 42</b>：呼叫自定義的WinMain()，模擬C語言的WinMain()，當然也可以把內容都寫在start()裡面<br><br>
 
 Makefile
 </p>

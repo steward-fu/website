@@ -53,7 +53,7 @@
 2. <a href="http://www.winprog.org/tutorial/">tutorial</a><br>
 3. <a href="https://github.com/gammasoft71/Examples_Win32">examples_win32</a><br><br>
 
-一般在建立Windows視窗時，會註冊自定義的Class並且設定事件處理的副程式(callback)，不過，目前範例使用的Class是系統預設的WC_DIALOG，因此，可以透過SetWindowLongPtr()設定callback，這種替換callback的行為就稱為Subclass，意指為原本Class的Subclass，所以Subclass後，需要將原先callback的位址(SetWindowLongPtr()的回傳值)保存下來，然後透過呼叫CallWindowProc()(傳入原先callback的位址)，用來將處理控制權移交回原先視窗元件，所以當有多層Subclass的情形發生時，每次在處理事件時，記得判斷對應的Handle，如：在處理關閉事件時(WM_CLOSE)，會先判斷目前的hWnd是否為當前的視窗hWnd，如果是當前視窗hWnd，才進行關閉的動作，避免關閉到其它視窗元件<br><br>
+一般在建立Windows視窗時，會註冊自定義的Class並且設定事件處理的副程式(callback)，不過，目前範例使用的Class是系統預設的WC_DIALOG，因此，可以透過SetWindowLong()設定callback，這種替換callback的行為就稱為Subclass，意指為原本Class的Subclass，所以Subclass後，需要將原先callback的位址(SetWindowLong()的回傳值)保存下來，然後透過呼叫CallWindowProc()(傳入原先callback的位址)，用來將處理控制權移交回原先視窗元件，所以當有多層Subclass的情形發生時，每次在處理事件時，記得判斷對應的Handle，如：在處理關閉事件時(WM_CLOSE)，會先判斷目前的hWnd是否為當前的視窗hWnd，如果是當前視窗hWnd，才進行關閉的動作，避免關閉到其它視窗元件<br><br>
 
 main.asm
 </p>
@@ -61,34 +61,24 @@ main.asm
     .386
     .model flat,stdcall
     option casemap:none
- 
+  
 include c:\masm32\include\windows.inc
 include c:\masm32\include\kernel32.inc
 include c:\masm32\include\user32.inc
- 
+  
 includelib c:\masm32\lib\user32.lib
 includelib c:\masm32\lib\kernel32.lib
- 
+  
     WinMain proto :DWORD, :DWORD, :DWORD, :DWORD
- 
+  
     .data
 szCaption   db "main",0
 hWin        dd 0
 hInstance   dd 0
 CommandLine dd 0
 defWndProc  dd 0
- 
+  
     .code
-start:
-    invoke GetModuleHandle, NULL
-    mov hInstance, eax
- 
-    invoke GetCommandLine
-    mov CommandLine, eax
- 
-    invoke WinMain, hInstance, NULL,CommandLine, SW_SHOWDEFAULT
-    invoke ExitProcess, eax
-
 WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
     .if uMsg == WM_CLOSE
         invoke DestroyWindow, hWnd
@@ -99,21 +89,21 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         xor eax, eax
         ret
     .endif
+
     invoke CallWindowProc, defWndProc, hWnd, uMsg, wParam, lParam
     ret
 WndProc endp
-
+ 
 WinMain proc hInst:DWORD, hPrevInst:DWORD, CmdLine:DWORD, CmdShow:DWORD
     local msg:MSG
- 
+  
     invoke CreateWindowEx, WS_EX_LEFT, WC_DIALOG, offset szCaption, 
-        WS_OVERLAPPEDWINDOW or WS_VISIBLE, 0, 0, 300, 300, 
-        NULL, NULL, NULL, NULL
+        WS_OVERLAPPEDWINDOW or WS_VISIBLE, 0, 0, 300, 300, NULL, NULL, NULL, NULL
     mov hWin, eax
-
+ 
     invoke SetWindowLong, hWin, GWL_WNDPROC, WndProc
     mov defWndProc, eax
-
+ 
 @@:
     invoke GetMessage, addr msg, NULL, 0, 0
     cmp eax, 0
@@ -124,14 +114,21 @@ WinMain proc hInst:DWORD, hPrevInst:DWORD, CmdLine:DWORD, CmdShow:DWORD
     mov eax, msg.wParam
     ret
 WinMain endp
+
+start:
+    invoke GetModuleHandle, NULL
+    mov hInstance, eax
+  
+    invoke GetCommandLine
+    mov CommandLine, eax
+  
+    invoke WinMain, hInstance, NULL,CommandLine, SW_SHOWDEFAULT
+    invoke ExitProcess, eax
 end start
 </pre>
 <p>
-<b>Line 33 ~ 41</b>：關閉視窗的順序為：主視窗收到WM_CLOSE事件時，呼叫DestroyWindow()，DestroyWindow()會自動將子視窗的相關資源也一併釋放掉(包含Resource描述的資源)，系統接著會發送WM_DESTROY事件給主視窗，待主視窗收到WM_DESTROY事件時，呼叫PostQuitMessage()結束視窗，值得注意的地方是，SendMessage()是屬於Block方式呼叫(必須等待動作執行完畢才返回)，而PostQuitMessage()則是Non-block方式呼叫<br>
-<b>Line 42</b>：將處理控制權移交給下一個視窗元件</br>
-<b>Line 49 ~ 52</b>：保存當前視窗的hWnd<br>
-<b>Line 54 ~ 55</b>：設定當前視窗的callback<br>
-<b>Line 58 ~ 62</b>：提取並且分發事件(Message)<br><br>
+<b>Line 23~31</b>：關閉視窗的順序為：主視窗收到WM_CLOSE事件時，呼叫DestroyWindow()，DestroyWindow()會自動將子視窗的相關資源也一併釋放掉(包含Resource描述的資源)，系統接著會發送WM_DESTROY事件給主視窗，待主視窗收到WM_DESTROY事件時，呼叫PostQuitMessage()結束視窗，值得注意的地方是，SendMessage()是屬於Block方式呼叫(必須等待動作執行完畢才返回)，而PostQuitMessage()則是Non-block方式呼叫<br>
+<b>Line 33</b>：將處理控制權移交給下一個視窗元件</br><br>
 
 Makefile
 </p>
