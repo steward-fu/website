@@ -1,0 +1,164 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>FASM &gt;&gt; Assembly (x86) &gt;&gt; Win32 API &gt;&gt; Dialog</h3>
+<p><b>Create Window</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://board.flatassembler.net/">fasm</a><br><br>
+
+Windows的視窗可以分成：<b>Dialog</b>、Single Document Interface(<b>SDI</b>)、Multiple Document Interface(<b>MDI</b>)三種類別，相較於SDI、MDI這兩類別的程式，Dialog類別是比較容易上手學習的一個類別，相當適合初學者入門學習，而Windows程式設計的精髓就是，學會其中一個類別，其餘類別都可以很容易上手，Windows控制項(如：Button、Edit)也是此類道理，比較需要注意的是，Windows視窗程式設計的核心是圍繞着事件處理(處理Message)，任何的視窗設定或者溝通都是以事件導向為原則，因此，寫出一個簡單的視窗框架，將有助於了解Windows視窗程式的運作<br><br>
+
+main.asm
+</p>
+<pre class="brush:asm">
+    format PE GUI 4.0
+    entry start
+ 
+    include 'c:\fasm\include\win32a.inc'
+
+    section '.idata' import data readable writeable
+library user, 'user32.dll', kernel, 'kernel32.dll'
+ 
+import user, \
+    MessageBox,      'MessageBoxA', \
+    GetMessage,      'GetMessageA', \
+    CreateWindowEx,  'CreateWindowExA', \
+    DispatchMessage, 'DispatchMessageA'
+
+import kernel, \
+    ExitProcess,     'ExitProcess', \
+    GetCommandLine,  'GetCommandLineA', \
+    GetModuleHandle, 'GetModuleHandleA'
+ 
+    section '.data' data readable writeable
+szCaption   db  'main',0
+CommandLine dd  0
+hInstance   dd  0
+ 
+    section '.text' code readable executable
+proc WinMain hInst, hPrevInst, CmdLine, CmdShow
+    local msg:MSG
+
+    invoke CreateWindowEx, WS_EX_LEFT, WC_DIALOG, szCaption, \
+        WS_OVERLAPPEDWINDOW or WS_VISIBLE, 0, 0, 300, 300, NULL, NULL, NULL, NULL
+
+@@:
+    lea eax, [msg]
+    invoke GetMessage, eax, NULL, 0, 0
+    cmp eax, 0
+    je @f
+    lea eax, [msg]
+    invoke DispatchMessage, eax
+    jmp @b
+@@:
+    mov eax, [msg.wParam]
+    ret
+endp
+
+start:
+    invoke GetModuleHandle, NULL
+    mov [hInstance], eax
+ 
+    invoke GetCommandLine
+    mov [CommandLine], eax
+ 
+    stdcall WinMain, [hInstance], NULL, [CommandLine], SW_SHOWNORMAL
+    invoke ExitProcess, eax
+</pre>
+<p>
+<b>Line 26~43</b>：proc、endp用來定義Procedure的區間<br>
+<b>Line 27</b>：Local變數宣告方式<br>
+<b>Line 29~30</b>：在建立Windows視窗時，需要指定對應的Class，如：Edit、Button，除了可以使用系統預設的Class之外，也可以註冊自定義的Class，上面例子使用的WC_DIALOG，就是系統預設定義的Dialog Class，WS_OVERLAPPEDWINDOW代表視窗有標題、最大化、最小化的按鈕，WS_VISIBLE是建立一個可視化的視窗<br>
+<b>Line 32</b>：暫時性的Label，不需要指定名稱，適合小範圍的應用，但需要搭配@f、@b使用<br>
+<b>Line 33</b>：FASM沒有addr偽指令(取得Local變數的位址)，因此，需要手動使用lea指令取得變數位址<br>
+<b>Line 34</b>：從Queue提取Message(包含視窗、系統事件)，addr用來計算local變數的位址，offset則是global變數位址<br>
+<b>Line 36</b>：@f(forward)代表會跳到下一個@@位置(Line 40)<br>
+<b>Line 38</b>：分發Message到處理視窗事件的副程式，由於目前的Dialog視窗並沒有對應的處理副程式，因此，無法處理任何Message，包含關閉視窗的Message，所以執行後，必須使用kill命令強制關閉該視窗<br>
+<b>Line 39</b>：@b(back)代表會跳到上一個@@位置(Line 32)<br>
+<b>Line 46~50</b>：一般習慣是在程式進入時，保存Instance、CommandLine的內容<br>
+<b>Line 52</b>：呼叫自定義的WinMain()，模擬C語言的WinMain()，當然也可以把內容都寫在start()裡面，stdcall巨集會展開成call + push的綜合指令，invoke巨集也是會展開成call + push的綜合指令，差別在於，invoke巨集是屬於間接呼叫，而stdcall巨集屬於直接呼叫，這些巨集位於：fasm/include/macro/proc32.inc<br><br>
+
+Makefile
+</p>
+<pre>
+export WINEPREFIX=/home/user/.wine_amd64
+
+TARGET=main
+MYWINE=box86 wine
+FASM32=/home/user/.wine_amd64/drive_c/fasm
+
+all:
+    ${MYWINE} ${FASM32}/fasm.exe ${TARGET}.asm
+
+run:
+    ${MYWINE} ${TARGET}.exe
+
+clean:
+    rm -rf ${TARGET}.exe
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ make
+$ make run
+</pre>
+<p>
+<img style="border:0px" style="border:0px" src="win32_dlg_window/1.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../program.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
