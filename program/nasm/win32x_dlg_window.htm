@@ -44,15 +44,15 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>Netwide Assembler (NASM) &gt;&gt; Assembly (x86) &gt;&gt; Win32 API (NASMX)</h3>
-<p><b>Hello, world!</b></p>
+<h3>Netwide Assembler (NASM) &gt;&gt; Assembly (x86) &gt;&gt; Win32 API (NASMX) &gt;&gt; Dialog</h3>
+<p><b>Create Window</b></p>
 <hr size="1">
 <p>
 參考資訊：<br>
 1. <a href="https://www.nasm.us/xdoc/2.13rc9/html/nasmdoc0.html">nasm</a><br>
 2. <a href="https://masm32.com/board/index.php">masm32</a><br><br>
 
-經典的<b>Hello, world!</b>程式框架總是能夠讓人細心品味一款程式語言的美好，司徒就使用一個簡單的Message對話盒來展現<b>Hello, world!</b>框架<br><br>
+Windows的視窗可以分成：<b>Dialog</b>、Single Document Interface(<b>SDI</b>)、Multiple Document Interface(<b>MDI</b>)三種類別，相較於SDI、MDI這兩類別的程式，Dialog類別是比較容易上手學習的一個類別，相當適合初學者入門學習，而Windows程式設計的精髓就是，學會其中一個類別，其餘類別都可以很容易上手，Windows控制項(如：Button、Edit)也是此類道理，比較需要注意的是，Windows視窗程式設計的核心是圍繞着事件處理(處理Message)，任何的視窗設定或者溝通都是以事件導向為原則，因此，寫出一個簡單的視窗框架，將有助於了解Windows視窗程式的運作<br><br>
 
 main.asm
 </p>
@@ -65,27 +65,45 @@ main.asm
     entry start
 
     section .data use32
-szCaption declare(NASMX_TCHAR) NASMX_TEXT("main"),0
-szContent declare(NASMX_TCHAR) NASMX_TEXT("Hello, world!"),0
+NASMX_ISTRUC msg, MSG
+szCaption    declare(NASMX_TCHAR) NASMX_TEXT("main"),0
+CommandLine  dd 0
+hInstance    dd 0
 
     section .text use32
+proc WinMain, dword hInst, dword hPrevInst, dword CmdLine, dword CmdShow
+    locals none
+
+    invoke CreateWindowEx, WS_EX_LEFT, WC_DIALOG, offset szCaption, \
+        WS_OVERLAPPEDWINDOW | WS_VISIBLE, 0, 0, 300, 300, NULL, NULL, NULL, NULL
+
+    do  
+        invoke DispatchMessage, msg
+        invoke GetMessage, msg, NULL, NULL, NULL
+    while eax, !=, 0
+
+    mov eax, dword [msg + MSG.wParam]
+endproc
+
 proc start, ptrdiff_t argc, ptrdiff_t argv
     locals none
 
-    invoke MessageBox, NULL, szContent, szCaption, MB_OK
+    invoke GetModuleHandle, NULL
+    mov [hInstance], eax
+
+    invoke GetCommandLine, NULL
+    mov [CommandLine], eax
+
+    invoke WinMain, hInstance, NULL, CommandLine, SW_SHOWNORMAL
     invoke ExitProcess, NULL
 endproc
 </pre>
 <p>
-<b>Line 1~4</b>：Header檔案<br>
-<b>Line 6</b>：程式進入點<br>
-<b>Line 8</b>：初始化的資料區段<br>
-<b>Line 9~10</b>：初始化的Global變數，型態是TCHAR且最後一個byte是0<br>
-<b>Line 12</b>：程式區段<br>
-<b>Line 13~18</b>：proc、endproc用來定義Procedure的區間<br>
-<b>Line 14</b>：沒有Local變數<br>
-<b>Line 16</b>：顯示Message對話盒<br>
-<b>Line 17</b>：結束Process並且釋放相關資源<br><br>
+<b>Line 18~19</b>：在建立Windows視窗時，需要指定對應的Class，如：Edit、Button，除了可以使用系統預設的Class之外，也可以註冊自定義的Class，上面例子使用的WC_DIALOG，就是系統預設定義的Dialog Class，WS_OVERLAPPEDWINDOW代表視窗有標題、最大化、最小化的按鈕，WS_VISIBLE是建立一個可視化的視窗<br>
+<b>Line 22</b>：分發Message到處理視窗事件的副程式，由於目前的Dialog視窗並沒有對應的處理副程式，因此，無法處理任何Message，包含關閉視窗的Message，所以執行後，必須使用kill命令強制關閉該視窗<br>
+<b>Line 23</b>：從Queue提取Message(包含視窗、系統事件)，addr用來計算local變數的位址，offset則是global變數位址<br>
+<b>Line 32~36</b>：一般習慣是在程式進入時，保存Instance、CommandLine的內容<br>
+<b>Line 38</b>：呼叫自定義的WinMain()，模擬C語言的WinMain()，當然也可以把內容都寫在start()裡面<br><br>
 
 Makefile
 </p>
@@ -115,7 +133,7 @@ $ make
 $ make run
 </pre>
 <p>
-<img style="border:0px" src="win32_hello/1.jpg" class="maxSize">
+<img style="border:0px" src="win32x_window/1.jpg" class="maxSize">
 </p>
 
 <p>
