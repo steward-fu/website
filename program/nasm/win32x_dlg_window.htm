@@ -65,10 +65,21 @@ main.asm
     entry start
 
     section .data use32
-NASMX_ISTRUC msg, MSG
 szCaption    declare(NASMX_TCHAR) NASMX_TEXT("main"),0
 CommandLine  dd 0
 hInstance    dd 0
+
+NASMX_ISTRUC msg, MSG 
+    NASMX_AT hwnd,    NULL
+    NASMX_AT message, NULL
+    NASMX_AT wParam,  NULL
+    NASMX_AT lParam,  NULL
+    NASMX_AT time,    NULL
+    NASMX_ISTRUC pt, POINT
+        NASMX_AT x, 0
+        NASMX_AT y, 0
+    NASMX_IENDSTRUC
+NASMX_IENDSTRUC
 
     section .text use32
 proc WinMain, dword hInst, dword hPrevInst, dword CmdLine, dword CmdShow
@@ -94,16 +105,17 @@ proc start, ptrdiff_t argc, ptrdiff_t argv
     invoke GetCommandLine, NULL
     mov [CommandLine], eax
 
-    invoke WinMain, hInstance, NULL, CommandLine, SW_SHOWNORMAL
+    invoke WinMain, [hInstance], NULL, [CommandLine], SW_SHOWNORMAL
     invoke ExitProcess, NULL
 endproc
 </pre>
 <p>
-<b>Line 18~19</b>：在建立Windows視窗時，需要指定對應的Class，如：Edit、Button，除了可以使用系統預設的Class之外，也可以註冊自定義的Class，上面例子使用的WC_DIALOG，就是系統預設定義的Dialog Class，WS_OVERLAPPEDWINDOW代表視窗有標題、最大化、最小化的按鈕，WS_VISIBLE是建立一個可視化的視窗<br>
-<b>Line 22</b>：分發Message到處理視窗事件的副程式，由於目前的Dialog視窗並沒有對應的處理副程式，因此，無法處理任何Message，包含關閉視窗的Message，所以執行後，必須使用kill命令強制關閉該視窗<br>
-<b>Line 23</b>：從Queue提取Message(包含視窗、系統事件)，addr用來計算local變數的位址，offset則是global變數位址<br>
-<b>Line 32~36</b>：一般習慣是在程式進入時，保存Instance、CommandLine的內容<br>
-<b>Line 38</b>：呼叫自定義的WinMain()，模擬C語言的WinMain()，當然也可以把內容都寫在start()裡面<br><br>
+<b>Line 13~23</b>：NASMX_STRUC用來定義Struct，而NASMX_ISTRUC則是宣告資料(Instance)的意思，NASMX_AT用來指定初始化的資料內容，如果沒有想要做資料初始化，可以省略NASMX_AT<br>
+<b>Line 29~30</b>：在建立Windows視窗時，需要指定對應的Class，如：Edit、Button，除了可以使用系統預設的Class之外，也可以註冊自定義的Class，上面例子使用的WC_DIALOG，就是系統預設定義的Dialog Class，WS_OVERLAPPEDWINDOW代表視窗有標題、最大化、最小化的按鈕，WS_VISIBLE是建立一個可視化的視窗<br>
+<b>Line 33</b>：分發Message到處理視窗事件的副程式，由於目前的Dialog視窗並沒有對應的處理副程式，因此，無法處理任何Message，包含關閉視窗的Message，所以執行後，必須使用kill命令強制關閉該視窗<br>
+<b>Line 34</b>：從Queue提取Message(包含視窗、系統事件)，addr用來計算local變數的位址，offset則是global變數位址<br>
+<b>Line 43~47</b>：一般習慣是在程式進入時，保存Instance、CommandLine的內容<br>
+<b>Line 49</b>：呼叫自定義的WinMain()，模擬C語言的WinMain()，當然也可以把內容都寫在start()裡面<br><br>
 
 Makefile
 </p>
