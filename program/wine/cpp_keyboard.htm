@@ -44,7 +44,7 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>Wine &gt;&gt; C/C++ &gt;&gt; Dialog</h3>
+<h3>Wine &gt;&gt; C/C++</h3>
 <p><b>Keyboard</b></p>
 <hr size="1">
 <p>
@@ -54,13 +54,13 @@
 3. <a href="http://www.winprog.org/tutorial/">tutorial</a><br>
 4. <a href="https://github.com/gammasoft71/Examples_Win32">examples_win32</a><br><br>
 
-WM_KEYDOWN、WM_KEYUP是一般鍵盤按鍵事件，而WM_SYSKEYDOWN、WM_SYSKEYUP則是屬於系統按鍵的事件，系統按鍵就是左上角小視窗圖案的那些按鍵命令。<br><br>
+WM_KEYDOWN、WM_KEYUP是一般鍵盤按鍵事件，而WM_SYSKEYDOWN、WM_SYSKEYUP則是屬於系統按鍵的事件，系統按鍵就是左上角小視窗圖案的那些按鍵命令<br><br>
 
 WM_KEYDOWN、WM_KEYUP
 </p>
 <pre>
 nVirtKey = (int) wParam; // virtual-key code
-lKeyData = lParam; // key data
+lKeyData = lParam;       // key data
 </pre><br>
 
 <p>
@@ -68,7 +68,7 @@ WM_SYSKEYDOWN、WM_SYSKEYUP
 </p>
 <pre>
 nVirtKey = (int) wParam; // virtual-key code
-lKeyData = lParam; // key data
+lKeyData = lParam;       // key data
 </pre><br>
 
 <p>
@@ -82,49 +82,32 @@ main.c
 
 HWND hWin = NULL;
 WNDPROC defWndProc = NULL;
-char buf[255] = {0};
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+    char buf[255] = {0};
+
     switch (uMsg) {
     case WM_KEYDOWN:
     case WM_SYSKEYDOWN:
         sprintf(buf, "key: %d", (int)wParam);
-        InvalidateRect(hWnd, NULL, true);
-        break;
+        SetWindowText(hWnd, buf);
+        return 0;
     case WM_CLOSE:
         DestroyWindow(hWnd);
         return 0;
     case WM_DESTROY:
         PostQuitMessage(0);
         return 0;
-    case WM_PAINT:
-        PAINTSTRUCT ps = {0};
-        HDC hdc = BeginPaint(hWnd, &amp;ps);
-        HFONT font =
-            CreateFont(48, 0, 0, 0, FW_BOLD, false, false, false, 0,
-                       OUT_OUTLINE_PRECIS, CLIP_DEFAULT_PRECIS,
-                       CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, "Arial");
-        SetTextColor(hdc, RGB(0x00, 0x00, 0xff));
-        SetBkMode(hdc, TRANSPARENT);
-        SelectObject(hdc, font);
-        DrawText(hdc, buf, strlen(buf), &amp;ps.rcPaint,
-                 DT_SINGLELINE | DT_CENTER | DT_VCENTER);
-        EndPaint(hWnd, &amp;ps);
-        DeleteObject(font);
-        break;
     }
     return CallWindowProc(defWndProc, hWnd, uMsg, wParam, lParam);
 }
 
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
-                   LPSTR lpCmdLine, int nCmdShow)
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
-    hWin = CreateWindow(WC_DIALOG, "main", WS_OVERLAPPEDWINDOW, 0, 0, 300, 300,
-                        NULL, NULL, NULL, NULL);
-    defWndProc =
-        (WNDPROC)SetWindowLongPtr(hWin, GWLP_WNDPROC, (long int)WndProc);
-    ShowWindow(hWin, SW_SHOW);
+    hWin = CreateWindow(WC_DIALOG, "main", 
+        WS_OVERLAPPEDWINDOW | WS_VISIBLE, 0, 0, 300, 300, NULL, NULL, NULL, NULL);
+    defWndProc = (WNDPROC)SetWindowLongPtr(hWin, GWLP_WNDPROC, (long int)WndProc);
 
     MSG msg = {0};
     while (GetMessage(&amp;msg, NULL, 0, 0)) {
@@ -133,8 +116,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     ExitProcess(0);
     return 0;
 }
-</pre><br>
+</pre>
 <p>
+<b>Line 14~17</b>：將按鍵數值顯示在視窗標題<br><br>
+
 編譯、執行
 </p>
 <pre>
@@ -142,7 +127,7 @@ $ winegcc main.c -o main -lgdi32
 $ wine ./main.exe
 </pre>
 <p>
-<img style="border:0px" src="cpp_dlg_keyboard/1.jpg" class="maxSize">
+<img style="border:0px" src="cpp_keyboard/1.jpg" class="maxSize">
 </p>
 
 <p>
