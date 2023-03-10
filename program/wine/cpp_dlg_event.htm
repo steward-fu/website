@@ -79,10 +79,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
     hWin = CreateWindow(WC_DIALOG, "main", 
-        WS_OVERLAPPEDWINDOW, 0, 0, 300, 300, NULL, NULL, NULL, NULL);
-
+        WS_OVERLAPPEDWINDOW | WS_VISIBLE, 0, 0, 300, 300, NULL, NULL, NULL, NULL);
     defWndProc = (WNDPROC)SetWindowLongPtr(hWin, GWLP_WNDPROC, (long int)WndProc);
-    ShowWindow(hWin, SW_SHOW);
 
     MSG msg = {0};
     while (GetMessage(&amp;msg, NULL, 0, 0)) {
@@ -95,9 +93,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 <p>
 <b>Line 9~14</b>：關閉視窗的順序為：主視窗收到WM_CLOSE事件時，呼叫DestroyWindow()，DestroyWindow()會自動將子視窗的相關資源也一併釋放掉(包含Resource描述的資源)，系統接著會發送WM_DESTROY事件給主視窗，待主視窗收到WM_DESTROY事件時，呼叫PostQuitMessage()結束視窗，值得注意的地方是，SendMessage()是屬於Block方式呼叫(必須等待動作執行完畢才返回)，而PostQuitMessage()則是Non-block方式呼叫<br>
 <b>Line 16</b>：將處理控制權移交給下一個視窗元件</br>
-<b>Line 21~22</b>：保存當前視窗的hWnd<br>
-<b>Line 24</b>：設定當前視窗的callback<br>
-<b>Line 25</b>：由於沒有設定WS_VISIBLE，因此，透過ShowWindow()讓當前視窗可視化<br><br>
+<b>Line 23</b>：設定當前視窗的callback<br><br>
 
 編譯、執行
 </p>
