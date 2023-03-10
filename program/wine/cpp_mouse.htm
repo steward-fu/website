@@ -44,8 +44,8 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>Wine &gt;&gt; C/C++ &gt;&gt; Dialog</h3>
-<p><b>Mouse</b></p>
+<h3>Wine &gt;&gt; C/C++</h3>
+<p><b>Mouse Event</b></p>
 <hr size="1">
 <p>
 參考資訊：<br>
@@ -57,7 +57,7 @@
 WM_MOUSEMOVE
 </p>
 <pre>
-fwKeys = wParam; // key flags
+fwKeys = wParam;       // key flags
 xPos = LOWORD(lParam); // horizontal position of cursor
 yPos = HIWORD(lParam); // vertical position of cursor
 </pre><br>
@@ -72,49 +72,32 @@ main.c
 #include &lt;windows.h&gt;
 
 HWND hWin = NULL;
-char buf[255] = {0};
 WNDPROC defWndProc = NULL;
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+    char buf[255] = {0};
+
     switch (uMsg) {
     case WM_MOUSEMOVE:
-        sprintf(buf, "%d, %d, %d", LOWORD(lParam), HIWORD(lParam), (int)wParam);
-        InvalidateRect(hWnd, NULL, true);
-        break;
+        sprintf(buf, "%d-%d", LOWORD(lParam), HIWORD(lParam));
+        SetWindowText(hWnd, buf);
+        return 0;
     case WM_CLOSE:
         DestroyWindow(hWnd);
         return 0;
     case WM_DESTROY:
         PostQuitMessage(0);
         return 0;
-    case WM_PAINT:
-        PAINTSTRUCT ps = {0};
-        HDC hdc = BeginPaint(hWnd, &amp;ps);
-        HFONT font =
-            CreateFont(48, 0, 0, 0, FW_BOLD, false, false, false, 0,
-                       OUT_OUTLINE_PRECIS, CLIP_DEFAULT_PRECIS,
-                       CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, "Arial");
-        SetTextColor(hdc, RGB(0x00, 0x00, 0xff));
-        SetBkMode(hdc, TRANSPARENT);
-        SelectObject(hdc, font);
-        DrawText(hdc, buf, strlen(buf), &amp;ps.rcPaint,
-                 DT_SINGLELINE | DT_CENTER | DT_VCENTER);
-        EndPaint(hWnd, &amp;ps);
-        DeleteObject(font);
-        break;
     }
     return CallWindowProc(defWndProc, hWnd, uMsg, wParam, lParam);
 }
 
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
-                   LPSTR lpCmdLine, int nCmdShow)
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
-    hWin = CreateWindow(WC_DIALOG, "main", WS_OVERLAPPEDWINDOW, 0, 0, 300, 300,
-                        NULL, NULL, NULL, NULL);
-    defWndProc =
-        (WNDPROC)SetWindowLongPtr(hWin, GWLP_WNDPROC, (long int)WndProc);
-    ShowWindow(hWin, SW_SHOW);
+    hWin = CreateWindow(WC_DIALOG, "main", 
+        WS_OVERLAPPEDWINDOW | WS_VISIBLE, 0, 0, 300, 300, NULL, NULL, NULL, NULL);
+    defWndProc = (WNDPROC)SetWindowLongPtr(hWin, GWLP_WNDPROC, (long int)WndProc);
 
     MSG msg = {0};
     while (GetMessage(&amp;msg, NULL, 0, 0)) {
@@ -128,11 +111,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 編譯、執行
 </p>
 <pre>
-$ winegcc main.c -o main -lgdi32
+$ winegcc main.c -o main
 $ wine ./main.exe
 </pre>
 <p>
-<img style="border:0px" src="cpp_dlg_mouse/1.jpg" class="maxSize">
+<img style="border:0px" src="../nasm/win32_mouse/1.jpg" class="maxSize">
 </p>
 
 <p>
