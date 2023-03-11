@@ -44,8 +44,8 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>Wine &gt;&gt; C/C++ &gt;&gt; Dialog</h3>
-<p><b>Timer</b></p>
+<h3>Wine &gt;&gt; C/C++</h3>
+<p><b>Set Timer</b></p>
 <hr size="1">
 <p>
 參考資訊：<br>
@@ -66,15 +66,16 @@ main.c
 
 int cnt = 0;
 HWND hWin = NULL;
-char buf[255] = {0};
 WNDPROC defWndProc = NULL;
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+    char buf[255] = {0};
+
     switch (uMsg) {
     case WM_TIMER:
         sprintf(buf, "%d", cnt++);
-        InvalidateRect(hWnd, NULL, true);
+        SetWindowText(hWnd, buf);
         break;
     case WM_CLOSE:
         DestroyWindow(hWnd);
@@ -83,33 +84,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         KillTimer(hWnd, 1);
         PostQuitMessage(0);
         return 0;
-    case WM_PAINT:
-        PAINTSTRUCT ps = {0};
-        HDC hdc = BeginPaint(hWnd, &amp;ps);
-        HFONT font =
-            CreateFont(48, 0, 0, 0, FW_BOLD, false, false, false, 0,
-                       OUT_OUTLINE_PRECIS, CLIP_DEFAULT_PRECIS,
-                       CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, "Arial");
-        SetTextColor(hdc, RGB(0x00, 0x00, 0xff));
-        SetBkMode(hdc, TRANSPARENT);
-        SelectObject(hdc, font);
-        DrawText(hdc, buf, strlen(buf), &amp;ps.rcPaint,
-                 DT_SINGLELINE | DT_CENTER | DT_VCENTER);
-        EndPaint(hWnd, &amp;ps);
-        DeleteObject(font);
-        break;
     }
     return CallWindowProc(defWndProc, hWnd, uMsg, wParam, lParam);
 }
 
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
-                   LPSTR lpCmdLine, int nCmdShow)
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
-    hWin = CreateWindow(WC_DIALOG, "main", WS_OVERLAPPEDWINDOW, 0, 0, 300, 300,
-                        NULL, NULL, NULL, NULL);
-    defWndProc =
-        (WNDPROC)SetWindowLongPtr(hWin, GWLP_WNDPROC, (long int)WndProc);
-    ShowWindow(hWin, SW_SHOW);
+    hWin = CreateWindow(WC_DIALOG, "main", 
+        WS_OVERLAPPEDWINDOW | WS_VISIBLE, 0, 0, 300, 300, NULL, NULL, NULL, NULL);
+    defWndProc = (WNDPROC)SetWindowLongPtr(hWin, GWLP_WNDPROC, (long int)WndProc);
     SetTimer(hWin, 1, 1000, NULL);
 
     MSG msg = {0};
@@ -119,16 +102,20 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     ExitProcess(0);
     return 0;
 }
-</pre><br>
+</pre>
 <p>
+<b>Line 15~17</b>：累加數值並且顯示在視窗標題<br>
+<b>Line 23</b>：不使用Timer，記得關閉Timer<br>
+<b>Line 35</b>：設定Timer為每秒(1000ms)觸發一次，ID=1<br><br>
+
 編譯、執行
 </p>
 <pre>
-$ winegcc main.c -o main -lgdi32
+$ winegcc main.c -o main
 $ wine ./main.exe
 </pre>
 <p>
-<img style="border:0px" src="cpp_dlg_timer/1.jpg" class="maxSize">
+<img style="border:0px" src="../nasm/cpp_timer/1.jpg" class="maxSize">
 </p>
 
 <p>
