@@ -44,8 +44,8 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>Wine &gt;&gt; C/C++ &gt;&gt; Dialog</h3>
-<p><b>ScrollBar</b></p>
+<h3>Wine &gt;&gt; C/C++</h3>
+<p><b>Set ScrollBar</b></p>
 <hr size="1">
 <p>
 參考資訊：<br>
@@ -62,16 +62,11 @@ main.c
 #include &lt;string.h&gt;
 #include &lt;windows.h&gt;
 
-int hPos = 0;
-int vPos = 0;
 HWND hWin = NULL;
-char buf[255] = {0};
 WNDPROC defWndProc = NULL;
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-    int updated = 0;
-
     switch (uMsg) {
     case WM_CLOSE:
         DestroyWindow(hWnd);
@@ -79,98 +74,34 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     case WM_DESTROY:
         PostQuitMessage(0);
         return 0;
-    case WM_PAINT:
-        PAINTSTRUCT ps = {0};
-        HDC hdc = BeginPaint(hWnd, &amp;ps);
-        HFONT font =
-            CreateFont(38, 0, 0, 0, FW_BOLD, false, false, false, 0,
-                       OUT_OUTLINE_PRECIS, CLIP_DEFAULT_PRECIS,
-                       CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, "Arial");
-        SetTextColor(hdc, RGB(0x00, 0x00, 0xff));
-        SetBkMode(hdc, TRANSPARENT);
-        SelectObject(hdc, font);
-        DrawText(hdc, buf, strlen(buf), &amp;ps.rcPaint,
-                 DT_SINGLELINE | DT_CENTER | DT_VCENTER);
-        EndPaint(hWnd, &amp;ps);
-        DeleteObject(font);
-        break;
     case WM_VSCROLL:
         switch (LOWORD(wParam)) {
         case SB_LINEUP:
-            vPos -= 1;
-            updated = 1;
+            SetWindowText(hWnd, "LINE++");
             break;
         case SB_LINEDOWN:
-            vPos += 1;
-            updated = 1;
+            SetWindowText(hWnd, "LINE--");
             break;
         case SB_PAGEUP:
-            vPos -= 10;
-            updated = 1;
+            SetWindowText(hWnd, "PAGE++");
             break;
         case SB_PAGEDOWN:
-            vPos += 10;
-            updated = 1;
+            SetWindowText(hWnd, "PAGE--");
             break;
         }
         break;
-    case WM_HSCROLL:
-        switch (LOWORD(wParam)) {
-        case SB_LINEUP:
-            hPos -= 1;
-            updated = 1;
-            break;
-        case SB_LINEDOWN:
-            hPos += 1;
-            updated = 1;
-            break;
-        case SB_PAGEUP:
-            hPos -= 10;
-            updated = 1;
-            break;
-        case SB_PAGEDOWN:
-            hPos += 10;
-            updated = 1;
-            break;
-        }
-        break;
-    }
-
-    if (updated &gt; 0) {
-        if (vPos &lt; 0) {
-            vPos = 0;
-        }
-        if (vPos &gt; 99) {
-            vPos = 99;
-        }
-        if (hPos &lt; 0) {
-            hPos = 0;
-        }
-        if (hPos &gt; 99) {
-            hPos = 99;
-        }
-        SetScrollPos(hWnd, SB_VERT, vPos, TRUE);
-        SetScrollPos(hWnd, SB_HORZ, hPos, TRUE);
-        sprintf(buf, "h:%d, v:%d", hPos, vPos);
-        InvalidateRect(hWnd, NULL, true);
     }
     return CallWindowProc(defWndProc, hWnd, uMsg, wParam, lParam);
 }
 
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
-                   LPSTR lpCmdLine, int nCmdShow)
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
-    hWin = CreateWindow(WC_DIALOG, "main",
-                        WS_OVERLAPPEDWINDOW | WS_VSCROLL | WS_HSCROLL, 0, 0,
-                        300, 300, NULL, NULL, NULL, NULL);
-    defWndProc =
-        (WNDPROC)SetWindowLongPtr(hWin, GWLP_WNDPROC, (long int)WndProc);
-    ShowWindow(hWin, SW_SHOW);
+    hWin = CreateWindow(WC_DIALOG, "main", 
+        WS_OVERLAPPEDWINDOW | WS_VISIBLE | WS_VSCROLL, 0, 0, 300, 300, NULL, NULL, NULL, NULL);
+    defWndProc = (WNDPROC)SetWindowLongPtr(hWin, GWLP_WNDPROC, (long int)WndProc);
 
     SetScrollRange(hWin, SB_VERT, 0, 100, FALSE);
-    SetScrollRange(hWin, SB_HORZ, 0, 100, FALSE);
-    SetScrollPos(hWin, SB_VERT, vPos, TRUE);
-    SetScrollPos(hWin, SB_HORZ, hPos, TRUE);
+    SetScrollPos(hWin, SB_VERT, 50, TRUE);
 
     MSG msg = {0};
     while (GetMessage(&amp;msg, NULL, 0, 0)) {
@@ -179,7 +110,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     ExitProcess(0);
     return 0;
 }
-</pre><br>
+</pre>
 <p>
 編譯、執行
 </p>
@@ -188,7 +119,7 @@ $ winegcc main.c -o main -lgdi32
 $ wine ./main.exe
 </pre>
 <p>
-<img style="border:0px" src="cpp_dlg_scrollbar/1.jpg" class="maxSize">
+<img style="border:0px" src="../nasm/win32_scrollbar/1.jpg" class="maxSize">
 </p>
 
 <p>
