@@ -126,7 +126,7 @@ _gdi32    db "/defaultlib:c:\\masm32\\lib\\gdi32.lib "
 _user32   db "/defaultlib:c:\\masm32\\lib\\user32.lib "
 _kernel32 db "/defaultlib:c:\\masm32\\lib\\kernel32.lib "
   
-    segment .data use32
+    segment .data
 hWin        dd 0
 szCaption   db "main",0
 hInstance   dd 0
@@ -142,7 +142,7 @@ msg istruc MSG
     at .pt,      dd 0, 0
 iend
  
-    segment .text use32
+    segment .text
 WndProc:
     push ebp
     mov ebp, esp
@@ -160,7 +160,7 @@ WndProc:
     jmp .finish
 
 .handle_destroy:
-    push dword 0
+    push 0
     call PostQuitMessage
     xor eax, eax
     jmp .finish
@@ -181,18 +181,18 @@ WinMain:
     push ebp
     mov ebp, esp
  
-    push dword 0
-    push dword 0
-    push dword 0
-    push dword 0
-    push dword 300
-    push dword 300
-    push dword 0
-    push dword 0
-    push dword WS_OVERLAPPEDWINDOW | WS_VISIBLE
+    push 0
+    push 0
+    push 0
+    push 0
+    push 300
+    push 300
+    push 0
+    push 0
+    push WS_OVERLAPPEDWINDOW | WS_VISIBLE
     push szCaption
-    push dword WC_DIALOG
-    push dword WS_EX_LEFT
+    push WC_DIALOG
+    push WS_EX_LEFT
     call CreateWindowEx
     mov [hWin], eax
 
@@ -203,15 +203,15 @@ WinMain:
     mov [defWndProc], eax
  
 .loop:
-    push dword 0
-    push dword 0
-    push dword 0
-    push dword msg
+    push 0
+    push 0
+    push 0
+    push msg
     call GetMessage
     cmp eax, 0
     je .exit
  
-    push dword msg
+    push msg
     call DispatchMessage
     jmp .loop
  
@@ -221,16 +221,16 @@ WinMain:
     ret 16
  
 _start:
-    push dword 0
+    push 0
     call GetModuleHandle
     mov [hInstance], eax
  
     call GetCommandLine
     mov [CommandLine], eax
  
-    push dword SW_SHOWNORMAL
+    push SW_SHOWNORMAL
     push dword [CommandLine]
-    push dword 0
+    push 0
     push dword [hInstance]
     call WinMain
  
