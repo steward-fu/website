@@ -45,24 +45,52 @@
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
 <h3>Debian</h3>
-<p><b>shell script "--" 用途</b></p>
+<p><b>--用途</b></p>
 <hr size="1">
 <p>
-"--"後面的東西代表參數<br><br>
+參考資訊：<br>
+1. <a href="https://github.com/torvalds/linux/blob/master/init/main.c">init</b><br>
+2. <a href="https://unix.stackexchange.com/questions/570729/where-is-the-double-dash-argument-documented">where-is-the-double-dash-argument-documented</a><br><br>
 
-run.sh
+<b>--</b>後面的東西代表實際參數，而非參數選項<br><br>
+
+如下範例會將檔名為<b>-A</b>的內容印出來，<b>-A</b>其實是cat的選項，代表<b>--show-all</b>，因此，如果檔名剛好是<b>-A</b>，則可以使用<b>--</b>來結束參數選項，讓<b>-A</b>是以檔名方式傳遞給cat開啟
 </p>
 <pre>
-#!/bin/sh
-"$@"
+$ cat -- -A
 </pre><br>
 
 <p>
-測試
+在Linux Kernel CMDLINE中，如果要將實際參數傳遞給init時，也是使用<b>--</b>的方式，可以參考檔案：init/main.c
+</p>
+<pre class="brush:cpp">
+/* Anything after -- gets handed straight to init. */
+static int __init set_init_arg(char *param, char *val,
+			       const char *unused, void *arg)
+{
+	unsigned int i;
+
+	if (panic_later)
+		return 0;
+
+	repair_env_string(param, val);
+
+	for (i = 0; argv_init[i]; i++) {
+		if (i == MAX_INIT_ARGS) {
+			panic_later = "init";
+			panic_param = param;
+			return 0;
+		}
+	}
+	argv_init[i] = param;
+	return 0;
+}
+</pre>
+<p>
+<b>--</b>後面的<b>FC3000</b>，不是參數選項，而是一個實際參數，因此，param="FC3000"
 </p>
 <pre>
-$ ./run.sh echo "test"
-  test
+CONFIG_CMDLINE="rootwait root=/dev/mmcblk0p1 ro fstype=vfat init=/mininit -- FC3000"
 </pre><br>
 
 <p>
