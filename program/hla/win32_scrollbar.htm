@@ -1,0 +1,183 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>High Level Assembly (HLA) &gt;&gt; Win32 API (HLA v1.x)</h3>
+<p><b>Set ScrollBar</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="http://winapi.freetechsecrets.com/win32/">win32</a><br>
+2. <a href="http://masm32.com/board/index.php?topic=3584.0">masm32</a><br><br>
+
+當視窗的可視區域(如：300x300像素)小於顯示圖片大小(如：640x480像素)時，這時可以使用Windows視窗元件ScrollBar，用來做顯示位置調整的動作，ScrollBar元件有垂直和水平兩種方向並且提供視窗事件回報機制(WM_VSCROLL、WM_HSCROLL)，因此，這裡的ScrollBar元件並不能夠自動幫忙做顯示位置調整的動作，取而代之的是，在收到WM_VSCROLL、WM_HSCROLL事件時，使用者必須自己決定哪些東西要顯示在視窗的可視區域上<br><br>
+
+main.hla
+</p>
+<pre class="brush:asm">
+program main;
+     
+#include("w.hhf")
+#include("args.hhf")
+#include("memory.hhf")
+#include("strings.hhf")
+     
+static
+    hWin:        dword;
+    hInstance:   dword;
+    CommandLine: string;
+    defWndProc:  dword;
+   
+readonly
+    SLUP:      string:= "LINE++";
+    SLDN:      string:= "LINE--";
+    SPUP:      string:= "PAGE++";
+    SPDN:      string:= "PAGE--";
+    szCaption: string:= "main";
+    
+procedure WndProc(hWnd:dword; uMsg:uns32; wParam:dword; lParam:dword); @stdcall;
+begin WndProc;
+    if (uMsg == w.WM_VSCROLL) then
+        mov(wParam, eax);
+        and($ffff, eax);
+        if (eax == w.SB_LINEUP) then
+            w.SetWindowText(hWnd, SLUP);
+        elseif (eax == w.SB_LINEDOWN) then
+            w.SetWindowText(hWnd, SLDN);
+        elseif (eax == w.SB_PAGEUP) then
+            w.SetWindowText(hWnd, SPUP);
+        elseif (eax == w.SB_PAGEDOWN) then
+            w.SetWindowText(hWnd, SPDN);
+        endif;
+        xor(eax, eax);
+    elseif (uMsg == w.WM_CLOSE) then
+        w.DestroyWindow(hWnd);
+        xor(eax, eax);
+    elseif (uMsg == w.WM_DESTROY) then
+        w.PostQuitMessage(0);
+        xor(eax, eax);
+    else
+        w.CallWindowProc(defWndProc, hWnd, uMsg, wParam, lParam);
+    endif;
+end WndProc;
+    
+procedure WinMain(hInst:dword; hPrevInst:dword; CmdLine:string; CmdShow:dword);
+var
+    msg: w.MSG;
+     
+begin WinMain;
+    w.CreateWindowEx(w.WS_EX_LEFT, w.WC_DIALOG, szCaption,
+        w.WS_OVERLAPPEDWINDOW | w.WS_VISIBLE | w.WS_VSCROLL, 0, 0, 300, 300, 0, 0, NULL, NULL);
+    mov(eax, hWin);
+    
+    w.SetWindowLong(hWin, w.GWL_WNDPROC, &WndProc);
+    mov(eax, defWndProc);
+
+    w.SetScrollRange(hWin, w.SB_VERT, 0, 100, false);
+    w.SetScrollPos(hWin, w.SB_VERT, 50, true);
+    forever
+        w.GetMessage(msg, NULL, 0, 0);
+        breakif(!eax);
+     
+        w.DispatchMessage(msg);
+    endfor;
+    mov(msg.wParam, eax);
+end WinMain;
+     
+begin main;
+    w.GetModuleHandle(NULL);
+    mov(eax, hInstance);
+    mov(arg.cmdLn(), CommandLine);
+    
+    WinMain(hInstance, NULL, CommandLine, w.SW_SHOWNORMAL);
+    
+    w.ExitProcess(eax);
+end main;
+</pre>
+<p>
+<b>Line 23~35</b>：處理ScrollBar訊息並且顯示在視窗標題<br>
+<b>Line 53</b>：WS_VSCROLL是垂直的ScrollBar，WS_HSCROLL則是水平的ScrollBar<br>
+<b>Line 59</b>：設定ScrollBar最大的範圍<br>
+<b>Line 60</b>：設定ScrollBar目前的位置<br><br>
+
+Makefile
+</p>
+<pre>
+export WINEPREFIX=/home/user/.wine_amd64
+
+TARGET=main
+MYWINE=box86 wine
+
+all:
+	${MYWINE} hlaparse.exe -WIN32 -level=high -v -test ${TARGET}.hla
+	${MYWINE} polink.exe @${TARGET}.link hlalib.lib ${TARGET}.obj /OUT:${TARGET}.exe
+
+run:
+	${MYWINE} ${TARGET}.exe
+
+clean:
+	rm -rf ${TARGET}.exe ${TARGET}.obj ${TARGET}.link
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ make
+$ make run
+</pre>
+<p>
+<img style="border:0px" src="../nasm/win32_scrollbar/1.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../program.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
