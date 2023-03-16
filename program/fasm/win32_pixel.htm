@@ -1,0 +1,232 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>FASM &gt;&gt; Assembly (x86) &gt;&gt; Win32 API &gt;&gt; Painting</h3>
+<p><b>Set Pixel</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://board.flatassembler.net/">fasm</a><br><br>
+
+屏幕的最小顯示單位是像素，像素由紅色(Red)、綠色(Green)、藍色(Blue)、Alpha等四個顏色組成，因此，在呼叫CreateWindow()時，傳入的解析度，如：300x300，代表該視窗(有效區域)的X軸有300個像素，而Y軸則是有300個像素，這個300x300像素的區域是可以用來繪製任何東西，WM_PAINT是處理視窗重新繪畫的事件，繪畫的相關處理都需要在這個事件完成，比較特別的是，Windows視窗將繪圖的許多東西抽象化，最基本的需求是：一個DC(Device Context)和一個BITMAP，DC可以想像成是一個畫台，而BITMAP則是一片畫布(Buffer)，DC有了Buffer就可以畫上任何東西並將其顯示在視窗上<br><br>
+
+main.asm
+</p>
+<pre class="brush:asm">
+    format PE GUI 4.0
+    entry start
+      
+    include "c:\fasm\include\win32a.inc"
+     
+    section ".idata" import data readable writeable
+library user, "user32.dll", kernel, "kernel32.dll", gdi, "gdi32.dll"
+
+import gdi, \
+    SetPixel,        "SetPixel"
+
+import user, \
+    EndPaint,        "EndPaint",  \
+    SetTimer,        "SetTimer",  \
+    wsprintf,        "wsprintfA", \
+    KillTimer,       "KillTimer",  \
+    BeginPaint,      "BeginPaint", \
+    MessageBox,      "MessageBoxA", \
+    GetMessage,      "GetMessageA", \
+    SetScrollPos,    "SetScrollPos", \
+    DestroyWindow,   "DestroyWindow", \
+    SetWindowText,   "SetWindowTextA", \
+    SetWindowLong,   "SetWindowLongA", \
+    SetScrollRange,  "SetScrollRange", \
+    CreateWindowEx,  "CreateWindowExA", \
+    CallWindowProc,  "CallWindowProcA", \
+    DispatchMessage, "DispatchMessageA", \
+    PostQuitMessage, "PostQuitMessage"
+     
+import kernel, \
+    ExitProcess,     "ExitProcess", \
+    GetCommandLine,  "GetCommandLineA", \
+    GetModuleHandle, "GetModuleHandleA"
+      
+    section ".data" data readable writeable
+hWin        dd 0
+szCaption   db "main",0
+hInstance   dd 0
+CommandLine dd 0
+defWndProc  dd 0
+ 
+    section ".text" code readable executable
+proc WndProc hWnd, uMsg, wParam, lParam
+    local x:DWORD
+    local y:DWORD
+    local hdc:DWORD
+    local ps:PAINTSTRUCT
+
+    mov eax, [uMsg]
+    cmp eax, WM_PAINT
+    je .handle_paint
+    cmp eax, WM_CLOSE
+    je .handle_close
+    cmp eax, WM_DESTROY
+    je .handle_destroy
+    invoke CallWindowProc, [defWndProc], [hWnd], [uMsg], [wParam], [lParam]
+    jmp .finish
+ 
+.handle_paint:
+    lea eax, [ps]
+    invoke BeginPaint, [hWnd], eax
+    mov [hdc], eax
+
+    xor eax, eax
+    mov [y], eax
+.ylp:
+    xor eax, eax
+    mov [x], eax
+.xlp:
+    invoke SetPixel, [hdc], [x], [y], 0ffh
+    inc dword [x]
+    cmp dword [x], 100
+    jb .xlp
+    inc dword [y]
+    cmp dword [y], 100
+    jb .ylp
+
+    lea eax, [ps]
+    invoke EndPaint, [hWnd], eax
+    xor eax, eax
+    jmp .finish
+ 
+.handle_close:
+    invoke DestroyWindow, [hWnd]
+    xor eax, eax
+    jmp .finish
+     
+.handle_destroy:
+    invoke PostQuitMessage, 0
+    xor eax, eax
+    jmp .finish
+      
+.finish:
+    ret
+endp
+     
+proc WinMain hInst, hPrevInst, CmdLine, CmdShow
+    local msg:MSG
+     
+    invoke CreateWindowEx, WS_EX_LEFT, WC_DIALOG, szCaption, \
+        WS_OVERLAPPEDWINDOW or WS_VISIBLE, 0, 0, 300, 300, NULL, NULL, NULL, NULL
+    mov [hWin], eax
+     
+    invoke SetWindowLong, [hWin], GWL_WNDPROC, WndProc
+    mov [defWndProc], eax
+  
+@@:
+    lea eax, [msg]
+    invoke GetMessage, eax, NULL, 0, 0
+    cmp eax, 0
+    je @f
+    lea eax, [msg]
+    invoke DispatchMessage, eax
+    jmp @b
+@@:
+    mov eax, [msg.wParam]
+    ret
+endp
+     
+start:
+    invoke GetModuleHandle, NULL
+    mov [hInstance], eax
+      
+    invoke GetCommandLine
+    mov [CommandLine], eax
+      
+    stdcall WinMain, [hInstance], NULL, [CommandLine], SW_SHOWNORMAL
+    invoke ExitProcess, eax
+</pre>
+<p>
+<b>Line 59~81</b>：處理繪畫事件<br>
+<b>Line 60~62</b>：取得視窗的DC，該DC已經有Buffer可以使用，因此，可以直接在上面繪製任何東西<br>
+<b>Line 64~76</b>：透過SetPixel()畫出一個正方形，顏色是紅色<br>
+<b>Line 78~79</b>：結束繪製<br><br>
+
+Makefile
+</p>
+<pre>
+export WINEPREFIX=/home/user/.wine_amd64
+
+TARGET=main
+MYWINE=box86 wine
+FASM32=/home/user/.wine_amd64/drive_c/fasm
+
+all:
+	${MYWINE} ${FASM32}/fasm.exe ${TARGET}.asm
+
+run:
+	${MYWINE} ${TARGET}.exe
+
+clean:
+	rm -rf ${TARGET}.exe
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ make
+$ make run
+</pre>
+<p>
+<img style="border:0px" style="border:0px" src="../nasm/win32_pixel/1.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../program.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
