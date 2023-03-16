@@ -59,7 +59,7 @@ main.asm
 <pre class="brush:asm">
     [bits 32]
     global _start
-
+ 
     extern _sprintf
     extern _SetPixel@16
     extern _EndPaint@8
@@ -80,7 +80,7 @@ main.asm
     extern _PostQuitMessage@4
     extern _GetModuleHandleA@4
     extern _DispatchMessageA@4
-
+ 
     %define ARG1            8h
     %define ARG2            0ch
     %define ARG3            10h
@@ -105,7 +105,7 @@ main.asm
     %define PostQuitMessage _PostQuitMessage@4
     %define GetModuleHandle _GetModuleHandleA@4
     %define DispatchMessage _DispatchMessageA@4
-     
+      
     struc RECT
         .left:   resd 1
         .top:    resd 1
@@ -113,7 +113,7 @@ main.asm
         .bottom: resd 1
         .SIZE:
     endstruc
-
+ 
     struc PAINTSTRUCT
         .hdc:         resd 1
         .fErase:      resd 1
@@ -123,13 +123,13 @@ main.asm
         .rgbReserved: resb 32
         .SIZE:
     endstruc
-
+ 
     struc POINT
         .x: resd 1
         .y: resd 1
         .SIZE:
     endstruc
-      
+       
     struc MSG
         .hwnd:    resd 1
         .message: resd 1
@@ -139,7 +139,7 @@ main.asm
         .pt:      resb POINT.SIZE
         .SIZE:
     endstruc
-
+ 
     WM_PAINT            equ 0Fh
     SB_LINEUP           equ 0
     SB_LINELEFT         equ 0
@@ -175,14 +175,14 @@ main.asm
                             WS_THICKFRAME | \
                             WS_MINIMIZEBOX | \
                             WS_MAXIMIZEBOX
-      
+       
     section .drectve info
 _entry    db "/entry:start "
 _gdi32    db "/defaultlib:c:\\masm32\\lib\\gdi32.lib "
 _user32   db "/defaultlib:c:\\masm32\\lib\\user32.lib "
 _msvcrt   db "/defaultlib:c:\\masm32\\lib\\msvcrt.lib "
 _kernel32 db "/defaultlib:c:\\masm32\\lib\\kernel32.lib "
-       
+        
     segment .data
 hWin        dd 0
 szCaption   db "main",0
@@ -192,7 +192,7 @@ CommandLine dd 0
 hdc         dd 0
 x           dd 0
 y           dd 0
-
+ 
 msg istruc MSG
     at .hwnd,    dd 0
     at .message, dd 0
@@ -201,7 +201,7 @@ msg istruc MSG
     at .time,    dd 0
     at .pt,      dd 0, 0
 iend
-      
+       
 ps istruc PAINTSTRUCT
     at .hdc,         dd 0
     at .fErase,      dd 0
@@ -210,12 +210,12 @@ ps istruc PAINTSTRUCT
     at .fIncUpdate,  dd 0
     at .rgbReserved, db 0
 iend
-
+ 
     segment .text
 WndProc:
     push ebp
     mov ebp, esp
-     
+      
     cmp dword [ebp + ARG2], WM_PAINT
     je .handle_paint
     cmp dword [ebp + ARG2], WM_CLOSE
@@ -223,14 +223,13 @@ WndProc:
     cmp dword [ebp + ARG2], WM_DESTROY
     je .handle_destroy
     jmp .handle_default
-
+ 
 .handle_paint:
-    lea eax, ps
-    push eax
+    push ps
     push dword [ebp + ARG1]
     call BeginPaint
     mov [hdc], eax
-
+ 
     xor eax, eax
     mov [y], eax
 .ylp:
@@ -243,33 +242,30 @@ WndProc:
     push dword [hdc]
     call SetPixel
     inc dword [x]
-    mov eax, dword [x]
-    cmp eax, 100
+    cmp dword [x], 100
     jb .xlp
     inc dword [y]
-    mov eax, dword [y]
-    cmp eax, 100
+    cmp dword [y], 100
     jb .ylp
-    
-    lea eax, ps
-    push eax
+     
+    push ps
     push dword [ebp + ARG1]
     call EndPaint
     xor eax, eax
     jmp .finish
-
+ 
 .handle_close:
     push dword [ebp + ARG1]
     call DestroyWindow
     xor eax, eax
     jmp .finish
-     
+      
 .handle_destroy:
     push 0
     call PostQuitMessage
     xor eax, eax
     jmp .finish
-     
+      
 .handle_default:
     push dword [ebp + ARG4]
     push dword [ebp + ARG3]
@@ -277,15 +273,15 @@ WndProc:
     push dword [ebp + ARG1]
     push dword [defWndProc]
     call CallWindowProc
-     
+      
 .finish:
     leave
     ret 16
-     
+      
 WinMain:
     push ebp
     mov ebp, esp
-      
+       
     push 0
     push 0
     push 0
@@ -300,13 +296,13 @@ WinMain:
     push WS_EX_LEFT
     call CreateWindowEx
     mov [hWin], eax
-     
+      
     push WndProc
     push GWL_WNDPROC
     push dword [hWin]
     call SetWindowLong
     mov [defWndProc], eax
-  
+   
 .loop:
     push 0
     push 0
@@ -315,38 +311,38 @@ WinMain:
     call GetMessage
     cmp eax, 0
     je .exit
-      
+       
     push msg
     call DispatchMessage
     jmp .loop
-      
+       
 .exit:
     mov eax, [msg + MSG.wParam]
     leave
     ret 16
-      
+       
 _start:
     push 0
     call GetModuleHandle
     mov [hInstance], eax
-      
+       
     call GetCommandLine
     mov [CommandLine], eax
-      
+       
     push SW_SHOWNORMAL
     push dword [CommandLine]
     push 0
     push dword [hInstance]
     call WinMain
-      
+       
     push eax
     call ExitProcess
 </pre>
 <p>
-<b>Line 168~200</b>：處理繪畫事件<br>
+<b>Line 168~196</b>：處理繪畫事件<br>
 <b>Line 169~172</b>：取得視窗的DC，該DC已經有Buffer可以使用，因此，可以直接在上面繪製任何東西<br>
-<b>Line 175~193</b>：透過SetPixel()畫出一個正方形，顏色是紅色<br>
-<b>Line 195~198</b>：結束繪製<br><br>
+<b>Line 174~190</b>：透過SetPixel()畫出一個正方形，顏色是紅色<br>
+<b>Line 192~194</b>：結束繪製<br><br>
 
 Makefile
 </p>
