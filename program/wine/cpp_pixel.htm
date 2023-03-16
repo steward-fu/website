@@ -59,12 +59,17 @@ main.c
 </p>
 <pre class="brush:cpp">
 #include &lt;windows.h&gt;
-
+ 
 HWND hWin = NULL;
 WNDPROC defWndProc = NULL;
-
+ 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+    int x = 0;
+    int y = 0;
+    HDC hdc = NULL;
+    PAINTSTRUCT ps = {0};
+
     switch (uMsg) {
     case WM_CLOSE:
         DestroyWindow(hWnd);
@@ -73,9 +78,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         PostQuitMessage(0);
         return 0;
     case WM_PAINT:
-        int x = 0, y = 0;
-        PAINTSTRUCT ps = {0};
-        HDC hdc = BeginPaint(hWnd, &amp;ps);
+        hdc = BeginPaint(hWnd, &amp;ps);
         for (y = 0; y &lt; 100; y++) {
             for (x = 0; x &lt; 100; x++) {
                 SetPixel(hdc, x, y, RGB(0xff, 0x00, 0x00));
@@ -86,13 +89,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     }
     return CallWindowProc(defWndProc, hWnd, uMsg, wParam, lParam);
 }
-
+ 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
     hWin = CreateWindow(WC_DIALOG, "main", 
         WS_OVERLAPPEDWINDOW | WS_VISIBLE, 0, 0, 300, 300, NULL, NULL, NULL, NULL);
     defWndProc = (WNDPROC)SetWindowLongPtr(hWin, GWLP_WNDPROC, (long int)WndProc);
-
+ 
     MSG msg = {0};
     while (GetMessage(&amp;msg, NULL, 0, 0)) {
         DispatchMessage(&amp;msg);
@@ -102,10 +105,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 }
 </pre>
 <p>
-<b>Line 15~25</b>：處理繪畫事件<br>
-<b>Line 18</b>：取得視窗的DC，該DC已經有Buffer可以使用，因此，可以直接在上面繪製任何東西<br>
-<b>Line 19~23</b>：透過SetPixel()畫出一個正方形，顏色是紅色<br>
-<b>Line 24</b>：結束繪製<br><br>
+<b>Line 20~28</b>：處理繪畫事件<br>
+<b>Line 21</b>：取得視窗的DC，該DC已經有Buffer可以使用，因此，可以直接在上面繪製任何東西<br>
+<b>Line 22~26</b>：透過SetPixel()畫出一個正方形，顏色是紅色<br>
+<b>Line 27</b>：結束繪製<br><br>
 
 編譯、執行
 </p>
