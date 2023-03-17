@@ -44,16 +44,14 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>Wine &gt;&gt; C/C++ &gt;&gt; Dialog &gt;&gt; Painting</h3>
-<p><b>Pen</b></p>
+<h3>Wine &gt;&gt; C/C++ &gt;&gt; Painting</h3>
+<p><b>Create Pen</b></p>
 <hr size="1">
 <p>
 參考資訊：<br>
 1. <a href="http://winapi.freetechsecrets.com/win32/">win32</a><br>
 2. <a href="http://www.winprog.org/tutorial/">tutorial</a><br>
 3. <a href="https://github.com/gammasoft71/Examples_Win32">examples_win32</a><br><br>
-
-當視窗元件需要重畫時，系統會透過發送WM_PAINT事件，讓callback進行處理，因此，可以在收到WM_PAINT事件時，繪製相關的圖像或者文字，而關於畫圖設定方面，可以分成Brush和Pen兩種設定，Brush代表填入的顏色，Pen則是線條的顏色<br><br>
 
 main.c
 </p>
@@ -65,6 +63,10 @@ WNDPROC defWndProc = NULL;
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+    HDC hdc = NULL;
+    HPEN pen = NULL;
+    PAINTSTRUCT ps = {0};
+
     switch (uMsg) {
     case WM_CLOSE:
         DestroyWindow(hWnd);
@@ -73,9 +75,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         PostQuitMessage(0);
         return 0;
     case WM_PAINT:
-        PAINTSTRUCT ps = {0};
-        HDC hdc = BeginPaint(hWnd, &amp;ps);
-        HPEN pen = CreatePen(PS_SOLID, 10, RGB(0xff, 0x00, 0x00));
+        hdc = BeginPaint(hWnd, &amp;ps);
+        pen = CreatePen(PS_SOLID, 10, RGB(0xff, 0x00, 0x00));
         SelectObject(hdc, pen);
         MoveToEx(hdc, 0, 0, NULL);
         LineTo(hdc, 100, 100);
@@ -86,14 +87,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     return CallWindowProc(defWndProc, hWnd, uMsg, wParam, lParam);
 }
 
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
-                   LPSTR lpCmdLine, int nCmdShow)
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
-    hWin = CreateWindow(WC_DIALOG, "main", WS_OVERLAPPEDWINDOW, 0, 0, 300, 300,
-                        NULL, NULL, NULL, NULL);
-    defWndProc =
-        (WNDPROC)SetWindowLongPtr(hWin, GWLP_WNDPROC, (long int)WndProc);
-    ShowWindow(hWin, SW_SHOW);
+    hWin = CreateWindow(WC_DIALOG, "main", 
+        WS_OVERLAPPEDWINDOW | WS_VISIBLE, 0, 0, 300, 300, NULL, NULL, NULL, NULL);
+    defWndProc = (WNDPROC)SetWindowLongPtr(hWin, GWLP_WNDPROC, (long int)WndProc);
 
     MSG msg = {0};
     while (GetMessage(&amp;msg, NULL, 0, 0)) {
@@ -111,7 +109,7 @@ $ winegcc main.c -o main -lgdi32
 $ wine ./main.exe
 </pre>
 <p>
-<img style="border:0px" src="cpp_dlg_pen/1.jpg" class="maxSize">
+<img style="border:0px" src="../nasm/win32_pen/1.jpg" class="maxSize">
 </p>
 
 <p>
