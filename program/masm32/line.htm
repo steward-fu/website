@@ -1,0 +1,205 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>MASM32 &gt;&gt; Painting</h3>
+<p><b>Draw Line</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="http://winapi.freetechsecrets.com/win32/">win32</a><br>
+2. <a href="http://www.winprog.org/tutorial/">tutorial</a><br>
+3. <a href="https://github.com/gammasoft71/Examples_Win32">examples_win32</a><br><br>
+
+線的起始點位置是位於(x=0, y=0)，使用者可以呼叫MoveToEx()設定新的起始點，而使用LineTo()就可以畫出一條直線，新的起始點則是線的結束位置<br><br>
+
+main.asm
+</p>
+<pre class="brush:asm">
+    .386
+    .model flat,stdcall
+    option casemap:none
+          
+include c:\masm32\include\msvcrt.inc
+include c:\masm32\include\windows.inc
+include c:\masm32\include\kernel32.inc
+include c:\masm32\include\gdi32.inc
+include c:\masm32\include\user32.inc
+          
+includelib c:\masm32\lib\msvcrt.lib
+includelib c:\masm32\lib\gdi32.lib
+includelib c:\masm32\lib\user32.lib
+includelib c:\masm32\lib\kernel32.lib
+          
+    .data
+szCaption   db "main",0
+hWin        dd 0
+hInstance   dd 0
+CommandLine dd 0
+defWndProc  dd 0
+          
+    .code
+WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
+    local hdc:dword
+    local pen[4]:dword
+    local ps:PAINTSTRUCT
+   
+    .if uMsg == WM_PAINT
+        invoke BeginPaint, hWnd, addr ps
+        mov hdc, eax
+   
+        invoke CreatePen, PS_SOLID, 3, 0ffh
+        mov pen[0], eax
+        invoke CreatePen, PS_SOLID, 3, 0ff00h
+        mov pen[4], eax
+        invoke CreatePen, PS_SOLID, 3, 0ff0000h
+        mov pen[8], eax
+
+        invoke SelectObject, hdc, pen[0]
+        invoke MoveToEx, hdc, 10, 100, NULL
+        invoke LineTo, hdc, 250, 100
+  
+        invoke SelectObject, hdc, pen[4]
+        invoke MoveToEx, hdc, 10, 150, NULL
+        invoke LineTo, hdc, 250, 150
+  
+        invoke SelectObject, hdc, pen[8]
+        invoke MoveToEx, hdc, 10, 200, NULL
+        invoke LineTo, hdc, 250, 200
+  
+        invoke EndPaint, hWnd, addr ps
+        invoke DeleteObject, pen[0]
+        invoke DeleteObject, pen[4]
+        invoke DeleteObject, pen[8]
+        xor eax, eax
+        ret
+    .elseif uMsg == WM_CLOSE
+        invoke DestroyWindow, hWnd
+        xor eax, eax
+        ret
+    .elseif uMsg == WM_DESTROY
+        invoke PostQuitMessage, 0
+        xor eax, eax
+        ret
+    .endif
+        
+    invoke CallWindowProc, defWndProc, hWnd, uMsg, wParam, lParam
+    ret
+WndProc endp
+         
+WinMain proc hInst:DWORD, hPrevInst:DWORD, CmdLine:DWORD, CmdShow:DWORD
+    local msg:MSG
+          
+    invoke CreateWindowEx, WS_EX_LEFT, WC_DIALOG, offset szCaption, 
+        WS_OVERLAPPEDWINDOW or WS_VISIBLE, 0, 0, 300, 300, NULL, NULL, NULL, NULL
+    mov hWin, eax
+         
+    invoke SetWindowLong, hWin, GWL_WNDPROC, WndProc
+    mov defWndProc, eax
+@@:
+    invoke GetMessage, addr msg, NULL, 0, 0
+    cmp eax, 0
+    je @f
+    invoke DispatchMessage, addr msg
+    jmp @b
+@@:
+    mov eax, msg.wParam
+    ret
+WinMain endp
+        
+start:
+    invoke GetModuleHandle, NULL
+    mov hInstance, eax
+          
+    invoke GetCommandLine
+    mov CommandLine, eax
+          
+    invoke WinMain, hInstance, NULL, CommandLine, SW_SHOWDEFAULT
+    invoke ExitProcess, eax
+end start
+</pre>
+<p>
+<b>Line 33~50</b>：產生三隻Pen並且畫出三條直線，需要注意的是，同一時間只能選擇一隻Pen<br><br>
+
+Makefile
+</p>
+<pre>
+export WINEPREFIX=/home/user/.wine_amd64
+
+TARGET=main
+MYWINE=box86 wine
+MASM32=/home/user/.wine_amd64/drive_c/masm32
+
+all:
+	${MYWINE} ${MASM32}/bin/ml.exe /c /coff /nologo ${TARGET}.asm
+	${MYWINE} ${MASM32}/bin/link.exe /SUBSYSTEM:WINDOWS /MERGE:.rdata=.text ${TARGET}.obj
+
+run:
+	${MYWINE} ${TARGET}.exe
+
+clean:
+	rm -rf ${TARGET}.exe ${TARGET}.obj
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ make
+$ make run
+</pre>
+<p>
+<img style="border:0px" src="../nasm/win32_line/1.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../program.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
