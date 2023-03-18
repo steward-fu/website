@@ -1,0 +1,243 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>FASM &gt;&gt; Assembly (x86) &gt;&gt; Win32 API &gt;&gt; Painting</h3>
+<p><b>Draw Line</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://board.flatassembler.net/">fasm</a><br><br>
+
+線的起始點位置是位於(x=0, y=0)，使用者可以呼叫MoveToEx()設定新的起始點，而使用LineTo()就可以畫出一條直線，新的起始點則是線的結束位置<br><br>
+
+main.asm
+</p>
+<pre class="brush:asm">
+    format PE GUI 4.0
+    entry start
+         
+    include "c:\fasm\include\win32a.inc"
+        
+    section ".idata" import data readable writeable
+library user, "user32.dll", kernel, "kernel32.dll", gdi, "gdi32.dll"
+   
+import gdi,                              \
+    LineTo,           "LineTo",          \
+    SetPixel,         "SetPixel",        \
+    MoveToEx,         "MoveToEx",        \
+    CreatePen,        "CreatePen",       \
+    DeleteObject,     "DeleteObject",    \
+    SelectObject,     "SelectObject",    \
+    CreateSolidBrush, "CreateSolidBrush"
+   
+import user,                             \
+    FillRect,        "FillRect",         \
+    EndPaint,        "EndPaint",         \
+    SetTimer,        "SetTimer",         \
+    wsprintf,        "wsprintfA",        \
+    KillTimer,       "KillTimer",        \
+    BeginPaint,      "BeginPaint",       \
+    MessageBox,      "MessageBoxA",      \
+    GetMessage,      "GetMessageA",      \
+    SetScrollPos,    "SetScrollPos",     \
+    DestroyWindow,   "DestroyWindow",    \
+    SetWindowText,   "SetWindowTextA",   \
+    SetWindowLong,   "SetWindowLongA",   \
+    SetScrollRange,  "SetScrollRange",   \
+    CreateWindowEx,  "CreateWindowExA",  \
+    CallWindowProc,  "CallWindowProcA",  \
+    DispatchMessage, "DispatchMessageA", \
+    PostQuitMessage, "PostQuitMessage"
+        
+import kernel,                           \
+    ExitProcess,     "ExitProcess",      \
+    GetCommandLine,  "GetCommandLineA",  \
+    GetModuleHandle, "GetModuleHandleA"
+         
+    section ".data" data readable writeable
+hWin        dd 0
+szCaption   db "main",0
+hInstance   dd 0
+CommandLine dd 0
+defWndProc  dd 0
+    
+    section ".text" code readable executable
+proc WndProc hWnd, uMsg, wParam, lParam
+    local hdc:DWORD
+    local pen[4]:DWORD
+    local ps:PAINTSTRUCT
+   
+    mov eax, [uMsg]
+    cmp eax, WM_PAINT
+    je .handle_paint
+    cmp eax, WM_CLOSE
+    je .handle_close
+    cmp eax, WM_DESTROY
+    je .handle_destroy
+    invoke CallWindowProc, [defWndProc], [hWnd], [uMsg], [wParam], [lParam]
+    jmp .finish
+    
+.handle_paint:
+    lea eax, [ps]
+    invoke BeginPaint, [hWnd], eax
+    mov [hdc], eax
+   
+    invoke CreatePen, PS_SOLID, 3, 0ffh
+    mov [pen + 0], eax
+    invoke CreatePen, PS_SOLID, 3, 0ff00h
+    mov [pen + 4], eax
+    invoke CreatePen, PS_SOLID, 3, 0ff0000h
+    mov [pen + 8], eax
+
+    invoke SelectObject, [hdc], [pen + 0]
+    invoke MoveToEx, [hdc], 10, 100, NULL
+    invoke LineTo, [hdc], 250, 100
+  
+    invoke SelectObject, [hdc], [pen + 4]
+    invoke MoveToEx, [hdc], 10, 150, NULL
+    invoke LineTo, [hdc], 250, 150
+  
+    invoke SelectObject, [hdc], [pen + 8]
+    invoke MoveToEx, [hdc], 10, 200, NULL
+    invoke LineTo, [hdc], 250, 200
+  
+    lea eax, [ps]
+    invoke EndPaint, [hWnd], eax
+    invoke DeleteObject, [pen + 0]
+    invoke DeleteObject, [pen + 4]
+    invoke DeleteObject, [pen + 8]
+    xor eax, eax
+    jmp .finish
+    
+.handle_close:
+    invoke DestroyWindow, [hWnd]
+    xor eax, eax
+    jmp .finish
+        
+.handle_destroy:
+    invoke PostQuitMessage, 0
+    xor eax, eax
+    jmp .finish
+         
+.finish:
+    ret
+endp
+        
+proc WinMain hInst, hPrevInst, CmdLine, CmdShow
+    local msg:MSG
+        
+    invoke CreateWindowEx, WS_EX_LEFT, WC_DIALOG, szCaption, \
+        WS_OVERLAPPEDWINDOW or WS_VISIBLE, 0, 0, 300, 300, NULL, NULL, NULL, NULL
+    mov [hWin], eax
+        
+    invoke SetWindowLong, [hWin], GWL_WNDPROC, WndProc
+    mov [defWndProc], eax
+     
+@@:
+    lea eax, [msg]
+    invoke GetMessage, eax, NULL, 0, 0
+    cmp eax, 0
+    je @f
+    lea eax, [msg]
+    invoke DispatchMessage, eax
+    jmp @b
+@@:
+    mov eax, [msg.wParam]
+    ret
+endp
+        
+start:
+    invoke GetModuleHandle, NULL
+    mov [hInstance], eax
+         
+    invoke GetCommandLine
+    mov [CommandLine], eax
+         
+    stdcall WinMain, [hInstance], NULL, [CommandLine], SW_SHOWNORMAL
+    invoke ExitProcess, eax
+</pre>
+<p>
+<b>Line 70~87</b>：產生三隻Pen並且畫出三條直線，需要注意的是，同一時間只能選擇一隻Pen<br><br>
+
+Makefile
+</p>
+<pre>
+export WINEPREFIX=/home/user/.wine_amd64
+
+TARGET=main
+MYWINE=box86 wine
+FASM32=/home/user/.wine_amd64/drive_c/fasm
+
+all:
+	${MYWINE} ${FASM32}/fasm.exe ${TARGET}.asm
+
+run:
+	${MYWINE} ${TARGET}.exe
+
+clean:
+	rm -rf ${TARGET}.exe
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ make
+$ make run
+</pre>
+<p>
+<img style="border:0px" src="../nasm/win32_line/1.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../program.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
