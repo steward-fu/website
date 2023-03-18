@@ -44,8 +44,8 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>Wine &gt;&gt; C/C++ &gt;&gt; Dialog &gt;&gt; Painting</h3>
-<p><b>Line</b></p>
+<h3>Wine &gt;&gt; C/C++ &gt;&gt; Painting</h3>
+<p><b>Draw Line</b></p>
 <hr size="1">
 <p>
 參考資訊：<br>
@@ -53,15 +53,8 @@
 2. <a href="http://www.winprog.org/tutorial/">tutorial</a><br>
 3. <a href="https://github.com/gammasoft71/Examples_Win32">examples_win32</a><br><br>
 
-說明：
-</p>
-<table>
-<tr><th>API</th></tr>
-<tr><td>BOOL MoveToEx(HDC hdc, int X, int Y, LPPOINT lpPoint);</td></tr>
-<tr><td>BOOL LineTo(HDC hdc, int nXEnd, int nYEnd);</td></tr>
-</table><br>
+線的起始點位置是位於(x=0, y=0)，使用者可以呼叫MoveToEx()設定新的起始點，而使用LineTo()就可以畫出一條直線，新的起始點則是線的結束位置<br><br>
 
-<p>
 main.c
 </p>
 <pre class="brush:cpp">
@@ -72,6 +65,12 @@ WNDPROC defWndProc = NULL;
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+    HDC hdc = NULL;
+    HPEN r_pen = NULL;
+    HPEN g_pen = NULL;
+    HPEN b_pen = NULL;
+    PAINTSTRUCT ps = {0};
+
     switch (uMsg) {
     case WM_CLOSE:
         DestroyWindow(hWnd);
@@ -80,11 +79,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         PostQuitMessage(0);
         return 0;
     case WM_PAINT:
-        PAINTSTRUCT ps = {0};
-        HDC hdc = BeginPaint(hWnd, &amp;ps);
-        HPEN r_pen = CreatePen(PS_SOLID, 3, RGB(0xff, 0x00, 0x00));
-        HPEN g_pen = CreatePen(PS_SOLID, 3, RGB(0x00, 0xff, 0x00));
-        HPEN b_pen = CreatePen(PS_SOLID, 3, RGB(0x00, 0x00, 0xff));
+        hdc = BeginPaint(hWnd, &amp;ps);
+        r_pen = CreatePen(PS_SOLID, 3, RGB(0xff, 0x00, 0x00));
+        g_pen = CreatePen(PS_SOLID, 3, RGB(0x00, 0xff, 0x00));
+        b_pen = CreatePen(PS_SOLID, 3, RGB(0x00, 0x00, 0xff));
+
         SelectObject(hdc, r_pen);
         MoveToEx(hdc, 10, 100, NULL);
         LineTo(hdc, 250, 100);
@@ -96,6 +95,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         SelectObject(hdc, b_pen);
         MoveToEx(hdc, 10, 200, NULL);
         LineTo(hdc, 250, 200);
+
         EndPaint(hWnd, &amp;ps);
         DeleteObject(r_pen);
         DeleteObject(g_pen);
@@ -105,14 +105,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     return CallWindowProc(defWndProc, hWnd, uMsg, wParam, lParam);
 }
 
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
-                   LPSTR lpCmdLine, int nCmdShow)
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
-    hWin = CreateWindow(WC_DIALOG, "main", WS_OVERLAPPEDWINDOW, 0, 0, 300, 300,
-                        NULL, NULL, NULL, NULL);
-    defWndProc =
-        (WNDPROC)SetWindowLongPtr(hWin, GWLP_WNDPROC, (long int)WndProc);
-    ShowWindow(hWin, SW_SHOW);
+    hWin = CreateWindow(WC_DIALOG, "main", 
+        WS_OVERLAPPEDWINDOW | WS_VISIBLE, 0, 0, 300, 300, NULL, NULL, NULL, NULL);
+    defWndProc = (WNDPROC)SetWindowLongPtr(hWin, GWLP_WNDPROC, (long int)WndProc);
 
     MSG msg = {0};
     while (GetMessage(&amp;msg, NULL, 0, 0)) {
@@ -121,8 +118,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     ExitProcess(0);
     return 0;
 }
-</pre><br>
+</pre>
 <p>
+<b>Line 23~37</b>：產生三隻Pen並且畫出三條直線，需要注意的是，同一時間只能選擇一隻Pen<br><br>
+
 編譯、執行
 </p>
 <pre>
