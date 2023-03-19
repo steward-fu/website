@@ -44,14 +44,16 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>Wine &gt;&gt; C/C++ &gt;&gt; Dialog &gt;&gt; Painting</h3>
-<p><b>Rectangle</b></p>
+<h3>Wine &gt;&gt; C/C++ &gt;&gt; Painting</h3>
+<p><b>Draw Rectangle</b></p>
 <hr size="1">
 <p>
 參考資訊：<br>
 1. <a href="http://winapi.freetechsecrets.com/win32/">win32</a><br>
 2. <a href="http://www.winprog.org/tutorial/">tutorial</a><br>
 3. <a href="https://github.com/gammasoft71/Examples_Win32">examples_win32</a><br><br>
+
+繪畫圖形需要透過SelectObject()去選擇Pen、Brush<br><br>
 
 main.c
 </p>
@@ -63,6 +65,11 @@ WNDPROC defWndProc = NULL;
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+    HDC hdc = NULL;
+    HPEN pen = NULL;
+    HBRUSH brush = NULL;
+    PAINTSTRUCT ps = {0};
+
     switch (uMsg) {
     case WM_CLOSE:
         DestroyWindow(hWnd);
@@ -71,10 +78,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         PostQuitMessage(0);
         return 0;
     case WM_PAINT:
-        PAINTSTRUCT ps = {0};
-        HDC hdc = BeginPaint(hWnd, &amp;ps);
-        HPEN pen = CreatePen(PS_SOLID, 3, RGB(0xff, 0x00, 0x00));
-        HBRUSH brush = CreateSolidBrush(RGB(0x00, 0xff, 0x00));
+        hdc = BeginPaint(hWnd, &amp;ps);
+        pen = CreatePen(PS_SOLID, 3, RGB(0xff, 0x00, 0x00));
+        brush = CreateSolidBrush(RGB(0x00, 0xff, 0x00));
         SelectObject(hdc, pen);
         SelectObject(hdc, brush);
         Rectangle(hdc, 10, 10, 200, 200);
@@ -86,14 +92,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     return CallWindowProc(defWndProc, hWnd, uMsg, wParam, lParam);
 }
 
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
-                   LPSTR lpCmdLine, int nCmdShow)
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
-    hWin = CreateWindow(WC_DIALOG, "main", WS_OVERLAPPEDWINDOW, 0, 0, 300, 300,
-                        NULL, NULL, NULL, NULL);
-    defWndProc =
-        (WNDPROC)SetWindowLongPtr(hWin, GWLP_WNDPROC, (long int)WndProc);
-    ShowWindow(hWin, SW_SHOW);
+    hWin = CreateWindow(WC_DIALOG, "main", 
+        WS_OVERLAPPEDWINDOW | WS_VISIBLE, 0, 0, 300, 300, NULL, NULL, NULL, NULL);
+    defWndProc = (WNDPROC)SetWindowLongPtr(hWin, GWLP_WNDPROC, (long int)WndProc);
 
     MSG msg = {0};
     while (GetMessage(&amp;msg, NULL, 0, 0)) {
@@ -102,8 +105,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     ExitProcess(0);
     return 0;
 }
-</pre><br>
+</pre>
 <p>
+<b>Line 26</b>：畫一個長方形，起始點位置是(x=10, y=10)，結束點位置是(x=200, y=200)<br><br>
+
 編譯、執行
 </p>
 <pre>
@@ -111,7 +116,7 @@ $ winegcc main.c -o main -lgdi32
 $ wine ./main.exe
 </pre>
 <p>
-<img style="border:0px" src="cpp_dlg_rectangle/1.jpg" class="maxSize">
+<img style="border:0px" src="../nasm/win32_rect/1.jpg" class="maxSize">
 </p>
 
 <p>
