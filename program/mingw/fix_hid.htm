@@ -44,34 +44,28 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>MinGW &gt;&gt; C/C++ &gt;&gt; Console</h3>
-<p><b>Hello, world!</b></p>
+<h3>MinGW</h3>
+<p><b>解決"undefined reference to HidD_GetHidGuid(_GUID*)@4"問題</b></p>
 <hr size="1">
 <p>
-main.c
-</p>
-<pre class="brush:cpp">
-#include &lt;stdio.h&gt;
-#include &lt;stdlib.h&gt;
-#include &lt;windows.h&gt;
-
-int main(int argc, char** argv)
-{
-  printf("Hello, world!\n");
-  return 0;
-}
-</pre><br>
-
-<p>
-編譯
+問題如下：
 </p>
 <pre>
-$ i686-w64-mingw32-gcc main.c -o main.exe -mconsole
+/tmp/ccwY1RCQ.o:main.cpp:(.text+0x25): undefined reference to `HidD_GetHidGuid(_GUID*)@4'
+/tmp/ccwY1RCQ.o:main.cpp:(.text+0x262): undefined reference to `HidD_GetAttributes(void*, _HIDD_ATTRIBUTES*)@8'
+collect2: error: ld returned 1 exit status
 </pre><br>
 
 <p>
-執行<br>
-<img src="cli_hello/1.jpg" class="maxSize">
+解法如下：
+</p>
+<pre class="brush:cpp">
+extern "C"{
+    #include &lt;hidsdi.h&gt;
+}
+</pre>
+<p>
+P.S. LDFlags則需要加上<b>-lhid</b>
 </p>
 
 <p>

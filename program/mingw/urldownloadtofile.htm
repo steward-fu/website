@@ -44,14 +44,40 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>MinGW</h3>
-<p><b>開發環境</b></p>
+<h3>MinGW &gt;&gt; C/C++</h3>
+<p><b>URLDownloadToFile</b></p>
 <hr size="1">
 <p>
-步驟如下：
+main.c
+</p>
+<pre class="brush:cpp">
+#define WIN32_LEAN_AND_MEAN
+#include &lt;tchar.h&gt;
+#include &lt;iomanip&gt;
+#include &lt;iostream&gt;
+#include &lt;urlmon.h&gt;
+#include &lt;wininet.h&gt;
+#include &lt;windows.h&gt;
+
+int main(int argc, char** argv)
+{
+    const TCHAR path[] = _T("putty.exe");
+    const TCHAR url[] = _T("https://the.earth.li/~sgtatham/putty/latest/w32/putty.exe");
+
+    printf("downloading: %s\n", url);
+    printf("to local file: %s\n", path);
+    DeleteUrlCacheEntry(url);
+    HRESULT hr = URLDownloadToFile(NULL, url, path, 0, NULL);
+    printf("hr:0x%x\n", hr);
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯
 </p>
 <pre>
-$ sudo apt-get install mingw-w64
+$ i686-w64-mingw32-g++ -U __STRICT_ANSI__ -o url.exe main.c -lwininet -luuid -lurlmon -static
 </pre><br>
 
 <p>

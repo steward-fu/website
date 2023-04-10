@@ -44,33 +44,49 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>MinGW &gt;&gt; C/C++ &gt;&gt; GUI</h3>
-<p><b>Hello, world!</b></p>
+<h3>MinGW</h3>
+<p><b>inline assembly</b></p>
 <hr size="1">
 <p>
 main.c
 </p>
 <pre class="brush:cpp">
-#include &lt;windows.h&gt;
-
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPreInst, LPTSTR lpCmdLine, int nShowCmd)
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;stdint.h&gt;
+ 
+int _main(int argc, char**argv)
 {
-  MessageBox(NULL, "Hello, world!", "MSG", MB_OK);
-  return 0;
+    uint32_t a=0x11223344, b=0x55667788;
+
+    printf("a:0x%08x, b:0x%08x\n", a, b);
+
+    __asm__(
+        ".intel_syntax noprefix\n"
+        "mov ecx, %[in_eax]\n"
+        "mov edx, %[in_ebx]\n"
+        "mov %[out_eax], edx\n"
+        "mov %[out_ebx], ecx\n"
+        ".att_syntax\n"
+        : [out_eax]"=r"(a), [out_ebx]"=r"(b)
+        : [in_eax]"r"(a), [in_ebx]"r"(b)
+        : "ecx", "edx"
+    );
+
+    printf("a:0x%08x, b:0x%08x\n", a, b);
+    return 0;
 }
 </pre><br>
 
 <p>
-編譯
+編譯、執行
 </p>
 <pre>
-$ i686-w64-mingw32-gcc hello.c -o hello.exe -mwindows
+$ i686-w64-mingw32-gcc main.c -o main.exe -lkernel32 -lmsvcrt -nostdlib
+$ wine main.exe
+    a:0x11223344, b:0x55667788
+    a:0x55667788, b:0x11223344
 </pre><br>
-
-<p>
-完成<br>
-<img src="gui_hello/1.jpg" class=maxSize>
-</p>
 
 <p>
 <br><a href="../../program.htm">返回上一頁</a>
