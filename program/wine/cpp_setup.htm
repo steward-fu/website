@@ -51,7 +51,20 @@
 參考資訊：<br>
 1. <a href="https://www.winehq.org/">winehq</a><br><br>
 
-步驟如下：
+Wine除了可以用來跑Windows PE執行檔案(xxx.exe)之外，更可以用來編譯Win32 API程式，而使用的工具則是Winelib，Winelib其實就是Wine的工具、元件庫，工具包含winegcc、wrc等，winegcc是GCC Compiler，用來編譯程式碼，而wrc則是Resouce Compiler，可以用來編譯Resource檔案，所以編譯後的檔案格式是Linux ELF，接著可以透過Wine元件庫，如：gdi32.dll.so、user32.dll.so，執行編譯後的這個Linux ELF檔案，winegcc編譯後的檔案包含xxx.exe、xxx.exe.so兩個檔案，如下 ：
+</p>
+<pre>
+$ winegcc main.c -o main.exe
+$ file main*
+    main.exe:    POSIX shell script, ASCII text executable
+    main.exe.so: ELF 64-bit LSB shared object, x86-64, version 1 (SYSV), dynamically linked, BuildID[sha1]=xxx, not stripped
+</pre>
+<p>
+main.exe是一個Script檔案，用來啟動Wine，而主要程式則是位於main.exe.so<br><br>
+
+這樣的好處是可以讓Win32 API、Linux API共處一室，可以在程式裡面同時使用Windows元件庫、Linux元件庫，當然，如果將Wine移植到ARM平台，就可以體會Winelib的強大，因為這樣代表可以在ARM平台，以原生速度執行這個編譯後的Win32程式<br><br>
+
+安裝步驟如下：
 </p>
 <pre>
 $ sudo apt-get install gcc-mingw* wine* -y
