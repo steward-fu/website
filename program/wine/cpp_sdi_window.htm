@@ -45,7 +45,7 @@
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
 <h3>Wine &gt;&gt; C/C++ &gt;&gt; Single Document Interface (SDI)</h3>
-<p><b>Handle Event</b></p>
+<p><b>Create Window</b></p>
 <hr size="1">
 <p>
 參考資訊：<br>
@@ -54,38 +54,25 @@
 3. <a href="http://www.winprog.org/tutorial/">tutorial</a><br>
 4. <a href="https://github.com/gammasoft71/Examples_Win32">examples_win32</a><br><br>
 
-當視窗有事件需要被處理時，系統會透過呼叫註冊的Callback副程式來處理，而這個Callback副程式就是在註冊Class時，設定給lpfnWndProc的事件處理副程式，因此，當這個事件處理副程式被呼叫時，可以處理自己感興趣的事件，而其餘事件則交給系統處理(透過呼叫DefWindowProc())，需要注意的是，例如：WM_CLOSE，就必須由該視窗自己處理，因為系統無法知道還有哪些額外的資源需要被釋放掉<br><br>
+Windows的視窗可以分成：<b>Dialog</b>、Single Document Interface(<b>SDI</b>)、Multiple Document Interface(<b>MDI</b>)三種類別，相對於SDI、MDI，Dialog類別是比較容易上手學習的一個類別，相當適合初次學習Windows視窗設計的使用者，而Windows視窗程式設計的核心就是圍繞着事件處理(處理Message)，任何的視窗設定或者溝通都是以事件導向為原則，因此，寫出一個簡單的視窗框架，將有助於了解Windows視窗程式的運作<br><br>
 
 main.c
 </p>
 <pre class="brush:cpp">
 #include &lt;windows.h&gt;
-
-LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
-{
-    switch (uMsg) {
-    case WM_CLOSE:
-        DestroyWindow(hWnd);
-        return 0;
-    case WM_DESTROY:
-        PostQuitMessage(0);
-        return 0;
-    }
-    return DefWindowProc(hWnd, uMsg, wParam, lParam);
-}
-
+ 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
     WNDCLASS wndClass = {0};
     const char *className = "main";
-
-    wndClass.lpfnWndProc = WndProc;
+ 
+    wndClass.lpfnWndProc = DefWindowProc;
     wndClass.lpszClassName = className;
-
+ 
     RegisterClass(&amp;wndClass);
     CreateWindow(className, "main", 
         WS_OVERLAPPEDWINDOW | WS_VISIBLE, 0, 0, 300, 300, NULL, NULL, NULL, NULL);
-
+ 
     MSG msg = {0};
     while (GetMessage(&amp;msg, NULL, 0, 0)) {
         DispatchMessage(&amp;msg);
@@ -94,8 +81,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 }
 </pre>
 <p>
-<b>Line 6~11</b>：關閉視窗的順序為：主視窗收到WM_CLOSE事件時，呼叫DestroyWindow()，DestroyWindow()會自動將子視窗的相關資源也一併釋放掉(包含Resource描述的資源)，系統接著會發送WM_DESTROY事件給主視窗，待主視窗收到WM_DESTROY事件時，呼叫PostQuitMessage()結束視窗，值得注意的地方是，SendMessage()是屬於Block方式呼叫(必須等待動作執行完畢才返回)，而PostQuitMessage()則是Non-block方式呼叫<br>
-<b>Line 13</b>：其餘事件由系統代為處理</br><br>
+<b>Line 8~11</b>：一般SDI視窗會註冊屬於自己的Class並且設定事件處理副程式，目前司徒著重在說明如何建立Windows視窗，因此，我們使用系統預設的事件處理副程式(DefWindowProc)，視窗訊息統一交給系統幫忙處理，由於是自定義的Class，因此，需要幫這個Class設定一個名字，之後就可以用這個Class名字來建立Windows視窗<br>
+<b>Line 12~13</b>：使用剛剛註冊的Class來建立Windows視窗，WS_OVERLAPPEDWINDOW代表視窗有標題、最大化、最小化的按鈕，WS_VISIBLE是建立一個可視化的視窗<br>
+<b>Line 16</b>：從Queue提取Message(包含視窗、系統事件)<br>
+<b>Line 17</b>：分發Message到處理視窗事件的副程式，由於目前註冊的處理副程式是使用系統預設(DefWindowProc)，因此，無法處理這個SDI視窗的Message，包含關閉視窗的Message，所以必須使用kill命令強制關閉該視窗<br><br>
 
 編譯、執行
 </p>
@@ -104,7 +93,7 @@ $ winegcc main.c -o main
 $ wine ./main.exe
 </pre>
 <p>
-<img style="border:0px" src="../nasm/win32_dlg_event/1.jpg" class="maxSize">
+<img style="border:0px" src="../nasm/win32_sdi_window/1.jpg" class="maxSize">
 </p>
 
 <p>
