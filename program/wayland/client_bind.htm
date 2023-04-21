@@ -59,41 +59,41 @@ main.c
 #include &lt;stdio.h&gt;
 #include &lt;string.h&gt;
 #include &lt;wayland-client.h&gt;
-
-struct wl_compositor *compositor = NULL;
-
-void registry_global_handler(void *data, struct wl_registry *registry, uint32_t name, const char *interface, uint32_t version)
+ 
+struct wl_compositor *comp = NULL;
+ 
+void cb_handle(void *dat, struct wl_registry *reg, uint32_t name, const char *intf, uint32_t ver)
 {
-    if (strcmp(interface, "wl_compositor") == 0) {
-        compositor = wl_registry_bind(registry, name, &amp;wl_compositor_interface, 3);
+    if (strcmp(intf, "wl_compositor") == 0) {
+        comp = wl_registry_bind(reg, name, &amp;wl_compositor_interface, 3);
     }
 }
- 
-void registry_global_remove_handler(void *data, struct wl_registry *registry, uint32_t name)
+  
+void cb_remove(void *dat, struct wl_registry *reg, uint32_t name)
 {
 }
- 
+  
 int main(int argc, char **argv)
 {
-    struct wl_display *display = wl_display_connect(NULL);
-    struct wl_registry *registry = wl_display_get_registry(display);
-    struct wl_registry_listener registry_listener = {
-        .global = registry_global_handler,
-        .global_remove = registry_global_remove_handler
+    struct wl_display *dis = wl_display_connect(NULL);
+    struct wl_registry *reg = wl_display_get_registry(dis);
+    struct wl_registry_listener cb = {
+        .global = cb_handle,
+        .global_remove = cb_remove
     };
+  
+    wl_registry_add_listener(reg, &amp;cb, NULL);
+    wl_display_roundtrip(dis); // wait for ready
  
-    wl_registry_add_listener(registry, &amp;registry_listener, NULL);
-    wl_display_roundtrip(display); // wait for ready
-
-    if (compositor != NULL) {
+    if (comp != NULL) {
         printf("bind wl_compositor successfully !\n");
     }
     else {
         printf("failed to bind wl_compositor !\n");
     }
- 
+  
     while (1) {
-        wl_display_dispatch(display);
+        wl_display_dispatch(dis);
     }
 }
 </pre><br>
