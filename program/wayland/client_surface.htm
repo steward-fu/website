@@ -1,0 +1,132 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Wayland &gt;&gt; Client</h3>
+<p><b>create surface</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://wayland.freedesktop.org/docs/html/apa.html">wayland</a><br>
+2. <a href="https://bugaevc.gitbooks.io/writing-wayland-clients/content/">writing-wayland-clients</a><br>
+3. <a href="https://jan.newmarch.name/Wayland/index.html">programming wayland clients</a><br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+#include &lt;wayland-client.h&gt;
+
+struct wl_display *dis = NULL;
+struct wl_surface *surf = NULL;
+struct wl_registry *reg = NULL;
+struct wl_compositor *comp = NULL;
+struct wl_shell *shell = NULL;
+struct wl_shell_surface *shell_surf = NULL;
+   
+void cb_handle(void *dat, struct wl_registry *reg, uint32_t id, const char *intf, uint32_t ver)
+{
+    if (strcmp(intf, "wl_compositor") == 0) {
+        comp = wl_registry_bind(reg, id, &amp;wl_compositor_interface, 3);
+    }
+    else if (strcmp(intf, "wl_shell") == 0) {
+        shell = wl_registry_bind(reg, id, &amp;wl_shell_interface, 1);
+    }
+}
+    
+void cb_remove(void *dat, struct wl_registry *reg, uint32_t id)
+{
+}
+    
+struct wl_registry_listener cb = {
+    .global = cb_handle,
+    .global_remove = cb_remove
+};
+
+int main(int argc, char **argv)
+{
+    dis = wl_display_connect(NULL);
+    reg = wl_display_get_registry(dis);
+
+    wl_registry_add_listener(reg, &amp;cb, NULL);
+    wl_display_dispatch(dis);
+    wl_display_roundtrip(dis);
+    printf("comp = 0x%08x\n", comp);
+    printf("shell = 0x%08x\n", shell);
+    
+    surf = wl_compositor_create_surface(comp);
+    printf("surf = 0x%08x\n", surf);
+
+    shell_surf = wl_shell_get_shell_surface(shell, surf);
+    printf("shell_surf = 0x%08x\n", shell_surf);
+
+    wl_shell_surface_set_toplevel(shell_surf);
+    wl_display_disconnect(dis);
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ gcc main.c -o main -lwayland-client
+$ ./main
+    comp = 0x2fc37320
+    shell = 0x2fc373b0
+    surf = 0x2fc37220
+    shell_surf = 0x2fc37280
+</pre><br>
+
+<p>
+<br><a href="../../program.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
