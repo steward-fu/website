@@ -59,20 +59,20 @@ main.c
 #include &lt;stdio.h&gt;
 #include &lt;string.h&gt;
 #include &lt;wayland-client.h&gt;
- 
+  
 struct wl_compositor *comp = NULL;
- 
-void cb_handle(void *dat, struct wl_registry *reg, uint32_t name, const char *intf, uint32_t ver)
+  
+void cb_handle(void *dat, struct wl_registry *reg, uint32_t id, const char *intf, uint32_t ver)
 {
     if (strcmp(intf, "wl_compositor") == 0) {
-        comp = wl_registry_bind(reg, name, &amp;wl_compositor_interface, 3);
+        comp = wl_registry_bind(reg, id, &amp;wl_compositor_interface, 3);
     }
 }
-  
-void cb_remove(void *dat, struct wl_registry *reg, uint32_t name)
+   
+void cb_remove(void *dat, struct wl_registry *reg, uint32_t id)
 {
 }
-  
+   
 int main(int argc, char **argv)
 {
     struct wl_display *dis = wl_display_connect(NULL);
@@ -81,20 +81,13 @@ int main(int argc, char **argv)
         .global = cb_handle,
         .global_remove = cb_remove
     };
-  
+   
     wl_registry_add_listener(reg, &amp;cb, NULL);
-    wl_display_roundtrip(dis); // wait for ready
- 
-    if (comp != NULL) {
-        printf("bind wl_compositor successfully !\n");
-    }
-    else {
-        printf("failed to bind wl_compositor !\n");
-    }
-  
-    while (1) {
-        wl_display_dispatch(dis);
-    }
+    wl_display_dispatch(dis);
+    wl_display_roundtrip(dis);
+    printf("comp=0x%08x\n", comp);
+    wl_display_disconnect(dis);
+    return 0;
 }
 </pre><br>
 
@@ -104,8 +97,7 @@ int main(int argc, char **argv)
 <pre>
 $ gcc main.c -o main -lwayland-client
 $ ./main
-    bind wl_compositor successfully !
-    ^C
+    comp=0x31be4320
 </pre><br>
 
 <p>

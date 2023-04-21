@@ -59,20 +59,20 @@ main.c
 #include &lt;stdio.h&gt;
 #include &lt;string.h&gt;
 #include &lt;wayland-client.h&gt;
-
+   
 struct wl_compositor *comp = NULL;
-
-void cb_handle(void *dat, struct wl_registry *reg, uint32_t name, const char *intf, uint32_t ver)
+   
+void cb_handle(void *dat, struct wl_registry *reg, uint32_t id, const char *intf, uint32_t ver)
 {
     if (strcmp(intf, "wl_compositor") == 0) {
-        comp = wl_registry_bind(reg, name, &amp;wl_compositor_interface, 3);
+        comp = wl_registry_bind(reg, id, &amp;wl_compositor_interface, 3);
     }
 }
-
-void cb_remove(void *dat, struct wl_registry *reg, uint32_t name)
+    
+void cb_remove(void *dat, struct wl_registry *reg, uint32_t id)
 {
 }
-
+    
 int main(int argc, char **argv)
 {
     struct wl_display *dis = wl_display_connect(NULL);
@@ -81,49 +81,50 @@ int main(int argc, char **argv)
         .global = cb_handle,
         .global_remove = cb_remove
     };
-
+    
     wl_registry_add_listener(reg, &amp;cb, NULL);
-    wl_display_roundtrip(dis); // wait for ready
-
-    if (comp != NULL) {
-        printf("bind wl_compositor successfully !\n");
-    }
-    else {
-        printf("failed to bind wl_compositor !\n");
-    }
-
-    while (1) {
-        wl_display_dispatch(dis);
-    }
+    wl_display_dispatch(dis);
+    wl_display_roundtrip(dis);
+    printf("comp=0x%08x\n", comp);
+    wl_display_disconnect(dis);
+    return 0;
 }
 </pre><br>
 
 <p>
-編譯、執行
+編譯、執行(WAYLAND_DEBUG=0)
+</p>
+<pre>
+$ gcc main.c -o main -lwayland-client
+$ ./main
+    comp=0x0980b320
+</pre><br>
+
+<p>
+編譯、執行(WAYLAND_DEBUG=1)
 </p>
 <pre>
 $ gcc main.c -o main -lwayland-client
 $ WAYLAND_DEBUG=1 ./main
-    [1119164.951]  -&gt; wl_display@1.get_registry(new id wl_registry@2)
-    [1119165.386]  -&gt; wl_display@1.sync(new id wl_callback@3)
-    [1119166.990] wl_display@1.delete_id(3)
-    [1119167.212] wl_registry@2.global(1, "wl_compositor", 3)
-    [1119167.345]  -&gt; wl_registry@2.bind(1, "wl_compositor", 3, new id [unknown]@4)
-    [1119167.450] wl_registry@2.global(2, "wl_data_device_manager", 1)
-    [1119167.520] wl_registry@2.global(3, "wl_shm", 1)
-    [1119167.590] wl_registry@2.global(4, "qt_hardware_integration", 1)
-    [1119167.940] wl_registry@2.global(5, "android_wlegl", 2)
-    [1119168.223] wl_registry@2.global(6, "qt_surface_extension", 1)
-    [1119168.326] wl_registry@2.global(7, "qt_touch_extension", 1)
-    [1119168.502] wl_registry@2.global(8, "qt_windowmanager", 1)
-    [1119168.675] wl_registry@2.global(9, "wl_seat", 3)
-    [1119168.842] wl_registry@2.global(10, "wl_output", 2)
-    [1119169.079] wl_registry@2.global(11, "wl_shell", 1)
-    [1119169.352] wl_registry@2.global(12, "lipstick_recorder_manager", 1)
-    [1119169.451] wl_registry@2.global(13, "alien_manager", 1)
-    [1119169.970] wl_callback@3.done(11194)
-    bind wl_compositor successfully !
-    ^C
+    [2156106.030]  -&gt; wl_display@1.get_registry(new id wl_registry@2)
+    [2156107.746] wl_registry@2.global(1, "wl_compositor", 3)
+    [2156108.187]  -&gt; wl_registry@2.bind(1, "wl_compositor", 3, new id [unknown]@3)
+    [2156108.299] wl_registry@2.global(2, "wl_data_device_manager", 1)
+    [2156108.368] wl_registry@2.global(3, "wl_shm", 1)
+    [2156108.434] wl_registry@2.global(4, "qt_hardware_integration", 1)
+    [2156108.501] wl_registry@2.global(5, "android_wlegl", 2)
+    [2156108.565] wl_registry@2.global(6, "qt_surface_extension", 1)
+    [2156108.629] wl_registry@2.global(7, "qt_touch_extension", 1)
+    [2156108.695] wl_registry@2.global(8, "qt_windowmanager", 1)
+    [2156108.758] wl_registry@2.global(9, "wl_seat", 3)
+    [2156108.925] wl_registry@2.global(10, "wl_output", 2)
+    [2156109.101] wl_registry@2.global(11, "wl_shell", 1)
+    [2156109.248] wl_registry@2.global(12, "lipstick_recorder_manager", 1)
+    [2156109.317] wl_registry@2.global(13, "alien_manager", 1)
+    [2156109.415]  -&gt; wl_display@1.sync(new id wl_callback@4)
+    [2156111.255] wl_display@1.delete_id(4)
+    [2156111.465] wl_callback@4.done(11968)
+    comp=0x178aa320
 </pre><br>
 
 <p>
