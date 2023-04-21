@@ -1,0 +1,118 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Wayland &gt;&gt; Client</h3>
+<p><b>bind compositor</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://wayland.freedesktop.org/docs/html/apa.html">wayland</a><br>
+2. <a href="https://bugaevc.gitbooks.io/writing-wayland-clients/content/">writing-wayland-clients</a><br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+#include &lt;wayland-client.h&gt;
+
+struct wl_compositor *compositor = NULL;
+
+void registry_global_handler(void *data, struct wl_registry *registry, uint32_t name, const char *interface, uint32_t version)
+{
+    if (strcmp(interface, "wl_compositor") == 0) {
+        compositor = wl_registry_bind(registry, name, &amp;wl_compositor_interface, 3);
+    }
+}
+ 
+void registry_global_remove_handler(void *data, struct wl_registry *registry, uint32_t name)
+{
+}
+ 
+int main(int argc, char **argv)
+{
+    struct wl_display *display = wl_display_connect(NULL);
+    struct wl_registry *registry = wl_display_get_registry(display);
+    struct wl_registry_listener registry_listener = {
+        .global = registry_global_handler,
+        .global_remove = registry_global_remove_handler
+    };
+ 
+    wl_registry_add_listener(registry, &amp;registry_listener, NULL);
+    wl_display_roundtrip(display); // wait for ready
+
+    if (compositor != NULL) {
+        printf("bind wl_compositor successfully !\n");
+    }
+    else {
+        printf("failed to bind wl_compositor !\n");
+    }
+ 
+    while (1) {
+        wl_display_dispatch(display);
+    }
+}
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ gcc main.c -o main -lwayland-client
+$ ./main
+    bind wl_compositor successfully !
+    ^C
+</pre><br>
+
+<p>
+<br><a href="../../program.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
