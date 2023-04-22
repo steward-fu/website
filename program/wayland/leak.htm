@@ -1,0 +1,183 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Wayland</h3>
+<p><b>如何使用Valgrind找出Memory Leak的地方</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://wayland.freedesktop.org/docs/html/apa.html">wayland</a><br>
+2. <a href="https://bugaevc.gitbooks.io/writing-wayland-clients/content/">writing-wayland-clients</a><br>
+3. <a href="https://jan.newmarch.name/Wayland/index.html">programming wayland clients</a><br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;wayland-client.h&gt;
+   
+void cb_handle(void *dat, struct wl_registry *reg, uint32_t id, const char *intf, uint32_t ver)
+{
+    printf("%s, intf:%s, ver:%u, id:%u\n", __func__, intf, ver, id);
+}
+   
+void cb_remove(void *dat, struct wl_registry *reg, uint32_t id)
+{
+    printf("%s, %u\n", __func__, id);
+}
+   
+int main(int argc, char **argv)
+{
+    struct wl_display *dis = wl_display_connect(NULL);
+    struct wl_registry *reg = wl_display_get_registry(dis);
+    struct wl_registry_listener cb = {
+        .global = cb_handle,
+        .global_remove = cb_remove
+    };
+   
+    wl_registry_add_listener(reg, &amp;cb, NULL);
+    wl_display_dispatch(dis);
+    wl_display_roundtrip(dis);
+ 
+    wl_display_disconnect(dis);
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ gcc main.c -o main -lwayland-client -ggdb
+$ valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --verbose --log-file=log.txt ./main
+$ cat log.txt
+    ==2893== HEAP SUMMARY:
+    ==2893==     in use at exit: 80 bytes in 1 blocks
+    ==2893==   total heap usage: 27 allocs, 26 frees, 22,144 bytes allocated
+    ==2893== 
+    ==2893== Searching for pointers to 1 not-freed blocks
+    ==2893== Checked 93,032 bytes
+    ==2893== 
+    ==2893== 80 bytes in 1 blocks are definitely lost in loss record 1 of 1
+    ==2893==    at 0x486D71C: calloc (vg_replace_malloc.c:1328)
+    ==2893==    by 0x4899B3F: ??? (in /usr/lib64/libwayland-client.so.0.3.0)
+    ==2893==    by 0x489A1CB: wl_proxy_marshal_array_constructor_versioned (in /usr/lib64/libwayland-client.so.0.3.0)
+    ==2893==    by 0x489A4B7: wl_proxy_marshal_constructor (in /usr/lib64/libwayland-client.so.0.3.0)
+    ==2893==    by 0x4008E7: wl_display_get_registry (wayland-client-protocol.h:1052)
+    ==2893==    by 0x4009C7: main (main.c:17)
+    ==2893== 
+    ==2893== LEAK SUMMARY:
+    ==2893==    definitely lost: 80 bytes in 1 blocks
+    ==2893==    indirectly lost: 0 bytes in 0 blocks
+    ==2893==      possibly lost: 0 bytes in 0 blocks
+    ==2893==    still reachable: 0 bytes in 0 blocks
+    ==2893==         suppressed: 0 bytes in 0 blocks
+    ==2893== 
+    ==2893== ERROR SUMMARY: 1 errors from 1 contexts (suppressed: 0 from 0)
+</pre>
+<p>
+P.S. 經由Valgrind的Log，可以發現wl_display_get_registry()配置的記憶體沒有被釋放掉，也就是沒有呼叫wl_registry_destroy()去釋放記憶體<br><br>
+
+main.c(修改後)
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;wayland-client.h&gt;
+   
+void cb_handle(void *dat, struct wl_registry *reg, uint32_t id, const char *intf, uint32_t ver)
+{
+    printf("%s, intf:%s, ver:%u, id:%u\n", __func__, intf, ver, id);
+}
+   
+void cb_remove(void *dat, struct wl_registry *reg, uint32_t id)
+{
+    printf("%s, %u\n", __func__, id);
+}
+   
+int main(int argc, char **argv)
+{
+    struct wl_display *dis = wl_display_connect(NULL);
+    struct wl_registry *reg = wl_display_get_registry(dis);
+    struct wl_registry_listener cb = {
+        .global = cb_handle,
+        .global_remove = cb_remove
+    };
+   
+    wl_registry_add_listener(reg, &amp;cb, NULL);
+    wl_display_dispatch(dis);
+    wl_display_roundtrip(dis);
+
+    wl_registry_destroy(reg);
+    wl_display_disconnect(dis);
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ gcc main.c -o main -lwayland-client -ggdb
+$ valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --verbose --log-file=log.txt ./main
+$ cat log.txt
+    ==3014== HEAP SUMMARY:
+    ==3014==     in use at exit: 0 bytes in 0 blocks
+    ==3014==   total heap usage: 27 allocs, 27 frees, 22,144 bytes allocated
+    ==3014== 
+    ==3014== All heap blocks were freed -- no leaks are possible
+    ==3014== 
+    ==3014== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
+</pre><br>
+
+<p>
+<br><a href="../../program.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
