@@ -139,29 +139,41 @@ int main(int argc, char **argv)
 
     dis = wl_display_connect(NULL);
     reg = wl_display_get_registry(dis);
- 
+
     wl_registry_add_listener(reg, &amp;cb_global, NULL);
     wl_display_dispatch(dis);
     wl_display_roundtrip(dis);
     surf = wl_compositor_create_surface(comp);
     shell_surf = wl_shell_get_shell_surface(shell, surf);
     wl_shell_surface_set_toplevel(shell_surf);
- 
+
     fd = syscall(SYS_memfd_create, "main", 0);
     ftruncate(fd, SIZE);
- 
+
     addr = mmap(NULL, SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     pool = wl_shm_create_pool(shm, fd, SIZE);
     buf = wl_shm_pool_create_buffer(pool, 0, WIDTH, HEIGHT, STRIDE, WL_SHM_FORMAT_RGB565);
+    wl_shm_pool_destroy(pool);
 
     frame = wl_surface_frame(surf);
     wl_callback_add_listener(frame, &amp;cb_frame, NULL);
-    
+
     wl_surface_attach(surf, buf, 0, 0);
     wl_surface_commit(surf);
- 
-    while (wl_display_dispatch(dis) != -1) {
+
+    int cnt = 30;
+    while (cnt--) {
+        wl_display_dispatch(dis);
     }
+
+    wl_callback_destroy(frame);
+    wl_shell_surface_destroy(shell_surf);
+    wl_shell_destroy(shell);
+    wl_surface_destroy(surf);
+    wl_buffer_destroy(buf);
+    wl_shm_destroy(shm);
+    wl_compositor_destroy(comp);
+    wl_registry_destroy(reg);
     wl_display_disconnect(dis);
     munmap(addr, SIZE);
     return 0;

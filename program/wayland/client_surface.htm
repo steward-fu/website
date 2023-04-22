@@ -60,11 +60,11 @@ main.c
 #include &lt;string.h&gt;
 #include &lt;wayland-client.h&gt;
 
+struct wl_shell *shell = NULL;
 struct wl_display *dis = NULL;
 struct wl_surface *surf = NULL;
 struct wl_registry *reg = NULL;
 struct wl_compositor *comp = NULL;
-struct wl_shell *shell = NULL;
 struct wl_shell_surface *shell_surf = NULL;
    
 void cb_handle(void *dat, struct wl_registry *reg, uint32_t id, const char *intf, uint32_t ver)
@@ -92,11 +92,10 @@ int main(int argc, char **argv)
     reg = wl_display_get_registry(dis);
 
     wl_registry_add_listener(reg, &amp;cb, NULL);
-    wl_display_dispatch(dis);
     wl_display_roundtrip(dis);
     printf("comp = 0x%08x\n", comp);
     printf("shell = 0x%08x\n", shell);
-    
+
     surf = wl_compositor_create_surface(comp);
     printf("surf = 0x%08x\n", surf);
 
@@ -104,6 +103,13 @@ int main(int argc, char **argv)
     printf("shell_surf = 0x%08x\n", shell_surf);
 
     wl_shell_surface_set_toplevel(shell_surf);
+    wl_display_roundtrip(dis);
+
+    wl_shell_surface_destroy(shell_surf);
+    wl_shell_destroy(shell);
+    wl_surface_destroy(surf);
+    wl_compositor_destroy(comp);
+    wl_registry_destroy(reg);
     wl_display_disconnect(dis);
     return 0;
 }

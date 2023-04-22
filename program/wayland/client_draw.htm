@@ -58,6 +58,7 @@ main.c
 <pre class="brush:cpp">
 #include &lt;stdint.h&gt;
 #include &lt;stdio.h&gt;
+#include &lt;unistd.h&gt;
 #include &lt;string.h&gt;
 #include &lt;sys/mman.h&gt;
 #include &lt;syscall.h&gt;
@@ -105,22 +106,23 @@ int main(int argc, char **argv)
 {
     dis = wl_display_connect(NULL);
     reg = wl_display_get_registry(dis);
-
+ 
     wl_registry_add_listener(reg, &amp;cb, NULL);
     wl_display_dispatch(dis);
     wl_display_roundtrip(dis);
     surf = wl_compositor_create_surface(comp);
     shell_surf = wl_shell_get_shell_surface(shell, surf);
     wl_shell_surface_set_toplevel(shell_surf);
-
+ 
     int fd = syscall(SYS_memfd_create, "main", 0);
     ftruncate(fd, SIZE);
-
+ 
     uint16_t *addr = mmap(NULL, SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     pool = wl_shm_create_pool(shm, fd, SIZE);
     buf = wl_shm_pool_create_buffer(pool, 0, WIDTH, HEIGHT, STRIDE, WL_SHM_FORMAT_RGB565);
+    wl_shm_pool_destroy(pool);
     printf("mmap = 0x%08x\n", addr);
-
+ 
     int x = 0, y = 0;
     uint16_t *p = addr;
     for (y = 0; y &lt; HEIGHT; y++) {
@@ -130,10 +132,17 @@ int main(int argc, char **argv)
     }
     wl_surface_attach(surf, buf, 0, 0);
     wl_surface_commit(surf);
-
-    while (1) {
-        wl_display_dispatch(dis);
-    }
+    wl_display_dispatch(dis);
+    wl_display_roundtrip(dis);
+    usleep(3000000);
+ 
+    wl_shell_surface_destroy(shell_surf);
+    wl_shell_destroy(shell);
+    wl_surface_destroy(surf);
+    wl_buffer_destroy(buf);
+    wl_shm_destroy(shm);
+    wl_compositor_destroy(comp);
+    wl_registry_destroy(reg);
     wl_display_disconnect(dis);
     munmap(addr, SIZE);
     return 0;
