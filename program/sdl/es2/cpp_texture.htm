@@ -1,0 +1,202 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../../header.js"></script>
+<div id="page">
+<h3>SDL OpenGL ES 2.0 &gt;&gt; C/C++</h3>
+<p><b>Texture</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://wiki.libsdl.org/FrontPage">docs</a><br>
+2. <a href="http://www.subdude-site.com/WebPages_Local/RefInfo/Computer/Linux/LinuxGuidesOfOthers/linuxProgrammingGuides/pdfs/MobileDeviceProgramming/MOBogl_OpenGL_ES_2-0_ProgrammingGuide_2009_457pgs.pdf">OpenGL_ES_2-0_ProgrammingGuide</a><br>
+3. <a href="https://kaprikawn.wordpress.com/2018/01/07/learning-to-learn-opengl-es-2-0-part-01/">learning-to-learn-opengl-es-2-0</a><br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;GLES2/gl2.h&gt;
+#include &lt;SDL2/SDL.h&gt;
+
+const char *vShaderSrc =
+    "attribute vec4 a_position;   \n"
+    "attribute vec2 a_texCoord;   \n"
+    "varying vec2 v_texCoord;     \n"
+    "void main()                  \n"
+    "{                            \n"
+    "   gl_Position = a_position; \n"
+    "   v_texCoord = a_texCoord;  \n"
+    "}                            \n";
+
+const char *fShaderSrc =
+    "#ifdef GL_ES                                         \n"
+    "precision mediump float;                             \n"
+    "#endif                                               \n"
+    "varying vec2 v_texCoord;                             \n"
+    "uniform sampler2D s_texture;                         \n"
+    "void main()                                          \n"
+    "{                                                    \n"
+    "    gl_FragColor = texture2D(s_texture, v_texCoord); \n"
+    "}                                                    \n";
+
+int main(int argc, char **argv)
+{
+    int w = 320;
+    int h = 240;
+
+    SDL_Window *window = NULL;
+    SDL_Renderer *render = NULL;
+    SDL_GLContext context = {0};
+
+    SDL_Init(SDL_INIT_VIDEO);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+
+    window = SDL_CreateWindow("main", 0, 0, w, h, SDL_WINDOW_OPENGL);
+    render = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+    context = SDL_GL_CreateContext(window);
+
+    GLuint vShader = 0;
+    GLuint fShader = 0;
+    GLuint pObject = 0;
+
+    vShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(vShader, 1, &amp;vShaderSrc, NULL);
+    glCompileShader(vShader);
+
+    fShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(fShader, 1, &amp;fShaderSrc, NULL);
+    glCompileShader(fShader);
+
+    pObject = glCreateProgram();
+    glAttachShader(pObject, vShader);
+    glAttachShader(pObject, fShader);
+    glLinkProgram(pObject);
+    glUseProgram(pObject);
+
+    GLint positionLoc = glGetAttribLocation(pObject, "a_position");
+    GLint texCoordLoc = glGetAttribLocation(pObject, "a_texCoord");
+    GLint samplerLoc = glGetUniformLocation(pObject, "s_texture");
+    
+    GLuint textureId = 0;
+    GLubyte pixels[320 * 240 * 3] = {0};
+
+    int x = 0, y = 0;
+    for (y = 0; y &lt; 240; y++) {
+        for (x = 0; x &lt; 320; x++) {
+            switch(y / 80){
+            case 0:
+                pixels[(y * 320 * 3) + (x * 3) + 0] = 0xff;
+                pixels[(y * 320 * 3) + (x * 3) + 1] = 0x00;
+                pixels[(y * 320 * 3) + (x * 3) + 2] = 0x00;
+                break;
+            case 1:
+                pixels[(y * 320 * 3) + (x * 3) + 0] = 0x00;
+                pixels[(y * 320 * 3) + (x * 3) + 1] = 0xff;
+                pixels[(y * 320 * 3) + (x * 3) + 2] = 0x00;
+                break;
+            case 2:
+                pixels[(y * 320 * 3) + (x * 3) + 0] = 0x00;
+                pixels[(y * 320 * 3) + (x * 3) + 1] = 0x00;
+                pixels[(y * 320 * 3) + (x * 3) + 2] = 0xff;
+                break;
+            }
+        }
+    }
+
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glGenTextures(1, &amp;textureId);
+    glBindTexture(GL_TEXTURE_2D, textureId);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 320, 240, 0, GL_RGB, GL_UNSIGNED_BYTE, pixels);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+
+    GLfloat vVertices[] = {
+       -1.0f,  1.0f, 0.0f, 0.0f,  0.0f,
+       -1.0f, -1.0f, 0.0f, 0.0f,  1.0f,
+        1.0f, -1.0f, 0.0f, 1.0f,  1.0f,
+        1.0f,  1.0f, 0.0f, 1.0f,  0.0f
+    };
+    GLushort indices[] = {0, 1, 2, 0, 2, 3};
+
+    glViewport(0, 0, w, h);
+    glClear(GL_COLOR_BUFFER_BIT);
+    glVertexAttribPointer(positionLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), vVertices);
+    glVertexAttribPointer(texCoordLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &amp;vVertices[3]);
+    glEnableVertexAttribArray(positionLoc);
+    glEnableVertexAttribArray(texCoordLoc);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, textureId);
+    glUniform1i(samplerLoc, 0);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, indices);
+    SDL_GL_SwapWindow(window);
+    SDL_Delay(3000);
+
+    glDeleteShader(vShader);
+    glDeleteShader(fShader);
+    SDL_DestroyWindow(window);
+    SDL_DestroyRenderer(render);
+    SDL_GL_DeleteContext(context);
+    SDL_Quit();
+    return 0;
+}
+</pre><br>
+<p>
+完成<br>
+<img src="cpp_texture/1.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../../program.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
