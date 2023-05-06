@@ -18,10 +18,10 @@
  typeof(require) != 'undefined' ? SyntaxHighlighter = require('shCore').SyntaxHighlighter : null;
 
   function Brush() {
-    var my_constant = 'test';
-    var my_keyword =  'module center for';
+    var my_constant = 'true false';
+    var my_keyword =  'module center for if else';
     var my_type = 'int';
-    var my_function = 'meniscus cube_round_corner difference translate rotate hull sphere cube cylinder union';
+    var my_function = 'meniscus cube_round_corner echo difference translate rotate hull sphere cube cylinder union';
 
     this.regexList = [
       {regex: /^ *#.*/gm, css: 'my_preprocessor'},
