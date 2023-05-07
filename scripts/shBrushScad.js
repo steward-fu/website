@@ -19,9 +19,9 @@
 
   function Brush() {
     var my_constant = 'true false';
-    var my_keyword =  'file_path size width radius diameter angle height twist slices scale fn auto convexity module center for if else';
+    var my_keyword =  'points paths file_path size width radius diameter angle height twist slices scale fn auto convexity module center for if else';
     var my_type = 'int';
-    var my_function = 'square circle surface import rotate_extrude linear_extrude minkowski color resize meniscus cube_round_corner echo difference translate rotate hull sphere cube cylinder union';
+    var my_function = 'polygon square circle surface import rotate_extrude linear_extrude minkowski color resize meniscus cube_round_corner echo difference translate rotate hull sphere cube cylinder union';
 
     this.regexList = [
       {regex: /^ *#.*/gm, css: 'my_preprocessor'},
