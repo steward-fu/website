@@ -21,7 +21,7 @@
     var my_constant = 'true false';
     var my_keyword =  'angle height twist slices scale fn auto convexity module center for if else';
     var my_type = 'int';
-    var my_function = 'import rotate_extrude linear_extrude minkowski color resize meniscus cube_round_corner echo difference translate rotate hull sphere cube cylinder union';
+    var my_function = 'surface import rotate_extrude linear_extrude minkowski color resize meniscus cube_round_corner echo difference translate rotate hull sphere cube cylinder union';
 
     this.regexList = [
       {regex: /^ *#.*/gm, css: 'my_preprocessor'},
