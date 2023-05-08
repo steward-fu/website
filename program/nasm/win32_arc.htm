@@ -1,0 +1,448 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Netwide Assembler (NASM) &gt;&gt; Assembly (x86) &gt;&gt; Win32 API &gt;&gt; Painting</h3>
+<p><b>Draw Arc</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://www.nasm.us/xdoc/2.13rc9/html/nasmdoc0.html">nasm</a><br>
+2. <a href="https://masm32.com/board/index.php">masm32</a><br><br>
+
+使用方式：<br>
+<img src="win32_arc/1.jpg" class="maxSize"><br><br>
+
+main.asm
+</p>
+<pre class="brush:asm">
+    [bits 32]
+    global _start
+
+    extern _Arc@36
+    extern _sprintf
+    extern _LineTo@12
+    extern _Polygon@12
+    extern _Ellipse@20
+    extern _EndPaint@8
+    extern _MoveToEx@16
+    extern _FillRect@12
+    extern _SetPixel@16
+    extern _SetTimer@16
+    extern _KillTimer@8
+    extern _Rectangle@20
+    extern _CreatePen@12
+    extern _BeginPaint@8
+    extern _ExitProcess@4
+    extern _GetMessageA@16
+    extern _MessageBoxA@16
+    extern _DeleteObject@4
+    extern _SelectObject@8
+    extern _SetScrollPos@16
+    extern _DestroyWindow@4
+    extern _SetScrollRange@20
+    extern _SetWindowTextA@8
+    extern _SetWindowLongA@12
+    extern _CallWindowProcA@20
+    extern _GetCommandLineA@0
+    extern _CreateWindowExA@48
+    extern _PostQuitMessage@4
+    extern _CreateSolidBrush@4
+    extern _GetModuleHandleA@4
+    extern _DispatchMessageA@4
+
+    %define ARG1             8h
+    %define ARG2             0ch
+    %define ARG3             10h
+    %define ARG4             14h
+    %define Arc              _Arc@36
+    %define sprintf          _sprintf
+    %define LineTo           _LineTo@12
+    %define Polygon          _Polygon@12
+    %define Ellipse          _Ellipse@20
+    %define EndPaint         _EndPaint@8
+    %define MoveToEx         _MoveToEx@16
+    %define FillRect         _FillRect@12
+    %define SetPixel         _SetPixel@16
+    %define SetTimer         _SetTimer@16
+    %define KillTimer        _KillTimer@8
+    %define Rectangle        _Rectangle@20
+    %define CreatePen        _CreatePen@12
+    %define BeginPaint       _BeginPaint@8
+    %define GetMessage       _GetMessageA@16
+    %define MessageBox       _MessageBoxA@16
+    %define ExitProcess      _ExitProcess@4
+    %define DeleteObject     _DeleteObject@4
+    %define SelectObject     _SelectObject@8
+    %define SetScrollPos     _SetScrollPos@16
+    %define DestroyWindow    _DestroyWindow@4
+    %define SetScrollRange   _SetScrollRange@20
+    %define SetWindowText    _SetWindowTextA@8
+    %define SetWindowLong    _SetWindowLongA@12
+    %define CallWindowProc   _CallWindowProcA@20
+    %define GetCommandLine   _GetCommandLineA@0
+    %define CreateWindowEx   _CreateWindowExA@48
+    %define PostQuitMessage  _PostQuitMessage@4
+    %define CreateSolidBrush _CreateSolidBrush@4
+    %define GetModuleHandle  _GetModuleHandleA@4
+    %define DispatchMessage  _DispatchMessageA@4
+    
+    %macro CreateMyPen 2
+        push %2
+        push %1
+        push PS_SOLID
+        call CreatePen
+    %endmacro
+    
+    %macro DrawMyLine 6
+        push %2
+        push %1
+        call SelectObject
+         
+        push 0
+        push %4
+        push %3
+        push %1
+        call MoveToEx
+         
+        push %6
+        push %5
+        push %1
+        call LineTo
+    %endmacro
+    
+    struc RECT
+        .left:   resd 1
+        .top:    resd 1
+        .right:  resd 1
+        .bottom: resd 1
+        .SIZE:
+    endstruc
+        
+    struc PAINTSTRUCT
+        .hdc:         resd 1
+        .fErase:      resd 1
+        .rcPaint:     resb RECT.SIZE
+        .fRestore:    resd 1
+        .fIncUpdate:  resd 1
+        .rgbReserved: resb 32
+        .SIZE:
+    endstruc
+        
+    struc POINT
+        .x: resd 1
+        .y: resd 1
+        .SIZE:
+    endstruc
+              
+    struc MSG
+        .hwnd:    resd 1
+        .message: resd 1
+        .wParam:  resd 1
+        .lParam:  resd 1
+        .time:    resd 1
+        .pt:      resb POINT.SIZE
+        .SIZE:
+    endstruc
+     
+    PS_SOLID            equ 0
+    GWL_WNDPROC         equ -4
+    SB_LINEUP           equ 0
+    SB_LINELEFT         equ 0
+    SB_LINEDOWN         equ 1
+    SB_LINERIGHT        equ 1
+    SB_PAGEUP           equ 2
+    SB_PAGELEFT         equ 2
+    SB_PAGEDOWN         equ 3
+    SB_PAGERIGHT        equ 3
+    SB_VERT             equ 1
+    SW_SHOWNORMAL       equ 1h
+    WC_DIALOG           equ 8002h
+    WM_PAINT            equ 0Fh
+    WM_VSCROLL          equ 115h
+    WM_TIMER            equ 113h
+    WM_MOUSEMOVE        equ 200h
+    WM_SYSKEYDOWN       equ 104h
+    WM_KEYDOWN          equ 100h
+    WM_DESTROY          equ 2h
+    WM_CLOSE            equ 10h
+    WS_VSCROLL          equ 200000h
+    WS_OVERLAPPED       equ 0h
+    WS_CAPTION          equ 0c00000h
+    WS_SYSMENU          equ 80000h
+    WS_THICKFRAME       equ 40000h
+    WS_MINIMIZEBOX      equ 20000h
+    WS_MAXIMIZEBOX      equ 10000h
+    WS_VISIBLE          equ 10000000h
+    WS_EX_LEFT          equ 00000000h
+    WS_OVERLAPPEDWINDOW equ WS_OVERLAPPED | \
+                            WS_CAPTION | \
+                            WS_SYSMENU | \
+                            WS_THICKFRAME | \
+                            WS_MINIMIZEBOX | \
+                            WS_MAXIMIZEBOX
+              
+    section .drectve info
+_entry    db "/entry:start "
+_gdi32    db "/defaultlib:c:\\masm32\\lib\\gdi32.lib "
+_user32   db "/defaultlib:c:\\masm32\\lib\\user32.lib "
+_msvcrt   db "/defaultlib:c:\\masm32\\lib\\msvcrt.lib "
+_kernel32 db "/defaultlib:c:\\masm32\\lib\\kernel32.lib "
+               
+    segment .data
+hWin        dd 0
+szCaption   db "main",0
+hInstance   dd 0
+defWndProc  dd 0
+CommandLine dd 0
+hdc         dd 0
+pen         dd 0
+brush       dd 0
+ 
+msg istruc MSG
+    at .hwnd,    dd 0
+    at .message, dd 0
+    at .wParam,  dd 0
+    at .lParam,  dd 0
+    at .time,    dd 0
+    at .pt,      dd 0, 0
+iend
+              
+ps istruc PAINTSTRUCT
+    at .hdc,         dd 0
+    at .fErase,      dd 0
+    at .rcPaint,     dd 0, 0, 0, 0
+    at .fRestore,    dd 0
+    at .fIncUpdate,  dd 0
+    at .rgbReserved, db 0
+iend
+        
+    segment .text
+WndProc:
+    push ebp
+    mov ebp, esp
+             
+    cmp dword [ebp + ARG2], WM_PAINT
+    je .handle_paint
+    cmp dword [ebp + ARG2], WM_CLOSE
+    je .handle_close
+    cmp dword [ebp + ARG2], WM_DESTROY
+    je .handle_destroy
+    jmp .handle_default
+        
+.handle_paint:
+    push ps
+    push dword [ebp + ARG1]
+    call BeginPaint
+    mov [hdc], eax
+   
+    push 0ffh
+    push 3
+    push PS_SOLID
+    call CreatePen
+    mov [pen], eax
+   
+    push 0ff00h
+    call CreateSolidBrush
+    mov [brush], eax
+   
+    push dword [pen]
+    push dword [hdc]
+    call SelectObject
+   
+    push dword [brush]
+    push dword [hdc]
+    call SelectObject
+  
+    push 100
+    push 200
+    push 0
+    push 0
+    push 200
+    push 200
+    push 10
+    push 10
+    push dword [hdc]
+    call Arc
+
+    push ps
+    push dword [ebp + ARG1]
+    call EndPaint
+      
+    push dword [pen]
+    call DeleteObject
+    push dword [brush]
+    call DeleteObject
+    xor eax, eax
+    jmp .finish
+        
+.handle_close:
+    push dword [ebp + ARG1]
+    call DestroyWindow
+    xor eax, eax
+    jmp .finish
+             
+.handle_destroy:
+    push 0
+    call PostQuitMessage
+    xor eax, eax
+    jmp .finish
+             
+.handle_default:
+    push dword [ebp + ARG4]
+    push dword [ebp + ARG3]
+    push dword [ebp + ARG2]
+    push dword [ebp + ARG1]
+    push dword [defWndProc]
+    call CallWindowProc
+             
+.finish:
+    leave
+    ret 16
+             
+WinMain:
+    push ebp
+    mov ebp, esp
+              
+    push 0
+    push 0
+    push 0
+    push 0
+    push 300
+    push 300
+    push 0
+    push 0
+    push WS_OVERLAPPEDWINDOW | WS_VISIBLE
+    push szCaption
+    push WC_DIALOG
+    push WS_EX_LEFT
+    call CreateWindowEx
+    mov [hWin], eax
+             
+    push WndProc
+    push GWL_WNDPROC
+    push dword [hWin]
+    call SetWindowLong
+    mov [defWndProc], eax
+          
+.loop:
+    push 0
+    push 0
+    push 0
+    push msg
+    call GetMessage
+    cmp eax, 0
+    je .exit
+              
+    push msg
+    call DispatchMessage
+    jmp .loop
+              
+.exit:
+    mov eax, [msg + MSG.wParam]
+    leave
+    ret 16
+              
+_start:
+    push 0
+    call GetModuleHandle
+    mov [hInstance], eax
+              
+    call GetCommandLine
+    mov [CommandLine], eax
+              
+    push SW_SHOWNORMAL
+    push dword [CommandLine]
+    push 0
+    push dword [hInstance]
+    call WinMain
+              
+    push eax
+    call ExitProcess
+</pre>
+<p>
+<b>Line 239~248</b>：畫出一個Arc圖形<br><br>
+
+Makefile
+</p>
+<pre>
+export WINEPREFIX=/home/user/.wine_amd64
+
+TARGET=main
+MYWINE=box86 wine
+NASM32=/home/user/.wine_amd64/drive_c/nasm
+MASM32=/home/user/.wine_amd64/drive_c/masm32
+
+all:
+	${MYWINE} ${NASM32}/bin/nasm.exe -fwin32 ${TARGET}.asm
+	${MYWINE} ${MASM32}/bin/link.exe /SUBSYSTEM:WINDOWS /MERGE:.rdata=.text ${TARGET}.obj
+
+run:
+	${MYWINE} ${TARGET}.exe
+
+clean:
+	rm -rf ${TARGET}.exe ${TARGET}.obj
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ make
+$ make run
+</pre>
+<p>
+<img style="border:0px" src="win32_arc/2.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../program.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
