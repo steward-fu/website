@@ -1,0 +1,234 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>TRIMUI SMART &gt;&gt; Assembly</h3>
+<p><b>LED</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://github.com/steward-fu/pdf/blob/master/s3/pm.pdf">pdf</a><br><br>
+
+紅色LED連接到PG10<br>
+<img src="asm_led/3.jpg" class="maxSize"><br><br>
+
+GPIO位址<br>
+<img src="asm_led/1.jpg" class="maxSize"><br><br>
+
+PG_CFG1<br>
+<img src="asm_led/2.jpg" class="maxSize"><br><br>
+
+PG_DATA<br>
+<img src="asm_led/4.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .global _start
+        
+    .equ GPIO_BASE, 0x01c20800
+    .equ PG_CFG1,   (GPIO_BASE + (0x24 * 6) + 0x04)
+    .equ PG_DATA,   (GPIO_BASE + (0x24 * 6) + 0x10)
+         
+    .arm
+    .text
+_start:
+    .long 0xea000016
+    .byte 'e', 'G', 'O', 'N', '.', 'B', 'T', '0'
+    .long 0, __spl_size
+    .byte 'S', 'P', 'L', 2
+    .long 0, 0
+    .long 0, 0, 0, 0, 0, 0, 0, 0
+    .long 0, 0, 0, 0, 0, 0, 0, 0
+         
+_vector:
+    b reset
+    b .
+    b .
+    b .
+    b .
+    b .
+    b .
+    b .
+         
+reset:
+    ldr r0, =PG_CFG1
+    ldr r1, =0x11111111
+    str r1, [r0]
+    
+    ldr r0, =PG_DATA
+    ldr r2, =0xffff
+    str r2, [r0]
+     
+    ldr r0, =PG_DATA
+    ldr r1, =(1 &lt;&lt; 10)
+0:
+    eor r2, r1
+    str r2, [r0]
+    ldr r3, =500000
+1:
+    subs r3, #1
+    bne 1b
+    b 0b
+    .end
+</pre><br>
+
+<p>
+main.ld
+</p>
+<pre>
+OUTPUT_FORMAT("elf32-littlearm", "elf32-bigarm", "elf32-littlearm")
+OUTPUT_ARCH(arm)
+ENTRY(_start)
+
+MEMORY {
+    RAM : ORIGIN = 0x00000000, LENGTH = 128M
+}
+
+SECTIONS {
+    .text :
+    {
+        PROVIDE(__spl_start = .);
+        *(.text*)
+        PROVIDE(__spl_end = .);
+        *(.init.text)
+        *(.exit.text)
+        *(.glue*)
+        *(.note.gnu.build-id)
+    } &gt; RAM
+    PROVIDE(__spl_size = __spl_end - __spl_start);
+
+    .rodata ALIGN(8) :
+    {
+        PROVIDE(__rodata_start = .);
+        *(SORT_BY_ALIGNMENT(SORT_BY_NAME(.rodata*)))
+        PROVIDE(__rodata_end = .);
+    } &gt; RAM
+
+    .data ALIGN(8) :
+    {
+        PROVIDE(__data_start = .);    
+        *(.data*)
+        . = ALIGN(8);
+            PROVIDE(__data_end = .);
+        PROVIDE(__image_end = .);
+    } &gt; RAM
+
+    .bss ALIGN(8) (NOLOAD) :
+    {
+        PROVIDE(__bss_start = .);
+        *(.bss*)
+        *(.sbss*)
+        *(COMMON)
+        . = ALIGN(8);
+        PROVIDE(__bss_end = .);
+    } &gt; RAM
+
+    .stab 0 : { *(.stab) }
+    .stabstr 0 : { *(.stabstr) }
+    .stab.excl 0 : { *(.stab.excl) }
+    .stab.exclstr 0 : { *(.stab.exclstr) }
+    .stab.index 0 : { *(.stab.index) }
+    .stab.indexstr 0 : { *(.stab.indexstr) }
+    .comment 0 : { *(.comment) }
+    .debug_abbrev 0 : { *(.debug_abbrev) }
+    .debug_info 0 : { *(.debug_info) }
+    .debug_line 0 : { *(.debug_line) }
+    .debug_pubnames 0 : { *(.debug_pubnames) }
+    .debug_aranges 0 : { *(.debug_aranges) }
+}
+</pre><br>
+
+<p>
+Makefile
+</p>
+<pre>
+all:
+	arm-linux-gnueabihf-as -mcpu=cortex-a7 -o main.o main.s
+	arm-linux-gnueabihf-ld -T main.ld -o main.elf main.o
+	arm-linux-gnueabihf-objcopy -O binary main.elf main.bin
+	gcc mksunxi.c -o mksunxi
+	./mksunxi main.bin
+
+clean:
+	rm -rf main.bin main.o main.elf
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ make
+    arm-linux-gnueabihf-as -mcpu=cortex-a7 -o main.o main.s
+    arm-linux-gnueabihf-ld -T main.ld -o main.elf main.o
+    arm-linux-gnueabihf-objcopy -O binary main.elf main.bin
+    gcc mksunxi.c -o mksunxi
+    ./mksunxi main.bin
+    The bootloader head has been fixed, spl size is 512 bytes.
+</pre><br>
+
+<p>
+燒錄到MicroSD
+</p>
+<pre>
+$ sudo dd if=main.bin of=/dev/sdX bs=1024 seek=8 conv=notrunc
+</pre>
+<p>
+P.S. <b>/dev/sdX</b>是使用者的MicroSD位置<br><br>
+
+插入MicroSD並且開機<br>
+<img src="asm_led/5.jpg" class="maxSize"><br>
+<img src="asm_led/6.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
