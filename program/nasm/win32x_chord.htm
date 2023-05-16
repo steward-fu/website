@@ -1,0 +1,193 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Netwide Assembler (NASM) &gt;&gt; Assembly (x86) &gt;&gt; Win32 API (NASMX) &gt;&gt; Painting</h3>
+<p><b>Draw Chord</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://www.nasm.us/xdoc/2.13rc9/html/nasmdoc0.html">nasm</a><br>
+2. <a href="https://masm32.com/board/index.php">masm32</a><br><br>
+
+使用方式：<br>
+<img src="win32_chord/1.jpg" class="maxSize"><br><br>
+
+main.asm
+</p>
+<pre class="brush:asm">
+    %include "c:\\nasmx\\inc\\nasmx.inc"
+    %include "c:\\nasmx\\inc\\win32\\msvcrt.inc"
+    %include "c:\\nasmx\\inc\\win32\\windows.inc"
+    %include "c:\\nasmx\\inc\\win32\\gdi32.inc"
+    %include "c:\\nasmx\\inc\\win32\\user32.inc"
+    %include "c:\\nasmx\\inc\\win32\\kernel32.inc"
+           
+    entry start
+           
+    section .data
+hWin         dd 0
+hInstance    dd 0
+defWndProc   dd 0
+CommandLine  dd 0
+szCaption    declare(NASMX_TCHAR) NASMX_TEXT("main"),0
+ 
+NASMX_ISTRUC msg, MSG
+NASMX_IENDSTRUC
+       
+NASMX_ISTRUC ps, PAINTSTRUCT
+NASMX_IENDSTRUC
+            
+    section .text
+proc WndProc, dword hWnd, uint_t uMsg, dword wParam, dword lParam
+    locals
+        local hdc, DWORD
+        local pen, DWORD
+        local brush, DWORD
+    endlocals
+         
+    switch dword [argv(.uMsg)]
+    case dword WM_PAINT
+        invoke BeginPaint, [argv(.hWnd)], ps
+        mov [var(.hdc)], eax
+       
+        invoke CreatePen, PS_SOLID, 3, 0ffh
+        mov [var(.pen)], eax
+        invoke CreateSolidBrush, 0ff00h
+        mov [var(.brush)], eax
+     
+        invoke SelectObject, [var(.hdc)], [var(.pen)]
+        invoke SelectObject, [var(.hdc)], [var(.brush)]
+        invoke Chord, [var(.hdc)], 10, 10, 200, 200, 0, 0, 200, 100
+      
+        invoke EndPaint, [argv(.hWnd)], ps
+        invoke DeleteObject, [var(.pen)]
+        invoke DeleteObject, [var(.brush)]
+        break
+    case dword WM_CLOSE
+        invoke DestroyWindow, [argv(.hWnd)]
+        break
+    case dword WM_DESTROY
+        invoke PostQuitMessage, 0
+        break
+    default
+        invoke CallWindowProc, [defWndProc], [argv(.hWnd)], [argv(.uMsg)], [argv(.wParam)], [argv(.lParam)]
+    endswitch
+endproc
+            
+proc WinMain, dword hInst, dword hPrevInst, dword CmdLine, dword CmdShow
+    locals none
+             
+    invoke CreateWindowEx, WS_EX_LEFT, WC_DIALOG, szCaption, \
+        WS_OVERLAPPEDWINDOW | WS_VISIBLE, 0, 0, 300, 300, NULL, NULL, NULL, NULL
+    mov [hWin], eax
+            
+    invoke SetWindowLong, [hWin], GWL_WNDPROC, WndProc
+    mov [defWndProc], eax
+        
+    do
+        invoke DispatchMessage, msg
+        invoke GetMessage, msg, NULL, NULL, NULL
+    while eax, !=, 0
+             
+    mov eax, dword [msg + MSG.wParam]
+endproc
+             
+proc start, dword argc, dword argv
+    locals none
+             
+    invoke GetModuleHandle, NULL
+    mov [hInstance], eax
+             
+    invoke GetCommandLine, NULL
+    mov [CommandLine], eax
+             
+    invoke WinMain, [hInstance], NULL, [CommandLine], SW_SHOWNORMAL
+    invoke ExitProcess, NULL
+endproc
+</pre>
+<p>
+<b>Line 43</b>：畫出一個Chord圖形<br><br>
+
+Makefile
+</p>
+<pre>
+export WINEPREFIX=/home/user/.wine_amd64
+
+TARGET=main
+MYWINE=box86 wine
+NASM32=/home/user/.wine_amd64/drive_c/nasmx
+
+all:
+	${MYWINE} ${NASM32}/bin/nasm.exe -fwin32 ${TARGET}.asm
+	${MYWINE} ${NASM32}/bin/GoLink.exe /entry _main ${TARGET}.obj kernel32.dll user32.dll gdi32.dll msvcrt.dll /mix
+
+run:
+	${MYWINE} ${TARGET}.exe
+
+clean:
+	rm -rf ${TARGET}.exe ${TARGET}.obj
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ make
+$ make run
+</pre>
+<p>
+<img style="border:0px" src="win32_chord/2.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../program.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
