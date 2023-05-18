@@ -45,26 +45,28 @@
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
 <h3>FASM &gt;&gt; Assembly (x86) &gt;&gt; Win32 API &gt;&gt; Painting</h3>
-<p><b>Draw Polygon</b></p>
+<p><b>Draw Arc</b></p>
 <hr size="1">
 <p>
 參考資訊：<br>
 1. <a href="https://board.flatassembler.net/">fasm</a><br><br>
 
-Polygon()可以用來繪製多邊形，需要傳入的資訊是一個座標點陣列，用來描述有哪些點需要被連接<br><br>
+使用方式：<br>
+<img src="../nasm/win32_arc/1.jpg" class="maxSize"><br><br>
 
 main.asm
 </p>
 <pre class="brush:asm">
     format PE GUI 4.0
     entry start
-            
+             
     include "c:\fasm\include\win32a.inc"
-           
+            
     section ".idata" import data readable writeable
 library user, "user32.dll", kernel, "kernel32.dll", gdi, "gdi32.dll"
-      
+       
 import gdi,                              \
+    Arc,              "Arc",             \
     LineTo,           "LineTo",          \
     Polygon,          "Polygon",         \
     Ellipse,          "Ellipse",         \
@@ -75,7 +77,7 @@ import gdi,                              \
     DeleteObject,     "DeleteObject",    \
     SelectObject,     "SelectObject",    \
     CreateSolidBrush, "CreateSolidBrush"
-      
+       
 import user,                             \
     FillRect,        "FillRect",         \
     EndPaint,        "EndPaint",         \
@@ -94,27 +96,26 @@ import user,                             \
     CallWindowProc,  "CallWindowProcA",  \
     DispatchMessage, "DispatchMessageA", \
     PostQuitMessage, "PostQuitMessage"
-           
+            
 import kernel,                           \
     ExitProcess,     "ExitProcess",      \
     GetCommandLine,  "GetCommandLineA",  \
     GetModuleHandle, "GetModuleHandleA"
-            
+             
     section ".data" data readable writeable
 hWin        dd 0
 szCaption   db "main",0
 hInstance   dd 0
 CommandLine dd 0
 defWndProc  dd 0
-       
+        
     section ".text" code readable executable
 proc WndProc hWnd, uMsg, wParam, lParam
     local hdc:DWORD
     local pen:DWORD
     local brush:DWORD
-    local pt[3]:POINT
     local ps:PAINTSTRUCT
-      
+       
     mov eax, [uMsg]
     cmp eax, WM_PAINT
     je .handle_paint
@@ -124,60 +125,52 @@ proc WndProc hWnd, uMsg, wParam, lParam
     je .handle_destroy
     invoke CallWindowProc, [defWndProc], [hWnd], [uMsg], [wParam], [lParam]
     jmp .finish
-       
+        
 .handle_paint:
     lea eax, [ps]
     invoke BeginPaint, [hWnd], eax
     mov [hdc], eax
-      
+       
     invoke CreatePen, PS_SOLID, 3, 0ffh
     mov [pen], eax
     invoke CreateSolidBrush, 0ff00h
     mov [brush], eax
-   
+    
     invoke SelectObject, [hdc], [pen]
     invoke SelectObject, [hdc], [brush]
-
-    mov [sizeof.POINT * 0 + pt.x], 150
-    mov [sizeof.POINT * 0 + pt.y], 10
-    mov [sizeof.POINT * 1 + pt.x], 50
-    mov [sizeof.POINT * 1 + pt.y], 200
-    mov [sizeof.POINT * 2 + pt.x], 250
-    mov [sizeof.POINT * 2 + pt.y], 200
-    lea eax, [pt]
-    invoke Polygon, [hdc], eax, 3
-     
+    invoke Arc, [hdc], 10, 10, 200, 200, 0, 0, 200, 100
+      
     lea eax, [ps]
     invoke EndPaint, [hWnd], eax
     invoke DeleteObject, [pen]
     invoke DeleteObject, [brush]
     xor eax, eax
     jmp .finish
-       
+        
 .handle_close:
     invoke DestroyWindow, [hWnd]
     xor eax, eax
     jmp .finish
-           
+            
 .handle_destroy:
     invoke PostQuitMessage, 0
     xor eax, eax
     jmp .finish
-            
+             
 .finish:
     ret
 endp
-           
+            
 proc WinMain hInst, hPrevInst, CmdLine, CmdShow
     local msg:MSG
-           
+            
     invoke CreateWindowEx, WS_EX_LEFT, WC_DIALOG, szCaption, \
         WS_OVERLAPPEDWINDOW or WS_VISIBLE, 0, 0, 300, 300, NULL, NULL, NULL, NULL
     mov [hWin], eax
-           
+            
     invoke SetWindowLong, [hWin], GWL_WNDPROC, WndProc
     mov [defWndProc], eax
-        
+         
 @@:
     lea eax, [msg]
     invoke GetMessage, eax, NULL, 0, 0
@@ -190,19 +183,19 @@ proc WinMain hInst, hPrevInst, CmdLine, CmdShow
     mov eax, [msg.wParam]
     ret
 endp
-           
+            
 start:
     invoke GetModuleHandle, NULL
     mov [hInstance], eax
-            
+             
     invoke GetCommandLine
     mov [CommandLine], eax
-            
+             
     stdcall WinMain, [hInstance], NULL, [CommandLine], SW_SHOWNORMAL
     invoke ExitProcess, eax
 </pre>
 <p>
-<b>Line 83~90</b>：使用三個座標點畫出一個三角形<br><br>
+<b>Line 82</b>：畫出一個Arc圖形<br><br>
 
 Makefile
 </p>
@@ -231,7 +224,7 @@ $ make
 $ make run
 </pre>
 <p>
-<img style="border:0px" src="../nasm/win32_polygon/1.jpg" class="maxSize">
+<img style="border:0px" src="../nasm/win32_arc/2.jpg" class="maxSize">
 </p>
 
 <p>
