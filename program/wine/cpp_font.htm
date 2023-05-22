@@ -44,8 +44,8 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>Wine &gt;&gt; C/C++ &gt;&gt; Dialog &gt;&gt; Painting</h3>
-<p><b>Font</b></p>
+<h3>Wine &gt;&gt; C/C++ &gt;&gt; Painting</h3>
+<p><b>Create Font</b></p>
 <hr size="1">
 <p>
 參考資訊：<br>
@@ -54,17 +54,24 @@
 3. <a href="http://www.winprog.org/tutorial/">tutorial</a><br>
 4. <a href="https://github.com/gammasoft71/Examples_Win32">examples_win32</a><br><br>
 
+在Windows視窗程式設計中，一般都是創造字型來使用，因為系統預設的字型太小，創造的字型除了可以粗體、斜體，還可以設定成長寬為不等比例顯示，司徒使用一個簡單例子來說明如何創造字型<br><br>
+
 main.c
 </p>
 <pre class="brush:cpp">
 #include &lt;stdbool.h&gt;
 #include &lt;windows.h&gt;
-
+ 
 HWND hWin = NULL;
 WNDPROC defWndProc = NULL;
-
+ 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+    HDC hdc = NULL;
+    HFONT font = NULL;
+    PAINTSTRUCT ps = {0};
+    const char *pMsg = "Test";
+
     switch (uMsg) {
     case WM_CLOSE:
         DestroyWindow(hWnd);
@@ -73,13 +80,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         PostQuitMessage(0);
         return 0;
     case WM_PAINT:
-        const char *pMsg = "Test";
-        PAINTSTRUCT ps = {0};
-        HDC hdc = BeginPaint(hWnd, &amp;ps);
-        HFONT font =
-            CreateFont(48, 0, 0, 0, FW_BOLD, false, false, false, 0,
-                       OUT_OUTLINE_PRECIS, CLIP_DEFAULT_PRECIS,
-                       CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, "Arial");
+        hdc = BeginPaint(hWnd, &amp;ps);
+
+        font = CreateFont(48, 0, 0, 0, FW_BOLD, false, false, false, 0,
+            OUT_OUTLINE_PRECIS, CLIP_DEFAULT_PRECIS,
+            CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, "Arial");
+
         SetTextColor(hdc, RGB(0xff, 0x00, 0x00));
         SetBkMode(hdc, TRANSPARENT);
         SelectObject(hdc, font);
@@ -90,16 +96,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     }
     return CallWindowProc(defWndProc, hWnd, uMsg, wParam, lParam);
 }
-
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
-                   LPSTR lpCmdLine, int nCmdShow)
+ 
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
-    hWin = CreateWindow(WC_DIALOG, "main", WS_OVERLAPPEDWINDOW, 0, 0, 300, 300,
-                        NULL, NULL, NULL, NULL);
-    defWndProc =
-        (WNDPROC)SetWindowLongPtr(hWin, GWLP_WNDPROC, (long int)WndProc);
-    ShowWindow(hWin, SW_SHOW);
-
+    hWin = CreateWindow(WC_DIALOG, "main", 
+        WS_OVERLAPPEDWINDOW | WS_VISIBLE, 0, 0, 300, 300, NULL, NULL, NULL, NULL);
+    defWndProc = (WNDPROC)SetWindowLongPtr(hWin, GWLP_WNDPROC, (long int)WndProc);
+ 
     MSG msg = {0};
     while (GetMessage(&amp;msg, NULL, 0, 0)) {
         DispatchMessage(&amp;msg);
@@ -107,8 +110,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     ExitProcess(0);
     return 0;
 }
-</pre><br>
+</pre>
 <p>
+<b>Line 24~26</b>：創造一個大小48、粗體的Arial字型<br><br>
+
 編譯、執行
 </p>
 <pre>
@@ -116,7 +121,7 @@ $ winegcc main.c -o main -lgdi32
 $ wine ./main.exe
 </pre>
 <p>
-<img style="border:0px" src="cpp_dlg_font/1.jpg" class="maxSize">
+<img style="border:0px" src="../nasm/win32_font/1.jpg" class="maxSize">
 </p>
 
 <p>
