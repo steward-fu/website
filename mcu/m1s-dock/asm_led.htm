@@ -1,0 +1,186 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>(RV64GCV + RV32GCP + RV32EMC) BL808 (Sipeed M1s Dock) &gt;&gt; Assembly</h3>
+<p><b>LED</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://wiki.sipeed.com/hardware/en/maix/m1s/m1s_dock.html">wiki</a><br>
+2. <a href="https://github.com/bouffalolab/bl808_linux">bl808_linux</a><br><br>
+
+LED是連接到IO8<br>
+<img src="asm_led/1.jpg" class="maxSize"><br>
+<img src="asm_led/2.jpg" class="maxSize"><br><br>
+
+每個GPIO都支援多種功能切換<br>
+<img src="asm_led/3.jpg" class="maxSize"><br><br>
+
+gpio_cfg8<br>
+<img src="asm_led/4.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .global _start
+
+    .equiv gpio_cfg8, 0x200008e4
+ 
+    .text
+    .org 0x0000
+_vector:
+    j _start
+ 
+    .org 0x0200
+_start:
+    fence
+    fence.i
+    icache.iall
+    csrr a5, mhcr
+    ori a5, a5, 1
+    csrw mhcr, a5
+
+    fence
+    fence.i
+    fence
+    fence.i
+    dcache.iall
+    csrr a5, mhcr
+    lui a4, 1
+    addi a4, a4, 62
+    or a5, a5, a4
+    csrw mhcr, a5
+    fence
+    fence.i
+
+    li t0, (1 &lt;&lt; 6) | (11 &lt;&lt; 8) | (1 &lt;&lt; 24)
+    li t1, (1 &lt;&lt; 24)
+0:
+    xor t0, t0, t1
+    li a0, gpio_cfg8
+    sw t0, 0(a0)
+
+    lui t2, 10000
+1:
+    nop
+    addi t2, t2, -1
+    bgtz t2, 1b
+    j 0b
+    .end
+</pre><br>
+
+<p>
+main.ld
+</p>
+<pre>
+MEMORY {
+    FLASH : ORIGIN = 0x58000000, LENGTH = 32M
+}
+
+SECTIONS {
+    .text : { *(.text*) } &gt; FLASH
+    .rodata : { *(.rodata*) } &gt; FLASH
+    .bss : { *(.bss*) } &gt; FLASH
+}
+</pre><br>
+
+<p>
+Makefile
+</p>
+<pre>
+all:
+	riscv64-unknown-linux-gnu-gcc -o main.o main.s -nostdlib -march=rv32imafcpzpsfoperand_xtheade -mabi=ilp32f -mtune=e907
+	riscv64-unknown-linux-gnu-ld -T main.ld -o main.elf main.o -b elf32-littleriscv
+	riscv64-unknown-linux-gnu-objcopy -O binary main.elf main.bin
+
+clean:
+	rm -rf main.bin main.o main.elf
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ make
+    riscv64-unknown-linux-gnu-gcc -o main.o main.s -nostdlib -march=rv32imafcpzpsfoperand_xtheade -mabi=ilp32f -mtune=e907
+    riscv64-unknown-linux-gnu-ld -T main.ld -o main.elf main.o -b elf32-littleriscv
+    riscv64-unknown-linux-gnu-ld: Using an executable file (main.o) as input to a link is deprecated - support is likely to be removed in the future
+    riscv64-unknown-linux-gnu-objcopy -O binary main.elf main.bin
+</pre><br>
+
+<p>
+連接UART到PC<br>
+<img src="asm_led/5.jpg" class="maxSize"><br><br>
+
+執行BLDevCube-ubuntu<br>
+<img src="asm_led/6.jpg" class="maxSize"><br><br>
+
+因為目前只需要使用M0，因此，切換到MCU頁面，將M0 Group設定成<b>group0</b>，Image Addr設定成Flash起始位址<b>0x58000000</b>，然後選擇<b>main.bin</b>，Port/SN會根據個人的電腦而不一樣，司徒的是<b>/dev/ttyACM1</b>，Uart Rate設定成<b>2000000</b><br>
+<img src="asm_led/7.jpg" class="maxSize"><br><br>
+
+因為Sipeed M1s Dock有連接PU_CHIP(RST)到BL702，因此，按下<b>Create & Download</b>就可以燒錄完成<br>
+<img src="asm_led/8.jpg" class="maxSize"><br>
+假如遇到無法燒錄的狀況時，可以使用如下方式進入燒錄模式：<br>
+1. 按下BOOT按鍵<br>
+2. 按下RST按鍵<br>
+3. 放開RST按鍵<br>
+4. 放開BOOT按鍵<br>
+然後再次按下<b>Create & Download</b>就可以燒錄完成<br><br>
+
+接著，按下RST按鍵或者按下BLDevCube-ubuntu的<b>Open Uart</b>按鈕<br>
+<img src="asm_led/5.jpg" class="maxSize"><br>
+<img src="asm_led/9.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
