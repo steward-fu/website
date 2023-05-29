@@ -134,6 +134,9 @@ all:
 	riscv64-unknown-linux-gnu-objcopy -O binary main.elf tmp.bin
 	python3 gen_checksum.py tmp.bin main.bin
 
+run:
+	xfel ddr f133 &amp;&amp; xfel write 0x40000000 main.bin &amp;&amp; xfel exec 0x40000000
+
 clean:
 	rm -rf main.bin main.o main.elf tmp.bin
 </pre><br>
@@ -150,14 +153,17 @@ $ make
 </pre><br>
 
 <p>
-燒錄到MicroSD
+執行
 </p>
 <pre>
-$ sudo dd if=main.bin of=/dev/sdX bs=1024 seek=8
+$ make run
+    xfel ddr f133 &amp;&amp; xfel write 0x40000000 main.bin &amp;&amp; xfel exec 0x40000000
+    Initial ddr controller succeeded
+    100% [================================================] 16.000 KB, 431.932 KB/s
 </pre><br>
 
 <p>
-插入MicroSD後，上電即可<br>
+完成<br>
 <img src="asm_led/6.jpg" class="maxSize"><br>
 <img src="asm_led/7.jpg" class="maxSize">
 </p>
