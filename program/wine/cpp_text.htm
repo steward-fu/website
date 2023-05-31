@@ -44,8 +44,8 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>Wine &gt;&gt; C/C++ &gt;&gt; Dialog &gt;&gt; Painting</h3>
-<p><b>Text</b></p>
+<h3>Wine &gt;&gt; C/C++ &gt;&gt; Painting</h3>
+<p><b>Draw Text</b></p>
 <hr size="1">
 <p>
 參考資訊：<br>
@@ -54,25 +54,24 @@
 3. <a href="http://www.winprog.org/tutorial/">tutorial</a><br>
 4. <a href="https://github.com/gammasoft71/Examples_Win32">examples_win32</a><br><br>
 
-說明：
-</p>
-<table>
-<tr><th>API</th></tr>
-<tr><td>int DrawText(HDC hDC, LPCTSTR lpString, int nCount, LPRECT lpRect, UINT uFormat);</td></tr>
-</table><br>
+使用TextOut()顯示文字時，只有X、Y參數可以用來設定顯示的位置，當文字長度超過顯示區域時，就需要拆解文字，包含置中顯示也是需要花費額外的計算，如果遇到這些問題，建議使用DrawText()顯示文字，DrawText()提供更多選項使用，包含多行顯示、置中顯示，使用者只需要傳入顯示範圍即可<br><br>
 
-<p>
 main.c
 </p>
 <pre class="brush:cpp">
 #include &lt;stdbool.h&gt;
 #include &lt;windows.h&gt;
-
+ 
 HWND hWin = NULL;
 WNDPROC defWndProc = NULL;
-
+ 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+    HDC hdc = NULL;
+    HFONT font = NULL;
+    PAINTSTRUCT ps = {0};
+    const char *pMsg = "Test";
+
     switch (uMsg) {
     case WM_CLOSE:
         DestroyWindow(hWnd);
@@ -81,34 +80,28 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         PostQuitMessage(0);
         return 0;
     case WM_PAINT:
-        const char *pMsg = "Test";
-        PAINTSTRUCT ps = {0};
-        HDC hdc = BeginPaint(hWnd, &amp;ps);
-        HFONT font =
-            CreateFont(48, 0, 0, 0, FW_BOLD, false, false, false, 0,
-                       OUT_OUTLINE_PRECIS, CLIP_DEFAULT_PRECIS,
-                       CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, "Arial");
+        hdc = BeginPaint(hWnd, &amp;ps);
+        font = CreateFont(48, 0, 0, 0, FW_BOLD, false, false, false, 0,
+           OUT_OUTLINE_PRECIS, CLIP_DEFAULT_PRECIS,
+           CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, "Arial");
+
         SetTextColor(hdc, RGB(0x00, 0x00, 0xff));
         SetBkMode(hdc, TRANSPARENT);
         SelectObject(hdc, font);
-        DrawText(hdc, pMsg, strlen(pMsg), &amp;ps.rcPaint,
-                 DT_SINGLELINE | DT_CENTER | DT_VCENTER);
+        DrawText(hdc, pMsg, strlen(pMsg), &amp;ps.rcPaint, DT_SINGLELINE | DT_CENTER | DT_VCENTER);
         EndPaint(hWnd, &amp;ps);
         DeleteObject(font);
         break;
     }
     return CallWindowProc(defWndProc, hWnd, uMsg, wParam, lParam);
 }
-
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
-                   LPSTR lpCmdLine, int nCmdShow)
+ 
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
-    hWin = CreateWindow(WC_DIALOG, "main", WS_OVERLAPPEDWINDOW, 0, 0, 300, 300,
-                        NULL, NULL, NULL, NULL);
-    defWndProc =
-        (WNDPROC)SetWindowLongPtr(hWin, GWLP_WNDPROC, (long int)WndProc);
-    ShowWindow(hWin, SW_SHOW);
-
+    hWin = CreateWindow(WC_DIALOG, "main", 
+        WS_OVERLAPPEDWINDOW | WS_VISIBLE, 0, 0, 300, 300, NULL, NULL, NULL, NULL);
+    defWndProc = (WNDPROC)SetWindowLongPtr(hWin, GWLP_WNDPROC, (long int)WndProc);
+ 
     MSG msg = {0};
     while (GetMessage(&amp;msg, NULL, 0, 0)) {
         DispatchMessage(&amp;msg);
@@ -116,8 +109,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     ExitProcess(0);
     return 0;
 }
-</pre><br>
+</pre>
 <p>
+<b>Line 30</b>：使用DrawText()顯示文字<br><br>
+
 編譯、執行
 </p>
 <pre>
@@ -125,7 +120,7 @@ $ winegcc main.c -o main -lgdi32
 $ wine ./main.exe
 </pre>
 <p>
-<img style="border:0px" src="cpp_dlg_text/1.jpg" class="maxSize">
+<img style="border:0px" src="../nasm/win32_text/1.jpg" class="maxSize">
 </p>
 
 <p>
