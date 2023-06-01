@@ -48,6 +48,9 @@
 <p><b>build uboot</b></p>
 <hr size="1">
 <p>
+參考資料：<br>
+1. <a href="https://github.com/Lichee-Pi/u-boot.git">u-boot</a><br><br>
+
 步驟如下：
 </p>
 <pre>
@@ -73,9 +76,38 @@ $ sudo dd if=u-boot-sunxi-with-spl.bin of=/dev/sdx bs=1024 seek=8
 </pre><br>
 
 <p>
-Load Kernel and rootfs from SPI flash (include/configs/sun8i.h)
+SPI (include/configs/sun8i.h)
 </p>
 <pre class="brush:cpp">
+/*
+ * (C) Copyright 2014 Chen-Yu Tsai &lt;wens@csie.org&gt;
+ *
+ * Configuration settings for the Allwinner A23 (sun8i) CPU
+ *
+ * SPDX-License-Identifier: GPL-2.0+
+ */
+
+#ifndef __CONFIG_H
+#define __CONFIG_H
+
+/*
+ * A23 specific configuration
+ */
+
+#ifdef CONFIG_USB_EHCI
+#define CONFIG_USB_EHCI_SUNXI
+#endif
+
+#ifdef CONFIG_MACH_SUN8I_H3
+    #define CONFIG_SUNXI_USB_PHYS   4
+#elif defined CONFIG_MACH_SUN8I_A83T
+    #define CONFIG_SUNXI_USB_PHYS   3
+#elif defined CONFIG_MACH_SUN8I_V3S
+    #define CONFIG_SUNXI_USB_PHYS   1
+#else
+    #define CONFIG_SUNXI_USB_PHYS   2
+#endif
+
 #define CONFIG_BOOTCOMMAND   "sf probe 0; "                           \
                              "sf read 0x41800000 0x100000 0x10000; "  \
                              "sf read 0x41000000 0x110000 0x400000; " \
@@ -83,18 +115,61 @@ Load Kernel and rootfs from SPI flash (include/configs/sun8i.h)
 
 #define CONFIG_BOOTARGS      "console=ttyS1,115200 earlyprintk panic=5 rootwait " \
                              "mtdparts=spi32766.0:1M(uboot)ro,64k(dtb)ro,4M(kernel)ro,-(rootfs) root=31:03 rw rootfstype=jffs2"
+
+/*
+ * Include common sunxi configuration where most the settings are
+ */
+#include &lt;configs/sunxi-common.h&gt;
+
+#endif /* __CONFIG_H */
 </pre><br>
 
 <p>
-Load Kernel and rootfs from SDCard
+MicroSD (include/configs/sun8i.h)
 </p>
 <pre class="brush:cpp">
+/*
+ * (C) Copyright 2014 Chen-Yu Tsai &lt;wens@csie.org&gt;
+ *
+ * Configuration settings for the Allwinner A23 (sun8i) CPU
+ *
+ * SPDX-License-Identifier: GPL-2.0+
+ */
+
+#ifndef __CONFIG_H
+#define __CONFIG_H
+
+/*
+ * A23 specific configuration
+ */
+
+#ifdef CONFIG_USB_EHCI
+#define CONFIG_USB_EHCI_SUNXI
+#endif
+
+#ifdef CONFIG_MACH_SUN8I_H3
+    #define CONFIG_SUNXI_USB_PHYS   4
+#elif defined CONFIG_MACH_SUN8I_A83T
+    #define CONFIG_SUNXI_USB_PHYS   3
+#elif defined CONFIG_MACH_SUN8I_V3S
+    #define CONFIG_SUNXI_USB_PHYS   1
+#else
+    #define CONFIG_SUNXI_USB_PHYS   2
+#endif
+
 #define CONFIG_BOOTCOMMAND  "setenv bootm_boot_mode sec; " \
                             "load mmc 0:1 0x41000000 zImage; "  \
                             "load mmc 0:1 0x41800000 sun8i-v3s-licheepi-zero.dtb; " \
                             "bootz 0x41000000 - 0x41800000;"
 
 #define CONFIG_BOOTARGS     "console=ttyS1,115200 earlyprintk panic=5 rootwait root=/dev/mmcblk0p2 earlyprintk rw rootfstype=ext4"
+
+/*
+ * Include common sunxi configuration where most the settings are
+ */
+#include &lt;configs/sunxi-common.h&gt;
+
+#endif /* __CONFIG_H */
 </pre>
 
 <p>
