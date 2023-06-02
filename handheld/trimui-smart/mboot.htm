@@ -1,0 +1,194 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>TRIMUI SMART</h3>
+<p><b>如何使用MicroSD製作多重開機模式</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://github.com/FunKey-Project/Allwinner-V3s-BROM">Allwinner-V3s-BROM</a><br><br>
+
+BROM
+</p>
+<pre class="brush:asm">
+;; Vector table
+ffff0000:    ea000008     b    reset         ; reset
+ffff0004:    ea000006     b    unimplemented ; _undefined_instruction
+ffff0008:    ea000005     b    unimplemented ; _software_interrupt
+ffff000c:    ea000004     b    unimplemented ; _prefetch_abort
+ffff0010:    ea000003     b    unimplemented ; _data_abort
+ffff0014:    ea000002     b    unimplemented ; _not_used
+ffff0018:    ea000011     b    irq           ; _irq
+ffff001c:    ea000000     b    unimplemented ; _fiq
+ffff0020:    ea000013     b    fel_setup     ; FEL
+
+unimplemented:
+ffff0024:    eafffffe     b    unimplemented ; loop forever
+</pre>
+<p>
+P.S. fel = 0xffff0020<br><br>
+
+BROM
+<pre class="brush:asm">
+boot:
+ffff2e34:    eb000cce     bl    check_uboot         ; check if uboot button is pressed, return value in r0
+ffff2e38:    e1a04000     mov   r4, r0              ; r4 = check_uboot();
+ffff2e3c:    e3540000     cmp   r4, #0              ; see if check_uboot returned 0
+ffff2e40:    0a000000     beq   .try_boot_MMC0      ; if check_uboot was 0, try to boot from MMC0
+ffff2e44:    ea000026     b     .boot_fel           ; else boot FEL mode
+
+.try_boot_MMC0:
+ffff2e48:    e3a00000     mov   r0, #0
+ffff2e4c:    ebffffed     bl    0xffff2e08
+ffff2e50:    e3a00000     mov   r0, #0              ; r0 = 0x0; (which card_no to boot, 0 = mmc0)
+ffff2e54:    eb000190     bl    load_boot0_from_mmc ; load SPL from mmc0
+ffff2e58:    e1a04000     mov   r4, r0              ; r4 = load_from_mmc();
+ffff2e5c:    e3540000     cmp   r4, #0              ; see if load_from_mmc returned 0
+ffff2e60:    1a000000     bne   .try_boot_eMMC      ; if load_from_mmc returned 0 try to boot from eMMc on MMC2
+ffff2e64:    ea000021     b     .boot_spl           ; else skip to .boot_spl
+
+.try_boot_eMMC:
+ffff2e68:    e3a00001     mov   r0, #1
+ffff2e6c:    ebffffe5     bl    0xffff2e08
+ffff2e70:    e3a00002     mov   r0, #2              ; r0 = 0x2; (which card_no to boot, 2 = mmc2)
+ffff2e74:    eb0001b0     bl    0xffff353c          ; load SPL from eMMC
+ffff2e78:    e1a04000     mov   r4, r0              ; r4 = load_from_emmc();
+ffff2e7c:    e3540000     cmp   r4, #0              ; see if load_from_emmc returned 0
+ffff2e80:    1a000000     bne   .try_boot_MMC2      ; if load_from_emmc returned 0 try to boot from MMC2
+ffff2e84:    ea000019     b     .boot_spl           ; else skip to .boot_spl
+
+.try_boot_MMC2:
+ffff2e88:    e3a00002     mov   r0, #2              ; r0 = 0x2; (which card_no to boot, 2 = mmc2)
+ffff2e8c:    eb000182     bl    load_boot0_from_mmc ; load SPL from mmc2
+ffff2e90:    e1a04000     mov   r4, r0              ; r4 = load_from_mmc();
+ffff2e94:    e3540000     cmp   r4, #0              ; see if load_from_mmc returned 0
+ffff2e98:    1a000000     bne   .try_boot_SPINOR; if load_from_mmc returned 0 try to boot from SPI NAND-flash
+ffff2e9c:    ea000013     b     .boot_spl
+
+.try_boot_SPINOR:
+ffff2ea0:    e3a00002     mov   r0, #2
+ffff2ea4:    ebffffd7     bl    0xffff2e08
+ffff2ea8:    eb000c2b     bl    load_boot0_from_spinor ; load SPL from SPI NOR-flash
+ffff2eac:    e1a04000     mov   r4, r0                 ; r4 = load_from_spinor();
+ffff2eb0:    e3540000     cmp   r4, #0                 ; see if load_from_spinor returned 0
+ffff2eb4:    1a000000     bne   .try_boot_from_SPINAND ; if load_from_spinor returned 0 try to boot from SPI NOR-flash
+ffff2eb8:    ea00000c     b     .boot_spl              ; else skip to .boot_spl
+
+.try_boot_SPINAND:
+ffff2ebc:    e3a00003     mov   r0, #3
+ffff2ec0:    ebffffd0     bl    0xffff2e08
+ffff2ec4:    eb0000d7     bl    load_boot0_from_spinand ; load SPL from SPI NAND-flash
+ffff2ec8:    e1a04000     mov   r4, r0                  ; r4 = load_from_spinand();
+ffff2ecc:    e3540000     cmp   r4, #0                  ; see if load_from_spinand returned 0
+ffff2ed0:    1a000000     bne   .none_found             ; if load_from_spinand returned 0 boot from FEL mode (via .none_found)
+ffff2ed4:    ea000005     b     .boot_spl               ; else skip to .boot_spl
+</pre>
+<p>
+P.S. mmc2 = 0xffff2e88<br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .global _start
+         
+    .equ GPIO_BASE, 0x01c20800
+    .equ PE_CFG1,   (GPIO_BASE + (0x24 * 4) + 0x04)
+    .equ PE_PULL0,  (GPIO_BASE + (0x24 * 4) + 0x1c)
+    .equ PE_DATA,   (GPIO_BASE + (0x24 * 4) + 0x10)
+
+    .arm
+    .text
+_start:
+    .long 0xea000016
+    .byte 'e', 'G', 'O', 'N', '.', 'B', 'T', '0'
+    .long 0, __spl_size
+    .byte 'S', 'P', 'L', 2
+    .long 0, 0
+    .long 0, 0, 0, 0, 0, 0, 0, 0
+    .long 0, 0, 0, 0, 0, 0, 0, 0
+
+_vector:
+    b reset
+    b .
+    b .
+    b .
+    b .
+    b .
+    b .
+    b .
+
+reset:
+    ldr r0, =PE_CFG1
+    ldr r1, =0x00000000
+    str r1, [r0]
+     
+    ldr r0, =PE_PULL0
+    ldr r1, =0x55555555
+    str r1, [r0]
+
+0:
+    ldr r0, =PE_DATA
+    ldr r1, [r0]
+    tst r1, #(1 &lt;&lt; 12)
+    beq fel
+    b 0xffff2e88
+fel:
+    b 0xffff0020
+    .end
+</pre>
+<p>
+編譯並燒錄到MicroSD後，插入開機，預設從eMMC2(官方系統)執行，如果按下SELECT按鍵開機，則進入fel模式
+</p>
+
+<p>
+<br><a href="../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
