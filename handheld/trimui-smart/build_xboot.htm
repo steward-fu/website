@@ -1,0 +1,463 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>TRIMUI SMART</h3>
+<p><b>build xboot</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://github.com/xboot/xboot">xboot</a><br><br>
+
+sys-uart.c
+</p>
+<pre class="brush:cpp">
+/*
+ * sys-uart.c
+ *
+ * Copyright(c) 2007-2023 Jianjun Jiang &lt;8192542@qq.com&gt;
+ * Official site: http://xboot.org
+ * Mobile phone: +86-18665388956
+ * QQ: 8192542
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ *
+ */
+
+#include &lt;xboot.h&gt;
+
+void sys_uart_init(void)
+{
+	virtual_addr_t addr;
+	u32_t val;
+
+	/* Config GPIOB0 and GPIOB1 to txd2 and rxd2 */
+	addr = 0x01c20824;
+	val = read32(addr);
+	val &amp;= ~0xff;
+	val |= 0x22;
+	write32(addr, val);
+
+	/* Open the clock gate for uart0 */
+	addr = 0x01c2006c;
+	val = read32(addr);
+	val |= 1 &lt;&lt; 18;
+	write32(addr, val);
+
+	/* Deassert uart0 reset */
+	addr = 0x01c202d8;
+	val = read32(addr);
+	val |= 1 &lt;&lt; 18;
+	write32(addr, val);
+
+	/* Config uart0 to 115200-8-1-0 */
+	addr = 0x01c28800;
+	write32(addr + 0x04, 0x0);
+	write32(addr + 0x08, 0xf7);
+	write32(addr + 0x10, 0x0);
+	val = read32(addr + 0x0c);
+	val |= (1 &lt;&lt; 7);
+	write32(addr + 0x0c, val);
+	write32(addr + 0x00, 0xd &amp; 0xff);
+	write32(addr + 0x04, (0xd &gt;&gt; 8) &amp; 0xff);
+	val = read32(addr + 0x0c);
+	val &amp;= ~(1 &lt;&lt; 7);
+	write32(addr + 0x0c, val);
+	val = read32(addr + 0x0c);
+	val &amp;= ~0x1f;
+	val |= (0x3 &lt;&lt; 0) | (0 &lt;&lt; 2) | (0x0 &lt;&lt; 3);
+	write32(addr + 0x0c, val);
+}
+
+void sys_uart_putc(char c)
+{
+	virtual_addr_t addr = 0x01c28800;
+
+	while((read32(addr + 0x7c) &amp; (0x1 &lt;&lt; 1)) == 0);
+	write32(addr + 0x00, c);
+}
+</pre><br>
+
+<p>
+src/arch/arm32/mach-s3/xiaozhi.c
+</p>
+<pre class="brush:cpp">
+/*
+ * xiaozhi.c
+ *
+ * Copyright(c) 2007-2023 Jianjun Jiang &lt;8192542@qq.com&gt;
+ * Official site: http://xboot.org
+ * Mobile phone: +86-18665388956
+ * QQ: 8192542
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ *
+ */
+
+#include &lt;xboot.h&gt;
+
+static u32_t sram_read_id(virtual_addr_t virt)
+{
+	u32_t id;
+
+	write32(virt, read32(virt) | (1 &lt;&lt; 15));
+	id = read32(virt) &gt;&gt; 16;
+	write32(virt, read32(virt) &amp; ~(1 &lt;&lt; 15));
+	return id;
+}
+
+static int mach_detect(struct machine_t * mach)
+{
+	u32_t id = sram_read_id(phys_to_virt(0x01c00024));
+
+	if(id == 0x1681)
+		return 1;
+	return 0;
+}
+
+static void mach_smpinit(struct machine_t * mach)
+{
+}
+
+static void mach_smpboot(struct machine_t * mach, void (*func)(void))
+{
+}
+
+static void mach_shutdown(struct machine_t * mach)
+{
+}
+
+static void mach_reboot(struct machine_t * mach)
+{
+}
+
+static void mach_sleep(struct machine_t * mach)
+{
+}
+
+static void mach_cleanup(struct machine_t * mach)
+{
+}
+
+static void mach_logger(struct machine_t * mach, const char * buf, int count)
+{
+	virtual_addr_t virt = phys_to_virt(0x01c28800);
+	int i;
+
+	for(i = 0; i &lt; count; i++)
+	{
+		while((read32(virt + 0x14) &amp; (0x1 &lt;&lt; 6)) == 0);
+		write32(virt + 0x00, buf[i]);
+	}
+}
+
+static const char * mach_uniqueid(struct machine_t * mach)
+{
+	static char uniqueid[32 + 1] = { 0 };
+	virtual_addr_t virt = phys_to_virt(0x01c23800);
+	uint32_t sid[4];
+
+	sid[0] = read32(virt + 0 * 4);
+	sid[1] = read32(virt + 1 * 4);
+	sid[2] = read32(virt + 2 * 4);
+	sid[3] = read32(virt + 3 * 4);
+	snprintf(uniqueid, sizeof(uniqueid), "%08x%08x%08x%08x",sid[0], sid[1], sid[2], sid[3]);
+	return uniqueid;
+}
+
+static int mach_keygen(struct machine_t * mach, const char * msg, void * key)
+{
+	return 0;
+}
+
+static int mach_verify(struct machine_t * mach)
+{
+	return 1;
+}
+
+static struct machine_t xiaozhi = {
+	.name 		= "xiaozhi",
+	.desc 		= "XiaoZhi Based On Allwinner S3 SOC",
+	.detect 	= mach_detect,
+	.smpinit	= mach_smpinit,
+	.smpboot	= mach_smpboot,
+	.shutdown	= mach_shutdown,
+	.reboot		= mach_reboot,
+	.sleep		= mach_sleep,
+	.cleanup	= mach_cleanup,
+	.logger		= mach_logger,
+	.uniqueid	= mach_uniqueid,
+	.keygen		= mach_keygen,
+	.verify		= mach_verify,
+};
+
+static __init void xiaozhi_machine_init(void)
+{
+	register_machine(&amp;xiaozhi);
+}
+
+static __exit void xiaozhi_machine_exit(void)
+{
+	unregister_machine(&amp;xiaozhi);
+}
+
+machine_initcall(xiaozhi_machine_init);
+machine_exitcall(xiaozhi_machine_exit);
+</pre><br>
+
+<p>
+編譯、下載
+</p>
+<pre>
+$ cd
+$ git clone https://github.com/xboot/xboot
+$ cd xboot
+$ vim src/Makefile
+    341     #@echo [SZ] Listing $@
+    342     #@$(SZ) -G $@
+
+$ make CROSS_COMPILE=arm-linux-gnueabihf- PLATFORM=arm32-s3
+$ xfel ddr s3
+$ xfel write 0x40000000 output/xboot.bin
+$ xfel exec 0x40000000
+</pre><br>
+
+<p>
+UART2 (115200 bps)
+</p>
+<pre>
+       _                   _
+ _  _ | |___ _____ _____ _| |_
+\ \/ /|  _  |  _  |  _  |_   _|  (C) 2007-2023
+ )  ( | |_| | |_| | |_| | | |____JIANJUN.JIANG__
+/_/\_\|_____|_____|_____| |_____________________|
+V3.0.0 (Jun  2 2023 - 23:25:05) - [xiaozhi][XiaoZhi Based On Allwinner S3 SOC]
+[    0.000020]Probe device 'blk-romdisk.0' with blk-romdisk
+[    0.000800]Probe device 'osc24m' with clk-fixed
+[    0.000810]Probe device 'osc32k' with clk-fixed
+[    0.000820]Probe device 'iosc' with clk-fixed
+[    0.000830]Probe device 'pll-cpu' with clk-s3-pll
+[    0.000840]Probe device 'pll-audio' with clk-s3-pll
+[    0.000850]Probe device 'pll-video' with clk-s3-pll
+[    0.000860]Probe device 'pll-ve' with clk-s3-pll
+[    0.000870]Probe device 'pll-ddr0' with clk-s3-pll
+[    0.000880]Probe device 'pll-periph0' with clk-s3-pll
+[    0.000890]Probe device 'pll-isp' with clk-s3-pll
+[    0.000900]Probe device 'pll-periph1' with clk-s3-pll
+[    0.000910]Probe device 'pll-ddr1' with clk-s3-pll
+[    0.000920]Probe device 'osc24m-750' with clk-fixed-factor
+[    0.000930]Probe device 'pll-periph0-2' with clk-fixed-factor
+[    0.000940]Probe device 'losc' with clk-fixed-factor
+[    0.000950]Probe device 'cpu' with clk-mux
+[    0.000960]Probe device 'axi' with clk-divider
+[    0.000970]Probe device 'ahb1-pre-div' with clk-divider
+[    0.000980]Probe device 'mux-ahb1' with clk-mux
+[    0.000990]Probe device 'ahb1' with clk-ratio
+[    0.001000]Probe device 'apb1' with clk-ratio
+[    0.001010]Probe device 'mux-apb2' with clk-mux
+[    0.001020]Probe device 'ratio-apb2' with clk-ratio
+[    0.001030]Probe device 'apb2' with clk-divider
+[    0.001040]Probe device 'ahb2' with clk-mux
+[    0.001050]Probe device 'gate-bus-uart0' with clk-gate
+[    0.001060]Probe device 'gate-bus-uart1' with clk-gate
+[    0.001070]Probe device 'gate-bus-uart2' with clk-gate
+[    0.001080]Probe device 'link-uart0' with clk-link
+[    0.001090]Probe device 'link-uart1' with clk-link
+[    0.001100]Probe device 'link-uart2' with clk-link
+[    0.001110]Probe device 'gate-bus-i2c0' with clk-gate
+[    0.001120]Probe device 'gate-bus-i2c1' with clk-gate
+[    0.001130]Probe device 'link-i2c0' with clk-link
+[    0.001140]Probe device 'link-i2c1' with clk-link
+[    0.001150]Probe device 'gate-bus-usbphy0' with clk-gate
+[    0.001160]Probe device 'gate-bus-usb-otg-device' with clk-gate
+[    0.001170]Probe device 'gate-bus-usb-otg-ehci0' with clk-gate
+[    0.001180]Probe device 'gate-bus-usb-otg-ohci0' with clk-gate
+[    0.001190]Probe device 'gate-usb-otg-ohci0' with clk-gate
+[    0.001200]Probe device 'link-usb-otg-device' with clk-link
+[    0.001210]Probe device 'link-usb-otg-ehci0' with clk-link
+[    0.001220]Probe device 'link-usb-otg-ohci0' with clk-link
+[    0.001230]Probe device 'gate-bus-hstimer' with clk-gate
+[    0.001240]Probe device 'link-hstimer' with clk-link
+[    0.001250]Probe device 'gate-bus-ephy' with clk-gate
+[    0.001260]Probe device 'gate-bus-emac' with clk-gate
+[    0.001270]Probe device 'link-emac' with clk-link
+[    0.001280]Probe device 'mux-spi0' with clk-mux
+[    0.001290]Probe device 'ratio-spi0' with clk-ratio
+[    0.001300]Probe device 'div-spi0' with clk-divider
+[    0.001310]Probe device 'gate-spi0' with clk-gate
+[    0.001320]Probe device 'gate-bus-spi0' with clk-gate
+[    0.001330]Probe device 'link-spi0' with clk-link
+[    0.001340]Probe device 'mux-timer0' with clk-mux
+[    0.001350]Probe device 'ratio-timer0' with clk-ratio
+[    0.001360]Probe device 'link-timer0' with clk-link
+[    0.001370]Probe device 'mux-timer1' with clk-mux
+[    0.001380]Probe device 'ratio-timer1' with clk-ratio
+[    0.001390]Probe device 'link-timer1' with clk-link
+[    0.001400]Probe device 'mux-timer2' with clk-mux
+[    0.001410]Probe device 'ratio-timer2' with clk-ratio
+[    0.001420]Probe device 'link-timer2' with clk-link
+[    0.001430]Probe device 'link-pwm' with clk-link
+[    0.001440]Probe device 'link-wdt' with clk-link
+[    0.001450]Probe device 'mux-de' with clk-mux
+[    0.001460]Probe device 'div-de' with clk-divider
+[    0.001470]Probe device 'gate-de' with clk-gate
+[    0.001480]Probe device 'gate-bus-de' with clk-gate
+[    0.001490]Probe device 'link-de' with clk-link
+[    0.001500]Probe device 'mux-tcon' with clk-mux
+[    0.001510]Probe device 'div-tcon' with clk-divider
+[    0.001520]Probe device 'gate-tcon' with clk-gate
+[    0.001530]Probe device 'gate-bus-tcon' with clk-gate
+[    0.001540]Probe device 'link-tcon' with clk-link
+[    0.001550]Probe device 'mux-sdmmc0' with clk-mux
+[    0.001560]Probe device 'ratio-sdmmc0' with clk-ratio
+[    0.001570]Probe device 'div-sdmmc0' with clk-divider
+[    0.001580]Probe device 'gate-sdmmc0' with clk-gate
+[    0.001590]Probe device 'gate-bus-sdmmc0' with clk-gate
+[    0.001600]Probe device 'link-sdmmc0' with clk-link
+[    0.001610]Probe device 'mux-sdmmc1' with clk-mux
+[    0.001620]Probe device 'ratio-sdmmc1' with clk-ratio
+[    0.001630]Probe device 'div-sdmmc1' with clk-divider
+[    0.001640]Probe device 'gate-sdmmc1' with clk-gate
+[    0.001650]Probe device 'gate-bus-sdmmc1' with clk-gate
+[    0.001660]Probe device 'link-sdmmc1' with clk-link
+[    0.001670]Probe device 'mux-sdmmc2' with clk-mux
+[    0.001680]Probe device 'ratio-sdmmc2' with clk-ratio
+[    0.001690]Probe device 'div-sdmmc2' with clk-divider
+[    0.001700]Probe device 'gate-sdmmc2' with clk-gate
+[    0.001710]Probe device 'gate-bus-sdmmc2' with clk-gate
+[    0.001720]Probe device 'link-sdmmc2' with clk-link
+[    0.001730]Probe device 'reset-s3.0' with reset-s3
+[    0.001740]Probe device 'reset-s3.1' with reset-s3
+[    0.001750]Probe device 'reset-s3.2' with reset-s3
+[    0.001760]Probe device 'reset-s3.3' with reset-s3
+[    0.001770]Probe device 'reset-s3.4' with reset-s3
+[    0.001780]Probe device 'irq-gic400.0' with irq-gic400
+[    0.001790]Probe device 'irq-s3-gpio.0' with irq-s3-gpio
+[    0.001800]Probe device 'irq-s3-gpio.1' with irq-s3-gpio
+[    0.001810]Probe device 'gpio-s3.0' with gpio-s3
+[    0.001820]Probe device 'gpio-s3.1' with gpio-s3
+[    0.001830]Probe device 'gpio-s3.2' with gpio-s3
+[    0.001840]Probe device 'gpio-s3.3' with gpio-s3
+[    0.001850]Probe device 'gpio-s3.4' with gpio-s3
+[    0.001860]Probe device 'gpio-s3.5' with gpio-s3
+[    0.001870]Probe device 'pwm-s3.0' with pwm-s3
+[    0.001880]Probe device 'pwm-s3.1' with pwm-s3
+[    0.001890]Probe device 'ce-s3-timer.0' with ce-s3-timer
+[    0.000024]Probe device 'cs-s3-timer.0' with cs-s3-timer
+[    0.005319]Probe device 'uart-16550.0' with uart-16550
+[    0.010417]Probe device 'uart-16550.1' with uart-16550
+[    0.015530]Probe device 'uart-16550.2' with uart-16550
+[    0.020733]Probe device 'i2c-s3.0' with i2c-s3
+[    0.025145]Probe device 'i2c-s3.1' with i2c-s3
+[    0.029566]Probe device 'spi-s3.0' with spi-s3
+[    0.038308]SD/MMC card at the 'sdhci-s3.0' host controller:
+[    0.043787]  Attached is a SD card
+[    0.047168]  Version: 2.0
+[    0.049780]  Capacity: 29.760GB
+[    0.052887]  High capacity card
+[    0.056006]  CID: 1D414455-53440000-10000170-9F016BE9
+[    0.061033]  CSD: 400E0032-5B590000-EE137F80-0A40004D
+[    0.066059]  Max transfer speed: 25000000 HZ
+[    0.070306]  Manufacturer ID: 1D
+[    0.073513]  OEM/Application ID: 4144
+[    0.077153]  Product name: 'USD'
+[    0.080533]  Product revision: 1.0
+[    0.083913]  Serial no: 327122954
+[    0.087206]  Manufacturing date: 2022.11
+[    0.092792]Found mbr partition:
+[    0.095846]  0x0000000000000000 ~ 0x00000007709fffff 29.760GB  - sdhci-s3.0.sdcard
+[    0.103400]  0x0000000000400000 ~ 0x00000000343fffff 832.000MB - sdhci-s3.0.sdcard.p0
+[    0.111184]Probe device 'sdhci-s3.0' with sdhci-s3
+[    0.115989]Fail to probe device with blk-spinor
+[    0.120477]Probe device 'wdg-s3.0' with wdg-s3
+[    0.124902]Probe device 'key-s3-lradc.0' with key-s3-lradc
+[    0.130889]Probe device 'led-pwm.0' with led-pwm
+[    0.135433]Probe device 'buzzer-pwm.0' with buzzer-pwm
+[    0.142883]Probe device 'fb-s3.0' with fb-s3
+[    0.147074]Probe device 'console-uart.0' with console-uart
+[    0.153078]mount /private with 'ram' filesystem
+</pre><br>
+
+<p>
+<br><a href="../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
