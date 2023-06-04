@@ -1,0 +1,426 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>(ARM Cortex-A7) T113-S3 (MangoPi MQ-R)</h3>
+<p><b>分析XBoot GT911無法觸發中斷的原因</b></p>
+<hr size="1">
+<p>
+參考資料：<br>
+1. <a href="https://github.com/xboot/xboot">xboot<a><br>
+2. <a href="https://dl.linux-sunxi.org/touchscreen/GT911%20Datasheet.pdf">GT911</a><br>
+3. <a href="https://debugdump.com/topic/3633/mq-t113%E4%BD%BF%E7%94%A8xboot%E9%A9%B1%E5%8A%A8gt911%E6%97%B6%E4%B8%AD%E6%96%AD%E6%97%A0%E6%B3%95%E4%BD%BF%E7%94%A8/6">debugdump</a><br><br>
+
+T113-S3開發板<br>
+<img src="pcb/1.jpg" class="maxSize"><br><br>
+
+司徒手上並沒有GT911觸控板，因此，司徒使用Arduino Micro模擬GT911訊號<br>
+<img src="xboot_int/1.jpg" class="maxSize"><br><br>
+
+Arduino腳位：<br>
+<img src="../atmega32u4/pinout/1.jpg" class="maxSize"><br><br>
+
+T113-S3腳位：<br>
+<img src="pin/1.jpg" class="maxSize"><br><br>
+
+司徒將GT911 I2C訊號接到T113-S3 I2C-2，GT911的中斷則是接到T113-S3 PB6(手動觸發)<br>
+<img src="xboot_int/2.jpg" class="maxSize"><br><br>
+
+杜邦線連接<br>
+<img src="xboot_int/3.jpg" class="maxSize"><br><br>
+
+Arduino模擬GT911程式
+</p>
+<pre class="brush:cpp">
+#include &lt;Wire.h&gt;
+
+unsigned short rx = 0;
+void receiveEvent(int howMany) {
+  if(howMany == 2){
+    rx = Wire.read();
+    rx&lt;&lt;= 8;
+    rx|= Wire.read();
+  }
+  else{
+    while (Wire.available()) {
+      Wire.read();
+    }
+  }
+  Serial.print("howMany:");
+  Serial.print(howMany);
+  Serial.print("\n");
+  Serial.print("0x");
+  Serial.print(rx, HEX);
+  Serial.print("\n");
+}
+
+unsigned short x = 0;
+unsigned short y = 0;
+void requestEvent() {
+  switch(rx){
+  case 0x8047:
+    Wire.write(byte(0x01));
+    break;
+  case 0x8140:
+    Wire.write('A');
+    Wire.write('B');
+    Wire.write('C');
+    Wire.write('D');
+    break;
+  case 0x8144:
+    Wire.write(byte(0x12));
+    Wire.write(byte(0x34));
+    break;
+  case 0x814e:
+    Wire.write(byte(0x80 | 1));
+    break;
+  case 0x814f:
+    Wire.write(byte(0x01));
+    Wire.write(byte(x));
+    Wire.write(byte(x &gt;&gt; 8));
+    Wire.write(byte(y));
+    Wire.write(byte(y &gt;&gt; 8));
+    Wire.write(byte(0x00));
+    Wire.write(byte(0x00));
+    Wire.write(byte(0x00));
+    x+= 1;
+    y+= 1;
+    break;
+  }
+  rx = 0;
+}
+
+void setup() {
+  Wire.begin(20);
+  Wire.onReceive(receiveEvent);
+  Wire.onRequest(requestEvent);
+  Serial.begin(115200);
+
+}
+
+void loop() {
+  delay(100);
+}
+</pre><br>
+
+<p>
+src/arch/arm32/mach-t113s3/romdisk/boot/mangopi.json
+</p>
+<pre>
+524     "i2c-t113:2@0x02502800": {
+525         "clock-name": "bus-i2c2",
+526         "clock-frequency": 400000,
+527         "reset": 466,
+528         "sda-gpio": 133,
+529         "sda-gpio-config": 4,
+530         "scl-gpio": 132,
+531         "scl-gpio-config": 4
+532     },
+
+662     "ts-gt911": {
+663         "i2c-bus": "i2c-t113.2",
+664         "slave-address": 20,
+665         "interrupt-gpio": 38,
+666         "interrupt-gpio-config": 14,
+667         "reset-gpio": 34,
+668         "reset-gpio-config": 1
+669     },
+</pre><br>
+
+<p>
+src/arch/arm32/mach-t113s3/driver/ts-gt911.c
+</p>
+<pre>
+ 75 static bool_t gt911_write(struct i2c_device_t * dev, u16_t reg, u8_t * buf, int len)
+ 76 {
+ 77     struct i2c_msg_t msg;
+ 78     u8_t mbuf[256];
+ 79
+ 80     if(len &gt; sizeof(mbuf) - 1)
+ 81         len = sizeof(mbuf) - 1;
+ 82     mbuf[0] = (reg &gt;&gt; 8) &amp; 0xff;
+ 83     mbuf[1] = (reg &gt;&gt; 0) &amp; 0xff;
+ 84     memcpy(&amp;mbuf[2], buf, len);
+ 85
+ 86     msg.addr = dev-&gt;addr;
+ 87     msg.flags = 0;
+ 88     msg.len = 32;//len + 2;
+ 89     msg.buf = &amp;mbuf[0];
+ 90
+ 91     if(i2c_transfer(dev-&gt;i2c, &amp;msg, 1) != 1)
+ 92         return FALSE;
+ 93     return TRUE;
+ 94 }
+
+134 static bool_t gt911_initial(struct i2c_device_t * dev)
+135 {
+136     u8_t cfg;
+137     u8_t id[4];
+138     u8_t ver[2];
+139
+140     if(!gt911_read(dev, GT911_CONFIG_DATA, &amp;cfg, 1))
+141         return FALSE;
+142     if(!gt911_read(dev, GT911_PRODUCT_ID, &amp;id[0], 4))
+143         return FALSE;
+144     if(!gt911_read(dev, GT911_FIRMWARE_VERSION, &amp;ver[0], 2))
+145         return FALSE;
+146
+147     LOG("GT911 Version: %c%c%c%c(0x%02x%02x)(0x%02x)\r\n", id[0], id[1], id[2], id[3], ver[1], ver[0], cfg);
+148     return gt911_send_cfg(dev, (u8_t *)gt911_config_data, ARRAY_SIZE(gt911_config_data));
+149 }
+
+151 static void gt911_interrupt(void * data)
+152 {
+153     struct input_t * input = (struct input_t *)data;
+154     struct ts_gt911_pdata_t * pdat = (struct ts_gt911_pdata_t *)input-&gt;priv;
+155     u8_t status, buf[40];
+156     u8_t * p;
+157     int count, i;
+158     int id, x, y;
+159
+160     LOG("%s++\r\n", __func__);
+161     disable_irq(pdat-&gt;irq);
+162     for(i = 0; i &lt; 5; i++)
+163     {
+164         pdat-&gt;node[i].valid = 0;
+165     }
+166     if(gt911_read(pdat-&gt;dev, GT911_STATUS, &amp;status, 1) &amp;&amp; (status &amp; (1 &lt;&lt; 7)))
+167     {
+168         count = status &amp; 0x0f;
+169         if(count &gt; 0 &amp;&amp; count &lt; 5)
+170         {
+171             if(gt911_read(pdat-&gt;dev, GT911_COOR_ADDR, &amp;buf[0], count &lt;&lt; 3))
+172             {
+173                 for(i = 0; i &lt; count; i++)
+174                 {
+175                     p = &amp;buf[i &lt;&lt; 3];
+176                     id = p[0];
+177                     x = (p[2] &lt;&lt; 8) | (p[1] &lt;&lt; 0);
+178                     y = (p[4] &lt;&lt; 8) | (p[3] &lt;&lt; 0);
+179                     LOG("%s, count:%d, x:%d, y:%d\r\n", __func__, count, x, y);
+...
+209     enable_irq(pdat-&gt;irq);
+210     LOG("%s--\r\n", __func__);
+211 }
+</pre><br>
+
+<p>
+編譯、下載
+</p>
+<pre>
+$ make CROSS_COMPILE=arm-linux-gnueabihf- PLATFORM=arm32-t113s3
+$ xfel ddr t113-s3
+$ xfel write 0x40000000 output/xboot.bin
+$ xfel exec 0x40000000
+</pre><br>
+
+<p>
+Arduino GT911可以正常工作，但是，中斷PB6無法被觸發
+</p>
+<pre>
+[    0.260214]GT911 Version: ABCD(0x3412)(0x01)
+[    0.287074]Probe device 'ts-gt911.0' with ts-gt911
+</pre><br>
+
+<p>
+為了方便測試，司徒將PB6加上提昇電阻並且改成Falling中斷觸發
+</p>
+<pre>
+282     LOG("%s, gpio:%d, gpiocfg:%d, irqnum:%d\r\n", __func__, gpio, gpiocfg, irq);
+283     if(gpio &gt;= 0)
+284     {
+285         if(gpiocfg &gt;= 0)
+286             gpio_set_cfg(gpio, gpiocfg);
+287         gpio_set_pull(gpio, GPIO_PULL_UP);
+288     }
+289     request_irq(pdat-&gt;irq, gt911_interrupt, IRQ_TYPE_EDGE_FALLING, input);
+</pre><br>
+
+<p>
+PB6=GPIO38、GPIOCFG=14、IRQ=262，這個IRQ應該是抓錯了？
+</p>
+<pre>
+[    0.266982]ts_gt911_probe, gpio:38, gpiocfg:14, irqnum:262
+</pre>
+<p>
+<img src="xboot_int/4.jpg" class="maxSize"><br><br>
+
+src/arch/arm32/mach-t113s3/romdisk/boot/mangopi.json
+</p>
+<pre>
+388     "irq-gic400@0x03020000": { "interrupt-base": 32, "interrupt-count": 224 },
+389     "irq-t113-gpio@0x02000220": { "interrupt-base": 224, "interrupt-count":  8, "interrupt-parent":  101 },
+390     "irq-t113-gpio@0x02000240": { "interrupt-base": 256, "interrupt-count":  8, "interrupt-parent":  103 },
+391     "irq-t113-gpio@0x02000260": { "interrupt-base": 288, "interrupt-count": 23, "interrupt-parent":  105 },
+392     "irq-t113-gpio@0x02000280": { "interrupt-base": 320, "interrupt-count": 14, "interrupt-parent":  107 },
+393     "irq-t113-gpio@0x020002a0": { "interrupt-base": 352, "interrupt-count":  7, "interrupt-parent":  109 },
+394     "irq-t113-gpio@0x020002c0": { "interrupt-base": 384, "interrupt-count": 16, "interrupt-parent":  111 },
+</pre><br>
+
+<p>
+src/driver/interrupt/interrupt.c
+</p>
+<pre>
+191 bool_t request_irq(int irq, void (*func)(void *), enum irq_type_t type, void * data)
+192 {
+193     struct irqchip_t * chip;
+194     int offset;
+195
+196     if(!func)
+197         return FALSE;
+198
+199     chip = search_irqchip(irq);
+200     if(!chip)
+201         return FALSE;
+202
+203     offset = irq - chip-&gt;base;
+204     if(chip-&gt;handler[offset].func != null_interrupt_function) {
+205         return FALSE;
+206     }
+207
+208     LOG("%s, irq:%d, chip-&gt;base:%d, offset:%d\r\n", __func__, irq, chip-&gt;base, offset);
+</pre><br>
+
+<p>
+XBoot修改到的中斷地址是屬於PC6，但是司徒的中斷是設定成PB6
+</p>
+<pre>
+[    0.272634]request_irq, irq:262, chip-&gt;base:256, offset:6
+</pre><br>
+
+<p>
+src/arch/arm32/mach-t113s3/driver/irq-t113-gpio.c
+</p>
+<pre>
+ 92     addr = pdat-&gt;virt + GPIO_INT_CFG0 + ((offset &gt;&gt; 3) &lt;&lt; 2);
+ 93     val = read32(addr);
+ 94     val &amp;= ~(0xf &lt;&lt; ((offset &amp; 0x7) &lt;&lt; 2));
+ 95     val |= ((cfg &amp; 0x7) &lt;&lt; ((offset &amp; 0x7) &lt;&lt; 2));
+ 96     write32(addr, val);
+ 97
+ 98     LOG("%s, addr:%p, type:%d, offset:%d\r\n", __func__, addr, type, offset);
+</pre><br>
+
+<p>
+果然修改到PC6 0x02000240
+</p>
+<pre>
+[    0.268151]ts_gt911_probe, gpio:38, gpiocfg:14, irqnum:262
+[    0.273812]request_irq, irq:262, chip-&gt;base:256, offset:6
+[    0.279202]irq_t113_gpio_settype, addr:0x02000240, type:3, offset:6
+[    0.285373]Probe device 'ts-gt911.0' with ts-gt911
+</pre>
+<p>
+PB6是位於<b>0x02000230</b><br>
+<img src="xboot_int/5.jpg" class="maxSize"><br><br>
+
+Workaround (src/driver/interrupt/interrupt.c)
+</p>
+<pre>
+ 62 static struct irqchip_t * search_irqchip(int irq)
+ 63 {
+ 64     struct device_t * pos, * n;
+ 65     struct irqchip_t * chip;
+ 66
+ 67     list_for_each_entry_safe(pos, n, &amp;__device_head[DEVICE_TYPE_IRQCHIP], head)
+ 68     {
+ 69         chip = (struct irqchip_t *)(pos-&gt;priv);
+ 70         if(irq == 230){
+ 71             if(chip-&gt;base == 224){
+ 72                 return chip;
+ 73             }
+ 74             continue;
+ 75         }
+ 76         if((irq &gt;= chip-&gt;base) &amp;&amp; (irq &lt; (chip-&gt;base + chip-&gt;nirq)))
+ 77             return chip;
+ 78     }
+ 79     return NULL;
+ 80 }
+
+191 bool_t request_irq(int irq, void (*func)(void *), enum irq_type_t type, void * data)
+192 {
+193     struct irqchip_t * chip;
+194     int offset;
+195
+196     if(!func)
+197         return FALSE;
+198
+199     if(irq == 262){
+200         irq-= 32;
+201     }
+</pre><br>
+
+<p>
+修改後，就可以正常中斷觸發並且回報觸控點
+</p>
+<pre>
+[    0.260653]GT911 Version: ABCD(0x3412)(0x01)
+[    0.266935]ts_gt911_probe, gpio:38, gpiocfg:14, irqnum:262
+[    0.272326]request_irq, irq:230, chip-&gt;base:224, offset:6
+[    0.277959]irq_t113_gpio_settype, addr:0x02000220, type:3, offset:6
+[    0.299301]Probe device 'ts-gt911.0' with ts-gt911
+[    0.304091]Probe device 'g2d-t113.0' with g2d-t113
+[    0.310178]Probe device 'fb-t113-rgb.0' with fb-t113-rgb
+[    0.315658]Probe device 'console-uart.0' with console-uart
+[    0.322001]mount /private with 'ram' filesystem
+Press any key to stop auto boot:  0.000
+xboot: /# 
+[    5.434256]gt911_interrupt++
+[    5.440101]gt911_interrupt, count:1, x:1, y:1
+[    5.446270]gt911_interrupt--
+[    9.054572]gt911_interrupt++
+[    9.060405]gt911_interrupt, count:1, x:2, y:2
+[    9.066782]gt911_interrupt--
+</pre><br>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
