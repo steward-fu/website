@@ -1,0 +1,193 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Gaviar (小志掌機) &gt;&gt; Assembly</h3>
+<p><b>Button</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://datasheet.lcsc.com/lcsc/1810231210_Worldsemi-WS2812C_C114587.pdf">ws2812c</a><br>
+2. <a href="https://en.wikipedia.org/wiki/Delay_slot">Delay_slot</a><br>
+3. <a href="https://github.com/Ouyancheng/FlatHeadBro">FlatHeadBro</a><br><br>
+
+按鍵R連接到PE1<br>
+<img src="asm_btn/1.jpg" class="maxSize"><br><br>
+
+GPIO位址<br>
+<img src="asm_led/4.jpg" class="maxSize"><br><br>
+
+PE_CFG0<br>
+<img src="asm_btn/2.jpg" class="maxSize"><br><br>
+
+PE_DAT<br>
+<img src="asm_led/6.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .global _start
+  
+    .equ GPIO_BASE, 0x02000000
+    .equ PE_CFG0,   0x00c0
+    .equ PE_DAT,    0x00d0
+    .equ PE_PULL0,  0x00e4
+    .equ _50NS,     10
+    .equ _100NS,    20
+    .equ _200NS,    40
+    .equ _300NS,    60
+    .equ _400NS,    80
+    .equ _450NS,    90
+    .equ _800NS,    160
+    .equ _850NS,    170
+    .equ _1US,      200
+    .equ _500US,    100000
+    .equ _1S,       200000000
+   
+    .text
+    .long 0x0a00006f
+    .byte 'e','G','O','N','.','B','T','0'
+    .long 0x5F0A6C39
+    .long 0x8000
+    .long 0, 0
+    .long 0, 0, 0, 0, 0, 0, 0, 0
+    .long 0, 0, 0, 0, 0, 0, 0, 0
+ 
+    .org 0x00a0
+_vector:
+    j _start
+   
+    .org 0x0100
+_start:
+    li t0, 0x100000
+    li a0, GPIO_BASE + PE_CFG0
+    sw t0, 0(a0)
+    
+    li t0, 0x55555555
+    li a0, GPIO_BASE + PE_PULL0
+    sw t0, 0(a0)
+
+    li a0, GPIO_BASE + PE_DAT
+0:
+    lw t0, 0(a0)
+    not t0, t0
+    and t0, t0, (1 &lt;&lt; 1)
+    sll t0, t0, 11
+    jal b24
+
+    li t0, _500US
+    jal delay
+
+    j 0b
+
+b24:
+    move t2, ra
+    move t3, t0
+    li t4, 24
+0:
+    and t0, t3, 1
+    srl t3, t3, 1
+    beqz t0, 1f
+    jal b1
+    j 2f
+1:
+    jal b0
+2:
+    addi t4, t4, -1
+    bgtz t4, 0b
+    jr t2
+
+b0:
+    move t1, ra
+    li t0, (1 &lt;&lt; 5)
+    sw t0, 0(a0)
+
+    li t0, _300NS
+    jal delay
+
+    li t0, (0 &lt;&lt; 5)
+    sw t0, 0(a0)
+
+    li t0, _850NS
+    jal delay
+    jr t1
+
+b1:
+    move t1, ra
+    li t0, (1 &lt;&lt; 5)
+    sw t0, 0(a0)
+
+    li t0, _800NS
+    jal delay
+
+    li t0, (0 &lt;&lt; 5)
+    sw t0, 0(a0)
+
+    li t0, _400NS
+    jal delay
+    jr t1
+
+delay:
+    addi t0, t0, -1
+    bgtz t0, delay
+    jr ra
+    .end
+</pre><br>
+
+<p>
+完成<br>
+<img src="asm_btn/3.jpg" class="maxSize"><br>
+<img src="asm_btn/4.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
