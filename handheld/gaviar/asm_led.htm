@@ -91,7 +91,7 @@ main.s
     .equ _1S,       200000000
    
     .text
-    .long 0x0a00006f
+    .long 0x4000006f
     .byte 'e','G','O','N','.','B','T','0'
     .long 0x5F0A6C39
     .long 0x8000
@@ -99,11 +99,7 @@ main.s
     .long 0, 0, 0, 0, 0, 0, 0, 0
     .long 0, 0, 0, 0, 0, 0, 0, 0
  
-    .org 0x00a0
-_vector:
-    j _start
-   
-    .org 0x0100
+    .org 0x0400
 _start:
     li t0, 0x100000
     li a0, GPIO_BASE + PE_CFG0
@@ -243,30 +239,30 @@ $ make run
 <img src="asm_led/7.jpg" class="maxSize"><br>
 <img src="asm_led/8.jpg" class="maxSize"><br><br>
 
-開頭使用0x0a00006f，它是一個跳躍指令，因為第4個Byte後的資料會由BROM使用，至於司徒為何要保留長度160(0xa0)？其實司徒不知道BROM會用多少，多餘的部份，司徒心想之後應該可以拿來使用，至於BROM使用的資料格式，可以參考https://github.com/Ouyancheng/FlatHeadBro/blob/master/boot0/boot0-header.c
+開頭使用0x4000006f，它是一個跳躍指令，因為第4個Byte後的資料會由BROM使用，至於司徒為何要保留長度1024(0x400)？因為F133的中斷向量總共有223個，中斷向量位址達到0x380，因此，司徒就從0x400開始執行，至於BROM使用的資料格式，可以參考https://github.com/Ouyancheng/FlatHeadBro/blob/master/boot0/boot0-header.c
 </p>
 <pre>
-$ /opt/f133/bin/riscv64-unknown-linux-gnu-objdump -bbinary -mriscv -D main.bin | head -n20
+$ /opt/f133/bin/riscv64-unknown-linux-gnu-objdump -bbinary -mriscv:rv64 -D main.bin | head -n20
 
 main.bin:     file format binary
 
 
 Disassembly of section .data:
 
-0000000000000000 &lt;.data&gt;:
-       0:    0a00006f              j   0xa0
-       4:    4765                  li  a4,25
-       6:    422e4e4f              fnmadd.d ft8,ft8,ft2,fs0,rmm
-       a:    3054                  fld fa3,160(s0)
-       c:    bf5e                  fsd fs7,440(sp)
-       e:    a7ad                  j   0x778
-      10:    4000                  lw  s0,0(s0)
+0000000000000000 <.data>:
+       0:    4000006f              j     0x400
+       4:    4765                  li    a4,25
+       6:    422e4e4f              fnmadd.d    ft8,ft8,ft2,fs0,rmm
+       a:    3054                  fld   fa3,160(s0)
+       c:    8c78                  0x8c78
+       e:    9a24                  0x9a24
+      10:    4000                  lw    s0,0(s0)
     ...
-      9e:    0000                  unimp
-      a0:    0600006f              j   0x100
-    ...
-     100:    001002b7              lui t0,0x100
-     104:    02000537              lui a0,0x2000
+     3fe:    0000                  unimp
+     400:    001002b7              lui   t0,0x100
+     404:    02000537              lui   a0,0x2000
+     408:    0c05051b              addiw a0,a0,192
+     40c:    00552023              sw    t0,0(a0) # 0x2000000
 </pre><br>
 
 <p>
