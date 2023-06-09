@@ -1,0 +1,293 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Gaviar (小志掌機) &gt;&gt; Assembly</h3>
+<p><b>LED</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://datasheet.lcsc.com/lcsc/1810231210_Worldsemi-WS2812C_C114587.pdf">ws2812c</a><br>
+2. <a href="https://en.wikipedia.org/wiki/Delay_slot">Delay_slot</a><br>
+3. <a href="https://github.com/Ouyancheng/FlatHeadBro">FlatHeadBro</a><br><br>
+
+PE5用來控制LED，不過這顆LED是WS2812C，它需要透過串列訊號控制<br>
+<img src="asm_led/1.jpg" class="maxSize"><br><br>
+
+WS2812C裡面有R、G、B三顆LED，每顆LED用一個Byte來代表亮度，傳送的串列訊號如下：<br>
+<img src="asm_led/2.jpg" class="maxSize"><br><br>
+
+因為只有一隻DI腳位，因此，對於時序有一些要求，如果要傳送0，需要的時序是T0H(300ns)+T0L(850ns)，而傳送1則是T1H(800ns)+T1L(400ns)，結尾需要傳送RET(&gt;280us)<br>
+<img src="asm_led/3.jpg" class="maxSize"><br><br>
+
+GPIO位址<br>
+<img src="asm_led/4.jpg" class="maxSize"><br><br>
+
+PE_CFG0<br>
+<img src="asm_led/5.jpg" class="maxSize"><br><br>
+
+PE_DAT<br>
+<img src="asm_led/6.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .global _start
+  
+    .equ GPIO_BASE, 0x02000000
+    .equ PE_CFG0,   0x00c0
+    .equ PE_DAT,    0x00d0
+    .equ _50NS,     10
+    .equ _100NS,    20
+    .equ _200NS,    40
+    .equ _300NS,    60
+    .equ _400NS,    80
+    .equ _450NS,    90
+    .equ _800NS,    160
+    .equ _850NS,    170
+    .equ _1US,      200
+    .equ _1S,       200000000
+   
+    .text
+    .long 0x0a00006f
+    .byte 'e','G','O','N','.','B','T','0'
+    .long 0x5F0A6C39
+    .long 0x8000
+    .long 0, 0
+    .long 0, 0, 0, 0, 0, 0, 0, 0
+    .long 0, 0, 0, 0, 0, 0, 0, 0
+ 
+    .org 0x00a0
+_vector:
+    j _start
+   
+    .org 0x0100
+_start:
+    li t0, 0x100000
+    li a0, GPIO_BASE + PE_CFG0
+    sw t0, 0(a0)
+
+    li a0, GPIO_BASE + PE_DAT
+0:
+    li t0, (1 &lt;&lt; 12)
+    jal b24
+
+    li t0, _1S
+    jal delay
+
+    li t0, (0 &lt;&lt; 0)
+    jal b24
+    
+    li t0, _1S
+    jal delay
+    j 0b
+
+b24:
+    move t2, ra
+    move t3, t0
+    li t4, 24
+0:
+    and t0, t3, 1
+    srl t3, t3, 1
+    beqz t0, 1f
+    jal b1
+    j 2f
+1:
+    jal b0
+2:
+    addi t4, t4, -1
+    bgtz t4, 0b
+    jr t2
+
+b0:
+    move t1, ra
+    li t0, (1 &lt;&lt; 5)
+    sw t0, 0(a0)
+
+    li t0, _300NS
+    jal delay
+
+    li t0, (0 &lt;&lt; 5)
+    sw t0, 0(a0)
+
+    li t0, _850NS
+    jal delay
+    jr t1
+
+b1:
+    move t1, ra
+    li t0, (1 &lt;&lt; 5)
+    sw t0, 0(a0)
+
+    li t0, _800NS
+    jal delay
+
+    li t0, (0 &lt;&lt; 5)
+    sw t0, 0(a0)
+
+    li t0, _400NS
+    jal delay
+    jr t1
+
+delay:
+    addi t0, t0, -1
+    bgtz t0, delay
+    jr ra
+    .end
+</pre><br>
+
+<p>
+main.ld
+</p>
+<pre>
+MEMORY {
+    FLASH : ORIGIN = 0, LENGTH = 32M
+}
+
+SECTIONS {
+    .text : { *(.text*) } &gt; FLASH
+    .rodata : { *(.rodata*) } &gt; FLASH
+    .bss : { *(.bss*) } &gt; FLASH
+}
+</pre><br>
+
+<p>
+Makefile
+</p>
+<pre>
+all:
+    riscv64-unknown-linux-gnu-as -o main.o main.s
+    riscv64-unknown-linux-gnu-ld -T main.ld -o main.elf main.o
+    riscv64-unknown-linux-gnu-objcopy -O binary main.elf tmp.bin
+    python3 gen_checksum.py tmp.bin main.bin
+
+run:
+    xfel ddr f133 &amp;&amp; xfel write 0x40000000 main.bin &amp;&amp; xfel exec 0x40000000
+
+clean:
+    rm -rf main.bin main.o main.elf tmp.bin
+</pre><br>
+
+<p>
+連接USB到PC
+</p>
+<pre>
+$ lsusb
+    Bus 002 Device 064: ID 1f3a:efe8 Onda (unverified) V972 tablet in flashing mode
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ make
+    riscv64-unknown-linux-gnu-as -o main.o main.s
+    riscv64-unknown-linux-gnu-ld -T main.ld -o main.elf main.o
+    riscv64-unknown-linux-gnu-objcopy -O binary main.elf tmp.bin
+    python3 gen_checksum.py tmp.bin main.bin
+</pre><br>
+
+<p>
+下載
+</p>
+<pre>
+$ make run
+    xfel ddr f133 &amp;&amp; xfel write 0x40000000 main.bin &amp;&amp; xfel exec 0x40000000
+    100% [================================================] 16.000 KB, 383.004 KB/s
+</pre><br>
+
+<p>
+完成<br>
+<img src="asm_led/7.jpg" class="maxSize"><br>
+<img src="asm_led/8.jpg" class="maxSize"><br><br>
+
+開頭使用0x0a00006f，它是一個跳躍指令，因為第4個Byte後的資料會由BROM使用，至於司徒為何要保留長度160(0xa0)？其實司徒不知道BROM會用多少，多餘的部份，司徒心想之後應該可以拿來使用，至於BROM使用的資料格式，可以參考https://github.com/Ouyancheng/FlatHeadBro/blob/master/boot0/boot0-header.c
+</p>
+<pre>
+$ /opt/f133/bin/riscv64-unknown-linux-gnu-objdump -bbinary -mriscv -D main.bin | head -n20
+
+main.bin:     file format binary
+
+
+Disassembly of section .data:
+
+0000000000000000 &lt;.data&gt;:
+       0:    0a00006f              j   0xa0
+       4:    4765                  li  a4,25
+       6:    422e4e4f              fnmadd.d ft8,ft8,ft2,fs0,rmm
+       a:    3054                  fld fa3,160(s0)
+       c:    bf5e                  fsd fs7,440(sp)
+       e:    a7ad                  j   0x778
+      10:    4000                  lw  s0,0(s0)
+    ...
+      9e:    0000                  unimp
+      a0:    0600006f              j   0x100
+    ...
+     100:    001002b7              lui t0,0x100
+     104:    02000537              lui a0,0x2000
+</pre><br>
+
+<p>
+仔細的玩家應該可以發現，RISC-V沒有MIPS的Delay Slot，不需要在跳躍指令後面塞一個nop或者做指令排序，在開發PSP模擬器踩到的坑洞，看來RISC-V應該解決了，而所謂的Delay Slot指的就是如下狀況：
+</p>
+<pre class="brush:asm">
+lw   v0,4(v1)   # load word from address v1+4 into v0
+nop             # wasted load delay slot
+jr   v0         # jump to the address specified by v0
+nop             # wasted branch delay slot
+</pre>
+<p>
+如果jr後面沒有插入nop，則會跑飛，因為jr慢了一步執行(提取、解碼、執行)，這種Delay Slot狀況是跟架構設計有關係，不過，司徒可以看到RISC-V的進步，真是感動流淚～
+</p>
+
+<p>
+<br><a href="../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
