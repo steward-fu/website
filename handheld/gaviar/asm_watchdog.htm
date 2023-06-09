@@ -1,0 +1,225 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Gaviar (小志掌機) &gt;&gt; Assembly</h3>
+<p><b>Watchdog</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://datasheet.lcsc.com/lcsc/1810231210_Worldsemi-WS2812C_C114587.pdf">ws2812c</a><br>
+2. <a href="https://en.wikipedia.org/wiki/Delay_slot">Delay_slot</a><br>
+3. <a href="https://github.com/Ouyancheng/FlatHeadBro">FlatHeadBro</a><br><br>
+
+Watchdog方塊圖<br>
+<img src="asm_watchdog/1.jpg" class="maxSize"><br><br>
+
+Timer位址<br>
+<img src="asm_timer0/1.jpg" class="maxSize"><br><br>
+
+Timer暫存器<br>
+<img src="asm_timer0/2.jpg" class="maxSize"><br><br>
+
+IRQ Enable<br>
+<img src="asm_watchdog/2.jpg" class="maxSize"><br><br>
+
+IRQ Status<br>
+<img src="asm_watchdog/3.jpg" class="maxSize"><br><br>
+
+Soft Reset<br>
+<img src="asm_watchdog/4.jpg" class="maxSize"><br><br>
+
+Ctrl<br>
+<img src="asm_watchdog/5.jpg" class="maxSize"><br><br>
+
+Cfg<br>
+<img src="asm_watchdog/6.jpg" class="maxSize"><br><br>
+
+Mode<br>
+<img src="asm_watchdog/7.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .global _start
+
+    .equ CCU_BASE,   0x02001000
+    .equ GPIO_BASE,  0x02000000
+    .equ LEDC_BASE,  0x02008000
+    .equ TIMER_BASE, 0x02050000
+    .equ PE_CFG0,    0x00c0
+
+    .equ WDOG_IRQ_EN_REG,     0x00a0
+    .equ WDOG_IRQ_STA_REG,    0x00a4
+    .equ WDOG_SOFT_RST_REG,   0x00a8
+    .equ WDOG_CTRL_REG,       0x00b0
+    .equ WDOG_CFG_REG,        0x00b4
+    .equ WDOG_MODE_REG,       0x00b8
+    .equ WDOG_OUTPUT_CFG_REG, 0x00bc
+
+    .equ LEDC_CLK_REG,              0x0bf0
+    .equ LEDC_BGR_REG,              0x0bfc
+    .equ LEDC_CTRL_REG,             0x0000
+    .equ LED_T01_TIMING_CTRL_REG,   0x0004
+    .equ LEDC_DATA_FINISH_CNT_REG,  0x0008
+    .equ LED_RESET_TIMING_CTRL_REG, 0x000c
+    .equ LEDC_WAIT_TIME0_CTRL_REG,  0x0010
+    .equ LEDC_DATA_REG,             0x0014
+    .equ LEDC_DMA_CTRL_REG,         0x0018
+    .equ LEDC_INT_CTRL_REG,         0x001c
+    .equ LEDC_INT_STS_REG,          0x0020
+    .equ LEDC_WAIT_TIME1_CTRL_REG,  0x0028
+   
+    .text
+    .long 0x0a00006f
+    .byte 'e','G','O','N','.','B','T','0'
+    .long 0x5F0A6C39
+    .long 0x8000
+    .long 0, 0
+    .long 0, 0, 0, 0, 0, 0, 0, 0
+    .long 0, 0, 0, 0, 0, 0, 0, 0
+ 
+    .org 0x00a0
+_vector:
+    j _start
+   
+    .org 0x0100
+_start:
+    li t0, (1 &lt;&lt; 16) | (1 &lt;&lt; 0)
+    li a0, CCU_BASE + LEDC_BGR_REG
+    sw t0, 0(a0)
+
+    li t0, (1 &lt;&lt; 31)
+    li a0, CCU_BASE + LEDC_CLK_REG
+    sw t0, 0(a0)
+
+    li t0, 0x500000
+    li a0, GPIO_BASE + PE_CFG0
+    sw t0, 0(a0)
+    
+    li t0, (0x14 &lt;&lt; 21) | (0x06 &lt;&lt; 16) | (0x07 &lt;&lt; 6) | (0x13 &lt;&lt; 0)
+    li a0, LEDC_BASE + LED_T01_TIMING_CTRL_REG
+    sw t0, 0(a0)
+    
+    li t0, (0x1d4c &lt;&lt; 16)
+    li a0, LEDC_BASE + LEDC_DATA_FINISH_CNT_REG
+    sw t0, 0(a0)
+    
+    li t0, (0x1d4c &lt;&lt; 16)
+    li a0, LEDC_BASE + LED_RESET_TIMING_CTRL_REG
+    sw t0, 0(a0)
+    
+    li t0, (0xff &lt;&lt; 0)
+    li a0, LEDC_BASE + LEDC_WAIT_TIME0_CTRL_REG
+    sw t0, 0(a0)
+    
+    li t0, 0
+    li a0, LEDC_BASE + LEDC_DMA_CTRL_REG
+    sw t0, 0(a0)
+    
+    li t0, 0
+    li a0, LEDC_BASE + LEDC_INT_CTRL_REG
+    sw t0, 0(a0)
+
+    li t0, (0x16aa &lt;&lt; 16) | (0 &lt;&lt; 4) | (1 &lt;&lt; 0)
+    li a0, TIMER_BASE + WDOG_MODE_REG
+    sw t0, 0(a0)
+
+    li t0, (0x16aa &lt;&lt; 16) | (2 &lt;&lt; 0)
+    li a0, TIMER_BASE + WDOG_CFG_REG
+    sw t0, 0(a0)
+
+    li t0, (0xa57 &lt;&lt; 1) | (1 &lt;&lt; 0)
+    li a0, TIMER_BASE + WDOG_CTRL_REG
+    sw t0, 0(a0)
+
+    li t1, 0
+    li t2, (1 &lt;&lt; 12)
+0:
+    li t0, (1 &lt;&lt; 16) | (1 &lt;&lt; 5) | (1 &lt;&lt; 4) | (1 &lt;&lt; 3) | (1 &lt;&lt; 2) | (1 &lt;&lt; 0)
+    li a0, LEDC_BASE + LEDC_CTRL_REG
+    sw t0, 0(a0)
+
+    xor t1, t1, t2
+    li a0, LEDC_BASE + LEDC_DATA_REG
+    sw t1, 0(a0)
+    
+    li a0, LEDC_BASE + LEDC_INT_STS_REG
+1:
+    lw t0, 0(a0)
+    and t0, t0, 1
+    beqz t0, 1b
+    sw t0, 0(a0)
+
+    li a0, TIMER_BASE + WDOG_IRQ_STA_REG
+2:
+    lw t0, 0(a0)
+    and t0, t0, 1
+    beqz t0, 2b
+    sw t0, 0(a0)
+    j 0b
+
+delay:
+    addi t0, t0, -1
+    bgtz t0, delay
+    jr ra
+    .end
+</pre><br>
+
+<p>
+完成<br>
+<img src="asm_led/7.jpg" class="maxSize"><br>
+<img src="asm_led/8.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
