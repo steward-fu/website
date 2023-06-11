@@ -1,0 +1,326 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Gaviar (小志掌機) &gt;&gt; Assembly</h3>
+<p><b>LCD (GPIO)</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://datasheet.lcsc.com/lcsc/1810231210_Worldsemi-WS2812C_C114587.pdf">ws2812c</a><br>
+2. <a href="https://en.wikipedia.org/wiki/Delay_slot">Delay_slot</a><br>
+3. <a href="https://github.com/Ouyancheng/FlatHeadBro">FlatHeadBro</a><br><br>
+
+LCD電路<br>
+<img src="sch2/1.jpg" class="maxSize"><br>
+<img src="sch2/7.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .global _start
+
+    .equ GPIO_BASE,  0x02000000
+    .equ PD_CFG0,    0x0090
+    .equ PD_CFG1,    0x0094
+    .equ PD_CFG2,    0x0098
+    .equ PD_DAT,     0x00a0
+
+    .equ LCD_RST,    (1 &lt;&lt; 0)
+    .equ LCD_WR,     (1 &lt;&lt; 18)
+    .equ LCD_RS,     (1 &lt;&lt; 19)
+    .equ LCD_RD,     (1 &lt;&lt; 20)
+    .equ LCD_CS,     (1 &lt;&lt; 21)
+    .equ LCD_BL,     (1 &lt;&lt; 22)
+
+    .equ _250MS,     50000000
+    .equ _500MS,     100000000
+    .equ _1S,        200000000
+
+    .text
+    .long 0x4000006f
+    .byte 'e','G','O','N','.','B','T','0'
+    .long 0x5F0A6C39
+    .long 0x8000
+    .long 0, 0
+    .long 0, 0, 0, 0, 0, 0, 0, 0
+    .long 0, 0, 0, 0, 0, 0, 0, 0
+  
+    .org 0x0400
+_start:
+    li t0, 0x11111111
+    li a0, GPIO_BASE + PD_CFG0
+    sw t0, 0(a0)
+    li a0, GPIO_BASE + PD_CFG1
+    sw t0, 0(a0)
+    li a0, GPIO_BASE + PD_CFG2
+    sw t0, 0(a0)
+
+    li t0, 0xffffffff
+    li a0, GPIO_BASE + PD_DAT
+    sw t0, 0(a0)
+
+    jal lcd_rst
+
+    li t0, 0xb2
+    jal lcd_cmd
+    li t0, 0x5c
+    jal lcd_dat
+    li t0, 0x5c
+    jal lcd_dat
+    li t0, 0x00
+    jal lcd_dat
+    li t0, 0x33
+    jal lcd_dat
+    li t0, 0x33
+    jal lcd_dat
+    
+    li t0, 0xb7
+    jal lcd_cmd
+    li t0, 0x35
+    jal lcd_dat
+    
+    li t0, 0x21
+    jal lcd_cmd
+    
+    li t0, 0x11
+    jal lcd_cmd
+
+    li t0, _250MS
+    jal delay
+
+    li t0, 0xe0
+    jal lcd_cmd
+    li t0, 0xd0
+    jal lcd_dat
+    li t0, 0x06
+    jal lcd_dat
+    li t0, 0x0b
+    jal lcd_dat
+    li t0, 0x07
+    jal lcd_dat
+    li t0, 0x07
+    jal lcd_dat
+    li t0, 0x24
+    jal lcd_dat
+    li t0, 0x2e
+    jal lcd_dat
+    li t0, 0x32
+    jal lcd_dat
+    li t0, 0x46
+    jal lcd_dat
+    li t0, 0x37
+    jal lcd_dat
+    li t0, 0x13
+    jal lcd_dat
+    li t0, 0x13
+    jal lcd_dat
+    li t0, 0x2d
+    jal lcd_dat
+    li t0, 0x33
+    jal lcd_dat
+    
+    li t0, 0xe1
+    jal lcd_cmd
+    li t0, 0xd0
+    jal lcd_dat
+    li t0, 0x02
+    jal lcd_dat
+    li t0, 0x06
+    jal lcd_dat
+    li t0, 0x09
+    jal lcd_dat
+    li t0, 0x08
+    jal lcd_dat
+    li t0, 0x05
+    jal lcd_dat
+    li t0, 0x29
+    jal lcd_dat
+    li t0, 0x44
+    jal lcd_dat
+    li t0, 0x42
+    jal lcd_dat
+    li t0, 0x38
+    jal lcd_dat
+    li t0, 0x14
+    jal lcd_dat
+    li t0, 0x14
+    jal lcd_dat
+    li t0, 0x2a
+    jal lcd_dat
+    li t0, 0x30
+    jal lcd_dat
+    
+    li t0, 0x36
+    jal lcd_cmd
+    li t0, 0xb0
+    jal lcd_dat
+    
+    li t0, 0x2a
+    jal lcd_cmd
+    li t0, 0x00
+    jal lcd_dat
+    li t0, 0x00
+    jal lcd_dat
+    li t0, 0x01
+    jal lcd_dat
+    li t0, 0x3f
+    jal lcd_dat
+    
+    li t0, 0x2b
+    jal lcd_cmd
+    li t0, 0x00
+    jal lcd_dat
+    li t0, 0x00
+    jal lcd_dat
+    li t0, 0x00
+    jal lcd_dat
+    li t0, 0xef
+    jal lcd_dat
+    
+    li t0, 0x3a
+    jal lcd_cmd
+    li t0, 0x55
+    jal lcd_dat
+
+    li t0, 0x29
+    jal lcd_cmd
+    
+    li t0, 0x2c
+    jal lcd_cmd
+
+    li t6, 320 * 80
+red:
+    li t0, 0xf800
+    jal lcd_dat
+    addi t6, t6, -1
+    bgtz t6, red
+    
+    li t6, 320 * 80
+green:
+    li t0, 0x7e0
+    jal lcd_dat
+    addi t6, t6, -1
+    bgtz t6, green
+    
+    li t6, 320 * 80
+blue:
+    li t0, 0x1f
+    jal lcd_dat
+    addi t6, t6, -1
+    bgtz t6, blue
+1:
+    j 1b
+
+lcd_wr:
+    li a0, GPIO_BASE + PD_DAT
+
+    li t4, 0x00ff
+    and t2, t0, t4
+    li t4, 0xff00
+    and t3, t0, t4
+    sll t2, t2, 1
+    sll t3, t3, 2
+
+    move t5, t1
+    or t5, t5, t2
+    or t5, t5, t3
+    sw t5, 0(a0)
+
+    li t0, LCD_WR
+    or t5, t5, t0
+    sw t5, 0(a0)
+    jr ra
+
+lcd_dat:
+    move a1, ra
+    li t1, LCD_RS | LCD_RD | LCD_BL | LCD_RST
+    jal lcd_wr
+    jr a1
+
+lcd_cmd:
+    move a1, ra
+    li t1, LCD_RD | LCD_BL | LCD_RST
+    jal lcd_wr
+    jr a1
+
+lcd_rst:
+    move a1, ra
+    li t0, 0x00000000
+    li a0, GPIO_BASE + PD_DAT
+    sw t0, 0(a0)
+
+    li t0, _250MS
+    jal delay
+
+    li t0, 0xffffffff
+    li a0, GPIO_BASE + PD_DAT
+    sw t0, 0(a0)
+
+    li t0, _250MS
+    jal delay
+    jr a1
+
+delay:
+    addi t0, t0, -1
+    bgtz t0, delay
+    jr ra
+    .end
+</pre><br>
+
+<p>
+完成<br>
+<img src="asm_lcd/1.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
