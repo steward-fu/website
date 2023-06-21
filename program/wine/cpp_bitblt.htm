@@ -44,8 +44,8 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>Wine &gt;&gt; C/C++ &gt;&gt; Dialog &gt;&gt; Painting</h3>
-<p><b>BitBlt</b></p>
+<h3>Wine &gt;&gt; C/C++ &gt;&gt; Painting</h3>
+<p><b>Device Context BitBlt</b></p>
 <hr size="1">
 <p>
 參考資訊：<br>
@@ -60,12 +60,18 @@ main.c
 </p>
 <pre class="brush:cpp">
 #include &lt;windows.h&gt;
-
+ 
 HWND hWin = NULL;
 WNDPROC defWndProc = NULL;
-
+ 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+    int x = 0, y = 0;
+    HDC hDst = NULL;
+    HDC hSrc = NULL;
+    HBITMAP hBmp = NULL;
+    PAINTSTRUCT ps = {0};
+
     switch (uMsg) {
     case WM_CLOSE:
         DestroyWindow(hWnd);
@@ -74,12 +80,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         PostQuitMessage(0);
         return 0;
     case WM_PAINT:
-        int x = 0, y = 0;
-        PAINTSTRUCT ps = {0};
-        HDC hDst = BeginPaint(hWnd, &amp;ps);
-        HDC hSrc = CreateCompatibleDC(hDst);
-        HBITMAP hBmp = CreateCompatibleBitmap(hDst, 200, 200);
-
+        hDst = BeginPaint(hWnd, &amp;ps);
+        hSrc = CreateCompatibleDC(hDst);
+        hBmp = CreateCompatibleBitmap(hDst, 200, 200);
+ 
         SelectObject(hSrc, hBmp);
         for (y = 10; y &lt; 100; y++) {
             for (x = 10; x &lt; 100; x++) {
@@ -87,7 +91,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             }
         }
         BitBlt(hDst, 0, 0, 200, 200, hSrc, 0, 0, SRCCOPY);
-
+ 
         EndPaint(hWnd, &amp;ps);
         DeleteObject(hBmp);
         DeleteDC(hSrc);
@@ -95,13 +99,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     }
     return CallWindowProc(defWndProc, hWnd, uMsg, wParam, lParam);
 }
-
+ 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
-    hWin = CreateWindow(WC_DIALOG, "main", WS_OVERLAPPEDWINDOW, 0, 0, 300, 300, NULL, NULL, NULL, NULL);
+    hWin = CreateWindow(WC_DIALOG, "main", 
+        WS_OVERLAPPEDWINDOW | WS_VISIBLE, 0, 0, 300, 300, NULL, NULL, NULL, NULL);
     defWndProc = (WNDPROC)SetWindowLongPtr(hWin, GWLP_WNDPROC, (long int)WndProc);
-    ShowWindow(hWin, SW_SHOW);
-
+ 
     MSG msg = {0};
     while (GetMessage(&amp;msg, NULL, 0, 0)) {
         DispatchMessage(&amp;msg);
@@ -118,7 +122,7 @@ $ winegcc main.c -o main -lgdi32
 $ wine ./main.exe
 </pre>
 <p>
-<img style="border:0px" src="cpp_dlg_bitblt/1.jpg" class="maxSize">
+<img style="border:0px" src="../nasm/win32_bitblt/1.jpg" class="maxSize">
 </p>
 
 <p>
