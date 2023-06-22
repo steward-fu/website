@@ -54,7 +54,9 @@
 3. <a href="http://www.winprog.org/tutorial/">tutorial</a><br>
 4. <a href="https://github.com/gammasoft71/Examples_Win32">examples_win32</a><br><br>
 
-使用CreateDC()、CreateCompatibleDC()產生出來的DC並沒有Buffer可以用來畫圖，因此，記得使用CreateBitmap()、CreateCompatibleBitmap()產生Buffer<br><br>
+Device Context(DC)是一個可以用繪製圖形的裝置，當創建一個新的Windows視窗時，系統也會創建一個DC用來提供繪製圖形的功能，DC只是一個裝置，它需要一塊Buffer用來儲存需要顯示的圖形(像素)，系統預設也會幫Window視窗配置一塊可以用來儲存像素的Buffer，這也是為何可以直接在視窗上面繪製圖形的緣故，需要注意的是，當使用CreateDC()、CreateCompatibleDC()創建一個新的DC時，這樣的DC預設並沒有Buffer可以使用，所以，需要使用CreateBitmap()、CreateCompatibleBitmap()配置Buffer，這樣才可以在這個DC上面繪製圖形<br><br>
+
+針對像素的處理，如果需要對像素進行搬移或者複製，除了可以使用迴圈的方式之外，BitBlt()是一個不錯的選擇方式，BitBlt()可以用來複製某個區間範的像素到另一個地方去，例如：複製(x=10, y=10, width=100, height=100)的像素到(x=100, y=100)位置，司徒使用如下範例說明如何使用BitBlt()<br><br>
 
 main.c
 </p>
@@ -113,8 +115,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     ExitProcess(0);
     return 0;
 }
-</pre><br>
+</pre>
 <p>
+<b>Line 23</b>：創建一個DC<br>
+<b>Line 24</b>：創建DC的Buffer<br>
+<b>Line 27~31</b>：紅色像素<br>
+<b>Line 32</b>：使用BitBlt()複製像素到另一個DC<br><br>
+
 編譯、執行
 </p>
 <pre>
