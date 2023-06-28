@@ -1,0 +1,130 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Miyoo Mini Plus</h3>
+<p><b>如何透過U-Boot回復SPI資料</b></p>
+<hr size="1">
+<p>
+參考資料：<br>
+1. <a href="https://github.com/steward-fu/archives/releases">git</a><br><br>
+
+必要條件：<br>
+1. UART可以使用<br>
+2. SPI IPL存在(前400KB)<br><br>
+
+更新步驟：<br>
+1. 格式化MicroSD的第一分區成FAT32<br>
+2. 將<a href="https://github.com/steward-fu/archives/releases/download/miyoo-mini-plus/spi.img">spi.img</a>放到MicroSD根目錄<br>
+3. 開機後，透過UART輸入任何字元，藉此中斷U-Boot繼續執行
+</p>
+<pre>
+SigmaStar # version
+    U-Boot 2015.01 (Mar 26 2023 - 23:38:58)
+    arm-linux-gnueabihf-gcc (GNU Toolchain for the A-profile Architecture 8.2-2018-08 (arm-rel-8.23)) 8.2.1 20180802
+    GNU ld (GNU Toolchain for the A-profile Architecture 8.2-2018-08 (arm-rel-8.23)) 2.30.0.20180625
+
+SigmaStar # mmc dev 0
+    switch to partitions #0, OK
+    mmc0 is current device
+
+SigmaStar # fatls mmc 0
+    get_dev_hwpart (mmc, 0, 0)
+    get_dev_hwpart ifname mmc, name usb,reloc_get_dev 23f39c2c, select_hwpart 00000000,mmc_get_dev 23f73a84, mmc_select_hwpart 23f72a34
+    get_dev_hwpart ifname mmc, name mmc,reloc_get_dev 23f73a84, select_hwpart 23f72a34,mmc_get_dev 23f73a84, mmc_select_hwpart 23f72a34
+    part unspecified1
+    part_type is 2, part -2
+    part unspecified2
+    get_partition_info part 1, ret 0
+    return part 1
+    get_device_and_partition(mmc, 0) return 1, fstype=1
+    probe fstype = 1, info-&gt;fstype=1
+    probe fs_dev_desc = 00000001, info-&gt;null_dev_desc_ok=0
+     16777216   spi.img
+
+    1 file(s), 0 dir(s)
+
+SigmaStar # fatload mmc 0 0x21000000 spi.img 0 0
+    get_dev_hwpart (mmc, 0, 0)
+    get_dev_hwpart ifname mmc, name usb,reloc_get_dev 23f39c2c, select_hwpart 00000000,mmc_get_dev 23f73a84, mmc_select_hwpart 23f72a34
+    get_dev_hwpart ifname mmc, name mmc,reloc_get_dev 23f73a84, select_hwpart 23f72a34,mmc_get_dev 23f73a84, mmc_select_hwpart 23f72a34
+    part unspecified1
+    part_type is 2, part -2
+    part unspecified2
+    get_partition_info part 1, ret 0
+    return part 1
+    get_device_and_partition(mmc, 0) return 1, fstype=1
+    probe fstype = 1, info-&gt;fstype=1
+    probe fs_dev_desc = 00000001, info-&gt;null_dev_desc_ok=0
+    reading spi.img
+    16777216 bytes read in 1190 ms (13.4 MiB/s)
+
+SigmaStar # sf probe
+    Flash is detected (0x0B05, 0xC8, 0x40, 0x18)
+    SF: Detected nor0 with total size 16 MiB
+
+SigmaStar # sf erase 0 1000000
+    _spi_flash_erase: addr 0x0, len 0x1000000 100%(cost 61079 ms)
+    SF: 16777216 bytes @ 0x0 Erased: OK
+
+SigmaStar # sf write 0x21000000 0 0x1000000
+    _spi_flash_write to 0x0, len 0x1000000 from 0x21000000 100%(cost 29740 ms)
+    SF: 16777216 bytes @ 0x0 Written: OK
+
+SigmaStar # reset
+</pre>
+<p>
+P.S. 如果有SPI燒錄器可以使用，只要將spi.img直接燒錄到SPI Flash即可
+</p>
+
+<p>
+<br><a href="../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
