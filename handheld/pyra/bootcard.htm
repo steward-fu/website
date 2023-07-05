@@ -1,0 +1,132 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Pyra</h3>
+<p><b>如何製作可開機SDCard</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://packages.pyra-handheld.com/images/">images</a><br>
+2. <a href="https://pyra-handheld.com/wiki/index.php?title=Manual#Reflashing_a_Pyra">Reflashing_a_Pyra</a><br><br>
+
+步驟如下：
+</p>
+<pre>
+$ cd
+$ wget https://packages.pyra-handheld.com/images/bookworm/bookworm1.img.7z
+$ 7za x bookworm1.img.7z
+$ sudo dd if=bookworm1.img of=/dev/sdX bs=1M
+
+$ fdisk -l
+    Device     Boot  Start     End Sectors  Size Id Type
+    /dev/sdb1  *      2048  526335  524288  256M 83 Linux
+    /dev/sdb2       526336 8388607 7862272  3.8G 83 Linux
+
+$ sudo fdisk /dev/sdb
+    Welcome to fdisk (util-linux 2.33.1).
+    Changes will remain in memory only, until you decide to write them.
+    Be careful before using the write command.
+
+    Command (m for help): p
+        Disk /dev/sdb: 238.3 GiB, 255869321216 bytes, 499744768 sectors
+        Disk model: Storage Device
+        Units: sectors of 1 * 512 = 512 bytes
+        Sector size (logical/physical): 512 bytes / 512 bytes
+        I/O size (minimum/optimal): 512 bytes / 512 bytes
+        Disklabel type: dos
+        Disk identifier: 0x9ef3bd97
+
+        Device     Boot  Start     End Sectors  Size Id Type
+        /dev/sdb1  *      2048  526335  524288  256M 83 Linux
+        /dev/sdb2       526336 8388607 7862272  3.8G 83 Linux
+
+    Command (m for help): d
+        Partition number (1,2, default 2): 2
+        Partition 2 has been deleted.
+
+    Command (m for help): n
+        Partition type
+           p   primary (1 primary, 0 extended, 3 free)
+           e   extended (container for logical partitions)
+        Select (default p): p
+        Partition number (2-4, default 2): 2
+        First sector (526336-499744767, default 526336):
+        Last sector, +/-sectors or +/-size{K,M,G,T,P} (526336-499744767, default 499744767):
+
+        Created a new partition 2 of type 'Linux' and of size 238 GiB.
+        Partition #2 contains a f2fs signature.
+
+        Do you want to remove the signature? [Y]es/[N]o: N
+
+    Command (m for help): p
+        Disk /dev/sdb: 238.3 GiB, 255869321216 bytes, 499744768 sectors
+        Disk model: Storage Device
+        Units: sectors of 1 * 512 = 512 bytes
+        Sector size (logical/physical): 512 bytes / 512 bytes
+        I/O size (minimum/optimal): 512 bytes / 512 bytes
+        Disklabel type: dos
+        Disk identifier: 0x9ef3bd97
+
+        Device     Boot  Start       End   Sectors  Size Id Type
+        /dev/sdb1  *      2048    526335    524288  256M 83 Linux
+        /dev/sdb2       526336 499744767 499218432  238G 83 Linux
+
+$ sudo fsck.f2fs /dev/sdb2
+$ sudo resize.f2fs /dev/sdb2
+</pre>
+<p>
+P.S. fsck.f2fs、resize.f2fs建議在Pyra上面執行(使用另一個系統開機)
+</p>
+
+<p>
+<br><a href="../../handheld.htm">返回上一頁</a>
+</p>
+</div>
+</div>
+</div>
+</body>
+</html>
