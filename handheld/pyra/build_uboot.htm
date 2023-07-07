@@ -1,0 +1,161 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Pyra</h3>
+<p><b>build uboot</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://dev.pyra-handheld.com/daveshah/pyra-uboot/-/tree/pyra-alt-ddr3">pyra-alt-ddr3</a><br>
+2. <a href="https://forum.digikey.com/t/debian-getting-started-with-the-omap5432-uevm/12455">debian-getting-started-with-the-omap5432-uevm</a><br><br>
+
+步驟如下：
+</p>
+<pre>
+$ cd
+$ git clone https://dev.pyra-handheld.com/daveshah/pyra-uboot/ -b pyra-alt-ddr3
+$ cd pyra-uboot
+$ ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- make omap5_pyra_4gb_defconfig
+$ ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- make -j4
+
+$ sudo dd if=/dev/zero of=/dev/sdX bs=1M count=10
+$ sudo dd if=MLO of=/dev/sdX count=2 seek=1 bs=128k
+$ sudo dd if=u-boot.img of=/dev/sdX count=4 seek=1 bs=384k
+</pre><br>
+
+<p>
+將SDCard放到左邊卡槽，接著開機就可以看到U-Boot訊息
+</p>
+<pre>
+U-Boot SPL 2016.11-g8d28294fb8 (Jul 06 2023 - 20:49:59)
+OMAP5432-GP ES2.0
+cold reset
+sw warm reset
+Status before starting init:
+EMIF_STATUS        40000004 40000004
+EMIF_SDRAM_CONFIG  61851bba 61851bba
+EMIF_SDRAM_REFCTRL 00001035 00001035
+EMIF_PERF_CTR_TIME ca447a5d ca447a90
+EMIF_OCP_ERROR_LOG 00000000 00000000
+EMIF_DDR_PHY_CTRL1 0034400a 0034400a
+EMIF_PHY_STATUS_1  0000003f 0000003f
+EMIF_PHY_STATUS_20 003f0000 003f0000
+EMIF_PHY_STATUS_21 00000000 00000000
+
+Status after init:
+EMIF_STATUS        40000004 40000004
+EMIF_SDRAM_CONFIG  61851bba 61851bba
+EMIF_SDRAM_REFCTRL 00001035 00001035
+EMIF_PERF_CTR_TIME caca1a7d caca1ab0
+EMIF_OCP_ERROR_LOG 00000000 00000000
+EMIF_DDR_PHY_CTRL1 0034400a 0034400a
+EMIF_PHY_STATUS_1  0000003f 0000003f
+EMIF_PHY_STATUS_20 003f0000 003f0000
+EMIF_PHY_STATUS_21 00000000 00000000
+READBACK deadbeef
+
+Status after memory test:
+EMIF_STATUS        40000004 40000004
+EMIF_SDRAM_CONFIG  61851bba 61851bba
+EMIF_SDRAM_REFCTRL 00001035 00001035
+EMIF_PERF_CTR_TIME cb541bc1 cb541bf5
+EMIF_OCP_ERROR_LOG 00000000 00000000
+EMIF_DDR_PHY_CTRL1 0034400a 0034400a
+EMIF_PHY_STATUS_1  0000003f 0000003f
+EMIF_PHY_STATUS_20 003f0000 003f0000
+EMIF_PHY_STATUS_21 00000000 00000000
+READBACK deadbeef
+
+&gt;&gt;spl:board_init_r()
+spl_init()
+Trying to boot from MMC1
+** First descriptor is NOT a primary desc on 0:1 **
+SPL: Please implement spl_start_uboot() for your board
+SPL: Direct Linux boot not active!
+spl: payload image: U-Boot 2016.11-g8d28294fb8 for o load addr: 0x807fffc0 size: 325072
+Jumping to U-Boot
+loaded - jumping to U-Boot...
+
+U-Boot 2016.11-g8d28294fb8 (Jul 06 2023 - 20:49:59 -0400)
+
+LPAE build running in hypervisor mode!
+CPU  : ARM Cortex-A15 r2p2
+SoC  : OMAP5432-GP ES2.0
+Board: OMAP5432 Pyra
+I2C:   ready
+DRAM:  4 GiB
+MMC:   OMAP SD/MMC: 0, OMAP SD/MMC: 1, OMAP SD/MMC: 2
+*** Warning - bad CRC, using default environment
+
+HW Revision: CPU: v5.3 Mainboard: v5.3
+BOOTDEV: SD Left
+SCSI:  SATA link 0 timeout.
+AHCI 0001.0300 32 slots 1 ports 3 Gbps 0x1 impl SATA mode
+flags: 64bit ncq stag pm led clo only pmp pio slum part ccc apst
+scanning bus for devices...
+Found 0 device(s).
+Net:   No ethernet found.
+Hit any key to stop autoboot:  0
+=&gt;
+=&gt;
+=&gt;
+=&gt; version
+
+U-Boot 2016.11-g8d28294fb8 (Jul 06 2023 - 20:49:59 -0400)
+arm-linux-gnueabi-gcc (Debian 8.3.0-2) 8.3.0
+GNU ld (GNU Binutils for Debian) 2.31.1
+=&gt;
+</pre><br>
+
+<p>
+<br><a href="../../handheld.htm">返回上一頁</a>
+</p>
+</div>
+</div>
+</div>
+</body>
+</html>
