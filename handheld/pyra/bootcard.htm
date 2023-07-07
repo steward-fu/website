@@ -50,78 +50,37 @@
 <hr size="1">
 <p>
 參考資訊：<br>
-1. <a href="https://packages.pyra-handheld.com/images/">images</a><br>
-2. <a href="https://pyra-handheld.com/wiki/index.php?title=Manual#Reflashing_a_Pyra">Reflashing_a_Pyra</a><br><br>
+1. <a href="https://dev.pyra-handheld.com/daveshah/pyra-uboot/-/tree/pyra-alt-ddr3">pyra-alt-ddr3</a><br>
+2. <a href="https://forum.digikey.com/t/debian-getting-started-with-the-omap5432-uevm/12455">debian-getting-started-with-the-omap5432-uevm</a><br><br>
 
 步驟如下：
 </p>
 <pre>
-$ cd
-$ wget https://packages.pyra-handheld.com/images/bookworm/bookworm1.img.7z
-$ 7za x bookworm1.img.7z
-$ sudo dd if=bookworm1.img of=/dev/sdX bs=1M
-
-$ fdisk -l
-    Device     Boot  Start     End Sectors  Size Id Type
-    /dev/sdb1  *      2048  526335  524288  256M 83 Linux
-    /dev/sdb2       526336 8388607 7862272  3.8G 83 Linux
-
+$ sudo dd if=/dev/zero of=/dev/sdb bs=1M count=10
+$ sudo dd if=MLO of=/dev/sdb count=2 seek=1 bs=128k
+$ sudo dd if=u-boot.img of=/dev/sdb count=4 seek=1 bs=384k
 $ sudo fdisk /dev/sdb
-    Welcome to fdisk (util-linux 2.33.1).
-    Changes will remain in memory only, until you decide to write them.
-    Be careful before using the write command.
-
     Command (m for help): p
-        Disk /dev/sdb: 238.3 GiB, 255869321216 bytes, 499744768 sectors
-        Disk model: Storage Device
-        Units: sectors of 1 * 512 = 512 bytes
-        Sector size (logical/physical): 512 bytes / 512 bytes
-        I/O size (minimum/optimal): 512 bytes / 512 bytes
-        Disklabel type: dos
-        Disk identifier: 0x9ef3bd97
+    Disk /dev/sdb: 3.7 GiB, 3904897024 bytes, 7626752 sectors
+    Disk model: Storage Device
+    Units: sectors of 1 * 512 = 512 bytes
+    Sector size (logical/physical): 512 bytes / 512 bytes
+    I/O size (minimum/optimal): 512 bytes / 512 bytes
+    Disklabel type: dos
+    Disk identifier: 0x5b9d58b7
 
-        Device     Boot  Start     End Sectors  Size Id Type
-        /dev/sdb1  *      2048  526335  524288  256M 83 Linux
-        /dev/sdb2       526336 8388607 7862272  3.8G 83 Linux
+    Device     Boot   Start     End Sectors  Size Id Type
+    /dev/sdb1         16384 1064959 1048576  512M  c W95 FAT32 (LBA)
+    /dev/sdb2       1064960 7626751 6561792  3.1G 83 Linux
 
-    Command (m for help): d
-        Partition number (1,2, default 2): 2
-        Partition 2 has been deleted.
-
-    Command (m for help): n
-        Partition type
-           p   primary (1 primary, 0 extended, 3 free)
-           e   extended (container for logical partitions)
-        Select (default p): p
-        Partition number (2-4, default 2): 2
-        First sector (526336-499744767, default 526336):
-        Last sector, +/-sectors or +/-size{K,M,G,T,P} (526336-499744767, default 499744767):
-
-        Created a new partition 2 of type 'Linux' and of size 238 GiB.
-        Partition #2 contains a f2fs signature.
-
-        Do you want to remove the signature? [Y]es/[N]o: N
-
-    Command (m for help): p
-        Disk /dev/sdb: 238.3 GiB, 255869321216 bytes, 499744768 sectors
-        Disk model: Storage Device
-        Units: sectors of 1 * 512 = 512 bytes
-        Sector size (logical/physical): 512 bytes / 512 bytes
-        I/O size (minimum/optimal): 512 bytes / 512 bytes
-        Disklabel type: dos
-        Disk identifier: 0x9ef3bd97
-
-        Device     Boot  Start       End   Sectors  Size Id Type
-        /dev/sdb1  *      2048    526335    524288  256M 83 Linux
-        /dev/sdb2       526336 499744767 499218432  238G 83 Linux
-
-    Command (m for help): w
-
-$ sudo fsck.f2fs /dev/sdb2
-$ sudo resize.f2fs /dev/sdb2
+$ sudo mkfs.vfat /dev/sdb1
+$ sudo mkfs.ext4 /dev/sdb2
+$ sudo fatlabel /dev/sdb1 boot
+$ sudo e2label /dev/sdb2 rootfs
 </pre>
 <p>
-P.S. fsck.f2fs、resize.f2fs必須在Pyra上面執行後，才能拿去當作開機SDCard，不能開完機後，再拿去做resize，否則該開機SDCard將無法使用
+P.S. <b>/dev/sdb</b>是司徒使用的例子，最前面保留8MB給MLO、u-boot.img使用<br>
+<img src="bootcard/1.jpg" class="maxSize">
 </p>
 
 <p>
