@@ -56,9 +56,10 @@ arch=arm
 baudrate=115200
 board=omap5_pyra
 board_name=omap5_pyra
-bootcmd=run importuserenv; run mmcargs; run bootos
+bootcmd=run bootfstypecmd; run importuserenv; run mmcargs; run bootos
 bootdelay=2
 bootfile=zImage
+bootfstypecmd=fstype mmc ${mmcdev}:${bootpart} bootfstype; setenv bootfsload ${bootfstype}load;
 bootm_size=0x10000000
 bootos=sysboot mmc ${mmcdev}:${bootpart} any ${scriptaddr} /extlinux/extlinux.conf
 bootpart=1
@@ -69,17 +70,17 @@ fdt_addr_r=0x88000000
 fdtaddr=0x88000000
 fdtfile=omap5-letux-cortex15-v5.3+pyra-v5.3.dtb
 finduuid=part uuid mmc ${mmcdev}:${rootfspart} uuid
-importuserenv=if ext4load mmc ${mmcdev}:${bootpart} ${scriptaddr} ${userenv}; then env import -t ${scriptaddr} ${filesize}; fi
+importuserenv=if ${bootfsload} mmc ${mmcdev}:${bootpart} ${scriptaddr} ${userenv}; then echo Found data to import;env import -t ${scriptaddr} ${filesize}; else echo No user data to import;fi
 kernel_addr_r=0x82000000
 loadaddr=0x82000000
 loados=ext4load mmc ${mmcdev}:${bootpart} ${loadaddr} ${bootfile}; ext4load mmc ${mmcdev}:${bootpart} ${rdaddr} ${rdfile}; ext4load mmc ${mmcdev}:${bootpart} ${fdtaddr} ${fdtfile}
 mmcargs=run finduuid; setenv bootargs console=${console} root=PARTUUID=${uuid} rw rootfstype=${rootfstype} rootwait vram=12M omapfb.vram=0:8M,1:4M omapfb.rotate_type=0 omapdss.def_disp=lcd twl4030_charger.allow_usb=1 musb_hdrc.preserve_vbus=1 log_buf_len=8M ignore_loglevel earlyprintk drm_kms_helper.fbdev_rotation=8 drm.force_hw_rotation fastboot
-mmcdev=0
+mmcdev=1
 pxefile_addr_r=0x80100000
 ramdisk_addr_r=0x88080000
 rdaddr=0x88080000
 rdfile=initrd.img
-rootfspart=2
+rootfspart=4
 rootfstype=f2fs
 scriptaddr=0x80000000
 scsidevs=0
@@ -90,7 +91,7 @@ stdout=serial
 usbethaddr=02:e1:18:13:12:70
 userenv=uEnv.txt
 vendor=dragonbox
-ver=U-Boot 2016.11-g8d28294fb8 (Jul 06 2023 - 22:25:13 -0400)
+ver=U-Boot 2016.11 (May 20 2023 - 20:46:01 +0000)
 </pre><br>
 
 <p>
