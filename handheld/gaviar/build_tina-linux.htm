@@ -1,0 +1,144 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Gaviar (小志掌機)</h3>
+<p><b>build tina-linux</b></p>
+<hr size="1">
+<p>
+參考資料：<br>
+1. <a href="https://github.com/steward-fu/archives/releases/download/f133">f133</a><br><br>
+
+感謝lovexulu的協助，提供Tina-Linux的移植結果給司徒參考，由於Tina-Linux下載相當費時也比較麻煩，因此，司徒將其搬遷到GitHub，編譯步驟如下：
+</p>
+<pre>
+$ cd
+$ git clone https://github.com/steward-fu/tina-linux_sdk
+$ cd tina-linux_sdk
+
+$ wget https://github.com/steward-fu/archives/releases/download/f133/tina-linux_sdk_dl.7z.001
+$ wget https://github.com/steward-fu/archives/releases/download/f133/tina-linux_sdk_dl.7z.002
+$ wget https://github.com/steward-fu/archives/releases/download/f133/tina-linux_sdk_toolchain.tar.gz
+$ tar xvf https://github.com/steward-fu/archives/releases/download/f133/tina-linux_sdk_toolchain.tar.gz
+$ 7za x https://github.com/steward-fu/archives/releases/download/f133/tina-linux_sdk_dl.7z.001
+
+$ source ./build/envsetup.sh
+$ lunch
+    You're building on Linux
+
+    Lunch menu... pick a combo:
+         1. d1-h_nezha_min-tina
+         2. d1-h_nezha-tina
+         3. d1s_nezha-tina
+
+    Which would you like? [Default d1s_nezha]:3
+
+$ make
+$ pack
+    /home/steward/Data/tina-linux_sdk/out/d1s-nezha/tina_d1s-nezha_uart4.img
+
+    pack finish
+</pre><br>
+
+<p>
+燒錄步驟：<br>
+1. 下載<a href="https://github.com/steward-fu/archives/releases/download/f133/PhoenixCardv4.2.7.7z">PhoenixCardv4.2.7.7z</a>並且解壓縮<br>
+2. 執行PhoenixCard.exe<br>
+3. 選擇好Image、Start up後，按下Burn開始燒錄<br> 
+<img src="build_tina-linux/1.jpg" class="maxSize"><br><br>
+
+燒錄完成<br>
+<img src="build_tina-linux/2.jpg" class="maxSize"><br><br>
+
+預設分區如下圖，如果想要使用自己編譯的buildroot系統，只要替換到rootfs分區就可以，不過預設只有25MB<br>
+<img src="build_tina-linux/3.jpg" class="maxSize"><br><br>
+
+對/dev/sdb8進行擴充，這樣就可以放檔案進入測試<br>
+<img src="build_tina-linux/4.jpg" class="maxSize"><br><br>
+
+開機後，可以直接使用adb shell進入console
+</p>
+<pre>
+$ adb devices
+    * daemon not running; starting now at tcp:5037
+    * daemon started successfully
+    List of devices attached
+    20080411	device
+
+$ adb shell
+    BusyBox v1.27.2 () built-in shell (ash)
+
+    ------run profile file-----
+     _____  _              __     _
+    |_   _||_| ___  _ _   |  |   |_| ___  _ _  _ _
+      | |   _ |   ||   |  |  |__ | ||   || | ||_'_|
+      | |  | || | || _ |  |_____||_||_|_||___||_,_|
+      |_|  |_||_|_||_|_|  Tina is Based on OpenWrt!
+     ----------------------------------------------
+     Tina Linux (Neptune, 61CC0487)
+     ----------------------------------------------
+    nodev	debugfs
+    root@TinaLinux:/#
+    root@TinaLinux:/# mount /dev/mmcblk0p8 /mnt/UDISK/
+    root@TinaLinux:/# amixer sset 'Headphone volume' 100%
+        Simple mixer control 'Headphone volume',0
+          Capabilities: volume volume-joined
+          Playback channels: Mono
+          Capture channels: Mono
+          Limits: 0 - 7
+          Mono: 7 [100%]
+    root@TinaLinux:/# aplay /mnt/UDISK/ok.wav 
+        Playing WAVE '/mnt/UDISK/ok.wav' : Signed 16 bit Little Endian, Rate 11025 Hz, Mono
+</pre><br>
+
+<p>
+<br><a href="../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
