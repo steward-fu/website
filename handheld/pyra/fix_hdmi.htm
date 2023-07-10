@@ -1,0 +1,144 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Pyra</h3>
+<p><b>解決"drivers/bus/omap_l3_noc.c:147 l3_interrupt_handler"問題</b></p>
+<hr size="1">
+<p>
+問題如下：
+</p>
+<pre>
+[    4.833229] ------------[ cut here ]------------
+[    4.833234] WARNING: CPU: 0 PID: 5 at drivers/bus/omap_l3_noc.c:147 l3_interrupt_handler+0x254/0x374
+[    4.833242] 44000000.ocp:L3 Custom Error: MASTER MPU TARGET L4WAKEUP (Idle): Data Access in User mode during Functional access
+[    4.833247] Modules linked in:
+[    4.833260] CPU: 0 PID: 5 Comm: kworker/0:0 Not tainted 5.6.19-letux-lpae-pyra+ #3
+[    4.833260] Hardware name: Generic OMAP5 (Flattened Device Tree)
+[    4.833260] Workqueue: events deferred_probe_work_func
+[    4.833288] [&lt;c0212e60&gt;] (unwind_backtrace) from [&lt;c020d1a0&gt;] (show_stack+0x10/0x14)
+[    4.833290] [&lt;c020d1a0&gt;] (show_stack) from [&lt;c0c651c4&gt;] (dump_stack+0x94/0xa8)
+[    4.833295] [&lt;c0c651c4&gt;] (dump_stack) from [&lt;c023513c&gt;] (__warn+0xd0/0xf8)
+[    4.833310] [&lt;c023513c&gt;] (__warn) from [&lt;c023552c&gt;] (warn_slowpath_fmt+0x94/0xb8)
+[    4.833321] [&lt;c023552c&gt;] (warn_slowpath_fmt) from [&lt;c069615c&gt;] (l3_interrupt_handler+0x254/0x374)
+[    4.833321] [&lt;c069615c&gt;] (l3_interrupt_handler) from [&lt;c02907b4&gt;] (__handle_irq_event_percpu+0x58/0x29c)
+[    4.833323] [&lt;c02907b4&gt;] (__handle_irq_event_percpu) from [&lt;c0290a24&gt;] (handle_irq_event_percpu+0x2c/0x80)
+[    4.833333] [&lt;c0290a24&gt;] (handle_irq_event_percpu) from [&lt;c0290ab0&gt;] (handle_irq_event+0x38/0x5c)
+[    4.833346] [&lt;c0290ab0&gt;] (handle_irq_event) from [&lt;c0295044&gt;] (handle_fasteoi_irq+0xb8/0x168)
+[    4.833351] [&lt;c0295044&gt;] (handle_fasteoi_irq) from [&lt;c028fa34&gt;] (generic_handle_irq+0x24/0x34)
+[    4.833351] [&lt;c028fa34&gt;] (generic_handle_irq) from [&lt;c0290008&gt;] (__handle_domain_irq+0x5c/0xb4)
+[    4.833351] [&lt;c0290008&gt;] (__handle_domain_irq) from [&lt;c0694490&gt;] (gic_handle_irq+0x3c/0x78)
+[    4.833360] [&lt;c0694490&gt;] (gic_handle_irq) from [&lt;c0201ab8&gt;] (__irq_svc+0x58/0x8c)
+[    4.833367] Exception stack(0xed8f5830 to 0xed8f5878)
+[    4.833375] 5820:                                     ede41090 00000113 fce10194 00000003
+[    4.833382] 5840: edf7a840 00000001 c1203fc8 ec940c10 edf7a8c4 00000000 c0cf4b14 00000000
+[    4.833382] 5860: 00000194 ed8f5880 c07c9144 c0c83604 20000113 ffffffff
+[    4.833382] [&lt;c0201ab8&gt;] (__irq_svc) from [&lt;c0c83604&gt;] (_raw_spin_unlock_irqrestore+0x1c/0x4c)
+[    4.833392] [&lt;c0c83604&gt;] (_raw_spin_unlock_irqrestore) from [&lt;c07c9144&gt;] (w677l_regulator+0x58/0x64)
+[    4.833405] [&lt;c07c9144&gt;] (w677l_regulator) from [&lt;c07c94c8&gt;] (w677l_enable+0xf8/0x3dc)
+[    4.833412] [&lt;c07c94c8&gt;] (w677l_enable) from [&lt;c07ae688&gt;] (omapdss_device_enable+0x20/0x34)
+[    4.833412] [&lt;c07ae688&gt;] (omapdss_device_enable) from [&lt;c07cc8c4&gt;] (omap_encoder_enable+0x40/0x80)
+[    4.833420] [&lt;c07cc8c4&gt;] (omap_encoder_enable) from [&lt;c0774ae4&gt;] (drm_atomic_helper_commit_modeset_enables+0x23c/0x268)
+[    4.833434] [&lt;c0774ae4&gt;] (drm_atomic_helper_commit_modeset_enables) from [&lt;c07c9f9c&gt;] (omap_atomic_commit_tail+0x48/0xc0)
+[    4.833443] [&lt;c07c9f9c&gt;] (omap_atomic_commit_tail) from [&lt;c0775bfc&gt;] (commit_tail+0x9c/0x1b0)
+[    4.833443] [&lt;c0775bfc&gt;] (commit_tail) from [&lt;c0776800&gt;] (drm_atomic_helper_commit+0x134/0x158)
+[    4.833444] [&lt;c0776800&gt;] (drm_atomic_helper_commit) from [&lt;c07a3454&gt;] (drm_client_modeset_commit_atomic+0x16c/0x210)
+[    4.833459] [&lt;c07a3454&gt;] (drm_client_modeset_commit_atomic) from [&lt;c07a3550&gt;] (drm_client_modeset_commit_force+0x58/0x184)
+[    4.833473] [&lt;c07a3550&gt;] (drm_client_modeset_commit_force) from [&lt;c077af44&gt;] (drm_fb_helper_restore_fbdev_mode_unlocked+0x54/0x98)
+[    4.833473] [&lt;c077af44&gt;] (drm_fb_helper_restore_fbdev_mode_unlocked) from [&lt;c077afb8&gt;] (drm_fb_helper_set_par+0x30/0x5c)
+[    4.833473] [&lt;c077afb8&gt;] (drm_fb_helper_set_par) from [&lt;c06eeb6c&gt;] (fbcon_init+0x3e0/0x578)
+[    4.833487] [&lt;c06eeb6c&gt;] (fbcon_init) from [&lt;c073bb2c&gt;] (visual_init+0xbc/0x104)
+[    4.833502] [&lt;c073bb2c&gt;] (visual_init) from [&lt;c073d00c&gt;] (do_bind_con_driver+0x1e0/0x3bc)
+[    4.833504] [&lt;c073d00c&gt;] (do_bind_con_driver) from [&lt;c073d538&gt;] (do_take_over_console+0x138/0x1d4)
+[    4.833504] [&lt;c073d538&gt;] (do_take_over_console) from [&lt;c06eb254&gt;] (do_fbcon_takeover+0x74/0xd4)
+[    4.833511] [&lt;c06eb254&gt;] (do_fbcon_takeover) from [&lt;c06e2ec4&gt;] (register_framebuffer+0x204/0x2dc)
+[    4.833524] [&lt;c06e2ec4&gt;] (register_framebuffer) from [&lt;c077aa4c&gt;] (__drm_fb_helper_initial_config_and_unlock+0x404/0x5ac)
+[    4.833534] [&lt;c077aa4c&gt;] (__drm_fb_helper_initial_config_and_unlock) from [&lt;c07d2b20&gt;] (omap_fbdev_init+0x8c/0xc4)
+[    4.833534] [&lt;c07d2b20&gt;] (omap_fbdev_init) from [&lt;c07ca500&gt;] (pdev_probe+0x4ec/0x788)
+[    4.833534] [&lt;c07ca500&gt;] (pdev_probe) from [&lt;c07df994&gt;] (platform_drv_probe+0x48/0x98)
+[    4.833548] [&lt;c07df994&gt;] (platform_drv_probe) from [&lt;c07dd49c&gt;] (really_probe+0x1c8/0x458)
+[    4.833561] [&lt;c07dd49c&gt;] (really_probe) from [&lt;c07dd9e0&gt;] (driver_probe_device+0x158/0x1b0)
+[    4.833565] [&lt;c07dd9e0&gt;] (driver_probe_device) from [&lt;c07db6e8&gt;] (bus_for_each_drv+0x80/0xc4)
+[    4.833565] [&lt;c07db6e8&gt;] (bus_for_each_drv) from [&lt;c07dd240&gt;] (__device_attach+0xd0/0x15c)
+[    4.833569] [&lt;c07dd240&gt;] (__device_attach) from [&lt;c07dc454&gt;] (bus_probe_device+0x84/0x8c)
+[    4.833582] [&lt;c07dc454&gt;] (bus_probe_device) from [&lt;c07d8e2c&gt;] (device_add+0x65c/0x798)
+[    4.833594] [&lt;c07d8e2c&gt;] (device_add) from [&lt;c07df764&gt;] (platform_device_add+0x130/0x23c)
+[    4.833595] [&lt;c07df764&gt;] (platform_device_add) from [&lt;c07e02d4&gt;] (platform_device_register_full+0xd0/0x110)
+[    4.833595] [&lt;c07e02d4&gt;] (platform_device_register_full) from [&lt;c07af820&gt;] (dss_bind+0x80/0xa8)
+[    4.833603] [&lt;c07af820&gt;] (dss_bind) from [&lt;c07d659c&gt;] (try_to_bring_up_master+0x1ec/0x2a8)
+[    4.833614] [&lt;c07d659c&gt;] (try_to_bring_up_master) from [&lt;c07d66f4&gt;] (__component_add+0x9c/0x168)
+[    4.833625] [&lt;c07d66f4&gt;] (__component_add) from [&lt;c07c6fd0&gt;] (hdmi5_probe+0x1ec/0x244)
+[    4.833626] [&lt;c07c6fd0&gt;] (hdmi5_probe) from [&lt;c07df994&gt;] (platform_drv_probe+0x48/0x98)
+[    4.833626] [&lt;c07df994&gt;] (platform_drv_probe) from [&lt;c07dd49c&gt;] (really_probe+0x1c8/0x458)
+[    4.833628] [&lt;c07dd49c&gt;] (really_probe) from [&lt;c07dd9e0&gt;] (driver_probe_device+0x158/0x1b0)
+[    4.833639] [&lt;c07dd9e0&gt;] (driver_probe_device) from [&lt;c07db6e8&gt;] (bus_for_each_drv+0x80/0xc4)
+[    4.833653] [&lt;c07db6e8&gt;] (bus_for_each_drv) from [&lt;c07dd240&gt;] (__device_attach+0xd0/0x15c)
+[    4.833656] [&lt;c07dd240&gt;] (__device_attach) from [&lt;c07dc454&gt;] (bus_probe_device+0x84/0x8c)
+[    4.833656] [&lt;c07dc454&gt;] (bus_probe_device) from [&lt;c07dc980&gt;] (deferred_probe_work_func+0x78/0xb8)
+[    4.833664] [&lt;c07dc980&gt;] (deferred_probe_work_func) from [&lt;c025102c&gt;] (process_one_work+0x22c/0x5c8)
+[    4.833676] [&lt;c025102c&gt;] (process_one_work) from [&lt;c025165c&gt;] (worker_thread+0x294/0x598)
+[    4.833687] [&lt;c025165c&gt;] (worker_thread) from [&lt;c0257950&gt;] (kthread+0x150/0x154)
+[    4.833687] [&lt;c0257950&gt;] (kthread) from [&lt;c02010d8&gt;] (ret_from_fork+0x14/0x3c)
+[    4.833687] Exception stack(0xed8f5fb0 to 0xed8f5ff8)
+[    4.833687] 5fa0:                                     00000000 00000000 00000000 00000000
+[    4.833692] 5fc0: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+[    4.833699] 5fe0: 00000000 00000000 00000000 00000000 00000013 00000000
+[    4.833705] ---[ end trace 8d164100dde24847 ]---
+</pre><br>
+
+<p>
+解法如下：<br>
+<img src="fix_hdmi/1.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../handheld.htm">返回上一頁</a>
+</p>
+</div>
+</div>
+</div>
+</body>
+</html>
