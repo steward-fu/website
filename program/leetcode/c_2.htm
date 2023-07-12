@@ -54,83 +54,53 @@
 題目：<br>
 <img src="c_2/1.jpg" class="maxSize"><br><br>
 
-答案：
+解答：
 </p>
 <pre class="brush:cpp">
-struct ListNode* addTwoNumbers(struct ListNode *l1, struct ListNode *l2)
+struct ListNode* addTwoNumbers(struct ListNode* l1, struct ListNode* l2)
 {
-    struct ListNode *t1=l1;
-    struct ListNode *t2=l2;
-    struct ListNode *tt1=NULL;
-    struct ListNode *tt2=NULL;
-    int m1=0, m2=0;
-    int c1=0, c2=0, n=0;
-    
-    while(1){
-        c1 = 0;
-        c2 = 0;
-        if(t1){
-            m1+= 1;
-            c1 = t1-&gt;val;
-        }
-        
-        if(t2){
-            m2+= 1;
-            c2 = t2-&gt;val;
-        }
-        
-        if(t1 || t2){
-            if(t1){
-                t1-&gt;val = c1 + c2 + n;
-            }
-            if(t2){
-                t2-&gt;val = c1 + c2 + n;
-            }
-            n = 0;
-        }
-        
-        if(t1 &amp;&amp; (t1-&gt;val &gt;= 10)){
-            t1-&gt;val-= 10;
-            n = 1;
-        }
-        if(t2 &amp;&amp; (t2-&gt;val &gt;= 10)){
-            t2-&gt;val-= 10;
-            n = 1;
-        }
-        
-        if(t1){
-            tt1 = t1;
-            t1 = t1-&gt;next;
-        }
-        
-        if(t2){
-            tt2 = t2;
-            t2 = t2-&gt;next;
+    int c0 = 0, c1 = 0, cc = 0;
+    struct ListNode *r = l1 ? l1 : l2 ? l2 : NULL;
+    struct ListNode *t = r;
+
+    while (t) {
+        if (l1) {
+            c0 = l1-&gt;val;
+            l1 = l1-&gt;next;
         }
 
-        if((t1 == NULL) &amp;&amp; (t2 == NULL)){
-            if(n &gt; 0){
-                if(m1 &gt; m2){
-                    tt1-&gt;next = l2;
-                    tt1-&gt;next-&gt;val = n;
-                    tt1-&gt;next-&gt;next = NULL;
-                }
-                else{
-                    tt2-&gt;next = l1;
-                    tt2-&gt;next-&gt;val = n;
-                    tt2-&gt;next-&gt;next = NULL;
-                }
-            }
+        if (l2) {
+            c1 = l2-&gt;val;
+            l2 = l2-&gt;next;
+        }
+
+        t-&gt;val = c0 + c1 + cc;
+        c0 = 0;
+        c1 = 0;
+        cc = 0;
+        if(t-&gt;val &gt;= 10){
+            t-&gt;val-= 10;
+            cc = 1;
+        }
+
+        t-&gt;next = l1 ? l1 : l2 ? l2 : NULL;
+        if (t-&gt;next == NULL) {
             break;
         }
+        t = t-&gt;next;
     }
-    
-    if(m1 &gt; m2){
-        return l1;
+
+    if (cc) {
+        t-&gt;next = malloc(sizeof(struct ListNode));
+        t-&gt;next-&gt;val = cc;
+        t-&gt;next-&gt;next = NULL;
     }
-    return l2;
+    return r;
 }
-</pre><br>
+</pre>
+<p>
+P.S. 由於LeetCode的編譯器有問題，Workaround是透過變數做累加
+</p>
 
 <p>
 <br><a href="../../program.htm">返回上一頁</a>
