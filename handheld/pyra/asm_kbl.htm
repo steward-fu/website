@@ -1,0 +1,226 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Pyra &gt;&gt; Assembly</h3>
+<p><b>Keyboard Backlight</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://github.com/steward-fu/pdf/blob/master/omap5432/rm.pdf">pdf</a><br>
+2. <a href="https://pyra-handheld.com/wiki/index.php?title=Main_Page">wiki</a><br><br>
+
+鍵盤背光電路如下，PERIPHERAL-RESET是連接到MCSPI1_CS1(GPIO5_144)，KEYPAD-BL是連接到PWM(GPIO8_230)<br>
+<img src="asm_kbl/1.jpg" class="maxSize"><br><br>
+
+MCSPI1_CS1_MUXMODE = 6 (GPIO5_144)<br>
+<img src="asm_kbl/2.jpg" class="maxSize"><br><br>
+
+TIMER8_PWM_EVT_MUXMODE = 6 (GPIO8_230)<br>
+<img src="asm_kbl/3.jpg" class="maxSize"><br><br>
+
+GPIO5 Clock<br>
+<img src="asm_kbl/4.jpg" class="maxSize"><br><br>
+
+GPIO8 Clock<br>
+<img src="asm_kbl/5.jpg" class="maxSize"><br><br>
+
+GPIO_OE<br>
+<img src="asm_kbl/6.jpg" class="maxSize"><br><br>
+
+GPIO_DATAOUT<br>
+<img src="asm_kbl/7.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .global _start
+
+    .equ CM_L4PER_GPIO5_CLKCTRL, 0x4a009078
+    .equ CM_L4PER_GPIO8_CLKCTRL, 0x4a009118
+
+    .equ CONTROL_CORE_PAD0_MCSPI1_CS1_PAD1_I2C5_SCL,     0x4a0029c4
+    .equ CONTROL_CORE_PAD0_TIMER8_PWM_EVT_PAD1_I2C3_SCL, 0x4a002978
+
+    .equ GPIO5_OE, 0x4805b134
+    .equ GPIO8_OE, 0x48053134
+
+    .equ GPIO5_DATAOUT, 0x4805b13c
+    .equ GPIO8_DATAOUT, 0x4805313c
+ 
+    .arm
+    .text
+_start:
+    b reset
+    b .
+    b .
+    b .
+    b .
+    b .
+    b .
+    b .
+     
+reset:
+    ldr r0, =CM_L4PER_GPIO5_CLKCTRL
+    ldr r1, =(1 &lt;&lt; 0)
+    str r1, [r0]
+
+    ldr r0, =CONTROL_CORE_PAD0_MCSPI1_CS1_PAD1_I2C5_SCL
+    ldr r1, =6
+    str r1, [r0]
+
+    ldr r0, =CM_L4PER_GPIO8_CLKCTRL
+    ldr r1, =(1 &lt;&lt; 0)
+    str r1, [r0]
+    
+    ldr r0, =CONTROL_CORE_PAD0_TIMER8_PWM_EVT_PAD1_I2C3_SCL
+    ldr r1, =6
+    str r1, [r0]
+ 
+    ldr r0, =GPIO5_OE
+    ldr r1, =0
+    str r1, [r0]
+
+    ldr r0, =GPIO5_DATAOUT
+    ldr r1, =0xffffffff
+    str r1, [r0]
+
+    ldr r0, =GPIO8_OE
+    ldr r1, =0
+    str r1, [r0]
+
+    ldr r0, =GPIO8_DATAOUT
+    ldr r1, =0xffffffff
+    ldr r2, =0x00000000
+0:
+    eor r2, r1
+    str r2, [r0]
+    ldr r3, =50000000
+1:
+    subs r3, #1
+    bne 1b
+    b 0b
+    .end
+</pre><br>
+
+<p>
+main.ld
+</p>
+<pre>
+MEMORY
+{
+  RAM : ORIGIN = 0, LENGTH = 32M
+}
+
+SECTIONS
+{
+  .text : { *(.text*) } &gt; RAM
+  .data : { *(.data*) } &gt; RAM
+}
+</pre><br>
+
+<p>
+Makefile
+</p>
+<pre>
+SD=/dev/sdX
+
+all:
+	arm-linux-gnueabihf-as -mcpu=cortex-a7 -o main.o main.s
+	arm-linux-gnueabihf-ld -T main.ld -o main.elf main.o
+	arm-linux-gnueabihf-objcopy -O binary main.elf main.bin
+
+sd:
+	sudo dd if=/dev/zero of=${SD} bs=1M count=10
+	sudo dd if=MLO of=${SD} count=2 seek=1 bs=128k
+	sudo dd if=main.bin of=${SD} count=4 seek=1 bs=384k
+
+clean:
+	rm -rf main.bin main.o main.elf
+</pre>
+<p>
+P.S. <b>/dev/sdX</b>是SDCard位置<br><br>
+
+編譯並且燒錄到SDCard
+</p>
+<pre>
+$ wget https://github.com/steward-fu/archives/releases/download/pyra/MLO
+
+$ make
+    arm-linux-gnueabihf-as -mcpu=cortex-a7 -o main.o main.s
+    arm-linux-gnueabihf-ld -T main.ld -o main.elf main.o
+    arm-linux-gnueabihf-objcopy -O binary main.elf main.bin
+
+$ make sd
+    sudo dd if=/dev/zero of=/dev/sdb bs=1M count=10
+    10+0 records in
+    10+0 records out
+    10485760 bytes (10 MB, 10 MiB) copied, 2.61366 s, 4.0 MB/s
+    sudo dd if=MLO of=/dev/sdb count=2 seek=1 bs=128k
+    0+1 records in
+    0+1 records out
+    66172 bytes (66 kB, 65 KiB) copied, 0.00214024 s, 30.9 MB/s
+    sudo dd if=main.bin of=/dev/sdb count=4 seek=1 bs=384k
+    0+1 records in
+    0+1 records out
+    188 bytes copied, 0.00200567 s, 93.7 kB/s
+</pre>
+<p>
+P.S. MLO是OMAP的X-Loader，司徒是直接從U-Boot編譯後，拿來使用的<br><br>
+
+將SDCard插入到Pyra左邊的卡槽，開機後，鍵盤背光就會開始閃爍<br>
+<img src="asm_kbl/8.jpg" class="maxSize"><br>
+<img src="asm_kbl/9.jpg" class="maxSize">
+</p>
+
+<p>
+<br><a href="../../handheld.htm">返回上一頁</a>
+</p>
+</div>
+</div>
+</div>
+</body>
+</html>
