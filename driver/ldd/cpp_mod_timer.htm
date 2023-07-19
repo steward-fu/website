@@ -61,48 +61,48 @@ Timer是一種Callback機制，提供使用者設定片段時間後觸發的方�
 main.c
 </p>
 <pre class="brush:cpp">
-#include &lt;glinux/init.h&gt;g
-#include &lt;glinux/device.h&gt;g
-#include &lt;glinux/module.h&gt;g
-#include &lt;glinux/delay.h&gt;g
-#include &lt;glinux/kernel.h&gt;g
-#include &lt;glinux/errno.h&gt;g
-#include &lt;glinux/mm.h&gt;g
-#include &lt;glinux/gpio.h&gt;g
-
+#include &lt;linux/init.h&gt;
+#include &lt;linux/device.h&gt;
+#include &lt;linux/module.h&gt;
+#include &lt;linux/delay.h&gt;
+#include &lt;linux/kernel.h&gt;
+#include &lt;linux/errno.h&gt;
+#include &lt;linux/mm.h&gt;
+#include &lt;linux/gpio.h&gt;
+ 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Steward Fu");
 MODULE_DESCRIPTION("Linux Driver");
- 
+  
 #define USR3_LED ((32 * 1) + 24)
-
+ 
 static int period=300;
 static struct timer_list timer={0};
-
+ 
 void timer_handler(unsigned long unused)
 {
   static int state=0;
-     
+      
   state^= 1;
   gpio_set_value(USR3_LED, state);
-  mod_timer(&amp;gtimer, jiffies + msecs_to_jiffies(period));
+  mod_timer(&amp;timer, jiffies + msecs_to_jiffies(period));
 }
- 
+  
 int ldd_init(void)
 {
   gpio_request(USR3_LED, "USR3");
   gpio_direction_output(USR3_LED, 1);
-  setup_timer(&amp;gtimer, timer_handler, 0);
-  mod_timer(&amp;gtimer, jiffies + msecs_to_jiffies(period));
+  setup_timer(&amp;timer, timer_handler, 0);
+  mod_timer(&amp;timer, jiffies + msecs_to_jiffies(period));
   return 0;
 }
- 
+  
 void ldd_exit(void)
 {
-  del_timer(&amp;gtimer);
+  del_timer(&amp;timer);
   gpio_free(USR3_LED);
 }
- 
+  
 module_init(ldd_init);
 module_exit(ldd_exit);
 </pre>
