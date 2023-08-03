@@ -1,0 +1,98 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>iriver Dicple D88</h3>
+<p><b>reverse kernel</b></p>
+<hr size="1">
+<p>
+unpack uImage
+</p>
+<pre>
+$ dd if=uImage of=kernel.bin bs=1 skip=64
+$ zcat kernel.bin &gt; body
+</pre><br>
+
+<p>
+d88 kallsym
+</p>
+<pre>
+# cat /proc/kallsyms | head
+    80010400 t run_init_process
+    80010400 T _stext
+    80010418 t init_post
+    80010500 t try_name
+    80010718 T name_to_dev_t
+    80010a90 T calibrate_delay
+    80010c60 T prom_getcmdline
+    80010c6c T prom_getenv
+    80010c74 T str2hexnum
+    80010cc8 T str2eaddr
+
+# cat /proc/kallsyms | grep d8key_init
+    8033452c t d8key_init
+</pre><br>
+
+<p>
+開啟IDA Pro並且選擇mipsl<br>
+<img src="reverse/1.jpg" class="maxSize"><br><br>
+
+由於前面0x400是中斷表，因此，設定位址從0x80010000開始<br>
+<img src="reverse/2.jpg" class="maxSize"><br><br>
+
+0x8033452c = d8key_init<br>
+<img src="reverse/3.jpg" class="maxSize"><br>
+P.S. 參考kallsym就可以開始逆向分析
+</p>
+
+<p>
+<br><a href="../../umpc.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
