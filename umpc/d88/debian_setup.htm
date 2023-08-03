@@ -1,0 +1,98 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>iriver Dicple D88 &gt;&gt; Debian</h3>
+<p><b>安裝系統</b></p>
+<hr size="1">
+<p>
+參考資料：<br>
+1. <a href="https://github.com/steward-fu/archives/releases?q=d88&expanded=true">github</a><br><br>
+
+步驟如下：
+</p>
+<pre>
+$ wget https://ftp-master.debian.org/keys/release-6.asc -qO- | gpg --import --no-default-keyring --keyring ./debian-release-6.gpg
+$ sudo debootstrap --keyring=./debian-release-6.gpg --arch mipsel --foreign squeeze squeeze http://archive.debian.org/debian/
+$ sudo chroot squeeze /debootstrap/debootstrap --second-stage
+
+$ sudo mount -o bind /dev squeeze/dev
+$ sudo mount -o bind /sys squeeze/sys
+$ sudo mount -o bind /proc squeeze/proc
+
+$ sudo chroot squeeze
+# passwd
+# adduser user
+# nano /etc/apt/sources.list
+    deb http://archive.debian.org/debian squeeze main contrib non-free
+
+# apt-get update
+# apt-get install lxde obconf openbox lxde-common xbindkeys xdotool vim sudo locales
+
+# nano /etc/inittab
+    #T0:23:respawn:/sbin/getty -L ttyS0 9600 vt100
+    T1:23:respawn:/sbin/getty -L ttyS1 57600 vt100
+
+# nano /etc/fstab
+    /swap.img none  swap  sw  0  0
+
+# dd if=/dev/zero of=/swap.img bs=1M count=512
+# mkswap /swap.img
+# exit
+
+$ sudo umount squeeze/dev
+$ sudo umount squeeze/sys
+$ sudo umount squeeze/proc
+</pre>
+
+<p>
+<br><a href="../../umpc.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
