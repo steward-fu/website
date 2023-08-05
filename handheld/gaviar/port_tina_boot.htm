@@ -1,0 +1,144 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Gaviar (小志掌機)</h3>
+<p><b>移植tina-linux bootloader</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://riscv.org/wp-content/uploads/2019/06/13.30-RISCV_OpenSBI_Deep_Dive_v5.pdf">opensbi</a><br><br>
+
+BOOT0、OpenSBI的UART腳位配置<br>
+<img src="port_tina_boot/1.jpg" class="maxSize"><br><br>
+
+U-Boot的UART腳位配置<br>
+<img src="port_tina_boot/2.jpg" class="maxSize"><br><br>
+
+U-Boot的MicroSD腳位配置<br>
+<img src="port_tina_boot/3.jpg" class="maxSize"><br><br>
+
+由於是Boot Loader移植，司徒有必要解說一下Boot Loader的用途是什麼，從下圖可以知道，最簡單的Boot Loader就是初始化RAM、關閉中斷、關閉Cache後，將Linux Kernel載入RAM，然後執行Linux Kernel，這就是Boot Loader的主要工作～<br>
+<img src="port_tina_boot/4.jpg" class="maxSize"><br><br>
+
+但是RISC-V的Boot Loader其實稍微複雜一點點，如下圖所示，主要有三個部份組成Boot Loader：LOADER(BOOT0)、OpenSBI、BOOTLAODER(U-Boot)<br>
+<img src="port_tina_boot/5.jpg" class="maxSize"><br><br>
+
+相較於ARM，RISC-V多了一個OpenSBI，那OpenSBI是什麼呢？其實OpenSBI主要用來做權限轉移，從低權限切到高權限執行硬體的相關操作，雖然這部份可以實作在Kernel中，不過RISC-V看來有想要抽象化硬體的概念，一旦將硬體抽象化，代表將來只要實作OpenSBI，就可以達到兼容執行在不同廠家的晶片上，不過司徒也是剛接觸RISC-V，既然大家都這樣使用，那就只好跟隨大家～<br>
+<img src="port_tina_boot/7.jpg" class="maxSize"><br><br>
+
+司徒畫了一張F133的啟動流程，用來對照一下<br>
+<img src="port_tina_boot/6.jpg" class="maxSize"><br>
+步驟1. 上電後，F133開始跑<br>
+步驟2. F133將晶片內部的BROM載入到SRAM，然後從SRAM開始跑<br>
+步驟3. BROM接著開始尋找可以使用的媒介，小志掌機只有MicroSD，因此，BROM會從MicroSD的8KB位址載入程式到SRAM執行<br>
+步驟4. F133第一個執行的程式是BOOT0<br>
+步驟5. BOOT0主要用來初始化RAM並且執行OpenSBI<br>
+步驟6. OpenSBI執行後，會載入U-Boot並且將控制權交給U-Boot<br>
+步驟7. U-Boot會從MicroSD載入Linux Kernel、Device Tree到RAM，接著執行Linux Kernel<br>
+步驟8. Linux Kernel會依據BOOTCMD載入rootfs並且將控制權交給init程式，init是Linux作業系統的第一個執行程式<br><br>
+
+由於BOOT0是第一個執行的程式，司徒額外畫了一個執行流程圖<br>
+<img src="port_tina_boot/8.jpg" class="maxSize"><br><br>
+
+雖然Boot Loader流程大致清楚，不過，司徒還是需要說一下，一開始提到的UART配置修改，究竟這些修改是設定到哪邊去呢？其實位於<b>lichee/brandy-2.0/spl/nboot/main/boot0_head.c</b>
+</p>
+<pre>
+const boot0_file_head_t  BT0_head = {
+    {
+        /* jump_instruction*/
+        JUMP_INSTRUCTION,
+        BOOT0_MAGIC,
+        STAMP_VALUE,
+#ifdef ALIGN_SIZE_8K
+        0x2000,
+#else
+        0x4000,
+#endif
+        sizeof(boot_file_head_t),
+        BOOT_PUB_HEAD_VERSION,
+        CONFIG_BOOT0_RET_ADDR,
+        CONFIG_BOOT0_RUN_ADDR,
+        0,
+        {
+        /*brom modify: nand-4bytes sdmmc-2bytes*/
+        0, 0, 0, 0, '4', '.', '0', 0
+        },
+    },
+
+    {
+        /*__u32 prvt_head_size;*/
+        0,
+        /*char prvt_head_vsn[4];*/
+        1,
+        0,/* power_mode */
+        {0},/* reserver[2]  */
+        /*unsigned int     dram_para[32] ;*/
+        {0},
+        /*__s32 uart_port;*/
+        0,
+        /*normal_gpio_cfg   uart_ctrl[2];*/
+        {
+        {6, 2, 4, 1, 1, 0, {0} },/*PB8: 4--RX*/
+        {6, 4, 4, 1, 1, 0, {0} },/*PB9: 4--TX*/
+        },
+        /*__s32 enable_jtag;*/
+        0,
+        /*normal_gpio_cfg    jtag_gpio[5];*/
+        {{0}, {0}, {0}, {0}, {0} },
+</pre>
+<p>
+Tina-Linux使用Patch方式，將配置的數值更新到boot0_header，雖然作法粗暴，不過卻是最簡單的配置替換作法，缺點就是不好獨立拆開使用
+</p>
+
+<p>
+<br><a href="../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
