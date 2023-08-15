@@ -21,10 +21,10 @@
 
   function Brush()
   {
-    var my_type = 'console';
+    var my_type = 'console Promise';
     var my_constant = 'test';
-    var my_keyword = 'break case catch continue default delete do else false for function if in instanceof new null return super switch this throw true try typeof var while with';
-    var my_function = 'log ActiveXObject OpenTextFile WriteLine Close';
+    var my_keyword = 'await async require break case catch continue default delete do else false for function if in instanceof new null return super switch this throw true try typeof var while with';
+    var my_function = 'list log reject start resolve ActiveXObject OpenTextFile WriteLine Close';
     var r = SyntaxHighlighter.regexLib;
     this.regexList = [
       { regex: r.multiLineDoubleQuotedString, css: 'string' },
