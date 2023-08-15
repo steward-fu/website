@@ -24,7 +24,7 @@
     var my_type = 'Applet Graphics';
     var my_constant = 'java.awt.Graphics java.applet.Applet';
     var my_keyword = 'abstract assert boolean break byte case catch char class const continue default do double else enum extends false final finally float for goto if implements import instanceof int interface long native new null package private protected public return short static strictfp super switch synchronized this throw throws true transient try void volatile while';
-    var my_function = 'paint drawString';
+    var my_function = 'paint drawString main';
 
     this.regexList = [
       { regex: SyntaxHighlighter.regexLib.singleLineCComments, css: 'comments' },
