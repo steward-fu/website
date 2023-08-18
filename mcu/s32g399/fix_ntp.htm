@@ -1,0 +1,155 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>S32G399</h3>
+<p><b>解決"ntpd -gq resulted in error"問題</b></p>
+<hr size="1">
+<p>
+問題如下：
+</p>
+<pre>
+root@v2xdomu:~# python3 ~/ota/demo/update_monitor.py
+    ╭──────────────────────────────────────────────────────────────────────────────╮
+    │ 0:00:03 The network interface was configured.                                │
+    │ 0:01:07 Synchronizing the system datetime with the ntp servers ...           │
+    ╰──────────────────────────────────────────────────────────────────────────────╯
+    0:01:10 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ Preparing
+    Traceback (most recent call last):
+      File "/home/root/ota/demo/update_monitor.py", line 647, in <module>
+        main()
+      File "/home/root/ota/demo/update_monitor.py", line 642, in main
+        UpdateMonitor(**vars(args)).run()
+      File "/home/root/ota/demo/update_monitor.py", line 565, in run
+        self.sync_system_datetime()
+      File "/home/root/ota/demo/update_monitor.py", line 512, in sync_system_datetime
+        UpdateMonitor.execute_command(f"ssh root@{DOM0_IP} {SSH_CONNECTION_PARAMS} '{sync_datetime_cmd}'")
+      File "/home/root/ota/demo/update_monitor.py", line 502, in execute_command
+        raise Exception(err_msg)
+    Exception: Execution of command ssh root@10.0.100.10 -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null 'pkill ntpd || true; ntpd -gq' resulted in error.
+    stdout: b'18 Aug 07:31:50 ntpd[6909]: ntpd 4.2.8p15@1.3728-o Tue Jun 23 09:22:17 UTC 2020 (2): Starting
+    18 Aug 07:31:50 ntpd[6909]: Command line: ntpd -gq
+    18 Aug 07:31:50 ntpd[6909]: ------------------
+    ----------------------------------
+    18 Aug 07:31:50 ntpd[6909]: ntp-4 is maintained by Network Time Foundation,
+    18 Aug 07:31:50 ntpd[6909]: Inc. (NTF), a non-profit 501(c)(3) public-benefit
+    18 Aug 07:31:50 ntpd[6909]: corporation.  Support and training for ntp-4 are
+    18 Aug 07:31:51 ntpd[6909]: available at https://www.nwtime.org/support
+    18 Aug 07:31:51 ntpd[6909]: -----------------------------------
+    -----------------
+    18 Aug 07:31:51 ntpd[6909]: proto: precision = 0.200 usec (-22)
+    18 Aug 07:31:51 ntpd[6909]: basedate set to 2020-06-11
+    18 Aug 07:31:51 ntpd[6909]: gps base set to 2020-06-14 (week 2110)
+    18 Aug 07:31:51 ntpd[6909]: Listen and drop on 0 v6wildcard [::]:123
+    18 Aug 07:31:51 ntpd[6909]: Listen and drop on 1 v4wildcard 0.0.0.0:123
+    18 Aug 07:31:51 ntpd[6909]: Listen normally on 2 lo 127.0.0.1:123
+    18 Aug 07:31:51 ntpd[6909]: Listen normally on 3 dummy0 10.255.255.254:123
+    18 Aug 07:31:51 ntpd[6909]: Listen normally on 4 xenbr0 192.168.1.40:123
+    18 Aug 07:31:51 ntpd[6909]: Listen normally on 5 v2xbr 10.0.100.10:123
+    18 Aug 07:31:51 ntpd[6909]: Listen normally on 6 flannel.1 10.42.1.0:123
+    18 Aug 07:31:51 ntpd[6909]: Listen normally on 7 lo [::1]:123
+    18 Aug 07:31:51 ntpd[6909]: Listen normally on 8 eth0 [fe80::383e:9fff:fe68:613b%4]:123
+    18 Aug 07:31:51 ntpd[6909]: Listen normally on 9 dummy0 [fe80::c48:c3ff:feea:6fbe%6]:123
+    18 Aug 07:31:51 ntpd[6909]: Listen normally on 10 xenbr0 [fe80::383e:9fff:fe68:613b%7]:123
+    18 Aug 07:31:51 ntpd[6909]: Listen normally on 11 v2xbr [fe80::4c2:e7ff:fe1e:aa76%8]:123
+    18 Aug 07:31:51 ntpd[6909]: Listen normally on 12 vif1.0 [fe80::fcff:ffff:feff:ffff%9]:123
+    18 Aug 07:31:51 ntpd[6909]: Listen normally on 13 vif1.1 [fe80::fcff:ffff:feff:ffff%10]:123
+    18 Aug 07:31:51 ntpd[6909]: Listen normally on 14 flannel.1 [fe80::c859:55ff:fe9c:f260%11]:123
+    18 Aug 07:31:51 ntpd[6909]: Listening on routing socket on fd #31 for interface updates'
+    stderr: b"Warning: Permanently added '10.0.100.10' (ECDSA) to the list of known hosts."
+    File=/dev/null 'pkill ntpd || true; ntpd -gq'HostKeyChecking=no -oUserKnownHostsF
+    Warning: Permanently added '10.0.100.10' (ECDSA) to the list of known hosts.
+</pre><br>
+
+<p>
+解法(dom0)：
+</p>
+<pre>
+# vim /etc/ntp.conf
+    driftfile /var/lib/ntp/ntp.drift
+
+    server 0.pool.ntp.org
+    server 1.pool.ntp.org
+    server 2.pool.ntp.org
+    server 3.pool.ntp.org
+
+    server 134.27.184.44
+    server 165.114.89.6
+    server 134.27.69.6
+
+    server tock.stdtime.gov.tw
+    server watch.stdtime.gov.tw
+    server time.stdtime.gov.tw
+    server clock.stdtime.gov.tw
+    server tick.stdtime.gov.tw
+
+# ntpd -gq
+</pre>
+
+<p>
+解法(v2xdomu)：
+</p>
+<pre>
+# vim ~/ota/demo/update_monitor.py
+    @staticmethod
+        def sync_system_datetime():
+            ''' Force a system datetime update on both dom0 and domU by restarting tthe ntp daemon. '''
+            sync_datetime_cmd = 'pkill ntpd || true; ntpd -gq'
+
+            #UpdateMonitor.execute_command(sync_datetime_cmd)
+            #UpdateMonitor.execute_command(f"ssh root@{DOM0_IP} {SSH_CONNECTION_PARAAMS} '{sync_datetime_cmd}'")
+
+# python3 ~/ota/demo/update_monitor.py
+</pre><br>
+
+<p>
+<br><a href="../../mcu.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
