@@ -1,0 +1,111 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Debian &gt;&gt; Android</h3>
+<p><b>virtual adb device</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://blog.csdn.net/pwl999/article/details/121873236">pwl999</a><br>
+2. <a href="https://www.cnblogs.com/zengjfgit/p/6289873.html">zengjfgit</a><br>
+3. <a href="https://github.com/kiddlu/android-adbd-for-linux">android-adbd-for-linux</a><br>
+4. <a href="https://tzaumin.blogspot.com/2017/12/linuxandroid-adb-toolusbconsole.html">linuxandroid-adb-toolusbconsole</a><br>
+5. <a href="https://www.rich-informatik.de/blog/how-to-fix-adb-devices-message-unauthorized-device-on-macos">how-to-fix-adb-devices-message-unauthorized-device-on-macos</a><br><br>
+
+<b>使用情境：</b><br>
+在macOS下，透過adb連接到Ubuntu 20.04 x64(Virtualbox)<br><br>
+
+Ubuntu 20.04 (192.168.15.221)
+</p>
+<pre>
+$ sudo modprobe g_ffs idVendor=0x18d1 idProduct=0x4e42 iSerialNumber="buildroot"
+$ sudo mkdir -p /dev/usb-ffs/adb
+$ sudo mount -t functionfs adb /dev/usb-ffs/adb -o uid=2000,gid=2000
+
+$ cd
+$ git clone https://github.com/kiddlu/android-adbd-for-linux
+$ cd android-adbd-for-linux
+$ echo "" &gt; cross.cmake
+$ vim adbd/adb.c
+    int SIMPLE_AUTH = 1;
+
+$ mkdir build
+$ cd build
+$ cmake ..
+$ make -j4
+$ ./adbd
+
+$ netstat -l | grep 5555
+    tcp        0      0 0.0.0.0:5555            0.0.0.0:*               LISTEN
+</pre><br>
+
+<p>
+macOS (建立SSH Tunnel)
+</p>
+<pre>
+$ ssh -L 127.0.0.1:5555:192.168.15.221:5555 user@192.168.15.221
+</pre><br>
+
+<p>
+macOS (連接Ubuntu adb device)
+</p>
+<pre>
+$ rm ~/.android/adbkey
+$ adb kill-server
+$ adb devices
+    List of devices attached
+    emulator-5554    device
+</pre><br>
+
+<p>
+<br><a href="../../system.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
