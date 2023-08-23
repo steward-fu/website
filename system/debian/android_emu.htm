@@ -1,0 +1,138 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>Debian &gt;&gt; Android</h3>
+<p><b>android emulator</b></p>
+<hr size="1">
+<p>
+參考資訊：<br>
+1. <a href="https://gist.github.com/nhtua/2d294f276dc1e110a7ac14d69c37904f">nhtua</a><br><br>
+
+00.install-android-sdk.sh
+</p>
+<pre>
+#!/bin/bash -i
+#using shebang with -i to enable interactive mode (auto load .bashrc)
+
+set -e #stop immediately if any error happens
+
+# Install Open SDK
+apt update
+apt install openjdk-8-jdk -y
+update-java-alternatives --set java-1.8.0-openjdk-amd64
+java -version
+
+# Install SDK Manager
+# you can find this file at https://developer.android.com/studio/index.html#downloads - section command line only
+cd ~ &amp;&amp; wget https://dl.google.com/android/repository/sdk-tools-linux-4333796.zip
+ANDROID_HOME=/opt/androidsdk
+mkdir -p $ANDROID_HOME
+apt install unzip -y &amp;&amp; unzip sdk-tools-linux-4333796.zip -d $ANDROID_HOME
+
+echo "export ANDROID_HOME=$ANDROID_HOME" &gt;&gt; ~/.bashrc
+echo 'export SDK=$ANDROID_HOME' &gt;&gt; ~/.bashrc
+echo 'export PATH=$SDK/emulator:$SDK/tools:$SDK/tools/bin:$SDK/platform-tools:$PATH' &gt;&gt; ~/.bashrc
+source ~/.bashrc
+
+# Install Android Image version 28
+yes | sdkmanager "platform-tools" "platforms;android-28" "emulator"
+yes | sdkmanager "system-images;android-28;google_apis;x86_64"
+emulator -version
+
+echo "INSTALL ANDROID SDK DONE!"
+echo "run 01.emulator-up.sh [new device name] to start emulator"
+</pre><br>
+
+<p>
+01.emulator-up.sh
+</p>
+<pre>
+#!/bin/bash -i
+#using shebang with -i to enable interactive mode (auto load .bashrc)
+#this script was inspired from https://docs.travis-ci.com/user/languages/android/
+
+set -e #stop immediately if any error happens
+
+avd_name=$1
+
+if [[ -z "$avd_name" ]]; then
+  avd_name="avd28"
+fi
+
+#check if emulator work well
+emulator -version
+
+# create virtual device, default using Android 9 Pie image (API Level 28)
+echo no | avdmanager create avd -n avd28 -k "system-images;android-28;google_apis;x86_64" --force
+
+# start the emulator
+emulator -avd avd28 -no-audio -no-window &amp;
+
+# show connected virtual device
+adb devices
+</pre><br>
+
+<p>
+執行
+</p>
+<pre>
+$ chmod a+x 00* 01*
+$ sudo ./00.install-android-sdk.sh
+$ sudo ./01.emulator-up.sh
+$ adb devices
+    List of devices attached
+    emulator-5554	offline
+</pre><br>
+
+<p>
+<br><a href="../../system.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
