@@ -45,39 +45,42 @@
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
 <h3>Java &gt;&gt; Node.js</h3>
-<p><b>ping</b></p>
+<p><b>yaml</b></p>
 <hr size="1">
 <p>
 參考資訊：<br>
-1. <a href="https://blog.csdn.net/shunzi2016/article/details/117533724">csdn</a><br><br>
+1. <a href="https://www.npmjs.com/package/js-yaml">js-yaml</a><br><br>
 
 main.js
 </p>
 <pre class="brush:javascript">
-var child = require('child_process');
+var fs = require('fs');
+var yaml = require('js-yaml');
 
-async function start(client_ip) {
-    var conn = false;
+const yfile = yaml.load(fs.readFileSync('test.yaml', 'utf8'));
 
-    await new Promise((resolve, reject) =&gt; {
-        var ping = child.exec(`ping -c 30 ${client_ip}`);
-        ping.stdout.on('data', function(data) {
-            data = data.toString(data);
-            
-            if (data.indexOf('64 bytes from') &gt; -1) {
-                conn = true;
-            }
+Object.keys(yfile).forEach(k0 =&gt; {
+    var v = yfile[k0];
+    const len = v.length;
+
+    console.log(k0);
+    for (var i=0; i&lt;len; i++) {
+        Object.keys(v[i]).forEach(k1 =&gt; {
+            console.log('desc:', v[i][k1]['desc']);
         });
+    }
+});
+</pre><br>
 
-        ping.on('exit', function(code, signal) {
-            resolve('ok');
-        });
-    });
-
-    console.log('ping %s (result: %s)', client_ip, conn);
-}
-
-start('192.168.56.101');
+<p>
+test.yaml
+</p>
+<pre>
+this is title:
+    - test 1:
+        desc: "description for test 1"
+    - test 2:
+        desc: "description for test 2"
 </pre><br>
 
 <p>
@@ -85,7 +88,9 @@ start('192.168.56.101');
 </p>
 <pre>
 $ node main.js
-    ping 192.168.56.101 (result: true)
+    this is title
+    desc: description for test 1
+    desc: description for test 2
 </pre><br>
 
 <p>
