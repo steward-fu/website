@@ -1,0 +1,220 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>GNU &gt;&gt; C/C++</h3>
+<p><b>ring buffer</b></p>
+<hr size="1">
+<p>
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;math.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;pthread.h&gt;
+#include &lt;sys/ioctl.h&gt;
+
+#define QUEUE_SIZE  1024
+
+typedef struct {
+    int size;
+    int read;
+    int write;
+    uint8_t *buffer;
+    pthread_mutex_t lock;
+} queue_t;
+
+static queue_t queue = {0};
+
+static void queue_init(queue_t *q, size_t s)
+{
+    q-&gt;buffer = (uint8_t *)malloc(s);
+    q-&gt;size = s;
+    q-&gt;read = q-&gt;write = 0;
+    pthread_mutex_init(&amp;q-&gt;lock, NULL);
+}
+
+static void queue_destroy(queue_t *q)
+{
+    if (q-&gt;buffer) {
+        free(q-&gt;buffer);
+    }
+    pthread_mutex_destroy(&amp;q-&gt;lock);
+}
+
+static int queue_size_for_read(queue_t *q)
+{
+    if (q-&gt;read == q-&gt;write) {
+        return 0;
+    }
+    else if(q-&gt;read &lt; q-&gt;write) {
+        return q-&gt;write - q-&gt;read;
+    }
+    return (QUEUE_SIZE - q-&gt;read) + q-&gt;write;
+}
+
+static int queue_size_for_write(queue_t *q)
+{
+    if (q-&gt;write == q-&gt;read) {
+        return QUEUE_SIZE;
+    }
+    else if (q-&gt;write &lt; q-&gt;read) {
+        return q-&gt;read - q-&gt;write;
+    }
+    return (QUEUE_SIZE - q-&gt;write) + q-&gt;read;
+}
+
+static int queue_put(queue_t *q, uint8_t *buffer, size_t size)
+{
+    int r = 0, tmp = 0, avai = 0;
+
+    pthread_mutex_lock(&amp;q-&gt;lock);
+    avai = queue_size_for_write(q);
+    if (size &gt; avai) {
+        size = avai;
+    }
+    r = size;
+
+    if (size &gt; 0) {
+        if ((q-&gt;write &gt;= q-&gt;read) &amp;&amp; ((q-&gt;write + size) &gt; QUEUE_SIZE)) {
+            tmp = QUEUE_SIZE - q-&gt;write;
+            size-= tmp;
+            memcpy(&amp;q-&gt;buffer[q-&gt;write], buffer, tmp);
+            memcpy(q-&gt;buffer, &amp;buffer[tmp], size);
+            q-&gt;write = size;
+        }
+        else {
+            memcpy(&amp;q-&gt;buffer[q-&gt;write], buffer, size);
+            q-&gt;write += size;
+        }
+    }
+    pthread_mutex_unlock(&amp;q-&gt;lock);
+    return r;
+}
+
+static size_t queue_get(queue_t *q, uint8_t *buffer, size_t max)
+{
+    int r = 0, tmp = 0, avai = 0, size = max;
+
+    pthread_mutex_lock(&amp;q-&gt;lock);
+    avai = queue_size_for_read(q);
+    if (size &gt; avai) {
+        size = avai;
+    }
+    r = size;
+
+    if (size &gt; 0) {
+        if ((q-&gt;read &gt; q-&gt;write) &amp;&amp; (q-&gt;read + size) &gt; QUEUE_SIZE) {
+            tmp = QUEUE_SIZE - q-&gt;read;
+            size-= tmp;
+            memcpy(buffer, &amp;q-&gt;buffer[q-&gt;read], tmp);
+            memcpy(&amp;buffer[tmp], q-&gt;buffer, size);
+            q-&gt;read = size;
+        }
+        else {
+            memcpy(buffer, &amp;q-&gt;buffer[q-&gt;read], size);
+            q-&gt;read+= size;
+        }
+    }
+    pthread_mutex_unlock(&amp;q-&gt;lock);
+    return r;
+}
+
+int main(int argc, char **argv)
+{
+    char buf[32] = {0};
+    int ret = 0, cc = 0;
+
+    queue_init(&amp;queue, (size_t)QUEUE_SIZE);
+    if (queue.buffer == NULL) {
+        return -1;
+    }
+    memset(queue.buffer, 0, QUEUE_SIZE);
+
+    buf[0] = 0x00;
+    buf[1] = 0x11;
+    queue_put(&amp;queue, buf, 2);
+    
+    buf[0] = 0x22;
+    buf[1] = 0x33;
+    buf[2] = 0x44;
+    queue_put(&amp;queue, buf, 3);
+    
+    ret = queue_get(&amp;queue, buf, sizeof(buf));
+    printf("ret: %d\n", ret);
+    for (cc=0; cc&lt;ret; cc++) {
+        printf("0x%02x, ", buf[cc]);
+    }
+    printf("\n");
+
+    queue_destroy(&amp;queue);
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ gcc main.c -o test
+$ ./test
+    ret: 5
+    0x00, 0x11, 0x22, 0x33, 0x44,
+</pre><br>
+
+<p>
+<br><a href="../../program.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
