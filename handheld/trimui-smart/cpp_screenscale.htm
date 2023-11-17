@@ -504,8 +504,16 @@ int main(int argc, char **argv)
     uint16_t *p = NULL;
     uint16_t col[] = {0xf800, 0x07e0, 0x001f};
     int cc = 0, x = 0, y = 0, r = 0, csel = 0;
+    uint32_t args[4] = {0, (uintptr_t)&amp;buffer_config, 1, 0};
 
     fb_init();
+
+    // x: 0~50
+    // y: 0~100
+    buffer_config.info.fb.crop.width  = (uint64_t)50 &lt;&lt; 32;
+    buffer_config.info.fb.crop.height = (uint64_t)100 &lt;&lt; 32;
+    ioctl(disp_dev, DISP_LAYER_SET_CONFIG, args);
+
     while (1) {
         buffer_config.info.fb.addr[0] = (uintptr_t)((uint16_t*)buffer_info.padd + (320 * 240 * cc));
         mem_map[OVL_V_TOP_LADD0 / 4] = (uintptr_t)((uint16_t*)buffer_info.padd + (320 * 240 * cc));
@@ -516,13 +524,6 @@ int main(int argc, char **argv)
                 p[(((320 - 1) - x) * 240) + y] = col[(y / 80) % 3];
             }
         }
-
-        buffer_config.info.fb.crop.x = (uint64_t)100 &lt;&lt; 32;
-        buffer_config.info.fb.crop.y = (uint64_t)100 &lt;&lt; 32;
-        buffer_config.info.fb.crop.width  = (uint64_t)100 &lt;&lt; 32;
-        buffer_config.info.fb.crop.height = (uint64_t)100 &lt;&lt; 32;
-        uint32_t args[4] = {0, (uintptr_t)&amp;buffer_config, 1, 0};
-        ioctl(disp_dev, DISP_LAYER_SET_CONFIG, args);
         ioctl(fb_dev, FBIO_WAITFORVSYNC, &amp;r);
         cc^= 1;
         csel+= 1;
