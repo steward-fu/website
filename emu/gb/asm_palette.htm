@@ -72,113 +72,113 @@ IE          equ $ffff
 IEF_VBLANK  equ %00000001
 STAT        equ $ff41
 STATF_BUSY  equ %00000010
-  
+
 section "vblank", rom0[$0040]
-  reti
-     
+    reti
+
 section "lcdc", rom0[$0048]
-  reti
-     
+    reti
+
 section "timer", rom0[$0050]
-  reti
-     
+    reti
+
 section "serial", rom0[$0058]
-  reti
-     
+    reti
+
 section "joypad", rom0[$0060]
-  reti
-     
+    reti
+
 section "entry", rom0[$0100]
-  nop
-  jp _start
-     
+    nop
+    jp _start
+
 section "header", rom0[$0104]
-  db $ce, $ed, $66, $66, $cc, $0d, $00, $0b, $03, $73, $00, $83, $00, $0c, $00, $0d
-  db $00, $08, $11, $1f, $88, $89, $00, $0e, $dc, $cc, $6e, $e6, $dd, $dd, $d9, $99
-  db $bb, $bb, $67, $63, $6e, $0e, $ec, $cc, $dd, $dc, $99, $9f, $bb, $b9, $33, $3e
-  db "0123456789abcde"
-  db 0
-  db 0, 0
-  db 0
-  db 0
-  db 0
-  db 0
-  db 1
-  db $33
-  db 0
-  db 0
-  dw 0
-     
+    db $ce, $ed, $66, $66, $cc, $0d, $00, $0b, $03, $73, $00, $83, $00, $0c, $00, $0d
+    db $00, $08, $11, $1f, $88, $89, $00, $0e, $dc, $cc, $6e, $e6, $dd, $dd, $d9, $99
+    db $bb, $bb, $67, $63, $6e, $0e, $ec, $cc, $dd, $dc, $99, $9f, $bb, $b9, $33, $3e
+    db "0123456789abcde"
+    db 0
+    db 0, 0
+    db 0
+    db 0
+    db 0
+    db 0
+    db 1
+    db $33
+    db 0
+    db 0
+    dw 0
+
 _start:
-  di
-  ld sp, $ffff
-  ld a, IEF_VBLANK
-  ld [IE], a
-  ei
-  
-  halt
-  halt
+    di
+    ld sp, $ffff
+    ld a, IEF_VBLANK
+    ld [IE], a
+    ei
 
-  ld a, [LCDC]
-  and ~LCDCF_ON
-  ld [LCDC], a
-  
-  ld d, 32
-  ld bc, tile
-  ld hl, $8000
+    halt
+    halt
+
+    ld a, [LCDC]
+    and ~LCDCF_ON
+    ld [LCDC], a
+
+    ld d, 32
+    ld bc, tile
+    ld hl, $8000
 copy_tile:
-  ld a, [bc]
-  ld [hl+], a
-  inc bc
-  dec d
-  jr nz, copy_tile
-  
-  ld hl, $9800
-  ld [hl], 1
-  
-  ld a, %11100100
-  ld [BGP], a
- 
-  ld a, [LCDC]
-  or LCDCF_ON
-  ld [LCDC], a
-  
-  jp @
-  
-tile:
-  db %00000000
-  db %00000000
-  db %00000000
-  db %00000000
-  db %00000000
-  db %00000000
-  db %00000000
-  db %00000000
-  db %00000000
-  db %00000000
-  db %00000000
-  db %00000000
-  db %00000000
-  db %00000000
-  db %00000000
-  db %00000000
+    ld a, [bc]
+    ld [hl+], a
+    inc bc
+    dec d
+    jr nz, copy_tile
 
-  db %00000000
-  db %00000000
-  db %00000000
-  db %00000000
-  db %11111111
-  db %00000000
-  db %11111111
-  db %00000000
-  db %00000000
-  db %11111111
-  db %00000000
-  db %11111111
-  db %11111111
-  db %11111111
-  db %11111111
-  db %11111111
+    ld hl, $9800
+    ld [hl], 1
+
+    ld a, %11100100
+    ld [BGP], a
+
+    ld a, [LCDC]
+    or LCDCF_ON
+    ld [LCDC], a
+
+    jp @
+
+tile:
+    db %00000000
+    db %00000000
+    db %00000000
+    db %00000000
+    db %00000000
+    db %00000000
+    db %00000000
+    db %00000000
+    db %00000000
+    db %00000000
+    db %00000000
+    db %00000000
+    db %00000000
+    db %00000000
+    db %00000000
+    db %00000000
+
+    db %00000000
+    db %00000000
+    db %00000000
+    db %00000000
+    db %11111111
+    db %00000000
+    db %11111111
+    db %00000000
+    db %00000000
+    db %11111111
+    db %00000000
+    db %11111111
+    db %11111111
+    db %11111111
+    db %11111111
+    db %11111111
 </pre>
 <p>
 每個像素的色階由tile設定，因此，顯示一個8x8 Pixels，需要16 Bytes(1個Pixel由2個bits控制)，色階對應的顏色則由BGP(Background)、OBP0(Object)、OBP1(Object)設定<br><br>
