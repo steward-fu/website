@@ -69,122 +69,122 @@ LCDC       equ $ff40
 LCDCF_ON   equ %10000000
 
 section "vblank", rom0[$0040]
-  reti
-      
-section "lcdc", rom0[$0048]
-  reti
-      
-section "timer", rom0[$0050]
-  reti
-      
-section "serial", rom0[$0058]
-  reti
-      
-section "joypad", rom0[$0060]
-  reti
-      
-section "entry", rom0[$0100]
-  nop
-  jp _start
-      
-section "header", rom0[$0104]
-  db $ce, $ed, $66, $66, $cc, $0d, $00, $0b, $03, $73, $00, $83, $00, $0c, $00, $0d
-  db $00, $08, $11, $1f, $88, $89, $00, $0e, $dc, $cc, $6e, $e6, $dd, $dd, $d9, $99
-  db $bb, $bb, $67, $63, $6e, $0e, $ec, $cc, $dd, $dc, $99, $9f, $bb, $b9, $33, $3e
-  db "0123456789abcde"
-  db $80
-  db 0, 0
-  db 0
-  db 0
-  db 0
-  db 0
-  db 1
-  db $33
-  db 0
-  db 0
-  dw 0
-      
-_start:
-  di
-  ld sp, $ffff
-  ld a, IEF_VBLANK
-  ld [IE], a
-  ei
-    
-  ld d, 32
-  ld bc, tile
-  ld hl, $8000
-copy_tile:
-  ld a, [bc]
-  ld [hl+], a
-  inc bc
-  dec d
-  jr nz, copy_tile
-   
-  ld b, 0
-  ld hl, color
-copy_palette:
-  ld a, b
-  ld [$ff68], a
-  ld a, [hl]
-  ld [$ff69], a
-  inc hl
-  inc b
-  ld a, b
-  cp 8
-  jr nz, copy_palette
+    reti
 
-  ld a, 1
-  ld [$9800], a
+section "lcdc", rom0[$0048]
+    reti
+
+section "timer", rom0[$0050]
+    reti
+
+section "serial", rom0[$0058]
+    reti
+
+section "joypad", rom0[$0060]
+    reti
+
+section "entry", rom0[$0100]
+    nop
+    jp _start
+
+section "header", rom0[$0104]
+    db $ce, $ed, $66, $66, $cc, $0d, $00, $0b, $03, $73, $00, $83, $00, $0c, $00, $0d
+    db $00, $08, $11, $1f, $88, $89, $00, $0e, $dc, $cc, $6e, $e6, $dd, $dd, $d9, $99
+    db $bb, $bb, $67, $63, $6e, $0e, $ec, $cc, $dd, $dc, $99, $9f, $bb, $b9, $33, $3e
+    db "0123456789abcde"
+    db $80
+    db 0, 0
+    db 0
+    db 0
+    db 0
+    db 0
+    db 1
+    db $33
+    db 0
+    db 0
+    dw 0
+
+_start:
+    di
+    ld sp, $ffff
+    ld a, IEF_VBLANK
+    ld [IE], a
+    ei
+
+    ld d, 32
+    ld bc, tile
+    ld hl, $8000
+copy_tile:
+    ld a, [bc]
+    ld [hl+], a
+    inc bc
+    dec d
+    jr nz, copy_tile
+
+    ld b, 0
+    ld hl, color
+copy_palette:
+    ld a, b
+    ld [$ff68], a
+    ld a, [hl]
+    ld [$ff69], a
+    inc hl
+    inc b
+    ld a, b
+    cp 8
+    jr nz, copy_palette
+
+    ld a, 1
+    ld [$9800], a
 
 loop:
-  halt
+    halt
 
-  ld a, [SCX]
-  inc a
-  ld [SCX], a
-  jp loop
-   
+    ld a, [SCX]
+    inc a
+    ld [SCX], a
+    jp loop
+
 color:
-  dw $7fff
-  dw $001f
-  dw $03e0
-  dw $7c00
-   
-tile:
-  db %00000000
-  db %00000000
-  db %00000000
-  db %00000000
-  db %00000000
-  db %00000000
-  db %00000000
-  db %00000000
-  db %00000000
-  db %00000000
-  db %00000000
-  db %00000000
-  db %00000000
-  db %00000000
-  db %00000000
-  db %00000000
+    dw $7fff
+    dw $001f
+    dw $03e0
+    dw $7c00
 
-  db %11111111
-  db %00000000
-  db %11111111
-  db %00000000
-  db %11111111
-  db %00000000
-  db %11111111
-  db %00000000
-  db %11111111
-  db %00000000
-  db %11111111
-  db %00000000
-  db %11111111
-  db %00000000
-  db %11111111
-  db %00000000
+tile:
+    db %00000000
+    db %00000000
+    db %00000000
+    db %00000000
+    db %00000000
+    db %00000000
+    db %00000000
+    db %00000000
+    db %00000000
+    db %00000000
+    db %00000000
+    db %00000000
+    db %00000000
+    db %00000000
+    db %00000000
+    db %00000000
+
+    db %11111111
+    db %00000000
+    db %11111111
+    db %00000000
+    db %11111111
+    db %00000000
+    db %11111111
+    db %00000000
+    db %11111111
+    db %00000000
+    db %11111111
+    db %00000000
+    db %11111111
+    db %00000000
+    db %11111111
+    db %00000000
 </pre>
 <p>
 執行halt指令後，CPU進入省電模式，待VBLANK中斷發生後，才繼續往下執行，每發一次VBLANK中斷，移動x捲軸一次<br><br>
