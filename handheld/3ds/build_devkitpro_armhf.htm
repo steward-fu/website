@@ -46,24 +46,69 @@
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
 <h3>Nintendo 3DS</h3>
-<p><b>build citro2d</b></p>
+<p><b>build devkitpro (CROSSBUILD=arm-linux-gnueabihf)</b></p>
 <hr size="1">
 <p>
-步驟如下：
+參考資訊：<br>
+1. <a href="https://wiki.debian.org/Multiarch/HOWTO">multiarch</a><br>
+2. <a href="https://askubuntu.com/questions/523226/install-crossbuild-essential-armhf-on-amd64">install-crossbuild-essential-armhf-on-amd64</a><br><br>
+
+Debian 10 x64
 </p>
 <pre>
-$ export DEVKITPRO=/opt/devkitpro/
-$ export DEVKITARM=/opt/devkitpro/devkitARM/
+$ sudo dpkg --add-architecture armhf
+$ sudo apt-get update
+$ sudo apt-get install crossbuild-essential-armhf
+$ sudo apt-get install libmpc*:armhf libgmp-dev:armhf libgmp10:armhf libgmpxx4ldbl:armhf libmpfr6:armhf libstdc++6:armhf zlib1g-dev:armhf qemu qemu-user-static -y
 
+$ sudo chmod 0777 /opt
 $ cd
-$ git clone https://github.com/devkitPro/citro2d
-$ cd citro2d
-$ make
-$ make install
-</pre><br>
+$ git clone https://github.com/devkitPro/buildscripts
+$ cd buildscripts
+$ vim build-devkit.sh +29
+    CROSSBUILD=arm-linux-gnueabihf
+
+$ wget https://wii.leseratte10.de/devkitPro/devkitARM/devkitarm-rules/devkitarm-rules-1.2.1.tar.gz
+$ wget https://wii.leseratte10.de/devkitPro/devkitARM/devkitarm-rules/devkitarm-crtls-1.1.1.tar.gz
+$ wget https://ftp.gnu.org/gnu/binutils/binutils-2.39.tar.xz
+$ wget https://ftp.gnu.org/gnu/gcc/gcc-12.2.0/gcc-12.2.0.tar.xz
+$ ./build-devkit.sh
+  Please select the toolchain you require
+
+  1: devkitARM (gba gp32 ds 3ds)
+  2: devkitPPC (gamecube wii wii-u)
+  3: devkitA64 (switch)
+  1
+
+  Please enter the directory where you would like 'devkitARM' to be installed:
+  for mingw/msys you must use &lt;drive&gt;:/&lt;install path&gt; or you will have include path problems
+  this is the top level directory for devkitpro, i.e. e:/devkitPro
+  /opt/devkitpro
+
+  use /usr/bin/make as make
+
+  Ready to install devkitARM in /opt/devkitARM
+
+  press return to continue
+ 
+  Would you like to delete the build folders and patched sources? [Y/n]
+
+  Removing patched sources and build directories
+
+  note: Add the following to your environment;
+
+    DEVKITPRO=/opt/devkitpro
+    DEVKITARM=/opt/devkitpro/devkitARM
+
+$ file /opt/devkitpro/devkitARM/bin/arm-none-eabi-gcc
+    /opt/devkitpro/devkitARM/bin/arm-none-eabi-gcc: ELF 32-bit LSB executable, ARM, EABI5 version 1 (SYSV), dynamically linked, interpreter /lib/ld-linux-armhf.so.3, for GNU/Linux 3.2.0, BuildID[sha1]=2ec4f1805818eacb5250c14089a0981689c2c208, with debug_info, not stripped
+</pre>
+<p>
+P.S. 編譯過程中，需要的rules相關檔案，可以從<a href="https://github.com/steward-fu/3ds/releases/download/v1.0/devkitpro_elf_x64.tar.gz">devkitpro_x64</a>提取
+</p>
 
 <p>
-<br><a href="../../emu.htm">返回上一頁</a>
+<br><a href="../../handheld.htm">返回上一頁</a>
 </p>
 
 </div>
