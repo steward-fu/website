@@ -1,0 +1,118 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+
+  <link rel="shortcut icon" href="../../website.ico">
+  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
+  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
+  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
+  
+  <script type="text/javascript" src="../../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
+
+  <!-- Conditional comment to apply opacity fix for IE #content background.
+       Invalid CSS, but can be removed without harming design -->
+  <!--[if gt IE 5]>
+  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
+  <![endif]-->
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../../header.js"></script>
+<div id="page">
+<h3>TRIMUI SMART</h3>
+<p><b>GPIO按鍵改造</b></p>
+<hr size="1">
+<p>
+TRIMUI SMART掌機的按鍵太少，導致司徒在玩NDS模擬器時，缺少一個可以換屏的按鍵，相當不方便，於是激起司徒改造的動力，使用的按鍵如下圖<br>
+<img src="cust_key/1.jpg" class="maxSize"><br><br>
+
+拿掉無用的LED，這個按鍵剛剛好可以塞下<br>
+<img src="cust_key/2.jpg" class="maxSize"><br><br>
+
+相當不錯<br>
+<img src="cust_key/3.jpg" class="maxSize"><br><br>
+
+使用PG11當作按鍵輸入<br>
+<img src="cust_key/4.jpg" class="maxSize"><br><br>
+
+跳線完成<br>
+<img src="cust_key/5.jpg" class="maxSize"><br><br>
+
+完美<br>
+<img src="cust_key/6.jpg" class="maxSize"><br>
+<img src="cust_key/7.jpg" class="maxSize"><br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;string.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;sys/mman.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;time.h&gt;
+ 
+int main(int argc, char* argv[])
+{
+    int fd = open("/dev/mem", O_RDWR);
+    uint32_t *cfg = NULL;
+    uint32_t *dat = NULL;
+    uint32_t *pul = NULL;
+    uint8_t *mem = mmap(0, 4096, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0x01c20000);
+
+    printf("mem 0x%x\n", mem);
+    cfg = (uint32_t *)(mem + 0x800 + (0x24 * 6) + 0x04);
+    dat = (uint32_t *)(mem + 0x800 + (0x24 * 6) + 0x10);
+    pul = (uint32_t *)(mem + 0x800 + (0x24 * 6) + 0x1c);
+
+    printf("cfg 0x%x\n", *cfg);
+    *cfg &amp;= 0xffff0fff;
+    *pul |= 0x00400000;
+
+    while (1) {
+        usleep(1000000);
+        printf("dat 0x%x\n", *dat);
+    }
+
+    munmap(mem, 4096);
+    close(fd);
+    return 0;
+}
+</pre><br>
+
+<p>
+<br><a href="../../handheld.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>
