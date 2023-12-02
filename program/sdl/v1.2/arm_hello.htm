@@ -54,84 +54,84 @@
 main.s
 </p>
 <pre class="brush:asm">
-  .macro invoke func:req, args:vararg
-    .ifnb \args
-      argc = 0
-      .irp param, \args
-        argc = argc + 1
-      .endr
-      argrc = argc
-      .rept argc
-        argrc = argrc - 1
-        argc = 0
-        .irp param, \args
-          .if argrc == argc
-            .if argrc == 0
-              mov r0, \param
-            .elseif argrc == 1
-              mov r1, \param
-            .elseif argrc == 2
-              mov r2, \param
-            .elseif argrc == 3
-              mov r3, \param
-            .else
-              mov r4, \param
-              push {r4}
-            .endif
-          .endif
-          argc = argc + 1
-        .endr
-      .endr
-    .endif
-    bl \func
-  .endm
+    .macro invoke func:req, args:vararg
+        .ifnb \args
+            argc = 0
+            .irp param, \args
+                argc = argc + 1
+            .endr
+            argrc = argc
+            .rept argc
+                argrc = argrc - 1
+                argc = 0
+                .irp param, \args
+                    .if argrc == argc
+                        .if argrc == 0
+                            mov r0, \param
+                        .elseif argrc == 1
+                            mov r1, \param
+                        .elseif argrc == 2
+                            mov r2, \param
+                        .elseif argrc == 3
+                            mov r3, \param
+                        .else
+                            mov r4, \param
+                            push {r4}
+                        .endif
+                    .endif
+                    argc = argc + 1
+                .endr
+            .endr
+        .endif
+        bl \func
+    .endm
   
-  .global main
-  .extern exit
+    .global main
+    .extern exit
   
-  .equ SDL_INIT_VIDEO,  0x20
-  .equ SDL_HWSURFACE,   0x01
+    .equ SDL_INIT_VIDEO,  0x20
+    .equ SDL_HWSURFACE,   0x01
   
-  .align
-  .data
+    .align
+    .data
 screen: .zero 4
-bmp: .zero 4
+bmp:    .zero 4
 
-  .align
-  .text
+    .align
+    .text
 bmp_path: .asciz "main.bmp"
 bmp_mode: .asciz "rw"
 
-  .align
-  .text
+    .align
+    .text
 main:
-  invoke SDL_Init, $SDL_INIT_VIDEO
-  invoke SDL_SetVideoMode, $320, $240, $16, $SDL_HWSURFACE
-  ldr r1, =screen
-  str r0, [r1]
+    invoke SDL_Init, $SDL_INIT_VIDEO
+    invoke SDL_SetVideoMode, $320, $240, $16, $SDL_HWSURFACE
+    ldr r1, =screen
+    str r0, [r1]
 
-  ldr r4, =bmp_path
-  ldr r5, =bmp_mode
-  invoke SDL_RWFromFile, r4, r5
-  invoke SDL_LoadBMP_RW, r0, #1
-  ldr r1, =bmp
-  str r0, [r1]
- 
-  ldr r4, =bmp
-  ldr r4, [r4]
-  ldr r5, =screen
-  ldr r5, [r5]
-  invoke SDL_UpperBlit, r4, $0, r5, $0
-  ldr r4, =screen 
-  ldr r4, [r4]
-  invoke SDL_Flip, r4
-  invoke SDL_Delay, $2000
-  ldr r4, =bmp
-  ldr r4, [r4]
-  invoke SDL_FreeSurface, r4
-  invoke SDL_Quit
-  invoke exit, $0
-  .end
+    ldr r4, =bmp_path
+    ldr r5, =bmp_mode
+    invoke SDL_RWFromFile, r4, r5
+    invoke SDL_LoadBMP_RW, r0, #1
+    ldr r1, =bmp
+    str r0, [r1]
+
+    ldr r4, =bmp
+    ldr r4, [r4]
+    ldr r5, =screen
+    ldr r5, [r5]
+    invoke SDL_UpperBlit, r4, $0, r5, $0
+    ldr r4, =screen
+    ldr r4, [r4]
+    invoke SDL_Flip, r4
+    invoke SDL_Delay, $2000
+    ldr r4, =bmp
+    ldr r4, [r4]
+    invoke SDL_FreeSurface, r4
+    invoke SDL_Quit
+    invoke exit, $0
+    .end
 </pre><br>
 
 <p>

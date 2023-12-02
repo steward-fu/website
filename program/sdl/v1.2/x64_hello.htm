@@ -55,61 +55,61 @@
 main.s
 </p>
 <pre class="brush:asm">
-  .macro invoke func:req, args:vararg
-    .ifnb \args
-      argc = 0
-      .irp param, \args
-        .if argc == 0
-          mov \param, %rdi
-        .elseif argc == 1
-          mov \param, %rsi
-        .elseif argc == 2
-          mov \param, %rdx
-        .elseif argc == 3
-          mov \param, %rcx
-        .elseif argc == 4
-          mov \param, %rcx
-        .elseif argc == 5
-          mov \param, %rcx
+    .macro invoke func:req, args:vararg
+        .ifnb \args
+            argc = 0
+            .irp param, \args
+                .if argc == 0
+                    mov \param, %rdi
+                .elseif argc == 1
+                    mov \param, %rsi
+                .elseif argc == 2
+                    mov \param, %rdx
+                .elseif argc == 3
+                    mov \param, %rcx
+                .elseif argc == 4
+                    mov \param, %rcx
+                .elseif argc == 5
+                    mov \param, %rcx
+                .endif
+                argc = argc + 1
+            .endr
         .endif
-        argc = argc + 1
-      .endr
-    .endif
-    call \func
-  .endm
+        call \func
+    .endm
 
-  .equ SDL_INIT_VIDEO,  0x20
-  .equ SDL_HWSURFACE,   0X01
+    .equ SDL_INIT_VIDEO,  0x20
+    .equ SDL_HWSURFACE,   0X01
 
-  .text
-  .global main
+    .text
+    .global main
 main:
-  invoke SDL_Init, $SDL_INIT_VIDEO
-  invoke SDL_SetVideoMode, $320, $240, $16, $SDL_HWSURFACE
-  mov %rax, screen
+    invoke SDL_Init, $SDL_INIT_VIDEO
+    invoke SDL_SetVideoMode, $320, $240, $16, $SDL_HWSURFACE
+    mov %rax, screen
 
-  invoke SDL_RWFromFile, $bmp_path, $bmp_mode
-  invoke SDL_LoadBMP_RW, %rax, $1
-  mov %rax, bmp
-  
-  invoke SDL_UpperBlit, bmp, $0, screen, $0
-  invoke SDL_Flip, screen
-  invoke SDL_Delay, $3000
-  invoke SDL_FreeSurface, bmp
-  invoke SDL_Quit
+    invoke SDL_RWFromFile, $bmp_path, $bmp_mode
+    invoke SDL_LoadBMP_RW, %rax, $1
+    mov %rax, bmp
 
-  mov $0, %rax
-  ret
+    invoke SDL_UpperBlit, bmp, $0, screen, $0
+    invoke SDL_Flip, screen
+    invoke SDL_Delay, $3000
+    invoke SDL_FreeSurface, bmp
+    invoke SDL_Quit
 
-  .align
-  .text
+    mov $0, %rax
+    ret
+
+    .align
+    .text
 bmp_path: .asciz "main.bmp"
 bmp_mode: .asciz "rw"
 
-  .align
-  .data
+    .align
+    .data
 screen: .quad 0
-bmp: .quad 0
+bmp:    .quad 0
   .end
 </pre><br>
 
