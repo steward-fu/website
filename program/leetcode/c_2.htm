@@ -57,50 +57,35 @@
 解答：
 </p>
 <pre class="brush:cpp">
-struct ListNode* addTwoNumbers(struct ListNode *l1, struct ListNode *l2)
+struct ListNode* addTwoNumbers(struct ListNode* l1, struct ListNode* l2)
 {
-    int c0 = 0, c1 = 0, cc = 0;
-    struct ListNode *r = l1 ? l1 : l2 ? l2 : NULL;
-    struct ListNode *t = r;
+    int cc = 0;
+    struct ListNode *r = malloc(sizeof(struct ListNode));
+    struct ListNode *cur = r;
 
-    while (t) {
-        if (l1) {
-            c0 = l1-&gt;val;
-            l1 = l1-&gt;next;
-        }
+    while (l1 || l2) {
+        int v1 = l1 ? l1-&gt;val : 0;
+        int v2 = l2 ? l2-&gt;val : 0;
 
-        if (l2) {
-            c1 = l2-&gt;val;
-            l2 = l2-&gt;next;
-        }
+        l1 = l1 ? l1-&gt;next : NULL;
+        l2 = l2 ? l2-&gt;next : NULL;
 
-        t-&gt;val = c0 + c1 + cc;
-        c0 = 0;
-        c1 = 0;
-        cc = 0;
-        if (t-&gt;val &gt;= 10) {
-            t-&gt;val-= 10;
-            cc = 1;
-        }
-
-        t-&gt;next = l1 ? l1 : l2 ? l2 : NULL;
-        if (t-&gt;next == NULL) {
-            break;
-        }
-        t = t-&gt;next;
+        v1+= v2 + cc;
+        cur-&gt;next = malloc(sizeof(struct ListNode));
+        cur-&gt;next-&gt;val = v1 % 10;
+        cur-&gt;next-&gt;next = NULL;
+        cur = cur-&gt;next;
+        cc = v1 / 10;
     }
 
     if (cc) {
-        t-&gt;next = malloc(sizeof(struct ListNode));
-        t-&gt;next-&gt;val = cc;
-        t-&gt;next-&gt;next = NULL;
+        cur-&gt;next = malloc(sizeof(struct ListNode));
+        cur-&gt;next-&gt;val = cc;
+        cur-&gt;next-&gt;next = NULL;
     }
-    return r;
+    return r-&gt;next;
 }
-</pre>
-<p>
-P.S. 由於LeetCode的編譯器有問題，Workaround是透過變數做累加
-</p>
+</pre><br>
 
 <p>
 <br><a href="../../program.htm">返回上一頁</a>
