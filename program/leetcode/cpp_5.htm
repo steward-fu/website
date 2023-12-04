@@ -44,7 +44,7 @@
 <div id="content">
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
-<h3>LeetCode &gt;&gt; C</h3>
+<h3>LeetCode &gt;&gt; CPP</h3>
 <p><b>5. Longest Palindromic Substring</b></p>
 <hr size="1">
 <p>
@@ -58,40 +58,38 @@
 解答：
 </p>
 <pre class="brush:cpp">
-void search(const char *s, int l, int r, int *start, int *cnt)
-{
-    int len = strlen(s);
- 
-    while ((l &gt;= 0) &amp;&amp; (r &lt; len) &amp;&amp; (s[l] == s[r])) {
-        l-= 1;
-        r+= 1;
+class Solution {
+public:
+    void search(string s, int l, int r, int &amp;start, int &amp;cnt) {
+        int len = s.size();
+
+        while ((l &gt;= 0) &amp;&amp; (r &lt; len) &amp;&amp; (s[l] == s[r])) {
+            l-= 1;
+            r+= 1;
+        }
+
+        if (cnt &lt; (r - l - 1)) {
+            start = l + 1;
+            cnt = r - l - 1;
+        }
     }
 
-    if (*cnt &lt; (r - l - 1)) {
-        *start = l + 1;
-        *cnt = r - l - 1;
+    string longestPalindrome(string s) {
+        if (s.size() &lt; 2) {
+            return s;
+        }
+
+        int cnt = 0;
+        int start = 0;
+        for (int i = 0; i &lt; s.size(); i++) {
+            search(s, i, i, start, cnt);
+            search(s, i, i + 1, start, cnt);
+        }
+
+        s[start + cnt] = 0;
+        return &amp;s[start];
     }
-}
- 
-char* longestPalindrome(char *s)
-{
-    int c0 = 0;
-    int cnt = 0;
-    int start = 0;
-    int len = strlen(s);
- 
-    if (len &lt; 2) {
-        return s;
-    }
- 
-    for (c0 = 0; c0 &lt; len - 1; c0++) {
-        search(s, c0, c0, &amp;start, &amp;cnt);
-        search(s, c0, c0 + 1, &amp;start, &amp;cnt);
-    }
- 
-    s[start + cnt] = 0;
-    return &amp;s[start];
-}
+};
 </pre><br>
 
 <p>
