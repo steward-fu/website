@@ -3,6 +3,6 @@ All of files or resources used on my website can be found from the following lin
 
 &nbsp;
 
-| Resource Name | Resource Link |
+| Resource Icon | Resource Link |
 | ------------- | ------------- |
 | ![](img/photos/pdf.jpg) | [Chip Datasheet](https://github.com/steward-fu/website/releases/tag/datasheet) |
