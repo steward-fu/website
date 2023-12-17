@@ -64,8 +64,8 @@ Linux Kernel將中斷處理切成top-half和bottom-half兩部份，top-half指�
 </p>
 <pre>
 const char * const softirq_to_name[NR_SOFTIRQS] = { 
-  "HI", "TIMER", "NET_TX", "NET_RX", "BLOCK", "IRQ_POLL",
-  "TASKLET", "SCHED", "HRTIMER", "RCU", "PocketBeagle"
+    "HI", "TIMER", "NET_TX", "NET_RX", "BLOCK", "IRQ_POLL",
+    "TASKLET", "SCHED", "HRTIMER", "RCU", "PocketBeagle"
 };
 EXPORT_SYMBOL(open_softirq);
 EXPORT_SYMBOL(raise_softirq_irqoff);
@@ -76,22 +76,19 @@ EXPORT_SYMBOL(raise_softirq);
 include/linux/interrupt.h
 </p>
 <pre>
-enum
-{
-  HI_SOFTIRQ=0,
-  TIMER_SOFTIRQ,
-  NET_TX_SOFTIRQ,
-  NET_RX_SOFTIRQ,
-  BLOCK_SOFTIRQ,
-  IRQ_POLL_SOFTIRQ,
-  TASKLET_SOFTIRQ,
-  SCHED_SOFTIRQ,
-  HRTIMER_SOFTIRQ, /* Unused, but kept as tools rely on the
-          numbering. Sigh! */
-  RCU_SOFTIRQ,    /* Preferable RCU should always be the last softirq */
-
-  POCKETBEAGLE_SOFTIRQ,
-  NR_SOFTIRQS
+enum {
+    HI_SOFTIRQ=0,
+    TIMER_SOFTIRQ,
+    NET_TX_SOFTIRQ,
+    NET_RX_SOFTIRQ,
+    BLOCK_SOFTIRQ,
+    IRQ_POLL_SOFTIRQ,
+    TASKLET_SOFTIRQ,
+    SCHED_SOFTIRQ,
+    HRTIMER_SOFTIRQ, /* Unused, but kept as tools rely on the numbering. Sigh! */
+    RCU_SOFTIRQ,     /* Preferable RCU should always be the last softirq */
+    POCKETBEAGLE_SOFTIRQ,
+    NR_SOFTIRQS
 };
 </pre>
 <p>
@@ -100,73 +97,73 @@ P.S. 接著重新編譯Kernel並且更新zImage<br><br>
 ldd.S
 </p>
 <pre class="brush:asm">
-.global init_module
-.global cleanup_module
+    .global init_module
+    .global cleanup_module
 
-.equ BUTTON,               27
-.equ IRQF_TRIGGER_RISING,  1
-.equ POCKETBEAGLE_SOFTIRQ, 10
+    .equ BUTTON,               27
+    .equ IRQF_TRIGGER_RISING,  1
+    .equ POCKETBEAGLE_SOFTIRQ, 10
 
-.section .modinfo, "ae"
+    .section .modinfo, "ae"
 __UNIQUE_ID_0: .asciz "license=GPL"
 __UNIQUE_ID_1: .asciz "author=Steward Fu"
 __UNIQUE_ID_2: .asciz "description=Linux Driver"
 
-.section .data
+    .section .data
 btn_irq:     .dcb 4
 irq_name:    .asciz "gpio_irq"
 softirq_msg: .asciz "softirq_handler\n"
 
-.align 2
-.section .text
+    .align 2
+    .section .text
 softirq_handler:
-  push {lr}
-  ldr r0, =softirq_msg
-  bl printk
-  pop {pc}
+    push {lr}
+    ldr r0, =softirq_msg
+    bl printk
+    pop {pc}
 
 irq_handler:
-  push {lr}
-  mov r0, #POCKETBEAGLE_SOFTIRQ
-  bl raise_softirq
-  mov r0, #1
-  pop {pc}
+    push {lr}
+    mov r0, #POCKETBEAGLE_SOFTIRQ
+    bl raise_softirq
+    mov r0, #1
+    pop {pc}
 
 init_module:
-  push {r4, r5, lr}
+    push {r4, r5, lr}
 
-  mov r0, #BUTTON
-  bl gpio_to_desc
-  bl gpiod_to_irq
-  ldr r1, =btn_irq
-  str r0, [r1]
+    mov r0, #BUTTON
+    bl gpio_to_desc
+    bl gpiod_to_irq
+    ldr r1, =btn_irq
+    str r0, [r1]
 
-  ldr r1, =irq_handler
-  mov r2, #0
-  mov r3, #IRQF_TRIGGER_RISING
-  ldr r4, =irq_name
-  mov r5, #0
-  push {r4, r5}
-  bl request_threaded_irq
-  pop {r4, r5}
+    ldr r1, =irq_handler
+    mov r2, #0
+    mov r3, #IRQF_TRIGGER_RISING
+    ldr r4, =irq_name
+    mov r5, #0
+    push {r4, r5}
+    bl request_threaded_irq
+    pop {r4, r5}
 
-  mov r0, #POCKETBEAGLE_SOFTIRQ
-  ldr r1, =softirq_handler
-  bl open_softirq
+    mov r0, #POCKETBEAGLE_SOFTIRQ
+    ldr r1, =softirq_handler
+    bl open_softirq
 
-  mov r0, #0
-  pop {r4, r5, pc}
+    mov r0, #0
+    pop {r4, r5, pc}
 
 cleanup_module:
-  push {lr}
-  ldr r0, =btn_irq
-  ldr r0, [r0]
-  mov r1, #0
-  bl free_irq
-  mov r0, #POCKETBEAGLE_SOFTIRQ
-  bl raise_softirq_irqoff
-  pop {pc}
-.end
+    push {lr}
+    ldr r0, =btn_irq
+    ldr r0, [r0]
+    mov r1, #0
+    bl free_irq
+    mov r0, #POCKETBEAGLE_SOFTIRQ
+    bl raise_softirq_irqoff
+    pop {pc}
+    .end
 </pre>
 <p>
 <b>ldd_init</b>: 設定GPIO中斷以及softirq延遲處理副程式<br>
