@@ -49,7 +49,7 @@
 <hr size="1">
 <p>
 參考資訊：<br>
-1. <a href="https://github.com/steward-fu/ldd">Source Code</a><br><br>
+1. <a href="https://github.com/steward-fu/website/releases/tag/ldd">ldd</a><br><br>
 
 PocketBeagle開發板上有四顆USR LED，此次範例將使用USR3 LED，位置如下：<br>
 <img src="cpp_gpio_output/1.jpg" class="maxSize"><br><br>
@@ -58,18 +58,18 @@ Device Tree
 </p>
 <pre>
 led@5 {
-  label = "beaglebone:green:usr3";
-  gpios = &lt;&amp;gpio1 24 GPIO_ACTIVE_HIGH&gt;
-  linux,default-trigger = "mmc1";
-  default-state = "off";
+    label = "beaglebone:green:usr3";
+    gpios = &lt;&amp;gpio1 24 GPIO_ACTIVE_HIGH&gt;
+    linux,default-trigger = "mmc1";
+    default-state = "off";
 };
 </pre>
 <p>
 P.S. USR3位置是GPIO1-24<br><br>
 
-控制GPIO的輸出方式，基本上，就是操作CPU Register，設定GPIO方向，然後針對該GPIO設定Low、High電位，因此，使用者需要查閱CPU Register說明手冊，過程真是相當繁瑣，而除了控制Register方式之外，Linux Kernel提供一些更友好的GPIO操作函數，供使用者方便開發使用，也大大增加其移植性<br><br>
+Linux驅動程式可以看做是在寫韌體程式，因此，可以在驅動程式裡面直接操作GPIO暫存器，當然也可以遵循Linux規範，使用統一的GPIO操作函數，如果GPIO驅動程式沒有先移植好的話，那就只能使用GPIO暫存器操作，幸運地，在這一版PocketBeagle Kernel中，已經完成GPIO驅動程式的移植，因此，此範例將使用Linux統一的GPIO操作函數。<br><br>
 
-使用步驟：<br>
+使用步驟如下：<br>
 1. gpio_request()<br>
 2. gpio_to_desc()<br>
 3. gpiod_direction_output_raw()<br>
@@ -79,69 +79,68 @@ P.S. USR3位置是GPIO1-24<br><br>
 ldd.S
 </p>
 <pre class="brush:asm">
-.global init_module
-.global cleanup_module
+    .global init_module
+    .global cleanup_module
 
-.equ USR3_LED, ((32 * 1) + 24)
+    .equ USR3_LED, ((32 * 1) + 24)
 
-.section .modinfo, "ae"
+    .section .modinfo, "ae"
 __UNIQUE_ID_0: .asciz "license=GPL"
 __UNIQUE_ID_1: .asciz "author=Steward Fu"
 __UNIQUE_ID_2: .asciz "description=Linux Driver"
 
-.section .text
+    .section .text
 led_name: .asciz "USR3"
 
-.align 2
-.section .text
+    .align 2
+    .section .text
 init_module:
-  push {r4, r5, lr}
+    push {r4, r5, lr}
 
-  mov r0, #USR3_LED
-  ldr r1, =led_name
-  bl gpio_request
+    mov r0, #USR3_LED
+    ldr r1, =led_name
+    bl gpio_request
 
-  mov r0, #USR3_LED
-  bl gpio_to_desc
-  mov r5, r0
+    mov r0, #USR3_LED
+    bl gpio_to_desc
+    mov r5, r0
 
-  mov r0, r5
-  mov r1, #1
-  bl gpiod_direction_output_raw
+    mov r0, r5
+    mov r1, #1
+    bl gpiod_direction_output_raw
 
-  mov r4, #3
+    mov r4, #30
 loop:
-  mov r0, r5
-  mov r1, #0
-  bl gpiod_set_raw_value
+    mov r0, r5
+    mov r1, #0
+    bl gpiod_set_raw_value
 
-  mov r0, #1000
-  bl msleep
+    mov r0, #1000
+    bl msleep
 
-  mov r0, r5
-  mov r1, #1
-  bl gpiod_set_raw_value
+    mov r0, r5
+    mov r1, #1
+    bl gpiod_set_raw_value
 
-  mov r0, #1000
-  bl msleep
+    mov r0, #1000
+    bl msleep
 
-  subs r4, #1
-  bne loop
+    subs r4, #1
+    bne loop
 
-  mov r0, #USR3_LED
-  bl gpio_free
+    mov r0, #USR3_LED
+    bl gpio_free
 
-  mov r0, #0
-  pop {r4, r5, pc}
+    mov r0, #0
+    pop {r4, r5, pc}
 
 cleanup_module:
-  push {lr}
-  pop {pc}
-.end
+    push {lr}
+    pop {pc}
+    .end
 </pre>
 <p>
-<b>init_module</b>: 首先請求GPIO資源，接著設定GPIO輸出方向，最後則是使用迴圈輸出LED閃爍動作<br>
-<b>cleanup_module</b>: 不做任何事情<br><br>
+<b>init_module</b>: 請求GPIO資源，接著設定GPIO輸出方向，最後使用迴圈點亮LED(30次)<br><br>
 
 完成<br>
 <img src="cpp_gpio_output/2.jpg" class="maxSize"><br>
