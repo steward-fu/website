@@ -49,11 +49,11 @@
 <hr size="1">
 <p>
 參考資訊：<br>
-1. <a href="https://www.cnblogs.com/wang_yb/archive/2013/04/23/3037268.html">wang_yb</a><br>
-2. <a href="https://github.com/steward-fu/ldd">Source Code</a><br>
+1. <a href="https://github.com/steward-fu/website/releases/tag/ldd">ldd</a><br>
+2. <a href="https://www.cnblogs.com/wang_yb/archive/2013/04/23/3037268.html">wang_yb</a><br>
 3. <a href="http://jimmychenhaha.blogspot.com/2016/09/softirq.html">jimmychenhaha</a><br><br>
 
-Linux Kernel將中斷處理切成top-half和bottom-half兩部份，top-half指的就是中斷副程式本身，而bottom-half指的就是延遲處理的中斷副程式，如果事情可以快速處理完畢，就直接在中斷副程式裡處理就可以，如果無法立即完成(如：需要等待或者傳遞大量資料)，則可以安排一個延遲處理的副程式，softirq就是一種延遲處理的機制，雖然是延遲處理，不過，softirq也是執行在高優先級別的等級，因此，不適合處理太耗時的東西，因為，高優先級別的副程式，如果太耗時，將延後Context Switch的發生(單核心)，導致系統效能出問題，softirq本身是可重複進入的(reentrant)，因此，在撰寫softirq程式時，必須要考慮到這個問題，不過，bottom-half機制確實解決中斷阻塞問題<br><br>
+Linux Kernel將中斷處理切成top-half和bottom-half兩部份，top-half指的就是中斷副程式本身，而bottom-half指的就是延遲處理的副程式，如果中斷要處理的事情不需太耗時，就直接在中斷副程式裡處理就可以，如果無法立即完成(如：需要等待或者傳遞大量資料)，則可以安排一個延遲處理的副程式，softirq就是一種延遲處理的機制，雖然是延遲處理，不過，softirq也是執行在比較高優先級別的等級，因此，不適合處理太過耗時的事情，但是適用於快速處理的場景，因為，高優先級別的副程式，如果太耗時，將延後Context Switch的發生(單核心來說)，導致系統效能出問題，softirq本身是可重複進入的(reentrant)，因此，在撰寫softirq程式時，必須要考慮到這個問題，不過有了bottom-half機制，確實可以有效解決中斷阻塞問題<br><br>
 
 使用步驟：<br>
 1. open_softirq()<br>
