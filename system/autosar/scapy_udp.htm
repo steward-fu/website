@@ -45,47 +45,64 @@
 <script type="text/javascript" src="../../header.js"></script>
 <div id="page">
 <h3>AUTOSAR &gt;&gt; SOME/IP</h3>
-<p><b>build vsomeip 3.1.16.1</b></p>
+<p><b>如何使用SCAPY產生UDP PCAP</b></p>
 <hr size="1">
 <p>
 參考資料：<br>
-1. <a href="https://github.com/COVESA/vsomeip">github</a><br>
-2. <a href="https://github.com/COVESA/vsomeip/wiki/vsomeip-in-10-minutes">vsomeip 10 mins</a><br><br>
+1. <a href="https://some-ip.com/standards.shtml">standards</a><br>
+2. <a href="https://www.autosar.org/fileadmin/standards/R22-11/FO/AUTOSAR_PRS_SOMEIPProtocol.pdf">SOME/IP</a><br>
+3. <a href="https://www.autosar.org/fileadmin/standards/R22-11/CP/AUTOSAR_SWS_SOMEIPTransportProtocol.pdf">Transport</a></a><br>
+4. <a href="https://www.autosar.org/fileadmin/standards/R22-11/FO/AUTOSAR_PRS_SOMEIPServiceDiscoveryProtocol.pdf">ServiceDiscovery</a><br><br>
 
-Dockerfile
+main.py
 </p>
-<pre>
-FROM ubuntu:18.04
+<pre class="brush:python">
+import os
+import struct
+from scapy.all import *
+import scapy.all as scapy
 
-RUN apt-get update
-RUN apt-get install git vim sudo build-essential make cmake libboost-all-dev net-tools python3 scapy python3-pip tcpdump -y
-RUN pip3 install scapy
-RUN git clone https://github.com/COVESA/vsomeip /vsomeip
-RUN cd /vsomeip &amp;&amp; git checkout 3.1.16.1
-RUN mkdir /vsomeip/build
-RUN cd /vsomeip/build &amp;&amp; cmake -DENABLE_SIGNAL_HANDLING=1 -DENABLE_MULTIPLE_ROUTING_MANAGERS=1 .. &amp;&amp; make -j2 &amp;&amp; make install
+data = bytearray(
+    b"\xff\xff\x81\x00"
+    b"\x00\x00\x00\x20"
+    b"\x00\x00\x00\x01"
+    b"\x01\x01\x02\x00"
+
+    b"\x80\x00\x00\x00" # service discovery
+    b"\x00\x00\x00\x10"
+
+    b"\x06\x00\x00\x00" # entry
+    b"\x12\x34\x56\x78"
+    b"\x00\x00\x00\x03"
+    b"\x00\x00\x44\x65"
+)
+
+packet = scapy.Ether() / scapy.IP() / scapy.UDP()
+packet[scapy.IP].dst = "192.168.0.1"
+packet[scapy.IP].src = "192.168.0.2"
+packet[scapy.UDP].dport = 1234
+packet[scapy.UDP].sport = 5678
+packet[scapy.UDP].payload = Packet(data)
+
+try:
+    scapy.wrpcap("test.pcap", packet, append=False)
+except Exception as e:
+    print(f"ERR: {e}")
 </pre><br>
 
 <p>
-編譯
+執行
 </p>
 <pre>
-$ sudo docker build -t someip .
-$ sudo docker run -it --rm -v `pwd`:/myfolder someip /bin/bash
-
-# cd /vsomeip/build/examples
-# make
-</pre><br>
-
+$ python3 ./main.py
+$ wireshark test.pcap
+</pre>
 <p>
-如果要刪除該Docker Image，使用如下指令
+<img src="scapy_udp/1.jpg" class="maxSize">
 </p>
-<pre>
-$ sudo docker image rm someip
-</pre><br>
 
 <p>
-<br><a href="../../network.htm">返回上一頁</a>
+<br><a href="../../system.htm">返回上一頁</a>
 </p>
 
 </div>
