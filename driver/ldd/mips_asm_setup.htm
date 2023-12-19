@@ -49,11 +49,10 @@
 <hr size="1">
 <p>
 參考資訊：<br>
-1. <a href="https://github.com/steward-fu/mt7688/releases/tag/v1.0">mt7688</a><br><br>
+1. <a href="https://github.com/steward-fu/website/releases/tag/ldd">ldd</a><br><br>
 
-為了一虧Assembly的美貌，司徒最後決定把MIPS Assembly也納入Linux Driver教學的一部分，畢竟Assembly還是司徒比較喜愛的開發語言，從更底層看到的東西，將會有別於一般使用C/C++開發的東西，為了了解底層運作，學習Assembly還是有其必要，而目前坊間有許多MIPS開發板可以選擇，使用者可以選擇自己喜愛的開發板使用，司徒目前使用如下開發板<br>
-<img src="mips_asm_setup/1.jpg" class="maxSize"><br>
-如果是購買原廠開發板，可以發現，它有兩種型號，<b>Smart 7688</b>以及<b>Smart7688 Duo</b>，差別在於多了一顆Atmega32，目前司徒沒有使用它，因此，使用者也可以選擇使用Smart 7688開發板<br><br>
+目前市面上可以購買到的MIPS開發板確實不多，司徒選定的MIPS開發板如下：<br>
+<img src="mips_asm_setup/1.jpg" class="maxSize"><br><br>
 
 接著需要一條USB轉UART傳輸線，目前司徒使用PL2303傳輸線：<br>
 <img src="arm_asm_setup/2.jpg" class="maxSize"><br><br>
@@ -61,7 +60,7 @@
 接著連接開發板與UART
 </p>
 <table>
-<tr><th>Smart 7688 Duo</th><th>PL2303</th></tr>
+<tr><th>LinkIt Smart7688</th><th>PL2303</th></tr>
 <tr><td>GND</td><td>黑線</td></tr>
 <tr><td>P9</td><td>綠線</td></tr>
 <tr><td>P8</td><td>白線</td></tr>
@@ -69,31 +68,48 @@
 <p>
 <img src="mips_asm_setup/2.jpg" class="maxSize"><br><br>
 
-接著為了避免發生驅動無法掛載的問題，需要自己編譯一次Kernel
+為了避免發生驅動無法掛載的問題，需要自己編譯一次Kernel
 </p>
 <pre>
-$ cd ~/Downloads/
-$ wget https://github.com/steward-fu/mt7688/releases/download/v1.0/toolchain.tar.gz
-$ tar xvf toolchain.tar.gz
+$ cd
+$ wget https://github.com/steward-fu/website/releases/download/ldd/mips_gcc-8.30.tar.gz
+$ tar xvf mips_gcc-8.30.tar.gz
 $ sudo mv mt7688 /opt/
 
-$ wget https://github.com/steward-fu/mt7688/releases/download/v1.0/kernel.tar.gz
-$ tar xvf kernel.tar.gz
+$ wget https://github.com/steward-fu/website/releases/download/ldd/mips_kernel.tar.gz
+$ tar xvf mips_kernel.tar.gz
 $ cd kernel
 $ ./run.sh
 </pre><br>
 
 <p>
-接著更新系統，步驟如下：<br>
+更新系統，步驟如下：<br>
 1. 準備USB隨身碟並且格式化成FAT32<br>
-2. 複製編譯後的lks7688.img到USB隨身碟<br>
-3. 插入USB隨身碟到Smart 7688 Duo的USB host port<br>
+2. 複製編譯後的<b>lks7688.img</b>到USB隨身碟<br>
+3. 插入USB隨身碟到LinkIt Smart7688的USB Port<br>
 <img src="mips_asm_setup/3.jpg" class="maxSize"><br>
 4. 按住WiFi按鈕<br>
 5. 接上USB電源<br> 
 6. 5秒後鬆開WiFi按鈕(第一次WiFi LED滅時)<br><br>
 
-更新完成後，使用minicom(<b>baudrate 57600bps</b>)就可以看到如下資訊：
+更新過程
+</p>
+<pre>
+Register 1111 NbrPorts 1
+USB EHCI 1.00
+scanning bus 0 for devices... 2 USB Device(s) found
+       scanning bus for storage devices... 1 Storage Device(s) found
+reading lks7688.img
+.......................................................
+
+3145732 bytes read
+writing lks7688.img to flash
+................................................
+................................................
+</pre><br>
+
+<p>
+更新完成後，使用minicom(57600bps)就可以看到如下資訊：
 </p>
 <pre>
 Welcome to MT7688
@@ -102,11 +118,11 @@ mt7688 login:
 <p>
 P.S. 輸入root即可進入系統<br><br>
 
-接著查看一下Kernel號碼以及編譯者的資訊，如果沒有問題，那代表開發環境已經準備好了
+檢查一下Kernel號碼以及編譯者的資訊，如果沒有問題，那代表開發環境已經準備好了
 </p>
 <pre>
-# cat /proc/version
-  Linux version 5.4.83 (steward@debian) (gcc version 7.4.0 (Buildroot 2019.02.4)) #3 Fri Dec 18 19:59:00 EST 2020
+# cat /proc/version 
+    Linux version 3.18.44 (steward@debian) (gcc version 7.4.0 (Buildroot 2019.02.4) ) #2 Tue Dec 19 07:29:26 EST 2023
 </pre><br>
 
 <br><a href="../../driver.htm">返回上一頁</a>
