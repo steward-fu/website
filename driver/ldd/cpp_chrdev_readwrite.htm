@@ -49,9 +49,10 @@
 <hr size="1">
 <p>
 參考資訊：<br>
-1. <a href="https://github.com/steward-fu/ldd">Source Code</a><br><br>
+1. <a href="https://github.com/steward-fu/website/releases/tag/ldd">ldd</a><br>
+2. <a href="https://www.aps-web.jp/en/ca-en/21578/#anchor2">anchor2</a><br><br>
 
-User Application可以透過read()、write()傳遞資料給驅動程式，而需要注意的地方是，複製資料使用的方式是copy_to_user()、copy_from_user()，而不是一般的memcpy()<br><br>
+User Application可以透過read()、write()傳送資料給驅動程式，但是需要注意的地方是，在Linux Kernel中，如果要存取User Application傳送過來的資料時，必須使用copy_to_user()、copy_from_user()，而不是一般的memcpy()或者直接指標操作，否則會導致驅動程式崩潰，這是因為Linux Kernel和User Application是位於不同保護空間，因此，在存取User Application資料時，必須確保該資料已經被Map且位於記憶體<br><br>
 
 使用方式：<br>
 1. copy_to_user()<br>
@@ -70,65 +71,65 @@ MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Steward Fu");
 MODULE_DESCRIPTION("Linux Driver");
 
-static int base=0;
+static int base = 0;
 static struct cdev mycdev;
-static char mybuf[255]={0};
-static struct class *myclass=NULL;
+static char mybuf[255] = {0};
+static struct class *myclass = NULL;
 
 static int myopen(struct inode *inode, struct file *file)
 {
-  printk("%s\n", __func__);
-  return 0;
+    printk("%s\n", __func__);
+    return 0;
 }
 
 static int myclose(struct inode *inode, struct file *file)
 {
-  printk("%s\n", __func__);
-  return 0;
+    printk("%s\n", __func__);
+    return 0;
 }
 
 static ssize_t myread(struct file *flip, char __user *buf, size_t len, loff_t *off)
 {
-  int r=0;
+    int r = 0;
   
-  r = copy_to_user(buf, mybuf, strlen(mybuf));
-  printk("%s, %s\n", __func__, mybuf);
-  return r;
+    r = copy_to_user(buf, mybuf, strlen(mybuf));
+    printk("%s, %s\n", __func__, mybuf);
+    return r;
 }
 
 static ssize_t mywrite(struct file *flip, const char __user *buf, size_t len, loff_t *off)
 {
-  int r=0;
+    int r = 0;
 
-  r = copy_from_user(mybuf, buf, len);
-  printk("%s, %s\n", __func__, mybuf);
-  return r;
+    r = copy_from_user(mybuf, buf, len);
+    printk("%s, %s\n", __func__, mybuf);
+    return r;
 }
 
 static const struct file_operations myfops = {
-  .owner = THIS_MODULE,
-  .open = myopen,
-  .read = myread,
-  .write = mywrite,
-  .release = myclose,
+    .owner = THIS_MODULE,
+    .open = myopen,
+    .read = myread,
+    .write = mywrite,
+    .release = myclose,
 };
 
 int ldd_init(void)
 {
-  alloc_chrdev_region(&amp;base, 0, 1, "myfile");
-  myclass = class_create(THIS_MODULE, "myfile");
-  device_create(myclass, NULL, base, NULL, "myfile");
-  cdev_init(&amp;mycdev, &amp;myfops);
-  cdev_add(&amp;mycdev, base, 1);
-  return 0;
+    alloc_chrdev_region(&amp;base, 0, 1, "myfile");
+    myclass = class_create(THIS_MODULE, "myfile");
+    device_create(myclass, NULL, base, NULL, "myfile");
+    cdev_init(&amp;mycdev, &amp;myfops);
+    cdev_add(&amp;mycdev, base, 1);
+    return 0;
 }
  
 void ldd_exit(void)
 {
-  device_destroy(myclass, base);
-  cdev_del(&amp;mycdev);
-  class_destroy(myclass);
-  unregister_chrdev_region(base, 1);
+    device_destroy(myclass, base);
+    cdev_del(&amp;mycdev);
+    class_destroy(myclass);
+    unregister_chrdev_region(base, 1);
 }
  
 module_init(ldd_init);
@@ -146,20 +147,18 @@ module_exit(ldd_exit);
 </p>
 <pre>
 # echo "test" &gt; /dev/myfile
-  mywrite, test
-
+    mywrite, test
 </pre>
 <p>
-P.S. 按下<b>ctrl+c</b>停止<br><br>
+P.S. 按下<b>Ctrl+C</b>停止<br><br>
 
 讀取字串
 </p>
 <pre>
 # cat /dev/myfile
-  myopen
-  myread, test
-
-  myclose
+    myopen
+    myread, test
+    myclose
 </pre><br>
 
 <p>

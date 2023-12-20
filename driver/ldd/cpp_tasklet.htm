@@ -49,7 +49,7 @@
 <hr size="1">
 <p>
 參考資訊：<br>
-1. <a href="https://github.com/steward-fu/ldd">Source Code</a><br><br>
+1. <a href="https://github.com/steward-fu/website/releases/tag/ldd">ldd</a><br><br>
 
 tasklet也是屬於softirq的一種，差別在於執行順序是排在softirq後面且不會有重複進入問題(reentrant)，加上不是靜態編譯，因此，不需要特別修改Kernel就可以使用，因此，是一種相當適合應用在高優先級別的延遲處理機制，當然，高優先級別的機制是不適合處理太過耗時的東西，這點還是需要特別注意<br><br>
 
@@ -77,30 +77,30 @@ MODULE_DESCRIPTION("Linux Driver");
  
 #define BUTTON 27
 
-struct tasklet_struct mytask={0};
+struct tasklet_struct mytask = {0};
 
 void tasklet_handler(unsigned long data)
 {
-  printk("%s\n", __func__);
+    printk("%s\n", __func__);
 }
 
 static irqreturn_t irq_handler(int irq, void *arg)
 {
-  tasklet_schedule(&amp;mytask);
-  return IRQ_HANDLED;
+    tasklet_schedule(&amp;mytask);
+    return IRQ_HANDLED;
 }
 
 int ldd_init(void)
 {
-  tasklet_init(&amp;mytask, tasklet_handler, 0);
-  request_irq(gpio_to_irq(BUTTON), irq_handler, IRQF_TRIGGER_RISING, "gpio_irq", NULL);
-  return 0;
+    tasklet_init(&amp;mytask, tasklet_handler, 0);
+    request_irq(gpio_to_irq(BUTTON), irq_handler, IRQF_TRIGGER_RISING, "gpio_irq", NULL);
+    return 0;
 }
  
 void ldd_exit(void)
 {
-  free_irq(gpio_to_irq(BUTTON), NULL);
-  tasklet_kill(&amp;mytask);
+    free_irq(gpio_to_irq(BUTTON), NULL);
+    tasklet_kill(&amp;mytask);
 }
  
 module_init(ldd_init);

@@ -49,9 +49,10 @@
 <hr size="1">
 <p>
 參考資訊：<br>
-1. <a href="https://github.com/steward-fu/ldd">Source Code</a><br><br>
+1. <a href="https://github.com/steward-fu/website/releases/tag/ldd">ldd</a><br>
+2. <a href="https://linux-kernel-labs.github.io/refs/heads/master/labs/device_drivers.html">device_drivers</a><br><br>
 
-User Application可以透過檔案操作方式跟驅動程式溝通，Linux將這種檔案方式歸類成字元驅動程式(Char)和區塊驅動程式(Block)兩大類，主要區別在於傳遞方式以及速度，可以把字元驅動程式想像成每次傳輸都是以1個Byte為單位，而User Application可以透過open()、read()、write()、ioctl()、close()跟字元驅動程式溝通，那User Application怎麼知道路徑在哪呢？答案是Symbolic Link(/dev/xxx)，那Symbolic Link又如何連結到字元驅動程式呢？答案是Major、Minor號碼，Major、Minor號碼是驅動程式的索引(一個代表號碼)，字元驅動程式在被系統載入時，會註冊Major和Minor號碼，使用者可以透過mknod工具，去建立一個Symbolic Link(名稱可以由使用者隨意取)並且綁定到字元驅動程式的這個Major、Minor號碼，完成連接的溝通管道<br><br>
+User Application可以透過檔案操作方式跟驅動程式溝通，在Linux Kernel中，將檔案分成字元驅動程式(Char)和區塊驅動程式(Block)兩大類，主要區別在於傳輸方式，可以把字元驅動程式想像成每次傳輸都是以1個Byte為單位，而區塊驅動程式則是多個Bytes為單位，如：512 Bytes，User Application可以透過open()、read()、write()、ioctl()、close()跟字元驅動程式溝通，那User Application怎麼知道路徑在哪呢？答案是Symbolic Link(/dev/xxx)，那Symbolic Link又如何連結到字元驅動程式呢？答案是Major、Minor號碼，Major、Minor號碼是驅動程式的裝置索引，字元驅動程式在被系統載入時，會註冊Major和Minor號碼，使用者可以透過mknod工具，去建立一個Symbolic Link(名稱可以由使用者隨意取)並且綁定到字元驅動程式的這個Major、Minor號碼，完成連接的管道<br><br>
 
 字元驅動程式建立步驟：<br>
 1. alloc_chrdev_region()<br>
@@ -72,40 +73,40 @@ MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Steward Fu");
 MODULE_DESCRIPTION("Linux Driver");
 
-static int base=0;
+static int base = 0;
 static struct cdev mycdev;
 
 static int myopen(struct inode *inode, struct file *file)
 {
-  printk("%s\n", __func__);
-  return 0;
+    printk("%s\n", __func__);
+    return 0;
 }
 
 static int myclose(struct inode *inode, struct file *file)
 {
-  printk("%s\n", __func__);
-  return 0;
+    printk("%s\n", __func__);
+    return 0;
 }
 
 static const struct file_operations myfops = {
-  .owner = THIS_MODULE,
-  .open = myopen,
-  .release = myclose,
+    .owner = THIS_MODULE,
+    .open = myopen,
+    .release = myclose,
 };
 
 int ldd_init(void)
 {
-  alloc_chrdev_region(&amp;base, 0, 1, "myfile");
-  cdev_init(&amp;mycdev, &amp;myfops);
-  cdev_add(&amp;mycdev, base, 1);
-  printk("major:%d, minor:%d\n", MAJOR(base), MINOR(base));
-  return 0;
+    alloc_chrdev_region(&amp;base, 0, 1, "myfile");
+    cdev_init(&amp;mycdev, &amp;myfops);
+    cdev_add(&amp;mycdev, base, 1);
+    printk("major:%d, minor:%d\n", MAJOR(base), MINOR(base));
+    return 0;
 }
  
 void ldd_exit(void)
 {
-  cdev_del(&amp;mycdev);
-  unregister_chrdev_region(base, 1);
+    cdev_del(&amp;mycdev);
+    unregister_chrdev_region(base, 1);
 }
  
 module_init(ldd_init);
@@ -115,14 +116,15 @@ module_exit(ldd_exit);
 <b>ldd_init</b>: 建立字元驅動程式<br>
 <b>myopen</b>: 對應User Application的open()<br>
 <b>myclose</b>: 對應User Application的close()<br>
-<b>ldd_exit</b>: 刪除字元驅動程式<br>
+<b>ldd_exit</b>: 刪除字元驅動程式<br><br>
+
 alloc_chrdev_region()可以取得空閒的裝置號碼，如果想要自訂Major號碼，可以使用register_chrdev_region()<br><br>
 
 安裝驅動
 </p>
 <pre>
 # insmod /boot/main.ko 
-  major:243, minor:0
+    major:243, minor:0
 </pre>
 <p>
 P.S. Linux驅動程式使用Major、Minor號碼當作裝置索引<br><br>
@@ -132,7 +134,7 @@ make node
 <pre>
 # mknod /dev/myfile c 243 0
 # ls -al /dev/myfile
-  crw-r--r--    1 root     root      243,   0 Jan  1 00:00 /dev/myfile
+    crw-r--r--    1 root     root      243,   0 Jan  1 00:00 /dev/myfile
 </pre>
 <p>
 P.S. 建立Symbolic符號，供User Application開啟使用<br><br>
@@ -141,8 +143,8 @@ P.S. 建立Symbolic符號，供User Application開啟使用<br><br>
 </p>
 <pre>
 # echo "" &gt; /dev/myfile
-  myopen
-  sh: write error: Invalid argument myclose
+    myopen
+    sh: write error: Invalid argument myclose
 </pre><br>
 
 <p>

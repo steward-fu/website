@@ -49,7 +49,7 @@
 <hr size="1">
 <p>
 參考資訊：<br>
-1. <a href="https://github.com/steward-fu/ldd">Source Code</a><br><br>
+1. <a href="https://github.com/steward-fu/website/releases/tag/ldd">ldd</a><br><br>
 
 除了使用mknod工具建立Symbloic Link之外，字元驅動程式也可以自行建立這個Symbolic Link<br><br>
 
@@ -78,44 +78,44 @@ MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Steward Fu");
 MODULE_DESCRIPTION("Linux Driver");
 
-static int base=0;
+static int base = 0;
 static struct cdev mycdev;
-static struct class *myclass=NULL;
+static struct class *myclass = NULL;
 
 static int myopen(struct inode *inode, struct file *file)
 {
-  printk("%s\n", __func__);
-  return 0;
+    printk("%s\n", __func__);
+    return 0;
 }
 
 static int myclose(struct inode *inode, struct file *file)
 {
-  printk("%s\n", __func__);
-  return 0;
+    printk("%s\n", __func__);
+    return 0;
 }
 
 static const struct file_operations myfops = {
-  .owner = THIS_MODULE,
-  .open = myopen,
-  .release = myclose,
+    .owner = THIS_MODULE,
+    .open = myopen,
+    .release = myclose,
 };
 
 int ldd_init(void)
 {
-  alloc_chrdev_region(&amp;base, 0, 1, "myfile");
-  myclass = class_create(THIS_MODULE, "myfile"); // /sys/class/myfile
-  device_create(myclass, NULL, base, NULL, "myfile"); // /dev/myfile
-  cdev_init(&amp;mycdev, &amp;myfops);
-  cdev_add(&amp;mycdev, base, 1);
-  return 0;
+    alloc_chrdev_region(&amp;base, 0, 1, "myfile");
+    myclass = class_create(THIS_MODULE, "myfile");      /* /sys/class/myfile */
+    device_create(myclass, NULL, base, NULL, "myfile"); /* /dev/myfile       */
+    cdev_init(&amp;mycdev, &amp;myfops);
+    cdev_add(&amp;mycdev, base, 1);
+    return 0;
 }
  
 void ldd_exit(void)
 {
-  device_destroy(myclass, base);
-  cdev_del(&amp;mycdev);
-  class_destroy(myclass);
-  unregister_chrdev_region(base, 1);
+    device_destroy(myclass, base);
+    cdev_del(&amp;mycdev);
+    class_destroy(myclass);
+    unregister_chrdev_region(base, 1);
 }
  
 module_init(ldd_init);
@@ -138,7 +138,7 @@ module_exit(ldd_exit);
 </p>
 <pre>
 # ls -al /dev/myfile
-  crw-r--r--    1 root     root      243,   0 Jan  1 00:00 /dev/myfile
+    crw-r--r--    1 root     root      243,   0 Jan  1 00:00 /dev/myfile
 </pre><br>
 
 <p>
@@ -146,8 +146,8 @@ module_exit(ldd_exit);
 </p>
 <pre>
 # echo "" &gt; /dev/myfile
-  myopen
-  sh: write error: Invalid argument myclose
+    myopen
+    sh: write error: Invalid argument myclose
 </pre><br>
 
 <p>

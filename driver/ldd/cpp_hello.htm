@@ -49,9 +49,9 @@
 <hr size="1">
 <p>
 參考資訊：<br>
-1. <a href="https://github.com/steward-fu/ldd">Source Code</a><br><br>
+1. <a href="https://github.com/steward-fu/website/releases/tag/ldd">ldd</a><br><br>
 
-hello, world!是一個相當經典的入門教學範例，從這個範例的框架，使用者可以一探Linux的精簡之美，當然，它主要表達的目的，更多是對於環境的操作熟悉<br><br>
+<b>hello, world!</b>是一個相當經典的入門教學範例，從這個範例的框架，使用者可以一探Linux Kernel的精簡之美，當然，它主要表達的目的，更多是對於操作環境的熟悉<br><br>
 
 main.c
 </p>
@@ -66,59 +66,60 @@ MODULE_DESCRIPTION("Linux Driver");
  
 int ldd_init(void)
 {
-  printk("hello, world!\n");
-  return 0;
+    printk("hello, world!\n");
+    return 0;
 }
  
 void ldd_exit(void)
 {
-  printk("unload it\n");
+    printk("unload it\n");
 }
  
 module_init(ldd_init);
 module_exit(ldd_exit);
 </pre>
 <p>
-<b>ldd_init</b>: 系統載入驅動程式時，第一時間呼叫使用<br>
-<b>ldd_exit</b>: 卸載驅動程式時，最後時間被系統呼叫使用<br><br>
+<b>ldd_init</b>: 載入驅動程式時，系統會呼叫使用<br>
+<b>ldd_exit</b>: 卸載驅動程式時，系統會呼叫使用<br><br>
 
 Makefile
 </p>
 <pre>
 export ARCH=arm
-export CROSS_COMPILE=arm-linux-gnueabihf-
-KERNEL=$(HOME)/Downloads/kernel
+export CROSS_COMPILE=/opt/gcc-4.9/bin/arm-linux-gnueabihf-
+
+KERNEL=$(HOME)/kernel
 
 obj-m += main.o
+
 all:
 	make -C $(KERNEL) M=$(PWD) modules
 
 clean:
 	make -C $(KERNEL) M=$(PWD) clean
-</pre>
-<p>
-P.S. make指令前面是一個Tab字元，而非空白字元<br><br>
+</pre><br>
 
+<p>
 編譯
 </p>
 <pre>
 $ make
-  make -C kernel M=hello modules
-  make[1]: Entering directory 'kernel'
-    CC [M]  hello/main.o
-    Building modules, stage 2.
-    MODPOST 1 modules
-    CC      hello/main.mod.o
-    LD [M]  hello/main.ko
-  make[1]: Leaving directory 'kernel'
+    make -C kernel M=hello modules
+    make[1]: Entering directory 'kernel'
+        CC [M]  hello/main.o
+        Building modules, stage 2.
+        MODPOST 1 modules
+        CC      hello/main.mod.o
+        LD [M]  hello/main.ko
+    make[1]: Leaving directory 'kernel'
 </pre><br>
 
 <p>
-接著把<b>main.ko</b>放到第一分區，進入系統後，執行如下指令掛載驅動程式：
+接著把<b>main.ko</b>放到MicroSD第一分區，進入系統後，執行如下指令掛載驅動程式：
 </p>
 <pre>
 # insmod /boot/main.ko
-  hello, world!
+    hello, world!
 </pre><br>
 
 <p>
@@ -126,7 +127,7 @@ $ make
 </p>
 <pre>
 # rmmod main
-  unload it
+    unload it
 </pre><br>
 
 <p>

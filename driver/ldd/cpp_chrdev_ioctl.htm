@@ -49,9 +49,9 @@
 <hr size="1">
 <p>
 參考資訊：<br>
-1. <a href="https://github.com/steward-fu/ldd">Source Code</a><br><br>
+1. <a href="https://github.com/steward-fu/website/releases/tag/ldd">ldd</a><br><br>
 
-User Application除了使用read()、write()跟驅動程式傳遞資料之外，也可以使用以控制為主的ioctl()去跟驅動程式做交互設定的動作，作法只要添加unlocked_ioctl的Callback副程式即可<br><br>
+User Application除了透過read()、write()跟驅動程式傳送資料之外，也可以使用以控制為主的ioctl()去跟驅動程式溝通<br><br>
 
 main.c
 </p>
@@ -65,51 +65,51 @@ MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Steward Fu");
 MODULE_DESCRIPTION("Linux Driver");
 
-static int base=0;
+static int base = 0;
 static struct cdev mycdev;
-static struct class *myclass=NULL;
+static struct class *myclass = NULL;
 
 static int myopen(struct inode *inode, struct file *file)
 {
-  printk("%s\n", __func__);
-  return 0;
+    printk("%s\n", __func__);
+    return 0;
 }
 
 static int myclose(struct inode *inode, struct file *file)
 {
-  printk("%s\n", __func__);
-  return 0;
+    printk("%s\n", __func__);
+    return 0;
 }
 
 static long myioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
-  printk("%s, 0x%x\n", __func__, cmd);
-  return 0;
+    printk("%s, 0x%x\n", __func__, cmd);
+    return 0;
 }
 
 static const struct file_operations myfops = {
-  .owner = THIS_MODULE,
-  .open = myopen,
-  .release = myclose,
-  .unlocked_ioctl = myioctl,
+    .owner = THIS_MODULE,
+    .open = myopen,
+    .release = myclose,
+    .unlocked_ioctl = myioctl,
 };
 
 int ldd_init(void)
 {
-  alloc_chrdev_region(&amp;base, 0, 1, "myfile");
-  myclass = class_create(THIS_MODULE, "myfile");
-  device_create(myclass, NULL, base, NULL, "myfile");
-  cdev_init(&amp;mycdev, &amp;myfops);
-  cdev_add(&amp;mycdev, base, 1);
-  return 0;
+    alloc_chrdev_region(&amp;base, 0, 1, "myfile");
+    myclass = class_create(THIS_MODULE, "myfile");
+    device_create(myclass, NULL, base, NULL, "myfile");
+    cdev_init(&amp;mycdev, &amp;myfops);
+    cdev_add(&amp;mycdev, base, 1);
+    return 0;
 }
  
 void ldd_exit(void)
 {
-  cdev_del(&amp;mycdev);
-  device_destroy(myclass, base);
-  class_destroy(myclass);
-  unregister_chrdev_region(base, 1);
+    cdev_del(&amp;mycdev);
+    device_destroy(myclass, base);
+    class_destroy(myclass);
+    unregister_chrdev_region(base, 1);
 }
  
 module_init(ldd_init);
@@ -138,12 +138,12 @@ app.c
 
 int main(int argc, char **argv)
 {
-  int fd=0;
+    int fd = 0;
 
-  fd = open("/dev/myfile", O_RDWR);
-  ioctl(fd, MY_IOCTL, 0);
-  close(fd);
-  return 0;
+    fd = open("/dev/myfile", O_RDWR);
+    ioctl(fd, MY_IOCTL, 0);
+    close(fd);
+    return 0;
 }
 </pre><br>
 
@@ -153,9 +153,9 @@ int main(int argc, char **argv)
 <pre>
 # insmod /boot/main.ko
 # /boot/app
-  myopen
-  myioctl, 0xc0050000
-  myclose
+    myopen
+    myioctl, 0xc0050000
+    myclose
 </pre><br>
 
 <p>

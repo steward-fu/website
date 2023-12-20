@@ -49,15 +49,15 @@
 <hr size="1">
 <p>
 參考資訊：<br>
-1. <a href="https://github.com/steward-fu/ldd">Source Code</a><br><br>
+1. <a href="https://github.com/steward-fu/website/releases/tag/ldd">ldd</a><br><br>
 
-由於PocketBeagle板上的Power按鍵是透過PMIC連接，因此，需要連接另一個按鍵作為此篇教學使用，司徒選定27腳位，如下圖：<br>
+由於PocketBeagle板上的Power按鍵是透過PMIC連接，不適用此篇教學，因此，需要連接另一個按鍵來使用，司徒選定27腳位，如下圖：<br>
 <img src="cpp_gpio_input/2.jpg" class="maxSize"><br><br>
 
 僅需要焊接一顆按鍵即可，連接27腳位到+3.3V<br>
 <img src="cpp_gpio_input/1.jpg" class="maxSize"><br><br>
 
-使用步驟：<br>
+在此篇範例中，司徒使用Timer做按鍵檢查，當按鍵被按下時，點亮LED，反之則熄滅LED，因此，需要使用Linux Kernel的GPIO操作函數以及Timer，針對GPIO的輸入應用，步驟如下：<br>
 1. gpio_request()<br>
 2. gpio_direction_input()<br>
 3. gpio_get_value()<br>
@@ -82,36 +82,36 @@ MODULE_DESCRIPTION("Linux Driver");
 #define BUTTON   27
 #define USR3_LED ((32 * 1) + 24)
 
-static int period=100;
-static struct timer_list timer={0};
+static int period = 100;
+static struct timer_list timer = {0};
 
 void timer_handler(unsigned long unused)
 {
-  int state=0;
+    int state = 0;
      
-  state = gpio_get_value(BUTTON);
-  gpio_set_value(USR3_LED, state);
-  mod_timer(&amp;timer, jiffies + msecs_to_jiffies(period));
+    state = gpio_get_value(BUTTON);
+    gpio_set_value(USR3_LED, state);
+    mod_timer(&amp;timer, jiffies + msecs_to_jiffies(period));
 }
  
 int ldd_init(void)
 {
-  gpio_request(USR3_LED, "USR3");
-  gpio_direction_output(USR3_LED, 1);
+    gpio_request(USR3_LED, "USR3");
+    gpio_direction_output(USR3_LED, 1);
 
-  gpio_request(BUTTON, "BTN");
-  gpio_direction_input(BUTTON);
+    gpio_request(BUTTON, "BTN");
+    gpio_direction_input(BUTTON);
   
-  setup_timer(&amp;timer, timer_handler, 0);
-  mod_timer(&amp;timer, jiffies + msecs_to_jiffies(period));
-  return 0;
+    setup_timer(&amp;timer, timer_handler, 0);
+    mod_timer(&amp;timer, jiffies + msecs_to_jiffies(period));
+    return 0;
 }
  
 void ldd_exit(void)
 {
-  del_timer(&amp;timer);
-  gpio_free(BUTTON);
-  gpio_free(USR3_LED);
+    del_timer(&amp;timer);
+    gpio_free(BUTTON);
+    gpio_free(USR3_LED);
 }
  
 module_init(ldd_init);
