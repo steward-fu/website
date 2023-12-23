@@ -66,32 +66,32 @@ main.c
 
 int main(int argc, char **argv)
 {
-  int fan=-1;
-  char buf[4096]={0};
-  char path[255]={0};
-  char fdpath[32]={0};
-  ssize_t buflen=0, linklen=0;
-  struct fanotify_event_metadata *metadata=NULL;
+    int fan = -1;
+    char buf[4096] = {0};
+    char path[255] = {0};
+    char fdpath[32] = {0};
+    ssize_t buflen = 0, linklen = 0;
+    struct fanotify_event_metadata *metadata = NULL;
 
-  fan = fanotify_init(FAN_CLASS_NOTIF, O_RDONLY);
-  fanotify_mark(fan, FAN_MARK_ADD, FAN_OPEN | FAN_EVENT_ON_CHILD, AT_FDCWD, "/tmp");
+    fan = fanotify_init(FAN_CLASS_NOTIF, O_RDONLY);
+    fanotify_mark(fan, FAN_MARK_ADD, FAN_OPEN | FAN_EVENT_ON_CHILD, AT_FDCWD, "/tmp");
 
-  while(1){
-    buflen = read(fan, buf, sizeof(buf));
-    metadata = (struct fanotify_event_metadata*)&amp;buf;
+    while (1) {
+        buflen = read(fan, buf, sizeof(buf));
+        metadata = (struct fanotify_event_metadata*)&amp;buf;
 
-    while(FAN_EVENT_OK(metadata, buflen)){
-      if(metadata-&gt;mask &amp; FAN_Q_OVERFLOW){
-        continue;
-      }
-      sprintf(fdpath, "/proc/self/fd/%d", metadata-&gt;fd);
-      linklen = readlink(fdpath, path, sizeof(path) - 1);
-      path[linklen] = '\0';
-      printf("%s opened by process %d.\n", path, (int)metadata-&gt;pid);
-      close(metadata-&gt;fd);
-      metadata = FAN_EVENT_NEXT(metadata, buflen);
+        while (FAN_EVENT_OK(metadata, buflen)) {
+            if (metadata-&gt;mask &amp; FAN_Q_OVERFLOW) {
+                continue;
+            }
+            sprintf(fdpath, "/proc/self/fd/%d", metadata-&gt;fd);
+            linklen = readlink(fdpath, path, sizeof(path) - 1);
+            path[linklen] = '\0';
+            printf("%s opened by process %d.\n", path, (int)metadata-&gt;pid);
+            close(metadata-&gt;fd);
+            metadata = FAN_EVENT_NEXT(metadata, buflen);
+        }
     }
-  }
 }
 </pre><br>
 

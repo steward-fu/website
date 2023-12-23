@@ -62,26 +62,25 @@ init/main.c
 </p>
 <pre class="brush:cpp">
 /* Anything after -- gets handed straight to init. */
-static int __init set_init_arg(char *param, char *val,
-             const char *unused, void *arg)
+static int __init set_init_arg(char *param, char *val, const char *unused, void *arg)
 {
-  unsigned int i;
+    unsigned int i;
 
-  if (panic_later)
-    return 0;
+    if (panic_later)
+        return 0;
 
-  repair_env_string(param, val, unused, NULL);
+    repair_env_string(param, val, unused, NULL);
 
-  for (i = 0; argv_init[i]; i++) {
-    if (i == MAX_INIT_ARGS) {
-      panic_later = "init";
-      panic_param = param;
-      return 0;
+    for (i = 0; argv_init[i]; i++) {
+        if (i == MAX_INIT_ARGS) {
+            panic_later = "init";
+            panic_param = param;
+            return 0;
+        }
     }
-  }
-  argv_init[i] = param;
-  printk("%s, param %d: %s\n", __func__, i, param);
-  return 0;
+    argv_init[i] = param;
+    printk("%s, param %d: %s\n", __func__, i, param);
+    return 0;
 }
 </pre>
 <p>
@@ -92,13 +91,11 @@ set_init_arg()會解析"--"後面的參數<br><br>
 <pre class="brush:cpp">
 static int run_init_process(const char *init_filename)
 {
-  argv_init[0] = init_filename;
+    argv_init[0] = init_filename;
 
-  printk("argv[1]: %s\n", argv_init[1]);
-  printk("argv[2]: %s\n", argv_init[2]);
-  return do_execve(getname_kernel(init_filename),
-    (const char __user *const __user *)argv_init,
-    (const char __user *const __user *)envp_init);
+    printk("argv[1]: %s\n", argv_init[1]);
+    printk("argv[2]: %s\n", argv_init[2]);
+    return do_execve(getname_kernel(init_filename), (const char __user *const __user *)argv_init, (const char __user *const __user *)envp_init);
 }
 </pre><br>
 
