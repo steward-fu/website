@@ -49,7 +49,8 @@
 <hr size="1">
 <p>
 參考資訊：<br>
-1. <a href="https://leetcode.com/">leetcode</a><br><br>
+1. <a href="https://leetcode.com/">leetcode</a><br>
+2. <a href="https://static.kancloud.cn/kancloud/data-structure-and-algorithm-notes/72977">kancloud</a><br><br>
 
 題目：<br>
 <img src="c_4/1.jpg" class="maxSize"><br><br>
@@ -60,14 +61,35 @@
 class Solution {
 public:
     double findMedianSortedArrays(vector&lt;int&gt;&amp; nums1, vector&lt;int&gt;&amp; nums2) {
-        nums1.insert(nums1.end(), nums2.begin(), nums2.end());
-        sort(nums1.begin(), nums1.end());
+        int idx = 0;
+        int idx1 = 0;
+        int idx2 = 0;
+        int len1 = nums1.size();
+        int len2 = nums2.size();
+        int len = len1 + len2;
+        vector&lt;int&gt; p;
 
-        int len = nums1.size() &gt;&gt; 1;
-        if (nums1.size() % 2) {
-            return nums1[len];
+        while ((idx1 &lt; len1) &amp;&amp; (idx2 &lt; len2)) {
+            if (nums1[idx1] &gt; nums2[idx2]) {
+                p.push_back(nums2[idx2++]);
+            }
+            else {
+                p.push_back(nums1[idx1++]);
+            }
         }
-        return ((double)nums1[len - 1] + nums1[len]) / 2.0;
+
+        while (idx1 &lt; len1) {
+            p.push_back(nums1[idx1++]);
+        }
+
+        while (idx2 &lt; len2) {
+            p.push_back(nums2[idx2++]);
+        }
+
+        if (len % 2) {
+            return p[len &gt;&gt; 1];
+        }
+        return ((double)p[(len - 1) &gt;&gt; 1] + p[len &gt;&gt; 1]) / 2.0;
     }
 };
 </pre><br>

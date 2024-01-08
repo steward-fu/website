@@ -49,7 +49,8 @@
 <hr size="1">
 <p>
 參考資訊：<br>
-1. <a href="https://leetcode.com/">leetcode</a><br><br>
+1. <a href="https://leetcode.com/">leetcode</a><br>
+2. <a href="https://static.kancloud.cn/kancloud/data-structure-and-algorithm-notes/72977">kancloud</a><br><br>
 
 題目：<br>
 <img src="c_4/1.jpg" class="maxSize"><br><br>
@@ -57,24 +58,35 @@
 解答：
 </p>
 <pre class="brush:cpp">
-int comp(const void *v0, const void *v1)
-{
-    return *((int*)v0) - *((int*)v1);
-}
-
 double findMedianSortedArrays(int *nums1, int nums1Size, int *nums2, int nums2Size)
 {
+    int idx = 0;
+    int idx1 = 0;
+    int idx2 = 0;
     int len = nums1Size + nums2Size;
-    int *t = malloc(sizeof(int) * len);
+    int *p = malloc(sizeof(int) * len);
 
-    memcpy(t, nums1, sizeof(int) * nums1Size);
-    memcpy(&amp;t[nums1Size], nums2, sizeof(int) * nums2Size);
-    qsort(t, len, sizeof(int), comp);
+    while ((idx1 &lt; nums1Size) &amp;&amp; (idx2 &lt; nums2Size)) {
+        if (nums1[idx1] &gt; nums2[idx2]) {
+            p[idx++] = nums2[idx2++];
+        }
+        else {
+            p[idx++] = nums1[idx1++];
+        }
+    }
+
+    while (idx1 &lt; nums1Size) {
+        p[idx++] = nums1[idx1++];
+    }
+
+    while (idx2 &lt; nums2Size) {
+        p[idx++] = nums2[idx2++];
+    }
 
     if (len % 2) {
-        return t[len &gt;&gt; 1];
+        return p[len &gt;&gt; 1];
     }
-    return ((double)t[(len &gt;&gt; 1) - 1] + t[len &gt;&gt; 1]) / 2.0;
+    return ((double)p[(len - 1) &gt;&gt; 1] + p[len &gt;&gt; 1]) / 2.0;
 }
 </pre><br>
 
