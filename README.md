@@ -18,3 +18,9 @@ All of files or resources used on my website can be found from the following lin
 | Handheld | Resource Link |
 | -------- | ------------- |
 | ![](img/photos/pyra.jpg) | [Pyra](https://github.com/steward-fu/website/releases/tag/pyra) |
+
+&nbsp;
+
+| Phone | Resource Link |
+| -------- | ------------- |
+| ![](img/photos/pixel3axl.jpg) | [Google Pixel 3a XL](https://github.com/steward-fu/website/releases/tag/pixel-3a-xl) |
