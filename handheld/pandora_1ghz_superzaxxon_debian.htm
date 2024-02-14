@@ -1,0 +1,139 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+  <link rel="shortcut icon" href="../website.ico">
+  <link rel="stylesheet" type="text/css" href="../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../css/html.css" media="screen" />
+  <link rel="stylesheet" type="text/css" href="../css/layout.css" media="screen" />
+  <script type="text/javascript" src="../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../scripts/shBrushCpp.js"></script>
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../header.js"></script>
+<div id="page">
+<h3><a href="../index.htm">掌機</a> - Pandora (1GHz) - SuperZaxxon - <b>如何同時使用Debian系統</b></h3>
+<hr size="1">
+<br>
+<p>
+login.sh
+</p>
+<pre>
+#!/bin/sh
+CHROOT=$(dirname "$0")
+CHMODE=$1
+CHUSER=$2
+ 
+my_usage(){
+    echo "usage: login [cli|lxde] [root|user]"
+}
+ 
+my_mount(){
+    mount -o remount,rw,auto,sync,suid "$CHROOT"
+    mount -o bind /dev "$CHROOT/dev"
+    mount -o bind /sys "$CHROOT/sys"
+    mount -o bind /proc "$CHROOT/proc"
+    mount -o bind /dev/pts "$CHROOT/dev/pts"
+    mount -o bind /dev/shm "$CHROOT/dev/shm"
+    mount -o bind /etc/group "$CHROOT/etc/group"
+}
+ 
+my_umount(){
+    umount "$CHROOT/sys"
+    umount "$CHROOT/proc"
+    umount "$CHROOT/dev/pts"
+    umount "$CHROOT/dev/shm"
+    umount "$CHROOT/dev"
+    umount "$CHROOT/etc/group"
+}
+ 
+if [ `whoami` != "root" ] ; then
+    echo "run me as root !"
+    my_usage()
+    exit 1
+fi
+ 
+if [ "$CHMODE" != "cli" ] &amp;&amp; [ "$CHMODE" != "lxde" ] ; then
+    echo "only support cli and lxde mode !"
+    my_usage()
+    exit 2
+fi
+ 
+my_umount &gt; /dev/null 2&gt;&amp;1
+my_mount
+ 
+if [ "$CHMODE" == "lxde" ] ; then
+    DISPLAY=:0.0
+    export DISPLAY
+    xhost +
+    chroot $CHROOT su - "$CHUSER" -c 'startlxde'
+    killall lxpanel
+    killall pcmanfm
+else
+    chroot $CHROOT su - "$CHUSER"
+fi
+ 
+my_umount &gt; /dev/null 2&gt;&amp;1
+exit 0
+</pre>
+<p>
+P.S. 將login.sh放到Debian系統根目錄下<br><br>
+
+使用如下指令執行Debian系統：
+</p>
+<pre>
+$ sudo xxx/login lxde user
+</pre><br>
+
+<p>
+進入Debian系統後，從Debian Terminal執行如下命令，否則會遇到<b>dpkg: unrecoverable fatal error</b>
+</p>
+<pre>
+$ sudo umount /etc/group
+$ sudo vim /etc/resolv.conf
+    nameserver 8.8.8.8
+</pre><br>
+
+<p>
+中文輸入法(scim)
+</p>
+<pre>
+$ XMODIFIERS=@im=SCIM GTK_IM_MODULE=scim QT4_IM_MODULE=scim leafpad
+</pre>
+
+<p>
+<img src="pandora_1ghz_superzaxxon_debian/1.jpg" class="maxSize"><br><br>
+
+中文輸入法(ibus)，執行ibus service就可以<br>
+<img src="pandora_1ghz_superzaxxon_debian/2.jpg" class="maxSize"><br>
+<img src="pandora_1ghz_superzaxxon_debian/3.jpg" class="maxSize">
+</p>
+<br>
+</div>
+</div>
+</div>
+</body>
+</html>
