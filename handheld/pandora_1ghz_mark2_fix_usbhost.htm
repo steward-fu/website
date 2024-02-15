@@ -35,73 +35,55 @@
 <div id="content">
 <script type="text/javascript" src="../header.js"></script>
 <div id="page">
-<h3><a href="../index.htm">掌機</a> - Pandora (1GHz) - SuperZaxxon - <b>中文輸入法</b></h3>
+<h3><a href="../index.htm">掌機</a> - Pandora (1GHz) - Debian (Mark2) - <b>解決USBHostTrigger問題</b></h3>
 <hr size="1">
 <br>
 <p>
-更新套件
+當使用者使用pdcmd開啓USBHost模式後，會發現無法再度使用pdcmd關閉USBHost，這是因為pdcmd script在判斷ehci-hcd時，誤將ehci_hcd寫成ehci-hcd，使用者可以使用如下方式修復：
 </p>
 <pre>
-$ sudo opkg update
-$ sudo opkg install gtk-immodule-xim
-$ sudo opkg install angstrom-locale-zh-feed-config
-$ sudo opkg install locale-base-zh-tw
+$ sudo vim /usr/sbin/pdcmd
+    USBHostTrigger(){
+      if [ -z "$(lsmod | grep ehci_hcd)" ]; then
+        msg "USB Host" "Start"
+        modprobe ehci-hcd
+      else
+        msg "USB Host" "Stop"
+        rmmod ehci-hcd
+      fi
+    }
 </pre><br>
 
 <p>
-設定中文語系
+Enable USBHost
 </p>
 <pre>
-$ sudo vim ~/.profile
-    export LANG=zh_TW.UTF-8
-    export LC_ALL=zh_TW.UTF-8
-    export XMODIFIERS=@im=uim
-    export GTK_IM_MODULE=uim
-    uim-xim &amp;
-    uim-toolbar-gtk &amp;
+$ sudo pdcmd USBHostTrigger
+$ sudo dmesg -c
+    [ 3706.670959] ehci_hcd: USB 2.0 'Enhanced' Host Controller (EHCI) Driver
+    [ 3707.675842] ehci-omap ehci-omap.0: OMAP-EHCI Host Controller
+    [ 3707.682373] ehci-omap ehci-omap.0: new USB bus registered, assigned bus number 1
+    [ 3707.687225] ehci-omap ehci-omap.0: irq 77, io mem 0x48064800
+    [ 3707.699645] ehci-omap ehci-omap.0: USB 2.0 started, EHCI 1.00
+    [ 3707.699981] usb usb1: New USB device found, idVendor=1d6b, idProduct=0002
+    [ 3707.700103] usb usb1: New USB device strings: Mfr=3, Product=2, SerialNumber=1
+    [ 3707.700317] usb usb1: Product: OMAP-EHCI Host Controller
+    [ 3707.700531] usb usb1: Manufacturer: Linux 3.2.45 ehci_hcd
+    [ 3707.700653] usb usb1: SerialNumber: ehci-omap.0
+    [ 3707.707794] hub 1-0:1.0: USB hub found
+    [ 3707.708038] hub 1-0:1.0: 3 ports detected
 </pre><br>
 
 <p>
-支援中文檔名
+Disable USBHost
 </p>
 <pre>
-$ sudo nano /etc/udev/scripts/mount.sh
-    if ! $MOUNT -t auto -o dirsync,noatime,umask=0,utf8 $DEVNAME "/media/$name" &amp;&amp; ! $MOUNT -t auto -o dirsync,noatime,utf8 $DEVNAME "/media/$name"
-</pre><br>
-
-<p>
-設定vfat mount格式為utf8
-</p>
-<pre>
-$ sudo nano /etc/xdg/xfce4/mount.rc
-    [vfat]
-    uid=<auto>
-    utf8=true
-    shotname=winnt
-</pre><br>
-
-<p>
-安裝套件
-</p>
-<pre>
-$ cd
-$ wget https://github.com/steward-fu/website/releases/download/pandora/pinyin.tar.gz
-$ cd /
-$ sudo tar xvfp ~/pinyin.tar.gz
-</pre><br>
-
-<p>
-重新開機
-</p>
-<pre>
-$ sudo reboot
-</pre><br>
-
-<p>
-完成<br>
-<img src="pandora_1ghz_superzaxxon_cht/1.jpg" class="maxSize"><br>
-P.S. 點擊右下角視窗切換輸入法，<b>Shift + Space</b>則是On、Off的切換
-</p>
+$ sudo pdcmd USBHostTrigger
+$ sudo dmesg -c
+    [ 3725.640502] ehci-omap ehci-omap.0: remove, state 4
+    [ 3725.640747] usb usb1: USB disconnect, device number 1
+    [ 3725.643341] ehci-omap ehci-omap.0: USB bus 1 deregistered
+</pre>
 <br>
 </div>
 </div>
