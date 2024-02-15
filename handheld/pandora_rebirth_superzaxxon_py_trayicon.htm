@@ -1,0 +1,142 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>司徒的教學網站</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta name="author" content="fullahead.org" />
+  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+  <meta name="description" content="A valid, XHTML 1.0 template" />
+  <meta name="robots" content="index, follow, noarchive" />
+  <meta name="googlebot" content="noarchive" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+  <link rel="shortcut icon" href="../website.ico">
+  <link rel="stylesheet" type="text/css" href="../styles/shCore.css" />
+  <link rel="stylesheet" type="text/css" href="../styles/shThemeDefault.css" />
+  <link rel="stylesheet" type="text/css" href="../css/html.css" media="screen" />
+  <link rel="stylesheet" type="text/css" href="../css/layout.css" media="screen" />
+  <script type="text/javascript" src="../scripts/shCore.js"></script>
+  <script type="text/javascript" src="../scripts/shBrushPython.js"></script>
+</head>
+
+<body>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<div id="wrapper">
+<div id="content">
+<script type="text/javascript" src="../header.js"></script>
+<div id="page">
+<h3><a href="../index.htm">掌機</a> - Pandora (Rebirth) - SuperZaxxon - Python - <b>自製鍵盤背光控制</b></h3>
+<hr size="1">
+<br>
+<p>
+trayicon.py<br>
+</p>
+<pre class="brush:python">
+#!/usr/bin/python
+import os
+import sys
+import gtk
+import glib
+import time
+import commands
+import subprocess
+
+base_path = '/usr/pandora/trayicon/'
+
+class pandora:
+    def __init__(self):
+        self.statusicon = gtk.StatusIcon()
+        self.statusicon.set_from_file('{}{}'.format(base_path, 'main.png'))
+        self.statusicon.connect("activate", self.left_click_event)
+
+    def left_click_event(self, event):
+        time = gtk.get_current_event_time()
+        button = gtk.get_current_event().button
+
+        menu = gtk.Menu()
+
+        submenu = None
+        img = gtk.Image()
+        img.set_from_file('{}{}'.format(base_path, 'off.png'))
+        submenu = gtk.ImageMenuItem("Turn Off")
+        submenu.connect("button-press-event", self.off) 
+        submenu.set_image(img)
+        menu.append(submenu)
+
+        submenu = None
+        img = gtk.Image()
+        img.set_from_file('{}{}'.format(base_path, 'lv1.png'))
+        submenu = gtk.ImageMenuItem("Level 1")
+        submenu.connect("button-press-event", self.lv1) 
+        submenu.set_image(img)
+        menu.append(submenu)
+
+        submenu = None
+        img = gtk.Image()
+        img.set_from_file('{}{}'.format(base_path, 'lv2.png'))
+        submenu = gtk.ImageMenuItem("Level 2")
+        submenu.connect("button-press-event", self.lv2) 
+        submenu.set_image(img)
+        menu.append(submenu)
+
+        submenu = None
+        img = gtk.Image()
+        img.set_from_file('{}{}'.format(base_path, 'lv3.png'))
+        submenu = gtk.ImageMenuItem("Level 3")
+        submenu.connect("button-press-event", self.lv3) 
+        submenu.set_image(img)
+        menu.append(submenu)
+
+        '''
+        menu.append(gtk.SeparatorMenuItem())
+        menuexit = gtk.ImageMenuItem("Exit")
+        img = gtk.Image()
+        img.set_from_file('{}{}'.format(base_path, 'exit.png'))
+        menuexit.set_image(img)
+        menuexit.connect("button-press-event", self.exit) 
+        menu.append(menuexit) 
+        '''
+
+        menu.show_all() 
+        menu.popup(None, None, gtk.status_icon_position_menu, button, time, self.statusicon) 
+
+    def off(self, widget, event): 
+        os.system('echo 0 &gt; /sys/class/leds/pandora::keypad_bl/brightness')
+  
+    def lv1(self, widget, event): 
+        os.system('echo 50 &gt; /sys/class/leds/pandora::keypad_bl/brightness')
+  
+    def lv2(self, widget, event): 
+        os.system('echo 150 &gt; /sys/class/leds/pandora::keypad_bl/brightness')
+   
+    def lv3(self, widget, event): 
+        os.system('echo 250 &gt; /sys/class/leds/pandora::keypad_bl/brightness')
+  
+    def exit(self, widget, event): 
+        if event.button == 1:
+            gtk.main_quit() 
+  
+pandora()
+gtk.main()
+</pre><br>
+
+<p>
+完成<br>
+<img src="pandora_rebirth_superzaxxon_trayicon/1.jpg" class="maxSize">
+</p>
+<br>
+</div>
+</div>
+</div>
+</body>
+</html>
