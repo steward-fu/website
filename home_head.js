@@ -1,5 +1,5 @@
 ﻿document.write('<!--');
-document.write(' ____________________________________________________________');
+document.write(' ____________________________________________________________ ');
 document.write('|                                                            |');
 document.write('|    DESIGN + Pat Heard { http://fullahead.org }             |');
 document.write('|      DATE + 2006.09.12                                     |');
@@ -22,12 +22,9 @@ document.write('<link rel="stylesheet" type="text/css" href="styles/shCore.css" 
 document.write('<link rel="stylesheet" type="text/css" href="styles/shThemeDefault.css" />');
 document.write('<link rel="stylesheet" type="text/css" href="css/html.css" media="screen" />');
 document.write('<link rel="stylesheet" type="text/css" href="css/layout.css" media="screen" />');
-document.write('<script type="text/javascript" src="scripts/shCore.js" />');
-document.write('<script type="text/javascript" src="scripts/shBrushCpp.js" />');
 document.write('</head>');
 
 document.write('<body>');
-document.write('<script type="text/javascript">SyntaxHighlighter.all();</script>');
 document.write('<div id="wrapper">');
 document.write('<div id="content">');
 
