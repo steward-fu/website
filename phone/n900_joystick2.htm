@@ -1,0 +1,231 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../phone.htm">手機</a> - N900 - <b>自製遊戲手把(380機架)</b></h3>
+<hr size="1"><br>
+<p>
+雖然司徒之前已經自製一個N900手把，不過體積有點大，加上缺少Start、Select和L、R鍵，因此，司徒決定再製作一個更小、按鍵更多的手把，於是司徒找了一下可用的材料，發覺Dingoo Tech A380的按鍵還不錯<br>
+<img src="n900_joystick2/1.jpg" class="maxSize"><br><br>
+
+當然Dingoo Tech A330的手把也相當好看，只是它的A面並不是平面，製作難度比較高<br>
+<img src="n900_joystick2/2.jpg" class="maxSize"><br><br>
+
+Dingoo A320的按鍵是司徒最想拿來當材料，不過這一台是要拿來改IPS顯示屏，因此，這一台不能動刀<br>
+<img src="n900_joystick2/3.jpg" class="maxSize"><br><br>
+
+最後司徒決定使用Dingoo Tech A380，因為司徒覺得它的改造難度比較簡單，加上司徒短期應該沒時間研究它，但是A380的按鍵還是不夠多，因此，司徒決定使用如下材料當作其餘按鍵<br>
+<img src="n900_joystick2/4.jpg" class="maxSize"><br><br>
+
+抹掉外漆<br>
+<img src="n900_joystick2/5.jpg" class="maxSize"><br><br>
+
+剪裁<br>
+<img src="n900_joystick2/6.jpg" class="maxSize"><br><br>
+
+A380的D-Pad和按鍵<br>
+<img src="n900_joystick2/7.jpg" class="maxSize"><br><br>
+
+使用3秒膠固定<br>
+<img src="n900_joystick2/8.jpg" class="maxSize"><br><br>
+
+PCB板也使用3秒膠固定<br>
+<img src="n900_joystick2/9.jpg" class="maxSize"><br><br>
+
+PCB背面<br>
+<img src="n900_joystick2/10.jpg" class="maxSize"><br><br>
+
+使用CD-ROM的蓋子當支撐架<br>
+<img src="n900_joystick2/11.jpg" class="maxSize"><br><br>
+
+上D-Pad和按鍵<br>
+<img src="n900_joystick2/12.jpg" class="maxSize"><br><br>
+
+背面<br>
+<img src="n900_joystick2/13.jpg" class="maxSize"><br><br>
+
+拉線<br>
+<img src="n900_joystick2/14.jpg" class="maxSize"><br><br>
+
+使用更小的STM32F103板<br>
+<img src="n900_joystick2/15.jpg" class="maxSize"><br><br>
+
+焊接<br>
+<img src="n900_joystick2/16.jpg" class="maxSize"><br><br>
+
+固定STM32F103和手把主體<br>
+<img src="n900_joystick2/17.jpg" class="maxSize"><br><br>
+
+正面<br>
+<img src="n900_joystick2/18.jpg" class="maxSize"><br><br>
+
+需要一個USB Micro B接頭<br>
+<img src="n900_joystick2/19.jpg" class="maxSize"><br><br>
+
+USB Micro B連接到STM32F103主板<br>
+<img src="n900_joystick2/20.jpg" class="maxSize"><br><br>
+
+背面<br>
+<img src="n900_joystick2/21.jpg" class="maxSize"><br><br>
+
+連接支架<br>
+<img src="n900_joystick2/22.jpg" class="maxSize"><br><br>
+
+背面<br>
+<img src="n900_joystick2/23.jpg" class="maxSize"><br><br>
+
+完成<br>
+<img src="n900_joystick2/24.jpg" class="maxSize"><br><br>
+
+側面<br>
+<img src="n900_joystick2/25.jpg" class="maxSize"><br><br>
+
+背面<br>
+<img src="n900_joystick2/26.jpg" class="maxSize"><br><br>
+
+更薄的手把<br>
+<img src="n900_joystick2/27.jpg" class="maxSize"><br><br>
+
+另一面<br>
+<img src="n900_joystick2/28.jpg" class="maxSize"><br><br>
+
+底面<br>
+<img src="n900_joystick2/29.jpg" class="maxSize"><br><br>
+
+上邊<br>
+<img src="n900_joystick2/30.jpg" class="maxSize"><br><br>
+
+上手<br>
+<img src="n900_joystick2/31.jpg" class="maxSize"><br><br>
+
+相當棒的手把<br>
+<img src="n900_joystick2/32.jpg" class="maxSize"><br><br>
+
+跟前一代比較<br>
+<img src="n900_joystick2/33.jpg" class="maxSize"><br><br>
+
+另一面<br>
+<img src="n900_joystick2/34.jpg" class="maxSize"><br><br>
+
+電路圖<br>
+<img src="n900_joystick2/35.jpg" class="maxSize"><br><br>
+
+程式碼(修改自Keil MCBSTM32 Project)：
+</p>
+<pre class="brush:cpp">
+volatile unsigned int cur_state = 0, pre_state = 0;
+unsigned char index = 2;
+unsigned char buffer[8] = {0};
+
+void PushKey(unsigned char key)
+{
+    if (index &gt;= 5) {
+        buffer[0] = 0x00;
+        buffer[1] = 0x00;
+        buffer[2] = 0x01;
+        buffer[3] = 0x01;
+        buffer[4] = 0x01;
+        buffer[5] = 0x01;
+        buffer[6] = 0x01;
+        buffer[7] = 0x01;
+    }
+    else {
+        buffer[index] = key;
+        index += 1;
+    }
+}
+
+int main(void)
+{
+    stm32_Init(); // STM32 Initialization
+    GPIOA-&gt;CRL = 0x88888888;
+    GPIOA-&gt;CRH = 0x88888888;
+    GPIOA-&gt;ODR = 0x00000000;
+    GPIOB-&gt;CRL = 0x88888888;
+    GPIOB-&gt;CRH = 0x88888888;
+    GPIOB-&gt;ODR = 0x00000000;
+
+    USB_Init(); // USB Initialization
+    USB_Connect(TRUE); // USB Connect
+    while (1) {    
+        cur_state = 0; 
+        if (GPIOB-&gt;IDR &amp; 0x1000) { // PB12
+            cur_state |= 0x0001;
+        }
+        if (GPIOB-&gt;IDR &amp; 0x2000) { // PB13
+            cur_state |= 0x0002;
+        }
+        if (GPIOB-&gt;IDR &amp; 0x4000) { // PB14
+            cur_state |= 0x0004;
+        }
+        if (GPIOB-&gt;IDR &amp; 0x8000) { // PB15
+            cur_state |= 0x0008;
+        }
+        if (GPIOA-&gt;IDR &amp; 0x0100) { // PA8
+            cur_state |= 0x0010;
+        }
+        if (GPIOA-&gt;IDR &amp; 0x0200) { // PA9
+            cur_state |= 0x0020;
+        }
+        if (GPIOA-&gt;IDR &amp; 0x0400) { // PA10
+            cur_state |= 0x0040;
+        }
+        if (GPIOB-&gt;IDR &amp; 0x0400) { // PB10
+            cur_state |= 0x0080;
+        }
+        if (GPIOB-&gt;IDR &amp; 0x0200) { // PB9
+            cur_state |= 0x0100;
+        }
+        if (GPIOB-&gt;IDR &amp; 0x0001) { // PB0
+            cur_state |= 0x0200;
+        }
+        if (GPIOA-&gt;IDR &amp; 0x0040) { // PA6
+            cur_state |= 0x0400;
+        }
+        if (GPIOA-&gt;IDR &amp; 0x0080) { // PA7
+            cur_state |= 0x0800;
+        }
+        if (GPIOB-&gt;IDR &amp; 0x0020) { // PB5
+            cur_state |= 0x1000;
+        }
+        if (GPIOB-&gt;IDR &amp; 0x0040) { // PB6
+            cur_state |= 0x2000;
+        }
+
+        if (cur_state == pre_state) {
+            continue;
+        }
+        pre_state = cur_state;
+
+        index = 2;
+        buffer[0] = 0x00;
+        buffer[1] = 0x00;
+        buffer[2] = 0x00;
+        buffer[3] = 0x00;
+        buffer[4] = 0x00;
+        buffer[5] = 0x00;
+        buffer[6] = 0x00;
+        buffer[7] = 0x00;
+        if (pre_state &amp; 0x0001) PushKey(0x50);
+        if (pre_state &amp; 0x0002) PushKey(0x12);
+        if (pre_state &amp; 0x0004) PushKey(0x05);
+        if (pre_state &amp; 0x0008) PushKey(0x11); 
+        if (pre_state &amp; 0x0010) PushKey(0x51);
+        if (pre_state &amp; 0x0020) PushKey(0x4f);
+        if (pre_state &amp; 0x0040) PushKey(0x07);
+        if (pre_state &amp; 0x0080) PushKey(0x04);
+        if (pre_state &amp; 0x0100) PushKey(0x1b);
+        if (pre_state &amp; 0x0200) PushKey(0x06);
+        if (pre_state &amp; 0x0400) PushKey(0x52);
+        if (pre_state &amp; 0x0800) PushKey(0x10);
+        if (pre_state &amp; 0x1000) PushKey(0x1c);
+        if (pre_state &amp; 0x2000) PushKey(0x14);
+
+        if (USB_Configuration) {
+            USB_WriteEP(0x81, buffer, sizeof(buffer));
+        }
+    }
+}
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

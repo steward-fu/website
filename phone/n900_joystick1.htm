@@ -1,0 +1,220 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../phone.htm">手機</a> - N900 - <b>自製遊戲手把(A320機架)</b></h3>
+<hr size="1"><br>
+<p>
+AVR單晶片製作的N900手把<br>
+<img src="n900_joystick1/34.jpg" class="maxSize"><br><br>
+
+電路圖<br>
+<img src="n900_joystick1/35.jpg" class="maxSize"><br><br>
+
+原本要使用的藍牙手把<br>
+<img src="n900_joystick1/1.jpg" class="maxSize"><br>
+<img src="n900_joystick1/2.jpg" class="maxSize"><br>
+<img src="n900_joystick1/3.jpg" class="maxSize"><br><br>
+
+最後選定的材料<br>
+<img src="n900_joystick1/4.jpg" class="maxSize"><br><br>
+
+STM32F103開發板<br>
+<img src="n900_joystick1/5.jpg" class="maxSize"><br><br>
+
+裁切D-Pad和4顆按紐的面板以及PCB板<br>
+<img src="n900_joystick1/6.jpg" class="maxSize"><br><br>
+
+Micro USB和Mini USB傳輸線直接對接<br>
+<img src="n900_joystick1/7.jpg" class="maxSize"><br><br>
+
+底座<br>
+<img src="n900_joystick1/8.jpg" class="maxSize"><br><br>
+
+A320的Logo還是蠻好看的<br>
+<img src="n900_joystick1/9.jpg" class="maxSize"><br><br>
+
+固定位置<br>
+<img src="n900_joystick1/10.jpg" class="maxSize"><br><br>
+
+焊接<br>
+<img src="n900_joystick1/11.jpg" class="maxSize"><br><br>
+
+接線<br>
+<img src="n900_joystick1/12.jpg" class="maxSize"><br><br>
+
+外觀<br>
+<img src="n900_joystick1/13.jpg" class="maxSize"><br><br>
+
+背面就比較醜陋<br>
+<img src="n900_joystick1/14.jpg" class="maxSize"><br><br>
+
+支架固定<br>
+<img src="n900_joystick1/15.jpg" class="maxSize"><br><br>
+
+調整最佳的手感間距<br>
+<img src="n900_joystick1/16.jpg" class="maxSize"><br><br>
+
+用膠帶固定裸線<br>
+<img src="n900_joystick1/17.jpg" class="maxSize"><br><br>
+
+打一根樁腳<br>
+<img src="n900_joystick1/18.jpg" class="maxSize"><br><br>
+
+上架並焊接到STM32F103開發板<br>
+<img src="n900_joystick1/19.jpg" class="maxSize"><br><br>
+
+使用AB膠固定<br>
+<img src="n900_joystick1/20.jpg" class="maxSize"><br><br>
+
+開始蓋房子<br>
+<img src="n900_joystick1/21.jpg" class="maxSize"><br><br>
+
+側面<br>
+<img src="n900_joystick1/22.jpg" class="maxSize"><br><br>
+
+背面<br>
+<img src="n900_joystick1/23.jpg" class="maxSize"><br><br>
+
+使用塑鋼土補底<br>
+<img src="n900_joystick1/24.jpg" class="maxSize"><br><br>
+
+使用指甲油彩繪<br>
+<img src="n900_joystick1/25.jpg" class="maxSize"><br><br>
+
+光亮的背面<br>
+<img src="n900_joystick1/26.jpg" class="maxSize"><br><br>
+
+完成<br>
+<img src="n900_joystick1/27.jpg" class="maxSize"><br><br>
+
+側面<br>
+<img src="n900_joystick1/28.jpg" class="maxSize"><br><br>
+
+厚度有點厚，不過手感很棒<br>
+<img src="n900_joystick1/29.jpg" class="maxSize"><br><br>
+
+厚電池加上厚手把<br>
+<img src="n900_joystick1/30.jpg" class="maxSize"><br><br>
+
+手把底部使用沙紙磨圓，讓手感更好<br>
+<img src="n900_joystick1/31.jpg" class="maxSize"><br><br>
+
+這一面沒有可以固定的東西，因此，底部使用雙面膠替代，避免手把搖晃<br>
+<img src="n900_joystick1/32.jpg" class="maxSize"><br><br>
+
+手感相當不錯<br>
+<img src="n900_joystick1/33.jpg" class="maxSize"><br><br>
+
+由於司徒改裝的手把沒有Start、Select、L、R按鈕，因此，司徒只好使用音量+/-鍵(F7/F8)當作Start和Select按鈕，捨棄L、R按鈕，Mapping的方式如下：
+</p>
+<pre>
+$ sudo apt-get install xbindkeys xdotool
+$ vim ~/.xbindkeysrc
+"xdotool key q"
+    F7
+"xdotool key w"
+    F8
+
+$ xbindkeys
+</pre>
+<p>
+司徒將音量+/-改成q/w鍵，因此，在遊戲的Key Define中，使用者直接設定Start/Select成q/w即可<br><br>
+
+電路圖：<br>
+<img src="n900_joystick1/36.jpg" class="maxSize"><br><br>
+
+程式碼(修改自Keil MCBSTM32 Project)：
+</p>
+
+<pre class="brush:cpp">
+unsigned char cur_state = 0;
+unsigned char pre_state = 0;
+unsigned char index = 2;
+unsigned char buffer[8] = {0};
+
+void PushKey(unsigned char key)
+{
+    if (index &gt;= 5) {
+        buffer[0] = 0x00;
+        buffer[1] = 0x00;
+        buffer[2] = 0x01;
+        buffer[3] = 0x01;
+        buffer[4] = 0x01;
+        buffer[5] = 0x01;
+        buffer[6] = 0x01;
+        buffer[7] = 0x01;
+    }
+    else {
+        buffer[index] = 4 + (key - 'a');
+        index+= 1;
+    }
+}
+
+int main(void)
+{
+    stm32_Init(); // STM32 Initialization
+    GPIOA-&gt;CRL = 0x88888888;
+    GPIOA-&gt;CRH = 0x88888888;
+    GPIOA-&gt;ODR = 0x00000000;
+    GPIOB-&gt;CRL = 0x88888888;
+    GPIOB-&gt;CRH = 0x88888888;
+    GPIOB-&gt;ODR = 0x00000000;
+
+    USB_Init(); // USB Initialization
+    USB_Connect(TRUE); // USB Connect
+    while (1) {    
+        cur_state = 0; 
+        if (GPIOA-&gt;IDR &amp; 0x100) { // PA8
+            cur_state |= 0x01;
+        }
+        if (GPIOB-&gt;IDR &amp; 0x8000) { // PB15
+            cur_state |= 0x02;
+        }
+        if (GPIOB-&gt;IDR &amp; 0x4000) { // PB14
+            cur_state |= 0x04;
+        }
+        if (GPIOB-&gt;IDR &amp; 0x2000) { // PB13
+            cur_state |= 0x08;
+        }
+        if (GPIOB-&gt;IDR &amp; 0x1000) { // PB12
+            cur_state |= 0x10;
+        }
+        if (GPIOB-&gt;IDR &amp; 0x800) { // PB11
+            cur_state |= 0x20;
+        }
+        if (GPIOB-&gt;IDR &amp; 0x4) { // PB2
+            cur_state |= 0x40;
+        }
+        if (GPIOB-&gt;IDR &amp; 0x400) { // PB10
+            cur_state |= 0x80;
+        }
+
+        if (cur_state == pre_state) {
+            continue;
+        }
+        pre_state = cur_state;
+
+        index = 2;
+        buffer[0] = 0x00;
+        buffer[1] = 0x00;
+        buffer[2] = 0x00;
+        buffer[3] = 0x00;
+        buffer[4] = 0x00;
+        buffer[5] = 0x00;
+        buffer[6] = 0x00;
+        buffer[7] = 0x00;
+        if (pre_state &amp; 0x01) PushKey('a');
+        if (pre_state &amp; 0x02) PushKey('b');
+        if (pre_state &amp; 0x04) PushKey('c');
+        if (pre_state &amp; 0x08) PushKey('d');
+        if (pre_state &amp; 0x10) PushKey('e');
+        if (pre_state &amp; 0x20) PushKey('f');
+        if (pre_state &amp; 0x40) PushKey('g');
+        if (pre_state &amp; 0x80) PushKey('h');
+        USB_WriteEP(0x81, buffer, sizeof(buffer));
+    }
+}
+</pre><br>
+
+<br><script type="text/javascript" src="../tail.js"></script>
