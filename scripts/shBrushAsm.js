@@ -48,6 +48,6 @@
 
   Brush.prototype  = new SyntaxHighlighter.Highlighter();
   Brush.aliases  = ['asm', 'assembly', 'assembler'];
-  SyntaxHighlighter.brushes.Cpp = Brush;
+  SyntaxHighlighter.brushes.Asm = Brush;
   typeof(exports) != 'undefined' ? exports.Brush = Brush : null;
 })();

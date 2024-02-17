@@ -38,6 +38,6 @@
 
   Brush.prototype  = new SyntaxHighlighter.Highlighter();
   Brush.aliases  = ['scad'];
-  SyntaxHighlighter.brushes.Cpp = Brush;
+  SyntaxHighlighter.brushes.Scad = Brush;
   typeof(exports) != 'undefined' ? exports.Brush = Brush : null;
 })();

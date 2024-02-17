@@ -37,6 +37,6 @@
 
   Brush.prototype  = new SyntaxHighlighter.Highlighter();
   Brush.aliases  = ['py', 'python'];
-  SyntaxHighlighter.brushes.Delphi = Brush;
+  SyntaxHighlighter.brushes.Python = Brush;
   typeof(exports) != 'undefined' ? exports.Brush = Brush : null;
 })();

@@ -38,6 +38,6 @@
 
   Brush.prototype  = new SyntaxHighlighter.Highlighter();
   Brush.aliases  = ['verilog'];
-  SyntaxHighlighter.brushes.Cpp = Brush;
+  SyntaxHighlighter.brushes.Verilog = Brush;
   typeof(exports) != 'undefined' ? exports.Brush = Brush : null;
 })();

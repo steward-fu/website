@@ -38,6 +38,6 @@
 
   Brush.prototype  = new SyntaxHighlighter.Highlighter();
   Brush.aliases  = ['c#', 'csharp'];
-  SyntaxHighlighter.brushes.Cpp = Brush;
+  SyntaxHighlighter.brushes.CSharp = Brush;
   typeof(exports) != 'undefined' ? exports.Brush = Brush : null;
 })();

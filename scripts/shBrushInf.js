@@ -30,6 +30,6 @@
 
   Brush.prototype  = new SyntaxHighlighter.Highlighter();
   Brush.aliases  = ['inf'];
-  SyntaxHighlighter.brushes.Cpp = Brush;
+  SyntaxHighlighter.brushes.Inf = Brush;
   typeof(exports) != 'undefined' ? exports.Brush = Brush : null;
 })();

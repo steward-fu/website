@@ -38,6 +38,6 @@
 
   Brush.prototype  = new SyntaxHighlighter.Highlighter();
   Brush.aliases  = ['rust'];
-  SyntaxHighlighter.brushes.Cpp = Brush;
+  SyntaxHighlighter.brushes.Rust = Brush;
   typeof(exports) != 'undefined' ? exports.Brush = Brush : null;
 })();
