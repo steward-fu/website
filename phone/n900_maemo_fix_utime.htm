@@ -1,0 +1,33 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../phone.htm">手機</a> - N900 - Maemo - <b>解決uv__fs_utime: undefined reference to futimens、utimensat問題</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://obnam.org/bugs/utimensat-undefined-symbol/<br><br>
+
+問題如下：
+</p>
+<pre>
+uv-src-unix-fs.c.o: In function `uv__fs_futime':
+fs.c:(.text+0x214): undefined reference to `futimens'
+uv-src-unix-fs.c.o: In function `uv__fs_utime':
+fs.c:(.text+0xe1c): undefined reference to `utimensat'
+collect2: error: ld returned 1 exit status
+make: *** [cmake] Error 1
+</pre><br>
+
+<p>
+解法如下：
+</p>
+<pre>
+//return futimens(req-&gt;file, ts);
+return utimes(req-&gt;path, ts);
+
+//return utimensat(AT_FDCWD, req-&gt;path, ts, 0);
+return utimes(req-&gt;path, ts);
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

@@ -1,0 +1,49 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../phone.htm">手機</a> - N900 - Maemo - <b>解決Dynasm/dasm_arm.lua:29: module bit not found問題</b></h3>
+<hr size="1"><br>
+<p>
+問題如下：
+</p>
+<pre>
+lua ./dynasm/dynasm.lua -o jit-arm.h jit-arm.dasc
+jit-arm.dasc:4: error: cannot load module: ./dynasm/dasm_arm.lua:29: module 'bit' not found:
+    no field package.preload['bit']
+    no file './dynasm/bit.lua'
+    no file './bit.lua'
+    no file '/usr/local/share/lua/5.1/bit.lua'
+    no file '/usr/local/share/lua/5.1/bit/init.lua'
+    no file '/usr/local/lib/lua/5.1/bit.lua'
+    no file '/usr/local/lib/lua/5.1/bit/init.lua'
+    no file '/usr/share/lua/5.1/bit.lua'
+    no file '/usr/share/lua/5.1/bit/init.lua'
+    no file './bit.so'
+    no file '/usr/local/lib/lua/5.1/bit.so'
+    no file '/usr/lib/lua/5.1/bit.so'
+    no file '/usr/local/lib/lua/5.1/loadall.so':
+|.arch arm
+jit-arm.dasc:*: error: missing .arch directive
+jit-arm.dasc:*: info: fatal error in input file -- no output file generated.
+Makefile:58: recipe for target 'jit-arm.h' failed
+make: *** [jit-arm.h] Error 1
+</pre><br>
+
+<p>
+解法如下：
+</p>
+<pre>
+$ cd
+$ wget http://bitop.luajit.org/download/LuaBitOp-1.0.2.tar.gz
+$ tar xvf LuaBitOp-1.0.2.tar.gz
+$ cd LuaBitOp-1.0.2
+$ vim Makefile
+    6 INCLUDES= -I/usr/include/lua5.1
+
+$ make
+$ sudo mkdir -p /usr/local/lib/lua/5.1
+$ sudo make install
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

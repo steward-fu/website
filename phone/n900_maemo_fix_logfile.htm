@@ -1,0 +1,36 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../phone.htm">手機</a> - N900 - Maemo - <b>解決High CPU Usage問題(/usr/bin/Xorg -logfile)</b></h3>
+<hr size="1"><br>
+<p>
+使用者如果發現N900反應速度相當慢時，可以使用top指令查看，如發現是<b>/usr/bin/Xorg -logfile</b>所致時，可以使用如下方式解決：
+</p>
+<pre>
+$ sudo vim /etc/event.d/xomap
+    description "Xorg Server"
+    author "Oliver McFadden"
+
+    start on started sgx
+    stop on stopping sgx
+
+    console output
+
+    pre-start script
+    echo "Starting Xorg Server" &gt; /dev/console
+    XORG_OPTIONS="-logfile /tmp/Xorg.0.log -logverbose <b>0</b> -nolisten tcp -noreset -s 0 -core"
+    exec /usr/sbin/dsmetool -n -8 -r "/usr/bin/Xorg $XORG_OPTIONS"
+    end script
+
+    post-start script
+    DISPLAY=:0 /usr/sbin/waitx
+    end script
+
+    <b>post-stop script
+    end script</b>
+
+    service
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
