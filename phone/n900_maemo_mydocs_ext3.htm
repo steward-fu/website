@@ -1,0 +1,21 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../phone.htm">手機</a> - N900 - Maemo - <b>MyDocs格式化成Ext3</b></h3>
+<hr size="1"><br>
+<p>
+步驟如下：
+</p>
+<pre>
+$ sed -i '1d' /usr/sbin/mmc-mount
+$ echo -e '#!/bin/sh\ncase "$(sfdisk -c $(echo $1 | cut -c1-12) $(echo $1 | cut -c14))" in\n  43|83)\n mount -t auto -o $3,noauto,nosuid,noatime,nodiratime "$1" "$2" &gt; /dev/null\n ;;\n  *)\n '$(cat /usr/sbin/mmc-mount)'\n ;;\nesac' &gt; /usr/sbin/mmc-mount
+$ sed -i 's/\(| 1e\)/\1 |43|83/' /usr/sbin/osso-mmc-mount.sh
+$ umount /home/user/MyDocs
+$ sfdisk -c /dev/mmcblk0 1 43
+$ mkfs.ext3 -m 0 -L "Nokia N900" /dev/mmcblk0p1
+$ osso-mmc-mount.sh /dev/mmcblk0p1 /home/user/MyDocs
+$ chown -R user:users /home/user/MyDocs
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
