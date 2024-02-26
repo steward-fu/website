@@ -1,0 +1,62 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../phone.htm">手機</a> - N900 - Debian - <b>Build Kernel 4.9.0</b></h3>
+<hr size="1"><br>
+<p>
+步驟如下：
+</p>
+<pre>
+$ cd
+$ sudo apt-get install gcc-arm*
+
+$ git clone https://github.com/pali/linux-n900
+$ cd linux-n900
+$ git checkout v4.9-n900
+$ ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- make rx51_defconfig
+$ ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- make menuconfig
+</pre>
+<p>
+<img src="n900_debian_build_kernel_4_9_0/1.jpg" class="maxSize"><br>
+<img src="n900_debian_build_kernel_4_9_0/2.jpg" class="maxSize"><br><br>
+
+編譯
+</p>
+<pre>
+$ ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- make zImage dtbs modules
+$ INSTALL_MOD_PATH=out ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- make modules_install
+</pre><br>
+
+<p>
+uImage
+</p>
+<pre>
+$ cat arch/arm/boot/dts/omap3-n900.dtb &gt;&gt; arch/arm/boot/zImage
+$ mkimage -A arm -O linux -T kernel -C none -a 80008000 -e 80008000 -n uImage -d arch/arm/boot/zImage uImage
+</pre><br>
+
+<p>
+initird.img
+</p>
+<pre>
+$ cd 
+$ wget https://github.com/steward-fu/website/releases/download/n900/jessie-boot.tar.gz
+$ tar xvf jessie-boot.tar.gz
+$ cd debian8
+$ mkdir unpack
+$ cd unpack
+$ zcat ../initrd.img-4.9.0 | cpio -idmv
+    lib/modules/4.9.0
+
+$ find . | cpio -o -c | gzip -9 &gt; ../new_initrd.img
+</pre><br>
+
+<p>
+uInitrd
+</p>
+<pre>
+$ mkimage -A arm -T ramdisk -C none -a 0 -e 0 -n uInitrd -d new_initrd.img uInitrd
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
