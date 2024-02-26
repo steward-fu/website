@@ -1,0 +1,211 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../phone.htm">手機</a> - N900 - Easy Debian - <b>安裝系統(Debian 5)</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+http://qole.org/files/debian-m5-v3e.img.ext2.lzma<br><br>
+
+login
+</p>
+<pre>
+#!/bin/sh
+CHMODE=$1
+CHUSER=$2
+CHROOT=`dirname $0`
+
+_usage(){
+    echo "Usage: login [cli|lxde|xfce4] [root|user]"
+}
+
+_mount(){
+    sudo mount -o bind /sys           "$CHROOT/sys"
+    sudo mount -o bind /proc          "$CHROOT/proc"
+    sudo mount -o bind /dev           "$CHROOT/dev"
+    sudo mount -t devpts none         "$CHROOT/dev/pts"
+    sudo mount -o bind /dev/shm       "$CHROOT/dev/shm"
+    sudo mount -o bind /var/tmp       "$CHROOT/var/tmp"
+    sudo mount -o bind /var/run/pulse "$CHROOT/var/run/pulse"
+    sudo mount -o bind /var/run/dbus  "$CHROOT/var/run/dbus"
+    sudo mount -o bind /var/lib/dbus  "$CHROOT/var/lib/dbus"
+    sudo mount /dev/mmcblk0p1         "$CHROOT/home/user/MyDocs"
+}
+
+_umount(){
+    sudo umount "$CHROOT/var/lib/dbus"
+    sudo umount "$CHROOT/var/run/dbus"
+    sudo umount "$CHROOT/var/run/pulse"
+    sudo umount "$CHROOT/var/tmp"
+    sudo umount "$CHROOT/dev/shm"
+    sudo umount "$CHROOT/dev/pts"
+    sudo umount "$CHROOT/dev" &amp;&gt; /dev/null
+    sudo mount -o bind /dev "$CHROOT/dev"
+    sudo umount "$CHROOT/dev"
+    sudo umount "$CHROOT/proc"
+    sudo umount "$CHROOT/sys"
+    sudo umount "$CHROOT/home/user/MyDocs"
+}
+
+if [ `whoami` == "root" ] ; then
+    echo "Run me as user"
+    exit 1
+fi
+
+if [ "$CHMODE" != "cli" ] &amp;&amp; [ "$CHMODE" != "lxde" ] &amp;&amp; [ "$CHMODE" != "xfce4" ] ; then
+    _usage
+    exit 2
+fi
+
+if [ "$CHUSER" != "root" ] &amp;&amp; [ "$CHUSER" != "user" ] ; then
+    _usage
+    exit 
+fi
+
+_umount &amp;&gt; /dev/null
+_mount
+
+export GTK_MODULES=libgtkstylus.so
+if [ "x$DISPLAY" = x ] ; then
+    export DISPLAY=:0.0
+fi
+
+if [ "x$GTK_MODULES" = x ] ; then
+    export GTK_MODULES=libgtkstylus.so
+fi
+
+if [ "$CHMODE" = "cli" ] ; then
+    sudo chroot $CHROOT su - "$CHUSER"
+    _umount
+    exit 0
+fi
+
+if [ "$CHMODE" = "lxde" ] ; then
+    if [ ! -f "$CHROOT/usr/bin/startlxde1" ] ; then
+        echo "Not found LXDE installed"
+        exit 4
+    fi
+fi
+
+if [ "$CHMODE" = "xfce4" ] ; then
+    if [ ! -f "$CHROOT/usr/bin/startxfce41" ] ; then
+        echo "Not found XFCE4 installed"
+        exit 4
+    fi
+fi
+
+export DISPLAY=:0
+sudo chroot $CHROOT su - "$CHUSER" -c 'echo "chroot is now open"'
+sudo chroot $CHROOT su - "$CHUSER" -c '/usr/bin/Xephyr :1 -screen 800x480 -br -ac' &amp;
+while [ "x$PARWIN" = "x" ] ; do
+    export PARWIN=`wmctrl -l | grep -i "N/A Xephyr" | awk '{print $1}'`
+done
+DISPLAY=:1 ; sudo chroot $CHROOT su - "$CHUSER" -c "habak -mf /usr/share/fonts/truetype/DroidSans-Bold.ttf -ht 'Welcome to Debian5'"
+DISPLAY=:0 ; sudo wmctrl -i -r $PARWIN -T 'Debian5'
+sudo wmctrl -i -r $PARWIN -b toggle,fullscreen
+zenity --display=:0 --info --title="Information" --text="Welcome to Debian5. This window is needed to gain keyboard focus in LXDE." &amp;
+while [ "x$TWOWIN" = "x" ] ; do
+    export TWOWIN=`wmctrl -l | grep -i Information | awk '{print $1}'`
+done
+sudo chroot $CHROOT su root -c "/sbin/qobi-wmhint-fix $PARWIN"
+sudo chroot $CHROOT su "$CHUSER" -c "/usr/bin/xbindkeys"
+if [ "$CHMODE" = "xfce4" ] ; then
+    sudo chroot $CHROOT su - "$CHUSER" -c "/usr/bin/startxfce41"
+else
+    sudo chroot $CHROOT su - "$CHUSER" -c "/usr/bin/startlxde1"
+fi
+sudo killall Xephyr
+export DISPLAY=:0
+_umount
+exit 0
+</pre><br>
+
+<p>
+/etc/apt/sources.list
+</p>
+<pre>
+deb http://archive.debian.org/debian lenny main contrib non-free
+deb http://archive.debian.org/debian-backports lenny-backports main contrib non-free
+deb http://http.us.debian.org/debian squeeze main contrib non-free
+deb http://archive.debian.org/debian-security lenny/updates main contrib non-free
+deb http://security.us.debian.org/ squeeze/updates main contrib non-free
+deb ftp://ftp.deb-multimedia.org lenny main
+deb http://www.deb-multimedia.org squeeze main
+deb-src http://archive.debian.org/debian lenny main contrib non-free
+deb-src http://http.us.debian.org/debian squeeze main contrib non-free
+</pre><br>
+
+<p>
+/home/user/.xbindkeysrc
+</p>
+<pre>
+"wmctrl -r :ACTIVE: -b toggle,fullscreen"
+    m:0x81 + c:33
+
+"xdotool click 3"
+    Shift + Right
+"xdotool click 1"
+    Shift + Left
+"xdotool click 4"
+    Shift + Up
+"xdotool click 5"
+    Shift + Down
+
+"xdotool key Tab"
+    Control + Up
+
+"xdotool mousemove_relative 50 0"
+    Control + Right
+"xdotool mousemove_relative -- -50 0"
+    Control + Left
+#"xdotool mousemove_relative 0 -50"
+    # Control + Up
+#"xdotool mousemove_relative 0 50"
+    # Control + Down
+</pre><br>
+
+<p>
+CLI
+</p>
+<pre>
+$ sudo sh login cli user
+</pre>
+<p>
+<img src="n900_debian_setup_debian5/1.jpg" class="maxSize"><br><br>
+
+LXDE
+</p>
+<pre>
+$ sudo sh login lxde user
+</pre>
+
+<p>
+<img src="n900_debian_setup_debian5/2.jpg" class="maxSize"><br><br>
+由於LXDE是屬於另一個Display，一般情況下是無法取得鍵盤的控制權，因此可以透過Zenity視窗，讓使用者點選按鈕，藉此方式取得鍵盤控制權<br>
+<img src="n900_debian_setup_debian5/3.jpg" class="maxSize"><br>
+<img src="n900_debian_setup_debian5/4.jpg" class="maxSize"><br>
+<img src="n900_debian_setup_debian5/5.jpg" class="maxSize"><br>
+<img src="n900_debian_setup_debian5/6.jpg" class="maxSize"><br>
+<img src="n900_debian_setup_debian5/7.jpg" class="maxSize"><br>
+<img src="n900_debian_setup_debian5/8.jpg" class="maxSize"><br>
+<img src="n900_debian_setup_debian5/9.jpg" class="maxSize"><br>
+<img src="n900_debian_setup_debian5/10.jpg" class="maxSize"><br>
+<img src="n900_debian_setup_debian5/11.jpg" class="maxSize"><br>
+<img src="n900_debian_setup_debian5/12.jpg" class="maxSize"><br>
+<img src="n900_debian_setup_debian5/13.jpg" class="maxSize"><br>
+<img src="n900_debian_setup_debian5/14.jpg" class="maxSize"><br>
+<img src="n900_debian_setup_debian5/18.jpg" class="maxSize"><br><br>
+
+XFCE4
+</p>
+<pre>
+$ sudo sh login xfce4 user
+</pre>
+<p>
+<img src="n900_debian_setup_debian5/15.jpg" class="maxSize"><br>
+<img src="n900_debian_setup_debian5/16.jpg" class="maxSize"><br>
+<img src="n900_debian_setup_debian5/17.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

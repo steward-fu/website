@@ -1,0 +1,29 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../phone.htm">手機</a> - N900 - Easy Debian - <b>Patch OpenSCAD</b></h3>
+<hr size="1"><br>
+<p>
+雖然OpenSCAD可以在Debian Wheezy(7)以上的系統安裝，不過司徒測試Easy Debian後，發現只有在Easy Debian(Jessie)才可以成功安裝和開啟，不過，當司徒程式寫好OpenSCAD程式並Compile後，卻發生無法顯示2D/3D圖形的問題，而在Easy Debian(Wheezy)上，OpenSCAD可以安裝成功，但是在執行的過程中，OpenSCAD會出現如下<b>CGAL ERROR</b>的錯誤訊息：<br>
+<img src="n900_debian_patch_openscad/5.jpg" class="maxSize"><br><br>
+
+司徒找了一些資料後，發現在Build OpenSCAD程式碼時，需要下<b>-frounding-math</b>參數或使用如下的方式解決：
+<img src="n900_debian_patch_openscad/3.jpg" class="maxSize"><br>
+司徒嘗試使用安裝的方式解決，不過似乎還是無法解決這個問題，因此，司徒決定下載最新程版式碼並從頭編譯一次，盼能解決此問題，不過，遇到一些Debian 8才有的Library相依問題<br><br>
+
+解決的方式也算簡單，在桌機電腦上，使用IDA Pro打開OpenSCAD(選擇ARM CPU)並搜尋"Wrong rounding"字串，可以定位到如下兩個位置：<br>
+<img src="n900_debian_patch_openscad/1.jpg" class="maxSize"><br><br>
+
+往上尋找Branch的位置<br>
+<img src="n900_debian_patch_openscad/2.jpg" class="maxSize"><br><br>
+
+將所有<b>BNE loc_83ECC</b>(0x1a)都Patch成<b>BEQ loc_83ECC</b>(0x0a)即可，總共有5個地方需要Patch，如下所示：<br>
+<img src="n900_debian_patch_openscad/6.jpg" class="maxSize"><br><br>
+
+Patch過後的Binary可以直接替換<b>/usr/bin/openscad</b>檔案，執行後的畫面如下：<br>
+<img src="n900_debian_patch_openscad/4.jpg" class="maxSize"><br>
+P.S. 假如右邊Render區域無法正常顯示，請安裝<b>libgl1-mesa-swrast</b>套件
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
