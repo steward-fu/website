@@ -1,0 +1,128 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../phone.htm">手機</a> - N900 - PostMarketOS - <b>安裝系統</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://wiki.postmarketos.org/wiki/Nokia_N900<br>
+https://github.com/postmarketOS/pmbootstrap/releases<br>
+https://wiki.bibanon.org/Installing_postmarketOS_on_the_Nokia_N900<br><br>
+
+步驟如下：
+</p>
+<pre>
+$ cd
+$ sudo apt-get install python3.0 qemu-user-static
+$ git clone https://gitlab.com/postmarketOS/pmbootstrap
+$ cd pmbootstrap
+$ ./pmbootstrap.py init
+    [02:20:05] Location of the 'work' path. Multiple chroots (native, device arch, device rootfs) will be created in there.
+    [02:20:05] Work path []: /home/steward/.local/var/pmbootstrap
+    [02:20:07] NOTE: pmaports path: /home/steward/.local/var/pmbootstrap/cache_git/pmaports
+    [02:20:07] Choose your target device vendor (either an existing one, or a new one for porting).
+    [02:20:07] Available vendors (39): amazon, asus, bq, chuwi, fairphone, finepower, google, gp, htc, huawei, infocus, jolla, leeco, lenovo, lg, meizu, motorola, nextbit, nokia, oneplus, oppo, ouya, pine64, planet, purism, qemu, raspberry, samsung, semc, sony, surftab, t2m, tablet, teclast, wiko, wileyfox, wingtech, xiaomi, zte
+    [02:20:07] Vendor [nokia]: 
+    [02:20:08] Available codenames (4): frt, n9, n900, rm885
+    [02:20:08] Device codename [n900]: 
+    [02:20:09] This device has proprietary components, which trade some of your freedom with making more peripherals work.
+    [02:20:09] We would like to offer full functionality without hurting your freedom, but this is currently not possible for your device.
+    [02:20:09] device-nokia-n900-nonfree-firmware: Wifi firmware
+    [02:20:09] Enable this package? (y/n) [y]: 
+    [02:20:12] Available keymaps for device (3): us/rx51_us, ch/rx51_ch, it/rx51_it
+    [02:20:12] Keymap [us/rx51_us]: 
+    [02:20:13] Username [steward]: 
+    [02:20:14] Available user interfaces (12): 
+    [02:20:14] * none: No graphical environment
+    [02:20:14] * hildon: (X11) Lightweight GTK+2 UI (optimized for single-touch touchscreens)
+    [02:20:14] * i3wm: (X11) Tiling WM (keyboard required)
+    [02:20:14] * kodi: (Wayland) 10-foot UI useful on TV's
+    [02:20:14] * matchbox: (X11) Very basic user interface for handhelds
+    [02:20:14] * mate: (X11) MATE Desktop Environment, fork of GNOME2 (stylus recommended)
+    [02:20:14] * phosh: (Wayland) Mobile UI developed for the Librem 5 (does not work for armhf)
+    [02:20:14] * plasma-mobile: (Wayland) Mobile variant of KDE Plasma, optimized for touchscreen (slow without hardware acceleration!)
+    [02:20:14] * plasma-mobile-extras: Plasma Mobile with more apps pre-installed (video and music players, pdf reader, etc.)
+    [02:20:14] * shelli: Plain console with touchscreen gesture support
+    [02:20:14] * sway: (Wayland) Tiling WM, drop-in replacement for i3wm (DOES NOT RUN WITHOUT HW ACCELERATION!)
+    [02:20:14] * weston: (Wayland) Reference compositor (demo, not a phone interface)
+    [02:20:14] * xfce4: (X11) Lightweight GTK+2 desktop (stylus recommended)
+    [02:20:14] User interface []: i3wm
+    [02:20:20] Build options: Parallel jobs: 5, ccache per arch: 5G
+    [02:20:20] Change them? (y/n) [n]: 
+    [02:20:22] Additional packages that will be installed to rootfs. Specify them in a comma separated list (e.g.: vim,file) or "none"
+    [02:20:22] Extra packages []: alsa-utils,linux-firmware-ti-connectivity,xf86-video-vesa,mesa-egl,linux-firmware,xfce4-terminal
+    [02:20:42] Your host timezone: posixrules
+    [02:20:42] Use this timezone instead of GMT? (y/n) [y]: 
+    [02:20:43] Device hostname (short form, e.g. 'foo') [n900]: 
+    [02:20:45] Zap existing chroots to apply configuration? (y/n) [y]: 
+    [sudo] password for steward: 
+    [02:20:52] % rm -rf /home/steward/.local/var/pmbootstrap/chroot_native
+    [02:20:52] % rm -rf /home/steward/.local/var/pmbootstrap/chroot_buildroot_armv7
+    [02:20:52] % rm -rf /home/steward/.local/var/pmbootstrap/chroot_rootfs_nokia-n900
+    [02:20:53] Cleared up ~1751 MB of space
+    [02:20:53] WARNING: The applications in the chroots do not get updated automatically.
+    [02:20:53] Run 'pmbootstrap zap' to delete all chroots once a day before working with pmbootstrap!
+    [02:20:53] It only takes a few seconds, and all packages are cached.
+    [02:20:53] Done!
+
+$ ./pmbootstrap.py install --sdcard /dev/mmcblk0
+    [02:21:23] *** (1/5) PREPARE NATIVE CHROOT ***
+    [02:21:23] (native) install alpine-base
+    [02:21:25] (native) install cryptsetup util-linux e2fsprogs parted dosfstools
+    [02:21:26] *** (2/5) CREATE DEVICE ROOTFS ("nokia-n900") ***
+    [02:21:26] (native) install qemu-arm
+    [02:21:27] Register qemu binfmt (arm)
+    [02:21:27] (rootfs_nokia-n900) install alpine-base
+    [02:21:33] (rootfs_nokia-n900) install postmarketos-base ttf-droid device-nokia-n900 device-nokia-n900-nonfree-firmware postmarketos-ui-xfce4 xfce4-terminal
+    [02:23:55] (rootfs_nokia-n900) write /etc/os-release
+    [02:23:56] (rootfs_nokia-n900) install
+    [02:24:01] (rootfs_nokia-n900) mkinitfs postmarketos-stable
+    [02:24:09]  *** SET LOGIN PASSWORD FOR: 'steward' ***
+    New password: 
+    Retype new password: 
+    passwd: password updated successfully
+    * WARNING: loadkmap is already starting
+    [02:26:44] *** (3/5) PREPARE INSTALL BLOCKDEVICE ***
+    [02:26:45] (native) mount /dev/install (host: /dev/mmcblk0)
+    [02:26:45] WARNING: This device has a previous installation of pmOS. CONTINUE? (y/n) [n]: y
+    [02:26:47] (native) partition /dev/install (boot: 56M, root: the rest)
+    [02:26:48] (native) format /dev/installp2
+    [02:27:06] (native) mount /dev/installp2 to /mnt/install
+    [02:27:07] (native) format /dev/installp1 (boot, ext2), mount to /mnt/install/boot
+    [02:27:07] *** (4/5) FILL INSTALL BLOCKDEVICE ***
+    [02:27:07] (native) copy rootfs_nokia-n900 to /mnt/install/
+    [02:28:01] *** (5/5) FLASHING TO DEVICE ***
+    [02:28:01] Run the following to flash your installation to the target device:
+    [02:28:01] * pmbootstrap flasher flash_kernel
+    [02:28:01]   Flashes the kernel + initramfs to your device:
+    [02:28:01]   /home/steward/.local/var/pmbootstrap/chroot_rootfs_nokia-n900/boot
+    [02:28:01] * If the above steps do not work, you can also create symlinks to the generated files with 'pmbootstrap export' and flash outside of pmbootstrap.
+    [02:28:01] NOTE: chroot is still active (use 'pmbootstrap shutdown' as necessary)
+    [02:28:01] Done
+
+$ ./pmbootstrap.py shutdown
+    [02:29:13] Unregister qemu binfmt (arm)
+    [02:29:13] Done
+</pre>
+<p>
+P.S. Work路徑必須位於<b>$HOME/.local/var/pmbootstrap</b><br><br>
+
+Maemon
+</p>
+<pre>
+$ sudo vim /etc/bootmenu.d/10-pmos.item
+    ITEM_NAME="postmarketOS"
+    ITEM_SCRIPT="boot.scr"
+    ITEM_DEVICE="${EXT_CARD}p1"
+    ITEM_FSTYPE="ext2"
+
+$ u-boot-update-bootmenu
+</pre><br>
+
+<p>
+完成<br>
+<img src="n900_postmarketos_setup/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

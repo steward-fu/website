@@ -1,0 +1,37 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../phone.htm">手機</a> - N900 - PostMarketOS - <b>Unpack uInitrd-postmarketos-stable</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+http://h-wrt.com/en/mini-how-to/uInitrd<br><br>
+
+方式如下：
+</p>
+<pre>
+$ file uInitrd-postmarketos-stable
+    uInitrd-postmarketos-stable: u-boot legacy uImage, uInitrd, Linux/ARM, RAMDisk Image (Not compressed), 6172013 bytes, Thu Nov  7 06:37:51 2019, Load Address: 0x00000000, Entry Point: 0x00000000, Header CRC: 0xA31D3D89, Data CRC: 0x36BB5FB5
+
+$ mkimage -l uInitrd-postmarketos-stable 
+    Image Name:   uInitrd
+    Created:      Thu Nov  7 01:37:51 2019
+    Image Type:   ARM Linux RAMDisk Image (uncompressed)
+    Data Size:    6172013 Bytes = 6027.36 kB = 5.89 MB
+    Load Address: 00000000
+    Entry Point:  00000000
+
+$ dd if=uInitrd-postmarketos-stable of=initrd skip=64 bs=1
+$ file initrd 
+    initrd: gzip compressed data, max compression, from Unix
+
+$ mv initrd initrd.gz
+$ gunzip initrd.gz
+$ file initrd 
+    initrd: ASCII cpio archive (SVR4 with no CRC)
+
+$ cpio -i -F initrd
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
