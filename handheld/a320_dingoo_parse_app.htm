@@ -1,0 +1,288 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - Dingoo A320 - Dingoo - <b>解析App文件格式</b></h3>
+<hr size="1"><br>
+<p>
+App Header
+</p>
+<table>
+  <tr><td>CCDL (32Bytes)</td></tr>
+  <tr><td>Import Table (32Bytes)</td></tr>
+  <tr><td>Import String (8Bytes)</td></tr>
+  <tr><td>Export Table (32Bytes)</td></tr>
+  <tr><td>Export String (8Bytes)</td></tr>
+  <tr><td>Raw Table (32Bytes)</td></tr>
+  <tr><td>Raw Binary</td></tr>
+</table><br>
+<p>
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;string.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;unistd.h&gt;
+ 
+typedef struct {
+    char ident[4];
+    uint8_t unknown[20];
+    uint8_t padding[8];
+} __attribute__((__packed__)) _app_ccdl;
+ 
+typedef struct {
+    char ident[4];
+    uint32_t unknown;
+    uint32_t offset;
+    uint32_t size;
+    uint8_t padding[16];
+} __attribute__((__packed__)) _app_impt;
+ 
+typedef struct {
+    char ident[4];
+    uint32_t unknown;
+    uint32_t offset;
+    uint32_t size;
+    uint8_t padding[16];
+} __attribute__((__packed__)) _app_expt;
+ 
+typedef struct {
+    char ident[4];
+    uint32_t unknown0;
+    uint32_t offset;
+    uint32_t size;
+    uint32_t unknown1;
+    uint32_t entry;
+    uint32_t origin;
+    uint32_t prog_size;
+} __attribute__((__packed__)) _app_rawd;
+ 
+typedef struct {
+    uint32_t str_offset;
+    uint32_t unknown[2];
+    uint32_t offset;
+} __attribute__((__packed__)) _app_impt_entry;
+ 
+typedef struct {
+    uint32_t str_offset;
+    uint32_t unknown[2];
+    uint32_t offset;
+} __attribute__((__packed__)) _app_expt_entry;
+ 
+uint32_t print_table(uint8_t *src, uint32_t off, uint32_t size)
+{
+    uint8_t *p = src + off;
+    uint32_t str_off = off;
+    uint32_t cnt, total = size / sizeof(_app_impt_entry);
+ 
+    for (cnt = 0; cnt &lt; total; cnt++) {
+        if (((_app_impt_entry *)p)-&gt;unknown[1] &gt; 0x20000) {
+            printf("    string: count(0x%x) offset(0x%x)\n", cnt, str_off);
+            break;
+        }
+        p += sizeof(_app_impt_entry);
+        str_off += sizeof(_app_impt_entry);
+    }
+ 
+    p = src + off;
+    for (cnt = 0; cnt &lt; total; cnt++, p += sizeof(_app_impt_entry)) {
+        if (((_app_impt_entry *)p)-&gt;unknown[1] == 0x00000) {
+            continue;
+        }
+        if (((_app_impt_entry *)p)-&gt;unknown[1] &gt; 0x20000) {
+            break;
+        }
+        printf("    0x%x(%s)\n", ((_app_impt_entry*)p)-&gt;offset, &amp;src[((_app_impt_entry*)p)-&gt;str_offset + str_off]);
+    }
+    return str_off;
+}
+ 
+int main(int argc, char** argv)
+{
+    if (argc != 2) {
+        printf("Usage:\n  app2bin xxx.app\n");
+        return -1;
+    }
+ 
+    FILE* file = fopen(argv[1], "rb");
+    if (file == NULL) {
+        printf("Failed to open app: %s\n", argv[1]);
+        return -1;
+    }
+    fseek(file, 0, SEEK_END);
+    uintptr_t len = ftell(file);
+    printf("App length: %d\n", len);
+    fseek(file, 0, SEEK_SET);
+ 
+    uint8_t* body = (uint8_t *)malloc(len);
+    if (body == NULL) {
+        printf("Failed to allocate buffer for reading app\n");
+        fclose(file);
+        return -1;
+    }
+    fread(body, 1, len, file);
+    fclose(file);
+ 
+    printf("Parsing App...\n");  
+    _app_ccdl ccdl;
+    _app_impt impt;
+    _app_expt expt;
+    _app_rawd rawd;
+ 
+    uint8_t *ptr = body;
+    if (memcmp(ptr, "CCDL", 4) != 0) {
+        printf("Invalid App format (miss CCDL section)\n");
+        goto err;
+    }
+    ptr += sizeof(_app_ccdl);
+ 
+    uint32_t cnt = 0, total = 0;
+    uint32_t off = ((_app_impt *)ptr)-&gt;offset;
+    uint32_t size = ((_app_impt *)ptr)-&gt;size;
+    if (memcmp(ptr, "IMPT", 4) != 0) {
+        printf("Invalid App format (miss IMPT section)\n");
+        goto err;
+    }
+    printf("Import offset: 0x%x\n", off);
+    printf("Import size: 0x%x\n", size);
+    print_table(body, off, size);
+    ptr += sizeof(_app_impt);
+ 
+    if (memcmp(ptr, "EXPT", 4) != 0) {
+        printf("Invalid App format (miss EXPT section)\n");
+        goto err;
+    }
+    off = ((_app_rawd *)ptr)-&gt;offset;
+    size = ((_app_rawd *)ptr)-&gt;size;
+    printf("Export offset: %d\n", off);
+    printf("Export size: %d\n", size);
+    print_table(body, off, size);
+    ptr += sizeof(_app_expt);
+   
+    if (memcmp(ptr, "RAWD", 4) != 0) {
+        printf("Invalid App file format (miss RAWD section)\n");
+        goto err;
+    }
+ 
+    off = ((_app_rawd *)ptr)-&gt;offset;
+    size = ((_app_rawd *)ptr)-&gt;size;
+    printf("Raw offset: %d\n", off);
+    printf("Raw size: %d\n", size);
+    printf("Raw entry: 0x%x\n", ((_app_rawd *)ptr)-&gt;entry);
+    printf("Raw origin: 0x%x\n", ((_app_rawd *)ptr)-&gt;origin);
+    printf("Raw prog_size: %d\n", ((_app_rawd *)ptr)-&gt;prog_size);
+    ptr += sizeof(_app_rawd);
+
+    unlink("raw.bin"); 
+    int fd = open("raw.bin", O_CREAT | O_WRONLY, S_IRUSR);
+    if (fd &lt; 0) {
+        printf("Failed to create raw.bin file\n");
+        goto err;
+    }
+    write(fd, body + off, size);
+    close(fd);
+err:
+    free(body);
+    return 0;
+}
+</pre><br>
+
+<pre>
+$ sha1sum 7days.app
+    33e5a1b7eb4a9329a1f5afea6714759e93c6e115
+
+$ ./app2bin 7days.app
+    App length: 45732749
+    Parsing App...
+    Import offset: 0xa0
+    Import size: 0x860
+        string: count(0x48) offset(0x520)
+        0x80ad4500(abort)
+        0x80ad4508(printf)
+        0x80ad4510(sprintf)
+        0x80ad4518(fprintf)
+        0x80ad4520(strncasecmp)
+        0x80ad4528(malloc)
+        0x80ad4530(realloc)
+        0x80ad4538(free)
+        0x80ad4540(fread)
+        0x80ad4548(fwrite)
+        0x80ad4550(fseek)
+        0x80ad4558(LcdGetDisMode)
+        0x80ad4560(vxGoHome)
+        0x80ad4568(StartSwTimer)
+        0x80ad4570(free_irq)
+        0x80ad4578(fsys_RefreshCache)
+        0x80ad4580(strlen)
+        0x80ad4588(_lcd_set_frame)
+        0x80ad4590(_lcd_get_frame)
+        0x80ad4598(lcd_get_cframe)
+        0x80ad45a0(ap_lcd_set_frame)
+        0x80ad45a8(lcd_flip)
+        0x80ad45b0(__icache_invalidate_all)
+        0x80ad45b8(__dcache_writeback_all)
+        0x80ad45c0(TaskMediaFunStop)
+        0x80ad45c8(OSCPUSaveSR)
+        0x80ad45d0(OSCPURestoreSR)
+        0x80ad45d8(serial_getc)
+        0x80ad45e0(serial_putc)
+        0x80ad45e8(_kbd_get_status)
+        0x80ad45f0(get_game_vol)
+        0x80ad45f8(_kbd_get_key)
+        0x80ad4600(fsys_fopen)
+        0x80ad4608(fsys_fread)
+        0x80ad4610(fsys_fclose)
+        0x80ad4618(fsys_fseek)
+        0x80ad4620(fsys_ftell)
+        0x80ad4628(fsys_remove)
+        0x80ad4630(fsys_rename)
+        0x80ad4638(fsys_ferror)
+        0x80ad4640(fsys_feof)
+        0x80ad4648(fsys_fwrite)
+        0x80ad4650(fsys_findfirst)
+        0x80ad4658(fsys_findnext)
+        0x80ad4660(fsys_findclose)
+        0x80ad4668(fsys_flush_cache)
+        0x80ad4670(USB_Connect)
+        0x80ad4678(udc_attached)
+        0x80ad4680(USB_No_Connect)
+        0x80ad4688(waveout_open)
+        0x80ad4690(waveout_close)
+        0x80ad4698(waveout_close_at_once)
+        0x80ad46a0(waveout_set_volume)
+        0x80ad46a8(HP_Mute_sw)
+        0x80ad46b0(waveout_can_write)
+        0x80ad46b8(waveout_write)
+        0x80ad46c0(pcm_can_write)
+        0x80ad46c8(pcm_ioctl)
+        0x80ad46d0(OSTimeGet)
+        0x80ad46d8(OSTimeDly)
+        0x80ad46e0(OSSemPend)
+        0x80ad46e8(OSSemPost)
+        0x80ad46f0(OSSemCreate)
+        0x80ad46f8(OSTaskCreate)
+        0x80ad4700(OSSemDel)
+        0x80ad4708(OSTaskDel)
+        0x80ad4710(GetTickCount)
+        0x80ad4718(_sys_judge_event)
+        0x80ad4720(fsys_fopenW)
+        0x80ad4728(__to_unicode_le)
+        0x80ad4730(__to_locale_ansi)
+    Export offset: 2304
+    Export size: 64
+        string: count(0x3) offset(0x930)
+        0x80ad4824(getext)
+        0x80ad483c(AppMain)
+    Raw offset: 2368
+    Raw size: 1273280
+    Raw entry: 0x80ad4740
+    Raw origin: 0x80a00000
+    Raw prog_size: 1315408 
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

@@ -1,66 +1,21 @@
-﻿<!--
- ____________________________________________________________
-|                                                            |
-|    DESIGN + Pat Heard { http://fullahead.org }             |
-|      DATE + 2006.09.12                                     |
-| COPYRIGHT + Free use if this notice is kept in place.      |
-|____________________________________________________________|
-
--->
-
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
-    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
-<head>
-  <title>司徒的教學網站</title>
-  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
-  <meta name="author" content="fullahead.org" />
-  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
-  <meta name="description" content="A valid, XHTML 1.0 template" />
-  <meta name="robots" content="index, follow, noarchive" />
-  <meta name="googlebot" content="noarchive" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+<head><script type="text/javascript" src="../page_head.js"></script>
 
-  <link rel="shortcut icon" href="../../../website.ico">
-  <link rel="stylesheet" type="text/css" href="../../../styles/shCore.css" />
-  <link rel="stylesheet" type="text/css" href="../../../styles/shThemeDefault.css" />
-  <link rel="stylesheet" type="text/css" href="../../../css/html.css" media="screen, projection, tv " />
-  <link rel="stylesheet" type="text/css" href="../../../css/layout.css" media="screen, projection, tv" />
-  <link rel="stylesheet" type="text/css" href="../../../css/print.css" media="print" />
-  
-  <script type="text/javascript" src="../../../scripts/shCore.js"></script>
-  <script type="text/javascript" src="../../../scripts/shBrushCpp.js"></script>
-
-  <!-- Conditional comment to apply opacity fix for IE #content background.
-       Invalid CSS, but can be removed without harming design -->
-  <!--[if gt IE 5]>
-  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
-  <![endif]-->
-</head>
-
-<body>
-<script type="text/javascript">SyntaxHighlighter.all();</script>
-<div id="wrapper">
-<div id="content">
-<script type="text/javascript" src="../../../header.js"></script>
-<div id="page">
-<h3>Dingoo A320 &gt;&gt; Dingoo</h3>
-<p><b>Patch ILI9338.DL(支援S6D04M0X21)</b></p>
-<hr size="1">
+<h3><a href="../index.htm">掌機</a> - Dingoo A320 - Dingoo - <b>Patch ILI9338.DL(支援S6D04M0X21)</b></h3>
+<hr size="1"><br>
 <p>
-雖然司徒之前已經幫A320掌機替換過IPS屏，但是替換的屏是2.6吋IPS ILI9340，而原本A320掌機的屏幕則是2.8吋，當初選擇2.6吋的原因是找不到37Pin 2.8吋IPS屏，因此，只好將就使用，如今已經可以從淘寶網找到2.8吋IPS屏，於是司徒再度燃起換屏的興致，只是此次換屏的過程可說是相當幸苦，因爲除了一開始點不亮之外，最後還遇到Binary Patch空間不足的問題，因爲這個屏需要更多初始化指令，雖然過程一波三折，不過最後還是成功完成這個任務，於是司徒整理成此篇文章，分享給有需要的人。<br><br>
+ILI93xx.DL<br>
+<img src="a320_dingoo_patch_ili9340/1.jpg" class="maxSize"><br><br>
 
-DL檔案的檔頭如下：<br>
-<img src="patch_ili9340/1.jpg" class="maxSize"><br>
-根據Dingoo SDK的說明檔案，這種檔頭分成如下幾種區塊：
+Header種類<br>
 </p>
-
-<pre class="brush:cpp">
-CCDL, IMPT, EXPT, RAWD, [ERPT], [&lt;null&gt;]
+<pre>
+CCDL, IMPT, EXPT, RAW, [ERPT], [NULL]
 </pre><br>
 
 <p>
-每個區塊的長度為32 Bytes且格式如下：
+每個Header的長度為32Bytes：
 </p>
 <pre class="brush:cpp">
 char name[4];
@@ -70,7 +25,7 @@ uint32_t size;
 </pre><br>
 
 <p>
-經由上面的格式，可以知道PRAW Offset是0x2b0(size=0x2788)，因此可以使用如下指令取出Binary並且反組譯:
+經由上面的格式，可以知道RAW Offset是0x2b0(size=0x2788)，因此可以使用如下指令取出Binary並且反組譯:
 </p>
 
 <pre>
@@ -82,7 +37,7 @@ $ mipsel-linux-objdump -b binary -m mips -D ILI9338.bin &gt; ILI9338.dis
 根據Dingux的驅動程式(drivers/video/jz4740_slcd.h)，ILI9338的LCD初使化片段指令如下：
 </p>
 
-<pre class="brush:cpp">
+<pre>
 Mcupanel_Command(0x11);
 mdelay(100);
 Mcupanel_Command(0xCB);
@@ -90,14 +45,12 @@ Mcupanel_Data(0x01);
 Mcupanel_Command(0xC0);
 Mcupanel_Data(0x26);
 Mcupanel_Data(0x01);
-...
 </pre><br>
 
 <p>
-經由上面的初使化程式，可以找到如下反組譯的位置：
+反組譯位置
 </p>
-
-<pre class="brush:cpp">
+<pre>
 ROM:0000199Cg      li      $gp, 0xFFFFE664
 ROM:000019A4g      addu    $gp, $t9
 ROM:000019A8g      addiu   $sp, -0x20
@@ -164,7 +117,7 @@ ROM:00001A98g      lw      $t9, 0x2400($gp)
 ROM:00001A9Cg      jalr    $t9
 ROM:00001AA0g      nop
 ROM:00001AA4g      lw      $gp, 0x10($sp)
-ROM:00001AA8g      li      $a0, 0x26  # '&'
+ROM:00001AA8g      li      $a0, 0x26  # '&amp;'
 ROM:00001AACg      lw      $t9, 0x2360($gp)
 ROM:00001AB0g      jalr    $t9
 ROM:00001AB4g      nop
@@ -420,10 +373,9 @@ ROM:00001E98g      addiu   $sp, 0x20
 </pre><br>
 
 <p>
-接著移植賣家提供的初始化程式到OpenDingux jz4740_slcd.h
+LCD初始化程式
 </p>
-
-<pre class="brush:cpp">
+<pre>
 mdelay(120); 
 Mcupanel_Command(0x0001); 
 Mcupanel_Command(0x00f0); 
@@ -652,7 +604,7 @@ Mcupanel_Command(0x002c);
 接著是最難的地方，因為這個屏需要更多的指令，所以沒有足夠的空間做Binary Patch，因此，司徒必須找尋其它沒有使用到的空間來填充需要的指令，加上A320掌機沒有比較方便的除錯方式，因此，司徒花了相當多的時間測試，最終完成Binary Patch，Patch後的Assembly內容如下：
 </p>
 
-<pre class="brush:cpp">
+<pre>
 ROM:0000199Cg      li      $gp, 0xFFFFE664
 ROM:000019A4g      addu    $gp, $t9
 ROM:000019A8g      addiu   $sp, -0x24
@@ -986,8 +938,7 @@ ROM:00001E98g      addiu   $sp, 0x24
 <p>
 Patch後的Binary內容
 </p>
-
-<pre class="brush:cpp">
+<pre>
 0001c50: 01000224 00001c3c 64e69c27 21e09903  ...$...&lt;d..'!...
 0001c60: dcffbd27 1000bcaf a0000424 1c00bfaf  ...'.......$....
 0001c70: 1800bcaf 8c23998f 09f82003 00000000  .....#.... .....
@@ -1076,15 +1027,7 @@ Patch後的Binary內容
 
 <p>
 完成<br>
-<img src="patch_s6d04m0x21/1.jpg" class="maxSize">
+<img src="a320_dingoo_patch_s6d04m0x21/1.jpg" class="maxSize">
 </p>
 
-<p>
-<br><a href="../../../handheld.htm">返回上一頁</a>
-</p>
-
-</div>
-</div>
-</div>
-</body>
-</html>
+<br><script type="text/javascript" src="../tail.js"></script>

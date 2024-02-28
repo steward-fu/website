@@ -1,66 +1,21 @@
-﻿<!--
- ____________________________________________________________
-|                                                            |
-|    DESIGN + Pat Heard { http://fullahead.org }             |
-|      DATE + 2006.09.12                                     |
-| COPYRIGHT + Free use if this notice is kept in place.      |
-|____________________________________________________________|
-
--->
-
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
-    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
-<head>
-  <title>司徒的教學網站</title>
-  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
-  <meta name="author" content="fullahead.org" />
-  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
-  <meta name="description" content="A valid, XHTML 1.0 template" />
-  <meta name="robots" content="index, follow, noarchive" />
-  <meta name="googlebot" content="noarchive" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+<head><script type="text/javascript" src="../page_head.js"></script>
 
-  <link rel="shortcut icon" href="../../../website.ico">
-  <link rel="stylesheet" type="text/css" href="../../../styles/shCore.css" />
-  <link rel="stylesheet" type="text/css" href="../../../styles/shThemeDefault.css" />
-  <link rel="stylesheet" type="text/css" href="../../../css/html.css" media="screen, projection, tv " />
-  <link rel="stylesheet" type="text/css" href="../../../css/layout.css" media="screen, projection, tv" />
-  <link rel="stylesheet" type="text/css" href="../../../css/print.css" media="print" />
-  
-  <script type="text/javascript" src="../../../scripts/shCore.js"></script>
-  <script type="text/javascript" src="../../../scripts/shBrushCpp.js"></script>
-
-  <!-- Conditional comment to apply opacity fix for IE #content background.
-       Invalid CSS, but can be removed without harming design -->
-  <!--[if gt IE 5]>
-  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
-  <![endif]-->
-</head>
-
-<body>
-<script type="text/javascript">SyntaxHighlighter.all();</script>
-<div id="wrapper">
-<div id="content">
-<script type="text/javascript" src="../../../header.js"></script>
-<div id="page">
-<h3>Dingoo A320 &gt;&gt; Dingoo</h3>
-<p><b>Patch ILI9338.DL(支援ILI9340)</b></p>
-<hr size="1">
+<h3><a href="../index.htm">掌機</a> - Dingoo A320 - Dingoo - <b>Patch ILI9338.DL(支援ILI9340)</b></h3>
+<hr size="1"><br>
 <p>
-由於官方並沒有釋出Dingoo原始程式碼，因此，修改的方式就只能透過Patch Binary，加上ILI9340屏也不在官方支援的清單中，於是再度激起司徒使用逆向工程的手法，讓Dingoo系統也可以支援ILI9340，這樣至少可以使用更好的屏幕，再次爽玩七夜這款遊戲。<br><br>
+ILI93xx.DL<br>
+<img src="a320_dingoo_patch_ili9340/1.jpg" class="maxSize"><br><br>
 
-使用者如果有燒錄過Dingoo系統，應該有發現需要ILI93xx.DL、A320.HXF這兩個檔案，其中ILI93xx.DL就是初始化相關硬體的程式碼，格式不像一般的ELF檔案：<br>
-<img src="patch_ili9340/1.jpg" class="maxSize"><br>
-根據Dingoo SDK的說明檔案，這種檔案名稱為CCDL並且會有如下幾種Header：
+Header種類
 </p>
-
-<pre class="brush:cpp">
-CCDL, IMPT, EXPT, RAWD, [ERPT], [&lt;null&gt;]
+<pre>
+CCDL, IMPT, EXPT, RAW, [ERPT], [NULL]
 </pre><br>
 
 <p>
-每個Header的長度為32 Bytes且格式如下：
+每個Header的長度為32Bytes：
 </p>
 
 <pre class="brush:cpp">
@@ -71,7 +26,7 @@ uint32_t size;
 </pre><br>
 
 <p>
-經由上面的格式，可以知道PRAW位置的Offset是0x2b0(size=0x2788)，因此可以使用如下指令取出Binary並且反組譯:
+經由上面的格式，可以知道RAW Offset是0x2b0(size=0x2788)，因此可以使用如下指令取出Binary並且反組譯:
 </p>
 
 <pre>
@@ -83,7 +38,7 @@ $ mipsel-linux-objdump -b binary -m mips -D ILI9338.bin &gt; ILI9338.dis
 根據Dingux的驅動程式(drivers/video/jz4740_slcd.h)，ILI9338的LCD初使化片段指令如下：
 </p>
 
-<pre class="brush:cpp">
+<pre>
 Mcupanel_Command(0x11);
 mdelay(100);
 Mcupanel_Command(0xCB);
@@ -95,10 +50,9 @@ Mcupanel_Data(0x01);
 </pre><br>
 
 <p>
-經由上面的初使化程式，可以找到如下反組譯的位置：
+反組譯位置
 </p>
-
-<pre class="brush:cpp">
+<pre>
 // Mcupanel_Command(0x11);
 c64:  11000424   li  a0,17
 c68:  1c00bfaf   sw  ra,28(sp)
@@ -148,8 +102,7 @@ cf0:  00000000   nop
 <p>
 因為使用到Binary Patch的方式，通常需要考慮到是否空間不足的問題，幸運地，司徒發現只需修改幾行指令就可以點亮ILI9340，沒有遇到需要額外找尋空間的問題
 </p>
-
-<pre class="brush:cpp">
+<pre>
 /* Black magic */
 Mcupanel_Command(0x11);
 mdelay(100);
@@ -259,7 +212,6 @@ Mcupanel_Command(0x2c);
 <p>
 需要Patch蠻多地方，不過，幸好只有內容需要更改，不然真的很麻煩，Patch後的Bnary如下：
 </p>
-
 <pre>
 0001cc0: c0000424 6023998f 09f82003 00000000  ...$`#.... .....
 0001cd0: 1000bc8f <b>27</b>000424 0024998f 09f82003  ....'..$.$.... .
@@ -316,16 +268,8 @@ Mcupanel_Command(0x2c);
 </pre><br>
 
 <p>
-最後，使用Patch過後的ILI9340.DL和A320.HXF，就可以點亮換完屛的A320<br>
-<img src="patch_ili9340/2.jpg" class="maxSize">
+最後，使用Patch過後的ILI9340.DL和A320.HXF，就可以點亮新屏<br>
+<img src="a320_dingoo_patch_ili9340/2.jpg" class="maxSize">
 </p>
 
-<p>
-<br><a href="../../../handheld.htm">返回上一頁</a>
-</p>
-
-</div>
-</div>
-</div>
-</body>
-</html>
+<br><script type="text/javascript" src="../tail.js"></script>
