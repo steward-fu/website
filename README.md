@@ -6,6 +6,8 @@ All of files or resources used on my website can be found from the following lin
 | **Item**                            | **Resource Link**                                                                     |
 | ----------------------------------- | ------------------------------------------------------------------------------------- |
 | ![](img/photos/pandora.jpg)         | [Pandora](https://github.com/steward-fu/website/releases/tag/pandora)                 |
+| ![](img/photos/a320.jpg)            | [Dingoo A320](https://github.com/steward-fu/website/releases/tag/a320)                |
+| ![](img/photos/miyoo-mini.jpg)      | [Miyoo Mini](https://github.com/steward-fu/website/releases/tag/miyoo-mini)           |
 | ![](img/photos/miyoo-mini-plus.jpg) | [Miyoo Mini Plus](https://github.com/steward-fu/website/releases/tag/miyoo-mini-plus) |
 | ![](img/photos/pyra.jpg)            | [Pyra](https://github.com/steward-fu/website/releases/tag/pyra)                       |
 | ![](img/photos/q2.jpg)              | [Q2](https://github.com/steward-fu/website/releases/tag/q2)                           |
