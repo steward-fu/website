@@ -1,0 +1,29 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../phone.htm">手機</a> - N900 - MAEMO LESTE - <b>Build Kernel 6.1.9</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/maemo-leste/droid4-linux/tree/maemo-idle-report-6.1.y<br><br>
+
+步驟如下：
+</p>
+<pre>
+$ cd
+$ sudo apt-get install gcc-arm*
+
+$ git clone -b maemo-idle-report-6.1.y --depth=1 https://github.com/maemo-leste/droid4-linux
+$ cp ../config-6.1.9 .config
+$ ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- make menuconfig
+$ ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- make zImage modules dtbs -j4
+$ INSTALL_MOD_PATH=out ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- make modules_install -j4
+$ cat arch/arm/boot/zImage arch/arm/boot/dts/omap3-n900.dtb &gt; new
+$ mkimage -A arm -O linux -T kernel -C none -a 80008000 -e 80008000 -n uImage -d new uImage
+</pre>
+<p>
+P.S. 從系統/proc/config.gz取得config-6.1.9
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
