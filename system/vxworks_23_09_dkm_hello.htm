@@ -1,0 +1,80 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../system.htm">系統</a> - VxWorks - 23.09 - Kernel (DKM) - <b>Hello, world!</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://zhuanlan.zhihu.com/p/597577575<br>
+https://forums.windriver.com/t/vxworks-software-development-kit-sdk/43<br>
+https://d13321s3lxgewa.cloudfront.net/downloads/wrsdk-vxworks7-docs/2309/README_qemu.html<br>
+https://learning.windriver.com/path/vxworks7-essentials-workbench-and-tools/vxworks-kernel-shell<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;iosLib.h&gt;
+
+static int drvNum = 0;
+static DEV_HDR hdr = {0};
+
+int main(int argc, char **argv)
+{
+    drvNum = iosDrvInstall(NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    iosDevAdd(&amp;hdr, "/dev/hello", drvNum);
+    printf("Hello, world!\n");
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ wr-cc main.c -o hello -dkm
+</pre><br>
+
+<p>
+執行
+</p>
+<pre>
+-&gt; ld &lt; hello
+value = -140737380219648 = 0xffff800006720500 = _sysTableEnd + 0xffff800006312500
+
+-&gt; moduleShow
+
+        MODULE NAME             MODULE ID        GROUP #      SEGMENT ADDRESSES
+--------------------------- -------------------- ------- -------------------------
+hello                       0x00ffff800006720500       1 0xffffffff8c5a6000 (TEXT)
+                                                         0xffffffff8c5a7000 (DATA)
+                                                         0xffffffff8c5a7030 (BSS)
+value = 0 = 0x0
+
+-&gt; main
+Hello, world!
+value = 0 = 0x0
+
+-&gt; devs
+drv refs name
+ 22 [ 5] /dev/hello
+ 13 [ 5] /dev/random
+ 13 [ 5] /dev/urandom
+ 12 [ 5] /dev/zero
+ 11 [ 5] /fifos
+ 16 [ 5] /host.host
+ 14 [ 5] /input/event
+  0 [ 7] /null
+  5 [ 5] /ram
+ 10 [ 5] /ram0
+  9 [ 5] /romfs
+  3 [ 5] /shm
+ 10 [ 5] /tmp
+  2 [ 7] /ttyS0
+value = 0 = 0x0
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
