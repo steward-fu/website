@@ -1,0 +1,40 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../system.htm">系統</a> - VxWorks - 23.09 - <b>安裝系統(QEMU)</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://forums.windriver.com/t/vxworks-software-development-kit-sdk/43<br>
+https://d13321s3lxgewa.cloudfront.net/downloads/wrsdk-vxworks7-docs/2309/README_qemu.html<br><br>
+
+安裝步驟：
+</p>
+<pre>
+$ cd
+$ wget https://d13321s3lxgewa.cloudfront.net/wrsdk-vxworks7-qemu-1.13.2.tar.bz2
+$ tar xvf wrsdk-vxworks7-qemu-1.13.2.tar.bz2
+$ cd
+$ qemu-system-x86_64 -m 512M -kernel vxsdk/bsps/itl_generic_3_0_0_3/vxWorks \
+    -net nic -net user,hostfwd=tcp::1534-:1534,hostfwd=tcp::2345-:2345 \
+    -display none -serial stdio -monitor none \
+    -append "bootline:fs(0,0)host:vxWorks h=10.0.2.2 e=10.0.2.15 u=target pw=vxTarget o=gei0"
+</pre><br>
+
+<p>
+如果要存取Host檔案，在另一個Terminal視窗下，執行如下指令
+</p>
+<pre>
+$ sudo python3 -m pyftpdlib -p 21 -u target -P vxTarget -i 127.0.0.1 -d $HOME
+</pre><br>
+
+<p>
+QEMU裏面存取Host檔案
+</p>
+<pre>
+-&gt; cmd
+[vxWorks *]# ls /host.host
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
