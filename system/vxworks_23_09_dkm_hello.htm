@@ -22,7 +22,7 @@ main.c
 static int drvNum = 0;
 static DEV_HDR hdr = {0};
 
-int main(int argc, char **argv)
+int myProbe(void)
 {
     drvNum = iosDrvInstall(NULL, NULL, NULL, NULL, NULL, NULL, NULL);
     iosDevAdd(&amp;hdr, "/dev/hello", drvNum);
@@ -43,38 +43,38 @@ $ wr-cc main.c -o hello -dkm
 </p>
 <pre>
 -&gt; ld &lt; hello
-value = -140737380219648 = 0xffff800006720500 = _sysTableEnd + 0xffff800006312500
+    value = -140737380219648 = 0xffff800006720500 = _sysTableEnd + 0xffff800006312500
 
 -&gt; moduleShow
+            MODULE NAME             MODULE ID        GROUP #      SEGMENT ADDRESSES
+    --------------------------- -------------------- ------- -------------------------
+    hello                       0x00ffff800006720500       1 0xffffffff8c5a6000 (TEXT)
+                                                             0xffffffff8c5a7000 (DATA)
+                                                             0xffffffff8c5a7030 (BSS)
+    value = 0 = 0x0
 
-        MODULE NAME             MODULE ID        GROUP #      SEGMENT ADDRESSES
---------------------------- -------------------- ------- -------------------------
-hello                       0x00ffff800006720500       1 0xffffffff8c5a6000 (TEXT)
-                                                         0xffffffff8c5a7000 (DATA)
-                                                         0xffffffff8c5a7030 (BSS)
-value = 0 = 0x0
-
--&gt; main
-Hello, world!
-value = 0 = 0x0
+-&gt; sp myProbe
+    Task spawned: id = 0xffff80000035a3d0, name = t1
+    value = -140737484839984 = 0xffff80000035a3d0 = _sysTableEnd + 0xffff7ffffff4c3d0
+    Hello, world!
 
 -&gt; devs
-drv refs name
- 22 [ 5] /dev/hello
- 13 [ 5] /dev/random
- 13 [ 5] /dev/urandom
- 12 [ 5] /dev/zero
- 11 [ 5] /fifos
- 16 [ 5] /host.host
- 14 [ 5] /input/event
-  0 [ 7] /null
-  5 [ 5] /ram
- 10 [ 5] /ram0
-  9 [ 5] /romfs
-  3 [ 5] /shm
- 10 [ 5] /tmp
-  2 [ 7] /ttyS0
-value = 0 = 0x0
+    drv refs name
+     22 [ 5] /dev/hello
+     13 [ 5] /dev/random
+     13 [ 5] /dev/urandom
+     12 [ 5] /dev/zero
+     11 [ 5] /fifos
+     16 [ 5] /host.host
+     14 [ 5] /input/event
+      0 [ 7] /null
+      5 [ 5] /ram
+     10 [ 5] /ram0
+      9 [ 5] /romfs
+      3 [ 5] /shm
+     10 [ 5] /tmp
+      2 [ 7] /ttyS0
+    value = 0 = 0x0
 </pre>
 
 <br><script type="text/javascript" src="../tail.js"></script>
