@@ -14,5 +14,6 @@ All of files or resources used on my website can be found from the following lin
 | ![](img/photos/q2.jpg)              | [Q2](https://github.com/steward-fu/website/releases/tag/q2)                           |
 | ![](img/photos/pixel3axl.jpg)       | [Google Pixel 3a XL](https://github.com/steward-fu/website/releases/tag/pixel-3a-xl)  |
 | ![](img/photos/n900.jpg)            | [Nokia N900](https://github.com/steward-fu/website/releases/tag/n900)                 |
+| ![](img/photos/wdm.jpg)             | [Windows Device Driver (WDM)](https://github.com/steward-fu/website/releases/tag/wdm) |
 | ![](img/photos/ldd.jpg)             | [Linux Device Driver (LDD)](https://github.com/steward-fu/website/releases/tag/ldd)   |
 | ![](img/photos/pdf.jpg)             | [Chipset Datasheet](https://github.com/steward-fu/website/releases/tag/datasheet)     |
