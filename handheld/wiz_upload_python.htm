@@ -1,0 +1,34 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - GP2X Wiz - <b>Upload程式(Python)</b></h3>
+<hr size="1"><br>
+<pre class="brush:python">
+#!/usr/bin/python
+import os
+import sys
+import serial
+
+DEF_FILE = 'main.bin'
+DEF_PORT = '/dev/ttyUSB0'
+  
+if os.geteuid() != 0:
+    print 'run me as root'
+    sys.exit()
+ 
+if os.path.exists(DEF_FILE) == False:
+    print 'failed to open {}'.format(DEF_FILE)
+    sys.exit()
+
+print 'uploading...'
+ser = serial.Serial(DEF_PORT, 19200)
+ser.flush()
+f = open(DEF_FILE, 'rb')
+ser.write(f.read())
+f.close()
+ser.close()
+print 'upload complete'
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
