@@ -1,0 +1,131 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - GP2X Wiz - Assembly - <b>Timer3</b></h3>
+<hr size="1"><br>
+<p>
+Timer架構<br>
+<img src="wiz_asm_timer0/1.jpg" class="maxSize"><br><br>
+
+暫存器<br>
+<img src="wiz_asm_timer0/2.jpg" class="maxSize"><br><br>
+
+Timer計數(使用UART開機模式時，Clock固定使用PLL1且速度為147.46MHz)
+</p>
+<pre>
+TCLK = (PLL1 / CLKDIV) / SELTCLK
+
+PLL1 = 147.46MHz
+CLKDIV = 40
+SELTCLK = 2
+
+TCLK = (147.46MHz / 40) / 2 = 1843250Hz
+</pre><br>
+
+<p>
+main.s
+</p>
+<pre class="brush:asm">
+    .global _start
+
+    .equiv GPIOC_OUT,    0xc000a080
+    .equiv GPIOC_OUTENB, 0xc000a084
+    .equiv INTMODEL,     0xc0000808
+    .equiv INTMASKL,     0xc0000810
+    .equiv INTPENDL,     0xc0000820
+    .equiv TMR3_COUNT,   0xc0001980
+    .equiv TMR3_MATCH,   0xc0001984
+    .equiv TMR3_CONTROL, 0xc0001988
+    .equiv TMR3_CLKENB,  0xc00019c0
+    .equiv TMR3_CLKGEN,  0xc00019c4
+
+    .arm
+    .text
+_start:
+    b reset
+    b .
+    b .
+    b .
+    b .
+    b .
+    b irq_handler
+    b .
+
+irq_handler:
+    ldr r0, =TMR3_CONTROL
+    ldr r1, [r0]
+    orr r1, #(1 &lt;&lt; 5)
+    bic r1, #(1 &lt;&lt; 3)
+    str r1, [r0]
+
+    ldr r0, =GPIOC_OUT
+    eor r2, #(1 &lt;&lt; 16)
+    str r2, [r0]
+
+    ldr r0, =INTPENDL
+    ldr r1, =0xffffffff
+    str r1, [r0]
+
+    ldr r0, =TMR3_CONTROL
+    ldr r1, [r0]
+    orr r1, #(1 &lt;&lt; 3)
+    str r1, [r0]
+    subs pc, lr, #4
+
+reset:
+    mrs r0, cpsr
+    bic r0, #0x80
+    msr cpsr_c, r0
+
+    ldr r0, =INTMODEL
+    ldr r1, =0
+    str r1, [r0]
+
+    ldr r0, =INTMASKL
+    ldr r1, =0
+    str r1, [r0]
+
+    ldr r0, =INTPENDL
+    ldr r1, =0xffffffff
+    str r1, [r0]
+
+    ldr r0, =GPIOC_OUTENB
+    ldr r1, =(1 &lt;&lt; 16)
+    str r1, [r0]
+
+    ldr r0, =GPIOC_OUT
+    ldr r2, =(1 &lt;&lt; 16)
+    str r2, [r0]
+
+    ldr r0, =TMR3_CLKGEN
+    ldr r1, =(39 &lt;&lt; 4) | (1 &lt;&lt; 1)
+    str r1, [r0]
+
+    ldr r0, =TMR3_CLKENB
+    ldr r1, =0x0c
+    str r1, [r0]
+
+    ldr r0, =TMR3_COUNT
+    ldr r1, =0
+    str r1, [r0]
+
+    ldr r0, =TMR3_MATCH
+    ldr r1, =1843250
+    str r1, [r0]
+
+    ldr r0, =TMR3_CONTROL
+    ldr r1, =0x38
+    str r1, [r0]
+
+    b .
+    .end
+</pre><br>
+
+<p>
+完成<br>
+<img src="wiz_asm_led/4.jpg" class="maxSize"><br>
+<img src="wiz_asm_led/5.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

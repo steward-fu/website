@@ -1,0 +1,140 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - GP2X Wiz - Assembly - <b>LED</b></h3>
+<hr size="1"><br>
+<p>
+LED連接到GPIOC-16<br>
+<img src="wiz_asm_led/3.jpg" class="maxSize"><br><br>
+
+GPIO架構<br>
+<img src="wiz_asm_led/1.jpg" class="maxSize"><br><br>
+
+暫存器<br>
+<img src="wiz_asm_led/2.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .global _start
+
+    .equiv GPIOC_OUT,    0xc000a080
+    .equiv GPIOC_OUTENB, 0xc000a084
+
+    .arm
+    .text
+_start:
+    b reset
+    b .
+    b .
+    b .
+    b .
+    b .
+    b .
+    b .
+   
+reset:
+    ldr r0, =GPIOC_OUTENB
+    ldr r1, =(1 &lt;&lt; 16)
+    str r1, [r0]
+
+    ldr r0, =GPIOC_OUT
+0:
+    eor r1, #(1 &lt;&lt; 16)
+    str r1, [r0]
+    ldr r2, =1000000
+1:
+    subs r2, #1
+    bne 1b
+    b 0b
+    .end
+</pre><br>
+
+<p>
+main.ld
+</p>
+<pre>
+MEMORY {
+    RAM : ORIGIN = 0, LENGTH = 16K
+}
+
+SECTIONS {
+    text : {
+        *(.text*)
+        FILL(0x00)
+        . = 0x4000;
+    } &gt; RAM
+}
+</pre><br>
+
+<p>
+upload.py
+</p>
+<pre class="brush:python">
+#!/usr/bin/python
+import os
+import sys
+import serial
+ 
+DEF_FILE = 'main.bin'
+DEF_PORT = '/dev/ttyUSB0'
+   
+if os.geteuid() != 0:
+    print 'run me as root'
+    sys.exit()
+  
+if os.path.exists(DEF_FILE) == False:
+    print 'failed to open {}'.format(DEF_FILE)
+    sys.exit()
+  
+print 'uploading...'
+ser = serial.Serial(DEF_PORT, 19200)
+ser.flush()
+f = open(DEF_FILE, 'rb')
+ser.write(f.read())
+f.close()
+ser.close()
+print 'upload complete'
+</pre><br>
+
+<p>
+Makefile
+</p>
+<pre>
+all:
+	arm-none-eabi-as -mcpu=arm9 -o main.o main.s
+	arm-none-eabi-ld -T main.ld -o main.elf main.o
+	arm-none-eabi-objcopy -O binary main.elf main.bin
+
+upload:
+	sudo ./upload.py
+
+clean:
+	rm -rf main.bin main.elf main.o
+</pre><br>
+
+<p>
+上傳步驟如下：<br>
+1. 讓Wiz進入UART開機模式<br>
+2. 執行如下指令
+</p>
+<pre>
+$ make
+    arm-none-eabi-as -mcpu=arm9 -o main.o main.s
+    arm-none-eabi-ld -T main.ld -o main.elf main.o
+    arm-none-eabi-objcopy -O binary main.elf main.bin
+
+$ make upload
+    sudo ./upload.py
+    uploading...
+    upload complete
+</pre><br>
+
+<p>
+完成<br>
+<img src="wiz_asm_led/4.jpg" class="maxSize"><br>
+<img src="wiz_asm_led/5.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
