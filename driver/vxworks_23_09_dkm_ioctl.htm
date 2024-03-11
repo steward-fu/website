@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head><script type="text/javascript" src="../page_head.js"></script>
 
-<h3><a href="../driver.htm">驅動程式</a> - VxWorks - 23.09 - C/C++ - <b>File Operation</b></h3>
+<h3><a href="../driver.htm">驅動程式</a> - VxWorks - 23.09 - C/C++ - <b>IOCTL Operation</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
@@ -52,7 +52,6 @@ static long myRead(void *dev, char *buf, size_t size)
     printf("%s()\n", __func__);
     return 0;
 }
-
 static long myWrite(void *dev, const char *buf, size_t size)
 {
     if (dev == NULL) {
@@ -62,10 +61,16 @@ static long myWrite(void *dev, const char *buf, size_t size)
     printf("%s()\n", __func__);
     return 0;
 }
+
+static STATUS myIOCTL(void *dev, int cmd, long arg)
+{
+    printf("%s(), cmd %d, arg %p\n", __func__, cmd, arg);
+    return OK;
+}
  
 STATUS myProbe(void)
 {
-    drvNum = iosDrvInstall(NULL, NULL, myOpen, myClose, myRead, myWrite, NULL);
+    drvNum = iosDrvInstall(NULL, NULL, myOpen, myClose, myRead, myWrite, myIOCTL);
     iosDevAdd(&amp;hdr, "/dev/hello", drvNum);
     printf("Hello, world!\n");
     return OK;
@@ -91,29 +96,16 @@ $ wr-cc main.c -o hello -dkm
     value = -140737484839552 = 0xffff80000035a580 = _sysTableEnd + 0xffff7ffffff4c580
     Hello, world!
 
--&gt; devs
-    drv refs name
-     22 [ 5] /dev/hello
-     13 [ 5] /dev/random
-     13 [ 5] /dev/urandom
-     12 [ 5] /dev/zero
-     11 [ 5] /fifos
-     16 [ 5] /host.host
-     14 [ 5] /input/event
-      0 [ 7] /null
-      5 [ 5] /ram
-     10 [ 5] /ram0
-      9 [ 5] /romfs
-      3 [ 5] /shm
-     10 [ 5] /tmp
-      2 [ 7] /ttyS0
-    value = 0 = 0x0
-
 -&gt; open("/dev/hello")
     myOpen()
     value = 18 = 0x12
 
+-&gt; ioctl(18, 100, 0x1234)
+    myIOCTL(), cmd 100, arg 0x1234
+    value = 0 = 0x0
+
 -&gt; close(18)
+    myIOCTL(), cmd 82, arg 0x0
     myClose()
     value = 0 = 0x0
 </pre>
