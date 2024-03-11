@@ -1,0 +1,121 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../driver.htm">驅動程式</a> - VxWorks - 23.09 - C/C++ - <b>File Operation</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://zhuanlan.zhihu.com/p/597577575<br>
+https://forums.windriver.com/t/vxworks-software-development-kit-sdk/43<br>
+https://mail.prz-rzeszow.pl/~ssamolej/vxworks/vxworks_kernel_programmers_guide_6.6.pdf<br>
+https://d13321s3lxgewa.cloudfront.net/downloads/wrsdk-vxworks7-docs/2309/README_qemu.html<br>
+https://learning.windriver.com/path/vxworks7-essentials-workbench-and-tools/vxworks-kernel-shell<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;iosLib.h&gt;
+ 
+static int drvNum = 0;
+static DEV_HDR hdr = {0};
+
+void* myOpen(struct dev_hdr *dev, const char *remainder, int access, int mode)
+{
+    if (remainder[0] != '\0') {
+        return NULL;
+    }
+
+    printf("%s()\n", __func__);
+    return dev;
+}
+ 
+int myClose(void *dev)
+{
+    if (dev == NULL) {
+        return ERROR;
+    }
+
+    printf("%s()\n", __func__);
+    return OK;
+}
+
+long myRead(void *dev, char *buf, size_t size)
+{
+    if (dev == NULL) {
+        return ERROR;
+    }
+
+    printf("%s()\n", __func__);
+    return 0;
+}
+
+long myWrite(void *dev, const char *buf, size_t size)
+{
+    if (dev == NULL) {
+        return ERROR;
+    }
+
+    printf("%s()\n", __func__);
+    return 0;
+}
+ 
+int myProbe(void)
+{
+    drvNum = iosDrvInstall(NULL, NULL, myOpen, myClose, myRead, myWrite, NULL);
+    iosDevAdd(&amp;hdr, "/dev/hello", drvNum);
+    printf("Hello, world!\n");
+    return OK;
+}
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ wr-cc main.c -o hello -dkm
+</pre><br>
+
+<p>
+執行
+</p>
+<pre>
+-&gt; ld &lt; hello
+    value = -140737379950592 = 0xffff800006762000 = _sysTableEnd + 0xffff800006354000
+
+-&gt; sp myProbe
+    Task spawned: id = 0xffff80000035a580, name = t1
+    value = -140737484839552 = 0xffff80000035a580 = _sysTableEnd + 0xffff7ffffff4c580
+    Hello, world!
+
+-&gt; devs
+    drv refs name
+     22 [ 5] /dev/hello
+     13 [ 5] /dev/random
+     13 [ 5] /dev/urandom
+     12 [ 5] /dev/zero
+     11 [ 5] /fifos
+     16 [ 5] /host.host
+     14 [ 5] /input/event
+      0 [ 7] /null
+      5 [ 5] /ram
+     10 [ 5] /ram0
+      9 [ 5] /romfs
+      3 [ 5] /shm
+     10 [ 5] /tmp
+      2 [ 7] /ttyS0
+    value = 0 = 0x0
+
+-&gt; open("/dev/hello")
+    myOpen()
+    value = 18 = 0x12
+
+-&gt; close(18)
+    myClose()
+    value = 0 = 0x0
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
