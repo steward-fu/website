@@ -1,0 +1,92 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - Miyoo Mini - <b>解決No conversion from source format to float available問題</b></h3>
+<hr size="1"><br>
+<p>
+問題(-O3)：
+</p>
+<pre>
+You must call Mix_SetMusicCMD() first
+No conversion from source format to float available
+setpriority() failed
+music parameter was NULL
+</pre><br>
+<p>
+問題(-ggdb)：
+</p>
+<pre>
+You must call Mix_SetMusicCMD() first
+setpriority() failed
+WARN:
+
+Assertion failure at SDL_ChooseAudioConverters (/home/steward/Data/mmiyoo/sdl2/src/audio/SDL_audiotypecvt.c:1426), triggered 1 time:
+  'converters_chosen == SDL_TRUE'
+
+That operation is not supported
+No message system available
+Abort/Break/Retry/Ignore/AlwaysIgnore? [abriA] :
+Abort/Break/Retry/Ignore/AlwaysIgnore? [abriA] : a
+free(): invalid pointer
+Aborted
+</pre><br>
+
+<pre>
+$ vim src/audio/SDL_audiotypecvt.c +1426
+</pre>
+<pre class="brush:cpp">
+void SDL_ChooseAudioConverters(void)
+{
+    static SDL_bool converters_chosen = SDL_FALSE;
+
+    if (converters_chosen) {
+        return;
+    }
+
+#define SET_CONVERTER_FUNCS(fntype) \
+    SDL_Convert_S8_to_F32 = SDL_Convert_S8_to_F32_##fntype; \
+    SDL_Convert_U8_to_F32 = SDL_Convert_U8_to_F32_##fntype; \
+    SDL_Convert_S16_to_F32 = SDL_Convert_S16_to_F32_##fntype; \
+    SDL_Convert_U16_to_F32 = SDL_Convert_U16_to_F32_##fntype; \
+    SDL_Convert_S32_to_F32 = SDL_Convert_S32_to_F32_##fntype; \
+    SDL_Convert_F32_to_S8 = SDL_Convert_F32_to_S8_##fntype; \
+    SDL_Convert_F32_to_U8 = SDL_Convert_F32_to_U8_##fntype; \
+    SDL_Convert_F32_to_S16 = SDL_Convert_F32_to_S16_##fntype; \
+    SDL_Convert_F32_to_U16 = SDL_Convert_F32_to_U16_##fntype; \
+    SDL_Convert_F32_to_S32 = SDL_Convert_F32_to_S32_##fntype; \
+    converters_chosen = SDL_TRUE
+
+#if HAVE_SSE2_INTRINSICS
+    if (SDL_HasSSE2()) {
+        SET_CONVERTER_FUNCS(SSE2);
+        return;
+    }
+#endif
+
+#if HAVE_NEON_INTRINSICS
+    if (SDL_HasNEON()) {
+        SET_CONVERTER_FUNCS(NEON);
+        return;
+    }
+#endif
+
+#if NEED_SCALAR_CONVERTER_FALLBACKS
+    SET_CONVERTER_FUNCS(Scalar);
+#endif
+
+#undef SET_CONVERTER_FUNCS
+
+    SDL_assert(converters_chosen == SDL_TRUE);
+}
+</pre>
+<p>
+發生錯誤的位置是上面的42行，原因是HAVE_XXX_INTRINSICS並沒有被定義，而像SSE2或者NEON則是被定義在include/SDL_cpuinfo.h，因此，必須開啟--enable-cpuinfo選項才可以讓Audio正常運作<br><br>
+
+解法如下：
+</p>
+<pre>
+--enable-cpuinfo
+</pre><br>
+
+<br><script type="text/javascript" src="../tail.js"></script>

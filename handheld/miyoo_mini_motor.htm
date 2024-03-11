@@ -1,0 +1,32 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - Miyoo Mini - <b>增強振動馬達</b></h3>
+<hr size="1"><br>
+<p>
+其實司徒原本是想修復馬達不振的問題，但是，在改造振動馬達後，不振動的問題竟然不見了，因此，司徒只好分享一下如何增強振動馬達的強度<br>
+<img src="miyoo_mini_motor/1.jpg" class="maxSize"><br><br>
+
+司徒目前手上沒有電路圖，因此，花了時間找了一下，位置如下<br>
+<img src="miyoo_mini_motor/2.jpg" class="maxSize"><br>
+這個電路真是熟悉，司徒當初在幫小橫米上振動馬達時，就是使用達靈頓電路，原因是司徒手上剛好沒有PNP電晶體，想不到剛好在Miyoo Mini掌機身上也看到這個電路...<br><br>
+
+司徒把35R改成1R(電阻越小，振動強度越大)<br>
+<img src="miyoo_mini_motor/3.jpg" class="maxSize"><br><br>
+
+司徒花了一些時間查看Miyoo Mini系統，竟然找不到如何控制振動馬達的方式，絕望之際，發現PS模擬器有支援振動功能，因此，逆向了一下，發現Miyoo Mini是使用GPIO-48控制振動馬達<br>
+<img src="miyoo_mini_motor/4.jpg" class="maxSize"><br><br>
+
+控制方式如下：
+</p>
+<pre>
+# echo 48 &gt; /sys/class/gpio/export
+# echo out &gt; /sys/class/gpio/gpio48/direction
+# echo 0 &gt; /sys/class/gpio/gpio48/value
+
+# echo 1 &gt; /sys/class/gpio/gpio48/value
+# echo 48 &gt; /sys/class/gpio/unexport
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
