@@ -1,0 +1,47 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - Miyoo Mini - Parasyte - <b>Build FFplay(SDL1.2)</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://www.ffmpeg.org/olddownload.html<br>
+https://download.videolan.org/pub/videolan/x264/snapshots/<br>
+https://www.itdaan.com/tw/92868bd5575695ed06eb198085919f53<br><br>
+
+步驟如下：
+</p>
+<pre>
+$ cd
+$ wget https://github.com/steward-fu/website/releases/download/miyoo-mini/toolchain.tar.gz
+$ tar xvf toolchain.tar.gz
+$ sudo mv mmiyoo /opt
+$ sudo mv prebuilt /opt
+$ export PATH=/opt/mmiyoo/bin/:$PATH
+
+$ rm -rf /tmp/x264
+$ mkdir /tmp/x264
+
+$ cd
+$ wget https://download.videolan.org/pub/videolan/x264/snapshots/x264-snapshot-20150630-2245-stable.tar.bz2
+$ tar xvf x264-snapshot-20150630-2245-stable.tar.bz2
+$ cd x264-snapshot-20150630-2245-stable
+$ CC=arm-linux-gnueabihf-gcc ./configure --host=arm-linux-gnueabihf --cross-prefix=arm-linux-gnueabihf- --enable-static --enable-shared --disable-opencl --prefix=/tmp/x264
+$ make
+$ make install
+
+$ cd
+$ wget https://www.ffmpeg.org/releases/ffmpeg-2.4.14.tar.gz
+$ tar xvf ffmpeg-2.4.14.tar.gz
+$ cd ffmpeg-2.4.14
+$ ./configure --cross-prefix=arm-linux-gnueabihf- --enable-cross-compile --target-os=linux --cc=arm-linux-gnueabihf-gcc --arch=arm --enable-shared --enable-static --enable-gpl --enable-nonfree --enable-ffmpeg --enable-ffprobe --enable-ffplay --enable-swscale --enable-pthreads --enable-avresample --disable-yasm --disable-stripping --enable-libx264 --extra-cflags=-I/tmp/x264/include --extra-cflags=-I/opt/mmiyoo/arm-buildroot-linux-gnueabihf/sysroot/usr/include/SDL --extra-ldflags=-L/tmp/x264/lib --extra-libs=-lSDL
+$ vim config.mak
+    HAVE_SDL=yes
+    CONFIG_SDL=yes
+    CONFIG_FFPLAY=yes
+    CONFIG_SDL_OUTDEV=yes
+$ make
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
