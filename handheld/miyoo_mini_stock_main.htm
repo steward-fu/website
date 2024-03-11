@@ -1,0 +1,134 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - Miyoo Mini - Stock - <b>/customer/main</b></h3>
+<hr size="1"><br>
+<pre>
+#!/bin/sh
+
+#if ! [ -f /mnt/swapfile ] ; then
+#dd if=/dev/zero of=/mnt/swapfile bs=1M count=64
+#chmod 600 /mnt/swapfile
+#mkswap /mnt/swapfile
+#fi
+
+
+#if  [ -f /mnt/swapfile ] ; then
+#swapon /mnt/swapfile
+#fi
+
+#echo 0 &gt; /sys/class/graphics/fbcon/cursor_blink                                 
+#echo 0 &gt; /sys/class/vtconsole/vtcon1/bind
+
+#tinymix set 6 95 
+tinymix set 6 110 
+
+echo 3 &gt; /proc/sys/kernel/printk
+
+chmod a+x /usr/bin/notify
+UPDATE_FILE_NAME=/tmp/.try_upgrade_file
+UPDATE_TMP_DIR=/mnt/SDCARD/.tmp_update
+UPDATE_LOG=/mnt/SDCARD/update.log
+CUSTOMER_DIR=/mnt/SDCARD/miyoo/
+
+killprocess(){
+   pid=`ps | grep $1 | grep -v grep | cut -d' ' -f3`
+   kill -9 $pid
+}
+
+init_lcd(){
+   cat /proc/ls
+   if [ $1 -ne 0 ] ; then
+    sleep $1
+   fi 
+}
+
+echo 12 &gt; /sys/class/gpio/unexport
+
+#dump uboot env, not used anymore
+#chmod a+x /etc/fw_printenv
+#/etc/fw_printenv &gt; /tmp/the_uboot_env
+
+#mv /mnt/SDCARD/update.scr /mnt/SDCARD/_update.scr
+
+audio_all_test -O -i /customer/app/sound/change.wav -D 0 -V -30 &amp;
+
+while [ 1 ]; do
+  if [ -f $UPDATE_FILE_NAME ] ; then
+      upfile=`cat $UPDATE_FILE_NAME`
+      if [ -f ${upfile} ] ; then
+            echo start updating | tee $UPDATE_LOG
+            updateui &gt;&gt; $UPDATE_LOG &amp;
+            notify 0 extracting package
+            mkdir -p ${UPDATE_TMP_DIR}
+            total=`unzip -l ${upfile} | wc -l`            
+            unzip -d ${UPDATE_TMP_DIR} ${upfile} | awk -v total="$total" -v out="/tmp/.update_msg" 'function bname(file,a,n){n=split(file,a,"/");return a[n]}BEGIN{cnt=0}{printf ""&gt;out;cnt+=1;printf "%d extract %s\n",cnt*100/total,bname($2)&gt;&gt;out;close(out)}'
+           if [ -f ${UPDATE_TMP_DIR}/updater ] ; then
+               chmod a+x ${UPDATE_TMP_DIR}/updater
+               ${UPDATE_TMP_DIR}/updater | tee -a $UPDATE_LOG
+               rm -rf ${UPDATE_TMP_DIR}
+           else
+               echo unzip return $? | tee $UPDATE_LOG
+           fi
+           kilall updateui
+      fi
+      rm -f $UPDATE_FILE_NAME
+      rm -f /tmp/state.json
+  elif [ -d ${UPDATE_TMP_DIR} ] ; then
+      echo start updating again | tee $UPDATE_LOG
+      updateui &gt;&gt; $UPDATE_LOG &amp;
+      chmod a+x ${UPDATE_TMP_DIR}/updater
+      ${UPDATE_TMP_DIR}/updater | tee -a $UPDATE_LOG
+      rm -f $UPDATE_FILE_NAME
+      rm -rf ${UPDATE_TMP_DIR}
+      rm -f /tmp/state.json
+      kilall updateui
+  else
+      #exit 0  
+      a=`ps | grep dev/l | grep -v grep`                                                                             
+      if [ "$a" == "" ] ; then                                                                                        
+          init_lcd 1
+      fi
+
+      RUNNED=0
+      if [ -d ${CUSTOMER_DIR} ]   ; then
+        export LD_LIBRARY_PATH=/lib:/config/lib:${CUSTOMER_DIR}/lib 
+        
+        a=`ps | grep keymon | grep -v grep`
+        if [ "$a" == "" ] ; then
+            ${CUSTOMER_DIR}/app/keymon &amp;
+        fi
+
+        ${CUSTOMER_DIR}/app/MainUI
+        if [ $? -eq 0 ] ; then
+            RUNNED=1
+        else
+            RUNNED=0
+        fi
+      fi
+      if [ ${RUNNED} -eq 0 ] ; then
+        export LD_LIBRARY_PATH=/lib:/config/lib:/customer/lib
+
+        a=`ps | grep keymon | grep -v grep`
+        if [ "$a" == "" ] ; then
+            keymon &amp;
+        fi
+
+        MainUI
+      fi
+      sysmon freemma      
+      if [ -f /tmp/.cmdenc ] ; then                                                                                   
+          /root/gameloader                                                                                             
+      elif [ -f /tmp/cmd_to_run.sh ] ; then                                                                           
+         chmod a+x /tmp/cmd_to_run.sh                                                                                 
+         /tmp/cmd_to_run.sh                                                                                           
+         rm /tmp/cmd_to_run.sh                                                                                        
+      fi
+     sysmon freemma 
+  fi
+
+done
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
