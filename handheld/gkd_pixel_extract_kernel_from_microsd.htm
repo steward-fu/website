@@ -1,0 +1,46 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - GKD Pixel - <b>如何從MicroSD解出Kernel</b></h3>
+<hr size="1"><br>
+<p>
+步驟如下：
+</p>
+<pre>
+$ cd
+$ sudo dd if=/dev/sdX of=sd_mbr.img bs=1M count=20
+$ od -A d -t x1 sd_mbr.img | grep '1f 8b 08'
+    3145792 1f 8b 08 00 00 00 00 00 02 03 ec bd 0d 78 5c d5
+    7340096 1f 8b 08 00 00 00 00 00 02 03 ec bd 0f 74 1c d5
+
+$ dd if=sd_mbr.img of=head bs=1 count=3145792
+    3145792+0 records in
+    3145792+0 records out
+    3145792 bytes (3.1 MB, 3.0 MiB) copied, 6.86742 s, 458 kB/s
+
+$ dd if=sd_mbr.img of=body bs=1 skip=3145792
+    17825728+0 records in
+    17825728+0 records out
+    17825728 bytes (18 MB, 17 MiB) copied, 38.0227 s, 469 kB/s
+
+$ file body
+    body: gzip compressed data, max compression, from Unix, original size modulo 2^32 0
+
+$ zcat body &gt; body_ext
+    gzip: body: decompression OK, trailing garbage ignored
+
+$ strings body_ext | grep Linux
+    Linux version 3.10.14 (root@avrman-virtual-machine) (gcc version 5.2.0 (Ingenic r3.2.0-gcc520 2017.08-24) ) #141 PREEMPT Mon Oct 16 06:09:56 EDT 2023
+    No init found.  Try passing init= option to kernel. See Linux Documentation/init.txt for guidance.
+    Linux
+    [%s] Warning! Received an indication that the LUN assignments on this target have changed. The Linux SCSI layer does not automatically remap LUN assignments.
+    Warning! Received an indication that the LUN assignments on this target have changed. The Linux SCSI layer does not automatically remap LUN assignments.
+    [%s] Warning! Received an indication that the operating parameters on this target have changed. The Linux SCSI layer does not automatically adjust these parameters.
+    Warning! Received an indication that the operating parameters on this target have changed. The Linux SCSI layer does not automatically adjust these parameters.
+    6Advanced Linux Sound Architecture Driver Initialized.
+    Advanced Linux Sound Architecture Driver Version k%s.
+    Linux
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
