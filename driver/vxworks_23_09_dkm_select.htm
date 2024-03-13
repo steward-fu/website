@@ -1,0 +1,201 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../driver.htm">驅動程式</a> - VxWorks - 23.09 - C/C++ - <b>Select Operation</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://zhuanlan.zhihu.com/p/597577575<br>
+https://blog.csdn.net/tttt234567890/article/details/7094636<br>
+https://studies.ac.upc.edu/doctorat/ENGRAP/VxWorks-device-drivers.htm<br>
+https://forums.windriver.com/t/vxworks-software-development-kit-sdk/43<br>
+https://mail.prz-rzeszow.pl/~ssamolej/vxworks/vxworks_kernel_programmers_guide_6.6.pdf<br>
+https://d13321s3lxgewa.cloudfront.net/downloads/wrsdk-vxworks7-docs/2309/README_qemu.html<br>
+https://learning.windriver.com/path/vxworks7-essentials-workbench-and-tools/vxworks-kernel-shell<br>
+https://www.ecb.torontomu.ca/~courses/ee8205/Data-Sheets/Tornado-VxWorks/vxworks/ref/selectLib.html#selWakeupListInit<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;iosLib.h&gt;
+#include &lt;selectLib.h&gt;
+
+static int drvNum = {0};
+static DEV_HDR hdr = {0};
+static SEL_WAKEUP_LIST selWakeupList = {0};
+
+static void* myOpen(struct dev_hdr *dev, const char *remainder, int access, int mode)
+{
+    if (remainder[0] != '\0') {
+        return NULL;
+    }
+
+    printf("%s()\n", __func__);
+    return dev;
+}
+ 
+static STATUS myClose(void *dev)
+{
+    if (dev == NULL) {
+        return ERROR;
+    }
+
+    printf("%s()\n", __func__);
+    return OK;
+}
+
+static long myRead(void *dev, char *rbuf, size_t rbytes)
+{
+    if (dev == NULL) {
+        return 0;
+    }
+
+    printf("%s()\n", __func__);
+    return 0;
+}
+
+static long myWrite(void *dev, const char *wbuf, size_t wbytes)
+{
+    if (dev == NULL) {
+        return 0;
+    }
+
+    printf("%s()\n", __func__);
+    return 0;
+}
+
+static STATUS myIOCTL(void *dev, int cmd, long arg)
+{
+    SEL_WAKEUP_NODE *node = (SEL_WAKEUP_NODE *)arg;
+
+    if (dev == NULL) {
+        return ERROR;
+    }
+
+    switch (cmd) {
+    case FIOSELECT:
+        if (selNodeAdd(&amp;selWakeupList, node) == OK) {
+            if (selWakeupType(node) == SELREAD) {
+                printf("%s(), wakeup\n", __func__);
+                selWakeupAll(&amp;selWakeupList, SELREAD);
+            }
+        }
+        break;
+    case FIOUNSELECT:
+        selNodeDelete(&amp;selWakeupList, (SEL_WAKEUP_NODE *)arg);
+        break;
+    }
+    return OK;
+}
+
+STATUS myProbe(void)
+{
+    drvNum = iosDrvInstall(NULL, NULL, myOpen, myClose, myRead, myWrite, myIOCTL);
+    iosDevAdd(&amp;hdr, "/dev/hello", drvNum);
+    selWakeupListInit(&amp;selWakeupList);
+    return OK;
+}
+</pre><br>
+
+<p>
+app.c
+</p>
+<pre class="brush:cpp">
+#include &lt;errno.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stddef.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;string.h&gt;
+#include &lt;sys/time.h&gt;
+#include &lt;sys/select.h&gt;
+#include &lt;fcntl.h&gt;
+
+#define BUF_SIZE 255
+#define DEV_NAME "/dev/hello"
+
+static char buf[BUF_SIZE] = {0};
+
+int main(int argc, char **argv)
+{
+    int fd = open(DEV_NAME, O_RDONLY);
+    if (fd &lt; 0) {
+        printf("Failed tp open "DEV_NAME"\n");
+        return -1;
+    }
+
+    fd_set rfds;
+    struct timeval tv;
+
+    tv.tv_sec = 5;
+    tv.tv_usec = 0;
+    while (1) {
+        FD_ZERO(&amp;rfds);
+        FD_SET(fd, &amp;rfds);
+
+        int ret = select(fd + 1, &amp;rfds, NULL, NULL, &amp;tv);
+        if (ret == -1) {
+            return -1;
+        }
+        else if (ret &gt; 0) {
+            read(fd, buf, BUF_SIZE);
+            break;
+        }
+    }
+    close(fd);
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ wr-cc main.c -o hello -dkm
+$ wr-cc app.c -o app -dkm
+</pre><br>
+
+<p>
+執行
+</p>
+<pre>
+-&gt; ld &lt; hello
+    value = -140737379950592 = 0xffff800006762000 = _sysTableEnd + 0xffff800006354000
+
+-&gt; sp myProbe
+    Task spawned: id = 0xffff80000035bab0, name = t1
+    value = -140737484834128 = 0xffff80000035bab0 = _sysTableEnd + 0xffff7ffffff4dab0
+
+-&gt; devs
+    drv refs name
+     22 [ 5] /dev/hello
+     13 [ 5] /dev/random
+     13 [ 5] /dev/urandom
+     12 [ 5] /dev/zero
+     11 [ 5] /fifos
+     16 [ 5] /host.host
+     14 [ 5] /input/event
+      0 [ 7] /null
+      5 [ 5] /ram
+     10 [ 5] /ram0
+      9 [ 5] /romfs
+      3 [ 5] /shm
+     10 [ 5] /tmp
+      2 [ 7] /ttyS0
+    value = 0 = 0x0
+
+-&gt; cmd
+[vxWorks *]# app
+    Launching process 'app' ...
+    Process 'app' (process Id = 0xffff80000035c640) launched.
+    myOpen()
+    myIOCTL(), wakeup
+    myRead()
+    myClose()
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
