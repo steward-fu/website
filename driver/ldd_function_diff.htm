@@ -1,0 +1,30 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../driver.htm">驅動程式</a> - Linux Device Driver(LDD) - <b>如何取得API Function在Kernel版本的變動</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/torvalds/linux<br><br>
+
+例如：找尋vfs_getxattr()在所有Kernel版本的變動
+</p>
+<pre>
+$ cd
+$ git clone https://github.com/torvalds/linux
+$ cd linux
+$ git tag &gt; /tmp/tag
+$ echo "" &gt; /tmp/diff
+$ cat /tmp/tag | awk '{print "echo "$1" &gt;&gt; /tmp/diff &amp;&amp; git reset --hard &amp;&amp; git clean -f -d &amp;&amp; git checkout "$1" &amp;&amp; grep \" vfs_getxattr(\" include/linux -r &gt;&gt; /tmp/diff"}' | sh
+$ cat /tmp/diff | sort -n | uniq -c | grep vfs_
+         82 include/linux/xattr.h:ssize_t vfs_getxattr(struct dentry *, char *, void *, size_t);
+    574 include/linux/xattr.h:ssize_t vfs_getxattr(struct dentry *, const char *, void *, size_t);
+     49 include/linux/xattr.h:ssize_t vfs_getxattr(struct mnt_idmap *, struct dentry *, const char *,
+     94 include/linux/xattr.h:ssize_t vfs_getxattr(struct user_namespace *, struct dentry *, const char *,
+</pre>
+<p>
+P.S. 在/tmp/diff檔案找尋變動的區間即可知道從哪個Kernel版號開始變動
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
