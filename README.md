@@ -16,6 +16,7 @@ All of files or resources used on my website can be found from the following lin
 | ![](img/photos/pixel3axl.jpg)       | [Google Pixel 3a XL](https://github.com/steward-fu/website/releases/tag/pixel-3a-xl)  |
 | ![](img/photos/n900.jpg)            | [Nokia N900](https://github.com/steward-fu/website/releases/tag/n900)                 |
 | ![](img/photos/gemini-pda.jpg)      | [Gemini PDA 4G](https://github.com/steward-fu/website/releases/tag/gemini-pda)        |
+| ![](img/photos/s32g399.jpg)         | [NXP S32G399](https://github.com/steward-fu/website/releases/tag/s32g399)             |
 | ![](img/photos/wdm.jpg)             | [Windows Device Driver (WDM)](https://github.com/steward-fu/website/releases/tag/wdm) |
 | ![](img/photos/ldd.jpg)             | [Linux Device Driver (LDD)](https://github.com/steward-fu/website/releases/tag/ldd)   |
 | ![](img/photos/vxworks.jpg)         | [VxWorks](https://github.com/steward-fu/website/releases/tag/vxworks)                 |
