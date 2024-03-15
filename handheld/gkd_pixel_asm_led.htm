@@ -1,0 +1,133 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - GKD Pixel - Assembly - <b>LED</b></h3>
+<hr size="1"><br>
+<p>
+LCD背光連接到PC-14<br>
+<img src="gkd_pixel_asm_led/1.jpg" class="maxSize"><br><br>
+
+Output<br>
+<img src="gkd_pixel_asm_led/2.jpg" class="maxSize"><br><br>
+
+Data<br>
+<img src="gkd_pixel_asm_led/3.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .extern _start
+    .set noreorder
+
+    .equiv LCD_BL, 14
+    .equiv DELAY, 0x100000
+
+    .equiv PA, 0xb0010000 
+    .equiv PB, 0xb0011000 
+    .equiv PC, 0xb0012000 
+    .equiv PD, 0xb0013000 
+
+    .equiv PXPAT1, 0x0030
+    .equiv PXPAT0, 0x0040
+
+    .text
+    .ascii "LPSM"
+
+    .rept 2048
+    .byte 0
+    .endr
+
+_start:
+    li $9, 0
+    li $8, PA + PXPAT1
+    sw $9, 0($8)
+    li $8, PB + PXPAT1
+    sw $9, 0($8)
+    li $8, PC + PXPAT1
+    sw $9, 0($8)
+    li $8, PD + PXPAT1
+    sw $9, 0($8)
+
+    li $9, 0xffffffff
+    li $8, PA + PXPAT0
+    sw $9, 0($8)
+    li $8, PB + PXPAT0
+    sw $9, 0($8)
+    li $8, PC + PXPAT0
+    sw $9, 0($8)
+    li $8, PD + PXPAT0
+    sw $9, 0($8)
+
+loop:
+    xor $9, (1 &lt;&lt; LCD_BL)
+    li $8, PC + PXPAT0
+    sw $9, 0($8)
+
+    li $8, DELAY
+0:
+    addi $8, $8, -1
+    bnez $8, 0b
+    nop
+
+    b loop
+    nop
+</pre><br>
+
+<p>
+main.ld
+</p>
+<pre>
+OUTPUT_FORMAT("elf32-tradlittlemips", "elf32-tradbigmips", "elf32-tradlittlemips")
+OUTPUT_ARCH(mips)
+ENTRY(_start)
+
+SECTIONS
+{
+    . = 0;
+    .text : { *(.text) }
+    .data : { *(.data) }
+    .bss  : { *(.bss)  }
+}
+</pre><br>
+
+<p>
+Makefile
+</p>
+<pre>
+all:
+	mipsel-linux-gnu-as -o main.o main.s
+	mipsel-linux-gnu-ld -T main.ld -o main.elf main.o
+	mipsel-linux-gnu-objcopy -O binary main.elf main.bin
+
+flash:
+	sudo dd if=main.bin of=/dev/sdX bs=1K seek=17
+
+clean:
+	rm -rf main.bin main.o main.elf
+</pre><br>
+
+<p>
+編譯、燒錄到MicroSD
+</p>
+<pre>
+$ make
+    mipsel-linux-gnu-as -o main.o main.s
+    mipsel-linux-gnu-ld -T main.ld -o main.elf main.o
+    mipsel-linux-gnu-objcopy -O binary main.elf main.bin
+
+$ make flash
+    sudo dd if=main.bin of=/dev/sdX bs=1K seek=17
+    1+1 records in
+    1+1 records out
+    1232 bytes (1.2 kB, 1.2 KiB) copied, 0.023186 s, 53.1 kB/s
+</pre>
+<br>
+
+<p>
+完成<br>
+<img src="gkd_pixel_asm_led/4.jpg" class="maxSize"><br>
+<img src="gkd_pixel_asm_led/5.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
