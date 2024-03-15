@@ -1,0 +1,79 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - GKD Pixel - <b>解決Invalid use of incomplete typedef png_info問題</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://refspecs.linuxbase.org/LSB_3.1.0/LSB-Desktop-generic/LSB-Desktop-generic/libpng12man.html<br><br>
+
+問題如下：
+</p>
+<pre>
+scripts/png2logo.c:5:6: warning: no previous prototype for ‘gen_info’ [-Wmissing-prototypes]
+    5 | void gen_info(int w, int h, int bpp, int backcolor)
+      |      ^~~~~~~~
+scripts/png2logo.c:26:6: warning: no previous prototype for ‘ReadPng’ [-Wmissing-prototypes]
+   26 | void ReadPng(const char *png_file, int real_bit_dep ,int backcolor)
+      |      ^~~~~~~
+scripts/png2logo.c: In function ‘ReadPng’:
+scripts/png2logo.c:51:42: error: invalid use of incomplete typedef ‘png_info’ {aka ‘struct png_info_def’}
+   51 |         unsigned int pixel_num = info_ptr-&gt;height * info_ptr-&gt;width;
+      |                                          ^~
+scripts/png2logo.c:51:61: error: invalid use of incomplete typedef ‘png_info’ {aka ‘struct png_info_def’}
+   51 |         unsigned int pixel_num = info_ptr-&gt;height * info_ptr-&gt;width;
+      |                                                             ^~
+scripts/png2logo.c:56:26: error: invalid use of incomplete typedef ‘png_info’ {aka ‘struct png_info_def’}
+   56 |         gen_info(info_ptr-&gt;width, info_ptr-&gt;height, real_bit_dep, backcolor);
+      |                          ^~
+scripts/png2logo.c:56:43: error: invalid use of incomplete typedef ‘png_info’ {aka ‘struct png_info_def’}
+   56 |         gen_info(info_ptr-&gt;width, info_ptr-&gt;height, real_bit_dep, backcolor);
+      |                                           ^~
+scripts/png2logo.c:59:40: error: invalid use of incomplete typedef ‘png_info’ {aka ‘struct png_info_def’}
+   59 |                 for(i = 0; i &lt; info_ptr-&gt;height; i++)
+      |                                        ^~
+scripts/png2logo.c:61:51: error: invalid use of incomplete typedef ‘png_info’ {aka ‘struct png_info_def’}
+   61 |                         for(j = 0; j &lt; ( (info_ptr-&gt;pixel_depth / 8) * info_ptr-&gt;width); j += (info_ptr-&gt;pixel_depth / 8) )
+      |                                                   ^~
+scripts/png2logo.c:61:80: error: invalid use of incomplete typedef ‘png_info’ {aka ‘struct png_info_def’}
+   61 |                         for(j = 0; j &lt; ( (info_ptr-&gt;pixel_depth / 8) * info_ptr-&gt;width); j += (info_ptr-&gt;pixel_depth / 8) )
+      |                                                                                ^~
+scripts/png2logo.c:61:104: error: invalid use of incomplete typedef ‘png_info’ {aka ‘struct png_info_def’}
+   61 |                         for(j = 0; j &lt; ( (info_ptr-&gt;pixel_depth / 8) * info_ptr-&gt;width); j += (info_ptr-&gt;pixel_depth / 8) )
+      |                                                                                                        ^~
+scripts/png2logo.c:64:44: error: invalid use of incomplete typedef ‘png_info’ {aka ‘struct png_info_def’}
+   64 |                                 if(info_ptr-&gt;pixel_depth == 32){
+      |                                            ^~
+scripts/png2logo.c:69:50: error: invalid use of incomplete typedef ‘png_info’ {aka ‘struct png_info_def’}
+   69 |                                 }else if(info_ptr-&gt;pixel_depth == 24){
+      |                                                  ^~
+scripts/png2logo.c:81:40: error: invalid use of incomplete typedef ‘png_info’ {aka ‘struct png_info_def’}
+   81 |                 for(i = 0; i &lt; info_ptr-&gt;height; i++)
+      |                                        ^~
+scripts/png2logo.c:83:51: error: invalid use of incomplete typedef ‘png_info’ {aka ‘struct png_info_def’}
+   83 |                         for(j = 0; j &lt; ( (info_ptr-&gt;pixel_depth / 8) * info_ptr-&gt;width); j += (info_ptr-&gt;pixel_depth / 8) )
+      |                                                   ^~
+scripts/png2logo.c:83:80: error: invalid use of incomplete typedef ‘png_info’ {aka ‘struct png_info_def’}
+   83 |                         for(j = 0; j &lt; ( (info_ptr-&gt;pixel_depth / 8) * info_ptr-&gt;width); j += (info_ptr-&gt;pixel_depth / 8) )
+      |                                                                                ^~
+scripts/png2logo.c:83:104: error: invalid use of incomplete typedef ‘png_info’ {aka ‘struct png_info_def’}
+   83 |                         for(j = 0; j &lt; ( (info_ptr-&gt;pixel_depth / 8) * info_ptr-&gt;width); j += (info_ptr-&gt;pixel_depth / 8) )
+      |                                                                                                        ^~
+scripts/png2logo.c:51:22: warning: unused variable ‘pixel_num’ [-Wunused-variable]
+   51 |         unsigned int pixel_num = info_ptr-&gt;height * info_ptr-&gt;width;
+      |                      ^~~~~~~~~
+make[1]: *** [scripts/Makefile.host:118: scripts/png2logo] Error 1
+make: *** [Makefile:518: scripts] Error 2
+</pre><br>
+
+<p>
+解法如下：
+</p>
+<pre>
+info_ptr-&gt;width =&gt; png_get_image_width(png_ptr, info_ptr)
+info_ptr-&gt;height =&gt; png_get_image_height(png_ptr, info_ptr)
+info_ptr-&gt;pixel_depth =&gt; png_get_bit_depth(png_ptr, info_ptr)
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
