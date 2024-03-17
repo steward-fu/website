@@ -1,0 +1,133 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - GKD Pixel - Assembly - <b>GPIO Test</b></h3>
+<hr size="1"><br>
+<p>
+main.s
+</p>
+<pre class="brush:asm">
+    .extern _start
+    .set noreorder
+ 
+    .equiv LED,     14
+    .equiv DELAY,   0x200000
+ 
+    .equiv CPM,     0xb0000000
+    .equiv PA,      0xb0010000 
+    .equiv PB,      0xb0011000 
+    .equiv PC,      0xb0012000 
+    .equiv PD,      0xb0013000
+    .equiv UART1,   0xb0031000
+ 
+    .equiv PXPINL,  0x0000
+    .equiv PXINT,   0x0010
+    .equiv PXMSK,   0x0020
+    .equiv PXPAT1,  0x0030
+    .equiv PXPAT0,  0x0040
+    .equiv PXPEL,   0x0110
+    .equiv PXPEH,   0x0120
+ 
+    .equiv URBR,    0x0000
+    .equiv UTHR,    0x0000
+    .equiv UDLLR,   0x0000
+    .equiv UDLHR,   0x0004
+    .equiv UIER,    0x0004
+    .equiv UIIR,    0x0008
+    .equiv UFCR,    0x0008
+    .equiv ULCR,    0x000c
+    .equiv UMCR,    0x0010
+    .equiv ULSR,    0x0014
+    .equiv UMSR,    0x0018
+    .equiv USPR,    0x001c
+    .equiv ISR,     0x0020
+    .equiv UMR,     0x0024
+    .equiv UACR,    0x0028
+    .equiv URCR,    0x0040
+    .equiv UTCR,    0x0044
+ 
+    .equiv CLKGR0,  0x0020
+ 
+    .text
+    .ascii "LPSM"
+ 
+    .rept 2044
+    .byte 0
+    .endr
+ 
+_start:
+    li $8, CPM + CLKGR0
+    lw $9, 0($8)
+    and $9, ~(1 &lt;&lt; 15)
+    sw $9, 0($8)
+
+    li $9, ~((1 &lt;&lt; 23) | (1 &lt;&lt; 24))
+    li $8, PB + PXMSK
+    sw $9, 0($8)
+    li $8, PB + PXPAT0
+    sw $9, 0($8)
+ 
+    li $9, (1 &lt;&lt; 7) | 3
+    li $8, UART1 + ULCR
+    sw $9, 0($8)
+ 
+    li $10, 0
+    li $8, UART1 + UDLHR
+    sw $10, 0($8)
+ 
+    li $9, 13
+    li $8, UART1 + UDLLR
+    sw $9, 0($8)
+ 
+    li $9, 3
+    li $8, UART1 + ULCR
+    sw $9, 0($8)
+ 
+    li $9, (1 &lt;&lt; 4) | (1 &lt;&lt; 2) | (1 &lt;&lt; 1) | (1 &lt;&lt; 0)
+    li $8, UART1 + UFCR
+    sw $9, 0($8)
+ 
+    li $v0, 0x00
+    bal send_byte
+    nop
+
+    li $9, 0xffffffff
+    li $8, PC + PXMSK
+    sw $9, 0($8)
+
+    li $9, 0xffffffff
+    li $8, PC + PXPAT1
+    sw $9, 0($8)
+
+loop:
+    li $8, DELAY
+0:
+    addi $8, $8, -1
+    bnez $8, 0b
+    nop
+
+    li $8, PC + PXPINL
+    lw $v0, 0($8)
+    srl $v0, 8
+    bal send_byte
+    nop
+
+    b loop
+    nop
+ 
+send_byte:
+    li $8, UART1 + ULSR
+0:
+    lb $9, 0($8)
+    and $9, (1 &lt;&lt; 6)
+    beq $9, $zero, 0b
+    nop
+ 
+    li $8, UART1 + UTHR
+    sb $v0, 0($8)
+    jr $ra
+    nop
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
