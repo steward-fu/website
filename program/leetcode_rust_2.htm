@@ -1,0 +1,53 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - LeetCode - Rust - <b>2. Add Two Numbers</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://levelup.gitconnected.com/leetcode-problems-add-two-numbers-6a4045ce146c<br><br>
+
+題目：<br>
+<img src="leetcode_c_2/1.jpg" class="maxSize"><br><br>
+
+解答：
+</p>
+<pre class="brush:rust">
+impl Solution {
+    pub fn add_two_numbers(l1: Option&lt;Box&lt;ListNode&gt;&gt;, l2: Option&lt;Box&lt;ListNode&gt;&gt;) -&gt; Option&lt;Box&lt;ListNode&gt;&gt; {
+        let mut l1_cur = l1;
+        let mut l2_cur = l2;
+        let mut carry = 0;
+        let mut r = Some(Box::new(ListNode::new(0)));
+        let mut cur = r.as_mut();
+
+        while l1_cur.is_some() || l2_cur.is_some() {
+            let mut sum = carry;
+
+            if let Some(node) = l1_cur {
+                sum += node.val;
+                l1_cur = node.next;
+            }
+
+            if let Some(node) = l2_cur {
+                sum += node.val;
+                l2_cur = node.next;
+            }
+            carry = sum / 10;
+
+            if let Some(node) = cur {
+                node.next = Some(Box::new(ListNode::new(sum % 10)));
+                cur = node.next.as_mut();
+            }
+        }
+
+        if carry &gt; 0 {
+            cur.unwrap().next = Some(Box::new(ListNode::new(1)));
+        }
+        return r.unwrap().next;
+    }
+}
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
