@@ -1,0 +1,98 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../driver.htm">驅動程式</a> - VxWorks - 23.09 - C/C++ - <b>MUX Binding</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://zhuanlan.zhihu.com/p/597577575<br>
+https://studies.ac.upc.edu/doctorat/ENGRAP/VxWorks-device-drivers.htm<br>
+https://forums.windriver.com/t/vxworks-software-development-kit-sdk/43<br>
+https://mail.prz-rzeszow.pl/~ssamolej/vxworks/vxworks_kernel_programmers_guide_6.6.pdf<br>
+https://d13321s3lxgewa.cloudfront.net/downloads/wrsdk-vxworks7-docs/2309/README_qemu.html<br>
+https://learning.windriver.com/path/vxworks7-essentials-workbench-and-tools/vxworks-kernel-shell<br>
+https://cpp.hotexamples.com/site/file?hash=0x097d75ab101fe1fd6f0ba040e22d27e925f02c2a5bb9f311e7f20174c3e077c5&amp;fullName=vxworks5-master/target/src/drv/wdbEndPktDrv.c&amp;project=andy345/vxworks5<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;iosLib.h&gt;
+#include &lt;muxLib.h&gt;
+#include &lt;ipnet_ip4.h&gt;
+#include &lt;net/ethernet.h&gt;
+#include &lt;netinet/udp.h&gt;
+#include &lt;netinet/tcp.h&gt;
+
+#define MYPORT          9999
+#define NIC_INTF_NAME   "gei"
+
+static PROTO_COOKIE MuxCookie = NULL;
+
+static STATUS mux_rx_callback(void *pCookie, long type, M_BLK_ID mblk, LL_HDR_INFO *llHdrInfo, void *muxUserArg)
+{
+    char *pInPkt = NULL;
+    char *pData = NULL;
+    struct ip *pIpHdr = NULL;
+    struct tcphdr *pTcpHdr = NULL;
+    struct udphdr *pUdpHdr = NULL;
+    int size = llHdrInfo-&gt;dataOffset + IPNET_IP_HDR_SIZE + sizeof(struct tcphdr);
+    unsigned short sport = 0;
+    unsigned short dport = 0;
+
+    if (type != ETHERTYPE_IP) {
+        return OK;
+    }
+
+    if (!(mblk-&gt;mBlkHdr.mFlags &amp; M_PKTHDR) || (mblk-&gt;mBlkPktHdr.len &lt; size)) {
+        return OK; 
+    }
+
+    if (mblk-&gt;mBlkHdr.mLen &lt; size) {
+        if (netMblkOffsetToBufCopy(mblk, llHdrInfo-&gt;dataOffset, pInPkt, size, NULL) == 0) {
+            return OK;
+        }
+
+        pIpHdr = (struct ip *)pInPkt;
+        pTcpHdr = (struct tcphdr *)(pInPkt + IPNET_IP_HDR_SIZE);
+        pData = (char *)((unsigned char *)pTcpHdr + sizeof(struct tcphdr));
+    }
+    else {
+        pIpHdr = (struct ip *)(mblk-&gt;mBlkHdr.mData + llHdrInfo-&gt;dataOffset);
+        pTcpHdr = (struct tcphdr *)(mblk-&gt;mBlkHdr.mData + llHdrInfo-&gt;dataOffset + IPNET_IP_HDR_SIZE);
+        pData = (char *)((unsigned char *)pTcpHdr + sizeof(struct tcphdr));
+    }
+
+    sport = ntohs(pTcpHdr-&gt;th_sport);
+    dport = ntohs(pTcpHdr-&gt;th_dport);
+    if ((pIpHdr-&gt;ip_p == IPPROTO_TCP) &amp;&amp; (sport == MYPORT)) {
+        printf("TCP flags: 0x%x\n", pTcpHdr-&gt;th_flags);
+        if (pTcpHdr-&gt;th_flags &amp; TH_PUSH) {
+            printf("TCP data: \'%s\'\n", pData);
+        }
+    }
+
+    return OK;
+}
+
+STATUS myInit(void)
+{
+    if (muxLibInit() != OK) {
+        printf( "Failed to initialize mux subsystem\n");
+        return -1;
+    }
+
+    if(muxDevExists(NIC_INTF_NAME, 0)) {
+        if ((MuxCookie = muxBind(NIC_INTF_NAME, 0, mux_rx_callback, NULL, NULL, NULL, MUX_PROTO_SNARF, "MyMuxTest", NULL)) == NULL) {
+            printf("Failed to bind network interface\n ");
+        }
+    }
+    printf("Bind mux interface successfully\n");
+    return OK;
+}
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
