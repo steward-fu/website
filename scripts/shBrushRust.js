@@ -18,10 +18,10 @@
     typeof(require) != 'undefined' ? SyntaxHighlighter = require('shCore').SyntaxHighlighter : null;
 
     function Brush() {
-        var my_constant = 'MAX';
+        var my_constant = 'MAX cmp';
         var my_keyword =  'pub move if use struct else Some while async for fn impl as return in let None mut static';
         var my_type = 'tokio thread response gen f64 rand Rng routing extract Extension sqlx anyhow Result String sqlite SqlitePool serde actix_web web u64 MyStruct App HttpResponse HttpServer Deserialize int Option Html Box ListNode usize i32 u32 std net SocketAddr Router axum Server str Solution Vec vec';
-        var my_function = 'is_some add_two_numbers two_sum spawn join thread_rng pow _pi post_create post_read post_update post_delete to_string get connect query fetch_all sort_list main push pop to post get_index post_test run expect Ok content_type body Form format sort as_mut unwrap len println route handler from bind serve await into_make_service as_ref is_none new sort_array';
+        var my_function = 'length_of_longest_substring char_indices max is_some add_two_numbers two_sum spawn join thread_rng pow _pi post_create post_read post_update post_delete to_string get connect query fetch_all sort_list main push pop to post get_index post_test run expect Ok content_type body Form format sort as_mut unwrap len println route handler from bind serve await into_make_service as_ref is_none new sort_array';
 
         this.regexList = [
             {regex: /^ *#.*/gm, css: 'my_preprocessor'},
