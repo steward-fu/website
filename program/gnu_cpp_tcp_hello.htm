@@ -1,0 +1,140 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - GNU - C/C++ - <b>TCP Server、Client</b></h3>
+<hr size="1"><br>
+<p>
+server.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;sys/socket.h&gt;
+#include &lt;sys/socket.h&gt;
+#include &lt;netinet/in.h&gt;
+#include &lt;arpa/inet.h&gt;
+
+int main(int argc, char const* argv[])
+{
+    ssize_t r = 0;
+    int opt = 1;
+    int fd = -1;
+    int new_socket = 0;
+    char buf[1024] = {0};
+    struct sockaddr_in addr = {0};
+    const char *hello = "hello from server !";
+
+    if (argc != 3) {
+        printf("usage: %s ip port\n", argv[0]);
+        return 0;
+    }
+
+    socklen_t addrlen = sizeof(addr);
+    fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (fd &lt; 0) {
+        perror("socket");
+        return -1;
+    }
+
+    if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &amp;opt, sizeof(opt))) {
+        perror("setsockopt");
+        return -1;
+    }
+
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = inet_addr(argv[1]); // INADDR_ANY;
+    addr.sin_port = htons(atol(argv[2])); 
+    if (bind(fd, (struct sockaddr *)&amp;addr, sizeof(addr)) &lt; 0) {
+        perror("bind");
+        return -1;
+    }
+
+    if (listen(fd, 3) &lt; 0) {
+        perror("listen");
+        return -1;
+    }
+
+    new_socket = accept(fd, (struct sockaddr *)&amp;addr, &amp;addrlen);
+    if (new_socket &lt; 0) {
+        perror("accept");
+        return -1;
+    }
+
+    r = read(new_socket, buf, sizeof(buf));
+    printf("%s\n", buf);
+    send(new_socket, hello, strlen(hello), 0);
+    close(new_socket);
+    close(fd);
+    return 0;
+}
+</pre><br>
+
+<p>
+client.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;sys/socket.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;arpa/inet.h&gt;
+
+int main(int argc, char const* argv[])
+{
+    int r = 0;
+    int fd = -1;
+    int status = 0;
+    struct sockaddr_in addr = {0};
+    const char *hello = "hello from client !";
+    char buf[1024] = {0};
+
+    if (argc != 3) {
+        printf("usage: %s ip port\n", argv[0]);
+        return 0;
+    }
+
+    fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (fd &lt; 0) {
+        perror("socket");
+        return -1;
+    }
+
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(atol(argv[2])); 
+    if (inet_pton(AF_INET, argv[1], &amp;addr.sin_addr) &lt;= 0) {
+        perror("inet_pton");
+        return -1;
+    }
+
+    status = connect(fd, (struct sockaddr *)&amp;addr, sizeof(addr));
+    if (status &lt; 0) {
+        perror("connect");
+        return -1;
+    }
+
+    send(fd, hello, strlen(hello), 0);
+    r = read(fd, buf, sizeof(buf));
+    printf("%s\n", buf);
+    close(fd);
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ gcc server.c -o server
+$ gcc client.c -o client
+
+$ ./server 127.0.0.1 9999 &amp;
+$ ./client 127.0.0.1 9999
+hello from client !
+hello from server !
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
