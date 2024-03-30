@@ -1,0 +1,57 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - Miyoo Mini Plus - <b>解決LCD Pixel Clock問題</b></h3>
+<hr size="1"><br>
+<p>
+由於司徒編譯的Kernel始終無法產生<b>/proc/mi_modules/mi_panel/mi_panel0</b>，因此，屏始終無法被正確初始化，導致顯示有問題，如下圖：<br>
+<img src="miyoo_mini_plus_fix_lcd_pixel_clock/2.jpg" class="maxSize"><br>
+P.S. 最左邊的顯示有一部份跑到最右邊，然後最下方的顯示會有一條線一直閃爍<br><br>
+
+於是司徒開始逆向看一下mi_panel.ko驅動，發現都是透過mhal.ko驅動做設定，因此，司徒再度往mhal.ko驅動找尋東西，發現有一個副程式似乎跟Pixel Clock有關係<br>
+<img src="miyoo_mini_plus_fix_lcd_pixel_clock/1.jpg" class="maxSize"><br><br>
+
+這個位址可以透過kallsym取得
+</p>
+<pre>
+# cat /proc/kallsyms | grep HalPnlSetClkScPixel
+bf82cc29 t HalPnlSetClkScPixel  [mhal]
+</pre><br>
+
+<p>
+經由司徒的測試，發現如下的設定可以讓顯示變成正常
+</p>
+<pre class="brush:cpp">
+#include &lt;linux/device.h&gt;
+#include &lt;linux/init.h&gt;
+#include &lt;linux/module.h&gt;
+
+typedef void (*_HalPnlSetClkScPixel)(int, int);
+
+static _HalPnlSetClkScPixel HalPnlSetClkScPixel = 0xbf82cc29;
+
+int ldd_init(void)
+{
+    HalPnlSetClkScPixel(1, 0x44aa200);
+    return 0;
+}
+
+void ldd_exit(void)
+{
+}
+
+module_init(ldd_init);
+module_exit(ldd_exit);
+
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("Steward Fu");
+MODULE_DESCRIPTION("Linux Driver");
+</pre><br>
+
+<p>
+修正後，顯示終於變成正常<br>
+<img src="miyoo_mini_plus_fix_lcd_pixel_clock/3.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

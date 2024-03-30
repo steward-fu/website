@@ -1,0 +1,42 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - Miyoo Mini Plus - C/C++ - <b>Read GPIO</b></h3>
+<hr size="1"><br>
+<p>
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;string.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;sys/mman.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;time.h&gt;
+
+int main(int argc, char **argv)
+{
+    int fd = open("/dev/mem", O_RDWR);
+
+    if (fd &lt; 0){
+        printf("failed to open /dev/mem\n");
+        return -1;
+    }
+
+    uint8_t *gpio = mmap(0, 0x10000, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0x1f000000 + 0x200000);
+    printf("gpio table ptr: 0x%x\n", gpio);
+
+    // gpio-11 = 0x20782c
+    while (1) {
+        printf("0x%x\n", gpio[0x782c] &amp; 1);
+        usleep(500000);
+    }
+    close(fd);
+    return 0;
+}
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

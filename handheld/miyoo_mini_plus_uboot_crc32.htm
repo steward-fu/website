@@ -1,0 +1,54 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - Miyoo Mini Plus - <b>如何更新U-Boot Environment CRC32</b></h3>
+<hr size="1"><br>
+<p>
+CRC32結果位於：0x5f000<br>
+CRC32計算長度：0x5f004~0x60000<br>
+Environment Variables：0x5f004~0x60000<br><br>
+
+計算方式如下：
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;string.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;unistd.h&gt;
+
+static char buf[4096] = {0};
+
+unsigned int crc32b(unsigned char *buf, int len)
+{
+   int i = 0, j = 0;
+   unsigned int byte = 0, crc = 0, mask = 0;
+
+   crc = 0xffffffff;
+   for (i=0; i&lt;len; i++) {
+      byte = buf[i];
+      crc = crc ^ byte;
+      for (j = 7; j &gt;= 0; j--) {
+         mask = -(crc &amp; 1);
+         crc = (crc &gt;&gt; 1) ^ (0xedb88320 &amp; mask);
+      }
+   }
+   return ~crc;
+}
+
+int main(int argc, char **argv)
+{
+    int len = 0, fd = -1;
+    
+    fd = open("mtdblock0_env_offset", O_RDONLY);
+    len = read(fd, buf, sizeof(buf));
+    close(fd);
+
+    printf("0x%x\n", crc32b(buf, 0x1000 - 4));
+    return 0;
+}
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
