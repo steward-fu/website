@@ -1,0 +1,54 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - Miyoo Mini Plus - <b>Build Perf</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://stackoverflow.com/questions/5098360/cmake-specifying-build-toolchain<br><br>
+
+步驟如下：
+</p>
+<pre>
+$ cd
+$ wget https://github.com/steward-fu/website/releases/download/miyoo-mini/toolchain.tar.gz
+$ tar xvf toolchain.tar.gz
+$ sudo mv mmiyoo /opt
+$ sudo mv prebuilt /opt
+$ export PATH=/opt/mmiyoo/bin/:$PATH
+
+$ wget https://github.com/steward-fu/website/releases/download/miyoo-mini-plus/src_kernel-4.9.84.tar.gz
+$ tar xvf src_kernel-4.9.84.tar.gz
+$ cd kernel
+$ ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- make mmp_defconfig
+$ ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- make EXTRA_CFLAGS=-w -C tools/perf
+</pre><br>
+
+<p>
+Perf依賴很多Libraries，因此，必須確保Buildroot都有編譯需要的元件庫
+</p>
+<pre>
+Auto-detecting system features:
+...                         dwarf: [ on  ]
+...            dwarf_getlocations: [ on  ]
+...                         glibc: [ on  ]
+...                          gtk2: [ OFF ]
+...                      libaudit: [ on  ]
+...                        libbfd: [ OFF ]
+...                        libelf: [ on  ]
+...                       libnuma: [ on  ]
+...        numa_num_possible_cpus: [ on  ]
+...                       libperl: [ OFF ]
+...                     libpython: [ OFF ]
+...                      libslang: [ on  ]
+...                     libcrypto: [ on  ]
+...                     libunwind: [ on  ]
+...            libdw-dwarf-unwind: [ on  ]
+...                          zlib: [ on  ]
+...                          lzma: [ on  ]
+...                     get_cpuid: [ OFF ]
+...                           bpf: [ on  ]
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
