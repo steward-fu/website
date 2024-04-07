@@ -1,0 +1,87 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - Miyoo Mini Plus - <b>分析Perf Segmentation fault問題</b></h3>
+<hr size="1"><br>
+<p>
+問題如下：
+</p>
+<pre>
+# export LD_LIBRARY_PATH=lib
+# ./perf record -p 1054
+    Segmentation fault
+</pre><br>
+
+<p>
+分析如下：
+</p>
+<pre>
+# gdb ./perf record -p 1054
+
+(gdb) r
+    Starting program: /mnt/SDCARD/perf/perf record -p 1054
+    warning: Unable to find libthread_db matching inferior's thread library, thread debugging will not be available.
+
+    Program received signal SIGSEGV, Segmentation fault.
+    0x00492ff0 in snprintf (__fmt=0x5975ec "%s%s", __n=4096, __s=0x1cacec0 "")
+        at /opt/mmiyoo/arm-buildroot-linux-gnueabihf/sysroot/usr/include/bits/stdio2.h:67
+    67      /opt/mmiyoo/arm-buildroot-linux-gnueabihf/sysroot/usr/include/bits/stdio2.h: No such file or directory.
+
+(gdb) bt
+    #0  0x00492ff0 in snprintf (__fmt=0x5975ec "%s%s", __n=4096, __s=0x1cacec0 "")
+        at /opt/mmiyoo/arm-buildroot-linux-gnueabihf/sysroot/usr/include/bits/stdio2.h:67
+    #1  perf_event__synthesize_kernel_mmap (tool=0x5d7918 &lt;record&gt;, 
+        process=0x41d460 &lt;process_synthesized_event&gt;, 
+        machine=machine@entry=0x1ca4da0) at util/event.c:714
+    #2  0x0041ded4 in record__synthesize (tail=tail@entry=false, 
+        rec=0x5d7918 &lt;record&gt;) at builtin-record.c:792
+    #3  0x0041ee6c in __cmd_record (rec=0x5d7918 &lt;record&gt;, argv=&lt;optimized out&gt;, 
+        argc=0) at builtin-record.c:916
+    #4  cmd_record (argc=0, argv=&lt;optimized out&gt;, prefix=&lt;optimized out&gt;)
+        at builtin-record.c:1700
+    #5  0x004859e0 in run_builtin (argv=0xbefffe08, argc=3, 
+        p=0x5d89ec &lt;commands+84&gt;) at perf.c:357
+    #6  handle_internal_command (argc=3, argv=0xbefffe08) at perf.c:419
+    #7  0x0040f674 in run_argv (argv=0xbefffb68, argcp=0xbefffb6c) at perf.c:609
+    #8  main (argc=&lt;optimized out&gt;, argv=&lt;optimized out&gt;) at perf.c:609
+</pre><br>
+
+<p>
+Crash Point
+</p>
+<pre class="brush:cpp">
+int perf_event__synthesize_kernel_mmap(struct perf_tool *tool,
+                       perf_event__handler_t process,
+                       struct machine *machine)
+{
+    ...
+    size = snprintf(event-&gt;mmap.filename, sizeof(event-&gt;mmap.filename),
+            "%s%s", mmap_name, kmap-&gt;ref_reloc_sym-&gt;name) + 1;
+</pre><br>
+
+<p>
+這個Crash的點真的蠻奇特，找了一下，還是找不出問題，使用如下Workaround就可以解決
+</p>
+<pre class="brush:cpp">
+int perf_event__synthesize_kernel_mmap(struct perf_tool *tool,
+                       perf_event__handler_t process,
+                       struct machine *machine)
+{
+    return 0;
+}
+</pre><br>
+
+<p>
+雖然缺少一些Kernel資訊，不過，用來找出User Application的效能瓶頸，這樣的解決還是可以接受的
+</p>
+<pre>
+# export LD_LIBRARY_PATH=lib
+# ./perf record -p 1054
+# ./perf report
+</pre>
+<p>
+<img src="miyoo_mini_plus_fix_perf/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
