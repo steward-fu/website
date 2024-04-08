@@ -8,6 +8,7 @@ All of files or resources used on my website can be found from the following lin
 | ![](img/photos/pandora.jpg)         | [Pandora](https://github.com/steward-fu/website/releases/tag/pandora)                 |
 | ![](img/photos/a320.jpg)            | [Dingoo A320](https://github.com/steward-fu/website/releases/tag/a320)                |
 | ![](img/photos/wiz.jpg)             | [GP2X Wiz](https://github.com/steward-fu/website/releases/tag/wiz)                    |
+| ![](img/photos/miyoo-a30.jpg)       | [Miyoo A30](https://github.com/steward-fu/website/releases/tag/miyoo-a30)             |
 | ![](img/photos/gkd-pixel.jpg)       | [GKD Pixel](https://github.com/steward-fu/website/releases/tag/gkd-pixel)             |
 | ![](img/photos/miyoo-mini.jpg)      | [Miyoo Mini](https://github.com/steward-fu/website/releases/tag/miyoo-mini)           |
 | ![](img/photos/miyoo-mini-plus.jpg) | [Miyoo Mini Plus](https://github.com/steward-fu/website/releases/tag/miyoo-mini-plus) |
