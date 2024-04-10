@@ -1,0 +1,102 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - Miyoo A30 - C/C++ - <b>閃屏測試</b></h3>
+<hr size="1"><br>
+<p>
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;unistd.h&gt;
+
+#include &lt;SDL.h&gt;
+
+int main(int argc, char **argv)
+{
+    int cc = 0;
+    SDL_Rect rt = {0};
+    SDL_Surface *screen = NULL;
+    SDL_Window *window = NULL;
+    SDL_Texture *texture = NULL;
+    SDL_Renderer *renderer = NULL;
+
+    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK);
+    window = SDL_CreateWindow("Main", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 480, 640, SDL_WINDOW_SHOWN);
+    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+    texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB888, SDL_TEXTUREACCESS_TARGET, 640, 480);
+    screen = SDL_CreateRGBSurface(0, 640, 480, 32, 0, 0, 0, 0);
+
+    cc = 600;
+    rt.x = (480 - 640) / 2;
+    rt.y = (640 - 480) / 2;
+    rt.w = 640;
+    rt.h = 480;
+    while (cc--) {
+        switch (cc % 3) {
+        case 0:
+            SDL_FillRect(screen, &amp;screen-&gt;clip_rect, SDL_MapRGB(screen-&gt;format, 0xff, 0x00, 0x00));
+            break;
+        case 1:
+            SDL_FillRect(screen, &amp;screen-&gt;clip_rect, SDL_MapRGB(screen-&gt;format, 0x00, 0xff, 0x00));
+            break;
+        case 2:
+            SDL_FillRect(screen, &amp;screen-&gt;clip_rect, SDL_MapRGB(screen-&gt;format, 0x00, 0x00, 0xff));
+            break;
+        }
+        SDL_SetRenderTarget(renderer, NULL);
+        SDL_UpdateTexture(texture, NULL, screen-&gt;pixels, screen-&gt;pitch);
+        SDL_RenderCopyEx(renderer, texture, NULL, &amp;rt, 270, NULL, SDL_FLIP_NONE);
+        SDL_RenderPresent(renderer);
+        SDL_SetRenderTarget(renderer, texture);
+        SDL_Delay(60 / 1000);
+    }
+
+    SDL_FreeSurface(screen);
+    SDL_DestroyTexture(texture);
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(window);
+    SDL_Quit();
+    return 0;
+}
+</pre><br>
+
+<p>
+Makefile
+</p>
+<pre>
+TARGET  = main
+CROSS   = arm-linux-gnueabihf-
+CFLAGS  = -I/opt/staging_dir/target/usr/include/SDL2
+LDFLAGS = /opt/staging_dir/target/rootfs/usr/miyoo/lib/libSDL2-2.0.so.0
+
+export PATH=/opt/prebuilt_a30/bin:$(shell echo $$PATH)
+
+all:
+	$(CROSS)gcc main.c -o $(TARGET) $(CFLAGS) $(LDFLAGS)
+
+clean:
+	rm -rf $(TARGET)
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ cd
+
+$ wget https://github.com/steward-fu/website/releases/download/miyoo-a30/gcc-linaro-7.5.0-arm-linux-gnueabihf.tar.gz
+$ tar xvf gcc-linaro-7.5.0-arm-linux-gnueabihf.tar.gz
+$ sudo mv prebuilt_a30 /opt
+
+$ wget https://github.com/steward-fu/website/releases/download/miyoo-a30/staging_dir.tgz
+$ tar xvf staging_dir.tgz
+$ sudo mv staging_dir /opt
+
+$ make
+    arm-linux-gnueabihf-gcc main.c -o main -I/opt/staging_dir/target/usr/include/SDL2 /opt/staging_dir/target/rootfs/usr/miyoo/lib/libSDL2-2.0.so.0
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
