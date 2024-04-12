@@ -1,0 +1,57 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../system.htm">系統</a> - The Yocto Project - <b>解決Docker Error creating default "bridge" network問題</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://m5p3nc3r.github.io/Adding_docker_to_yocto/<br><br>
+
+問題如下(已經開啟Docker需要的Kernel Configs)：
+</p>
+<pre>
+root@nxp-s32g:~# systemctl restart docker
+    Job for docker.service failed because the control process exited with error code.
+    See "systemctl status docker.service" and "journalctl -xeu docker.service" for details.
+
+root@nxp-s32g:~# systemctl status docker.service
+    x docker.service - Docker Application Container Engine
+         Loaded: loaded (8;;file://nxp-s32g/lib/systemd/system/docker.service/lib/systemd/system/docker.service8;;; disabled; preset: disabled)8;;
+         Active: failed (Result: exit-code) since Fri 2023-03-03 10:21:00 UTC; 28s ago
+    TriggeredBy: x docker.socket
+           Docs: 8;;https://docs.docker.comhttps://docs.docker.com8;;8;;
+        Process: 952 ExecStart=/usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock (code=exited, status=1/FAILURE)
+       Main PID: 952 (code=exited, status=1/FAILURE)
+
+    Mar 03 10:21:00 nxp-s32g systemd[1]: docker.service: Scheduled restart job, restart counter is at 3.
+    Mar 03 10:21:00 nxp-s32g systemd[1]: Stopped Docker Application Container Engine.
+    Mar 03 10:21:00 nxp-s32g systemd[1]: docker.service: Start request repeated too quickly.
+    Mar 03 10:21:00 nxp-s32g systemd[1]: docker.service: Failed with result 'exit-code'.
+    Mar 03 10:21:00 nxp-s32g systemd[1]: Failed to start Docker Application Container Engine.
+
+root@nxp-s32g:~# /usr/bin/dockerd -H unix:// --containerd=/run/containerd/containerd.sock                                                             
+    INFO[2023-03-03T10:22:59.104929400Z] Starting up                                  
+    INFO[2023-03-03T10:22:59.320874600Z] [graphdriver] using prior storage driver: overlay2 
+    INFO[2023-03-03T10:22:59.339190800Z] Loading containers: start.                   
+    INFO[2023-03-03T10:22:59.452156000Z] Default bridge (docker0) is assigned with an IP address 172.17.0.0/16. Daemon option --bip can be used to set a  
+    INFO[2023-03-03T10:22:59.462546000Z] stopping event stream following graceful shutdown  error="<nil>" module=libcontainerd namespace=moby
+    failed to start daemon: Error initializing network controller: Error creating default "bridge" network: Failed to Setup IP tables: Unable to enable NAT rule:  (iptables failed: iptables --wait -t nat -I POSTROUTING -s 172.17.0.0/16 ! -o docker0 -j MASQUERADE: iptables v1.8.9 (legacy): Couldn't load target `MASQUERADE':No such file or directory
+
+    Try `iptables -h' or 'iptables --help' for more information.
+     (exit status 2))
+
+root@nxp-s32g:~# iptables --wait -t nat -I POSTROUTING -s 172.17.0.0/16 ! -o docker0 -j MASQUERADE
+    iptables v1.8.9 (legacy): Couldn't load target `MASQUERADE':No such file or directory
+
+    Try `iptables -h' or 'iptables --help' for more information.
+</pre><br>
+
+<p>
+解法如下(原本使用wrlinux-image-core)：
+</p>
+<pre>
+$ bitbake wrlinux-image-std
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
