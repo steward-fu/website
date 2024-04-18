@@ -1,0 +1,40 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - Miyoo A30 - <b>解決Could not initialize SDL sensor subsystem問題</b></h3>
+<hr size="1"><br>
+<p>
+問題如下：
+</p>
+<pre>
+Error: Could not initialize SDL sensor subsystem (SDL not built with sensor support)
+stack traceback:
+	[love "boot.lua"]:431: in function &lt;[love "boot.lua"]:427&gt;
+	[C]: at 0xb6aa7850
+	[C]: in function 'require'
+	[love "boot.lua"]:326: in function &lt;[love "boot.lua"]:154&gt;
+	[C]: in function 'xpcall'
+	[love "boot.lua"]:441: in function &lt;[love "boot.lua"]:434&gt;
+	[C]: in function 'xpcall'
+</pre><br>
+
+<p>
+解法如下：
+</p>
+<pre class="brush:cpp">
+Sensor::Sensor()
+    : love::sensor::Sensor("love.sensor.sdl")
+    , sensors()
+{
+    //if (SDL_InitSubSystem(SDL_INIT_SENSOR) &lt; 0)
+        //throw love::Exception("Could not initialize SDL sensor subsystem (%s)", SDL_GetError());
+}
+
+Sensor::~Sensor()
+{
+    //SDL_QuitSubSystem(SDL_INIT_SENSOR);
+}
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
