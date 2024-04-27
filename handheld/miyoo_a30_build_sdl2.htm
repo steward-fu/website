@@ -1,0 +1,56 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - Miyoo A30 - <b>Build SDL2</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/steward-fu/website/releases/tag/miyoo-a30<br><br>
+
+步驟如下：
+</p>
+<pre>
+$ sudo apt-get install gcc-arm* -y
+
+$ cd
+$ wget https://github.com/steward-fu/website/releases/download/miyoo-a30/staging_dir.tgz
+$ tar xvf staging_dir.tgz
+$ sudo mv staging_dir /opt
+
+$ wget https://github.com/steward-fu/website/releases/download/miyoo-a30/libsdl2-2.0.2-dfsg1-mali.zip
+$ unzip libsdl2-2.0.2-dfsg1-mali.zip
+$ cd libsdl2-2.0.2-dfsg1-mali
+
+$ export PATH=/opt/a30/bin:$PATH
+$ export CC=arm-linux-gcc
+$ export CXX=arm-linux-g++
+$ export CFLAGS="-marm -mcpu=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard -O3 -I/opt/staging_dir/target/usr/include -std=gnu99"
+$ export LDFLAGS="-L/opt/staging_dir/target/usr/lib -lMali -ldl"
+$ make distclean
+$ ./configure \
+    --host=arm-linux \
+    --disable-sndio \
+    --disable-power \
+    --disable-loadso \
+    --disable-haptic \
+    --disable-video-x11 \
+    --disable-input-tslib \
+    --disable-video-opengl \
+    --disable-video-wayland \
+    --disable-wayland-shared \
+    --enable-oss \
+    --enable-alsa \
+    --enable-shared \
+    --enable-static \
+    --enable-pthreads \
+    --enable-pthread-sem \
+    --enable-loadso \
+    --enable-joystick \
+    --enable-video-mali \
+    --enable-video-opengles
+
+$ make -j4
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
