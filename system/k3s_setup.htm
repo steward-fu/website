@@ -1,0 +1,85 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../system.htm">系統</a> - K3s - <b>安裝環境</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://kubernetes.io/zh-cn/docs/tasks/run-application/run-stateless-application-deployment/<br><br>
+
+步驟如下：
+</p>
+<pre>
+$ cd
+$ curl -sfL https://get.k3s.io | sh -s - --write-kubeconfig-mode 644
+$ sudo systemctl status k3s
+    ● k3s.service - Lightweight Kubernetes
+         Loaded: loaded (/etc/systemd/system/k3s.service; enabled; vendor preset: enabled)
+         Active: active (running) since Thu 2024-05-09 21:17:43 CST; 13h ago
+           Docs: https://k3s.io
+        Process: 121268 ExecStartPre=/bin/sh -xc ! /usr/bin/systemctl is-enabled --quiet nm-cloud-setup.service 2&gt;/dev/null (code=exited, status=0/SUCCESS)
+        Process: 121270 ExecStartPre=/sbin/modprobe br_netfilter (code=exited, status=0/SUCCESS)
+        Process: 121271 ExecStartPre=/sbin/modprobe overlay (code=exited, status=0/SUCCESS)
+       Main PID: 121272 (k3s-server)
+
+$ kubectl get node
+    NAME     STATUS   ROLES                  AGE   VERSION
+    ubuntu   Ready    control-plane,master   13h   v1.29.4+k3s1
+
+$ kubectl get pod
+    No resources found in default namespace.
+</pre><br>
+
+<p>
+main.yaml
+</p>
+<pre>
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+spec:
+  selector:
+    matchLabels:
+      app: nginx
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.16.1
+        ports:
+        - containerPort: 80
+</pre><br>
+
+<p>
+Deployment
+</p>
+<pre>
+$ kubectl create -f main.yaml 
+    deployment.apps/nginx-deployment created
+
+$ kubectl get pod
+    NAME                                READY   STATUS    RESTARTS   AGE
+    nginx-deployment-848dd6cfb5-tjr95   1/1     Running   0          19s
+
+$ kubectl exec -it nginx-deployment-848dd6cfb5-tjr95 -- /bin/bash
+
+root@nginx-deployment-848dd6cfb5-tjr95:/#
+
+$ kubectl get deployment
+    NAME               READY   UP-TO-DATE   AVAILABLE   AGE
+    nginx-deployment   1/1     1            1           4s
+
+$ kubectl delete deployment nginx-deployment
+    deployment.apps "nginx-deployment" deleted
+
+$ kubectl get pod
+    No resources found in default namespace.
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
