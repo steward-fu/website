@@ -1,0 +1,78 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../system.htm">系統</a> - K3s - <b>Hook createRuntime</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/containerd/containerd/issues/6645<br>
+https://github.com/containerd/containerd/blob/main/docs/cri/config.md<br>
+https://github.com/opencontainers/runtime-spec/blob/main/config.md#prestart<br><br>
+
+步驟如下：
+</p>
+<pre>
+$ su
+# ctr oci spec &gt; /var/lib/rancher/k3s/agent/etc/containerd/myconfig.json
+# vim /var/lib/rancher/k3s/agent/etc/containerd/myconfig.json
+    "hooks": {
+        "createRuntime": [
+        {
+            "path": "/home/user/run.sh",
+            "args": [ "" ],
+            "env": [],
+            "timeout": 120
+        }
+        ]
+    }
+
+# cp /var/lib/rancher/k3s/agent/etc/containerd/config.toml /var/lib/rancher/k3s/agent/etc/containerd/config.toml.tmpl
+# vim /var/lib/rancher/k3s/agent/etc/containerd/config.toml.tmpl
+    [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+      runtime_type = "io.containerd.runc.v2"
+      base_runtime_spec = "/var/lib/rancher/k3s/agent/etc/containerd/myconfig.json"
+
+# vim /home/user/run.sh
+    #!/bin/bash
+    echo 123 &gt; /tmp/hook_createRuntime
+
+# reboot
+# crictl info | grep RuntimeSpec
+    "baseRuntimeSpec": "/var/lib/rancher/k3s/agent/etc/containerd/myconfig.json",
+
+# vim test.yaml
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: nginx-deployment
+    spec:
+      selector:
+        matchLabels:
+          app: nginx
+      replicas: 1
+      template:
+        metadata:
+          labels:
+            app: nginx
+        spec:
+          containers:
+          - name: nginx
+            image: nginx
+            ports:
+            - containerPort: 80
+
+# kubectl create -f test.yaml 
+    deployment.apps/nginx-deployment created
+
+# cat /tmp/hook_createRuntime 
+    123
+
+# kubectl delete deployment nginx-deployment
+    deployment.apps "nginx-deployment" deleted
+
+# kubectl get pod
+    No resources found in default namespace.
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
