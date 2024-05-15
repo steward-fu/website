@@ -1,0 +1,98 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../system.htm">系統</a> - K3s - <b>Enable Audit Event</b></h3>
+<hr size="1">
+<p>
+參考資訊：<br>
+https://docs.k3s.io/security/hardening-guide<br>
+https://www.airplane.dev/blog/kubernetes-audit-logs<br>
+https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/<br><br>
+
+NXP S32G3：
+</p>
+<pre>
+# mkdir -p -m 700 /var/lib/rancher/k3s/server/logs
+# vim /var/lib/rancher/k3s/server/audit.yaml
+    apiVersion: audit.k8s.io/v1
+    kind: Policy
+    rules:
+    - level: Metadata
+
+# /etc/init.d/k3s-server
+    #!/usr/bin/env bash
+    ### BEGIN INIT INFO
+    # Provides:          k3s-server
+    # Required-Start:    networking
+    # Required-Stop:
+    # Default-Start:     S
+    # Default-Stop:      0 6
+    # Short-Description: Start the k3s server
+    # Description:       Wrapper for starting / stopping the k3s server.
+    #                    Runs when domU boots / shuts down on systems using SysV.
+    ### END INIT INFO
+    # SPDX-License-Identifier: BSD-3-Clause
+    #
+    # Copyright 2022 NXP
+
+    # Source function library.
+    . /etc/init.d/functions
+
+    K3S_SERVER_CONFIG="/etc/default/k3s-server"
+    K3S_CONF_FILE="/etc/rancher/k3s/config-server.yaml"
+    BINDIR_PATH="/usr/bin/"
+    LOG_FILE="/var/log/k3s-server.log"
+    K3S_DATA_PATH="/var/lib/rancher/k3s/data"
+
+    # shellcheck disable=SC1090
+    [ -f "${K3S_SERVER_CONFIG}" ] &amp;&amp; . "${K3S_SERVER_CONFIG}"
+
+    start_server() {
+        CMD_ARGS=()
+        if [ -f "${K3S_CONF_FILE}" ]; then
+            CMD_ARGS+=("--config=${K3S_CONF_FILE}")
+        fi
+
+        ${BINDIR_PATH}/k3s server '--kube-apiserver-arg=audit-log-path=/var/lib/rancher/k3s/server/logs/audit.log' '--kube-apiserver-arg=audit-policy-file=/var/lib/rancher/k3s/server/audit.yaml' "${CMD_ARGS[@]}" &gt; "${LOG_FILE}" 2&gt;&amp;1 &amp;
+    }
+
+    stop_server() {
+        kill -9 $(ps aux | grep '[k]3s server' | awk '{print $2}') 2&gt; /dev/null || true
+        ${BINDIR_PATH}/k3s-killall.sh &gt; /dev/null 2&gt;&amp;1
+    }
+    case "$1" in
+    start)
+        echo "Starting the k3s server"
+        start_server
+        ;;
+    stop)
+        echo "Stopping the k3s server"
+        stop_server
+        ;;
+    restart)
+        echo "Restarting the k3s server"
+        stop_server
+        start_server
+        ;;
+    status)
+        status "k3s-server"
+        exit $?
+        ;;
+    *)
+        echo "Usage: /etc/init.d/k3s-server {start|stop|restart|status}"
+        exit 1
+        ;;
+    esac
+
+    exit 0
+</pre>
+<p>
+P.S. 主要更動是附加如下兩個參數
+</p>
+<pre>
+--kube-apiserver-arg='audit-log-path=/var/lib/rancher/k3s/server/logs/audit.log'
+--kube-apiserver-arg='audit-policy-file=/var/lib/rancher/k3s/server/audit.yaml'
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

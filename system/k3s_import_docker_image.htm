@@ -1,0 +1,103 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../system.htm">系統</a> - K3s - <b>Import Docker Image</b></h3>
+<hr size="1">
+<p>
+參考資訊：<br>
+https://cwienczek.com/2020/06/import-images-to-k3s-without-docker-registry/<br><br>
+
+Dockerfile
+</p>
+<pre>
+FROM nginx
+
+RUN echo "123" &gt; /MyDockerImage
+</pre><br>
+
+<p>
+建立Docker Image
+</p>
+<pre>
+$ sudo docker build -t mydocker .
+$ docker image ls
+    REPOSITORY                         TAG                    IMAGE ID       CREATED          SIZE
+    mydocker                           latest                 d9803798f068   43 seconds ago   188MB
+
+$ sudo docker save mydocker -o mydocker.tar
+$ ls -al mydocker.tar 
+    -rw------- 1 root root 191824896 May 15 08:31 mydocker.tar
+</pre><br>
+
+<p>
+匯入Docker Image到K3s
+</p>
+<pre>
+$ sudo k3s ctr image import mydocker.tar
+$ sudo k3s ctr image ls
+    docker.io/library/mydocker:latest
+</pre><br>
+
+<p>
+main.yaml
+</p>
+<pre>
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+spec:
+  selector:
+    matchLabels:
+      app: nginx
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: mydocker
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 80
+</pre><br>
+
+<p>
+建立Pod
+</p>
+<pre>
+$ kubectl create -f main.yaml
+$ kubectl get pod
+    NAME                                READY   STATUS    RESTARTS   AGE
+    nginx-deployment-574c6948bf-6cxcd   1/1     Running   0          13s
+</pre><br>
+
+<p>
+運行Pod
+</p>
+<pre>
+$ kubectl exec -it nginx-deployment-574c6948bf-6cxcd -- /bin/bash
+
+root@nginx-deployment-574c6948bf-6cxcd:/# cat /MyDockerImage 
+    123
+</pre><br>
+
+<p>
+刪除Pod
+</p>
+<pre>
+$ kubectl get deployment
+    NAME               READY   UP-TO-DATE   AVAILABLE   AGE
+    nginx-deployment   1/1     1            1           111s
+
+$ kubectl delete deployment nginx-deployment
+    deployment.apps "nginx-deployment" deleted
+
+$ kubectl get pod
+    No resources found in default namespace.
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
