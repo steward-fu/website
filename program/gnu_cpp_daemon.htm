@@ -1,0 +1,76 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - GNU - C/C++ - <b>Daemon</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/pasce/daemon-skeleton-linux-c<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;signal.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;sys/stat.h&gt;
+
+static void run_daemon(void)
+{
+    int x = 0;
+    pid_t pid = 0;
+
+    pid = fork();
+    if (pid &lt; 0) {
+        exit(EXIT_FAILURE);
+    }
+    if (pid &gt; 0) {
+        exit(EXIT_SUCCESS);
+    }
+    if (setsid() &lt; 0) {
+        exit(EXIT_FAILURE);
+    }
+
+    signal(SIGCHLD, SIG_IGN);
+    signal(SIGHUP, SIG_IGN);
+    pid = fork();
+    if (pid &lt; 0) {
+        exit(EXIT_FAILURE);
+    }
+    if (pid &gt; 0) {
+        exit(EXIT_SUCCESS);
+    }
+
+    umask(0);
+    chdir("/");
+    for (x = sysconf(_SC_OPEN_MAX); x &gt;= 0; x--) {
+        close (x);
+    }
+
+    system("echo 123 &gt; /tmp/daemon_start");
+    sleep(3);
+    system("echo 123 &gt; /tmp/daemon_stop");
+}
+
+int main(int argc, char **argv)
+{
+    run_daemon();
+    return 0;
+}
+</pre><br>
+
+<p>
+執行
+</p>
+<pre>
+$ gcc main.c -o main
+$ ./main
+$ ls /tmp/daemon*
+    /tmp/daemon_start
+    /tmp/daemon_stop
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
