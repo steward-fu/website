@@ -1,0 +1,42 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - Miyoo A30 - C/C++ - <b>Volume</b></h3>
+<hr size="1"><br>
+<p>
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;string.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;sys/mman.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;time.h&gt;
+  
+int main(int argc, char* argv[])
+{
+    int fd = -1;
+    uint8_t *mem = NULL;
+    volatile uint32_t *p = NULL;
+     
+    fd = open("/dev/mem", O_RDWR);
+    mem = mmap(0, 4096, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0x1c22000);
+
+    uint32_t l = 140;
+    uint32_t r = 140;
+
+    p = (uint32_t *)(&amp;mem[0xc00 + 0x258]);
+    printf("Vol %d,%d\n", (*p &amp; 0xff), ((*p &gt;&gt; 8) &amp; 0xff));
+    *p = (l &lt;&lt; 8) | r;
+ 
+    munmap(mem, 4096);
+    close(fd);
+    return 0;
+}
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
