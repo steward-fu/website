@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head><script type="text/javascript" src="../page_head.js"></script>
 
-<h3><a href="../index.htm">掌機</a> - Miyoo A30 - C/C++ - OpenGL ES 2.0 - <b>Rotate Position (Shader)</b></h3>
+<h3><a href="../index.htm">掌機</a> - Miyoo A30 - C/C++ - OpenGL ES 2.0 - <b>Rotate Position (Vertex)</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
@@ -22,26 +22,27 @@ main.c
  
 #define LCD_W   480
 #define LCD_H   640
-
-const char *vShaderSrc = 
-    "attribute vec4 vPosition;    \n"
-    "void main(void)              \n"
-    "{                            \n"
-    "    const float angle = 90.0 * (3.1415 * 2.0) / 360.0;                                                                            \n"
-    "    mat4 rot = mat4(cos(angle), -sin(angle), 0.0, 0.0, sin(angle), cos(angle), 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0); \n"
-    "    gl_Position = vPosition * rot; \n"
-    "}";
  
+const char *vShaderSrc =
+    "attribute vec4 a_position;   \n"
+    "attribute vec2 a_texCoord;   \n"
+    "varying vec2 v_texCoord;     \n"
+    "void main()                  \n"
+    "{                            \n"
+    "   gl_Position = a_position; \n"
+    "   v_texCoord = a_texCoord;  \n"
+    "}                            \n";
+   
 const char *fShaderSrc =
-    "#ifdef GL_ES               \n"
-    "precision mediump float;   \n"
-    "#endif                     \n"
-    "uniform vec4 vColor;       \n"
-    "void main(void)            \n"
-    "{                          \n"
-    "    gl_FragColor = vColor; \n"
-    "}";
-
+    "precision mediump float;                                  \n"
+    "varying vec2 v_texCoord;                                  \n"
+    "uniform sampler2D s_texture;                              \n"
+    "void main()                                               \n"
+    "{                                                         \n"
+    "    vec3 tex = texture2D(s_texture, v_texCoord).rgb;      \n"
+    "    gl_FragColor = vec4(tex, 1.0);                        \n"
+    "}                                                         \n";
+ 
 int main(int argc, char** argv)
 {
     EGLint egl_major = 0;
@@ -72,11 +73,20 @@ int main(int argc, char** argv)
     GLuint fShader = 0;
     GLuint pObject = 0;
     GLint compiled = 0;
+ 
+    int x = 0;
+    int y = 0;
+    uint32_t *p = NULL;
+    GLuint texID = 0;
+    GLubyte *buf = NULL;
+ 
     GLfloat vVertices[] = {
-         0.0f,  0.5f, 0.0f,
-        -0.5f, -0.5f, 0.0f,
-         0.5f, -0.5f, 0.0f
+       -1.0f,  1.0f, 0.0f,      0.0f,  0.0f,
+       -1.0f, -1.0f, 0.0f,      0.0f,  1.0f,
+        1.0f, -1.0f, 0.0f,      1.0f,  1.0f,
+        1.0f,  1.0f, 0.0f,      1.0f,  0.0f
     };
+    GLushort indices[] = {0, 1, 2, 0, 2, 3};
  
     display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
     eglInitialize(display, &amp;egl_major, &amp;egl_minor);
@@ -101,23 +111,54 @@ int main(int argc, char** argv)
     glLinkProgram(pObject);
     glUseProgram(pObject);
  
+    GLint posLoc = glGetAttribLocation(pObject, "a_position");
+    GLint texLoc = glGetAttribLocation(pObject, "a_texCoord");
+    GLint samLoc = glGetUniformLocation(pObject, "s_texture");
+ 
+    glGenTextures(1, &amp;texID);
     glViewport(0, 0, LCD_W, LCD_H);
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
+ 
+    uint32_t col[] = {0xffff0000, 0xff00ff00, 0xff0000ff};
+ 
+    buf = malloc(LCD_W * LCD_H * 4);
+    p = (uint32_t *)buf;
+    for (y = 0; y &lt; LCD_H; y++) {
+        for (x = 0; x &lt; LCD_W; x++) {
+            *p++ = col[x / 160];
+        }
+    }
+    glBindTexture(GL_TEXTURE_2D, texID);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, LCD_W, LCD_H, 0, GL_RGBA, GL_UNSIGNED_BYTE, buf);
+ 
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texID);
 
-    GLuint vp = glGetAttribLocation(pObject, "vPosition");
-    glVertexAttribPointer(vp, 3, GL_FLOAT, GL_FALSE, 0, vVertices);
-    glEnableVertexAttribArray(vp);
+    vVertices[0] *= -1;
+    vVertices[1] *= -1;
+    vVertices[5] *= -1;
+    vVertices[6] *= -1;
+    vVertices[10] *= -1;
+    vVertices[11] *= -1;
+    vVertices[15] *= -1;
+    vVertices[16] *= -1;
  
-    GLuint vc = glGetUniformLocation(pObject, "vColor");
-    glUniform4f(vc, 1.0f, 0.0f, 0.0f, 1.0f);
+    glVertexAttribPointer(posLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), vVertices);
+    glVertexAttribPointer(texLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &amp;vVertices[3]);
+    glEnableVertexAttribArray(posLoc);
+    glEnableVertexAttribArray(texLoc);
+    glUniform1i(samLoc, 0);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, indices);
  
-    glViewport(0, 0, LCD_W, LCD_H);
-    glClear(GL_COLOR_BUFFER_BIT);
-    glDrawArrays(GL_TRIANGLES, 0, 3);
     eglSwapBuffers(display, surface);
     sleep(3);
  
+    free(buf);
+    glDeleteTextures(1, &amp;texID);
     eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
     eglDestroyContext(display, context);
     eglDestroySurface(display, surface);
@@ -135,7 +176,7 @@ $ /opt/a30/bin/arm-linux-gcc main.c -o test -lGLESv2 -lEGL -ldl
 
 <p>
 完成<br>
-<img src="miyoo_a30_cpp_es_rotate/1.jpg" class="maxSize">
+<img src="miyoo_a30_cpp_es_rotate2/1.jpg" class="maxSize">
 </p>
 
 <br><script type="text/javascript" src="../tail.js"></script>
