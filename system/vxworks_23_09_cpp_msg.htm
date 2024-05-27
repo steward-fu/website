@@ -1,0 +1,63 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../system.htm">系統</a> - VxWorks - 23.09 - C/C++ - <b>Message Queue</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://forums.windriver.com/t/vxworks-software-development-kit-sdk/43<br>
+https://d13321s3lxgewa.cloudfront.net/downloads/wrsdk-vxworks7-docs/2309/README_qemu.html<br>
+https://www.ee.torontomu.ca/~courses/ee8205/Data-Sheets/Tornado-VxWorks/vxworks/ref/msgQLib.html#msgQReceive<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;string.h&gt;
+#include &lt;msgQLib.h&gt;
+
+int main(int argc, char **argv)
+{
+    MSG_Q_ID id = NULL;
+    char buf[100] = {0};
+
+    id = msgQCreate(10, 100, MSG_Q_FIFO);
+    printf("Msg ID %p\n", id);
+
+    if (id) {
+        buf[0] = 0x12;
+        buf[1] = 0x23;
+        msgQSend(id, buf, sizeof(buf), WAIT_FOREVER, MSG_PRI_NORMAL);
+
+        memset(buf, 0, sizeof(buf));
+        msgQReceive(id, buf, sizeof(buf), WAIT_FOREVER);
+
+        printf("Ret 0x%x, 0x%x\n", buf[0], buf[1]);
+        msgQDelete(id);
+    }
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ wr-cc main.c -o main
+</pre><br>
+
+<p>
+執行
+</p>
+<pre>
+-&gt; cmd
+
+[vxWorks *]# app
+    Msg ID 0x10038
+    Ret 0x12, 0x23
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
