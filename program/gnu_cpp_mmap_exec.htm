@@ -1,0 +1,82 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - GNU - C/C++ - <b>MMAP(EXEC)</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/pasce/daemon-skeleton-linux-c<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;sys/mman.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;SDL.h&gt;
+
+int cpu_42(int v)
+{
+    return 4 * v;
+}
+
+int cpu_speedx(int v)
+{
+    return 2 * v;
+}
+
+int main(int argc, char **argv)
+{
+    int n = 100;
+    unsigned int s = 0;
+    unsigned int t1 = 0;
+    unsigned int t2 = 0;
+    const int msize = 1024;
+
+    void *icache = NULL;
+    int (*code)(int) = NULL;
+
+    int fd = open("/dev/mem", O_RDWR);
+    printf("fd %d\n", fd);
+
+    icache = mmap(NULL, msize, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE, fd, 0);
+    printf("icache %p\n", icache);
+
+    code = icache;
+
+    memcpy(icache, cpu_42, 64);
+    s = code(n);
+    printf("cpu_42 %d\n", s);
+
+    memset(icache, 0, msize);
+    memcpy(icache, cpu_speedx, 64);
+
+    t1 = SDL_GetTicks();
+    s = code(n);
+    t2 = SDL_GetTicks();
+    printf("cpu_speedx %d (%dms)\n", s, t2 - t1);
+
+    munmap(icache, msize);
+    close(fd);
+    return 0;
+}
+</pre><br>
+
+<p>
+執行
+</p>
+<pre>
+$ gcc main.c -o test -I/usr/include/SDL -lSDL
+$ sudo ./test
+    fd 3
+    icache 0x7fbafdffd000
+    cpu_42 400
+    cpu_speedx 200 (0ms)
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
