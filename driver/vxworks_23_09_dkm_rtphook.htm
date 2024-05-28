@@ -1,0 +1,91 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../driver.htm">驅動程式</a> - VxWorks - 23.09 - C/C++ - <b>RTP Hook</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://zhuanlan.zhihu.com/p/597577575<br>
+https://studies.ac.upc.edu/doctorat/ENGRAP/VxWorks-device-drivers.htm<br>
+https://forums.windriver.com/t/vxworks-software-development-kit-sdk/43<br>
+https://mail.prz-rzeszow.pl/~ssamolej/vxworks/vxworks_kernel_programmers_guide_6.6.pdf<br>
+https://d13321s3lxgewa.cloudfront.net/downloads/wrsdk-vxworks7-docs/2309/README_qemu.html<br>
+https://learning.windriver.com/path/vxworks7-essentials-workbench-and-tools/vxworks-kernel-shell<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;private/rtpLibP.h&gt;
+
+STATUS create_hook(const char *rtpFileName, const char *argv[], const char *envp[], 
+    int priority, size_t uStackSize, int options, int taskOptions)
+{
+    printf("%s, %s\n", __func__, rtpFileName);
+    return OK;
+}
+
+void delete_hook(const RTP_ID rtpId, const int exitCode)
+{
+    printf("%s\n", __func__);
+}
+
+void init_hook(const RTP_ID rtpId)
+{
+    printf("%s\n", __func__);
+}
+
+STATUS post_hook(const RTP_ID rtpId)
+{
+    printf("%s\n", __func__);
+    return OK;
+}
+
+int add_hook(void)
+{
+    rtpPreCreateHookAdd(create_hook, FALSE);
+    rtpInitCompleteHookAdd(init_hook, FALSE);
+    rtpPostCreateHookAdd(post_hook, FALSE);
+    rtpDeleteHookAdd(delete_hook, FALSE);
+    return OK;
+}
+</pre><br>
+
+<p>
+app.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+
+int main(int argc, char **argv)
+{
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ wr-cc app.c -o app
+$ wr-cc main.c -o main -dkm
+</pre><br>
+
+<p>
+執行
+</p>
+<pre>
+-&gt; ld &lt; main
+
+-&gt; sp add_hook
+
+-&gt; cmd
+
+[vxWorks *]# app
+    create_hook, ./app
+    post_hook
+    init_hook
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
