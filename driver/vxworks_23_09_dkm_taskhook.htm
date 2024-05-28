@@ -2,28 +2,64 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head><script type="text/javascript" src="../page_head.js"></script>
 
-<h3><a href="../driver.htm">驅動程式</a> - VxWorks - 23.09 - C/C++ - <b>Create Pipe</b></h3>
+<h3><a href="../driver.htm">驅動程式</a> - VxWorks - 23.09 - C/C++ - <b>Task Hook</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
 https://zhuanlan.zhihu.com/p/597577575<br>
+https://cloud.tencent.com/developer/article/1460923<br>
 https://studies.ac.upc.edu/doctorat/ENGRAP/VxWorks-device-drivers.htm<br>
 https://forums.windriver.com/t/vxworks-software-development-kit-sdk/43<br>
 https://mail.prz-rzeszow.pl/~ssamolej/vxworks/vxworks_kernel_programmers_guide_6.6.pdf<br>
 https://d13321s3lxgewa.cloudfront.net/downloads/wrsdk-vxworks7-docs/2309/README_qemu.html<br>
-https://learning.windriver.com/path/vxworks7-essentials-workbench-and-tools/vxworks-kernel-shell<br>
-https://www.ee.torontomu.ca/~courses/ee8205/Data-Sheets/Tornado-VxWorks/vxworks/ref/pipeDrv.html#pipeDevCreate<br><br>
+https://learning.windriver.com/path/vxworks7-essentials-workbench-and-tools/vxworks-kernel-shell<br><br>
 
 main.c
 </p>
 <pre class="brush:cpp">
-#include &lt;sysLib.h&gt;
-#include &lt;pipeDrv.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;taskLib.h&gt;
+#include &lt;taskHookLib.h&gt;
+#include &lt;private/taskLibP.h&gt;
 
-int create_pipe(void)
+int create_hook(WIND_TCB *pNewTcb)
 {
-    pipeDrv(10);
-    pipeDevCreate("/pipe/hello", 10, 100);
+    return OK;
+}
+
+void cont_hook(WIND_TCB *pNewTcb)
+{
+}
+
+void stop_hook(WIND_TCB *pNewTcb)
+{
+}
+
+int switch_hook(WIND_TCB *pOldTcb, WIND_TCB *pNewTcb)
+{
+    return OK;
+}
+
+void swap_hook(WIND_TCB *pOldTcb, WIND_TCB *pNewTcb)
+{
+}
+
+int delete_hook(WIND_TCB *pTcb)
+{
+    WIND_TCB *self = (WIND_TCB*)taskIdSelf();
+
+    printf("%s: %s\n", __func__, self-&gt;objCore.name);
+    return OK;
+}
+
+int add_hook(void)
+{
+    taskCreateHookAdd(create_hook);
+    taskContHookAdd(cont_hook);
+    taskStopHookAdd(stop_hook);
+    taskSwapHookAdd(switch_hook);
+    taskSwitchHookAdd(switch_hook);
+    taskDeleteHookAdd(delete_hook);
     return OK;
 }
 </pre><br>
@@ -33,26 +69,9 @@ app.c
 </p>
 <pre class="brush:cpp">
 #include &lt;stdio.h&gt;
-#include &lt;unistd.h&gt;
-#include &lt;fcntl.h&gt;
-#include &lt;string.h&gt;
 
 int main(int argc, char **argv)
 {
-    char buf[100] = {0};
-    int fd = open("/pipe/hello", O_RDWR);
-
-    if (fd &gt; 0){
-        buf[0] = 0x12;
-        buf[1] = 0x34;
-        write(fd, buf, sizeof(buf));
-
-        memset(buf, 0, sizeof(buf));
-        read(fd, buf, sizeof(buf));
-
-        printf("Read 0x%x, 0x%x\n", buf[0], buf[1]);
-        close(fd);
-    }
     return 0;
 }
 </pre><br>
@@ -71,16 +90,12 @@ $ wr-cc main.c -o main -dkm
 <pre>
 -&gt; ld &lt; main
 
--&gt; sp create_pipe
-
--&gt; devs
-    drv refs name
-      4 [ 5] /pipe/hello
+-&gt; sp add_hook
 
 -&gt; cmd
 
 [vxWorks *]# app
-    Read 0x12, 0x34
+    delete_hook: tJobTask
 </pre>
 
 <br><script type="text/javascript" src="../tail.js"></script>
