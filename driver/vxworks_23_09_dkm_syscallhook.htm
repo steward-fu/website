@@ -1,0 +1,163 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../driver.htm">驅動程式</a> - VxWorks - 23.09 - C/C++ - <b>Syscall Hook</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://zhuanlan.zhihu.com/p/597577575<br>
+https://cloud.tencent.com/developer/article/1460923<br>
+https://studies.ac.upc.edu/doctorat/ENGRAP/VxWorks-device-drivers.htm<br>
+https://forums.windriver.com/t/vxworks-software-development-kit-sdk/43<br>
+https://mail.prz-rzeszow.pl/~ssamolej/vxworks/vxworks_kernel_programmers_guide_6.6.pdf<br>
+https://d13321s3lxgewa.cloudfront.net/downloads/wrsdk-vxworks7-docs/2309/README_qemu.html<br>
+https://learning.windriver.com/path/vxworks7-essentials-workbench-and-tools/vxworks-kernel-shell<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+#include &lt;syscall.h&gt;
+#include &lt;syscallLib.h&gt;
+#include &lt;private/rtpLibP.h&gt;
+#include &lt;private/syscallLibP.h&gt;
+#include &lt;syscallTbl.h&gt;
+
+static int cc = 0;
+
+long myhook(void *p)
+{
+    cc = 100;
+    return _openSc(p);
+}
+
+int print_cc(void)
+{
+    printf("cc %d\n", cc);
+    return OK;
+}
+
+_WRS_DATA_ALIGN_BYTES(16) SYSCALL_RTN_TBL_ENTRY test[] = {
+    SYSCALL_DESC_ENTRY(0xffffffff80875360, "_exit", 1),
+    {0},
+    SYSCALL_DESC_ENTRY(myhook,"_open",3),
+    SYSCALL_DESC_ENTRY(0xffffffff8063b660, "_close", 1),
+    SYSCALL_DESC_ENTRY(0xffffffff8063b680, "_read", 3),
+    SYSCALL_DESC_ENTRY(0xffffffff8063b5f0, "_write", 3),
+    SYSCALL_DESC_ENTRY(0xffffffff8063b870, "_ioctl", 3),
+    SYSCALL_DESC_ENTRY(0xffffffff8063bee0, "_dup", 2),
+    SYSCALL_DESC_ENTRY(0xffffffff8063bf10, "_dup2", 2),
+    SYSCALL_DESC_ENTRY(0xffffffff8063a120, "_pipe", 2),
+    SYSCALL_DESC_ENTRY(0xffffffff8063b590, "_remove", 1),
+    SYSCALL_DESC_ENTRY(0xffffffff8063bb40, "_selectX", 6),
+    SYSCALL_DESC_ENTRY(0xffffffff8091fb80, "_socket", 3),
+    SYSCALL_DESC_ENTRY(0xffffffff8091fd80, "_bind", 3),
+    SYSCALL_DESC_ENTRY(0xffffffff8091ffb0, "_listen", 2),
+    SYSCALL_DESC_ENTRY(0xffffffff80920100, "_accept", 3),
+    SYSCALL_DESC_ENTRY(0xffffffff809203c0, "_connect", 3),
+    SYSCALL_DESC_ENTRY(0xffffffff80920630, "_sendto", 6),
+    SYSCALL_DESC_ENTRY(0xffffffff80920890, "_send", 4),
+    SYSCALL_DESC_ENTRY(0xffffffff80920a30, "_sendmsg", 3),
+    SYSCALL_DESC_ENTRY(0xffffffff80920dc0, "_recvfrom", 6),
+    SYSCALL_DESC_ENTRY(0xffffffff80921060, "_recv", 4),
+    SYSCALL_DESC_ENTRY(0xffffffff80921220, "_recvmsg", 3),
+    SYSCALL_DESC_ENTRY(0xffffffff80921500, "_setsockopt", 5),
+    SYSCALL_DESC_ENTRY(0xffffffff809216c0, "_getsockopt", 5),
+    SYSCALL_DESC_ENTRY(0xffffffff809218c0, "_getsockname", 3),
+    SYSCALL_DESC_ENTRY(0xffffffff80921aa0, "_getpeername", 3),
+    SYSCALL_DESC_ENTRY(0xffffffff80921c80, "_shutdown", 2),
+    SYSCALL_DESC_ENTRY(0xffffffff80837230, "mmap", 8),
+    SYSCALL_DESC_ENTRY(0xffffffff80837280, "munmap", 2),
+    SYSCALL_DESC_ENTRY(0xffffffff808372b0, "mprotect", 3),
+    SYSCALL_DESC_ENTRY(0xffffffff80853d00, "kill", 2),
+    SYSCALL_DESC_ENTRY(0xffffffff80853bf0, "_pause", 0),
+    SYSCALL_DESC_ENTRY(0xffffffff80853b30, "sigpending", 1),
+    SYSCALL_DESC_ENTRY(0xffffffff80853960, "sigprocmask", 3),
+    SYSCALL_DESC_ENTRY(0xffffffff80853dd0, "_sigqueue", 4),
+    SYSCALL_DESC_ENTRY(0xffffffff80853b90, "_sigsuspend", 1),
+    SYSCALL_DESC_ENTRY(0xffffffff80853e90, "_sigtimedwait", 3),
+    SYSCALL_DESC_ENTRY(0xffffffff80853880, "_sigaction", 4),
+    SYSCALL_DESC_ENTRY(0xffffffff80853e80, "_sigreturn", 0),
+    SYSCALL_DESC_ENTRY(0xffffffff8063bd60, "chdir", 1),
+    SYSCALL_DESC_ENTRY(0xffffffff8063bdd0, "_getcwd", 2),
+    {0},
+    SYSCALL_DESC_ENTRY(0xffffffff80875a70, "getpid", 0),
+    SYSCALL_DESC_ENTRY(0xffffffff80875a90, "getppid", 0),
+    SYSCALL_DESC_ENTRY(0xffffffff80854170, "_waitpid", 3),
+    SYSCALL_DESC_ENTRY(0xffffffff809a8e10, "sysctl", 6),
+    SYSCALL_DESC_ENTRY(0xffffffff8082eed0, "_schedPxInfoGet", 2),
+    SYSCALL_DESC_ENTRY(0xffffffff80853a10, "sigaltstack", 2),
+    SYSCALL_DESC_ENTRY(0xffffffff8063bf40, "_unlink", 1),
+    SYSCALL_DESC_ENTRY(0xffffffff8063bfa0, "_link", 2),
+    SYSCALL_DESC_ENTRY(0xffffffff8063c020, "_fsync", 1),
+    SYSCALL_DESC_ENTRY(0xffffffff8063c040, "_fdatasync", 1),
+    SYSCALL_DESC_ENTRY(0xffffffff8063c060, "_rename", 2),
+    SYSCALL_DESC_ENTRY(0xffffffff8063c0e0, "_fpathconf", 2),
+    SYSCALL_DESC_ENTRY(0xffffffff8063c110, "_pathconf", 2),
+    SYSCALL_DESC_ENTRY(0xffffffff8063c170, "_access", 2),
+    SYSCALL_DESC_ENTRY(0xffffffff8063c1d0, "_chmod", 2),
+    SYSCALL_DESC_ENTRY(0xffffffff80857c70, "pxTraceCreation", 5),
+    SYSCALL_DESC_ENTRY(0xffffffff80858050, "pxTraceCtl", 7),
+    SYSCALL_DESC_ENTRY(0xffffffff80857ed0, "pxTraceEvent", 7),
+    SYSCALL_DESC_ENTRY(0xffffffff80858370, "pxTraceEventNameQuery", 7),
+    SYSCALL_DESC_ENTRY(0xffffffff808588e0, "pxTraceLog", 4),
+    SYSCALL_DESC_ENTRY(0xffffffff808585e0, "pxTraceEventGet", 8)
+};
+
+int add_hook(void)
+{
+    syscallGroupRegister(8, "MYHOOK", 64, (SYSCALL_RTN_TBL_ENTRY *)&amp;test, 1);
+    return OK;
+}
+</pre><br>
+
+<p>
+app.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;fcntl.h&gt;
+
+int main(int argc, char **argv)
+{
+    int fd = -1;
+
+    fd = open("main", O_RDONLY);
+    close(fd);
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ wr-cc app.c -o app
+$ wr-cc main.c -o main -dkm
+</pre><br>
+
+<p>
+執行
+</p>
+<pre>
+-&gt; ld &lt; main
+
+-&gt; sp add_hook
+
+-&gt; sp print_cc
+    cc 0
+
+-&gt; cmd
+
+[vxWorks *]# app
+
+[vxWorks *]# C
+
+-&gt; sp print_cc
+    cc 100
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
