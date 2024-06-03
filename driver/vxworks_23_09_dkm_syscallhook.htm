@@ -25,18 +25,10 @@ main.c
 #include &lt;private/syscallLibP.h&gt;
 #include &lt;syscallTbl.h&gt;
 
-static int cc = 0;
-
-long myhook(void *p)
+long myhook(void *argv[3])
 {
-    cc = 100;
-    return _openSc(p);
-}
-
-int print_cc(void)
-{
-    printf("cc %d\n", cc);
-    return OK;
+    printf("file path: %s\n", (const char *)argv[0]);
+    return _openSc(argv);
 }
 
 _WRS_DATA_ALIGN_BYTES(16) SYSCALL_RTN_TBL_ENTRY test[] = {
@@ -147,17 +139,11 @@ $ wr-cc main.c -o main -dkm
 
 -&gt; sp add_hook
 
--&gt; sp print_cc
-    cc 0
-
 -&gt; cmd
 
 [vxWorks *]# app
 
-[vxWorks *]# C
-
--&gt; sp print_cc
-    cc 100
+file path: main
 </pre>
 
 <br><script type="text/javascript" src="../tail.js"></script>
