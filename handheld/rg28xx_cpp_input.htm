@@ -1,0 +1,88 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - Anbernic RG28XX - C/C++ - <b>Input Event</b></h3>
+<hr size="1"><br>
+<p>
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;linux/input.h&gt;
+ 
+/*
+UP     buf[10]=0x11, buf[12]=0xff
+DOWN   buf[10]=0x11, buf[12]=0x01
+LEFT   buf[10]=0x10, buf[12]=0xff
+RIGHT  buf[10]=0x10, buf[12]=0x01
+A      buf[10]=0x30, buf[12]=0x01
+B      buf[10]=0x31, buf[12]=0x01
+X      buf[10]=0x33, buf[12]=0x01
+Y      buf[10]=0x32, buf[12]=0x01
+L1     buf[10]=0x34, buf[12]=0x01
+L2     buf[10]=0x3a, buf[12]=0x01
+R1     buf[10]=0x35, buf[12]=0x01
+R2     buf[10]=0x3b, buf[12]=0x01
+MENU   buf[10]=0x38, buf[12]=0x01
+MENU   buf[10]=0x62, buf[12]=0x01
+SELECT buf[10]=0x36, buf[12]=0x01
+START  buf[10]=0x37, buf[12]=0x01
+VOL+   buf[10]=0x73, buf[12]=0x01
+VOL-   buf[10]=0x72, buf[12]=0x01
+*/
+
+int main(int argc, char **argv)
+{
+    int fd = -1;
+    char buf[16] = {0};
+
+    fd = open("/dev/input/event1", O_RDONLY);
+    if (fd &gt; 0) {
+        while (1) {
+            if (read(fd, buf, 16)) {
+                int s = !!buf[12];
+
+                switch (buf[10]) {
+                case 0x11: 
+                    if (s) {
+                        printf("%s 1\n", buf[12] == 0xff ? "UP" : "DOWN");
+                    }
+                    else {
+                        printf("UP/DOWN 0\n");
+                    }
+                    break;
+                case 0x10:
+                    if (s) {
+                        printf("%s 1\n", buf[12] == 0xff ? "LEFT" : "RIGHT");
+                    }
+                    else {
+                        printf("LEFT/RIGHT 0\n");
+                    }
+                    break;
+                case 0x30: printf("A %d\n", s); break;
+                case 0x31: printf("B %d\n", s); break;
+                case 0x33: printf("X %d\n", s); break;
+                case 0x32: printf("Y %d\n", s); break;
+                case 0x34: printf("L1 %d\n", s); break;
+                case 0x3a: printf("L2 %d\n", s); break;
+                case 0x35: printf("R1 %d\n", s); break;
+                case 0x3b: printf("R2 %d\n", s); break;
+                case 0x38: printf("MENU %d\n", s); break;
+                case 0x62: printf("MENU %d\n", s); break;
+                case 0x36: printf("SELECT %d\n", s); break;
+                case 0x37: printf("START %d\n", s); break;
+                case 0x73: printf("VOL+ %d\n", s); break;
+                case 0x72: printf("VOL- %d\n", s); break;
+                }
+            }
+        }
+    }
+    return 0;
+}
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
