@@ -1,0 +1,43 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - Anbernic RG28XX - C/C++ - <b>Volume</b></h3>
+<hr size="1"><br>
+<p>
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;alsa/asoundlib.h&gt;
+
+int main(int argc, char** argv)
+{
+    int vol = 10;
+	snd_mixer_t *mixer = NULL;
+	snd_mixer_elem_t *elem = NULL;
+	snd_mixer_selem_id_t *sid = NULL;
+
+	snd_mixer_open(&amp;mixer, 1);
+	snd_mixer_attach(mixer, "default");
+	snd_mixer_selem_register(mixer, NULL, NULL);
+	snd_mixer_load(mixer);
+	snd_mixer_selem_id_alloca(&amp;sid);
+	snd_mixer_selem_id_set_index(sid, 0);
+	snd_mixer_selem_id_set_name(sid, "lineout volume");
+	elem = snd_mixer_find_selem(mixer, sid);
+	snd_mixer_selem_set_playback_volume_all(elem, vol);
+	snd_mixer_close(mixer);
+	return 0;
+}
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ arm-linux-gcc main.c -o main -lasound
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
