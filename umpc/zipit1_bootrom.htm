@@ -1,0 +1,67 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../umpc.htm">微電腦</a> - Zipit Z1 - <b>BootROM</b></h3>
+<hr size="1"><br>
+<pre class="brush:asm">
+Hw_UARTDR1      equ 0x480
+Hw_UBRLCR1      equ 0x4c0
+Hw_BR9600       equ 0x17
+Hw_BR9600_13    equ 0x0b
+Hw_WRDLEN8      equ 0x60000
+StartFlag       equ '&gt;'
+EndFlag         equ '&gt;'
+
+uart_boot_base:
+  mov r12, #HwRegisterBase          @ r12 = 0x80000000
+  mov r8, #InternalRamBase          @ r8  = 0x10000000
+  add r9, r8, #ImageSize            @ r9  = 0x10000800
+
+  mov r0, #Hw_UART1EN
+  str r0, [r12, #Hw_SYSCON]
+  add r1, r12, #Hw_SYSFLG2
+  ldr r7, [r1]                      @ r7 = SYSFLG2
+  tst r7, #Hw_CKMODE
+  movne r0, #Hw_BR9600_13           @ load 13MHz value if bit set
+  moveq r0, #Hw_BR9600              @ if not set, load other divisor
+  orr r0, r0, #Hw_WRDLEN8           @ insert 8-bit character mode
+  str r0, [r12, #Hw_UBRLCR1]
+  mov r0, #StartFlag
+  str r0, [r12, #Hw_UARTDR1]
+  
+  @ receive the date
+  @ store bytes at r9 address, stop loop when r8==r9
+  @ leaves r8 set to 0x10000800
+  @ wait for byte to be available
+uart_ready_loop:
+  ldr r1, [r12, #Hw_SYSFLG]         @ spin, if ex fifo is empty
+  tst r1, #Hw_URXFE1
+  bne uart_ready_loop
+
+  @ read the data, store it, and accumulate checksum
+  ldr r0, [r12, #Hw_UARTDR1]        @ read data
+  strb r0, [r8], #1                 @ save it in memory
+  cmp r8, r9
+  blt uart_ready_loop
+
+  @ all received, send end flag
+  mov r0, #EndFlag
+  strb r0, [r12, #Hw_UARTDR1]       @ send reply
+
+  @ having loaded all the bytes, do the right thing to finish
+  ldrb r0, [r8, #(3-ImageSize)]
+  cmp r0, #BootImageFlagByte
+  moveq pc, r14                     @ return to caller for secure image
+
+  add r10, r12, #WWWWWWWWWW         @ r10 = 0x80002400
+  str r12, [r10, #(ZZZZZZZZZZZ - YYYYYYYYYY)]
+  sub pc, r8, #ImageSize            @ branch to 0x10000000
+
+uart_checksum:
+  dcd 0x436b74ab
+  assert(. - start_of_rom) = 640    @ check that it is in the right place
+  end
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

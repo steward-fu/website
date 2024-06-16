@@ -1,0 +1,159 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../umpc.htm">微電腦</a> - Zipit Z1 - Assembly - <b>Hello, world!</b></h3>
+<hr size="1"><br>
+<p>
+main.s
+</p>
+<pre class="brush:asm">
+    .text
+    .align 2
+    .global _start
+
+_start:
+    bal reset
+_undef:
+    bal .
+_swi:
+    bal .
+_prefetch_abort:
+    bal .
+_data_abort:
+    bal .
+_reserved:
+    bal .
+_irq:
+    bal .
+    bal . 
+ 
+reset:
+    ldr sp, =#0x60009600
+    ldr r0, =#0x80000000
+    ldr r1, =#0x40100
+    str r1, [r0, #0x100]
+    ldr r0, =#0x80002200
+    ldr r1, [r0]
+    orr r1, r1, #6
+    str r1, [r0]
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    ldr r0, =#0x80002600
+    ldr r1, =#0x31000000
+    str r1, [r0, #0x10]
+    nop
+    nop
+    nop
+    nop
+    ldr r0, =#0x80000000
+    ldr r1, =#0x60004
+    str r1, [r0, #0x4c0]
+    add r0, r0, #0x1000
+    str r1, [r0, #0x4c0]
+    mov r1, #0x100
+    str r1, [r0, #0x100]
+    mrc p15, 0, r5, c1, c0, 0
+    bic r5, r5, #0xd
+    mcr p15, 0, r5, c1, c0, 0
+    nop
+    nop
+    nop
+    nop
+    ldr r0, =hello
+    bl uart2_send_string
+halt:
+    b halt
+
+uart2_send_string:
+    stmfd sp!, {lr}
+    mov r3, r0
+0:
+    ldrb r0, [r3]
+    cmp r0, #0
+    beq 1f
+    bl uart2_send_char
+    add r3, r3, #1
+    b 0b
+1:
+    ldmfd sp!, {pc}
+    
+uart2_send_char:
+    stmfd sp!, {lr}
+    ldr r1, =#0x80001000
+1:
+    ldr r2, [r1, #0x140]
+    tst r2, #0x800000
+    bne 1b
+    str r0, [r1, #0x480]
+    ldmfd sp!, {pc}
+
+    .align
+hello: .asciz "Hello, world!"
+    .end
+</pre><br>
+
+<p>
+main.ld
+</p>
+<pre>
+MEMORY {
+    flash : ORIGIN = 0, LENGTH = 64M
+    ram : ORIGIN = 0x40000000, LENGTH = 64M
+}
+
+__stack_end__ = 0x40000000 + 8K - 4;
+SECTIONS {
+    . = 0;
+    startup : { *(.startup)} &gt;flash
+    prog : {
+        *(.text)
+        *(.rodata)
+        *(.rodata*)
+        *(.glue_7)
+        *(.glue_7t)
+    } &gt;flash
+    __end_of_text__ = .;
+    .data : {
+        __data_beg__ = .;
+        __data_beg_src__ = __end_of_text__;
+        *(.data)
+        __data_end__ = .;
+    } &gt;ram AT&gt;flash
+    .bss : {
+        __bss_beg__ = .;
+        *(.bss)
+    } &gt;ram
+    . = ALIGN(32 / 8);
+}
+. = ALIGN(32 / 8);
+_end = .;
+_bss_end__ = . ; __bss_end__ = . ; __end__ = . ;
+PROVIDE(end = .);
+PROVIDE(undefined_instruction_exception = endless_loop);
+PROVIDE(software_interrupt_exception = endless_loop);
+PROVIDE(prefetch_abort_exception = endless_loop);
+PROVIDE(data_abort_exception = endless_loop);
+PROVIDE(reserved_exception = endless_loop);
+PROVIDE(interrupt_exception = endless_loop);
+PROVIDE(fast_interrupt_exception = endless_loop);
+</pre><br>
+
+<p>
+Makefile
+</p>
+<pre>
+all:
+	arm-none-eabi-as -ggdb -mcpu=arm7 -o main.o main.s
+	arm-none-eabi-ld -T main.ld -o main.elf main.o
+	arm-none-eabi-objcopy -O binary main.elf main.bin
+
+clean:
+	rm -rf main.ihx main.hex main.o main.elf
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
