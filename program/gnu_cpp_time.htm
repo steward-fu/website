@@ -4,6 +4,16 @@
 
 <h3><a href="../program.htm">程式語言</a> - GNU - C/C++ - <b>Time</b></h3>
 <hr size="1"><br>
+<p>
+參考資料：<br>
+https://man7.org/linux/man-pages/man7/signal.7.html<br>
+https://man7.org/linux/man-pages/man2/timer_create.2.html<br>
+https://man7.org/linux/man-pages/man2/timerfd_create.2.html<br>
+https://stackoverflow.com/questions/997946/how-to-get-current-time-and-date-in-c<br>
+https://stackoverflow.com/questions/65792258/clock-nanosleep-it-ignores-timespec-structure<br>
+https://stackoverflow.com/questions/69099750/what-is-the-precision-of-the-gettimeofday-function<br><br>
+
+</p>
 <table>
 <tr><th>取得目前時間</th><th>說明</th></tr>
 <tr><td>time</td><td>time_t (second)</td></tr>
@@ -22,6 +32,262 @@
 <tr><td>getitimer / setitimer</td></tr>
 <tr><td>timer_create / timer_settime / timer_gettime / timer_delete</td></tr>
 <tr><td>timerfd_create / timerfd_gettime / timerfd_settime</td></tr>
-</table>
+</table><br>
+
+<p>
+time
+</p>
+<pre class="brush:cpp">
+#include &lt;time.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;unistd.h&gt;
+
+int main(int argc, char **argv)
+{
+    time_t t = time(NULL);
+    struct tm *now = localtime(&amp;t);
+
+    printf("%d/%d/%d %d:%d:%d\n",
+        now-&gt;tm_year + 1900, now-&gt;tm_mon + 1, now-&gt;tm_mday,
+        now-&gt;tm_hour, now-&gt;tm_min, now-&gt;tm_sec);
+    return 0;
+}
+</pre><br>
+
+<p>
+ftime
+</p>
+<pre class="brush:cpp">
+#include &lt;time.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;sys/timeb.h&gt;
+ 
+int main(int argc, char **argv)
+{
+    struct timeb t;
+ 
+    ftime(&amp;t);
+    printf("%ld(s), %d(ms)\n", t.time, t.millitm);
+    return 0;
+}
+</pre><br>
+
+<p>
+gettimeofday
+</p>
+<pre class="brush:cpp">
+#include &lt;time.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;sys/time.h&gt;
+
+int main(int argc, char **argv)
+{
+    struct timeval t;
+    struct timezone tz;
+
+    gettimeofday(&amp;t, &amp;tz);
+    printf("%ld(s), %ld(us)\n", t.tv_sec, t.tv_usec);
+    return 0;
+}
+</pre><br>
+
+<p>
+clock_gettime
+</p>
+<pre class="brush:cpp">
+#include &lt;time.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;unistd.h&gt;
+
+int main(int argc, char **argv)
+{
+    struct timespec t;
+
+    clock_gettime(CLOCK_REALTIME, &amp;t);
+    printf("%ld(s), %ld(ns)\n", t.tv_sec, t.tv_nsec);
+    return 0;
+}
+</pre><br>
+
+<p>
+sleep、alarm
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;signal.h&gt;
+
+void handle_signal(int sig)
+{
+    printf("%s\n", __func__);
+}
+
+int main(int argc, char **argv)
+{
+    signal(SIGALRM, handle_signal);
+    alarm(3);
+    pause();
+
+    sleep(3);
+    return 0;
+}
+</pre><br>
+
+<p>
+usleep、nanosleep
+</p>
+<pre class="brush:cpp">
+#include &lt;time.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;signal.h&gt;
+
+int main(int argc, char **argv)
+{
+    struct timespec req = {0};
+    struct timespec rem = {0};
+
+    usleep(3000000);
+
+    req.tv_sec = 3;
+    nanosleep(&amp;req, &amp;rem);
+    return 0;
+}
+</pre><br>
+
+<p>
+clock_nanosleep
+</p>
+<pre class="brush:cpp">
+#include &lt;time.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;unistd.h&gt;
+ 
+int main(int argc, char **argv)
+{
+    struct timespec req = {0};
+    struct timespec rem = {0};
+
+    req.tv_sec = 3;
+    clock_nanosleep(CLOCK_REALTIME, 0, &amp;req, &amp;rem);
+    return 0;
+}
+</pre><br>
+
+<p>
+setitimer
+</p>
+<pre class="brush:cpp">
+#include &lt;time.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;signal.h&gt;
+#include &lt;sys/time.h&gt;
+
+void handle_signal(int sig)
+{
+    printf("%s\n", __func__);
+}
+
+int main(int argc, char **argv)
+{
+    struct itimerval t = {0};
+
+    signal(SIGALRM, handle_signal);
+
+    t.it_value.tv_sec = 3;
+    setitimer(ITIMER_REAL, &amp;t, NULL);
+    pause();
+    return 0;
+}
+</pre><br>
+
+<p>
+timer_create
+</p>
+<pre class="brush:cpp">
+#include &lt;time.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;signal.h&gt;
+#include &lt;sys/time.h&gt;
+#include &lt;sys/timerfd.h&gt;
+
+void handle_signal(int sig)
+{
+    printf("%s\n", __func__);
+}
+
+int main(int argc, char **argv)
+{
+    timer_t fd = 0;
+    struct sigevent ev = {0};
+    struct  itimerspec ts = {0};
+
+    ev.sigev_value.sival_ptr = &amp;fd;
+    ev.sigev_notify = SIGEV_SIGNAL;
+    ev.sigev_signo = SIGALRM;
+    signal(SIGALRM, handle_signal);
+
+    timer_create(CLOCK_REALTIME, &amp;ev, &amp;fd);
+
+    ts.it_value.tv_sec = 3;
+    timer_settime(fd, 0, &amp;ts, NULL);
+    pause();
+    timer_delete(&amp;fd);
+    return 0;
+}
+</pre><br>
+
+<p>
+timerfd_create
+</p>
+<pre class="brush:cpp">
+#include &lt;time.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;signal.h&gt;
+#include &lt;sys/time.h&gt;
+#include &lt;sys/timerfd.h&gt;
+
+int main(int argc, char **argv)
+{
+    uint64_t exp = 0;
+    struct timespec now = {0};
+    struct itimerspec t = {0};
+    int fd = timerfd_create(CLOCK_REALTIME, 0);
+
+    clock_gettime(CLOCK_REALTIME, &amp;now);
+
+    t.it_value.tv_sec = now.tv_sec + 3;
+    timerfd_settime(fd, TFD_TIMER_ABSTIME, &amp;t, NULL);
+
+    read(fd, &amp;exp, sizeof(uint64_t));
+    printf("expired %ld\n", exp);
+    return 0;
+}
+</pre><br>
 
 <br><script type="text/javascript" src="../tail.js"></script>
