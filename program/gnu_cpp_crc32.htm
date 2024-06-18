@@ -1,0 +1,57 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - GNU - C/C++ - <b>CRC32</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://stackoverflow.com/questions/21001659/crc32-algorithm-implementation-in-c-without-a-look-up-table-and-with-a-public-li<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;string.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;unistd.h&gt;
+
+static char buf[512 * 1024] = {0};
+
+static unsigned int crc32b(unsigned char *buf, int len)
+{
+    int i = 0;
+    int j = 0;
+    unsigned int crc = 0;
+    unsigned int byte = 0;
+    unsigned int mask = 0;
+
+    crc = 0xffffffff;
+    for (i = 0; i &lt; len; i++) {
+        byte = buf[i];
+        crc ^= byte;
+        for (j = 7; j &gt;= 0; j--) {
+            mask = -(crc &amp; 1);
+            crc = (crc &gt;&gt; 1) ^ (0xedb88320 &amp; mask);
+        }
+    }
+    return ~crc;
+}
+
+int main(int argc, char **argv)
+{
+    int fd = -1;
+    int len = 0;
+    
+    fd = open("test.img", O_RDONLY);
+    len = read(fd, buf, sizeof(buf));
+    close(fd);
+
+    printf("0x%x\n", crc32b(buf, len));
+    return 0;
+}
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
