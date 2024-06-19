@@ -1,0 +1,91 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - GNU - C/C++ - <b>RapidJSON</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://rapidjson.org/index.html<br><br>
+
+main.cpp
+</p>
+<pre class="brush:cpp">
+#include &lt;rapidjson/document.h&gt;
+#include &lt;rapidjson/rapidjson.h&gt;
+#include &lt;rapidjson/writer.h&gt;
+#include &lt;rapidjson/pointer.h&gt;
+#include &lt;rapidjson/stringbuffer.h&gt;
+#include &lt;iostream&gt;
+ 
+using namespace rapidjson;
+ 
+int main(int argc, char **argv)
+{
+    const char *p0 = "0";
+    const char *p1 = "1";
+
+    Document jsondoc;
+    Value arr(kArrayType);
+    Value tmp(kArrayType);
+    Value obj(kObjectType);
+
+    Pointer("/r0/s0").Set(obj, "1", jsondoc.GetAllocator());
+    arr.PushBack(obj, jsondoc.GetAllocator());
+    
+    tmp.PushBack(StringRef(p0), jsondoc.GetAllocator());
+    tmp.PushBack(StringRef(p1), jsondoc.GetAllocator());
+    tmp.PushBack("2", jsondoc.GetAllocator());
+    tmp.PushBack("3", jsondoc.GetAllocator());
+    Pointer("/r1").Set(obj, tmp, jsondoc.GetAllocator());
+    arr.PushBack(obj, jsondoc.GetAllocator());
+
+    Pointer("/tags").Set(jsondoc, arr);
+ 
+    StringBuffer sb;
+    Writer&lt;StringBuffer&gt; writer(sb);
+    jsondoc.Accept(writer);
+    printf("%s\n", sb.GetString());
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ sudo apt-get install cmake jq -y
+
+$ cd
+$ git clone https://github.com/Tencent/rapidjson
+$ cd rapidjson
+$ git submodule update --init --recursive
+$ mkdir build
+$ cd build
+$ cmake ..
+$ make -j4
+$ sudo make install
+
+$ cd
+$ g++ main.cpp -o test
+$ ./test | jq
+    {
+      "tags": [
+        {
+          "r0": {
+            "s0": "1"
+          }
+        },
+        {
+          "r1": [
+            "0",
+            "1",
+            "2",
+            "3"
+          ]
+        }
+      ]
+    }
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
