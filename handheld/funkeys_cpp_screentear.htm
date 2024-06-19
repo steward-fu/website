@@ -1,0 +1,88 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - FunKey S - C/C++ - <b>Screen Tearing</b></h3>
+<hr size="1"><br>
+<p>
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdlib.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;string.h&gt;
+#include &lt;linux/fb.h&gt;
+#include &lt;sys/mman.h&gt;
+#include &lt;sys/ioctl.h&gt;
+#include &lt;sys/time.h&gt;
+#include &lt;time.h&gt;
+  
+#define FB_SIZE (240 * 240 * 2)
+  
+static int fb_dev = -1;
+static uint16_t *fb_mem = NULL;
+static struct fb_var_screeninfo vinfo = {0};
+  
+static int fb_init(void)
+{
+    fb_dev = open("/dev/fb0", O_RDWR);
+    if (fb_dev &lt; 0) {
+        printf("failed to open /dev/fb0\n");
+        return -1;
+    }
+  
+    if (ioctl(fb_dev, FBIOGET_VSCREENINFO, &amp;vinfo) &lt; 0) {
+        close(fb_dev);
+        printf("failed to ioctl /dev/fb0\n");
+        return -1;
+    }
+    
+    fb_mem = (uint16_t *)mmap(NULL, FB_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fb_dev, 0);
+    if (fb_mem == (void *)-1) {
+        close(fb_dev);
+        printf("failed to mmap /dev/fb0\n");
+        return -1;
+    }
+    memset(fb_mem, 0 , FB_SIZE);
+    return 0;
+}
+  
+static int fb_uninit(void)
+{
+    munmap(fb_mem, FB_SIZE);
+    fb_mem = NULL;
+  
+    close(fb_dev);
+    fb_dev = -1;
+    return 0;
+}
+  
+int main(int argc, char **argv)
+{
+    int x = 0;
+    int y = 0;
+    uint16_t cc = 0;
+    uint16_t ret = 0;
+    uint16_t *p = NULL;
+    uint16_t col[] = {0xf800, 0x07e0, 0x001f};
+  
+    fb_init();
+    while (1) {
+        p = fb_mem;
+        for (y = 0; y &lt; 240; y++) {
+            for (x = 0; x &lt; 240; x++) {
+                *p++= col[cc % 3];
+            }
+        }
+        usleep(1000000 / 60);
+        cc += 1;
+    }
+    fb_uninit();
+    return 0;
+}
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
