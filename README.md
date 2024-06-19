@@ -20,8 +20,9 @@ All of files or resources used on my website can be found from the following lin
 | ![](img/photos/pyra.jpg)            | [Pyra](https://github.com/steward-fu/website/releases/tag/pyra)                       |
 | ![](img/photos/x6-1.jpg)            | [X6](https://github.com/steward-fu/website/releases/tag/x6)                           |
 | ![](img/photos/q2.jpg)              | [Q2](https://github.com/steward-fu/website/releases/tag/q2)                           |
-| ![](img/photos/pixel3axl.jpg)       | [Google Pixel 3a XL](https://github.com/steward-fu/website/releases/tag/pixel-3a-xl)  |
 | ![](img/photos/n900.jpg)            | [Nokia N900](https://github.com/steward-fu/website/releases/tag/n900)                 |
+| ![](img/photos/pro1.jpg)            | [F(x)tec Pro1](https://github.com/steward-fu/website/releases/tag/pro1)               |
+| ![](img/photos/pixel3axl.jpg)       | [Google Pixel 3a XL](https://github.com/steward-fu/website/releases/tag/pixel-3a-xl)  |
 | ![](img/photos/zipit1.jpg)          | [Zipit Z1](https://github.com/steward-fu/website/releases/tag/zipit-z1)               |
 | ![](img/photos/d8.jpg)              | [iriver Dicple D8](https://github.com/steward-fu/website/releases/tag/iriver-d8)      |
 | ![](img/photos/gemini-pda.jpg)      | [Gemini PDA 4G](https://github.com/steward-fu/website/releases/tag/gemini-pda)        |
