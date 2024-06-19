@@ -1,0 +1,76 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - GNU - C/C++ - <b>JSON-C</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/json-c/json-c/tree/master<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;json-c/json.h&gt;
+
+#define JSON_FILE "test.json"
+#define JSON_VAL  "myval"
+
+int main(int argc, char **argv)
+{
+    int val = 0;
+    struct json_object *jfile = NULL;
+
+    jfile = json_object_from_file(JSON_FILE);
+    if (jfile != NULL) {
+        struct json_object *jval = NULL;
+        json_object_object_get_ex(jfile, JSON_VAL, &amp;jval);
+        val = json_object_get_int(jval);
+        printf("old myval: %d\n", val);
+
+        val = 5678;
+        json_object_object_add(jfile, JSON_VAL, json_object_new_int(val));
+        
+        json_object_object_get_ex(jfile, JSON_VAL, &amp;jval);
+        val = json_object_get_int(jval);
+        printf("new myval: %d\n", val);
+
+        json_object_to_file_ext(JSON_FILE, jfile, JSON_C_TO_STRING_PRETTY);
+        json_object_put(jfile);
+    }
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ cd
+$ git clone https://github.com/json-c/json-c
+$ cd json-c
+$ mkdir build
+$ cd build
+$ cmake ..
+$ make -j4
+$ sudo make install
+
+$ cd
+$ echo '{ "myval":1234 }' &gt; test.json
+
+$ gcc main.c -o test -ljson-c
+$ LD_LIBRARY_PATH=/usr/local/lib/ ./test
+    old myval: 1234
+    new myval: 5678
+
+$ cat test.json
+    {
+      "myval":5678
+    }
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
