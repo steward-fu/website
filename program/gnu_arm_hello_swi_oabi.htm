@@ -1,0 +1,50 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - GNU - Assembly (ARM) - <b>Hello, world!(swi, oabi)</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://gist.github.com/bellbind/753290<br>
+https://syscalls.w3challs.com/?arch=arm_strong<br>
+http://kerseykyle.com/articles/ARM-assembly-hello-world<br>
+https://github.com/kevinhooke/learning-arm-asm/blob/master/helloworld.s<br>
+https://stackoverflow.com/questions/48183434/implementation-of-syscall-on-arm-oabi-what-is-svc-0x900071<br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .global _start
+
+    .data
+msg: .ascii "hello, world!\n"
+len = . - msg
+
+    .text
+_start:
+    mov r0, #1
+    ldr r1, =msg
+    ldr r2, =len
+    swi 0x900004
+
+    mov r0, #0
+    swi 0x900001
+</pre><br>
+
+<table>
+<tr><th>NR</th><th>syscall name</th><th>arg0(r0)</th><th>arg1(r1)</th><th>arg2(r2)</th></tr>
+<tr><td>0x900001</td><td>exit</td><td>int error_code</td><td></td><td></td></tr>
+<tr><td>0x900004</td><td>write</td><td>unsigned int fd</td><td>const char *buf</td><td>size_t count</td></tr>
+</table><br>
+
+<p>
+編譯、執行
+</p> 
+<pre>
+$ arm-linux-gnueabihf-gcc main.s -o main -nostdlib -static
+$ qemu-arm ./main
+    hello, world!
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
