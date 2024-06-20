@@ -27,6 +27,7 @@ All of files or resources used on my website can be found from the following lin
 | ![](img/photos/d8.jpg)              | [iriver Dicple D8](https://github.com/steward-fu/website/releases/tag/iriver-d8)      |
 | ![](img/photos/gemini-pda.jpg)      | [Gemini PDA 4G](https://github.com/steward-fu/website/releases/tag/gemini-pda)        |
 | ![](img/photos/s32g399.jpg)         | [NXP S32G399](https://github.com/steward-fu/website/releases/tag/s32g399)             |
+| ![](img/photos/m1s-dock.jpg)        | [Sipeed M1s Dock](https://github.com/steward-fu/website/releases/tag/m1s-dock)        |
 | ![](img/photos/wdm.jpg)             | [Windows Device Driver (WDM)](https://github.com/steward-fu/website/releases/tag/wdm) |
 | ![](img/photos/ldd.jpg)             | [Linux Device Driver (LDD)](https://github.com/steward-fu/website/releases/tag/ldd)   |
 | ![](img/photos/vxworks.jpg)         | [VxWorks](https://github.com/steward-fu/website/releases/tag/vxworks)                 |
