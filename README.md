@@ -17,6 +17,7 @@ All of files or resources used on my website can be found from the following lin
 | ![](img/photos/miyoo-mini-plus.jpg) | [Miyoo Mini Plus](https://github.com/steward-fu/website/releases/tag/miyoo-mini-plus) |
 | ![](img/photos/psv2000.jpg)         | [PlayStation Vita 2000](https://github.com/steward-fu/website/releases/tag/psv2000)   |
 | ![](img/photos/funkeys.jpg)         | [FunKey S](https://github.com/steward-fu/website/releases/tag/funkey-s)               |
+| ![](img/photos/gaviar.jpg)          | [Gaviar F133](https://github.com/steward-fu/website/releases/tag/gaviar)              |
 | ![](img/photos/pyra.jpg)            | [Pyra](https://github.com/steward-fu/website/releases/tag/pyra)                       |
 | ![](img/photos/x6-1.jpg)            | [X6](https://github.com/steward-fu/website/releases/tag/x6)                           |
 | ![](img/photos/q2.jpg)              | [Q2](https://github.com/steward-fu/website/releases/tag/q2)                           |
