@@ -1,0 +1,49 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - GNU - Assembly (ARM 64) - <b>Hello, world!(svc)</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://chromium.googlesource.com/chromiumos/docs/+/HEAD/constants/syscalls.md<br>
+https://github.com/matja/asm-examples/blob/master/aarch64/hello.aarch64.linux.syscall.gas.asm<br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .global _start
+
+    .data
+msg: .asciz "hello, world!\n"
+len = . - msg
+
+    .text
+_start:
+    mov x8, #64
+    mov x0, #1
+    ldr x1, =msg
+    ldr x2, =len
+    svc #0
+
+    mov x8, #93
+    mov x0, #0
+    svc #0
+</pre><br>
+
+<table>
+<tr><th>NR</th><th>syscall name</th><th>x8</th><th>arg0(x0)</th><th>arg1(x1)</th><th>arg2(x2)</th></tr>
+<tr><td>64</td><td>write</td><td>4</td><td>unsigned int fd</td><td>const char *buf</td><td>size_t count</td></tr>
+<tr><td>93</td><td>exit</td><td>1</td><td>int error_code</td><td></td><td></td></tr>
+</table><br>
+
+<p>
+編譯、執行
+</p> 
+<pre>
+$ aarch64-linux-gnu-gcc main.s -o main -nostdlib -static
+$ qemu-aarch64 ./main
+    hello, world!
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
