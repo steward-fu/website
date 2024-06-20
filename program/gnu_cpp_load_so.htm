@@ -1,0 +1,54 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - GNU - C/C++ - <b>Load Share Library</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://stackoverflow.com/questions/29285546/when-do-so-files-get-loaded-linux<br><br>
+
+dl.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+
+void hello(void)
+{
+    printf("Hello, world!\n");
+}
+</pre><br>
+
+<p>
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;dlfcn.h&gt;
+
+typedef void hello(void);
+
+int main(int argc, char **argv)
+{
+    void* h = dlopen("./hello.so", RTLD_NOW);
+    hello *p = dlsym(h, "hello");
+    p();
+    dlclose(h);
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ gcc dl.c -shared -o hello.so
+$ gcc main.c -o main -ldl
+$ ./main
+    Hello, world!
+</pre>
+<p>
+P.S. 當執行dlopen()失敗時，可以呼叫dlerror()取得失敗的原因
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

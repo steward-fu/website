@@ -1,0 +1,87 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - GNU - C/C++ - <b>GetPrivateProfileString</b></h3>
+<hr size="1"><br>
+<p>
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;errno.h&gt;
+
+int GetPrivateProfileString(const char *title, const char *key, char *retbuf, const char *filename)
+{
+    FILE *fp = NULL;
+    char *temp = NULL;
+    char line[255] = {0};
+    char buffer[255] = {0};
+    int ch = 0, i = 0, flag = 0;
+
+    if ((fp = fopen(filename, "r")) == NULL) {
+        printf("failed to open file\n", filename);
+        return -1;
+    }
+
+    while (!feof(fp)) {
+        ch = fgetc(fp);
+        if (ch == EOF) {
+            break;
+        }
+
+        line[i++] = ch;
+        if (ch != '\n') {
+            continue;
+        }
+
+        line[--i] = '\0';
+        i = 0;
+        temp = strchr(line, '=');
+        if ((temp != NULL) &amp;&amp; (flag == 1)) {
+            if (strstr(line, key) != NULL) {
+                strcpy(retbuf, temp + 1);
+                fclose(fp);
+                return 0;
+            }
+        }
+        else {
+            strcpy(buffer, "[");
+            strcat(buffer, title);
+            strcat(buffer, "]");
+            if (strncmp(buffer, line, strlen(buffer)) == 0) {
+                flag = 1;
+            }
+        }
+    }
+    fclose(fp);
+    return -1;
+}
+
+int main(int argc, char **argv)
+{
+    char buffer[255] = {0};
+
+    if (GetPrivateProfileString("basic", "log", buffer, "config.ini") == 0) {
+        printf("Result: %s\n", buffer);
+    }
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ vim config.ini
+    [basic]
+    log="test"
+
+$ gcc main.c -o main
+$ ./main
+    Result: "test"
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

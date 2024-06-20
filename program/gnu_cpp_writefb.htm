@@ -1,0 +1,50 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - GNU - C/C++ - <b>Write Framebuffer</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://stackoverflow.com/questions/32082248/how-to-display-something-on-screen-through-linux-framebuffer<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;fcntl.h&gt;
+#include &lt;linux/fb.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;sys/ioctl.h&gt;
+#include &lt;sys/mman.h&gt;
+#include &lt;unistd.h&gt;
+
+int main(int argc, char **argv)
+{
+    int x = 0;
+    int y = 0;
+    int fd = 0;
+    uint16_t *fbp = 0;
+    uint32_t size = 0;
+    struct fb_var_screeninfo vinfo = {0};
+    struct fb_fix_screeninfo finfo = {0};
+
+    fd = open("/dev/fb0", O_RDWR);
+    ioctl(fd, FBIOGET_FSCREENINFO, &amp;finfo);
+    ioctl(fd, FBIOGET_VSCREENINFO, &amp;vinfo);
+
+    size = vinfo.xres * vinfo.yres * vinfo.bits_per_pixel / 8;
+    fbp = (uint16_t*)mmap(0, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    for (y = 0; y &lt; 240; y++) {
+        for (x = 0; x &lt; 320; x++) {
+            *fbp++ = 0xf800;
+        }
+    }
+    munmap(fbp, size);
+    close(fd);
+    return 0;
+}
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
