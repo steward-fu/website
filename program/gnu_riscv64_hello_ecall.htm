@@ -1,0 +1,50 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - GNU - Assembly (RISC-V 64) - <b>Hello, world!(ecall)</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://smist08.wordpress.com/2019/09/07/risc-v-assembly-language-hello-world/<br>
+https://chromium.googlesource.com/chromiumos/docs/+/HEAD/constants/syscalls.md<br>
+https://teaching.basilico.di.unimi.it/lib/exe/fetch.php/pub/debian-mips-tutorial.pdf<br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .global _start
+
+    .data
+msg: .asciz "hello, world!\n"
+len = . - msg
+
+    .text
+_start:
+    li a7, 64
+    li a0, 1
+    la a1, msg
+    li a2, len
+    ecall
+
+    li a7, 93
+    li a0, 0
+    ecall
+</pre><br>
+
+<table>
+<tr><th>NR</th><th>syscall name</th><th>a7</th><th>arg0(a0)</th><th>arg1(a1)</th><th>arg2(a2)</th></tr>
+<tr><td>64</td><td>write</td><td>4</td><td>unsigned int fd</td><td>const char *buf</td><td>size_t count</td></tr>
+<tr><td>93</td><td>exit</td><td>1</td><td>int error_code</td><td></td><td></td></tr>
+</table><br>
+
+<p>
+編譯、執行
+</p> 
+<pre>
+$ riscv64-linux-gnu-gcc main.s -o main -static -nostdlib
+$ qemu-riscv64 ./main
+    hello, world!
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
