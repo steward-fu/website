@@ -1,0 +1,58 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - GNU - <b>Set PID</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://efiop-notes.blogspot.com/2014/06/how-to-set-pid-using-nslastpid.html<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;fcntl.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;sys/file.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;unistd.h&gt;
+
+int main(int argc, char *argv[])
+{
+    int fd = -1;
+    int pid = -1;
+    char buf[32] = {0};
+
+    pid = atoi(argv[1]);
+    fd = open("/proc/sys/kernel/ns_last_pid", O_RDWR | O_CREAT, 0644);
+    flock(fd, LOCK_EX);
+    snprintf(buf, sizeof(buf), "%d", pid - 1);
+    write(fd, buf, strlen(buf));
+
+    int new_pid = -1;
+    new_pid = fork();
+    if (new_pid == 0) {
+        printf("mypid:%d\n", getpid());
+        exit(0);
+    }
+    flock(fd, LOCK_UN);
+    close(fd);
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ gcc main.c -o main
+$ sudo ./main 30000
+    mypid:30000
+</pre>
+<p>
+P.S. 需要使用root執行，由於需要Kernel支援，不見得所有平台都可以跑
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

@@ -1,0 +1,61 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - GNU - <b>Struct</b></h3>
+<hr size="1"><br>
+<p>
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdint.h&gt;
+
+struct _mydata {
+    uint8_t i0;
+    uint16_t i1;
+    uint32_t i2;
+} mydata = {0};
+
+int main(int argc, char **argv)
+{
+    return 0;
+}
+</pre><br>
+
+<p>
+IDA Pro<br>
+<img src="gnu_struct/1.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:cpp">
+    .global _start
+
+    .equ _mydata.i0, 1
+    .equ _mydata.i1, 2
+    .equ _mydata.i2, 4
+
+    .struct 0
+    _mydata_start:
+        i0: .struct . + _mydata.i0
+        i1: .struct . + _mydata.i1
+        i2: .struct . + _mydata.i2
+    _mydata_end:
+    _mydata_len = _mydata_end - _mydata_start
+
+    .data
+mydata: .space _mydata_len
+
+    .text
+_start:
+    mov $0, %ebx
+    mov $1, %eax
+    int $0x80
+</pre><br>
+
+<p>
+IDA Pro<br>
+<img src="gnu_struct/2.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

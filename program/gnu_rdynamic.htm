@@ -1,0 +1,71 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - GNU - <b>CFLAGS -rdynamic</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://stackoverflow.com/questions/36692315/what-exactly-does-rdynamic-do-and-when-exactly-is-it-needed<br><br>
+
+<b>-rdynamic</b>: This instructs the linker to add all symbols, not only used ones, to the dynamic symbol table<br><br>
+
+share.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+
+void out(const char*);
+
+void hello(void)
+{
+    out("hello, world!\n");
+}
+</pre>
+<p>
+P.S. 由於Export All Symbols，因此，可以在Share Library中呼叫out()<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;dlfcn.h&gt;
+#include &lt;stdio.h&gt;
+
+typedef void hello(void);
+
+void out(const char *buf)
+{
+    printf("%s", buf);
+}
+
+int main(int argc, char **argv)
+{
+    void *h = dlopen("./hello.so", RTLD_NOW);
+    hello *p = dlsym(h, "hello");
+    p();
+    dlclose(h);
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯、執行(沒有-rdynamic)
+</p>
+<pre>
+$ gcc share.c -shared -fPIC -o share.so
+$ gcc main.c -o main -ldl
+$ ./main
+    ERR: ./share.so: undefined symbol: out
+</pre><br>
+
+<p>
+編譯、執行(加上-rdynamic)
+</p>
+<pre>
+$ gcc share.c -shared -fPIC -o share.so
+$ gcc main.c -o main -ldl -rdynamic
+$ ./main
+    hello, world!
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

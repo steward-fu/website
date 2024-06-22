@@ -1,0 +1,99 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - GNU - <b>Invoke</b></h3>
+<hr size="1"><br>
+<p>
+arm32
+</p>
+<pre class="brush:asm">
+.macro invoke func:req, args:vararg
+    .ifnb \args
+        argc = 0
+        .irp param, \args
+            argc = argc + 1
+        .endr
+        argrc = argc
+        .rept argc
+            argrc = argrc - 1
+            argc = 0
+            .irp param, \args
+                .if argrc == argc
+                    .if argrc == 0
+                        mov r0, \param
+                    .elseif argrc == 1
+                        mov r1, \param
+                    .elseif argrc == 2
+                        mov r2, \param
+                    .elseif argrc == 3
+                        mov r3, \param
+                    .else
+                        mov r4, \param
+                        push {r4}
+                    .endif
+                .endif
+                argc = argc + 1
+            .endr
+        .endr
+    .endif
+    bl \func
+.endm
+
+    .equ SDL_INIT_VIDEO, 0x20
+    .equ SDL_HWSURFACE,  0X01
+
+    .global main
+  
+    .text
+main:
+    push {lr}
+    invoke SDL_Init, $SDL_INIT_VIDEO
+    invoke SDL_SetVideoMode, $320, $240, $32, $SDL_HWSURFACE
+    invoke SDL_Quit
+    pop {pc}
+</pre><br>
+
+<p>
+x64
+</p>
+<pre class="brush:asm">
+.macro invoke func:req, args:vararg
+    .ifnb \args
+        argc = 0
+        .irp param, \args
+            .if argc == 0
+                mov \param, %rdi
+            .elseif argc == 1
+                mov \param, %rsi
+            .elseif argc == 2
+                mov \param, %rdx
+            .elseif argc == 3
+                mov \param, %rcx
+            .elseif argc == 4
+                mov \param, %r8
+            .elseif argc == 5
+                mov \param, %r9
+            .else
+                push \prarm
+            .endif
+            argc = argc + 1
+        .endr
+    .endif
+    call \func
+.endm
+
+    .equ SDL_INIT_VIDEO, 0x20
+    .equ SDL_HWSURFACE,  0X01
+
+    .global main
+
+    .text
+main:
+    invoke SDL_Init, $SDL_INIT_VIDEO
+    invoke SDL_SetVideoMode, $320, $240, $32, $SDL_HWSURFACE
+    invoke SDL_Quit
+    ret
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
