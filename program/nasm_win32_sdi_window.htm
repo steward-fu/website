@@ -1,0 +1,119 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - Netwide Assembler (NASM) - Win32 API - Single Document Interface (SDI) - <b>Create Window</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://masm32.com/board/index.php<br>
+https://www.nasm.us/xdoc/2.13rc9/html/nasmdoc0.html<br><br>
+
+Windows的視窗可以分成：<b>Dialog</b>、Single Document Interface(<b>SDI</b>)、Multiple Document Interface(<b>MDI</b>)三種類別，相對於SDI、MDI，Dialog類別是比較容易上手學習的一個類別，相當適合初次學習Windows視窗設計的使用者，而Windows視窗程式設計的核心就是圍繞着事件處理(處理Message)，任何的視窗設定或者溝通都是以事件導向為原則，因此，寫出一個簡單的視窗框架，將有助於了解Windows視窗程式的運作<br><br>
+
+main.asm
+</p>
+<pre class="brush:asm">
+    %include "head.asm"
+
+    segment .text
+WinMain:
+    push ebp
+    mov ebp, esp
+
+    mov dword [wndClass + WNDCLASS.lpfnWndProc], DefWindowProc
+    mov dword [wndClass + WNDCLASS.lpszClassName], szName
+    push wndClass
+    call RegisterClass
+             
+    push 0
+    push 0
+    push 0
+    push 0
+    push 300
+    push 300
+    push 0
+    push 0
+    push WS_OVERLAPPEDWINDOW | WS_VISIBLE
+    push szName
+    push szName
+    push WS_EX_LEFT
+    call CreateWindowEx
+    mov [hWin], eax
+            
+.loop:
+    push 0
+    push 0
+    push 0
+    push msg
+    call GetMessage
+    cmp eax, 0
+    je .exit
+             
+    push msg
+    call DispatchMessage
+    jmp .loop
+             
+.exit:
+    mov eax, [msg + MSG.wParam]
+    leave
+    ret 16
+             
+_start:
+    push 0
+    call GetModuleHandle
+    mov [hInstance], eax
+             
+    call GetCommandLine
+    mov [CommandLine], eax
+             
+    push SW_SHOWNORMAL
+    push dword [CommandLine]
+    push 0
+    push dword [hInstance]
+    call WinMain
+             
+    push eax
+    call ExitProcess
+</pre>
+<p>
+<b>Line 8~11</b>：一般SDI視窗會註冊屬於自己的Class並且設定事件處理副程式，目前司徒著重在說明如何建立Windows視窗，因此，我們使用系統預設的事件處理副程式(DefWindowProc)，視窗訊息統一交給系統幫忙處理，由於是自定義的Class，因此，需要幫這個Class設定一個名字，之後就可以用這個Class名字來建立Windows視窗<br>
+<b>Line 13~26</b>：使用剛剛註冊的Class來建立Windows視窗，WS_OVERLAPPEDWINDOW代表視窗有標題、最大化、最小化的按鈕，WS_VISIBLE是建立一個可視化的視窗<br>
+<b>Line 29~33</b>：從Queue提取Message(包含視窗、系統事件)<br>
+<b>Line 37~38</b>：分發Message到處理視窗事件的副程式，由於目前註冊的處理副程式是使用系統預設(DefWindowProc)，因此，無法處理這個SDI視窗的Message，包含關閉視窗的Message，所以必須使用kill命令強制關閉該視窗<br>
+<b>Line 47~52</b>：一般習慣是在程式進入時，保存Instance、CommandLine的內容<br>
+<b>Line 54~58</b>：呼叫自定義的WinMain()，模擬C語言的WinMain()，當然也可以把內容都寫在start()裡面<br><br>
+
+Makefile
+</p>
+<pre>
+export WINEPREFIX=/home/user/.wine_amd64
+
+TARGET=main
+MYWINE=box86 wine
+NASM32=/home/user/.wine_amd64/drive_c/nasm
+MASM32=/home/user/.wine_amd64/drive_c/masm32
+
+all:
+	${MYWINE} ${NASM32}/bin/nasm.exe -fwin32 ${TARGET}.asm
+	${MYWINE} ${MASM32}/bin/link.exe /SUBSYSTEM:WINDOWS /MERGE:.rdata=.text ${TARGET}.obj
+
+run:
+	${MYWINE} ${TARGET}.exe
+
+clean:
+	rm -rf ${TARGET}.exe ${TARGET}.obj
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ make
+$ make run
+</pre>
+<p>
+<img style="border:0px" src="nasm_win32_sdi_window/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

@@ -5,6 +5,7 @@
 <h3><a href="../program.htm">程式語言</a> - Netwide Assembler (NASM) - Win32 API - <b>head.asm</b></h3>
 <hr size="1"><br>
 <pre class="brush:asm">
+</pre>
     [bits 32]
     global _start
      
@@ -36,6 +37,8 @@
     extern _SelectObject@8
     extern _SetScrollPos@16
     extern _DestroyWindow@4
+    extern _RegisterClassA@4
+    extern _DefWindowProcA@16
     extern _SetScrollRange@20
     extern _SetWindowTextA@8
     extern _SetWindowLongA@12
@@ -79,6 +82,8 @@
     %define SelectObject     _SelectObject@8
     %define SetScrollPos     _SetScrollPos@16
     %define DestroyWindow    _DestroyWindow@4
+    %define RegisterClass    _RegisterClassA@4
+    %define DefWindowProc    _DefWindowProcA@16
     %define SetScrollRange   _SetScrollRange@20
     %define SetWindowText    _SetWindowTextA@8
     %define SetWindowLong    _SetWindowLongA@12
@@ -148,6 +153,20 @@
         .SIZE:
     endstruc
  
+    struc WNDCLASS
+        .style:         resd 1
+        .lpfnWndProc:   resd 1
+        .cbClsExtra:    resd 1
+        .cbWndExtra:    resd 1
+        .hInstance:     resd 1
+        .hIcon:         resd 1
+        .hCursor:       resd 1
+        .hbrBackground: resd 1
+        .lpszMenuName:  resd 1
+        .lpszClassName: resd 1
+        .SIZE:
+    endstruc
+    
     DT_VCENTER          equ 4h
     DT_CENTER           equ 1h
     DT_SINGLELINE       equ 20h
@@ -204,6 +223,7 @@ _msvcrt   db "/defaultlib:c:\\masm32\\lib\\msvcrt.lib "
 _kernel32 db "/defaultlib:c:\\masm32\\lib\\kernel32.lib "
                     
     segment .data
+szName      db  "main",0
 szCaption   db  "main",0
 szFont      db  "Arial",0
 szMsg       db  "Test",0
@@ -232,7 +252,19 @@ ps istruc PAINTSTRUCT
     at .fIncUpdate,  dd 0
     at .rgbReserved, db 0
 iend             
-</pre>
+
+wndClass istruc WNDCLASS
+    at .style,         dd 0
+    at .lpfnWndProc,   dd 0
+    at .cbClsExtra,    dd 0
+    at .cbWndExtra,    dd 0
+    at .hInstance,     dd 0
+    at .hIcon,         dd 0
+    at .hCursor,       dd 0
+    at .hbrBackground, dd 0
+    at .lpszMenuName,  dd 0
+    at .lpszClassName, dd 0
+iend
 <p>
 struc用來定義Struct<br>
 istruc則是宣告資料(Instance)的意思，at用來指定初始化的資料內容，如果沒有想要做資料初始化，可以省略at<br>
