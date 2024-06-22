@@ -35,4 +35,5 @@ All of files or resources used on my website can be found from the following lin
 | ![](img/photos/wdm.jpg)             | [Windows Device Driver (WDM)](https://github.com/steward-fu/website/releases/tag/wdm)    |
 | ![](img/photos/ldd.jpg)             | [Linux Device Driver (LDD)](https://github.com/steward-fu/website/releases/tag/ldd)      |
 | ![](img/photos/vxworks.jpg)         | [VxWorks](https://github.com/steward-fu/website/releases/tag/vxworks)                    |
+| ![](img/photos/nasm.jpg)            | [Netwide Assembler (NASM)](https://github.com/steward-fu/website/releases/tag/nasm)      |
 | ![](img/photos/pdf.jpg)             | [Chipset Datasheet](https://github.com/steward-fu/website/releases/tag/datasheet)        |
