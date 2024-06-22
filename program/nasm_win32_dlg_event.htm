@@ -1,0 +1,150 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - Netwide Assembler (NASM) - Win32 API - Dialog - <b>Handle Event</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://masm32.com/board/index.php<br>
+https://www.nasm.us/xdoc/2.13rc9/html/nasmdoc0.html<br><br>
+
+一般在建立Windows視窗時，會註冊自定義的Class並且設定事件處理的副程式(callback)，不過，目前範例使用的Class是系統預設的WC_DIALOG，因此，可以透過SetWindowLong()設定callback，這種替換callback的行為就稱為Subclass，意指為原本Class的Subclass，所以Subclass後，需要將原先callback的位址(SetWindowLong()的回傳值)保存下來，然後透過呼叫CallWindowProc()(傳入原先callback的位址)，用來將處理控制權移交回原先視窗元件，所以當有多層Subclass的情形發生時，每次在處理事件時，記得判斷對應的Handle，如：在處理關閉事件時(WM_CLOSE)，會先判斷目前的hWnd是否為當前的視窗hWnd，如果是當前視窗hWnd，才進行關閉的動作，避免關閉到其它視窗元件<br><br>
+
+main.asm
+</p>
+<pre class="brush:asm">
+    %include "head.asm"
+
+    segment .text
+WndProc:
+    push ebp
+    mov ebp, esp
+
+    cmp dword [ebp + 0ch], WM_CLOSE
+    je .handle_close
+    cmp dword [ebp + 0ch], WM_DESTROY
+    je .handle_destroy
+    jmp .handle_default
+
+.handle_close:
+    push dword [ebp + 8]
+    call DestroyWindow
+    xor eax, eax
+    jmp .finish
+
+.handle_destroy:
+    push 0
+    call PostQuitMessage
+    xor eax, eax
+    jmp .finish
+
+.handle_default:
+    push dword [ebp + 14h]
+    push dword [ebp + 10h]
+    push dword [ebp + 0ch]
+    push dword [ebp + 8h]
+    push dword [defWndProc]
+    call CallWindowProc
+
+.finish:
+    leave
+    ret 16
+
+WinMain:
+    push ebp
+    mov ebp, esp
+ 
+    push 0
+    push 0
+    push 0
+    push 0
+    push 300
+    push 300
+    push 0
+    push 0
+    push WS_OVERLAPPEDWINDOW | WS_VISIBLE
+    push szCaption
+    push WC_DIALOG
+    push WS_EX_LEFT
+    call CreateWindowEx
+    mov [hWin], eax
+
+    push WndProc
+    push GWL_WNDPROC
+    push dword [hWin]
+    call SetWindowLong
+    mov [defWndProc], eax
+ 
+.loop:
+    push 0
+    push 0
+    push 0
+    push msg
+    call GetMessage
+    cmp eax, 0
+    je .exit
+ 
+    push msg
+    call DispatchMessage
+    jmp .loop
+ 
+.exit:
+    mov eax, [msg + MSG.wParam]
+    leave
+    ret 16
+ 
+_start:
+    push 0
+    call GetModuleHandle
+    mov [hInstance], eax
+ 
+    call GetCommandLine
+    mov [CommandLine], eax
+ 
+    push SW_SHOWNORMAL
+    push dword [CommandLine]
+    push 0
+    push dword [hInstance]
+    call WinMain
+ 
+    push eax
+    call ExitProcess
+</pre>
+<p>
+<b>Line 12~22</b>：關閉視窗的順序為：主視窗收到WM_CLOSE事件時，呼叫DestroyWindow()，DestroyWindow()會自動將子視窗的相關資源也一併釋放掉(包含Resource描述的資源)，系統接著會發送WM_DESTROY事件給主視窗，待主視窗收到WM_DESTROY事件時，呼叫PostQuitMessage()結束視窗，值得注意的地方是，SendMessage()是屬於Block方式呼叫(必須等待動作執行完畢才返回)，而PostQuitMessage()則是Non-block方式呼叫<br>
+<b>Line 24~30</b>：將處理控制權移交給下一個視窗元件</br><br>
+
+Makefile
+</p>
+<pre>
+export WINEPREFIX=/home/user/.wine_amd64
+
+TARGET=main
+MYWINE=box86 wine
+NASM32=/home/user/.wine_amd64/drive_c/nasm
+MASM32=/home/user/.wine_amd64/drive_c/masm32
+
+all:
+	${MYWINE} ${NASM32}/bin/nasm.exe -fwin32 ${TARGET}.asm
+	${MYWINE} ${MASM32}/bin/link.exe /SUBSYSTEM:WINDOWS /MERGE:.rdata=.text ${TARGET}.obj
+
+run:
+	${MYWINE} ${TARGET}.exe
+
+clean:
+	rm -rf ${TARGET}.exe ${TARGET}.obj
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ make
+$ make run
+</pre>
+<p>
+<img style="border:0px" src="nasm_win32_dlg_window/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
