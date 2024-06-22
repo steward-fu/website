@@ -1,0 +1,53 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - Netwide Assembler (NASM) - Assembly (x86) - <b>Hello, world!(int 0x80)</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://tldp.org/HOWTO/Assembly-HOWTO/hello.html<br>
+https://chromium.googlesource.com/chromiumos/docs/+/HEAD/constants/syscalls.md<br><br>
+
+System Call
+</p>
+<table>
+<tr><th>NR</th><th>syscall name</th><th>eax</th><th>arg0(ebx)</th><th>arg1(ecx)</th><th>arg2(edx)</th></tr>
+<tr><td>1</td><td>exit</td><td>1</td><td>int error_code</td><td></td><td></td></tr>
+<tr><td>4</td><td>write</td><td>4</td><td>unsigned int fd</td><td>const char *buf</td><td>size_t count</td></tr>
+</table><br>
+
+<p>
+main.s
+</p>
+<pre class="brush:asm">
+    global _start
+
+    section .data
+msg db "hello, world!", 10
+len equ $ - msg
+   
+    section .text
+_start:
+    mov eax, 4
+    mov ebx, 1
+    mov ecx, msg
+    mov edx, len
+    int 80h
+ 
+    mov eax, 1
+    mov ebx, 0
+    int 80h 
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ nasm -f elf32 main.s
+$ i686-linux-gnu-gcc main.o -o main -static -nostdlib
+$ qemu-i386 ./main
+    hello, world!
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
