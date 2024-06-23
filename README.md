@@ -16,6 +16,7 @@ All of files or resources used on my website can be found from the following lin
 | ![](img/photos/miyoo-mini.jpg)      | [Miyoo Mini](https://github.com/steward-fu/website/releases/tag/miyoo-mini)              |
 | ![](img/photos/miyoo-mini-plus.jpg) | [Miyoo Mini Plus](https://github.com/steward-fu/website/releases/tag/miyoo-mini-plus)    |
 | ![](img/photos/psv2000.jpg)         | [PlayStation Vita 2000](https://github.com/steward-fu/website/releases/tag/psv2000)      |
+| ![](img/photos/rzx50.jpg)           | [Ritmix RZX-50](https://github.com/steward-fu/website/releases/tag/rzx50)                |
 | ![](img/photos/funkeys.jpg)         | [FunKey S](https://github.com/steward-fu/website/releases/tag/funkey-s)                  |
 | ![](img/photos/gaviar.jpg)          | [Gaviar F133](https://github.com/steward-fu/website/releases/tag/gaviar)                 |
 | ![](img/photos/pyra.jpg)            | [Pyra](https://github.com/steward-fu/website/releases/tag/pyra)                          |
