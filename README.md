@@ -31,6 +31,7 @@ All of files or resources used on my website can be found from the following lin
 | ![](img/photos/pixel3axl.jpg)       | [Google Pixel 3a XL](https://github.com/steward-fu/website/releases/tag/pixel-3a-xl)     |
 | ![](img/photos/titan.jpg)           | [Unihertz Titan](https://github.com/steward-fu/website/releases/tag/titan)               |
 | ![](img/photos/c700.jpg)            | [SHARP Zaurus](https://github.com/steward-fu/website/releases/tag/zaurus)                |
+| ![](img/photos/pw-sh3.jpg)          | [SHARP Brain](https://github.com/steward-fu/website/releases/tag/brain)                  |
 | ![](img/photos/zipit1.jpg)          | [Zipit Z1](https://github.com/steward-fu/website/releases/tag/zipit-z1)                  |
 | ![](img/photos/zipit2.jpg)          | [Zipit Z2](https://github.com/steward-fu/website/releases/tag/zipit-z2)                  |
 | ![](img/photos/d8.jpg)              | [iriver Dicple D8](https://github.com/steward-fu/website/releases/tag/iriver-d8)         |
