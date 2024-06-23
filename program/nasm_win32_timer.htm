@@ -2,70 +2,61 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head><script type="text/javascript" src="../page_head.js"></script>
 
-<h3><a href="../program.htm">程式語言</a> - Netwide Assembler (NASM) - Win32 API - <b>Mouse Event</b></h3>
+<h3><a href="../program.htm">程式語言</a> - Netwide Assembler (NASM) - Win32 API - <b>Set Timer</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
 https://masm32.com/board/index.php<br>
 https://www.nasm.us/xdoc/2.13rc9/html/nasmdoc0.html<br><br>
 
-WM_MOUSEMOVE
-</p>
-<pre>
-fwKeys = wParam;       // key flags
-xPos = LOWORD(lParam); // horizontal position of cursor
-yPos = HIWORD(lParam); // vertical position of cursor
-</pre><br>
+Windows的Timer中斷週期是基於早期系統架構，因此，最短的Timer時間間隔為15ms，因此，即使Timer設定為1ms，觸發時間依舊為15ms<br><br>
 
-<p>
 main.asm
 </p>
 <pre class="brush:asm">
-    %include "head.asm"
- 
+    %include "head.asm" 
+
     segment .text
 WndProc:
     push ebp
     mov ebp, esp
-   
-    cmp dword [ebp + ARG2], WM_MOUSEMOVE
-    je .handle_mouse
+    
+    cmp dword [ebp + ARG2], WM_TIMER
+    je .handle_timer
     cmp dword [ebp + ARG2], WM_CLOSE
     je .handle_close
     cmp dword [ebp + ARG2], WM_DESTROY
     je .handle_destroy
     jmp .handle_default
-  
-.handle_mouse:
-    mov eax, [ebp + ARG4]
-    and eax, 0ffffh
-    push eax
-    mov eax, [ebp + ARG4]
-    shr eax, 16
-    and eax, 0ffffh
-    push eax
-    push FMT_MOUSE
+   
+.handle_timer:
+    inc dword [dwCnt]
+    push dword [dwCnt]
+    push FMT_TIMER
     push pBuf
     call sprintf
-  
+   
     push pBuf
     push dword [ebp + ARG1]
     call SetWindowText
     xor eax, eax
     jmp .finish
-  
+   
 .handle_close:
     push dword [ebp + ARG1]
     call DestroyWindow
     xor eax, eax
     jmp .finish
-   
+    
 .handle_destroy:
+    push 1
+    push dword [ebp + ARG1]
+    call KillTimer
     push 0
     call PostQuitMessage
     xor eax, eax
     jmp .finish
-   
+    
 .handle_default:
     push dword [ebp + ARG4]
     push dword [ebp + ARG3]
@@ -73,15 +64,15 @@ WndProc:
     push dword [ebp + ARG1]
     push dword [pDefWndProc]
     call CallWindowProc
-   
+    
 .finish:
     leave
     ret 16
-   
+    
 WinMain:
     push ebp
     mov ebp, esp
-    
+     
     push 0
     push 0
     push 0
@@ -96,13 +87,19 @@ WinMain:
     push WS_EX_LEFT
     call CreateWindowEx
     mov [hWin], eax
-
+    
     push WndProc
     push GWL_WNDPROC
     push dword [hWin]
     call SetWindowLong
     mov [pDefWndProc], eax
-
+ 
+    push 0
+    push 1000
+    push 1
+    push dword [hWin]
+    call SetTimer
+     
 .loop:
     push 0
     push 0
@@ -111,38 +108,40 @@ WinMain:
     call GetMessage
     cmp eax, 0
     je .exit
-    
+     
     push msg
     call DispatchMessage
     jmp .loop
-    
+     
 .exit:
     mov eax, [msg + MSG.wParam]
     leave
     ret 16
-    
+     
 _start:
     push 0
     call GetModuleHandle
     mov [hInstance], eax
-    
+     
     call GetCommandLine
     mov [pCommand], eax
-    
+     
     push SW_SHOWNORMAL
     push dword [pCommand]
     push 0
     push dword [hInstance]
     call WinMain
-    
+     
     push eax
     call ExitProcess
 </pre>
 <p>
-<b>Line 16~32</b>：將滑鼠座標顯示在視窗標題<br><br>
+<b>Line 16~27</b>：累加數值並且顯示在視窗標題<br>
+<b>Line 36~38</b>：關閉Timer<br>
+<b>Line 81~85</b>：設定Timer為每秒(1000ms)觸發一次，ID=1<br><br>
 
 完成<br>
-<img style="border:0px" src="nasm_win32_mouse/1.jpg" class="maxSize">
+<img style="border:0px" src="nasm_win32_timer/1.jpg" class="maxSize">
 </p>
 
 <br><script type="text/javascript" src="../tail.js"></script>

@@ -2,59 +2,66 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head><script type="text/javascript" src="../page_head.js"></script>
 
-<h3><a href="../program.htm">程式語言</a> - Netwide Assembler (NASM) - Win32 API - <b>Keyboard Event</b></h3>
+<h3><a href="../program.htm">程式語言</a> - Netwide Assembler (NASM) - Win32 API - <b>Set Scrollbar</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
 https://masm32.com/board/index.php<br>
 https://www.nasm.us/xdoc/2.13rc9/html/nasmdoc0.html<br><br>
 
-WM_KEYDOWN、WM_KEYUP是一般鍵盤按鍵事件，而WM_SYSKEYDOWN、WM_SYSKEYUP則是屬於系統按鍵的事件，系統按鍵就是左上角小視窗圖案的那些按鍵命令<br><br>
-WM_KEYDOWN、WM_KEYUP<br>
-<pre>
-nVirtKey = (int) wParam; // virtual-key code
-lKeyData = lParam;       // key data
-</pre><br>
+當視窗的可視區域(如：300x300像素)小於顯示圖片大小(如：640x480像素)時，這時可以使用Windows視窗元件Scrollbar，用來做顯示位置調整的動作，Scrollbar元件有垂直和水平兩種方向並且提供視窗事件回報機制(WM_VSCROLL、WM_HSCROLL)，因此，這裡的Scrollbar元件並不能夠自動幫忙做顯示位置調整的動作，取而代之的是，在收到WM_VSCROLL、WM_HSCROLL事件時，使用者必須自己決定哪些東西要顯示在視窗的可視區域上<br><br>
 
-<p>
-WM_SYSKEYDOWN、WM_SYSKEYUP
-</p>
-<pre>
-nVirtKey = (int) wParam; // virtual-key code
-lKeyData = lParam;       // key data
-</pre><br>
-
-<p>
 main.asm
 </p>
 <pre class="brush:asm">
     %include "head.asm" 
- 
+
     segment .text
 WndProc:
     push ebp
     mov ebp, esp
-  
-    cmp dword [ebp + ARG2], WM_KEYDOWN
-    je .handle_keydown
-    cmp dword [ebp + ARG2], WM_SYSKEYDOWN
-    je .handle_keydown
+     
+    cmp dword [ebp + ARG2], WM_VSCROLL
+    je .handle_vscroll
     cmp dword [ebp + ARG2], WM_CLOSE
     je .handle_close
     cmp dword [ebp + ARG2], WM_DESTROY
     je .handle_destroy
     jmp .handle_default
  
-.handle_keydown:
-    push dword [ebp + ARG3]
-    push FMT_KBD
-    push pBuf
-    call sprintf
+.handle_vscroll:
+    cmp word [ebp + ARG3], SB_LINEUP
+    je .handle_sb_line_up
+    cmp word [ebp + ARG3], SB_LINEDOWN
+    je .handle_sb_line_down
+    cmp word [ebp + ARG3], SB_PAGEUP
+    je .handle_sb_page_up
+    cmp word [ebp + ARG3], SB_PAGEDOWN
+    je .handle_sb_page_down
+    jmp .finish
  
-    push pBuf
+.handle_sb_line_up:
+    push SLUP
     push dword [ebp + ARG1]
     call SetWindowText
-    xor eax, eax
+    jmp .finish
+ 
+.handle_sb_line_down:
+    push SLDN
+    push dword [ebp + ARG1]
+    call SetWindowText
+    jmp .finish
+ 
+.handle_sb_page_up:
+    push SPUP
+    push dword [ebp + ARG1]
+    call SetWindowText
+    jmp .finish
+ 
+.handle_sb_page_down:
+    push SPDN
+    push dword [ebp + ARG1]
+    call SetWindowText
     jmp .finish
  
 .handle_close:
@@ -62,13 +69,13 @@ WndProc:
     call DestroyWindow
     xor eax, eax
     jmp .finish
-  
+     
 .handle_destroy:
     push 0
     call PostQuitMessage
     xor eax, eax
     jmp .finish
-  
+     
 .handle_default:
     push dword [ebp + ARG4]
     push dword [ebp + ARG3]
@@ -76,15 +83,15 @@ WndProc:
     push dword [ebp + ARG1]
     push dword [pDefWndProc]
     call CallWindowProc
-  
+     
 .finish:
     leave
     ret 16
-  
+     
 WinMain:
     push ebp
     mov ebp, esp
-   
+      
     push 0
     push 0
     push 0
@@ -93,19 +100,31 @@ WinMain:
     push 300
     push 0
     push 0
-    push WS_OVERLAPPEDWINDOW | WS_VISIBLE
+    push WS_OVERLAPPEDWINDOW | WS_VISIBLE | WS_VSCROLL
     push szAppName
     push WC_DIALOG
     push WS_EX_LEFT
     call CreateWindowEx
     mov [hWin], eax
-  
+     
     push WndProc
     push GWL_WNDPROC
     push dword [hWin]
     call SetWindowLong
     mov [pDefWndProc], eax
-   
+  
+    push 0
+    push 100
+    push 0
+    push SB_VERT
+    push dword [hWin]
+    call SetScrollRange
+ 
+    push 1
+    push 50
+    push SB_VERT
+    push dword [hWin]
+    call SetScrollPos
 .loop:
     push 0
     push 0
@@ -114,38 +133,41 @@ WinMain:
     call GetMessage
     cmp eax, 0
     je .exit
-   
+      
     push msg
     call DispatchMessage
     jmp .loop
-   
+      
 .exit:
     mov eax, [msg + MSG.wParam]
     leave
     ret 16
-   
+      
 _start:
     push 0
     call GetModuleHandle
     mov [hInstance], eax
-   
+      
     call GetCommandLine
     mov [pCommand], eax
-   
+      
     push SW_SHOWNORMAL
     push dword [pCommand]
     push 0
     push dword [hInstance]
     call WinMain
-   
+      
     push eax
     call ExitProcess
 </pre>
 <p>
-<b>Line 18~28</b>：將按鍵數值顯示在視窗標題<br><br>
+<b>Line 27~55</b>：處理Scrollbar訊息並且顯示在視窗標題<br>
+<b>Line 87</b>：WS_VSCROLL是垂直的Scrollbar，WS_HSCROLL則是水平的Scrollbar<br>
+<b>Line 100~105</b>：設定Scrollbar最大的範圍<br>
+<b>Line 107~111</b>：設定Scrollbar目前的位置<br><br>
 
 完成<br>
-<img style="border:0px" src="nasm_win32_keyboard/1.jpg" class="maxSize">
+<img style="border:0px" src="nasm_win32_scrollbar/1.jpg" class="maxSize">
 </p>
 
 <br><script type="text/javascript" src="../tail.js"></script>
