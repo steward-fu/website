@@ -15,12 +15,12 @@ main.asm
 </p>
 <pre class="brush:asm">
     %include "head.asm"
-
+ 
     segment .text
 WinMain:
     push ebp
     mov ebp, esp
-
+ 
     push 0
     push 0
     push 0
@@ -30,11 +30,11 @@ WinMain:
     push 0
     push 0
     push WS_OVERLAPPEDWINDOW | WS_VISIBLE
-    push szCaption
+    push szAppName
     push WC_DIALOG
     push WS_EX_LEFT
     call CreateWindowEx
-
+ 
 .loop:
     push 0
     push 0
@@ -43,30 +43,30 @@ WinMain:
     call GetMessage
     cmp eax, 0
     je .exit
-
+ 
     push msg
     call DispatchMessage
     jmp .loop
-
+ 
 .exit:
     mov eax, [msg + MSG.wParam]
     leave
     ret 16
-
+ 
 _start:
     push 0
     call GetModuleHandle
     mov [hInstance], eax
-
+ 
     call GetCommandLine
-    mov [CommandLine], eax
-
+    mov [pCommand], eax
+ 
     push SW_SHOWNORMAL
-    push dword [CommandLine]
+    push dword [pCommand]
     push 0
     push dword [hInstance]
     call WinMain
-
+ 
     push eax
     call ExitProcess
 </pre>
