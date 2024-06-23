@@ -1,0 +1,151 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - Netwide Assembler (NASM) - Win32 API - Dialog - <b>Keyboard Event</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://masm32.com/board/index.php<br>
+https://www.nasm.us/xdoc/2.13rc9/html/nasmdoc0.html<br><br>
+
+WM_KEYDOWN、WM_KEYUP是一般鍵盤按鍵事件，而WM_SYSKEYDOWN、WM_SYSKEYUP則是屬於系統按鍵的事件，系統按鍵就是左上角小視窗圖案的那些按鍵命令<br><br>
+WM_KEYDOWN、WM_KEYUP<br>
+<pre>
+nVirtKey = (int) wParam; // virtual-key code
+lKeyData = lParam;       // key data
+</pre><br>
+
+<p>
+WM_SYSKEYDOWN、WM_SYSKEYUP
+</p>
+<pre>
+nVirtKey = (int) wParam; // virtual-key code
+lKeyData = lParam;       // key data
+</pre><br>
+
+<p>
+main.asm
+</p>
+<pre class="brush:asm">
+    %include "head.asm" 
+
+    segment .text
+WndProc:
+    push ebp
+    mov ebp, esp
+ 
+    cmp dword [ebp + ARG2], WM_KEYDOWN
+    je .handle_keydown
+    cmp dword [ebp + ARG2], WM_SYSKEYDOWN
+    je .handle_keydown
+    cmp dword [ebp + ARG2], WM_CLOSE
+    je .handle_close
+    cmp dword [ebp + ARG2], WM_DESTROY
+    je .handle_destroy
+    jmp .handle_default
+
+.handle_keydown:
+    push dword [ebp + ARG3]
+    push fmt
+    push buf
+    call sprintf
+
+    push buf
+    push dword [ebp + ARG1]
+    call SetWindowText
+    xor eax, eax
+    jmp .finish
+
+.handle_close:
+    push dword [ebp + ARG1]
+    call DestroyWindow
+    xor eax, eax
+    jmp .finish
+ 
+.handle_destroy:
+    push 0
+    call PostQuitMessage
+    xor eax, eax
+    jmp .finish
+ 
+.handle_default:
+    push dword [ebp + ARG4]
+    push dword [ebp + ARG3]
+    push dword [ebp + ARG2]
+    push dword [ebp + ARG1]
+    push dword [defWndProc]
+    call CallWindowProc
+ 
+.finish:
+    leave
+    ret 16
+ 
+WinMain:
+    push ebp
+    mov ebp, esp
+  
+    push 0
+    push 0
+    push 0
+    push 0
+    push 300
+    push 300
+    push 0
+    push 0
+    push WS_OVERLAPPEDWINDOW | WS_VISIBLE
+    push szCaption
+    push WC_DIALOG
+    push WS_EX_LEFT
+    call CreateWindowEx
+    mov [hWin], eax
+ 
+    push WndProc
+    push GWL_WNDPROC
+    push dword [hWin]
+    call SetWindowLong
+    mov [defWndProc], eax
+  
+.loop:
+    push 0
+    push 0
+    push 0
+    push msg
+    call GetMessage
+    cmp eax, 0
+    je .exit
+  
+    push msg
+    call DispatchMessage
+    jmp .loop
+  
+.exit:
+    mov eax, [msg + MSG.wParam]
+    leave
+    ret 16
+  
+_start:
+    push 0
+    call GetModuleHandle
+    mov [hInstance], eax
+  
+    call GetCommandLine
+    mov [CommandLine], eax
+  
+    push SW_SHOWNORMAL
+    push dword [CommandLine]
+    push 0
+    push dword [hInstance]
+    call WinMain
+  
+    push eax
+    call ExitProcess
+</pre>
+<p>
+<b>Line 18~28</b>：將按鍵數值顯示在視窗標題<br><br>
+
+完成<br>
+<img style="border:0px" src="nasm_win32_keyboard/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
