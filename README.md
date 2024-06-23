@@ -29,6 +29,7 @@ All of files or resources used on my website can be found from the following lin
 | ![](img/photos/pro1.jpg)            | [F(x)tec Pro1](https://github.com/steward-fu/website/releases/tag/pro1)                  |
 | ![](img/photos/xt897.jpg)           | [Motorola XT897](https://github.com/steward-fu/website/releases/tag/xt897)               |
 | ![](img/photos/pixel3axl.jpg)       | [Google Pixel 3a XL](https://github.com/steward-fu/website/releases/tag/pixel-3a-xl)     |
+| ![](img/photos/titan.jpg)           | [Unihertz Titan](https://github.com/steward-fu/website/releases/tag/titan)               |
 | ![](img/photos/c700.jpg)            | [SHARP Zaurus](https://github.com/steward-fu/website/releases/tag/zaurus)                |
 | ![](img/photos/zipit1.jpg)          | [Zipit Z1](https://github.com/steward-fu/website/releases/tag/zipit-z1)                  |
 | ![](img/photos/zipit2.jpg)          | [Zipit Z2](https://github.com/steward-fu/website/releases/tag/zipit-z2)                  |
