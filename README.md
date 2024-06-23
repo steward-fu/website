@@ -21,6 +21,7 @@ All of files or resources used on my website can be found from the following lin
 | ![](img/photos/pyra.jpg)            | [Pyra](https://github.com/steward-fu/website/releases/tag/pyra)                          |
 | ![](img/photos/x760p.jpg)           | [Gemei X760+](https://github.com/steward-fu/website/releases/tag/x760p)                  |
 | ![](img/photos/x350.jpg)            | [X350](https://github.com/steward-fu/website/releases/tag/x350)                          |
+| ![](img/photos/x3.jpg)              | [Powkiddy X3](https://github.com/steward-fu/website/releases/tag/x3)                     |
 | ![](img/photos/x6-1.jpg)            | [X6](https://github.com/steward-fu/website/releases/tag/x6)                              |
 | ![](img/photos/zpg-pro.jpg)         | [Z-Pocket Game Pro(ZPG Pro)](https://github.com/steward-fu/website/releases/tag/zpg-pro) |
 | ![](img/photos/q2.jpg)              | [Q2](https://github.com/steward-fu/website/releases/tag/q2)                              |
