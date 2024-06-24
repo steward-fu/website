@@ -1,0 +1,165 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - Netwide Assembler (NASM) - Win32 API - Painting - <b>Draw Rectangle</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://masm32.com/board/index.php<br>
+https://www.nasm.us/xdoc/2.13rc9/html/nasmdoc0.html<br><br>
+
+繪畫圖形需要透過SelectObject()去選擇Pen、Brush<br><br>
+
+main.asm
+</p>
+<pre class="brush:asm">
+    %include "head.asm" 
+
+    segment .text
+WndProc:
+    push ebp
+    mov ebp, esp
+           
+    cmp dword [ebp + ARG2], WM_PAINT
+    je .handle_paint
+    cmp dword [ebp + ARG2], WM_CLOSE
+    je .handle_close
+    cmp dword [ebp + ARG2], WM_DESTROY
+    je .handle_destroy
+    jmp .handle_default
+      
+.handle_paint:
+    push ps
+    push dword [ebp + ARG1]
+    call BeginPaint
+    mov [hDC], eax
+ 
+    push 0ffh
+    push 3
+    push PS_SOLID
+    call CreatePen
+    mov [hPen], eax
+ 
+    push 0ff00h
+    call CreateSolidBrush
+    mov [hBrush], eax
+ 
+    push dword [hPen]
+    push dword [hDC]
+    call SelectObject
+ 
+    push dword [hBrush]
+    push dword [hDC]
+    call SelectObject
+ 
+    push 200
+    push 200
+    push 10
+    push 10
+    push dword [hDC]
+    call Rectangle
+    
+    push ps
+    push dword [ebp + ARG1]
+    call EndPaint
+    
+    push dword [hPen]
+    call DeleteObject
+    push dword [hBrush]
+    call DeleteObject
+    xor eax, eax
+    jmp .finish
+      
+.handle_close:
+    push dword [ebp + ARG1]
+    call DestroyWindow
+    xor eax, eax
+    jmp .finish
+           
+.handle_destroy:
+    push 0
+    call PostQuitMessage
+    xor eax, eax
+    jmp .finish
+           
+.handle_default:
+    push dword [ebp + ARG4]
+    push dword [ebp + ARG3]
+    push dword [ebp + ARG2]
+    push dword [ebp + ARG1]
+    push dword [pDefWndProc]
+    call CallWindowProc
+           
+.finish:
+    leave
+    ret 16
+           
+WinMain:
+    push ebp
+    mov ebp, esp
+            
+    push 0
+    push 0
+    push 0
+    push 0
+    push 300
+    push 300
+    push 0
+    push 0
+    push WS_OVERLAPPEDWINDOW | WS_VISIBLE
+    push szAppName
+    push WC_DIALOG
+    push WS_EX_LEFT
+    call CreateWindowEx
+    mov [hWin], eax
+           
+    push WndProc
+    push GWL_WNDPROC
+    push dword [hWin]
+    call SetWindowLong
+    mov [pDefWndProc], eax
+        
+.loop:
+    push 0
+    push 0
+    push 0
+    push msg
+    call GetMessage
+    cmp eax, 0
+    je .exit
+            
+    push msg
+    call DispatchMessage
+    jmp .loop
+            
+.exit:
+    mov eax, [msg + MSG.wParam]
+    leave
+    ret 16
+            
+_start:
+    push 0
+    call GetModuleHandle
+    mov [hInstance], eax
+            
+    call GetCommandLine
+    mov [pCommand], eax
+            
+    push SW_SHOWNORMAL
+    push dword [pCommand]
+    push 0
+    push dword [hInstance]
+    call WinMain
+            
+    push eax
+    call ExitProcess
+</pre>
+<p>
+<b>Line 40~45</b>：畫一個長方形，起始點位置是(x=10, y=10)，結束點位置是(x=200, y=200)<br><br>
+
+完成<br>
+<img style="border:0px" src="nasm_win32_rect/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
