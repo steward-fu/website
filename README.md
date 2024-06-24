@@ -18,6 +18,7 @@ All of files or resources used on my website can be found from the following lin
 | ![](img/photos/psv2000.jpg)         | [PlayStation Vita 2000](https://github.com/steward-fu/website/releases/tag/psv2000)      |
 | ![](img/photos/rs97.jpg)            | [RetroGame](https://github.com/steward-fu/website/releases/tag/rs97)                     |
 | ![](img/photos/rs90.jpg)            | [RetroMini](https://github.com/steward-fu/website/releases/tag/rs90)                     |
+| ![](img/photos/rg300.jpg)           | [RG99](https://github.com/steward-fu/website/releases/tag/rg99)                          |
 | ![](img/photos/rzx50.jpg)           | [Ritmix RZX-50](https://github.com/steward-fu/website/releases/tag/rzx50)                |
 | ![](img/photos/funkeys.jpg)         | [FunKey S](https://github.com/steward-fu/website/releases/tag/funkey-s)                  |
 | ![](img/photos/gaviar.jpg)          | [Gaviar F133](https://github.com/steward-fu/website/releases/tag/gaviar)                 |
