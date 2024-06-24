@@ -1,0 +1,153 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - Netwide Assembler (NASM) - Win32 API - Painting - <b>Draw Line</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://masm32.com/board/index.php<br>
+https://www.nasm.us/xdoc/2.13rc9/html/nasmdoc0.html<br><br>
+
+線的起始點位置是位於(x=0, y=0)，使用者可以呼叫MoveToEx()設定新的起始點，而使用LineTo()就可以畫出一條直線，新的起始點則是線的結束位置<br><br>
+
+main.asm
+</p>
+<pre class="brush:asm">
+    %include "head.asm" 
+
+    segment .text
+WndProc:
+    push ebp
+    mov ebp, esp
+          
+    cmp dword [ebp + ARG2], WM_PAINT
+    je .handle_paint
+    cmp dword [ebp + ARG2], WM_CLOSE
+    je .handle_close
+    cmp dword [ebp + ARG2], WM_DESTROY
+    je .handle_destroy
+    jmp .handle_default
+     
+.handle_paint:
+    push ps
+    push dword [ebp + ARG1]
+    call BeginPaint
+    mov [hDC], eax
+   
+    CreateMyPen 3, 0ffh
+    mov [hPen + 0], eax
+    CreateMyPen 3, 0ff00h
+    mov [hPen + 4], eax
+    CreateMyPen 3, 0ff0000h
+    mov [hPen + 8], eax
+ 
+    DrawMyLine dword [hDC], dword [hPen + 0], 10, 100, 250, 100
+    DrawMyLine dword [hDC], dword [hPen + 4], 10, 150, 250, 150
+    DrawMyLine dword [hDC], dword [hPen + 8], 10, 200, 250, 200
+   
+    push ps
+    push dword [ebp + ARG1]
+    call EndPaint
+   
+    push dword [hPen + 0]
+    call DeleteObject
+    push dword [hPen + 4]
+    call DeleteObject
+    push dword [hPen + 8]
+    call DeleteObject
+    xor eax, eax
+    jmp .finish
+     
+.handle_close:
+    push dword [ebp + ARG1]
+    call DestroyWindow
+    xor eax, eax
+    jmp .finish
+          
+.handle_destroy:
+    push 0
+    call PostQuitMessage
+    xor eax, eax
+    jmp .finish
+          
+.handle_default:
+    push dword [ebp + ARG4]
+    push dword [ebp + ARG3]
+    push dword [ebp + ARG2]
+    push dword [ebp + ARG1]
+    push dword [pDefWndProc]
+    call CallWindowProc
+          
+.finish:
+    leave
+    ret 16
+          
+WinMain:
+    push ebp
+    mov ebp, esp
+           
+    push 0
+    push 0
+    push 0
+    push 0
+    push 300
+    push 300
+    push 0
+    push 0
+    push WS_OVERLAPPEDWINDOW | WS_VISIBLE
+    push szAppName
+    push WC_DIALOG
+    push WS_EX_LEFT
+    call CreateWindowEx
+    mov [hWin], eax
+          
+    push WndProc
+    push GWL_WNDPROC
+    push dword [hWin]
+    call SetWindowLong
+    mov [pDefWndProc], eax
+       
+.loop:
+    push 0
+    push 0
+    push 0
+    push msg
+    call GetMessage
+    cmp eax, 0
+    je .exit
+           
+    push msg
+    call DispatchMessage
+    jmp .loop
+           
+.exit:
+    mov eax, [msg + MSG.wParam]
+    leave
+    ret 16
+           
+_start:
+    push 0
+    call GetModuleHandle
+    mov [hInstance], eax
+           
+    call GetCommandLine
+    mov [pCommand], eax
+           
+    push SW_SHOWNORMAL
+    push dword [pCommand]
+    push 0
+    push dword [hInstance]
+    call WinMain
+           
+    push eax
+    call ExitProcess
+</pre>
+<p>
+<b>Line 22~31</b>：產生三隻Pen並且畫出三條直線，需要注意的是，同一時間只能選擇一隻Pen<br><br>
+
+完成<br>
+<img style="border:0px" src="nasm_win32_line/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
