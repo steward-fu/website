@@ -1,0 +1,78 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - Netwide Assembler (NASM) - NASMX - <b>Hello, world!</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://masm32.com/board/index.php<br>
+https://www.nasm.us/xdoc/2.13rc9/html/nasmdoc0.html<br><br>
+
+經典的<b>Hello, world!</b>程式框架總是能夠讓人細心品味一款程式語言的美好，司徒就使用一個簡單的Message對話盒來展現<b>Hello, world!</b>框架<br><br>
+
+main.asm
+</p>
+<pre class="brush:asm">
+    %include "c:\\nasmx\\inc\\nasmx.inc"
+    %include "c:\\nasmx\\inc\\win32\\windows.inc"
+    %include "c:\\nasmx\\inc\\win32\\user32.inc"
+    %include "c:\\nasmx\\inc\\win32\\kernel32.inc"
+
+    entry start
+
+    section .data
+szCaption declare(NASMX_TCHAR) NASMX_TEXT("main"),0
+szContent declare(NASMX_TCHAR) NASMX_TEXT("Hello, world!"),0
+
+    section .text
+proc start, dword argc, dword argv
+    locals none
+
+    invoke MessageBox, NULL, szContent, szCaption, MB_OK
+    invoke ExitProcess, NULL
+endproc
+</pre>
+<p>
+<b>Line 1~4</b>：Header檔案<br>
+<b>Line 6</b>：程式進入點<br>
+<b>Line 8</b>：初始化的資料區段<br>
+<b>Line 9~10</b>：初始化的Global變數，型態是TCHAR且最後一個byte是0<br>
+<b>Line 12</b>：程式區段<br>
+<b>Line 13~18</b>：proc、endproc用來定義Procedure的區間<br>
+<b>Line 14</b>：沒有Local變數<br>
+<b>Line 16</b>：顯示Message對話盒<br>
+<b>Line 17</b>：結束Process並且釋放相關資源<br><br>
+
+Makefile
+</p>
+<pre>
+export WINEPREFIX=/home/user/.wine_amd64
+
+TARGET=main
+MYWINE=box86 wine
+NASM32=/home/user/.wine_amd64/drive_c/nasmx
+
+all:
+	${MYWINE} ${NASM32}/bin/nasm.exe -fwin32 ${TARGET}.asm
+	${MYWINE} ${NASM32}/bin/GoLink.exe /entry _main ${TARGET}.obj kernel32.dll user32.dll
+
+run:
+	${MYWINE} ${TARGET}.exe
+
+clean:
+	rm -rf ${TARGET}.exe ${TARGET}.obj
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ make
+$ make run
+</pre>
+<p>
+<img style="border:0px" src="nasm_win32_hello/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
