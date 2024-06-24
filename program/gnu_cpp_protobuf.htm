@@ -1,0 +1,76 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - GNU - C/C++ - <b>Protocol Buffers</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/afiskon/cpp-protobuf-example/tree/master<br>
+https://stackoverflow.com/questions/47704968/protoc-command-not-found-linux<br><br>
+
+main.proto
+</p>
+<pre class="brush:cpp">
+syntax = "proto3";
+
+package mytest.Test;
+
+message Who {
+    string name = 1;
+    int64 value = 2;
+}
+</pre><br>
+
+<p>
+main.cpp
+</p>
+<pre class="brush:cpp">
+#include &lt;iostream&gt;
+#include &lt;fstream&gt;
+#include &lt;stdexcept&gt;
+#include "main.pb.h"
+
+using namespace std;
+using namespace mytest::Test;
+
+int main(int argc, char **argv)
+{
+    GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+    Who t1;
+    t1.set_name("t1");
+    t1.set_value(100);
+
+    fstream out("t1.dat", ios::out | ios::trunc | ios::binary);
+    t1.SerializeToOstream(&amp;out);
+    out.close();
+
+    Who t2;
+    fstream in("t1.dat", ios::in | ios::binary);
+    t2.ParseFromIstream(&amp;in);
+    in.close();
+
+    cout &lt;&lt; "t1.name: " &lt;&lt; t1.name() &lt;&lt; endl;
+    cout &lt;&lt; "t1.value: " &lt;&lt; t1.value() &lt;&lt; endl;
+    cout &lt;&lt; "t2.name: " &lt;&lt; t2.name() &lt;&lt; endl;
+    cout &lt;&lt; "t2.value: " &lt;&lt; t2.value() &lt;&lt; endl;
+
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ protoc --cpp_out . main.proto
+$ g++ main.cpp -o test main.pb.cc -I. -lprotobuf
+$ ./test
+    t1.name: t1
+    t1.value: 100
+    t2.name: t1
+    t2.value: 100
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
