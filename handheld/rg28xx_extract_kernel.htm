@@ -1,0 +1,83 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - Anbernic RG28XX - <b>Extract kernel、config.gz</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://knulli.org/guides/h700-firmware-extract/<br>
+https://github.com/anestisb/android-unpackbootimg<br><br>
+
+步驟如下：
+</p>
+<pre>
+$ cd
+$ git clone https://github.com/anestisb/android-unpackbootimg
+$ cd android-unpackbootimg
+$ make
+
+$ cd
+$ wget https://github.com/steward-fu/website/releases/download/rg28xx/RG28XX-V1.0.4-EN16GB-240511.7z
+$ 7za x RG28XX-V1.0.4-EN16GB-240511.7z
+$ sudo fdisk -l RG28XX-V1.0.4-EN16GB-240511.IMG 
+    Disk RG28XX-V1.0.4-EN16GB-240511.IMG: 14.48 GiB, 15552479232 bytes, 30375936 sectors
+    Units: sectors of 1 * 512 = 512 bytes
+    Sector size (logical/physical): 512 bytes / 512 bytes
+    I/O size (minimum/optimal): 512 bytes / 512 bytes
+    Disklabel type: gpt
+    Disk identifier: AB6F3888-569A-4926-9668-80941DCB40BC
+
+    Device                              Start      End  Sectors  Size Type
+    RG28XX-V1.0.4-EN16GB-240511.IMG1    73728  8880127  8806400  4.2G Microsoft basic data
+    RG28XX-V1.0.4-EN16GB-240511.IMG2  8880128  8945663    65536   32M Microsoft basic data
+    RG28XX-V1.0.4-EN16GB-240511.IMG3  8945664  8978431    32768   16M Microsoft basic data
+    RG28XX-V1.0.4-EN16GB-240511.IMG4  8978432  9109503   131072   64M Microsoft basic data
+    RG28XX-V1.0.4-EN16GB-240511.IMG5  9109504 25886719 16777216    8G Microsoft basic data
+    RG28XX-V1.0.4-EN16GB-240511.IMG6 25886720 30373887  4487168  2.1G Microsoft basic data
+
+$ dd if=RG28XX-V1.0.4-EN16GB-240511.IMG of=boot.img bs=512 skip=8978432 count=131072
+$ file boot.img 
+    boot.img: Android bootimg, kernel (0x40080000), ramdisk (0x42000000), page size: 2048
+
+$ ./android-unpackbootimg/unpackbootimg -i boot.img -o boot_image/
+    BOARD_KERNEL_CMDLINE 
+    BOARD_KERNEL_BASE 40078000
+    BOARD_NAME sun50i_arm64
+    BOARD_PAGE_SIZE 2048
+    BOARD_HASH_TYPE sha1
+    BOARD_KERNEL_OFFSET 00008000
+    BOARD_RAMDISK_OFFSET 01f88000
+    BOARD_SECOND_OFFSET 00e88000
+    BOARD_TAGS_OFFSET fff88100
+    BOARD_DT_SIZE 2
+
+$ cd boot_image/
+$ file boot.img-zImage 
+    boot.img-zImage: Linux kernel ARM64 boot executable Image, little-endian, 4K pages
+
+$ od -A d -t x1 boot.img-zImage | grep '1f 8b 08'
+    9489504 1f 8b 08 00 00 00 00 00 02 03 94 3c cb 76 db b8
+    13476832 00 00 00 00 00 00 00 00 1f 8b 08 00 00 00 00 00
+
+$ dd if=boot.img-zImage of=kernel bs=1 count=9489504
+$ dd if=boot.img-zImage of=config.gz bs=1 skip=9489504
+
+$ strings kernel | grep Linux
+    Linux version 4.9.170 (cc@cc-H81M-S1) (gcc version 5.3.1 20160412 (Linaro GCC 5.3-2016.05) ) #178 SMP PREEMPT Fri May 10 17:37:24 CST 2024
+    Linux
+
+$ zcat config.gz | head
+    #
+    # Automatically generated file; DO NOT EDIT.
+    # Linux/arm64 4.9.170 Kernel Configuration
+    #
+    CONFIG_ARM64=y
+    CONFIG_64BIT=y
+    CONFIG_ARCH_PHYS_ADDR_T_64BIT=y
+    CONFIG_MMU=y
+    CONFIG_DEBUG_RODATA=y
+    CONFIG_ARM64_PAGE_SHIFT=12
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
