@@ -1,0 +1,51 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - Anbernic RG28XX - <b>Extract environment</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://knulli.org/guides/h700-firmware-extract/<br>
+https://github.com/anestisb/android-unpackbootimg<br><br>
+
+步驟如下：
+</p>
+<pre>
+$ cd 
+$ wget https://github.com/steward-fu/website/releases/download/rg28xx/RG28XX-V1.0.4-EN16GB-240511.7z
+$ 7za x RG28XX-V1.0.4-EN16GB-240511.7z
+$ sudo fdisk -l RG28XX-V1.0.4-EN16GB-240511.IMG 
+    Disk RG28XX-V1.0.4-EN16GB-240511.IMG: 14.48 GiB, 15552479232 bytes, 30375936 sectors
+    Units: sectors of 1 * 512 = 512 bytes
+    Sector size (logical/physical): 512 bytes / 512 bytes
+    I/O size (minimum/optimal): 512 bytes / 512 bytes
+    Disklabel type: gpt
+    Disk identifier: AB6F3888-569A-4926-9668-80941DCB40BC
+
+    Device                              Start      End  Sectors  Size Type
+    RG28XX-V1.0.4-EN16GB-240511.IMG1    73728  8880127  8806400  4.2G Microsoft basic data
+    RG28XX-V1.0.4-EN16GB-240511.IMG2  8880128  8945663    65536   32M Microsoft basic data
+    RG28XX-V1.0.4-EN16GB-240511.IMG3  8945664  8978431    32768   16M Microsoft basic data
+    RG28XX-V1.0.4-EN16GB-240511.IMG4  8978432  9109503   131072   64M Microsoft basic data
+    RG28XX-V1.0.4-EN16GB-240511.IMG5  9109504 25886719 16777216    8G Microsoft basic data
+    RG28XX-V1.0.4-EN16GB-240511.IMG6 25886720 30373887  4487168  2.1G Microsoft basic data
+
+$ dd if=RG28XX-V1.0.4-EN16GB-240511.IMG of=env.img bs=512 skip=8945664 count=32768
+$ strings env.img &gt; env.txt
+$ cat env.txt | head
+    earlyprintk=sunxi-uart,0x05000000
+    initcall_debug=0
+    console=ttyS0,115200
+    nand_root=/dev/nand0p4
+    mmc_root=/dev/mmcblk0p5
+    init=/init
+    loglevel=4
+    selinux=0
+    cma=64M
+    mac=
+
+$ mkenvimage -s 0x1000000 -o env.img env.txt 
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
