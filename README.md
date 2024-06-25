@@ -17,7 +17,7 @@ All of files or resources used on my website can be found from the following lin
 | ![](img/photos/psv2000.jpg)         | [PlayStation Vita 2000](https://github.com/steward-fu/website/releases/tag/psv2000)      |
 | ![](img/photos/rs90.jpg)            | [Anbernic RetroMini](https://github.com/steward-fu/website/releases/tag/rs90)            |
 | ![](img/photos/rs97.jpg)            | [Anbernic RetroGame](https://github.com/steward-fu/website/releases/tag/rs97)            |
-| ![](img/photos/rs280m.jpg)          | [Anbernic RG280M](https://github.com/steward-fu/website/releases/tag/rg280m)             |
+| ![](img/photos/rg280m.jpg)          | [Anbernic RG280M](https://github.com/steward-fu/website/releases/tag/rg280m)             |
 | ![](img/photos/rg28xx.jpg)          | [Anbernic RG28XX](https://github.com/steward-fu/website/releases/tag/rg28xx)             |
 | ![](img/photos/rg300.jpg)           | [Anbernic RG99](https://github.com/steward-fu/website/releases/tag/rg99)                 |
 | ![](img/photos/rg350.jpg)           | [Anbernic RG350](https://github.com/steward-fu/website/releases/tag/rg350)               |
