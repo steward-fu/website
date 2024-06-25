@@ -1,0 +1,122 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - Netwide Assembler (NASM) - Win32 API (NASMX) - <b>Keyboard Event</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://masm32.com/board/index.php<br>
+https://www.nasm.us/xdoc/2.13rc9/html/nasmdoc0.html<br><br>
+
+WM_KEYDOWN、WM_KEYUP是一般鍵盤按鍵事件，而WM_SYSKEYDOWN、WM_SYSKEYUP則是屬於系統按鍵的事件，系統按鍵就是左上角小視窗圖案的那些按鍵命令<br><br>
+WM_KEYDOWN、WM_KEYUP<br>
+<pre>
+nVirtKey = (int) wParam; // virtual-key code
+lKeyData = lParam;       // key data
+</pre><br>
+
+<p>
+WM_SYSKEYDOWN、WM_SYSKEYUP
+</p>
+<pre>
+nVirtKey = (int) wParam; // virtual-key code
+lKeyData = lParam;       // key data
+</pre><br>
+
+<p>
+main.asm
+</p>
+<pre class="brush:asm">
+    %include "c:\\nasmx\\inc\\nasmx.inc"
+    %include "c:\\nasmx\\inc\\win32\\msvcrt.inc"
+    %include "c:\\nasmx\\inc\\win32\\windows.inc"
+    %include "c:\\nasmx\\inc\\win32\\user32.inc"
+    %include "c:\\nasmx\\inc\\win32\\kernel32.inc"
+
+    entry start
+
+    section .data
+hWin         dd 0
+hInstance    dd 0
+defWndProc   dd 0
+CommandLine  dd 0
+buf          times 255 db 0
+fmt          db "Key: %d",0
+szCaption    declare(NASMX_TCHAR) NASMX_TEXT("main"),0
+ 
+NASMX_ISTRUC msg, MSG
+    NASMX_AT hwnd,    NULL
+    NASMX_AT message, NULL
+    NASMX_AT wParam,  NULL
+    NASMX_AT lParam,  NULL
+    NASMX_AT time,    NULL
+    NASMX_ISTRUC pt, POINT
+        NASMX_AT x, 0
+        NASMX_AT y, 0
+    NASMX_IENDSTRUC
+NASMX_IENDSTRUC
+ 
+    section .text
+proc WndProc, dword hWnd, uint_t uMsg, dword wParam, dword lParam
+    locals none
+ 
+    switch dword [argv(.uMsg)]
+    case dword WM_KEYDOWN
+        invoke sprintf, buf, fmt, [argv(.wParam)]
+        invoke SetWindowText, [argv(.hWnd)], buf
+        break
+    case dword WM_SYSKEYDOWN
+        invoke sprintf, buf, fmt, [argv(.wParam)]
+        invoke SetWindowText, [argv(.hWnd)], buf
+        break
+    case dword WM_CLOSE
+        invoke DestroyWindow, [argv(.hWnd)]
+        break
+    case dword WM_DESTROY
+        invoke PostQuitMessage, 0
+        break
+    default
+        invoke CallWindowProc, [defWndProc], [argv(.hWnd)], [argv(.uMsg)], [argv(.wParam)], [argv(.lParam)]
+    endswitch
+endproc
+ 
+proc WinMain, dword hInst, dword hPrevInst, dword CmdLine, dword CmdShow
+    locals none
+  
+    invoke CreateWindowEx, WS_EX_LEFT, WC_DIALOG, szCaption, \
+        WS_OVERLAPPEDWINDOW | WS_VISIBLE, 0, 0, 300, 300, NULL, NULL, NULL, NULL
+    mov [hWin], eax
+ 
+    invoke SetWindowLong, [hWin], GWL_WNDPROC, WndProc
+    mov [defWndProc], eax
+ 
+    do
+        invoke DispatchMessage, msg
+        invoke GetMessage, msg, NULL, NULL, NULL
+    while eax, !=, 0
+  
+    mov eax, dword [msg + MSG.wParam]
+endproc
+  
+proc start, dword argc, dword argv
+    locals none
+  
+    invoke GetModuleHandle, NULL
+    mov [hInstance], eax
+  
+    invoke GetCommandLine, NULL
+    mov [CommandLine], eax
+  
+    invoke WinMain, [hInstance], NULL, [CommandLine], SW_SHOWNORMAL
+    invoke ExitProcess, NULL
+endproc
+</pre>
+<p>
+<b>Line 35~42</b>：將按鍵數值顯示在視窗標題<br><br>
+
+完成<br>
+<img style="border:0px" src="nasm_win32_keyboard/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
