@@ -11,9 +11,9 @@ All of files or resources used on my website can be found from the following lin
 | ![](img/photos/trimui.jpg)          | [TRIMUI](https://github.com/steward-fu/website/releases/tag/trimui)                      |
 | ![](img/photos/trimui-smart.jpg)    | [TRIMUI SMART](https://github.com/steward-fu/website/releases/tag/trimui-smart)          |
 | ![](img/photos/miyoo-a30.jpg)       | [Miyoo A30](https://github.com/steward-fu/website/releases/tag/miyoo-a30)                |
-| ![](img/photos/gkd-pixel.jpg)       | [GKD Pixel](https://github.com/steward-fu/website/releases/tag/gkd-pixel)                |
 | ![](img/photos/miyoo-mini.jpg)      | [Miyoo Mini](https://github.com/steward-fu/website/releases/tag/miyoo-mini)              |
 | ![](img/photos/miyoo-mini-plus.jpg) | [Miyoo Mini Plus](https://github.com/steward-fu/website/releases/tag/miyoo-mini-plus)    |
+| ![](img/photos/gkd-pixel.jpg)       | [GKD Pixel](https://github.com/steward-fu/website/releases/tag/gkd-pixel)                |
 | ![](img/photos/psv2000.jpg)         | [PlayStation Vita 2000](https://github.com/steward-fu/website/releases/tag/psv2000)      |
 | ![](img/photos/rs90.jpg)            | [Anbernic RetroMini](https://github.com/steward-fu/website/releases/tag/rs90)            |
 | ![](img/photos/rs97.jpg)            | [Anbernic RetroGame](https://github.com/steward-fu/website/releases/tag/rs97)            |
