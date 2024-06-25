@@ -1,0 +1,115 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - Netwide Assembler (NASM) - Win32 API (NASMX) - Painting - <b>Draw Arc</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://masm32.com/board/index.php<br>
+https://www.nasm.us/xdoc/2.13rc9/html/nasmdoc0.html<br><br>
+
+使用方式：<br>
+<img src="nasm_win32_arc/1.jpg" class="maxSize"><br><br>
+
+main.asm
+</p>
+<pre class="brush:asm">
+    %include "c:\\nasmx\\inc\\nasmx.inc"
+    %include "c:\\nasmx\\inc\\win32\\msvcrt.inc"
+    %include "c:\\nasmx\\inc\\win32\\windows.inc"
+    %include "c:\\nasmx\\inc\\win32\\gdi32.inc"
+    %include "c:\\nasmx\\inc\\win32\\user32.inc"
+    %include "c:\\nasmx\\inc\\win32\\kernel32.inc"
+           
+    entry start
+           
+    section .data
+hWin         dd 0
+hInstance    dd 0
+defWndProc   dd 0
+CommandLine  dd 0
+szCaption    declare(NASMX_TCHAR) NASMX_TEXT("main"),0
+ 
+NASMX_ISTRUC msg, MSG
+NASMX_IENDSTRUC
+       
+NASMX_ISTRUC ps, PAINTSTRUCT
+NASMX_IENDSTRUC
+            
+    section .text
+proc WndProc, dword hWnd, uint_t uMsg, dword wParam, dword lParam
+    locals
+        local hdc, DWORD
+        local pen, DWORD
+        local brush, DWORD
+    endlocals
+         
+    switch dword [argv(.uMsg)]
+    case dword WM_PAINT
+        invoke BeginPaint, [argv(.hWnd)], ps
+        mov [var(.hdc)], eax
+       
+        invoke CreatePen, PS_SOLID, 3, 0ffh
+        mov [var(.pen)], eax
+        invoke CreateSolidBrush, 0ff00h
+        mov [var(.brush)], eax
+     
+        invoke SelectObject, [var(.hdc)], [var(.pen)]
+        invoke SelectObject, [var(.hdc)], [var(.brush)]
+        invoke Arc, [var(.hdc)], 10, 10, 200, 200, 0, 0, 200, 100
+      
+        invoke EndPaint, [argv(.hWnd)], ps
+        invoke DeleteObject, [var(.pen)]
+        invoke DeleteObject, [var(.brush)]
+        break
+    case dword WM_CLOSE
+        invoke DestroyWindow, [argv(.hWnd)]
+        break
+    case dword WM_DESTROY
+        invoke PostQuitMessage, 0
+        break
+    default
+        invoke CallWindowProc, [defWndProc], [argv(.hWnd)], [argv(.uMsg)], [argv(.wParam)], [argv(.lParam)]
+    endswitch
+endproc
+            
+proc WinMain, dword hInst, dword hPrevInst, dword CmdLine, dword CmdShow
+    locals none
+             
+    invoke CreateWindowEx, WS_EX_LEFT, WC_DIALOG, szCaption, \
+        WS_OVERLAPPEDWINDOW | WS_VISIBLE, 0, 0, 300, 300, NULL, NULL, NULL, NULL
+    mov [hWin], eax
+            
+    invoke SetWindowLong, [hWin], GWL_WNDPROC, WndProc
+    mov [defWndProc], eax
+        
+    do
+        invoke DispatchMessage, msg
+        invoke GetMessage, msg, NULL, NULL, NULL
+    while eax, !=, 0
+             
+    mov eax, dword [msg + MSG.wParam]
+endproc
+             
+proc start, dword argc, dword argv
+    locals none
+             
+    invoke GetModuleHandle, NULL
+    mov [hInstance], eax
+             
+    invoke GetCommandLine, NULL
+    mov [CommandLine], eax
+             
+    invoke WinMain, [hInstance], NULL, [CommandLine], SW_SHOWNORMAL
+    invoke ExitProcess, NULL
+endproc
+</pre>
+<p>
+<b>Line 43</b>：畫出一個Arc圖形<br><br>
+
+完成<br>
+<img style="border:0px" src="nasm_win32_arc/2.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
