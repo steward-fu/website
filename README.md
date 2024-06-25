@@ -11,15 +11,16 @@ All of files or resources used on my website can be found from the following lin
 | ![](img/photos/trimui.jpg)          | [TRIMUI](https://github.com/steward-fu/website/releases/tag/trimui)                      |
 | ![](img/photos/trimui-smart.jpg)    | [TRIMUI SMART](https://github.com/steward-fu/website/releases/tag/trimui-smart)          |
 | ![](img/photos/miyoo-a30.jpg)       | [Miyoo A30](https://github.com/steward-fu/website/releases/tag/miyoo-a30)                |
-| ![](img/photos/rg28xx.jpg)          | [Anbernic RG28XX](https://github.com/steward-fu/website/releases/tag/rg28xx)             |
 | ![](img/photos/gkd-pixel.jpg)       | [GKD Pixel](https://github.com/steward-fu/website/releases/tag/gkd-pixel)                |
 | ![](img/photos/miyoo-mini.jpg)      | [Miyoo Mini](https://github.com/steward-fu/website/releases/tag/miyoo-mini)              |
 | ![](img/photos/miyoo-mini-plus.jpg) | [Miyoo Mini Plus](https://github.com/steward-fu/website/releases/tag/miyoo-mini-plus)    |
 | ![](img/photos/psv2000.jpg)         | [PlayStation Vita 2000](https://github.com/steward-fu/website/releases/tag/psv2000)      |
-| ![](img/photos/rs97.jpg)            | [RetroGame](https://github.com/steward-fu/website/releases/tag/rs97)                     |
-| ![](img/photos/rs90.jpg)            | [RetroMini](https://github.com/steward-fu/website/releases/tag/rs90)                     |
-| ![](img/photos/rg350.jpg)           | [RG350](https://github.com/steward-fu/website/releases/tag/rg350)                        |
-| ![](img/photos/rg300.jpg)           | [RG99](https://github.com/steward-fu/website/releases/tag/rg99)                          |
+| ![](img/photos/rs90.jpg)            | [Anbernic RetroMini](https://github.com/steward-fu/website/releases/tag/rs90)            |
+| ![](img/photos/rs97.jpg)            | [Anbernic RetroGame](https://github.com/steward-fu/website/releases/tag/rs97)            |
+| ![](img/photos/rs280m.jpg)          | [Anbernic RG280M](https://github.com/steward-fu/website/releases/tag/rg280m)             |
+| ![](img/photos/rg28xx.jpg)          | [Anbernic RG28XX](https://github.com/steward-fu/website/releases/tag/rg28xx)             |
+| ![](img/photos/rg300.jpg)           | [Anbernic RG99](https://github.com/steward-fu/website/releases/tag/rg99)                 |
+| ![](img/photos/rg350.jpg)           | [Anbernic RG350](https://github.com/steward-fu/website/releases/tag/rg350)               |
 | ![](img/photos/rzx50.jpg)           | [Ritmix RZX-50](https://github.com/steward-fu/website/releases/tag/rzx50)                |
 | ![](img/photos/funkeys.jpg)         | [FunKey S](https://github.com/steward-fu/website/releases/tag/funkey-s)                  |
 | ![](img/photos/gaviar.jpg)          | [Gaviar F133](https://github.com/steward-fu/website/releases/tag/gaviar)                 |
