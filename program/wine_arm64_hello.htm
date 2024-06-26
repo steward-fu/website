@@ -1,0 +1,60 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - Wine - Assembly (ARM 64) - <b>Hello, world!</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+http://www.winprog.org/tutorial/start.html<br>
+https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-messagebox<br><br>
+
+經典的<b>Hello, world!</b>程式框架總是能夠讓人細心品味一款程式語言的美好，司徒就使用一個簡單的Message對話盒來展現<b>Hello, world!</b>框架<br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .global WinMain
+    .extern MessageBoxA
+    .extern ExitProcess
+ 
+    .data
+szCaption: .asciz "main"
+szContent: .asciz "Hello, world!"
+ 
+    .text
+WinMain:
+    stp x29, x30, [sp, #-0x10]!
+ 
+    mov x0, 0
+    ldr x1, =szContent
+    ldr x2, =szCaption
+    mov x3, 0
+    bl MessageBoxA
+
+    mov x0, 0
+    bl ExitProcess
+ 
+    mov x0, 0
+    ldp x29, x30, [sp], #0x10
+    ret
+</pre>
+<p>
+<b>Line 1</b>：程式進入點<br>
+<b>Line 2~3</b>：external function<br>
+<b>Line 5</b>：初始化的資料區段<br>
+<b>Line 6~7</b>：初始化的Global變數，型態是byte(char)且最後一個byte是0<br>
+<b>Line 13~17</b>：顯示Message對話盒<br>
+<b>Line 19~20</b>：結束Process並且釋放相關資源<br><br>
+
+編譯、執行
+</p>
+<pre>
+$ winegcc main.s -o main
+$ wine ./main.exe
+</pre>
+<p>
+<img style="border:0px" src="nasm_win32_hello/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
