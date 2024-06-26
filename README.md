@@ -50,6 +50,7 @@ All of files or resources used on my website can be found from the following lin
 | ![](img/photos/wdm.jpg)             | [Windows Device Driver (WDM)](https://github.com/steward-fu/website/releases/tag/wdm)    |
 | ![](img/photos/ldd.jpg)             | [Linux Device Driver (LDD)](https://github.com/steward-fu/website/releases/tag/ldd)      |
 | ![](img/photos/vxworks.jpg)         | [VxWorks](https://github.com/steward-fu/website/releases/tag/vxworks)                    |
+| ![](img/photos/masm32.jpg)          | [MASM32](https://github.com/steward-fu/website/releases/tag/masm32)                      |
 | ![](img/photos/nasm.jpg)            | [Netwide Assembler (NASM)](https://github.com/steward-fu/website/releases/tag/nasm)      |
 | ![](img/photos/fasm.jpg)            | [Flat Assembler (FASM)](https://github.com/steward-fu/website/releases/tag/fasm)         |
 | ![](img/photos/hla.jpg)             | [High Level Assembly (HLA)](https://github.com/steward-fu/website/releases/tag/hla)      |
