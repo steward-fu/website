@@ -1,0 +1,50 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - Wine - C/C++ - Dialog - <b>Create Window</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+http://www.winprog.org/tutorial/<br>
+http://winapi.freetechsecrets.com/win32/<br>
+https://github.com/gammasoft71/Examples_Win32<br>
+http://masm32.com/board/index.php?topic=3584.0<br>
+https://learn.microsoft.com/en-us/windows/win32/winmsg/window-styles<br><br>
+
+Windows的視窗可以分成：<b>Dialog</b>、Single Document Interface(<b>SDI</b>)、Multiple Document Interface(<b>MDI</b>)三種類別，相對於SDI、MDI，Dialog類別是比較容易上手學習的一個類別，相當適合初次學習Windows視窗設計的使用者，而Windows視窗程式設計的核心就是圍繞着事件處理(處理Message)，任何的視窗設定或者溝通都是以事件導向為原則，因此，寫出一個簡單的視窗框架，將有助於了解Windows視窗程式的運作<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;windows.h&gt;
+
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
+{
+    CreateWindow(WC_DIALOG, "main", 
+        WS_OVERLAPPEDWINDOW | WS_VISIBLE, 0, 0, 300, 300, NULL, NULL, NULL, NULL);
+
+    MSG msg = {0};
+    while (GetMessage(&amp;msg, NULL, 0, 0)) {
+        DispatchMessage(&amp;msg);
+    }
+    ExitProcess(0);
+    return 0;
+}
+</pre>
+<p>
+<b>Line 5~6</b>：在建立Windows視窗時，需要指定對應的Class，如：Edit、Button，除了可以使用系統預設的Class之外，也可以註冊自定義的Class，上面例子使用的WC_DIALOG，就是系統預設定義的Dialog Class，WS_OVERLAPPEDWINDOW代表視窗有標題、最大化、最小化的按鈕，WS_VISIBLE是建立一個可視化的視窗<br>
+<b>Line 9</b>：從Queue提取Message(包含視窗、系統事件)<br>
+<b>Line 10</b>：分發Message到處理視窗事件的副程式，由於目前的Dialog視窗並沒有對應的處理副程式，因此，無法處理任何Message，包含關閉視窗的Message，所以必須使用kill命令強制關閉該視窗<br><br>
+
+編譯、執行
+</p>
+<pre>
+$ winegcc main.c -o main
+$ wine ./main.exe
+</pre>
+<p>
+<img style="border:0px" src="nasm_win32_dlg_window/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
