@@ -33,6 +33,7 @@ All of files or resources used on my website can be found from the following lin
 | ![](img/photos/q2.jpg)              | [Q2](https://github.com/steward-fu/website/releases/tag/q2)                              |
 | ![](img/photos/n900.jpg)            | [Nokia N900](https://github.com/steward-fu/website/releases/tag/n900)                    |
 | ![](img/photos/pro1.jpg)            | [F(x)tec Pro1](https://github.com/steward-fu/website/releases/tag/pro1)                  |
+| ![](img/photos/pro1x.jpg)           | [F(x)tec Pro1 X](https://github.com/steward-fu/website/releases/tag/pro1-x)              |
 | ![](img/photos/xt897.jpg)           | [Motorola XT897](https://github.com/steward-fu/website/releases/tag/xt897)               |
 | ![](img/photos/pixel3axl.jpg)       | [Google Pixel 3a XL](https://github.com/steward-fu/website/releases/tag/pixel-3a-xl)     |
 | ![](img/photos/titan.jpg)           | [Unihertz Titan](https://github.com/steward-fu/website/releases/tag/titan)               |
