@@ -1,0 +1,84 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - Wine - C/C++ - Painting - <b>Draw Text</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+http://www.winprog.org/tutorial/<br>
+http://winapi.freetechsecrets.com/win32/<br>
+https://github.com/gammasoft71/Examples_Win32<br>
+http://masm32.com/board/index.php?topic=3584.0<br>
+https://learn.microsoft.com/en-us/windows/win32/winmsg/window-styles<br><br>
+
+使用TextOut()顯示文字時，只有X、Y參數可以用來設定顯示的位置，當文字長度超過顯示區域時，就需要拆解文字，包含置中顯示也是需要花費額外的計算，如果遇到這些問題，建議使用DrawText()顯示文字，DrawText()提供更多選項使用，包含多行顯示、置中顯示，使用者只需要傳入顯示範圍即可<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdbool.h&gt;
+#include &lt;windows.h&gt;
+ 
+HWND hWin = NULL;
+WNDPROC defWndProc = NULL;
+ 
+LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+    HDC hdc = NULL;
+    HFONT font = NULL;
+    PAINTSTRUCT ps = {0};
+    const char *pMsg = "Test";
+
+    switch (uMsg) {
+    case WM_CLOSE:
+        DestroyWindow(hWnd);
+        return 0;
+    case WM_DESTROY:
+        PostQuitMessage(0);
+        return 0;
+    case WM_PAINT:
+        hdc = BeginPaint(hWnd, &amp;ps);
+        font = CreateFont(48, 0, 0, 0, FW_BOLD, false, false, false, 0,
+           OUT_OUTLINE_PRECIS, CLIP_DEFAULT_PRECIS,
+           CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, "Arial");
+
+        SetTextColor(hdc, RGB(0x00, 0x00, 0xff));
+        SetBkMode(hdc, TRANSPARENT);
+        SelectObject(hdc, font);
+        DrawText(hdc, pMsg, strlen(pMsg), &amp;ps.rcPaint, DT_SINGLELINE | DT_CENTER | DT_VCENTER);
+        EndPaint(hWnd, &amp;ps);
+        DeleteObject(font);
+        break;
+    }
+    return CallWindowProc(defWndProc, hWnd, uMsg, wParam, lParam);
+}
+ 
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
+{
+    hWin = CreateWindow(WC_DIALOG, "main", 
+        WS_OVERLAPPEDWINDOW | WS_VISIBLE, 0, 0, 300, 300, NULL, NULL, NULL, NULL);
+    defWndProc = (WNDPROC)SetWindowLongPtr(hWin, GWLP_WNDPROC, (long int)WndProc);
+ 
+    MSG msg = {0};
+    while (GetMessage(&amp;msg, NULL, 0, 0)) {
+        DispatchMessage(&amp;msg);
+    }
+    ExitProcess(0);
+    return 0;
+}
+</pre>
+<p>
+<b>Line 30</b>：使用DrawText()顯示文字<br><br>
+
+編譯、執行
+</p>
+<pre>
+$ winegcc main.c -o main -lgdi32
+$ wine ./main.exe
+</pre>
+<p>
+<img style="border:0px" src="nasm_win32_text/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

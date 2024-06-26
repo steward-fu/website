@@ -1,0 +1,82 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - Wine - C/C++ - Painting - <b>Set Pixel</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+http://www.winprog.org/tutorial/<br>
+http://winapi.freetechsecrets.com/win32/<br>
+https://github.com/gammasoft71/Examples_Win32<br>
+http://masm32.com/board/index.php?topic=3584.0<br>
+https://learn.microsoft.com/en-us/windows/win32/winmsg/window-styles<br><br>
+
+屏幕的最小顯示單位是像素，像素由紅色(Red)、綠色(Green)、藍色(Blue)、Alpha等四個顏色組成，因此，在呼叫CreateWindow()時，傳入的解析度，如：300x300，代表該視窗(有效區域)的X軸有300個像素，而Y軸則是有300個像素，這個300x300像素的區域是可以用來繪製任何東西，WM_PAINT是處理視窗重新繪畫的事件，繪畫的相關處理都需要在這個事件完成，比較特別的是，Windows視窗將繪圖的許多東西抽象化，最基本的需求是：一個DC(Device Context)和一個BITMAP，DC可以想像成是一個畫台，而BITMAP則是一片畫布(Buffer)，DC有了Buffer就可以畫上任何東西並將其顯示在視窗上<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;windows.h&gt;
+ 
+HWND hWin = NULL;
+WNDPROC defWndProc = NULL;
+ 
+LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+    int x = 0;
+    int y = 0;
+    HDC hdc = NULL;
+    PAINTSTRUCT ps = {0};
+
+    switch (uMsg) {
+    case WM_CLOSE:
+        DestroyWindow(hWnd);
+        return 0;
+    case WM_DESTROY:
+        PostQuitMessage(0);
+        return 0;
+    case WM_PAINT:
+        hdc = BeginPaint(hWnd, &amp;ps);
+        for (y = 0; y &lt; 100; y++) {
+            for (x = 0; x &lt; 100; x++) {
+                SetPixel(hdc, x, y, RGB(0xff, 0x00, 0x00));
+            }
+        }
+        EndPaint(hWnd, &amp;ps);
+        break;
+    }
+    return CallWindowProc(defWndProc, hWnd, uMsg, wParam, lParam);
+}
+ 
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
+{
+    hWin = CreateWindow(WC_DIALOG, "main", 
+        WS_OVERLAPPEDWINDOW | WS_VISIBLE, 0, 0, 300, 300, NULL, NULL, NULL, NULL);
+    defWndProc = (WNDPROC)SetWindowLongPtr(hWin, GWLP_WNDPROC, (long int)WndProc);
+ 
+    MSG msg = {0};
+    while (GetMessage(&amp;msg, NULL, 0, 0)) {
+        DispatchMessage(&amp;msg);
+    }
+    ExitProcess(0);
+    return 0;
+}
+</pre>
+<p>
+<b>Line 20~28</b>：處理繪畫事件<br>
+<b>Line 21</b>：取得視窗的DC，該DC已經有Buffer可以使用，因此，可以直接在上面繪製任何東西<br>
+<b>Line 22~26</b>：透過SetPixel()畫出一個正方形，顏色是紅色<br>
+<b>Line 27</b>：結束繪製<br><br>
+
+編譯、執行
+</p>
+<pre>
+$ winegcc main.c -o main -lgdi32
+$ wine ./main.exe
+</pre>
+<p>
+<img style="border:0px" src="nasm_win32_pixel/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
