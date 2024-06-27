@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head><script type="text/javascript" src="../page_head.js"></script>
 
-<h3><a href="../program.htm">程式語言</a> - Wine - C/C++ - Menu - <b>Resource</b></h3>
+<h3><a href="../program.htm">程式語言</a> - Wine - C/C++ - Menu - <b>CreateMenu</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
@@ -16,7 +16,8 @@ main.c
 </p>
 <pre class="brush:cpp">
 #include &lt;windows.h&gt;
-#include "resource.h"
+
+#define IDM_EXIT 101
 
 HWND hWin = NULL;
 WNDPROC defWndProc = NULL;
@@ -36,17 +37,22 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             DestroyWindow(hWnd);
             break;
         }
-        break;
+        return 0;
     }
     return CallWindowProc(defWndProc, hWnd, uMsg, wParam, lParam);
 }
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
-    HMENU hMenu = LoadMenu(hInstance, MAKEINTRESOURCE(IDM_MAIN));
     hWin = CreateWindow(WC_DIALOG, "main",
-        WS_OVERLAPPEDWINDOW | WS_VISIBLE, 0, 0, 300, 300, NULL, hMenu, NULL, NULL);
+        WS_OVERLAPPEDWINDOW | WS_VISIBLE, 0, 0, 300, 300, NULL, NULL, NULL, NULL);
     defWndProc = (WNDPROC)SetWindowLongPtr(hWin, GWLP_WNDPROC, (long int)WndProc);
+
+    HMENU hMenu = CreateMenu();
+    HMENU hSubMenu = CreateMenu();
+    AppendMenu(hSubMenu, MF_STRING, IDM_EXIT, "Exit");
+    AppendMenu(hMenu, MF_POPUP, (UINT_PTR)hSubMenu, "File");
+    SetMenu(hWin, hMenu);
 
     MSG msg = {0};
     while (GetMessage(&amp;msg, NULL, 0, 0)) {
@@ -58,39 +64,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 </pre><br>
 
 <p>
-main.rc
-</p>
-<pre>
-#include &lt;windows.h&gt;
-#include "resource.h"
-
-IDM_MAIN MENU DISCARDABLE
-BEGIN
-    POPUP "File"
-    BEGIN
-        MENUITEM "Exit", IDM_EXIT
-    END
-END
-</pre><br>
-
-<p>
-resource.h
-</p>
-<pre>
-#define IDM_MAIN 101
-#define IDM_EXIT 102
-</pre><br>
-
-<p>
 編譯、執行
 </p>
 <pre>
-$ x86_64-w64-mingw32-windres main.rc -o main.res
-$ winegcc main.c main.res -o main
+$ winegcc main.c -o main
 $ wine ./main.exe
 </pre>
 <p>
-<img style="border:0px" src="nasm_win32_menu/1.jpg" class="maxSize">
+<img style="border:0px" src="nasm_win32_menu_resource/1.jpg" class="maxSize">
 </p>
 
 <br><script type="text/javascript" src="../tail.js"></script>
