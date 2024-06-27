@@ -1,0 +1,42 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../phone.htm">手機</a> - F(x)tec Pro1 - Sailfish - <b>解決Undefined reference to bcmp問題</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://patchwork.kernel.org/project/linux-kbuild/patch/20190312215203.27643-1-natechancellor@gmail.com/<br><br>
+
+添加如下程式到<b>lib/string.c</b>
+</p>
+<pre class="brush:cpp">
+#ifdef __HAVE_ARCH_MEMCMP
+int bcmp(const void *cs, const void *ct, size_t n)
+{
+       return memcmp(cs, ct, n);
+}
+EXPORT_SYMBOL(bcmp);
+#else
+/**
+ * memcmp - Compare two areas of memory
+ * @cs: One area of memory
+ * @ct: Another area of memory
+ * @count: The size of the area.
+ */
+#undef memcmp
+__visible int memcmp(const void *cs, const void *ct, size_t count)
+{
+	const unsigned char *su1, *su2;
+	int res = 0;
+
+	for (su1 = cs, su2 = ct; 0 &lt; count; ++su1, ++su2, count--)
+		if ((res = *su1 - *su2) != 0)
+			break;
+	return res;
+}
+EXPORT_SYMBOL(memcmp);
+#endif
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
