@@ -26,6 +26,7 @@ All of files or resources used on my website can be found from the following lin
 [![](img/photos/x760p.jpg)](https://github.com/steward-fu/website/releases/tag/x760p)
 [![](img/photos/x350.jpg)](https://github.com/steward-fu/website/releases/tag/x350)
 [![](img/photos/cm3.jpg)](https://github.com/steward-fu/website/releases/tag/retro-cm3)
+[![](img/photos/q90.jpg)](https://github.com/steward-fu/website/releases/tag/q90)
 [![](img/photos/x3.jpg)](https://github.com/steward-fu/website/releases/tag/x3)
 [![](img/photos/x6-1.jpg)](https://github.com/steward-fu/website/releases/tag/x6)
 [![](img/photos/zpg-pro.jpg)](https://github.com/steward-fu/website/releases/tag/zpg-pro)
