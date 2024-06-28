@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head><script type="text/javascript" src="../page_head.js"></script>
 
-<h3><a href="../program.htm">程式語言</a> - Wine - C/C++ - Menu - <b>Create Menu</b></h3>
+<h3><a href="../program.htm">程式語言</a> - Wine - C/C++ - Menu - <b>System Menu</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
@@ -31,7 +31,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     case WM_DESTROY:
         PostQuitMessage(0);
         return 0;
-    case WM_COMMAND:
+    case WM_SYSCOMMAND:
         switch (LOWORD(wParam)) {
         case IDM_EXIT:
             DestroyWindow(hWnd);
@@ -48,11 +48,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         WS_OVERLAPPEDWINDOW | WS_VISIBLE, 0, 0, 300, 300, NULL, NULL, NULL, NULL);
     defWndProc = (WNDPROC)SetWindowLongPtr(hWin, GWLP_WNDPROC, (long int)WndProc);
 
-    HMENU hMenu = CreateMenu();
-    HMENU hSubMenu = CreateMenu();
-    AppendMenu(hSubMenu, MF_STRING, IDM_EXIT, "Exit");
-    AppendMenu(hMenu, MF_POPUP, (UINT_PTR)hSubMenu, "File");
-    SetMenu(hWin, hMenu);
+    HMENU hMenu = GetSystemMenu(hWin, 0);
+    AppendMenu(hMenu, MF_STRING, IDM_EXIT, "MyExit");
 
     MSG msg = {0};
     while (GetMessage(&amp;msg, NULL, 0, 0)) {
@@ -71,7 +68,7 @@ $ winegcc main.c -o main
 $ wine ./main.exe
 </pre>
 <p>
-<img style="border:0px" src="nasm_win32_menu_resource/1.jpg" class="maxSize">
+<img style="border:0px" src="nasm_win32_menu_system/1.jpg" class="maxSize">
 </p>
 
 <br><script type="text/javascript" src="../tail.js"></script>
