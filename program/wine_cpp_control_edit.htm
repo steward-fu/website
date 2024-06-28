@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head><script type="text/javascript" src="../page_head.js"></script>
 
-<h3><a href="../program.htm">程式語言</a> - Wine - C/C++ - Menu - <b>CreateMenu</b></h3>
+<h3><a href="../program.htm">程式語言</a> - Wine - C/C++ - Control - <b>Edit</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
@@ -15,11 +15,15 @@ https://learn.microsoft.com/en-us/windows/win32/winmsg/window-styles<br><br>
 main.c
 </p>
 <pre class="brush:cpp">
+#include &lt;stdio.h&gt;
 #include &lt;windows.h&gt;
+#include &lt;richedit.h&gt;
 
-#define IDM_EXIT 101
+#define ID_EDIT 1000
 
 HWND hWin = NULL;
+HWND hEdit = NULL;
+HFONT hFont = NULL;
 WNDPROC defWndProc = NULL;
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -31,13 +35,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     case WM_DESTROY:
         PostQuitMessage(0);
         return 0;
-    case WM_COMMAND:
-        switch (LOWORD(wParam)) {
-        case IDM_EXIT:
-            DestroyWindow(hWnd);
-            break;
-        }
-        return 0;
     }
     return CallWindowProc(defWndProc, hWnd, uMsg, wParam, lParam);
 }
@@ -46,32 +43,48 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 {
     hWin = CreateWindow(WC_DIALOG, "main",
         WS_OVERLAPPEDWINDOW | WS_VISIBLE, 0, 0, 300, 300, NULL, NULL, NULL, NULL);
+
+    hFont = CreateFont(20, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, 0,
+        OUT_OUTLINE_PRECIS, CLIP_DEFAULT_PRECIS,
+        CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, "Arial");
+
+    hEdit = CreateWindow("EDIT", "Test", WS_CHILD | WS_VISIBLE | ES_CENTER | ES_MULTILINE,
+        50, 50, 100, 100, hWin, (HMENU)ID_EDIT, NULL, NULL);
+
     defWndProc = (WNDPROC)SetWindowLongPtr(hWin, GWLP_WNDPROC, (long int)WndProc);
 
-    HMENU hMenu = CreateMenu();
-    HMENU hSubMenu = CreateMenu();
-    AppendMenu(hSubMenu, MF_STRING, IDM_EXIT, "Exit");
-    AppendMenu(hMenu, MF_POPUP, (UINT_PTR)hSubMenu, "File");
-    SetMenu(hWin, hMenu);
+    SendMessage(hEdit, WM_SETFONT, (WPARAM)hFont, TRUE);
 
     MSG msg = {0};
     while (GetMessage(&amp;msg, NULL, 0, 0)) {
-        DispatchMessage(&amp;msg);
+        if (IsDialogMessage(hEdit, &amp;msg)) {
+            if ((msg.message == WM_CHAR) &amp;&amp; (msg.wParam == 13)) {
+                char buf[255] = {0};
+                GetWindowText(hEdit, buf, sizeof(buf));
+                MessageBox(hWin, buf, "main", MB_OK);
+            }
+        }
+        else {
+            TranslateMessage(&amp;msg);
+            DispatchMessage(&amp;msg);
+        }
     }
     ExitProcess(0);
     return 0;
 }
 </pre><br>
-
 <p>
 編譯、執行
 </p>
 <pre>
-$ winegcc main.c -o main
+$ winegcc main.c -o main -lgdi32
 $ wine ./main.exe
 </pre>
 <p>
-<img style="border:0px" src="nasm_win32_menu_resource/1.jpg" class="maxSize">
+<img style="border:0px" src="nasm_win32_control_edit/1.jpg" class="maxSize"><br><br>
+
+按下Enter鍵就會顯示目前Edit的內容<br>
+<img style="border:0px" src="nasm_win32_control_edit/2.jpg" class="maxSize">
 </p>
 
 <br><script type="text/javascript" src="../tail.js"></script>
