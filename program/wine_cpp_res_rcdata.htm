@@ -1,0 +1,78 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - Wine - C/C++ - Resource - <b>RCData</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+http://www.winprog.org/tutorial/<br>
+http://winapi.freetechsecrets.com/win32/<br>
+https://github.com/gammasoft71/Examples_Win32<br>
+http://masm32.com/board/index.php?topic=3584.0<br>
+https://learn.microsoft.com/en-us/windows/win32/winmsg/window-styles<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;windows.h&gt;
+#include "resource.h"
+
+void DropFile(HINSTANCE hInstance, DWORD dwID, TCHAR *pResType, TCHAR *pFileName)
+{
+    DWORD dwRet = 0;
+    HRSRC hRes = FindResource(hInstance, MAKEINTRESOURCE(dwID), pResType);
+    HGLOBAL hRsc = LoadResource(hInstance, hRes);
+    LPVOID lpRsc = (unsigned char *)LockResource(hRsc);
+
+    DWORD dwFileSize = SizeofResource(hInstance, hRes);
+    HGLOBAL hGlobal = GlobalAlloc(GMEM_MOVEABLE, dwFileSize);
+    LPVOID pvData = GlobalLock(hGlobal);
+    memcpy(pvData, lpRsc, dwFileSize);
+    HANDLE hFile = CreateFile(pFileName, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+    WriteFile(hFile, pvData, dwFileSize, &amp;dwRet, NULL);
+    CloseHandle(hFile);
+    GlobalUnlock(hGlobal);
+    GlobalFree(hGlobal);
+}
+
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
+{
+    DropFile(hInstance, IDD_ELF, "DATA", "tmp.exe");
+    DropFile(hInstance, IDD_LIB, "DATA", "tmp.exe.so");
+    ExitProcess(0);
+    return 0;
+}
+</pre><br>
+
+<p>
+main.rc
+</p>
+<pre>
+#include &lt;windows.h&gt;
+#include "resource.h"
+
+IDD_ELF DATA "test.exe"
+IDD_LIB DATA "test.exe.so"
+</pre><br>
+
+<p>
+resource.h
+</p>
+<pre>
+#define IDD_ELF 101
+#define IDD_LIB 102
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ x86_64-w64-mingw32-windres main.rc -o main.res
+$ winegcc main.c main.res -o main
+$ wine ./main.exe
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

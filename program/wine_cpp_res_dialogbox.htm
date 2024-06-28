@@ -1,0 +1,90 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - Wine - C/C++ - Resource - <b>DialogBox</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+http://www.winprog.org/tutorial/<br>
+http://winapi.freetechsecrets.com/win32/<br>
+https://github.com/gammasoft71/Examples_Win32<br>
+http://masm32.com/board/index.php?topic=3584.0<br>
+https://learn.microsoft.com/en-us/windows/win32/winmsg/window-styles<br><br>
+
+DialogBox()是另一種用來建立Dialog的方式，有別於CreateDialog()，DialogBox()是屬於Block方式呼叫，直到Dialog結束後，才會從DialogBox()繼續往下執行，而使用DialogBox()建立的Dialog，必須使用EndDialog()關閉Dialog視窗<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;windows.h&gt;
+#include "resource.h"
+
+INT_PTR CALLBACK DlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+    DWORD dwID = wParam;
+
+    switch (uMsg) {
+    case WM_COMMAND:
+        if (dwID == IDOK) {
+            EndDialog(hWnd, 0);
+            return TRUE;
+        }
+        break;
+    }
+    return FALSE;
+}
+
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
+{
+    DialogBox(hInstance, MAKEINTRESOURCE(IDD_MAIN), NULL, DlgProc);
+    ExitProcess(0);
+    return 0;
+}
+</pre><br>
+
+<p>
+main.rc
+</p>
+<pre>
+#include &lt;windows.h&gt;
+#include "resource.h"
+
+IDR_MAINFRAME ICON "main.ico"
+
+IDD_MAIN DIALOGEX 0, 0, 100, 42
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "main"
+FONT 10, "MS Shell Dlg", 0, 0, 0x1
+BEGIN
+    LTEXT          "MyDialog", IDC_STATIC, 32, 0, 32, 16, SS_NOPREFIX | SS_CENTER
+    ICON           IDR_MAINFRAME, IDC_STATIC, 42, 10, 16, 16
+    DEFPUSHBUTTON  "OK", IDOK, 0, 25, 100, 16, WS_GROUP
+END
+</pre><br>
+
+<p>
+resource.h
+</p>
+<pre>
+#define IDD_MAIN      101
+#define IDR_MAINFRAME 102
+#define IDC_STATIC    -1
+</pre><br>
+
+<p>
+main.ico<br>
+<img style="border:0px" src="nasm_win32_res_dialog/2.png" class="maxSize"><br><br>
+
+編譯、執行
+</p>
+<pre>
+$ x86_64-w64-mingw32-windres main.rc -o main.res
+$ winegcc main.c main.res -o main
+$ wine ./main.exe
+</pre>
+<p>
+<img style="border:0px" src="nasm_win32_res_dialog/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
