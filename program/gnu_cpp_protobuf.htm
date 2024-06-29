@@ -13,12 +13,13 @@ main.proto
 </p>
 <pre class="brush:cpp">
 syntax = "proto3";
-
+ 
 package mytest.Test;
-
+ 
 message Who {
     string name = 1;
     int64 value = 2;
+    map&lt;string, string&gt; items = 3;
 }
 </pre><br>
 
@@ -30,32 +31,38 @@ main.cpp
 #include &lt;fstream&gt;
 #include &lt;stdexcept&gt;
 #include "main.pb.h"
-
+ 
 using namespace std;
 using namespace mytest::Test;
-
+ 
 int main(int argc, char **argv)
 {
     GOOGLE_PROTOBUF_VERIFY_VERSION;
-
+ 
     Who t1;
     t1.set_name("t1");
     t1.set_value(100);
-
+    (*t1.mutable_items())["1"] = "egg";
+    (*t1.mutable_items())["2"] = "apple";
+ 
     fstream out("t1.dat", ios::out | ios::trunc | ios::binary);
     t1.SerializeToOstream(&amp;out);
     out.close();
-
+ 
     Who t2;
     fstream in("t1.dat", ios::in | ios::binary);
     t2.ParseFromIstream(&amp;in);
     in.close();
-
-    cout &lt;&lt; "t1.name: " &lt;&lt; t1.name() &lt;&lt; endl;
-    cout &lt;&lt; "t1.value: " &lt;&lt; t1.value() &lt;&lt; endl;
+ 
     cout &lt;&lt; "t2.name: " &lt;&lt; t2.name() &lt;&lt; endl;
     cout &lt;&lt; "t2.value: " &lt;&lt; t2.value() &lt;&lt; endl;
+    cout &lt;&lt; "t2.items_size: " &lt;&lt; t2.mutable_items()-&gt;size() &lt;&lt; endl;
 
+    google::protobuf::Map t2_items = *t2.mutable_items();
+    for (google::protobuf::Map&lt;string, string&gt;::const_iterator it = t2_items.begin(); it != t2_items.end(); it++) {
+        cout &lt;&lt; "[" &lt;&lt; it-&gt;first &lt;&lt; "] = " &lt;&lt; it-&gt;second &lt;&lt; endl;
+    }
+ 
     return 0;
 }
 </pre><br>
