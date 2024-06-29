@@ -1,0 +1,118 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - MASM32 - Painting - <b>Draw Ellipse</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+http://www.winprog.org/tutorial/<br>
+http://winapi.freetechsecrets.com/win32/<br>
+https://github.com/gammasoft71/Examples_Win32<br><br>
+
+使用方式：<br>
+<img src="nasm_win32_ellipse/1.jpg" class="maxSize"><br><br>
+
+main.asm
+</p>
+<pre class="brush:asm">
+    .386
+    .model flat,stdcall
+    option casemap:none
+            
+include c:\masm32\include\msvcrt.inc
+include c:\masm32\include\windows.inc
+include c:\masm32\include\kernel32.inc
+include c:\masm32\include\gdi32.inc
+include c:\masm32\include\user32.inc
+            
+includelib c:\masm32\lib\msvcrt.lib
+includelib c:\masm32\lib\gdi32.lib
+includelib c:\masm32\lib\user32.lib
+includelib c:\masm32\lib\kernel32.lib
+            
+    .data
+szCaption   db "main",0
+hWin        dd 0
+hInstance   dd 0
+CommandLine dd 0
+defWndProc  dd 0
+            
+    .code
+WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
+    local hdc:dword
+    local pen:dword
+    local brush:dword
+    local ps:PAINTSTRUCT
+     
+    .if uMsg == WM_PAINT
+        invoke BeginPaint, hWnd, addr ps
+        mov hdc, eax
+     
+        invoke CreatePen, PS_SOLID, 3, 0ffh
+        mov pen, eax
+        invoke CreateSolidBrush, 0ff00h
+        mov brush, eax
+  
+        invoke SelectObject, hdc, pen
+        invoke SelectObject, hdc, brush
+        invoke Ellipse, hdc, 10, 10, 200, 200
+    
+        invoke EndPaint, hWnd, addr ps
+        invoke DeleteObject, pen
+        invoke DeleteObject, brush
+        xor eax, eax
+        ret
+    .elseif uMsg == WM_CLOSE
+        invoke DestroyWindow, hWnd
+        xor eax, eax
+        ret
+    .elseif uMsg == WM_DESTROY
+        invoke PostQuitMessage, 0
+        xor eax, eax
+        ret
+    .endif
+          
+    invoke CallWindowProc, defWndProc, hWnd, uMsg, wParam, lParam
+    ret
+WndProc endp
+           
+WinMain proc hInst:DWORD, hPrevInst:DWORD, CmdLine:DWORD, CmdShow:DWORD
+    local msg:MSG
+            
+    invoke CreateWindowEx, WS_EX_LEFT, WC_DIALOG, offset szCaption, 
+        WS_OVERLAPPEDWINDOW or WS_VISIBLE, 0, 0, 300, 300, NULL, NULL, NULL, NULL
+    mov hWin, eax
+           
+    invoke SetWindowLong, hWin, GWL_WNDPROC, WndProc
+    mov defWndProc, eax
+@@:
+    invoke GetMessage, addr msg, NULL, 0, 0
+    cmp eax, 0
+    je @f
+    invoke DispatchMessage, addr msg
+    jmp @b
+@@:
+    mov eax, msg.wParam
+    ret
+WinMain endp
+          
+start:
+    invoke GetModuleHandle, NULL
+    mov hInstance, eax
+            
+    invoke GetCommandLine
+    mov CommandLine, eax
+            
+    invoke WinMain, hInstance, NULL, CommandLine, SW_SHOWDEFAULT
+    invoke ExitProcess, eax
+end start
+</pre>
+<p>
+<b>Line 41</b>：畫出一個Ellipse圖形<br><br>
+
+完成<br>
+<img style="border:0px" src="nasm_win32_ellipse/2.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
