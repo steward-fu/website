@@ -43,6 +43,7 @@ All of files or resources used on my website can be found from the following lin
 [![](img/photos/titan.jpg)](https://github.com/steward-fu/website/releases/tag/titan)
 [![](img/photos/c700.jpg)](https://github.com/steward-fu/website/releases/tag/zaurus)
 [![](img/photos/pw-sh3.jpg)](https://github.com/steward-fu/website/releases/tag/brain)
+[![](img/photos/pocketchip.jpg)](https://github.com/steward-fu/website/releases/tag/pocketchip)
 [![](img/photos/zipit1.jpg)](https://github.com/steward-fu/website/releases/tag/zipit-z1)
 [![](img/photos/zipit2.jpg)](https://github.com/steward-fu/website/releases/tag/zipit-z2)
 [![](img/photos/d8.jpg)](https://github.com/steward-fu/website/releases/tag/iriver-d8)
