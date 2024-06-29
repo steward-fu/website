@@ -1,0 +1,88 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - Wine - C/C++ - Common Dialog - <b>FindText</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+http://www.winprog.org/tutorial/<br>
+http://winapi.freetechsecrets.com/win32/<br>
+https://github.com/gammasoft71/Examples_Win32<br>
+http://masm32.com/board/index.php?topic=3584.0<br>
+https://learn.microsoft.com/en-us/windows/win32/winmsg/window-styles<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;windows.h&gt;
+
+UINT uFindID = 0;
+HWND hFindWnd = 0;
+char pWhat[255] = {0};
+FINDREPLACE stFindData = {0};
+
+HWND hWin = NULL;
+WNDPROC defWndProc = NULL;
+
+LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+    switch (uMsg) {
+    case WM_CLOSE:
+        DestroyWindow(hWnd);
+        return 0;
+    case WM_DESTROY:
+        PostQuitMessage(0);
+        return 0;
+    }
+
+    if (uMsg == uFindID) {
+        if (stFindData.Flags &amp; FR_FINDNEXT) {
+            MessageBox(hWnd, pWhat, "main", MB_OK);
+        }
+        return 0;
+    }
+    return CallWindowProc(defWndProc, hWnd, uMsg, wParam, lParam);
+}
+
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
+{
+    hWin = CreateWindow(WC_DIALOG, "main",
+        WS_OVERLAPPEDWINDOW | WS_VISIBLE, 0, 0, 300, 300, NULL, NULL, NULL, NULL);
+    defWndProc = (WNDPROC)SetWindowLongPtr(hWin, GWLP_WNDPROC, (long int)WndProc);
+
+    stFindData.lStructSize = sizeof(FINDREPLACE);
+    stFindData.Flags = FR_DOWN;
+    stFindData.hwndOwner = hWin;
+    stFindData.lpstrFindWhat = pWhat;
+    stFindData.wFindWhatLen = sizeof(pWhat);
+    uFindID = RegisterWindowMessage("commdlg_FindReplace");
+    hFindWnd = FindText(&amp;stFindData);
+
+    MSG msg = {0};
+    while (GetMessage(&amp;msg, NULL, 0, 0)) {
+        if (!IsDialogMessage(hFindWnd, &amp;msg)) {
+            TranslateMessage(&amp;msg);
+            DispatchMessage(&amp;msg);
+        }
+    }
+    ExitProcess(0);
+    return 0;
+}
+</pre><br>
+<p>
+編譯、執行
+</p>
+<pre>
+$ winegcc main.c -o main -lcomdlg32
+$ wine ./main.exe
+</pre>
+<p>
+<img style="border:0px" src="nasm_win32_comm_findtext/1.jpg" class="maxSize"><br>
+<img style="border:0px" src="nasm_win32_comm_findtext/2.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
