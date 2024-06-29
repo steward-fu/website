@@ -1,0 +1,76 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - MinGW - <b>解決Junk (%esp) after expression問題</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://cboard.cprogramming.com/cplusplus-programming/122654-inline-asm-mingw.html<br><br>
+
+問題如下：
+</p>
+<pre>
+/tmp/ccOFcofP.s: Assembler messages:
+/tmp/ccOFcofP.s:18: Error: junk `(%esp)' after expression
+/tmp/ccOFcofP.s:19: Error: junk `(%esp)' after expression
+/tmp/ccOFcofP.s:20: Error: junk `(%esp)' after expression
+/tmp/ccOFcofP.s:21: Error: junk `(%esp)' after expression
+/tmp/ccOFcofP.s:22: Error: no such instruction: `movl $LC0,8(%esp)'
+/tmp/ccOFcofP.s:23: Error: no such instruction: `imull %edx,%eax'
+/tmp/ccOFcofP.s:24: Error: junk `(%esp)' after expression
+/tmp/ccOFcofP.s:25: Error: junk `(%esp)' after expression
+/tmp/ccOFcofP.s:26: Error: no such instruction: `movl %eax,12(%esp)'
+/tmp/ccOFcofP.s:27: Error: no such instruction: `popl %edx'
+</pre><br>
+
+<p>
+修改前
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;stdint.h&gt;
+
+int _main(int argc, char**argv)
+{
+    volatile char a, b, c;
+
+    __asm__(
+        ".intel_syntax noprefix\n"
+        "push ax\n"
+    );
+
+    a = 8;
+    b = 9;
+    c = a * b;
+    printf("%d\n", c);
+}
+</pre><br>
+
+<p>
+修改後
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;stdint.h&gt;
+
+int _main(int argc, char**argv)
+{
+    volatile char a, b, c;
+
+    __asm__(
+        ".intel_syntax noprefix\n"
+        "push ax\n"
+        ".att_syntax\n"
+    );
+
+    a = 8;
+    b = 9;
+    c = a * b;
+    printf("%d\n", c);
+}
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

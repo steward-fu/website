@@ -1,0 +1,53 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - MinGW - OpenCV - <b>開發環境</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://stackoverflow.com/questions/19754316/cross-compiling-opencv-with-mingw-using-cmakein-linux-for-windows<br><br>
+
+步驟如下：
+</p>
+<pre>
+$ cd
+$ wget https://github.com/opencv/opencv/archive/4.3.0.zip
+$ unzip 4.3.0.zip
+$ mkdir -p opencv-4.3.0/build
+$ cd opencv-4.3.0/build
+$ vim ../platforms/linux/mingw.toolchain.cmake
+    SET(CMAKE_SYSTEM_NAME Windows)
+    SET(CMAKE_C_COMPILER x86_64-w64-mingw32-gcc)
+    SET(CMAKE_CXX_COMPILER x86_64-w64-mingw32-g++)
+    SET(CMAKE_RC_COMPILER x86_64-w64-mingw32-windres)
+    SET(CMAKE_FIND_ROOT_PATH  /usr/x86_64-w64-mingw32)
+    SET(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+    SET(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+    SET(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+
+$ cmake .. -DCMAKE_TOOLCHAIN_FILE=../platforms/linux/mingw.toolchain.cmake -DCMAKE_INSTALL_PREFIX=/usr/x86_64-w64-mingw32
+$ make -j4
+$ sudo make install
+
+$ cd
+$ wget https://github.com/opencv/opencv_contrib/archive/4.3.0.tar.gz
+$ tar xvf 4.3.0.tar.gz
+$ mkdir opencv_contrib-4.3.0/build
+$ cd opencv_contrib-4.3.0/build
+$ vim ../mingw.toolchain.cmake
+    SET(CMAKE_SYSTEM_NAME Windows)
+    SET(CMAKE_C_COMPILER x86_64-w64-mingw32-gcc)
+    SET(CMAKE_CXX_COMPILER x86_64-w64-mingw32-g++)
+    SET(CMAKE_RC_COMPILER x86_64-w64-mingw32-windres)
+    SET(CMAKE_FIND_ROOT_PATH  /usr/x86_64-w64-mingw32)
+    SET(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+    SET(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+    SET(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+
+$ cmake .. -DCMAKE_TOOLCHAIN_FILE=../mingw.toolchain.cmake -DCMAKE_INSTALL_PREFIX=/usr/x86_64-w64-mingw32 -DOPENCV_EXTRA_MODULES_PATH=../modules ../../opencv-4.3.0
+$ make -j4
+$ sudo make install
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

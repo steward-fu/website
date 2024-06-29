@@ -1,0 +1,48 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - MinGW - <b>Inline Assembly</b></h3>
+<hr size="1"><br>
+<p>
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;stdint.h&gt;
+ 
+int _main(int argc, char**argv)
+{
+    uint32_t a=0x11223344, b=0x55667788;
+
+    printf("a:0x%08x, b:0x%08x\n", a, b);
+
+    __asm__(
+        ".intel_syntax noprefix\n"
+        "mov ecx, %[in_eax]\n"
+        "mov edx, %[in_ebx]\n"
+        "mov %[out_eax], edx\n"
+        "mov %[out_ebx], ecx\n"
+        ".att_syntax\n"
+        : [out_eax]"=r"(a), [out_ebx]"=r"(b)
+        : [in_eax]"r"(a), [in_ebx]"r"(b)
+        : "ecx", "edx"
+    );
+
+    printf("a:0x%08x, b:0x%08x\n", a, b);
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ i686-w64-mingw32-gcc main.c -o main.exe -lkernel32 -lmsvcrt -nostdlib
+$ wine main.exe
+    a:0x11223344, b:0x55667788
+    a:0x55667788, b:0x11223344
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

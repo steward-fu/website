@@ -1,0 +1,66 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - MinGW - OpenCV - <b>解決Error: recursive_mutex in namespace std does not name a type問題</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/tpoechtrager/wclang/issues/37<br>
+https://stackoverflow.com/questions/14191566/c-mutex-in-namespace-std-does-not-name-a-type<br><br>
+
+問題如下：
+</p>
+<pre>
+In file included from opencv-4.3.0/modules/core/src/precomp.hpp:49:0,
+                 from opencv-4.3.0/modules/core/src/algorithm.cpp:43:
+opencv-4.3.0/modules/core/include/opencv2/core/utility.hpp:714:14: error: ‘recursive_mutex’ in namespace ‘std’ does not name a type
+ typedef std::recursive_mutex Mutex;
+              ^~~~~~~~~~~~~~~
+opencv-4.3.0/modules/core/include/opencv2/core/utility.hpp:715:25: error: ‘Mutex’ is not a member of ‘cv’
+ typedef std::lock_guard&amp;lt;cv::Mutex&amp;gt; AutoLock;
+                         ^~
+opencv-4.3.0/modules/core/include/opencv2/core/utility.hpp:715:25: error: ‘Mutex’ is not a member of ‘cv’
+opencv-4.3.0/modules/core/include/opencv2/core/utility.hpp:715:34: error: template argument 1 is invalid
+ typedef std::lock_guard&amp;lt;cv::Mutex&amp;gt; AutoLock;
+                                  ^
+In file included from opencv-4.3.0/modules/core/src/algorithm.cpp:43:0:
+opencv-4.3.0/modules/core/src/precomp.hpp:365:5: error: ‘Mutex’ in namespace ‘cv’ does not name a type
+ cv::Mutex&amp;&amp;amp; getInitializationMutex();
+     ^~~~~
+modules/core/CMakeFiles/opencv_core.dir/build.make:109: recipe for target 'modules/core/CMakeFiles/opencv_core.dir/src/algorithm.cpp.o' failed
+make[2]: *** [modules/core/CMakeFiles/opencv_core.dir/src/algorithm.cpp.o] Error 1
+CMakeFiles/Makefile2:1839: recipe for target 'modules/core/CMakeFiles/opencv_core.dir/all' failed
+make[1]: *** [modules/core/CMakeFiles/opencv_core.dir/all] Error 2
+Makefile:182: recipe for target 'all' failed
+make: *** [all] Error 2
+</pre><br>
+
+<p>
+解法如下(執行如下命令切換成支援Posix的編譯器)：
+</p>
+<pre>
+$ sudo update-alternatives --config x86_64-w64-mingw32-gcc
+  There are 2 choices for the alternative x86_64-w64-mingw32-gcc (providing /usr/bin/x86_64-w64-mingw32-gcc).
+
+    Selection    Path                                   Priority   Status
+  ------------------------------------------------------------
+    0            /usr/bin/x86_64-w64-mingw32-gcc-win32   60        auto mode
+  * 1            /usr/bin/x86_64-w64-mingw32-gcc-posix   30        manual mode
+    2            /usr/bin/x86_64-w64-mingw32-gcc-win32   60        manual mode
+
+  Press &lt;enter&gt; to keep the current choice[*], or type selection number:
+
+$ sudo update-alternatives --config x86_64-w64-mingw32-g++
+  There are 2 choices for the alternative x86_64-w64-mingw32-g++ (providing /usr/bin/x86_64-w64-mingw32-g++).
+
+    Selection    Path                                   Priority   Status
+  ------------------------------------------------------------
+    0            /usr/bin/x86_64-w64-mingw32-g++-win32   60        auto mode
+  * 1            /usr/bin/x86_64-w64-mingw32-g++-posix   30        manual mode
+    2            /usr/bin/x86_64-w64-mingw32-g++-win32   60        manual mode
+
+  Press &lt;enter&gt; to keep the current choice[*], or type selection number:
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
