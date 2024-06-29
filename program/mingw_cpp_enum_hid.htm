@@ -1,0 +1,95 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - MinGW - C/C++ - <b>Enumerate USB HID</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+http://www.winprog.org/tutorial/<br>
+http://winapi.freetechsecrets.com/win32/<br>
+https://github.com/gammasoft71/Examples_Win32<br>
+http://masm32.com/board/index.php?topic=3584.0<br>
+https://learn.microsoft.com/en-us/windows/win32/winmsg/window-styles<br><br>
+
+main.cpp
+</p>
+<pre class="brush:cpp">
+#include &lt;stdint.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;windows.h&gt;
+#include &lt;setupapi.h&gt;
+
+extern "C" {
+    #include &lt;hidsdi.h&gt;
+}
+
+int enum_hid(void)
+{
+    GUID hidGuid;
+    HANDLE hidHandle;
+
+    HidD_GetHidGuid(&amp;hidGuid);
+    HDEVINFO hDevInfo = SetupDiGetClassDevs(&amp;hidGuid, NULL, NULL, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
+    if (hDevInfo == INVALID_HANDLE_VALUE) {
+        printf("failed to SetupDiGetClassDevs\n");
+        return 0;
+    }
+
+    int deviceNo = 0;
+    SP_DEVICE_INTERFACE_DATA devInfoData;
+    devInfoData.cbSize = sizeof(SP_DEVICE_INTERFACE_DATA);
+    SetLastError(NO_ERROR);
+    while (GetLastError() != ERROR_NO_MORE_ITEMS) {
+        if (SetupDiEnumInterfaceDevice(hDevInfo, 0, &amp;hidGuid, deviceNo, &amp;devInfoData)) {
+            printf("Index: %d\n", deviceNo);
+            ULONG requiredLength = 0;
+            SetupDiGetInterfaceDeviceDetail(hDevInfo, &amp;devInfoData, NULL, 0, &amp;requiredLength, NULL);
+            PSP_INTERFACE_DEVICE_DETAIL_DATA devDetail = (SP_INTERFACE_DEVICE_DETAIL_DATA *)malloc(requiredLength);
+            devDetail-&gt;cbSize = sizeof(SP_INTERFACE_DEVICE_DETAIL_DATA);
+            if (SetupDiGetInterfaceDeviceDetail(hDevInfo, &amp;devInfoData, devDetail, requiredLength, NULL, NULL)) {
+                printf("Path: %s\n", devDetail-&gt;DevicePath);
+                hidHandle = CreateFile(devDetail-&gt;DevicePath, 
+                    GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
+                if (hidHandle != INVALID_HANDLE_VALUE) {
+                    _HIDD_ATTRIBUTES hidAttributes;
+                    if (HidD_GetAttributes(hidHandle, &amp;hidAttributes)) {
+                        printf("USB_VID:0x%04x, USB_PID:0x%04x\n", hidAttributes.VendorID, hidAttributes.ProductID);
+                    }
+                    CloseHandle(hidHandle);
+                }
+                free(devDetail);
+            }
+            deviceNo += 1;
+        }
+    }
+    SetupDiDestroyDeviceInfoList(hDevInfo);
+    return 1;
+}
+
+int main(int argc, char **argv)
+{
+    enum_hid();
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯步驟：
+</p>
+<pre>
+$ i686-w64-mingw32-g++ -o main.exe main.cpp -lsetupapi -lhid -static -fpermissive
+</pre><br>
+
+<p>
+執行結果：
+</p>
+<pre>
+C:\&gt; main.exe
+    Index: 0
+    Path: \\?\hid#vid_16c0&amp;pid_0486&amp;mi_00#7&amp;259e7455&amp;0&amp;0000#{4d1e55b2-f16f-11cf-88cb-001111000030}
+    USB_VID:0x16c0, USB_PID:0x0486
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

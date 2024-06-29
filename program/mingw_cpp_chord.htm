@@ -1,0 +1,82 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - MinGW - C/C++ - Painting - <b>Draw Chord</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+http://www.winprog.org/tutorial/<br>
+http://winapi.freetechsecrets.com/win32/<br>
+https://github.com/gammasoft71/Examples_Win32<br>
+http://masm32.com/board/index.php?topic=3584.0<br>
+https://learn.microsoft.com/en-us/windows/win32/winmsg/window-styles<br><br>
+
+使用方式：<br>
+<img src="nasm_win32_chord/1.jpg" class="maxSize"><br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;windows.h&gt;
+ 
+HWND hWin = NULL;
+WNDPROC defWndProc = NULL;
+ 
+LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+    HDC hdc = NULL;
+    HPEN pen = NULL;
+    HBRUSH brush = NULL;
+    PAINTSTRUCT ps = {0};
+
+    switch (uMsg) {
+    case WM_CLOSE:
+        DestroyWindow(hWnd);
+        return 0;
+    case WM_DESTROY:
+        PostQuitMessage(0);
+        return 0;
+    case WM_PAINT:
+        hdc = BeginPaint(hWnd, &amp;ps);
+        pen = CreatePen(PS_SOLID, 3, RGB(0xff, 0x00, 0x00));
+        brush = CreateSolidBrush(RGB(0x00, 0xff, 0x00));
+        SelectObject(hdc, pen);
+        SelectObject(hdc, brush);
+        Chord(hdc, 10, 10, 200, 200, 0, 0, 200, 100);
+        EndPaint(hWnd, &amp;ps);
+        DeleteObject(pen);
+        DeleteObject(brush);
+        break;
+    }
+    return CallWindowProc(defWndProc, hWnd, uMsg, wParam, lParam);
+}
+ 
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
+{
+    hWin = CreateWindow(WC_DIALOG, "main", 
+        WS_OVERLAPPEDWINDOW | WS_VISIBLE, 0, 0, 300, 300, NULL, NULL, NULL, NULL);
+    defWndProc = (WNDPROC)SetWindowLongPtr(hWin, GWLP_WNDPROC, (long int)WndProc);
+ 
+    MSG msg = {0};
+    while (GetMessage(&amp;msg, NULL, 0, 0)) {
+        DispatchMessage(&amp;msg);
+    }
+    ExitProcess(0);
+    return 0;
+}
+</pre>
+<p>
+<b>Line 26</b>：畫出一個Arc圖形<br><br>
+
+編譯、執行
+</p>
+<pre>
+$ i686-w64-mingw32-gcc -mwindows main.c -o main.exe
+$ wine ./main.exe
+</pre>
+<p>
+<img src="nasm_win32_chord/2.jpg" class="maxSize"><br><br>
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

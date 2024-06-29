@@ -1,0 +1,85 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - MinGW - C/C++ - Painting - <b>Create Font</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+http://www.winprog.org/tutorial/<br>
+http://winapi.freetechsecrets.com/win32/<br>
+https://github.com/gammasoft71/Examples_Win32<br>
+http://masm32.com/board/index.php?topic=3584.0<br>
+https://learn.microsoft.com/en-us/windows/win32/winmsg/window-styles<br><br>
+
+在Windows視窗程式設計中，當需要文字輸出顯示在視窗上時，一般都會使用自定義的字型，因為系統預設的字型太小，而自定義的字型，除了可以是粗體或者斜體，還可以設定自定義的長寬尺寸，司徒使用一個簡單例子來說明如何建立自定義的字型<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdbool.h&gt;
+#include &lt;windows.h&gt;
+ 
+HWND hWin = NULL;
+WNDPROC defWndProc = NULL;
+ 
+LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+    HDC hdc = NULL;
+    HFONT font = NULL;
+    PAINTSTRUCT ps = {0};
+    const char *pMsg = "Test";
+
+    switch (uMsg) {
+    case WM_CLOSE:
+        DestroyWindow(hWnd);
+        return 0;
+    case WM_DESTROY:
+        PostQuitMessage(0);
+        return 0;
+    case WM_PAINT:
+        hdc = BeginPaint(hWnd, &amp;ps);
+
+        font = CreateFont(48, 0, 0, 0, FW_BOLD, false, false, false, 0,
+            OUT_OUTLINE_PRECIS, CLIP_DEFAULT_PRECIS,
+            CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, "Arial");
+
+        SetTextColor(hdc, RGB(0xff, 0x00, 0x00));
+        SetBkMode(hdc, TRANSPARENT);
+        SelectObject(hdc, font);
+        TextOut(hdc, 100, 100, pMsg, strlen(pMsg));
+        EndPaint(hWnd, &amp;ps);
+        DeleteObject(font);
+        break;
+    }
+    return CallWindowProc(defWndProc, hWnd, uMsg, wParam, lParam);
+}
+ 
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
+{
+    hWin = CreateWindow(WC_DIALOG, "main", 
+        WS_OVERLAPPEDWINDOW | WS_VISIBLE, 0, 0, 300, 300, NULL, NULL, NULL, NULL);
+    defWndProc = (WNDPROC)SetWindowLongPtr(hWin, GWLP_WNDPROC, (long int)WndProc);
+ 
+    MSG msg = {0};
+    while (GetMessage(&amp;msg, NULL, 0, 0)) {
+        DispatchMessage(&amp;msg);
+    }
+    ExitProcess(0);
+    return 0;
+}
+</pre>
+<p>
+<b>Line 24~26</b>：創造一個大小48、粗體的Arial字型<br><br>
+
+編譯、執行
+</p>
+<pre>
+$ i686-w64-mingw32-gcc -mwindows main.c -o main.exe
+$ wine ./main.exe
+</pre>
+<p>
+<img style="border:0px" src="nasm_win32_font/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
