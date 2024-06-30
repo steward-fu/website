@@ -1,0 +1,78 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - Flat Assembler (FASM) - Win32 API - <b>Hello, world!</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://board.flatassembler.net/<br><br>
+
+main.asm
+</p>
+<pre class="brush:asm">
+    format PE GUI 4.0
+    entry start
+
+    include "c:\fasm\include\win32a.inc"
+
+    section ".idata" import data readable writeable
+library user, "user32.dll", kernel, "kernel32.dll"
+
+import user,   MessageBox,  "MessageBoxA"
+import kernel, ExitProcess, "ExitProcess"
+
+    section ".data" data readable writeable
+szCaption db "main",0
+szContent db "Hello, world!",0
+
+    section ".text" code readable executable
+start:
+    invoke MessageBox, NULL, szContent, szCaption, MB_OK
+    invoke ExitProcess, 0
+</pre>
+<p>
+<b>Line 1</b>：執行檔的格式<br>
+<b>Line 2</b>：程式的進入點<br>
+<b>Line 4</b>：Header檔案<br>
+<b>Line 6</b>：Import區段<br>
+<b>Line 7</b>：使用到的Library<br>
+<b>Line 9~10</b>：使用到的Win32 API<br>
+<b>Line 12</b>：初始化的資料區段<br>
+<b>Line 13~14</b>：初始化的Global變數，型態是byte(char)且最後一個byte是0<br>
+<b>Line 16</b>：程式區段<br>
+<b>Line 17</b>：程式的進入點<br>
+<b>Line 18</b>：顯示Message對話盒，invoke其實就是call + push的綜合指令<br>
+<b>Line 19</b>：結束Process並且釋放相關資源<br><br>
+
+Makefile
+</p>
+<pre>
+export WINEPREFIX=/home/user/.wine_amd64
+
+TARGET=main
+MYWINE=box86 wine
+FASM32=/home/user/.wine_amd64/drive_c/fasm
+
+all:
+	${MYWINE} ${FASM32}/fasm.exe ${TARGET}.asm
+
+run:
+	${MYWINE} ${TARGET}.exe
+
+clean:
+	rm -rf ${TARGET}.exe
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ make
+$ make run
+</pre>
+<p>
+<img style="border:0px" src="nasm_win32_hello/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
