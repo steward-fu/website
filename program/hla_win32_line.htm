@@ -1,0 +1,119 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - High Level Assembly (HLA) - Win32 API (HLA v1.x) - Painting - <b>Draw Line</b></h3>
+<hr size="1"><br>
+<p>
+參考網站：<br>
+http://winapi.freetechsecrets.com/win32/<br>
+http://masm32.com/board/index.php?topic=3584.0<br>
+https://www.plantation-productions.com/Webster/<br>
+https://www.plantation-productions.com/Webster/Win32Asm/win32API.html<br><br>
+
+線的起始點位置是位於(x=0, y=0)，使用者可以呼叫MoveToEx()設定新的起始點，而使用LineTo()就可以畫出一條直線，新的起始點則是線的結束位置<br><br>
+
+main.hla
+</p>
+<pre class="brush:asm">
+program main;
+         
+#include("w.hhf")
+#include("args.hhf")
+#include("memory.hhf")
+#include("strings.hhf")
+         
+static
+    hWin:        dword;
+    hInstance:   dword;
+    CommandLine: string;
+    defWndProc:  dword;
+       
+readonly
+    szCaption: string:= "main";
+        
+procedure WndProc(hWnd:dword; uMsg:uns32; wParam:dword; lParam:dword); @stdcall;
+var
+    hdc: dword;
+    pen: dword[3];
+    ps: w.PAINTSTRUCT;
+   
+begin WndProc;
+    if (uMsg == w.WM_PAINT) then
+        w.BeginPaint(hWnd, ps);
+        mov(eax, hdc);
+  
+        w.CreatePen(w.PS_SOLID, 3, $ff);
+        mov(eax, pen[0]);
+        w.CreatePen(w.PS_SOLID, 3, $ff00);
+        mov(eax, pen[4]);
+        w.CreatePen(w.PS_SOLID, 3, $ff0000);
+        mov(eax, pen[8]);
+
+        w.SelectObject(hdc, pen[0]);
+        w.MoveToEx(hdc, 10, 100, NULL);
+        w.LineTo(hdc, 250, 100);
+   
+        w.SelectObject(hdc, pen[4]);
+        w.MoveToEx(hdc, 10, 150, NULL);
+        w.LineTo(hdc, 250, 150);
+        
+        w.SelectObject(hdc, pen[8]);
+        w.MoveToEx(hdc, 10, 200, NULL);
+        w.LineTo(hdc, 250, 200);
+        
+        w.EndPaint(hWnd, ps);
+        w.DeleteObject(pen[0]);
+        w.DeleteObject(pen[4]);
+        w.DeleteObject(pen[8]);
+        xor(eax, eax);
+    elseif (uMsg == w.WM_CLOSE) then
+        w.DestroyWindow(hWnd);
+        xor(eax, eax);
+    elseif (uMsg == w.WM_DESTROY) then
+        w.PostQuitMessage(0);
+        xor(eax, eax);
+    else
+        w.CallWindowProc(defWndProc, hWnd, uMsg, wParam, lParam);
+    endif;
+end WndProc;
+        
+procedure WinMain(hInst:dword; hPrevInst:dword; CmdLine:string; CmdShow:dword);
+var
+    msg: w.MSG;
+         
+begin WinMain;
+    w.CreateWindowEx(w.WS_EX_LEFT, w.WC_DIALOG, szCaption,
+        w.WS_OVERLAPPEDWINDOW | w.WS_VISIBLE, 0, 0, 300, 300, 0, 0, NULL, NULL);
+    mov(eax, hWin);
+        
+    w.SetWindowLong(hWin, w.GWL_WNDPROC, &amp;WndProc);
+    mov(eax, defWndProc);
+   
+    forever
+        w.GetMessage(msg, NULL, 0, 0);
+        breakif(!eax);
+         
+        w.DispatchMessage(msg);
+    endfor;
+    mov(msg.wParam, eax);
+end WinMain;
+         
+begin main;
+    w.GetModuleHandle(NULL);
+    mov(eax, hInstance);
+    mov(arg.cmdLn(), CommandLine);
+        
+    WinMain(hInstance, NULL, CommandLine, w.SW_SHOWNORMAL);
+        
+    w.ExitProcess(eax);
+end main;
+</pre>
+<p>
+<b>Line 28~45</b>：產生三隻Pen並且畫出三條直線，需要注意的是，同一時間只能選擇一隻Pen<br><br>
+
+完成<br>
+<img style="border:0px" src="nasm_win32_line/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

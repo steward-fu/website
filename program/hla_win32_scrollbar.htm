@@ -1,0 +1,108 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - High Level Assembly (HLA) - Win32 API (HLA v1.x) - <b>Set Scrollbar</b></h3>
+<hr size="1"><br>
+<p>
+參考網站：<br>
+http://winapi.freetechsecrets.com/win32/<br>
+http://masm32.com/board/index.php?topic=3584.0<br>
+https://www.plantation-productions.com/Webster/<br>
+https://www.plantation-productions.com/Webster/Win32Asm/win32API.html<br><br>
+
+當視窗的可視區域(如：300x300像素)小於顯示圖片大小(如：640x480像素)時，這時可以使用Windows視窗元件Scrollbar，用來做顯示位置調整的動作，Scrollbar元件有垂直和水平兩種方向並且提供視窗事件回報機制(WM_VSCROLL、WM_HSCROLL)，因此，這裡的Scrollbar元件並不能夠自動幫忙做顯示位置調整的動作，取而代之的是，在收到WM_VSCROLL、WM_HSCROLL事件時，使用者必須自己決定哪些東西要顯示在視窗的可視區域上<br><br>
+
+main.hla
+</p>
+<pre class="brush:asm">
+program main;
+     
+#include("w.hhf")
+#include("args.hhf")
+#include("memory.hhf")
+#include("strings.hhf")
+     
+static
+    hWin:        dword;
+    hInstance:   dword;
+    CommandLine: string;
+    defWndProc:  dword;
+   
+readonly
+    SLUP:      string:= "LINE++";
+    SLDN:      string:= "LINE--";
+    SPUP:      string:= "PAGE++";
+    SPDN:      string:= "PAGE--";
+    szCaption: string:= "main";
+    
+procedure WndProc(hWnd:dword; uMsg:uns32; wParam:dword; lParam:dword); @stdcall;
+begin WndProc;
+    if (uMsg == w.WM_VSCROLL) then
+        mov(wParam, eax);
+        and($ffff, eax);
+        if (eax == w.SB_LINEUP) then
+            w.SetWindowText(hWnd, SLUP);
+        elseif (eax == w.SB_LINEDOWN) then
+            w.SetWindowText(hWnd, SLDN);
+        elseif (eax == w.SB_PAGEUP) then
+            w.SetWindowText(hWnd, SPUP);
+        elseif (eax == w.SB_PAGEDOWN) then
+            w.SetWindowText(hWnd, SPDN);
+        endif;
+        xor(eax, eax);
+    elseif (uMsg == w.WM_CLOSE) then
+        w.DestroyWindow(hWnd);
+        xor(eax, eax);
+    elseif (uMsg == w.WM_DESTROY) then
+        w.PostQuitMessage(0);
+        xor(eax, eax);
+    else
+        w.CallWindowProc(defWndProc, hWnd, uMsg, wParam, lParam);
+    endif;
+end WndProc;
+    
+procedure WinMain(hInst:dword; hPrevInst:dword; CmdLine:string; CmdShow:dword);
+var
+    msg: w.MSG;
+     
+begin WinMain;
+    w.CreateWindowEx(w.WS_EX_LEFT, w.WC_DIALOG, szCaption,
+        w.WS_OVERLAPPEDWINDOW | w.WS_VISIBLE | w.WS_VSCROLL, 0, 0, 300, 300, 0, 0, NULL, NULL);
+    mov(eax, hWin);
+    
+    w.SetWindowLong(hWin, w.GWL_WNDPROC, &amp;WndProc);
+    mov(eax, defWndProc);
+
+    w.SetScrollRange(hWin, w.SB_VERT, 0, 100, false);
+    w.SetScrollPos(hWin, w.SB_VERT, 50, true);
+    forever
+        w.GetMessage(msg, NULL, 0, 0);
+        breakif(!eax);
+     
+        w.DispatchMessage(msg);
+    endfor;
+    mov(msg.wParam, eax);
+end WinMain;
+     
+begin main;
+    w.GetModuleHandle(NULL);
+    mov(eax, hInstance);
+    mov(arg.cmdLn(), CommandLine);
+    
+    WinMain(hInstance, NULL, CommandLine, w.SW_SHOWNORMAL);
+    
+    w.ExitProcess(eax);
+end main;
+</pre>
+<p>
+<b>Line 23~35</b>：處理Scrollbar訊息並且顯示在視窗標題<br>
+<b>Line 53</b>：WS_VSCROLL是垂直的Scrollbar，WS_HSCROLL則是水平的Scrollbar<br>
+<b>Line 59</b>：設定Scrollbar最大的範圍<br>
+<b>Line 60</b>：設定Scrollbar目前的位置<br><br>
+
+完成<br>
+<img style="border:0px" src="nasm_win32_scrollbar/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

@@ -1,0 +1,32 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - High Level Assembly (HLA) - <b>解決w.WC_DIALOG定義錯誤問題</b></h3>
+<hr size="1"><br>
+<p>
+片段程式
+</p>
+<pre class="brush:asm">
+w.CreateWindowEx(w.WS_EX_LEFT, w.WC_DIALOG, AppName, w.WS_OVERLAPPEDWINDOW,
+    0, 0, 300, 300, 0, 0, hInst, NULL);
+</pre><br>
+
+<p>
+司徒一直稿不懂為何WC_DIALOG的程式跑不起來，逆向看了下，才發現WC_DIALOG的數值(0x8002)被改成0x1f42<br>
+<img src="hla_fix_wc_dialog/1.jpg" class="maxSize"><br><br>
+
+翻了下c:\hla\include\w.hhf
+</p>
+<pre class="brush:asm">
+WC_DIALOG:= 8002;
+</pre><br>
+
+<p>
+這才發現，原來是少了個$符號，$符號代表16進制的意思，沒有$則代表10進制，改成如下即可
+</p>
+<pre class="brush:asm">
+WC_DIALOG:= $8002;
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

@@ -1,0 +1,88 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - High Level Assembly (HLA) - Win32 API (HLA v1.x) - Single Document Interface (SDI) - <b>Handle Event</b></h3>
+<hr size="1"><br>
+<p>
+參考網站：<br>
+http://winapi.freetechsecrets.com/win32/<br>
+http://masm32.com/board/index.php?topic=3584.0<br>
+https://www.plantation-productions.com/Webster/<br>
+https://www.plantation-productions.com/Webster/Win32Asm/win32API.html<br><br>
+
+當視窗有事件需要被處理時，系統會透過呼叫註冊的Callback副程式來處理，而這個Callback副程式就是在註冊Class時，設定給lpfnWndProc的事件處理副程式，因此，當這個事件處理副程式被呼叫時，可以處理自己感興趣的事件，而其餘事件則交給系統處理(透過呼叫DefWindowProc())，需要注意的是，例如：WM_CLOSE，就必須由該視窗自己處理，因為系統無法知道還有哪些額外的資源需要被釋放掉<br><br>
+
+main.hla
+</p>
+<pre class="brush:asm">
+program main;
+ 
+#include("w.hhf")
+#include("args.hhf")
+#include("memory.hhf")
+#include("strings.hhf")
+ 
+static
+    hInstance:   dword;
+    CommandLine: string;
+    wndClass:    w.WNDCLASS;
+ 
+readonly
+    szName: string:= "main";
+
+procedure WndProc(hWnd:dword; uMsg:uns32; wParam:dword; lParam:dword); @stdcall;
+begin WndProc;
+    if (uMsg == w.WM_CLOSE) then
+        w.DestroyWindow(hWnd);
+        xor(eax, eax);
+        exit WndProc;
+    elseif (uMsg == w.WM_DESTROY) then
+        w.PostQuitMessage(0);
+        xor(eax, eax);
+        exit WndProc;
+    endif;
+
+    w.DefWindowProc(hWnd, uMsg, wParam, lParam);
+end WndProc;
+
+procedure WinMain(hInst:dword; hPrevInst:dword; CmdLine:string; CmdShow:dword);
+var
+    msg: w.MSG;
+ 
+begin WinMain;
+    mov(&amp;WndProc, wndClass.lpfnWndProc);
+    mov(szName, wndClass.lpszClassName);
+    w.RegisterClass(wndClass);
+
+    w.CreateWindowEx(w.WS_EX_LEFT, szName, szName,
+        w.WS_OVERLAPPEDWINDOW | w.WS_VISIBLE, 0, 0, 300, 300, 0, 0, NULL, NULL);
+     
+    forever
+        w.GetMessage(msg, NULL, 0, 0);
+        breakif(!eax);
+ 
+        w.DispatchMessage(msg);
+    endfor;
+    mov(msg.wParam, eax);
+end WinMain;
+ 
+begin main;
+    w.GetModuleHandle(NULL);
+    mov(eax, hInstance);
+    mov(arg.cmdLn(), CommandLine);
+ 
+    WinMain(hInstance, NULL, CommandLine, w.SW_SHOWNORMAL);
+ 
+    w.ExitProcess(eax);
+end main;
+</pre>
+<p>
+<b>Line 18~26</b>：關閉視窗的順序為：主視窗收到WM_CLOSE事件時，呼叫DestroyWindow()，DestroyWindow()會自動將子視窗的相關資源也一併釋放掉(包含Resource描述的資源)，系統接著會發送WM_DESTROY事件給主視窗，待主視窗收到WM_DESTROY事件時，呼叫PostQuitMessage()結束視窗，值得注意的地方是，SendMessage()是屬於Block方式呼叫(必須等待動作執行完畢才返回)，而PostQuitMessage()則是Non-block方式呼叫<br>
+<b>Line 28</b>：其餘事件由系統代為處理</br><br>
+
+完成<br>
+<img style="border:0px" src="nasm_win32_sdi_window/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

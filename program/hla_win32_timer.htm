@@ -1,0 +1,100 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - High Level Assembly (HLA) - Win32 API (HLA v1.x) - <b>Set Timer</b></h3>
+<hr size="1"><br>
+<p>
+參考網站：<br>
+http://winapi.freetechsecrets.com/win32/<br>
+http://masm32.com/board/index.php?topic=3584.0<br>
+https://www.plantation-productions.com/Webster/<br>
+https://www.plantation-productions.com/Webster/Win32Asm/win32API.html<br><br>
+
+Windows的Timer中斷週期是基於早期系統架構，因此，最短的Timer時間間隔為15ms，因此，即使Timer設定為1ms，觸發時間依舊為15ms<br><br>
+
+main.hla
+</p>
+<pre class="brush:asm">
+program main;
+    
+#include("w.hhf")
+#include("args.hhf")
+#include("memory.hhf")
+#include("strings.hhf")
+    
+static
+    cnt:         dword;
+    buf:         byte[255];
+    hWin:        dword;
+    hInstance:   dword;
+    CommandLine: string;
+    defWndProc:  dword;
+  
+    wsprintf: procedure(p0:dword; p1:dword; p2:dword); @stdcall; external("__imp__wsprintfA");
+  
+readonly
+    fmt:       string:= "%d";
+    szCaption: string:= "main";
+   
+procedure WndProc(hWnd:dword; uMsg:uns32; wParam:dword; lParam:dword); @stdcall;
+begin WndProc;
+    if (uMsg == w.WM_TIMER) then
+        inc(cnt);
+        wsprintf(&amp;buf, fmt, cnt);
+        w.SetWindowText(hWnd, &amp;buf);
+        xor(eax, eax);
+    elseif (uMsg == w.WM_CLOSE) then
+        w.DestroyWindow(hWnd);
+        xor(eax, eax);
+    elseif (uMsg == w.WM_DESTROY) then
+        w.KillTimer(hWnd, 1);
+        w.PostQuitMessage(0);
+        xor(eax, eax);
+    else
+        w.CallWindowProc(defWndProc, hWnd, uMsg, wParam, lParam);
+    endif;
+end WndProc;
+   
+procedure WinMain(hInst:dword; hPrevInst:dword; CmdLine:string; CmdShow:dword);
+var
+    msg: w.MSG;
+    
+begin WinMain;
+    w.CreateWindowEx(w.WS_EX_LEFT, w.WC_DIALOG, szCaption,
+        w.WS_OVERLAPPEDWINDOW | w.WS_VISIBLE, 0, 0, 300, 300, 0, 0, NULL, NULL);
+    mov(eax, hWin);
+   
+    w.SetWindowLong(hWin, w.GWL_WNDPROC, &amp;WndProc);
+    mov(eax, defWndProc);
+
+    w.SetTimer(hWin, 1, 1000, NULL);
+    forever
+        w.GetMessage(msg, NULL, 0, 0);
+        breakif(!eax);
+    
+        w.DispatchMessage(msg);
+    endfor;
+    mov(msg.wParam, eax);
+end WinMain;
+    
+begin main;
+    w.GetModuleHandle(NULL);
+    mov(eax, hInstance);
+    mov(arg.cmdLn(), CommandLine);
+   
+    WinMain(hInstance, NULL, CommandLine, w.SW_SHOWNORMAL);
+   
+    w.ExitProcess(eax);
+end main;
+</pre>
+<p>
+<b>Line 24~27</b>：累加數值並且顯示在視窗標題<br>
+<b>Line 33</b>：不使用Timer，記得關閉Timer<br>
+<b>Line 53</b>：設定Timer為每秒(1000ms)觸發一次，ID=1<br><br>
+
+完成<br>
+<img style="border:0px" src="nasm_win32_timer/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
