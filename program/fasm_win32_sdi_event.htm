@@ -13,34 +13,7 @@ https://board.flatassembler.net/<br><br>
 main.asm
 </p>
 <pre class="brush:asm">
-    format PE GUI 4.0
-    entry start
-  
-    include "c:\fasm\include\win32a.inc"
- 
-    section ".idata" import data readable writeable
-library user, "user32.dll", kernel, "kernel32.dll"
-  
-import user,                             \
-    MessageBox,      "MessageBoxA",      \
-    GetMessage,      "GetMessageA",      \
-    DestroyWindow,   "DestroyWindow",    \
-    RegisterClass,   "RegisterClassA",   \
-    DefWindowProc,   "DefWindowProcA",   \
-    CreateWindowEx,  "CreateWindowExA",  \
-    DispatchMessage, "DispatchMessageA", \
-    PostQuitMessage, "PostQuitMessage"
- 
-import kernel,                           \
-    ExitProcess,     "ExitProcess",      \
-    GetCommandLine,  "GetCommandLineA",  \
-    GetModuleHandle, "GetModuleHandleA"
-  
-    section ".data" data readable writeable
-szName      db       "main",0
-CommandLine dd       0
-hInstance   dd       0
-wndClass    WNDCLASS &lt;0&gt;
+    include "head.asm" 
 
     section ".text" code readable executable
 proc WndProc hWnd, uMsg, wParam, lParam
@@ -51,31 +24,31 @@ proc WndProc hWnd, uMsg, wParam, lParam
     je .handle_destroy
     invoke DefWindowProc, [hWnd], [uMsg], [wParam], [lParam]
     jmp .finish
- 
+  
 .handle_close:
     invoke DestroyWindow, [hWnd]
     xor eax, eax
     jmp .finish
- 
+  
 .handle_destroy:
     invoke PostQuitMessage, 0
     xor eax, eax
     jmp .finish
-  
+   
 .finish:
     ret
 endp
-
+ 
 proc WinMain hInst, hPrevInst, CmdLine, CmdShow
     local msg:MSG
-
-    mov [wndClass.lpfnWndProc], WndProc
-    mov [wndClass.lpszClassName], szName
-    invoke RegisterClass, wndClass
  
+    mov [pWndClass.lpfnWndProc], WndProc
+    mov [pWndClass.lpszClassName], szName
+    invoke RegisterClass, pWndClass
+  
     invoke CreateWindowEx, WS_EX_LEFT, szName, szName, \
         WS_OVERLAPPEDWINDOW or WS_VISIBLE, 0, 0, 300, 300, NULL, NULL, NULL, NULL
- 
+  
 @@:
     lea eax, [msg]
     invoke GetMessage, eax, NULL, 0, 0
@@ -88,20 +61,20 @@ proc WinMain hInst, hPrevInst, CmdLine, CmdShow
     mov eax, [msg.wParam]
     ret
 endp
- 
+  
 start:
     invoke GetModuleHandle, NULL
     mov [hInstance], eax
-  
+   
     invoke GetCommandLine
-    mov [CommandLine], eax
-  
-    stdcall WinMain, [hInstance], NULL, [CommandLine], SW_SHOWNORMAL
+    mov [pCommand], eax
+   
+    stdcall WinMain, [hInstance], NULL, [pCommand], SW_SHOWNORMAL
     invoke ExitProcess, eax
 </pre>
 <p>
-<b>Line 32~36</b>：關閉視窗的順序為：主視窗收到WM_CLOSE事件時，呼叫DestroyWindow()，DestroyWindow()會自動將子視窗的相關資源也一併釋放掉(包含Resource描述的資源)，系統接著會發送WM_DESTROY事件給主視窗，待主視窗收到WM_DESTROY事件時，呼叫PostQuitMessage()結束視窗，值得注意的地方是，SendMessage()是屬於Block方式呼叫(必須等待動作執行完畢才返回)，而PostQuitMessage()則是Non-block方式呼叫<br>
-<b>Line 37</b>：其餘事件由系統代為處理</br><br>
+<b>Line 5~9</b>：關閉視窗的順序為：主視窗收到WM_CLOSE事件時，呼叫DestroyWindow()，DestroyWindow()會自動將子視窗的相關資源也一併釋放掉(包含Resource描述的資源)，系統接著會發送WM_DESTROY事件給主視窗，待主視窗收到WM_DESTROY事件時，呼叫PostQuitMessage()結束視窗，值得注意的地方是，SendMessage()是屬於Block方式呼叫(必須等待動作執行完畢才返回)，而PostQuitMessage()則是Non-block方式呼叫<br>
+<b>Line 10</b>：其餘事件由系統代為處理</br><br>
 
 完成<br>
 <img style="border:0px" src="nasm_win32_sdi_window/1.jpg" class="maxSize">
