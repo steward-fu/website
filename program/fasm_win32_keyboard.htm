@@ -29,39 +29,7 @@ lKeyData = lParam;       // key data
 main.asm
 </p>
 <pre class="brush:asm">
-    format PE GUI 4.0
-    entry start
-  
-    include "c:\fasm\include\win32a.inc"
- 
-    section ".idata" import data readable writeable
-library user, "user32.dll", kernel, "kernel32.dll"
-  
-import user,                             \
-    wsprintf,        "wsprintfA",        \
-    MessageBox,      "MessageBoxA",      \
-    GetMessage,      "GetMessageA",      \
-    SetWindowText,   "SetWindowTextA",   \
-    DestroyWindow,   "DestroyWindow",    \
-    SetWindowLong,   "SetWindowLongA",   \
-    CreateWindowEx,  "CreateWindowExA",  \
-    CallWindowProc,  "CallWindowProcA",  \
-    DispatchMessage, "DispatchMessageA", \
-    PostQuitMessage, "PostQuitMessage"
- 
-import kernel,                           \
-    ExitProcess,     "ExitProcess",      \
-    GetCommandLine,  "GetCommandLineA",  \
-    GetModuleHandle, "GetModuleHandleA"
-  
-    section ".data" data readable writeable
-hWin        dd 0
-szCaption   db "main",0
-hInstance   dd 0
-CommandLine dd 0
-defWndProc  dd 0
-buf         db 255 dup(0)
-fmt         db "Key: %d",0
+    include "head.asm" 
 
     section ".text" code readable executable
 proc WndProc hWnd, uMsg, wParam, lParam
@@ -74,39 +42,39 @@ proc WndProc hWnd, uMsg, wParam, lParam
     je .handle_close
     cmp eax, WM_DESTROY
     je .handle_destroy
-    invoke CallWindowProc, [defWndProc], [hWnd], [uMsg], [wParam], [lParam]
+    invoke CallWindowProc, [pDefWndProc], [hWnd], [uMsg], [wParam], [lParam]
     jmp .finish
-
+ 
 .handle_key:
-    invoke wsprintf, buf, fmt, [wParam]
-    invoke SetWindowText, [hWnd], buf
+    invoke wsprintf, szBuf, FMT_KBD, [wParam]
+    invoke SetWindowText, [hWnd], szBuf
     xor eax, eax
     jmp .finish
-
+ 
 .handle_close:
     invoke DestroyWindow, [hWnd]
     xor eax, eax
     jmp .finish
- 
+  
 .handle_destroy:
     invoke PostQuitMessage, 0
     xor eax, eax
     jmp .finish
-  
+   
 .finish:
     ret
 endp
- 
+  
 proc WinMain hInst, hPrevInst, CmdLine, CmdShow
     local msg:MSG
- 
-    invoke CreateWindowEx, WS_EX_LEFT, WC_DIALOG, szCaption, \
+  
+    invoke CreateWindowEx, WS_EX_LEFT, WC_DIALOG, szName, \
         WS_OVERLAPPEDWINDOW or WS_VISIBLE, 0, 0, 300, 300, NULL, NULL, NULL, NULL
     mov [hWin], eax
- 
+  
     invoke SetWindowLong, [hWin], GWL_WNDPROC, WndProc
-    mov [defWndProc], eax
- 
+    mov [pDefWndProc], eax
+  
 @@:
     lea eax, [msg]
     invoke GetMessage, eax, NULL, 0, 0
@@ -119,19 +87,19 @@ proc WinMain hInst, hPrevInst, CmdLine, CmdShow
     mov eax, [msg.wParam]
     ret
 endp
- 
+  
 start:
     invoke GetModuleHandle, NULL
     mov [hInstance], eax
-  
+   
     invoke GetCommandLine
-    mov [CommandLine], eax
-  
-    stdcall WinMain, [hInstance], NULL, [CommandLine], SW_SHOWNORMAL
+    mov [pCommand], eax
+   
+    stdcall WinMain, [hInstance], NULL, [pCommand], SW_SHOWNORMAL
     invoke ExitProcess, eax
 </pre>
 <p>
-<b>Line 49~53</b>：將按鍵數值顯示在視窗標題<br><br>
+<b>Line 18~19</b>：將按鍵數值顯示在視窗標題<br><br>
 
 完成<br>
 <img style="border:0px" src="nasm_win32_keyboard/1.jpg" class="maxSize">
