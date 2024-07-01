@@ -1,0 +1,93 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - GNU - C/C++ - <b>Protocol Buffers(nanopb)</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://www.jianshu.com/p/cad578f48e0a<br>
+https://github.com/nanopb/nanopb/tree/master<br>
+https://github.com/afiskon/cpp-protobuf-example/tree/master<br>
+https://stackoverflow.com/questions/47704968/protoc-command-not-found-linux<br>
+https://stackoverflow.com/questions/62707863/how-to-encode-messages-with-map-using-google-protobuf-in-javascript-protocol<br><br>
+
+main.proto
+</p>
+<pre class="brush:cpp">
+syntax = "proto3";
+
+message Test {
+    string name = 1;
+    int32 value = 2;
+}
+</pre><br>
+
+<p>
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;pb_encode.h&gt;
+#include &lt;pb_decode.h&gt;
+
+#include "main.pb.h"
+
+bool write_pb(pb_ostream_t *stream, const pb_field_t *field, void * const *arg)
+{
+    char *str = *arg;
+
+    pb_encode_tag_for_field(stream, field);
+    return pb_encode_string(stream, (uint8_t *)str, strlen(str));
+}
+
+bool read_pb(pb_istream_t *stream, const pb_field_t *field, void **arg)
+{
+    int i = 0;
+    char* tmp = *arg;
+    uint64_t value = 0;
+
+    while (stream-&gt;bytes_left) {
+        pb_decode_varint(stream, &amp;value);
+        *(tmp + i) = value;
+        i+= 1;
+    }
+    return true;
+}
+
+int main(int argc, char **argv)
+{
+    char tmp[128] = {0};
+    char buffer[128] = {0};
+    
+    Test t1 = Test_init_zero;
+    pb_ostream_t s1 = pb_ostream_from_buffer(buffer, sizeof(buffer));
+    t1.name.funcs.encode = write_pb;
+    t1.name.arg = "t1";
+    t1.value = 100;
+    pb_encode(&amp;s1, Test_fields, &amp;t1);
+
+    Test t2 = Test_init_zero;
+    t2.name.arg = &amp;tmp;
+    t2.name.funcs.decode = read_pb;
+    pb_istream_t stream = pb_istream_from_buffer(buffer, s1.bytes_written);
+    pb_decode(&amp;stream, Test_fields, &amp;t2);
+
+    printf("t2.name %s\n", tmp);
+    printf("t2.value %d\n", t2.value);
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ protoc --nanopb_out=. main.proto
+$ gcc main.c -o test main.pb.c -I. -lprotobuf-nanopb
+$ ./test
+    t2.name t1
+    t2.value 100
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
