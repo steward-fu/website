@@ -64,6 +64,7 @@ All of files or resources used on my website can be found from the following lin
 [![](img/photos/t113-s3.jpg)](https://github.com/steward-fu/website/releases/tag/t113-s3)
 [![](img/photos/s32g399.jpg)](https://github.com/steward-fu/website/releases/tag/s32g399)
 [![](img/photos/m1s-dock.jpg)](https://github.com/steward-fu/website/releases/tag/m1s-dock)
+[![](img/photos/smart_mt7688-duo.jpg)](https://github.com/steward-fu/website/releases/tag/mt7688-duo)
 [![](img/photos/wdm.jpg)](https://github.com/steward-fu/website/releases/tag/wdm)
 [![](img/photos/ldd.jpg)](https://github.com/steward-fu/website/releases/tag/ldd)
 [![](img/photos/vxworks.jpg)](https://github.com/steward-fu/website/releases/tag/vxworks)
