@@ -58,6 +58,7 @@ All of files or resources used on my website can be found from the following lin
 [![](img/photos/gemini-pda.jpg)](https://github.com/steward-fu/website/releases/tag/gemini-pda)
 [![](img/photos/n810.jpg)](https://github.com/steward-fu/website/releases/tag/n810)
 [![](img/photos/pb.jpg)](https://github.com/steward-fu/website/releases/tag/pocketbeagle)
+[![](img/photos/lichee-nano.jpg)](https://github.com/steward-fu/website/releases/tag/lichee-nano)
 [![](img/photos/tiny200.jpg)](https://github.com/steward-fu/website/releases/tag/tiny200)
 [![](img/photos/newton.jpg)](https://github.com/steward-fu/website/releases/tag/newton)
 [![](img/photos/nuc977.jpg)](https://github.com/steward-fu/website/releases/tag/nuc977)
