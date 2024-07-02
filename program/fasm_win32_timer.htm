@@ -13,43 +13,8 @@ Windows的Timer中斷週期是基於早期系統架構，因此，最短的Timer
 main.asm
 </p>
 <pre class="brush:asm">
-    format PE GUI 4.0
-    entry start
-    
-    include "c:\fasm\include\win32a.inc"
+    include "head.asm"
    
-    section ".idata" import data readable writeable
-library user, "user32.dll", kernel, "kernel32.dll"
-    
-import user,                             \
-    wsprintf,        "wsprintfA",        \
-    SetTimer,        "SetTimer",         \
-    KillTimer,       "KillTimer",        \
-    MessageBox,      "MessageBoxA",      \
-    GetMessage,      "GetMessageA",      \
-    SetWindowText,   "SetWindowTextA",   \
-    DestroyWindow,   "DestroyWindow",    \
-    SetWindowLong,   "SetWindowLongA",   \
-    CreateWindowEx,  "CreateWindowExA",  \
-    CallWindowProc,  "CallWindowProcA",  \
-    DispatchMessage, "DispatchMessageA", \
-    PostQuitMessage, "PostQuitMessage"
-   
-import kernel,                           \
-    ExitProcess,     "ExitProcess",      \
-    GetCommandLine,  "GetCommandLineA",  \
-    GetModuleHandle, "GetModuleHandleA"
-    
-    section ".data" data readable writeable
-hWin        dd 0
-szCaption   db "main",0
-hInstance   dd 0
-CommandLine dd 0
-defWndProc  dd 0
-cnt         dd 0
-buf         db 255 dup(0)
-fmt         db "%d",0
-  
     section ".text" code readable executable
 proc WndProc hWnd, uMsg, wParam, lParam
     mov eax, [uMsg]
@@ -59,41 +24,41 @@ proc WndProc hWnd, uMsg, wParam, lParam
     je .handle_close
     cmp eax, WM_DESTROY
     je .handle_destroy
-    invoke CallWindowProc, [defWndProc], [hWnd], [uMsg], [wParam], [lParam]
+    invoke CallWindowProc, [pDefWndProc], [hWnd], [uMsg], [wParam], [lParam]
     jmp .finish
-  
+   
 .handle_timer:
-    inc dword [cnt]
-    invoke wsprintf, buf, fmt, [cnt]
-    invoke SetWindowText, [hWnd], buf
+    inc dword [dwCnt]
+    invoke wsprintf, szBuf, FMT_TIMER, [dwCnt]
+    invoke SetWindowText, [hWnd], szBuf
     xor eax, eax
     jmp .finish
-  
+   
 .handle_close:
     invoke DestroyWindow, [hWnd]
     xor eax, eax
     jmp .finish
-   
+    
 .handle_destroy:
     invoke KillTimer, [hWnd], 1
     invoke PostQuitMessage, 0
     xor eax, eax
     jmp .finish
-    
+     
 .finish:
     ret
 endp
-   
+    
 proc WinMain hInst, hPrevInst, CmdLine, CmdShow
     local msg:MSG
-   
-    invoke CreateWindowEx, WS_EX_LEFT, WC_DIALOG, szCaption, \
+    
+    invoke CreateWindowEx, WS_EX_LEFT, WC_DIALOG, szName, \
         WS_OVERLAPPEDWINDOW or WS_VISIBLE, 0, 0, 300, 300, NULL, NULL, NULL, NULL
     mov [hWin], eax
-   
+    
     invoke SetWindowLong, [hWin], GWL_WNDPROC, WndProc
-    mov [defWndProc], eax
-
+    mov [pDefWndProc], eax
+ 
     invoke SetTimer, [hWin], 1, 1000, NULL
 @@:
     lea eax, [msg]
@@ -107,21 +72,21 @@ proc WinMain hInst, hPrevInst, CmdLine, CmdShow
     mov eax, [msg.wParam]
     ret
 endp
-   
+    
 start:
     invoke GetModuleHandle, NULL
     mov [hInstance], eax
-    
+     
     invoke GetCommandLine
-    mov [CommandLine], eax
-    
-    stdcall WinMain, [hInstance], NULL, [CommandLine], SW_SHOWNORMAL
+    mov [pCommand], eax
+     
+    stdcall WinMain, [hInstance], NULL, [pCommand], SW_SHOWNORMAL
     invoke ExitProcess, eax
 </pre>
 <p>
-<b>Line 50~55</b>：累加數值並且顯示在視窗標題<br>
-<b>Line 63</b>：不使用Timer，記得關閉Timer<br>
-<b>Line 82</b>：設定Timer為每秒(1000ms)觸發一次，ID=1<br><br>
+<b>Line 16~18</b>：累加數值並且顯示在視窗標題<br>
+<b>Line 28</b>：不使用Timer，記得關閉Timer<br>
+<b>Line 47</b>：設定Timer為每秒(1000ms)觸發一次，ID=1<br><br>
 
 完成<br>
 <img style="border:0px" src="nasm_win32_timer/1.jpg" class="maxSize">

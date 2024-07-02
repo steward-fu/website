@@ -13,46 +13,8 @@ https://board.flatassembler.net/<br><br>
 main.asm
 </p>
 <pre class="brush:asm">
-    format PE GUI 4.0
-    entry start
-     
-    include "c:\fasm\include\win32a.inc"
-    
-    section ".idata" import data readable writeable
-library user, "user32.dll", kernel, "kernel32.dll"
-     
-import user,                             \
-    wsprintf,        "wsprintfA",        \
-    SetTimer,        "SetTimer",         \
-    KillTimer,       "KillTimer",        \
-    MessageBox,      "MessageBoxA",      \
-    GetMessage,      "GetMessageA",      \
-    SetScrollPos,    "SetScrollPos",     \
-    DestroyWindow,   "DestroyWindow",    \
-    SetWindowText,   "SetWindowTextA",   \
-    SetWindowLong,   "SetWindowLongA",   \
-    SetScrollRange,  "SetScrollRange",   \
-    CreateWindowEx,  "CreateWindowExA",  \
-    CallWindowProc,  "CallWindowProcA",  \
-    DispatchMessage, "DispatchMessageA", \
-    PostQuitMessage, "PostQuitMessage"
-    
-import kernel,                           \
-    ExitProcess,     "ExitProcess",      \
-    GetCommandLine,  "GetCommandLineA",  \
-    GetModuleHandle, "GetModuleHandleA"
-     
-    section ".data" data readable writeable
-hWin        dd 0
-szCaption   db "main",0
-hInstance   dd 0
-CommandLine dd 0
-defWndProc  dd 0
-SLUP        db "LINE++",0
-SLDN        db "LINE--",0
-SPUP        db "PAGE++",0
-SPDN        db "PAGE--",0
-
+    include "head.asm"
+ 
     section ".text" code readable executable
 proc WndProc hWnd, uMsg, wParam, lParam
     mov eax, [uMsg]
@@ -62,9 +24,9 @@ proc WndProc hWnd, uMsg, wParam, lParam
     je .handle_close
     cmp eax, WM_DESTROY
     je .handle_destroy
-    invoke CallWindowProc, [defWndProc], [hWnd], [uMsg], [wParam], [lParam]
+    invoke CallWindowProc, [pDefWndProc], [hWnd], [uMsg], [wParam], [lParam]
     jmp .finish
-
+ 
 .handle_vscroll:
     cmp word [wParam], SB_LINEUP
     je .handle_sb_line_up
@@ -75,47 +37,47 @@ proc WndProc hWnd, uMsg, wParam, lParam
     cmp word [wParam], SB_PAGEDOWN
     je .handle_sb_page_down
     jmp .finish
-
+ 
 .handle_sb_line_up:
     invoke SetWindowText, [hWnd], SLUP
     jmp .finish
-
+ 
 .handle_sb_line_down:
     invoke SetWindowText, [hWnd], SLDN
     jmp .finish
-
+ 
 .handle_sb_page_up:
     invoke SetWindowText, [hWnd], SPUP
     jmp .finish
-
+ 
 .handle_sb_page_down:
     invoke SetWindowText, [hWnd], SPDN
     jmp .finish
-
+ 
 .handle_close:
     invoke DestroyWindow, [hWnd]
     xor eax, eax
     jmp .finish
-    
+     
 .handle_destroy:
     invoke PostQuitMessage, 0
     xor eax, eax
     jmp .finish
-     
+      
 .finish:
     ret
 endp
-    
+     
 proc WinMain hInst, hPrevInst, CmdLine, CmdShow
     local msg:MSG
-    
-    invoke CreateWindowEx, WS_EX_LEFT, WC_DIALOG, szCaption, \
+     
+    invoke CreateWindowEx, WS_EX_LEFT, WC_DIALOG, szName, \
         WS_OVERLAPPEDWINDOW or WS_VISIBLE or WS_VSCROLL, 0, 0, 300, 300, NULL, NULL, NULL, NULL
     mov [hWin], eax
-    
+     
     invoke SetWindowLong, [hWin], GWL_WNDPROC, WndProc
-    mov [defWndProc], eax
- 
+    mov [pDefWndProc], eax
+  
     invoke SetScrollRange, [hWin], SB_VERT, 0, 100, FALSE
     invoke SetScrollPos, [hWin], SB_VERT, 50, TRUE
 @@:
@@ -130,22 +92,22 @@ proc WinMain hInst, hPrevInst, CmdLine, CmdShow
     mov eax, [msg.wParam]
     ret
 endp
-    
+     
 start:
     invoke GetModuleHandle, NULL
     mov [hInstance], eax
-     
+      
     invoke GetCommandLine
-    mov [CommandLine], eax
-     
-    stdcall WinMain, [hInstance], NULL, [CommandLine], SW_SHOWNORMAL
+    mov [pCommand], eax
+      
+    stdcall WinMain, [hInstance], NULL, [pCommand], SW_SHOWNORMAL
     invoke ExitProcess, eax
 </pre>
 <p>
-<b>Line 53~78</b>：處理Scrollbar訊息並且顯示在視窗標題<br>
-<b>Line 98</b>：WS_VSCROLL是垂直的Scrollbar，WS_HSCROLL則是水平的Scrollbar<br>
-<b>Line 104</b>：設定Scrollbar最大的範圍<br>
-<b>Line 105</b>：設定Scrollbar目前的位置<br><br>
+<b>Line 26~40</b>：處理Scrollbar訊息並且顯示在視窗標題<br>
+<b>Line 60</b>：WS_VSCROLL是垂直的Scrollbar，WS_HSCROLL則是水平的Scrollbar<br>
+<b>Line 66</b>：設定Scrollbar最大的範圍<br>
+<b>Line 67</b>：設定Scrollbar目前的位置<br><br>
 
 完成<br>
 <img style="border:0px" src="nasm_win32_scrollbar/1.jpg" class="maxSize">
