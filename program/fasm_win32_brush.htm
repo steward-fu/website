@@ -13,56 +13,14 @@ https://board.flatassembler.net/<br><br>
 main.asm
 </p>
 <pre class="brush:asm">
-    format PE GUI 4.0
-    entry start
-       
-    include "c:\fasm\include\win32a.inc"
-      
-    section ".idata" import data readable writeable
-library user, "user32.dll", kernel, "kernel32.dll", gdi, "gdi32.dll"
- 
-import gdi,                              \
-    SetPixel,         "SetPixel",        \
-    DeleteObject,     "DeleteObject",    \
-    CreateSolidBrush, "CreateSolidBrush"
- 
-import user,                             \
-    FillRect,        "FillRect",         \
-    EndPaint,        "EndPaint",         \
-    SetTimer,        "SetTimer",         \
-    wsprintf,        "wsprintfA",        \
-    KillTimer,       "KillTimer",        \
-    BeginPaint,      "BeginPaint",       \
-    MessageBox,      "MessageBoxA",      \
-    GetMessage,      "GetMessageA",      \
-    SetScrollPos,    "SetScrollPos",     \
-    DestroyWindow,   "DestroyWindow",    \
-    SetWindowText,   "SetWindowTextA",   \
-    SetWindowLong,   "SetWindowLongA",   \
-    SetScrollRange,  "SetScrollRange",   \
-    CreateWindowEx,  "CreateWindowExA",  \
-    CallWindowProc,  "CallWindowProcA",  \
-    DispatchMessage, "DispatchMessageA", \
-    PostQuitMessage, "PostQuitMessage"
-      
-import kernel,                           \
-    ExitProcess,     "ExitProcess",      \
-    GetCommandLine,  "GetCommandLineA",  \
-    GetModuleHandle, "GetModuleHandleA"
-       
-    section ".data" data readable writeable
-hWin        dd 0
-szCaption   db "main",0
-hInstance   dd 0
-CommandLine dd 0
-defWndProc  dd 0
-  
+    include "head.asm"
+
     section ".text" code readable executable
 proc WndProc hWnd, uMsg, wParam, lParam
     local hdc:DWORD
     local brush:DWORD
     local ps:PAINTSTRUCT
- 
+  
     mov eax, [uMsg]
     cmp eax, WM_PAINT
     je .handle_paint
@@ -70,50 +28,50 @@ proc WndProc hWnd, uMsg, wParam, lParam
     je .handle_close
     cmp eax, WM_DESTROY
     je .handle_destroy
-    invoke CallWindowProc, [defWndProc], [hWnd], [uMsg], [wParam], [lParam]
+    invoke CallWindowProc, [pDefWndProc], [hWnd], [uMsg], [wParam], [lParam]
     jmp .finish
-  
+   
 .handle_paint:
     lea eax, [ps]
     invoke BeginPaint, [hWnd], eax
     mov [hdc], eax
- 
+  
     invoke CreateSolidBrush, 0ffh
     mov [brush], eax
     lea eax, [ps]
     add eax, PAINTSTRUCT.rcPaint
     invoke FillRect, [hdc], eax, [brush]
-
+ 
     lea eax, [ps]
     invoke EndPaint, [hWnd], eax
     invoke DeleteObject, [brush]
     xor eax, eax
     jmp .finish
-  
+   
 .handle_close:
     invoke DestroyWindow, [hWnd]
     xor eax, eax
     jmp .finish
-      
+       
 .handle_destroy:
     invoke PostQuitMessage, 0
     xor eax, eax
     jmp .finish
-       
+        
 .finish:
     ret
 endp
-      
+       
 proc WinMain hInst, hPrevInst, CmdLine, CmdShow
     local msg:MSG
-      
-    invoke CreateWindowEx, WS_EX_LEFT, WC_DIALOG, szCaption, \
+       
+    invoke CreateWindowEx, WS_EX_LEFT, WC_DIALOG, szName, \
         WS_OVERLAPPEDWINDOW or WS_VISIBLE, 0, 0, 300, 300, NULL, NULL, NULL, NULL
     mov [hWin], eax
-      
+       
     invoke SetWindowLong, [hWin], GWL_WNDPROC, WndProc
-    mov [defWndProc], eax
-   
+    mov [pDefWndProc], eax
+    
 @@:
     lea eax, [msg]
     invoke GetMessage, eax, NULL, 0, 0
@@ -126,21 +84,21 @@ proc WinMain hInst, hPrevInst, CmdLine, CmdShow
     mov eax, [msg.wParam]
     ret
 endp
-      
+       
 start:
     invoke GetModuleHandle, NULL
     mov [hInstance], eax
-       
+        
     invoke GetCommandLine
-    mov [CommandLine], eax
-       
-    stdcall WinMain, [hInstance], NULL, [CommandLine], SW_SHOWNORMAL
+    mov [pCommand], eax
+        
+    stdcall WinMain, [hInstance], NULL, [pCommand], SW_SHOWNORMAL
     invoke ExitProcess, eax
 </pre>
 <p>
-<b>Line 66~67</b>：產生一個紅色的Brush<br>
-<b>Line 68~70</b>：將可視區域填入紅色<br>
-<b>Line 74</b>：釋放資源<br><br>
+<b>Line 24~25</b>：產生一個紅色的Brush<br>
+<b>Line 26~28</b>：將可視區域填入紅色<br>
+<b>Line 32</b>：釋放資源<br><br>
 
 完成<br>
 <img style="border:0px" src="nasm_win32_brush/1.jpg" class="maxSize">
