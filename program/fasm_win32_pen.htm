@@ -1,0 +1,108 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - Flat Assembler (FASM) - Win32 API - <b>Create Pen</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://board.flatassembler.net/<br><br>
+
+Pen可以想像成是一支畫筆，粗細、顏色都可以設定，DC(Device Context)可以透過SelectObject()選擇畫筆<br><br>
+
+main.asm
+</p>
+<pre class="brush:asm">
+    include "head.asm"
+
+    section ".text" code readable executable
+proc WndProc hWnd, uMsg, wParam, lParam
+    local hdc:DWORD
+    local pen:DWORD
+    local ps:PAINTSTRUCT
+   
+    mov eax, [uMsg]
+    cmp eax, WM_PAINT
+    je .handle_paint
+    cmp eax, WM_CLOSE
+    je .handle_close
+    cmp eax, WM_DESTROY
+    je .handle_destroy
+    invoke CallWindowProc, [pDefWndProc], [hWnd], [uMsg], [wParam], [lParam]
+    jmp .finish
+    
+.handle_paint:
+    lea eax, [ps]
+    invoke BeginPaint, [hWnd], eax
+    mov [hdc], eax
+   
+    invoke CreatePen, PS_SOLID, 10, 0ffh
+    mov [pen], eax
+    invoke SelectObject, [hdc], [pen]
+    invoke MoveToEx, [hdc], 0, 0, NULL
+    invoke LineTo, [hdc], 100, 100
+  
+    lea eax, [ps]
+    invoke EndPaint, [hWnd], eax
+    invoke DeleteObject, [pen]
+    xor eax, eax
+    jmp .finish
+    
+.handle_close:
+    invoke DestroyWindow, [hWnd]
+    xor eax, eax
+    jmp .finish
+        
+.handle_destroy:
+    invoke PostQuitMessage, 0
+    xor eax, eax
+    jmp .finish
+         
+.finish:
+    ret
+endp
+        
+proc WinMain hInst, hPrevInst, CmdLine, CmdShow
+    local msg:MSG
+        
+    invoke CreateWindowEx, WS_EX_LEFT, WC_DIALOG, szName, \
+        WS_OVERLAPPEDWINDOW or WS_VISIBLE, 0, 0, 300, 300, NULL, NULL, NULL, NULL
+    mov [hWin], eax
+        
+    invoke SetWindowLong, [hWin], GWL_WNDPROC, WndProc
+    mov [pDefWndProc], eax
+     
+@@:
+    lea eax, [msg]
+    invoke GetMessage, eax, NULL, 0, 0
+    cmp eax, 0
+    je @f
+    lea eax, [msg]
+    invoke DispatchMessage, eax
+    jmp @b
+@@:
+    mov eax, [msg.wParam]
+    ret
+endp
+        
+start:
+    invoke GetModuleHandle, NULL
+    mov [hInstance], eax
+         
+    invoke GetCommandLine
+    mov [pCommand], eax
+         
+    stdcall WinMain, [hInstance], NULL, [pCommand], SW_SHOWNORMAL
+    invoke ExitProcess, eax
+</pre>
+<p>
+<b>Line 24</b>：創造一支Pen，粗細是10，顏色則是紅色<br>
+<b>Line 26</b>：選擇要使用的Pen<br>
+<b>Line 27~28</b>：畫一條線<br>
+<b>Line 32</b>：刪除資源<br><br>
+
+完成<br>
+<img style="border:0px" src="nasm_win32_pen/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

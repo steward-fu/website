@@ -1,0 +1,111 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - Flat Assembler (FASM) - Win32 API - <b>Draw Text</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://board.flatassembler.net/<br><br>
+
+使用TextOut()顯示文字時，只有X、Y參數可以用來設定顯示的位置，當文字長度超過顯示區域時，就需要拆解文字，包含置中顯示也是需要花費額外的計算，如果遇到這些問題，建議使用DrawText()顯示文字，DrawText()提供更多選項使用，包含多行顯示、置中顯示，使用者只需要傳入顯示範圍即可<br><br>
+
+main.asm
+</p>
+<pre class="brush:asm">
+    include "head.asm"
+
+    section ".text" code readable executable
+proc WndProc hWnd, uMsg, wParam, lParam
+    local hdc:DWORD
+    local font:DWORD
+    local ps:PAINTSTRUCT
+           
+    mov eax, [uMsg]
+    cmp eax, WM_PAINT
+    je .handle_paint
+    cmp eax, WM_CLOSE
+    je .handle_close
+    cmp eax, WM_DESTROY
+    je .handle_destroy
+    invoke CallWindowProc, [pDefWndProc], [hWnd], [uMsg], [wParam], [lParam]
+    jmp .finish
+            
+.handle_paint:
+    lea eax, [ps]
+    invoke BeginPaint, [hWnd], eax
+    mov [hdc], eax
+      
+    invoke CreateFont, 48, 0, 0, 0, FW_BOLD, 0, 0, 0, 0, \
+        OUT_OUTLINE_PRECIS, CLIP_DEFAULT_PRECIS, \
+        CLEARTYPE_QUALITY, DEFAULT_PITCH or FF_DONTCARE, szFont
+    mov [font], eax
+  
+    invoke SetTextColor, [hdc], 0ff0000h
+    invoke SetBkMode, [hdc], TRANSPARENT
+    invoke SelectObject, [hdc], [font]
+ 
+    lea eax, [ps.rcPaint]
+    invoke DrawText, [hdc], szMsg, MsgLen, eax, DT_SINGLELINE or DT_CENTER or DT_VCENTER
+  
+    lea eax, [ps]
+    invoke EndPaint, [hWnd], eax
+    invoke DeleteObject, [font]
+    xor eax, eax
+    jmp .finish
+            
+.handle_close:
+    invoke DestroyWindow, [hWnd]
+    xor eax, eax
+    jmp .finish
+                
+.handle_destroy:
+    invoke PostQuitMessage, 0
+    xor eax, eax
+    jmp .finish
+                 
+.finish:
+    ret
+endp
+                
+proc WinMain hInst, hPrevInst, CmdLine, CmdShow
+    local msg:MSG
+                
+    invoke CreateWindowEx, WS_EX_LEFT, WC_DIALOG, szName, \
+        WS_OVERLAPPEDWINDOW or WS_VISIBLE, 0, 0, 300, 300, NULL, NULL, NULL, NULL
+    mov [hWin], eax
+                
+    invoke SetWindowLong, [hWin], GWL_WNDPROC, WndProc
+    mov [pDefWndProc], eax
+             
+@@:
+    lea eax, [msg]
+    invoke GetMessage, eax, NULL, 0, 0
+    cmp eax, 0
+    je @f
+    lea eax, [msg]
+    invoke DispatchMessage, eax
+    jmp @b
+@@:
+    mov eax, [msg.wParam]
+    ret
+endp
+                
+start:
+    invoke GetModuleHandle, NULL
+    mov [hInstance], eax
+                 
+    invoke GetCommandLine
+    mov [pCommand], eax
+                 
+    stdcall WinMain, [hInstance], NULL, [pCommand], SW_SHOWNORMAL
+    invoke ExitProcess, eax
+</pre>
+<p>
+<b>Line 33~34</b>：使用DrawText()顯示文字<br><br>
+
+完成<br>
+<img style="border:0px" src="nasm_win32_text/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
