@@ -1,0 +1,68 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - ObjAsm - Dialog - <b>Create Window</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/ObjAsm<br>
+https://objasm.x10host.com/index.htm<br><br>
+
+main.c
+</p>
+<pre class="brush:asm">
+%include @Environ(OBJASM_PATH)\Code\Macros\Model.inc
+SysSetup OOP, WIN32, ANSI_STRING
+ 
+%includelib &amp;LibPath&amp;Windows\shell32.lib
+ 
+MakeObjects Primer, Stream, WinPrimer, Window, Button, Hyperlink, Dialog, DialogModal, DialogAbout, WinApp, SdiApp
+ 
+Object MyApp, , SdiApp
+    RedefineMethod Init
+    RedefineMethod Run
+ObjectEnd
+ 
+Method MyApp.Init
+    invoke CreateWindowEx, WS_EX_LEFT, 8002h, offset szCaption, 
+        WS_OVERLAPPEDWINDOW or WS_VISIBLE, 0, 0, 300, 300, NULL, NULL, NULL, NULL
+MethodEnd
+ 
+Method MyApp.Run
+    local msg:MSG
+
+@@:
+    invoke GetMessage, addr msg, NULL, 0, 0
+    cmp eax, 0
+    je @f
+    invoke DispatchMessage, addr msg
+    jmp @b
+@@:
+    mov eax, msg.wParam
+MethodEnd
+ 
+    .data
+szCaption db "main",0
+ 
+    .code
+start proc
+    SysInit
+ 
+    OCall $ObjTmpl(MyApp)::MyApp.Init
+    OCall $ObjTmpl(MyApp)::MyApp.Run
+    OCall $ObjTmpl(MyApp)::MyApp.Done
+ 
+    SysDone
+    invoke ExitProcess, 0
+start endp
+ 
+end
+</pre><br>
+
+<p>
+完成<br>
+<img style="border:0px" src="nasm_win32_dlg_window/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
