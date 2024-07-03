@@ -73,6 +73,7 @@ All of files or resources used on my website can be found from the following lin
 [![](img/photos/ldd.jpg)](https://github.com/steward-fu/website/releases/tag/ldd)
 [![](img/photos/vxworks.jpg)](https://github.com/steward-fu/website/releases/tag/vxworks)
 [![](img/photos/masm32.jpg)](https://github.com/steward-fu/website/releases/tag/masm32)
+[![](img/photos/objasm.jpg)](https://github.com/steward-fu/website/releases/tag/objasm)
 [![](img/photos/nasm.jpg)](https://github.com/steward-fu/website/releases/tag/nasm)
 [![](img/photos/fasm.jpg)](https://github.com/steward-fu/website/releases/tag/fasm)
 [![](img/photos/hla.jpg)](https://github.com/steward-fu/website/releases/tag/hla)
