@@ -14,49 +14,34 @@ main.c
 <pre class="brush:asm">
 %include @Environ(OBJASM_PATH)\Code\Macros\Model.inc
 SysSetup OOP, WIN32, ANSI_STRING
- 
+   
 %includelib &amp;LibPath&amp;Windows\shell32.lib
- 
+   
 MakeObjects Primer, Stream, WinPrimer, Window, Button, Hyperlink, Dialog, DialogModal, DialogAbout, WinApp, SdiApp
- 
+   
 Object MyApp, , SdiApp
     RedefineMethod Init
-    RedefineMethod Run
 ObjectEnd
- 
-Method MyApp.Init
-    invoke CreateWindowEx, WS_EX_LEFT, WC_DIALOG, offset szCaption, 
+   
+Method MyApp.Init, uses esi
+    SetObject esi
+    invoke CreateWindowEx, WS_EX_LEFT, WC_DIALOG, $OfsCStr("main"), 
         WS_OVERLAPPEDWINDOW or WS_VISIBLE, 0, 0, 300, 300, NULL, NULL, NULL, NULL
+    m2m [xsi].hWnd, eax
 MethodEnd
- 
-Method MyApp.Run
-    local msg:MSG
 
-@@:
-    invoke GetMessage, addr msg, NULL, 0, 0
-    cmp eax, 0
-    je @f
-    invoke DispatchMessage, addr msg
-    jmp @b
-@@:
-    mov eax, msg.wParam
-MethodEnd
- 
-    .data
-szCaption db "main",0
- 
     .code
 start proc
     SysInit
- 
+   
     OCall $ObjTmpl(MyApp)::MyApp.Init
     OCall $ObjTmpl(MyApp)::MyApp.Run
     OCall $ObjTmpl(MyApp)::MyApp.Done
- 
+   
     SysDone
     invoke ExitProcess, 0
 start endp
- 
+   
 end
 </pre><br>
 
