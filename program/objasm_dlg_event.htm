@@ -1,0 +1,75 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - ObjAsm - Dialog - <b>Handle Event</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/ObjAsm<br>
+https://objasm.x10host.com/index.htm<br><br>
+
+main.c
+</p>
+<pre class="brush:asm">
+%include @Environ(OBJASM_PATH)\Code\Macros\Model.inc
+SysSetup OOP, WIN32, ANSI_STRING
+    
+%includelib &amp;LibPath&amp;Windows\shell32.lib
+    
+MakeObjects Primer, Stream, WinPrimer, Window, Button, Hyperlink, Dialog, DialogModal, DialogAbout, WinApp, SdiApp
+ 
+    .const   
+Object MyApp, , SdiApp
+    RedefineMethod Init
+    RedefineMethod WndProc, UINT, WPARAM, LPARAM
+
+    DefineVariable pDefWndProc, DWORD, 0
+ObjectEnd
+
+    .code
+Method MyApp.Init, uses esi
+    SetObject esi
+    invoke CreateWindowEx, WS_EX_LEFT, WC_DIALOG, $OfsCStr("main"), 
+        WS_OVERLAPPEDWINDOW or WS_VISIBLE, 0, 0, 300, 300, NULL, NULL, NULL, NULL
+    m2m [esi].hWnd, eax
+
+    invoke SetWindowLong, [esi].hWnd, GWL_WNDPROC, $MethodAddr(MyApp.WndProc)
+    m2m [esi].pDefWndProc, eax
+MethodEnd
+
+Method MyApp.WndProc, uses esi, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
+    SetObject esi
+
+    ACall esi.WndProc, uMsg, wParam, lParam
+    .if uMsg == WM_CLOSE
+        invoke DestroyWindow, [esi].hWnd
+        xor eax, eax
+    .elseif uMsg == WM_DESTROY
+        invoke PostQuitMessage, 0
+        xor eax, eax
+    .else
+        invoke CallWindowProc, [esi].pDefWndProc, [esi].hWnd, uMsg, wParam, lParam
+    .endif
+MethodEnd
+ 
+start proc
+    SysInit
+
+    OCall $ObjTmpl(MyApp)::MyApp.Init
+    OCall $ObjTmpl(MyApp)::MyApp.Run
+    OCall $ObjTmpl(MyApp)::MyApp.Done
+    
+    SysDone
+    invoke ExitProcess, 0
+start endp
+    
+end
+</pre><br>
+
+<p>
+完成<br>
+<img style="border:0px" src="nasm_win32_dlg_window/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
