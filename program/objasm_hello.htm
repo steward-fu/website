@@ -14,32 +14,34 @@ main.c
 <pre class="brush:asm">
 %include @Environ(OBJASM_PATH)\Code\Macros\Model.inc
 SysSetup OOP, WIN32, ANSI_STRING
- 
+  
 %includelib &amp;LibPath&amp;Windows\shell32.lib
- 
+  
 MakeObjects Primer, Stream, WinPrimer, Window, Button, Hyperlink, Dialog, DialogModal, DialogAbout, WinApp, DlgApp
-
+ 
     .const 
 Object MyApp, , DlgApp
     RedefineMethod Init
 ObjectEnd
- 
+  
     .code
-Method MyApp.Init
+Method MyApp.Init, uses esi
+    SetObject esi
+    ACall esi.Init
     invoke MessageBox, NULL, $OfsCStr("Hello, world!"), $OfsCStr("main"), MB_OK
 MethodEnd
-
+ 
 start proc
     SysInit
- 
+  
     OCall $ObjTmpl(MyApp)::MyApp.Init
     OCall $ObjTmpl(MyApp)::MyApp.Run
     OCall $ObjTmpl(MyApp)::MyApp.Done
- 
+  
     SysDone
     invoke ExitProcess, 0
 start endp
- 
+  
 end
 </pre><br>
 
