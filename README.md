@@ -54,6 +54,7 @@ All of files or resources used on my website can be found from the following lin
 [![](img/photos/pc-t1.jpg)](https://github.com/steward-fu/website/releases/tag/pc-t1)
 [![](img/photos/gpdwin.jpg)](https://github.com/steward-fu/website/releases/tag/gpdwin)
 [![](img/photos/gpdwin2.jpg)](https://github.com/steward-fu/website/releases/tag/gpdwin2)
+[![](img/photos/micropc.jpg)](https://github.com/steward-fu/website/releases/tag/gpdmicro)
 [![](img/photos/nanonote.jpg)](https://github.com/steward-fu/website/releases/tag/nanonote)
 [![](img/photos/d88.jpg)](https://github.com/steward-fu/website/releases/tag/iriver-d88)
 [![](img/photos/d8.jpg)](https://github.com/steward-fu/website/releases/tag/iriver-d8)
