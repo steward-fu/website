@@ -14,56 +14,71 @@ main.asm
 <pre class="brush:asm">
 %include @Environ(OBJASM_PATH)\Code\Macros\Model.inc
 SysSetup OOP, WIN32, ANSI_STRING
-    
-%includelib &amp;LibPath&amp;Windows\shell32.lib
-    
-MakeObjects Primer, Stream, WinPrimer, Window, Button, Hyperlink, Dialog, DialogModal, DialogAbout, WinApp, DlgApp
- 
+     
+MakeObjects Primer
+  
     .const   
-Object MyApp, , DlgApp
+Object MyApp, , Primer
     RedefineMethod Init
-    RedefineMethod WndProc, UINT, WPARAM, LPARAM
+    StaticMethod Run
+    StaticMethod WndProc, UINT, WPARAM, LPARAM
 
+    DefineVariable hWnd, HWND, 0
     DefineVariable pDefWndProc, DWORD, 0
 ObjectEnd
+
+    .data
+MyObj dd 0
 
     .code
 Method MyApp.Init, uses esi
     SetObject esi
-    ACall esi.Init
     invoke CreateWindowEx, WS_EX_LEFT, WC_DIALOG, $OfsCStr("main"), 
-        WS_OVERLAPPEDWINDOW or WS_VISIBLE, 0, 0, 300, 300, NULL, NULL, NULL, NULL
+        WS_OVERLAPPEDWINDOW or WS_VISIBLE, 0, 0, 300, 300, NULL, NULL, NULL, pSelf
     m2m [esi].hWnd, eax
-
+ 
     invoke SetWindowLong, [esi].hWnd, GWL_WNDPROC, $MethodAddr(MyApp.WndProc)
     m2m [esi].pDefWndProc, eax
+    m2m MyObj, pSelf
+MethodEnd
+
+Method MyApp.Run, uses esi
+    local msg:MSG
+ 
+@@:
+    invoke GetMessage, addr msg, NULL, 0, 0
+    cmp eax, 0
+    je @f
+    invoke DispatchMessage, addr msg
+    jmp @b
+@@:
+    mov eax, msg.wParam
 MethodEnd
 
 Method MyApp.WndProc, uses esi, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
-    SetObject esi
-    ACall esi.WndProc, uMsg, wParam, lParam
+    mov esi, MyObj
+    assume esi:ptr $Obj(MyApp)
+
     .if uMsg == WM_CLOSE
         invoke DestroyWindow, [esi].hWnd
-        xor eax, eax
     .elseif uMsg == WM_DESTROY
         invoke PostQuitMessage, 0
-        xor eax, eax
     .else
         invoke CallWindowProc, [esi].pDefWndProc, [esi].hWnd, uMsg, wParam, lParam
     .endif
 MethodEnd
- 
+
 start proc
     SysInit
-
+ 
     OCall $ObjTmpl(MyApp)::MyApp.Init
     OCall $ObjTmpl(MyApp)::MyApp.Run
     OCall $ObjTmpl(MyApp)::MyApp.Done
-    
+     
     SysDone
     invoke ExitProcess, 0
 start endp
-    
+     
 end
 </pre><br>
 

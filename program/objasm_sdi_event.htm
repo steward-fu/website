@@ -14,63 +14,53 @@ main.asm
 <pre class="brush:asm">
 %include @Environ(OBJASM_PATH)\Code\Macros\Model.inc
 SysSetup OOP, WIN32, ANSI_STRING
-    
-%includelib &amp;LibPath&amp;Windows\shell32.lib
-
-MakeObjects Primer, Stream, WinPrimer, Window, Button, Hyperlink, Dialog, DialogModal, DialogAbout, WinApp, SdiApp
-
+      
+MakeObjects Primer, Stream, WinPrimer, Window, WinApp, SdiApp
+  
     .const
+CStr szName, "main"
+ 
 Object MyApp, , SdiApp
     RedefineMethod Init
-    StaticMethod Startup
-    RedefineMethod WndProc, UINT, WPARAM, LPARAM
-
+    VirtualEvent OnPaint, WM_PAINT
+  
     DefineVariable wndClass, WNDCLASS, {0}
 ObjectEnd
-
+ 
     .code    
 Method MyApp.Init, uses esi
     SetObject esi
     ACall esi.Init
-    invoke CreateWindowEx, WS_EX_LEFT, $OfsCStr("main"), $OfsCStr("main"), 
-        WS_OVERLAPPEDWINDOW or WS_VISIBLE, 0, 0, 300, 300, NULL, NULL, NULL, NULL
+ 
+    m2m [esi].wndClass.lpfnWndProc, $MethodAddr(MyApp.WndProc)
+    m2m [esi].wndClass.lpszClassName, offset szName
+    invoke RegisterClass, addr [esi].wndClass
+ 
+    invoke CreateWindowEx, WS_EX_LEFT, offset szName, offset szName,
+        WS_OVERLAPPEDWINDOW or WS_VISIBLE, 0, 0, 300, 300, NULL, NULL, NULL, pSelf
     m2m [esi].hWnd, eax
 MethodEnd
 
-Method MyApp.WndProc, uses esi, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
-    SetObject esi
-    ACall esi.WndProc, uMsg, wParam, lParam
+Method MyApp.OnPaint, uses esi, wParam:WPARAM, lParam:LPARAM
+    local hDC:HDC
+    local PS:PAINTSTRUCT
 
-    .if uMsg == WM_CLOSE
-        invoke DestroyWindow, [esi].hWnd
-        xor eax, eax
-    .elseif uMsg == WM_DESTROY
-        invoke PostQuitMessage, 0
-        xor eax, eax
-    .endif
+    SetObject esi 
+    mov hDC, $invoke(BeginPaint, [esi].hWnd, addr PS) 
+    invoke EndPaint, [esi].hWnd, addr PS
 MethodEnd
 
-Method MyApp.Startup, uses esi
-    local msg:MSG
- 
-    SetObject esi
-    ACall esi.Startup
-    m2m [esi].wndClass.lpfnWndProc, $MethodAddr(MyApp.WndProc)
-    m2m [esi].wndClass.lpszClassName, $OfsCStr("main")
-    invoke RegisterClass, addr [esi].wndClass
-MethodEnd
- 
 start proc
     SysInit
-    
+      
     OCall $ObjTmpl(MyApp)::MyApp.Init
     OCall $ObjTmpl(MyApp)::MyApp.Run
     OCall $ObjTmpl(MyApp)::MyApp.Done
-    
+      
     SysDone
     invoke ExitProcess, 0
 start endp
-    
+      
 end
 </pre><br>
 
