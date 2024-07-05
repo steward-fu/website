@@ -70,6 +70,7 @@ All of files or resources used on my website can be found from the following lin
 [![](img/photos/m1s-dock.jpg)](https://github.com/steward-fu/website/releases/tag/m1s-dock)
 [![](img/photos/smart_mt7688.jpg)](https://github.com/steward-fu/website/releases/tag/mt7688)
 [![](img/photos/smart_mt7688-duo.jpg)](https://github.com/steward-fu/website/releases/tag/mt7688-duo)
+[![](img/photos/virus.jpg)](https://github.com/steward-fu/website/releases/tag/virus)
 [![](img/photos/wdm.jpg)](https://github.com/steward-fu/website/releases/tag/wdm)
 [![](img/photos/ldd.jpg)](https://github.com/steward-fu/website/releases/tag/ldd)
 [![](img/photos/vxworks.jpg)](https://github.com/steward-fu/website/releases/tag/vxworks)
