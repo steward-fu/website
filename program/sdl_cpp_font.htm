@@ -1,0 +1,61 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - Simple DirectMedia Layer (SDL) - v1.2 - C/C++ - <b>Open Font</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://www.libsdl.org/release/SDL-1.2.15/docs/html/index.html<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;SDL.h&gt;
+#include &lt;SDL_ttf.h&gt;
+ 
+int main(int argc, char **args)
+{
+    char buf[255] = {0};
+    SDL_Surface *screen = NULL;
+
+    SDL_Init(SDL_INIT_VIDEO);
+    screen = SDL_SetVideoMode(320, 240, 16, SDL_HWSURFACE);
+    TTF_Init();
+    TTF_Font *font = TTF_OpenFont("font.ttf", 30);
+    SDL_FillRect(screen, &amp;screen-&gt;clip_rect, SDL_MapRGB(screen-&gt;format, 0x00, 0x00, 0x00));
+
+    int w = 0;
+    int h = 0;
+    SDL_Color col = {0, 255, 0};
+    SDL_Rect rt = {0, 100, 0, 0};
+    const char *cc = "司徒的教學網站";
+
+    TTF_SizeUTF8(font, cc, &amp;w, &amp;h);
+    rt.x = (320 - w) / 2;
+    SDL_Surface *msg = TTF_RenderUTF8_Solid(font, cc, col);
+    SDL_BlitSurface(msg, NULL, screen, &amp;rt);
+    SDL_Flip(screen);
+    SDL_FreeSurface(msg);
+    SDL_Delay(3000);
+
+    TTF_CloseFont(font);
+    TTF_Quit();
+    SDL_Quit();
+    return 0;
+}
+</pre><br>
+<p>
+編譯、執行
+</p>
+<pre>
+$ gcc main.c -o main -lSDL -lSDL_ttf -I/usr/include/SDL
+$ ./main
+</pre>
+<p>
+<img style="border:0px" src="sdl_cpp_font/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

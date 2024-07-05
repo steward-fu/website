@@ -1,0 +1,48 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - Simple DirectMedia Layer (SDL) - v1.2 - C/C++ - <b>Stretch Surface</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://www.libsdl.org/release/SDL-1.2.15/docs/html/index.html<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;SDL.h&gt;
+
+int main(int argc, char **argv)
+{
+    SDL_Surface *screen = NULL;
+
+    SDL_Init(SDL_INIT_VIDEO);
+    screen = SDL_SetVideoMode(320, 240, 16, SDL_HWSURFACE);
+
+    SDL_Surface *bmp = SDL_LoadBMP("main.bmp");
+    SDL_SoftStretch(bmp, NULL, screen, NULL);
+    SDL_Flip(screen);
+    SDL_Delay(3000);
+
+    SDL_FreeSurface(bmp);
+    SDL_Quit();
+    return 0;
+}
+</pre>
+<p>
+P.S. 圖片像素格式必須跟SDL_SetVideoMode()一致，可以使用<b>ffmpeg -i src.jpg -pix_fmt rgb565 -y dst.bmp</b>轉換或者使用SDL_ConvertSurface()轉換<br><br>
+
+編譯、執行
+</p>
+<pre>
+$ gcc main.c -o main -lSDL -I/usr/include/SDL
+$ ./main
+</pre>
+<p>
+<img style="border:0px" src="sdl_cpp_stretch/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
