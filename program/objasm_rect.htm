@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head><script type="text/javascript" src="../page_head.js"></script>
 
-<h3><a href="../program.htm">程式語言</a> - ObjAsm - Painting - <b>Create Pen</b></h3>
+<h3><a href="../program.htm">程式語言</a> - ObjAsm - Painting - <b>Draw Rectangle</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
@@ -45,16 +45,20 @@ MethodEnd
 Method MyApp.OnPaint, uses esi, wParam:WPARAM, lParam:LPARAM
     local hDC:HDC
     local hPen:DWORD
+    local hBrush:DWORD
     local PS:PAINTSTRUCT
   
     SetObject esi
     mov hDC, $invoke(BeginPaint, [esi].hWnd, addr PS)
-    mov hPen, $invoke(CreatePen, PS_SOLID, 10, 0ffh)
+    mov hPen, $invoke(CreatePen, PS_SOLID, 3, 0ffh)
+    mov hBrush, $invoke(CreateSolidBrush, 0ff00h)
+
     invoke SelectObject, hDC, hPen
-    invoke MoveToEx, hDC, 0, 0, NULL
-    invoke LineTo, hDC, 100, 100
+    invoke SelectObject, hDC, hBrush
+    invoke Rectangle, hDC, 10, 10, 200, 200
     invoke EndPaint, [esi].hWnd, addr PS
     invoke DeleteObject, hPen
+    invoke DeleteObject, hBrush
 MethodEnd
  
 start proc
@@ -73,7 +77,7 @@ end
 
 <p>
 完成<br>
-<img style="border:0px" src="nasm_win32_pen/1.jpg" class="maxSize">
+<img style="border:0px" src="nasm_win32_rect/1.jpg" class="maxSize">
 </p>
 
 <br><script type="text/javascript" src="../tail.js"></script>
