@@ -1,0 +1,45 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../phone.htm">手機</a> - F(x)tec Pro1 X - <b>如何透過edl備份</b></h3>
+<hr size="1"><br>
+<p>
+參考資料：<br>
+https://github.com/bkerler/edl<br>
+https://community.fxtec.com/topic/3630-pro%C2%B9-x-backup-restore-and-repair-device-specific-partitions/<br><br>
+
+步驟如下：<br>
+1. 手機關機<br>
+2. 同時按住Vol-和Vol+<br>
+3. 連接USB到電腦<br>
+4. 執行如下命令
+</p>
+<pre>
+$ sudo apt install adb fastboot python3-dev python3-pip liblzma-dev git
+$ sudo apt purge modemmanager
+
+$ cd
+$ git clone https://github.com/bkerler/edl
+$ cd edl
+$ git submodule update --init --recursive
+$ sudo cp Drivers/51-edl.rules /etc/udev/rules.d
+$ sudo cp Drivers/50-android.rules /etc/udev/rules.d
+$ python setup.py build
+$ sudo python setup.py install
+
+$ ./edl r persist persist_backup.img
+$ ./edl r modemst2 modemst2_backup.img
+$ ./edl r modemst1 modemst1_backup.img
+$ ./edl r fsc fsc_backup.img
+$ ./edl r fsg fsg_backup.img
+
+$ sha1sum *.img
+    67dfd19f3eb3649d6f3f6631e44d0bd36b8d8d19  fsc_backup.img
+    86c525eaa5e25b37ed82aae3429067437d38f61f  fsg_backup.img
+    c60e225f834afd561ea66483a0965ba8577ac184  modemst1_backup.img
+    09a02f1eaf0ec271d4ec6a5d27ebdb3ee80ac2aa  modemst2_backup.img
+    dff84ef90cbedd861cc4f112db23d623dc06cd92  persist_backup.img
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
