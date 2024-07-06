@@ -1,0 +1,50 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../phone.htm">手機</a> - PINE64 PinePhone - Sailfish OS - <b>解決Repository adaptation-community is invalid問題</b></h3>
+<hr size="1"><br>
+<p>
+參考資料：<br>
+https://repo.sailfishos.org/obs/nemo:/devel:/hw:/pine:/<br>
+https://forum.sailfishos.org/t/sailfish-on-vollaos/6342/37?page=4<br><br>
+
+問題如下：
+</p>
+<pre>
+[root@PinePhone defaultuser]# zypper ref
+    Repository 'adaptation-common' is up to date.
+    Retrieving repository 'adaptation-community' metadata ...[error]
+    Repository 'adaptation-community' is invalid.
+    [adaptation-community|plugin:ssu?repo=adaptation-community] Valid metadata not found at specified URL
+    History:
+     - [adaptation-community|plugin:ssu?repo=adaptation-community] Repository type can't be determined.
+    Please check if the URIs defined for this repository are pointing to a valid repository.
+    Skipping repository 'adaptation-community' because of the above error.
+    Repository 'adaptation-community-common' is up to date.
+    Repository 'adaptation-dontbeevil' is up to date.
+    Repository 'adaptation-dontbeevil-kernel' is up to date.
+    Repository 'adaptation-pinephone' is up to date.
+    Repository 'apps' is up to date.
+    Repository 'hotfixes' is up to date.
+    Repository 'hw-native-common' is up to date.
+    Repository 'jolla' is up to date.
+    Repository 'store' is up to date.
+    Some of the repositories have not been refreshed because of an error.
+</pre><br>
+
+<p>
+解法如下：
+</p>
+<pre>
+$ sudo vim /usr/share/ssu/features.d/adaptation-community.ini
+    [adaptation-community]
+    repos = adaptation-community
+    pattern = Feature community adaptation
+    description = Enable ssu for community ports
+
+    [repositories]
+    adaptation-community = https://repo.sailfishos.org/obs/nemo:/devel:/hw:/pine:/dontbeevil/sailfish_latest_%(arch)/
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
