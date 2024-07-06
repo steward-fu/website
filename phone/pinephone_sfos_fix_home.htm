@@ -1,0 +1,42 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../phone.htm">手機</a> - PINE64 PinePhone - Sailfish OS - <b>解決無法掛載/home問題</b></h3>
+<hr size="1"><br>
+<p>
+解法如下
+</p>
+<pre>
+$ sudo vim /etc/fstab 
+    /dev/root  /         None    defaults,noatime 0 0
+    devtmpfs   /dev      devtmpfs  nosuid               0 0
+    devpts     /dev/pts  devpts  gid=5,mode=620         0 0
+    tmpfs      /dev/shm  tmpfs   noexec,nosuid,nodev    0 0
+    proc       /proc     proc    defaults         0 0
+    sysfs      /sys      sysfs   defaults         0 0
+    tmpfs      /tmp      tmpfs   nosuid,nodev           0 0
+    /dev/mmcblk2p3 /home ext4 defaults,noatime 0 0
+</pre><br>
+
+<p>
+/home容量可以使用完整的20GB
+</p>
+<pre>
+$ df -h
+    Filesystem                Size      Used Available Use% Mounted on
+    /dev/root                 7.2G      1.5G      5.3G  22% /
+    devtmpfs                  1.3G         0      1.3G   0% /dev
+    tmpfs                     1.5G         0      1.5G   0% /dev/shm
+    tmpfs                     1.5G      3.3M      1.5G   0% /run
+    tmpfs                     1.5G         0      1.5G   0% /sys/fs/cgroup
+    tmpfs                     1.5G         0      1.5G   0% /tmp
+    /dev/mmcblk2p1          194.5M     21.1M    158.6M  12% /boot
+    /dev/mmcblk2p3           20.8G     22.9M     19.7G   0% /home
+    tmpfs                   298.9M    696.0K    298.2M   0% /run/user/100000
+    tmpfs                     1.5G      3.3M      1.5G   0% /run/firejail/dbus
+    tmpfs                     1.5G      3.3M      1.5G   0% /run/firejail/firejail.ro.dir
+    tmpfs                     1.5G      3.3M      1.5G   0% /run/firejail/firejail.ro.file
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
