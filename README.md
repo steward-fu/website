@@ -40,7 +40,6 @@ All of files or resources used on my website can be found from the following lin
 [![](img/photos/gw.jpg)](https://github.com/steward-fu/website/releases/tag/gw)
 [![](img/photos/pmpv.jpg)](https://github.com/steward-fu/website/releases/tag/pmp-v)
 [![](img/photos/n900.jpg)](https://github.com/steward-fu/website/releases/tag/n900)
-[![](img/photos/pinephone.jpg)](https://github.com/steward-fu/website/releases/tag/pinephone)
 [![](img/photos/pro1.jpg)](https://github.com/steward-fu/website/releases/tag/pro1)
 [![](img/photos/pro1x.jpg)](https://github.com/steward-fu/website/releases/tag/pro1-x)
 [![](img/photos/xt897.jpg)](https://github.com/steward-fu/website/releases/tag/xt897)
