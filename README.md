@@ -20,6 +20,7 @@ All of files or resources used on my website can be found from the following lin
 [![](img/photos/nds.jpg)](https://github.com/steward-fu/website/releases/tag/nds)
 [![](img/photos/gcw0.jpg)](https://github.com/steward-fu/website/releases/tag/gcw0)
 [![](img/photos/ggm.jpg)](https://github.com/steward-fu/website/releases/tag/ggm)
+[![](img/photos/ga330.jpg)](https://github.com/steward-fu/website/releases/tag/ga330)
 [![](img/photos/pocketgo.jpg)](https://github.com/steward-fu/website/releases/tag/pocketgo)
 [![](img/photos/rs90.jpg)](https://github.com/steward-fu/website/releases/tag/rs90)
 [![](img/photos/rs97.jpg)](https://github.com/steward-fu/website/releases/tag/rs97)
