@@ -19,7 +19,6 @@ All of files or resources used on my website can be found from the following lin
 [![](img/photos/pspgo.jpg)](https://github.com/steward-fu/website/releases/tag/pspgo)
 [![](img/photos/caanoo.jpg)](https://github.com/steward-fu/website/releases/tag/caanoo)
 [![](img/photos/nds.jpg)](https://github.com/steward-fu/website/releases/tag/nds)
-[![](img/photos/a320.jpg)](https://github.com/steward-fu/website/releases/tag/a320)
 [![](img/photos/a330.jpg)](https://github.com/steward-fu/website/releases/tag/a330)
 [![](img/photos/a380.jpg)](https://github.com/steward-fu/website/releases/tag/a380)
 [![](img/photos/gcw0.jpg)](https://github.com/steward-fu/website/releases/tag/gcw0)
