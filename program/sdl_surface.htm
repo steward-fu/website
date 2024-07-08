@@ -1,0 +1,75 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - Simple DirectMedia Layer (SDL) - v1.2 - <b>SDL_SWSURFACE、SDL_HWSURFACE</b></h3>
+<hr size="1"><br>
+<p>
+區別如下：
+</p>
+<table>
+<tr><th>SDL_SWSURFACE</th><td>從系統記憶體配置使用(system memory)</td></tr>
+<tr><th>SDL_HWSURFACE</th><td>從顯示卡記憶體配置使用(video memory if possible), 讀寫Pixels時，需要先呼叫SDL_LockSurface()鎖住記憶體</td></tr>
+</table><br>
+<p>
+(SDL 1.2.15)src/video/SDL_video.c
+</p>
+<pre class="brush:cpp">
+583 SDL_Surface * SDL_SetVideoMode (int width, int height, int bpp, Uint32 flags)
+...
+683   mode = video-&gt;SetVideoMode(this, prev_mode,video_w,video_h,video_bpp,flags);
+</pre><br>
+
+<p>
+(SDL 1.2.15)src/video/fbcon/SDL_fbvideo.c
+</p>
+<pre class="brush:cpp">
+998 static SDL_Surface *FB_SetVideoMode(_THIS, SDL_Surface *current,
+999         int width, int height, int bpp, Uint32 flags)
+...
+1132   /* Set up the new mode framebuffer */
+1133   current-&gt;flags &amp;= SDL_FULLSCREEN;
+1134   if (shadow_fb) {
+1135     current-&gt;flags |= SDL_SWSURFACE;
+1136   } else {
+1137     current-&gt;flags |= SDL_HWSURFACE;
+1138   }
+1139   current-&gt;w = vinfo.xres;
+1140   current-&gt;h = vinfo.yres;
+1141   if (shadow_fb) {
+1142     current-&gt;pitch = current-&gt;w * ((vinfo.bits_per_pixel + 7) / 8);
+1143     current-&gt;pixels = shadow_mem;
+1144     physlinebytes = finfo.line_length;
+1145   } else {
+1146     current-&gt;pitch = finfo.line_length;
+1147     current-&gt;pixels = mapped_mem+mapped_offset;
+1148   }
+1149 
+1150   /* Set up the information for hardware surfaces */
+1151   surfaces_mem = (char *)current-&gt;pixels +
+1152     vinfo.yres_virtual*current-&gt;pitch;
+1153   surfaces_len = (shadow_fb) ?
+1154     0 : (mapped_memlen-(surfaces_mem-mapped_mem));
+1155 
+1156   FB_FreeHWSurfaces(this);
+1157   FB_InitHWSurfaces(this, current, surfaces_mem, surfaces_len);
+
+1218 static int FB_InitHWSurfaces(_THIS, SDL_Surface *screen, char *base, int size)
+1219 {
+1220   vidmem_bucket *bucket;
+1221 
+1222   surfaces_memtotal = size;
+1223   surfaces_memleft = size;
+1224 
+1225   if ( surfaces_memleft &gt; 0 ) {
+1226     bucket = (vidmem_bucket *)SDL_malloc(sizeof(*bucket));
+</pre><br>
+
+<p>
+(SDL 1.2.15)src/stdlib/SDL_malloc.c
+</p>
+<pre class="brush:cpp">
+614 #define malloc  SDL_malloc
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
