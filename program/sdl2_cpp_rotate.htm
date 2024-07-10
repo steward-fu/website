@@ -1,0 +1,65 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - Simple DirectMedia Layer (SDL) - v2.0 - C/C++ - <b>Rotate Render</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://wiki.libsdl.org/FrontPage<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;SDL.h&gt;
+  
+int main(int argc, char **argv)
+{
+    const int w = 320;
+    const int h = 240;
+    const int bpp = 16;
+    SDL_Window *window = NULL;
+    SDL_Surface *screen = NULL;
+    SDL_Texture *texture = NULL;
+    SDL_Renderer *renderer = NULL;
+
+    SDL_Init(SDL_INIT_VIDEO);
+    window = SDL_CreateWindow("main", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, w, h, SDL_WINDOW_SHOWN);
+    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+    screen = SDL_CreateRGBSurface(0, w, h, bpp, 0, 0, 0, 0);
+    texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB565, SDL_TEXTUREACCESS_STREAMING, w, h);
+
+    SDL_Surface *bmp = SDL_LoadBMP("main.bmp");
+    SDL_BlitSurface(bmp, NULL, screen, NULL);
+    SDL_FreeSurface(bmp);
+
+    SDL_UpdateTexture(texture, NULL, screen-&gt;pixels, screen-&gt;pitch);
+    SDL_RenderClear(renderer);
+    SDL_RenderCopyEx(renderer, texture, NULL, NULL, 180, NULL, SDL_FLIP_NONE);
+    SDL_RenderPresent(renderer);
+
+    SDL_Delay(3000);
+
+    SDL_FreeSurface(screen);
+    SDL_DestroyTexture(texture);
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(window);
+    SDL_Quit();
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ gcc main.c -o main -lSDL2 -I/usr/include/SDL2
+$ ./main
+</pre>
+<p>
+<img style="border:0px" src="sdl2_cpp_rotate/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

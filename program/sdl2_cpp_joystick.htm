@@ -1,0 +1,71 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - Simple DirectMedia Layer (SDL) - v2.0 - C/C++ - <b>Joystick Event</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://wiki.libsdl.org/FrontPage<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;SDL.h&gt;
+#include &lt;SDL2_gfxPrimitives.h&gt;
+  
+int main(int argc, char **argv)
+{
+    int num = 0;
+    const int w = 320;
+    const int h = 240;
+    const int bpp = 16;
+    char buf[255] = {0};
+    SDL_Window *window = NULL;
+    SDL_Renderer *renderer = NULL;
+ 
+    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK);
+    window = SDL_CreateWindow("main", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, w, h, SDL_WINDOW_SHOWN);
+    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+ 
+    SDL_RenderClear(renderer);
+    SDL_RenderPresent(renderer);
+ 
+    SDL_Event event = {0};
+    SDL_Joystick* joy = NULL;
+
+    num = SDL_NumJoysticks();
+    joy = SDL_JoystickOpen(0);
+    printf("Joystick (%d, %p)\n", num, joy);
+
+    while (1) {
+        if (SDL_PollEvent(&amp;event)) {
+            if (event.type == SDL_JOYAXISMOTION) {
+                if(event.jaxis.axis == 0) {
+                    printf("X Axis %d\n", event.jaxis.value);
+                }
+                if(event.jaxis.axis == 1) {
+                    printf("Y Axis %d\n", event.jaxis.value);
+                }
+            }
+            if (event.type == SDL_JOYBUTTONUP) {
+                printf("UP %d\n", event.jbutton.button);
+            }
+            if (event.type == SDL_JOYBUTTONDOWN) {
+                printf("DOWN %d\n", event.jbutton.button);
+            }
+        }
+        SDL_Delay(15);
+    }
+
+    SDL_JoystickClose(joy);
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(window);
+    SDL_Quit();
+    return 0;
+}
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
