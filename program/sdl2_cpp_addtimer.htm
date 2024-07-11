@@ -1,0 +1,59 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - Simple DirectMedia Layer (SDL) - v2.0 - C/C++ - <b>Add Timer</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://wiki.libsdl.org/FrontPage<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;SDL.h&gt;
+#include &lt;SDL_timer.h&gt;
+ 
+Uint32 mytimer(Uint32 interval, void *param)
+{
+    printf("%s: 0x%x\n", __func__, param);
+    return 0;
+}
+ 
+int main(int argc, char **argv)
+{
+    const int w = 320;
+    const int h = 240;
+    const int bpp = 16;
+    SDL_Window *window = NULL;
+    SDL_Renderer *renderer = NULL;
+
+    SDL_Init(SDL_INIT_VIDEO);
+    window = SDL_CreateWindow("main", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, w, h, SDL_WINDOW_SHOWN);
+    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+    SDL_RenderClear(renderer);
+    SDL_RenderPresent(renderer);
+
+    SDL_TimerID myid = SDL_AddTimer(1000, mytimer, (void*)0xdeadbeef);
+    SDL_Delay(3000);
+    SDL_RemoveTimer(myid);
+
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(window);
+    SDL_Quit();
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ gcc main.c -o main -lSDL2 -I/usr/include/SDL2
+$ ./main
+    mytimer: 0xdeadbeef
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

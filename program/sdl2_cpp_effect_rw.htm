@@ -1,0 +1,65 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - Simple DirectMedia Layer (SDL) - v2.0 - C/C++ - <b>Music Effect from Memory</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://wiki.libsdl.org/FrontPage<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;SDL.h&gt;
+#include &lt;SDL_mixer.h&gt;
+
+#include "hex_wav.h"
+#include "hex_effect.h"
+
+int main(int argc, char **argv)
+{
+    const int w = 320;
+    const int h = 240;
+    const int bpp = 16;
+    SDL_Window *window = NULL;
+    SDL_Renderer *renderer = NULL;
+
+    SDL_Init(SDL_INIT_VIDEO);
+    window = SDL_CreateWindow("main", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, w, h, SDL_WINDOW_SHOWN);
+    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+    SDL_RenderClear(renderer);
+    SDL_RenderPresent(renderer);
+
+    SDL_RWops *rw = NULL;
+    Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 4096);
+    rw = SDL_RWFromMem(hex_wav, sizeof(hex_wav));
+    Mix_Music *music = Mix_LoadMUS_RW(rw, 1);
+    rw = SDL_RWFromMem(hex_effect, sizeof(hex_effect));
+    Mix_Chunk *effect = Mix_LoadWAV_RW(rw, 1);
+    Mix_PlayMusic(music, 1);
+    Mix_PlayChannel(-1, effect, 0);
+
+    SDL_Delay(3000);
+
+    Mix_HaltMusic();
+    Mix_FreeChunk(effect);
+    Mix_FreeMusic(music);
+    Mix_CloseAudio();
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(window);
+    SDL_Quit();
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ gcc main.c -o main -lSDL2 -lSDL2_mixer -I/usr/include/SDL2
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
