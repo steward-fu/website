@@ -1,0 +1,37 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - TRIMUI - <b>解決Please port gnulib fseterr.c to your platform問題</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/ARM-software/arm-enterprise-acs/issues/73<br><br>
+
+問題如下：
+</p>
+<pre>
+lib/fseterr.c: In function 'fseterr':
+lib/fseterr.c:77:3: error: #error "Please port gnulib fseterr.c to your platform! Look at the definitions of ferror and clearerr on your system, then report this to bug-gnulib."
+  #error "Please port gnulib fseterr.c to your platform! Look at the definitions of ferror and clearerr on your system, then report this to bug-gnulib."
+   ^~~~~
+make[3]: *** [Makefile:3466: lib/fseterr.o] Error 1
+make[3]: *** Waiting for unfinished jobs....
+  CC       lib/isnanl.o
+make[3]: Leaving directory 'output/build/host-bison-3.0.4'
+</pre><br>
+
+<p>
+解法如下：
+</p>
+<pre>
+$ vim output/build/host-bison-3.0.4/lib/stdio-impl.h +20
+    #if !defined _IO_IN_BACKUP &amp;&amp; defined _IO_EOF_SEEN
+    # define _IO_IN_BACKUP 0x100
+    #endif
+
+$ vim output/build/host-bison-3.0.4/lib/fseterr.c +32
+    #if defined _IO_EOF_SEEN || __GNU_LIBRARY__ == 1 /* GNU libc, BeOS, Haiku, Linux libc5 */
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

@@ -1,0 +1,111 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - TRIMUI - <b>如何使用J-Link GDB Server和IDA Pro除錯程式</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://whycan.com/t_1003.html<br>
+https://whycan.com/t_2025.html<br>
+https://whycan.com/files/members/3/TF_SDNAND_JTAG_V002.pdf<br>
+https://github.com/nminaylov/F1C100s_info/blob/master/JTAG/allwinner_f1c100s.cfg<br><br>
+
+F1C200S JTAG腳位(和MicroSD共用腳位)
+</p>
+<table>
+<tr><th>TMS</th><td>PF0, SDC0_D1</td></tr>
+<tr><th>TDI</th><td>PF1, SDC0_D0</td></tr>
+<tr><th>TDO</th><td>PF3, SDC0_CMD</td></tr>
+<tr><th>TCK</th><td>PF5, SDC0_D2</th></tr>
+</table><br>
+
+<p>
+連接J-Link<br>
+<img src="trimui_jtag/9.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .global _start
+    
+    .equiv GPIO_BASE, 0x01c20800 
+    .equiv PE,        (4 * 0x24)
+    .equiv PORT_CFG0, 0x00
+    .equiv PORT_DATA, 0x10
+     
+    .arm
+    .text
+_start:
+    b reset
+    b .
+    b .
+    b .
+    b .
+    b .
+    b .
+    b .
+     
+reset:
+    ldr r0, =GPIO_BASE
+    ldr r1, =0x100000
+    str r1, [r0, #(PE + PORT_CFG0)]
+   
+0:
+    eor r1, #0x20
+    str r1, [r0, #(PE + PORT_DATA)]
+    b 0b
+    .end
+</pre><br>
+
+<p>
+main.ld
+</p>
+<pre>
+MEMORY {
+    ram : ORIGIN = 0, LENGTH = 32K
+}
+
+SECTIONS {
+    text : {
+        *(.text*)
+    } &gt; ram
+}
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ arm-none-eabi-as -mcpu=arm9 -o main.o main.s
+$ arm-none-eabi-ld -T main.ld -o main.elf main.o
+$ arm-none-eabi-objcopy -O binary main.elf main.bin
+</pre><br>
+
+<p>
+下載程式到RAM(<b>loadbin c:\main.bin 0</b>)<br>
+<img src="trimui_jtag_gdb/3.jpg" class="maxSize"><br><br>
+
+開啟J-Link GDB Server(<b>Init registers</b>記得勾選)<br>
+<img src="trimui_jtag_gdb/4.jpg" class="maxSize"><br><br>
+
+選擇ARM 9<br>
+<img src="trimui_jtag_gdb/5.jpg" class="maxSize"><br><br>
+
+Listening on TCP/IP port 2331<br>
+<img src="trimui_jtag_gdb/6.jpg" class="maxSize"><br><br>
+
+IDA Pro載入main.bin<br>
+<img src="trimui_jtag_gdb/1.jpg" class="maxSize"><br><br>
+
+按下F9，選擇<b>Remote GDB debugger</b><br>
+<img src="trimui_jtag_gdb/7.jpg" class="maxSize"><br><br>
+
+按下F9，輸入<b>localhost 2331</b><br>
+<img src="trimui_jtag_gdb/8.jpg" class="maxSize"><br><br>
+
+接著就可以開始除錯程式<br>
+<img src="trimui_jtag_gdb/2.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

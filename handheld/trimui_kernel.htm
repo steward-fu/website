@@ -1,0 +1,136 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - TRIMUI - <b>提取Kernel</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/Ithamar/awutils<br>
+https://stackoverflow.com/questions/48872746/what-is-an-imagewty-firmware-format<br><br>
+
+官方燒錄檔案
+</p>
+<pre>
+$ xxd trimui_model_S_dark_V0.105_en.img | head
+    00000000: 494d 4147 4557 5459 0003 0000 6000 0000  IMAGEWTY....`...
+    00000010: 0000 d004 3402 1000 00c8 5606 0000 0000  ....4.....V.....
+    00000020: 0004 0000 3412 0000 4387 0000 0001 0000  ....4...C.......
+    00000030: 0001 0000 0100 0000 0004 0000 1c00 0000  ................
+    00000040: 0004 0000 0000 0000 0000 0000 0000 0000  ................
+    00000050: 0000 0000 0000 0000 0000 0000 0000 0000  ................
+    00000060: 00c1 8449 10d9 a471 4011 e4b9 9069 4421  ...I...q@....iD!
+    00000070: 00e1 c4a9 9079 6451 4031 2419 1009 0401  .....ydQ@1$.....
+    00000080: 0001 0409 1019 2431 4051 6479 90a9 c4e1  ......$1@Qdy....
+    00000090: 0021 4469 90b9 e411 4071 a4d9 1049 84c1  .!Di....@q...I..
+</pre><br>
+
+<p>
+Unpack trimui_model_S_dark_V0.105_en.img
+</p>
+<pre>
+$ cd
+$ git clone https://github.com/Ithamar/awutils
+$ cd awutils
+$ gcc parsecfg.c twofish.c rc6.c awimage.c -o awimage -I.
+$ ./awimage ../trimui_model_S_dark_V0.105_en.img 
+    ./awimage: unpacking ../trimui_model_S_dark_V0.105_en.img to ../trimui_model_S_dark_V0.105_en.img.dump
+    Extracting: COMMON   SYS_CONFIG100000 (45841, 45856)
+    Extracting: COMMON   SYS_CONFIG_BIN00 (28672, 28672)
+    Extracting: COMMON   SPLIT_0000000000 (512, 512)
+    Extracting: COMMON   SYS_CONFIG000000 (3119, 3120)
+    Extracting: COMMON   DTB_CONFIG000000 (50176, 50176)
+    Extracting: BOOT     BOOT0_0000000000 (16384, 16384)
+    Extracting: 12345678 1234567890BOOT_0 (32768, 32768)
+    Extracting: 12345678 UBOOT_0000000000 (671744, 671744)
+    Extracting: 12345678 TOC1_00000000000 (8, 16)
+    Extracting: 12345678 TOC0_00000000000 (8, 16)
+    Extracting: FES      FES_1-0000000000 (11648, 11648)
+    Extracting: 12345678 BOOTPKG-00000000 (753664, 753664)
+    Extracting: PXTOOLSB XXXXXXXXXXXXXXXX (147968, 147968)
+    Extracting: UPFLYTLS XXXXXXXXXXXXXXXX (165019, 165024)
+    Extracting: UPFLTL32 XXXXXXXXXXXXXXXX (150847, 150848)
+    Extracting: 12345678 1234567890CARDTL (73216, 73216)
+    Extracting: 12345678 1234567890SCRIPT (1758, 1760)
+    Extracting: 12345678 1234567890___MBR (65536, 65536)
+    Extracting: 12345678 1234567890DLINFO (16384, 16384)
+    Extracting: 12345678 1234567890ARISC (15, 16)
+    Extracting: RFSFAT16 BOOTLOGO_FEX0000 (153738, 153744)
+    Extracting: RFSFAT16 VBOOTLOGO_FEX000 (4, 16)
+    Extracting: RFSFAT16 ENV_FEX000000000 (131072, 131072)
+    Extracting: RFSFAT16 VENV_FEX00000000 (4, 16)
+    Extracting: RFSFAT16 BOOT_FEX00000000 (3124088, 3124096)
+    Extracting: RFSFAT16 VBOOT_FEX0000000 (4, 16)
+    Extracting: RFSFAT16 ROOTFS_FEX000000 (100663296, 100663296)
+    Extracting: RFSFAT16 VROOTFS_FEX00000 (4, 16)
+
+$ cd ../trimui_model_S_dark_V0.105_en.img.dump
+$ ls
+    12345678_1234567890ARISC        12345678_BOOTPKG-00000000       'COMMON  _DTB_CONFIG000000.hdr'   image.cfg                       RFSFAT16_VBOOT_FEX0000000.hdr
+    12345678_1234567890ARISC.hdr    12345678_BOOTPKG-00000000.hdr   'COMMON  _SPLIT_0000000000'       PXTOOLSB_XXXXXXXXXXXXXXXX       RFSFAT16_VBOOTLOGO_FEX000
+    12345678_1234567890BOOT_0       12345678_TOC0_00000000000       'COMMON  _SPLIT_0000000000.hdr'   PXTOOLSB_XXXXXXXXXXXXXXXX.hdr   RFSFAT16_VBOOTLOGO_FEX000.hdr
+    12345678_1234567890BOOT_0.hdr   12345678_TOC0_00000000000.hdr   'COMMON  _SYS_CONFIG000000'       RFSFAT16_BOOT_FEX00000000       RFSFAT16_VENV_FEX00000000
+    12345678_1234567890CARDTL       12345678_TOC1_00000000000       'COMMON  _SYS_CONFIG000000.hdr'   RFSFAT16_BOOT_FEX00000000.hdr   RFSFAT16_VENV_FEX00000000.hdr
+    12345678_1234567890CARDTL.hdr   12345678_TOC1_00000000000.hdr   'COMMON  _SYS_CONFIG100000'       RFSFAT16_BOOTLOGO_FEX0000       RFSFAT16_VROOTFS_FEX00000
+    12345678_1234567890DLINFO       12345678_UBOOT_0000000000       'COMMON  _SYS_CONFIG100000.hdr'   RFSFAT16_BOOTLOGO_FEX0000.hdr   RFSFAT16_VROOTFS_FEX00000.hdr
+    12345678_1234567890DLINFO.hdr   12345678_UBOOT_0000000000.hdr   'COMMON  _SYS_CONFIG_BIN00'       RFSFAT16_ENV_FEX000000000       UPFLTL32_XXXXXXXXXXXXXXXX
+    12345678_1234567890___MBR       base.hdr                        'COMMON  _SYS_CONFIG_BIN00.hdr'   RFSFAT16_ENV_FEX000000000.hdr   UPFLTL32_XXXXXXXXXXXXXXXX.hdr
+    12345678_1234567890___MBR.hdr  'BOOT    _BOOT0_0000000000'      'FES     _FES_1-0000000000'       RFSFAT16_ROOTFS_FEX000000       UPFLYTLS_XXXXXXXXXXXXXXXX
+    12345678_1234567890SCRIPT      'BOOT    _BOOT0_0000000000.hdr'  'FES     _FES_1-0000000000.hdr'   RFSFAT16_ROOTFS_FEX000000.hdr   UPFLYTLS_XXXXXXXXXXXXXXXX.hdr
+    12345678_1234567890SCRIPT.hdr  'COMMON  _DTB_CONFIG000000'       Filelist.txt                     RFSFAT16_VBOOT_FEX0000000
+
+$ file * | grep -i Linux
+    RFSFAT16_BOOT_FEX00000000:     u-boot legacy uImage, ARM OpenWrt Linux-3.10.65, Linux/ARM, OS Kernel Image (Not compressed), 3124024 bytes, Thu Jan  1 00:00:00 1970, Load Address: 0x80008000, Entry Point: 0x80008000, Header CRC: 0x1877E4E2, Data CRC: 0x8DD5320A
+    RFSFAT16_ROOTFS_FEX000000:     Linux rev 1.0 ext2 filesystem data, UUID=57f8f4bc-abf4-655f-bf67-946fc0f9f25b (extents) (large files)
+
+$ strings RFSFAT16_BOOT_FEX00000000 | grep Linux
+    ARM OpenWrt Linux-3.10.65
+    Uncompressing Linux...
+    Linux Documentah
+    Linux
+
+$ dd if=RFSFAT16_BOOT_FEX00000000 of=zImage bs=1 skip=64
+    3124024+0 records in
+    3124024+0 records out
+    3124024 bytes (3.1 MB, 3.0 MiB) copied, 5.43237 s, 575 kB/s
+
+$ file zImage
+    zImage: Linux kernel ARM boot executable zImage (little-endian)
+
+$ file "COMMON  _DTB_CONFIG000000"
+    COMMON  _DTB_CONFIG000000: Device Tree Blob version 17, size=45683, boot CPU=0, string block size=7371, DT structure block size=38240
+
+$ cp "COMMON  _DTB_CONFIG000000" dtb
+$ dtc -I dtb -O dts -f dtb -o trimui.dts
+$ vim trimui.dts
+    lcd0@0 {
+        allwinner,pins = "PD3\0PD4\0PD5\0PD6\0PD7\0PD8\0PD18\0PD20\0PD21";
+        allwinner,function = "lcd0";
+        allwinner,pname = "lcdd5\0lcdd6\0lcdd7\0lcdd10\0lcdd11\0lcdd12\0lcdclk\0lcdhsync\0lcdvsync";
+
+    sdc0@0 {
+        allwinner,pins = "PF0\0PF1\0PF2\0PF3\0PF4\0PF5";
+
+    lcd0@01c0c000 {
+        lcd_x = &lt; 0x140 &gt;;
+        lcd_y = &lt; 0xf0 &gt;;
+        lcd_width = &lt; 0x32 &gt;;
+        lcd_height = &lt; 0x25 &gt;;
+        lcd_pwm_used = &lt; 0x01 &gt;;
+        lcd_pwm_ch = &lt; 0x01 &gt;;
+        lcd_hbp = &lt; 0x26 &gt;;
+        lcd_ht = &lt; 0x465 &gt;;
+        lcd_hspw = &lt; 0x12 &gt;;
+        lcd_vbp = &lt; 0x06 &gt;;
+        lcd_vt = &lt; 0x11e &gt;;
+        lcd_vspw = &lt; 0x04 &gt;;
+        lcd_cpu_if = &lt; 0x00 &gt;;
+
+  keyboard {
+        compatible = "allwinner,keyboard_2000mv";
+
+  chosen {
+        bootargs = "earlyprintk=sunxi-uart,0x01c25000 loglevel=8 initcall_debug=1 console=ttyS0 init=/init";
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

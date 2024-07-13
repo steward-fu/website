@@ -1,0 +1,40 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - TRIMUI - <b>解決Please port gnulib freadahead.c to your platform問題</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://blog.csdn.net/Jun626/article/details/104870430<br><br>
+
+問題如下：
+</p>
+<pre>
+make[3]: Entering directory 'output/build/host-m4-1.4.17/lib'
+/usr/bin/gcc  -I.   -I/var/lib/trimui-toolchain//usr/include  -O2 -I/var/lib/trimui-toolchain//usr/include -c -o glthread/lock.o glthread/lock.c
+/usr/bin/gcc  -I.   -I/var/lib/trimui-toolchain//usr/include  -O2 -I/var/lib/trimui-toolchain//usr/include -c -o freadahead.o freadahead.c
+freadahead.c: In function 'freadahead':
+freadahead.c:91:3: error: #error "Please port gnulib freadahead.c to your platform! Look at the definition of fflush, fread, ungetc on your system, then report this to bug-gnulib."
+  #error "Please port gnulib freadahead.c to your platform! Look at the definition of fflush, fread, ungetc on your system, then report this to bug-gnulib."
+   ^~~~~
+make[3]: *** [Makefile:1842: freadahead.o] Error 1
+make[3]: Leaving directory 'output/build/host-m4-1.4.17/lib'
+make[2]: *** [Makefile:1602: all] Error 2
+make[2]: Leaving directory 'output/build/host-m4-1.4.17/lib'
+make[1]: *** [Makefile:1506: all-recursive] Error 1
+make[1]: Leaving directory 'output/build/host-m4-1.4.17'
+make: *** [Makefile:1461: all] Error 2
+</pre><br>
+
+<p>
+解法如下：
+</p>
+<pre>
+$ output/build/host-m4-1.4.17
+$ sed -i 's/IO_ftrylockfile/IO_EOF_SEEN/' lib/*.c
+$ echo "#define _IO_IN_BACKUP 0x100" &gt;&gt; lib/stdio-impl.h
+$ make
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
