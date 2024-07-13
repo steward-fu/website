@@ -1,0 +1,68 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - Rust - <b>Web Server</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://www.rust-lang.org/learn/get-started<br>
+https://www.readfog.com/a/1673773161454342144<br>
+http://bzz.wallizard.com:8081/share/books/RUST/Programming%20Rust%202nd%20Edition.pdf<br><br>
+
+產生樣板
+</p>
+<pre>
+$ cargo new hello
+$ cd hello
+</pre><br>
+
+<p>
+Cargo.toml
+</p>
+<pre>
+[package]
+name = "hello"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+axum = "0"
+tokio = { version = "1", default-features = false, features = ["macros", "rt-multi-thread"] }
+</pre><br>
+
+<p>
+src/main.rs
+</p>
+<pre class="brush:rust">
+use std::net::SocketAddr;
+use axum::{response::Html, routing::get, Router};
+
+#[tokio::main]
+async fn main() {
+    let app = Router::new().route("/", get(handler));
+    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+
+    axum::Server::bind(&amp;addr)
+        .serve(app.into_make_service())
+        .await
+        .unwrap();
+}
+
+async fn handler() -&gt; Html&lt;&amp;'static str&gt; {
+    Html("&lt;h1&gt;Hello, world!&lt;/h1&gt;")
+}
+</pre><br>
+
+<p>
+執行
+</p>
+<pre>
+$ cargo run
+</pre><br>
+<p>
+開啟網頁並且輸入<b>http://127.0.0.1:3000</b><br>
+<img src="rust_webserver/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
