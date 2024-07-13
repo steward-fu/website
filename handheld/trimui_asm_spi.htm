@@ -1,0 +1,207 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - TRIMUI - Assembly - <b>SPI(NAND Flash)</b></h3>
+<hr size="1"><br>
+<p>
+參考資料：<br>
+http://nano.lichee.pro/<br>
+https://mangopi.org/mangopi_r<br><br>
+
+SPI0腳位
+</p>
+<table>
+<tr><th>SPI0_CLK</th><td>PC0</td></tr>
+<tr><th>SPI0_CS</th><td>PC1</td></tr>
+<tr><th>SPI0_MISO</th><td>PC2</td></tr>
+<tr><th>SPI0_MOSI</th><td>PC3</td></tr>
+</table>
+<p>
+<img src="trimui_asm_spi/1.jpg" class="maxSize"><br><br>
+
+暫存器<br>
+<img src="trimui_asm_spi/2.jpg" class="maxSize"><br><br>
+
+初始步驟：<br>
+1. 設定SPI Mode為Master<br>
+2. 設定DHB模式(避免接收多餘資料)<br>
+3. 設定CS_Level為Low<br>
+4. 設定CS_Owner為SPI Controller<br>
+5. 設定SPI CDR1為50MHz<br><br>
+
+傳送、接收步驟：<br>
+1. 清除RX、TX FIFO(FCR_REG)<br>
+2. 設定TXRX全部數量(MBC_REG)<br>
+3. 設定TX數量(MTC_REG)<br>
+4. 設定TX數量(BCC_REG)<br>
+5. 開始傳送接收(TCR_REG.XCH)<br>
+6. 等待結束後，從RXD提取資料<br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .global _start
+
+    .equ SPI0_BASE,  0x01c05000
+    .equ CCU_BASE,   0x01c20000
+    .equ GPIO_BASE,  0x01c20800
+    .equ UART1_BASE, 0x01c25400
+
+    .equ PLL_PERIPH_CTRL_REG,   0x0028
+    .equ AHB_APB_HCLKC_CFG_REG, 0x0054
+    .equ BUS_CLK_GATING_REG0,   0x0060
+    .equ BUS_CLK_GATING_REG2,   0x0068
+    .equ BUS_SOFT_RST_REG0,     0x02c0
+    .equ BUS_SOFT_RST_REG2,     0x02d0
+
+    .equ PA,   (0x24 * 0)
+    .equ PC,   (0x24 * 2)
+    .equ CFG0, 0x00
+    .equ DATA, 0x10
+    .equ RBR,  0x0000
+    .equ DLL,  0x0000
+    .equ DLH,  0x0004
+    .equ IER,  0x0004
+    .equ IIR,  0x0008
+    .equ LCR,  0x000c
+    .equ MCR,  0x0010
+    .equ USR,  0x007c
+
+    .equ GCR,  0x04
+    .equ TCR,  0x08
+    .equ IER,  0x10
+    .equ ISR,  0x14
+    .equ FCR,  0x18
+    .equ FSR,  0x1c
+    .equ WCR,  0x20
+    .equ CCR,  0x24
+    .equ MBC,  0x30
+    .equ MTC,  0x34
+    .equ BCC,  0x38
+    .equ TXD,  0x200
+    .equ RXD,  0x300
+
+    .arm
+    .text
+_start:
+    .long 0xea000016
+    .byte 'e', 'G', 'O', 'N', '.', 'B', 'T', '0'
+    .long 0, __spl_size
+    .byte 'S', 'P', 'L', 2
+    .long 0, 0
+    .long 0, 0, 0, 0, 0, 0, 0, 0
+    .long 0, 0, 0, 0, 0, 0, 0, 0
+
+_vector:
+    b reset
+    b .
+    b .
+    b .
+    b .
+    b .
+    b .
+    b .
+
+reset:
+    ldr r0, =CCU_BASE
+    ldr r1, =0x80041800
+    str r1, [r0, #PLL_PERIPH_CTRL_REG]
+    ldr r1, =0x00003180
+    str r1, [r0, #AHB_APB_HCLKC_CFG_REG]
+    ldr r1, =(1 &lt;&lt; 21)
+    str r1, [r0, #BUS_CLK_GATING_REG2]
+    str r1, [r0, #BUS_SOFT_RST_REG2]
+    ldr r1, =(1 &lt;&lt; 20)
+    str r1, [r0, #BUS_CLK_GATING_REG0]
+    str r1, [r0, #BUS_SOFT_RST_REG0]
+
+    ldr r0, =GPIO_BASE
+    ldr r1, =0x5500
+    str r1, [r0, #(PA + CFG0)]
+    ldr r1, =0x2222
+    str r1, [r0, #(PC + CFG0)]
+
+    ldr r0, =UART1_BASE
+    ldr r1, =0x00
+    str r1, [r0, #IER]
+    ldr r1, =0xf7
+    str r1, [r0, #IIR]
+    ldr r1, =0x00
+    str r1, [r0, #MCR]
+    ldr r1, [r0, #LCR]
+    orr r1, #(1 &lt;&lt; 7)
+    str r1, [r0, #LCR]
+    ldr r1, =54
+    str r1, [r0, #DLL]
+    ldr r1, =0x00
+    str r1, [r0, #DLH]
+    ldr r1, [r0, #LCR]
+    bic r1, #(1 &lt;&lt; 7)
+    str r1, [r0, #LCR]
+    ldr r1, [r0, #LCR]
+    bic r1, #0x1f
+    orr r1, #0x03
+    str r1, [r0, #LCR]
+
+    ldr r4, =SPI0_BASE
+    ldr r1, =(1 &lt;&lt; 1) | (1 &lt;&lt; 0)
+    str r1, [r4, #GCR]
+    ldr r1, =(1 &lt;&lt; 2) | (1 &lt;&lt; 8)
+    str r1, [r4, #TCR]
+    ldr r1, =(1 &lt;&lt; 8)
+    str r1, [r4, #CCR]
+    ldr r2, =(1 &lt;&lt; 31) | (1 &lt;&lt; 15)
+    str r2, [r4, #FCR]
+1:
+    ldr r1, [r4, #FCR]
+    tst r1, r2
+    bne 1b
+    ldr r1, =4
+    str r1, [r4, #MBC]
+    ldr r1, =2
+    str r1, [r4, #MTC]
+    ldr r1, =2
+    str r1, [r4, #BCC]
+    ldr r1, =0x9f
+    strb r1, [r4, #TXD]
+    ldr r1, =0x00
+    strb r1, [r4, #TXD]
+    ldr r1, [r4, #TCR]
+    orr r1, #(1 &lt;&lt; 31)
+    str r1, [r4, #TCR]
+1:
+    ldr r1, [r4, #TCR]
+    tst r1, #(1 &lt;&lt; 31)
+    bne 1b
+
+    ldrb r0, [r4, #RXD]
+    bl send_byte
+    ldrb r0, [r4, #RXD]
+    bl send_byte
+
+main:
+    b main
+
+send_byte:
+    push {lr}
+    ldr r1, =UART1_BASE
+1:
+    ldr r2, [r1, #USR]
+    tst r2, #(1 &lt;&lt; 1)
+    beq 1b
+    strb r0, [r1, #RBR]
+    pop {pc}
+    .end
+</pre>
+<p>
+P.S. 目前板子是焊接GD5F1GQ4UAY NAND Flash<br><br>
+
+GD5F1GQ4UAY<br>
+<img src="trimui_asm_spi/3.jpg" class="maxSize"><br><br>
+
+完成<br>
+<img src="trimui_asm_spi/4.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

@@ -1,0 +1,137 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - TRIMUI - Assembly - <b>Timer1</b></h3>
+<hr size="1"><br>
+<p>
+參考資料：<br>
+http://nano.lichee.pro/<br>
+https://mangopi.org/mangopi_r<br><br>
+
+Work Flow<br>
+<img src="trimui_asm_timer0/1.jpg" class="maxSize"><br><br>
+
+暫存器<br>
+<img src="trimui_asm_timer0/2.jpg" class="maxSize"><br><br>
+
+中斷<br>
+<img src="trimui_asm_timer0/3.jpg" class="maxSize"><br><br>
+
+Timer1時間
+</p>
+<pre>
+Ticks = LOSC / (TMR1_CLK_PRES * TMR1_INTV_VALUE_REG) = 32KHz / (128 * 256) = 1Hz
+</pre><br>
+
+<p>
+main.s
+</p>
+<pre class="brush:asm">
+    .global _start
+
+    .equiv GPIO_BASE,  0x01c20800 
+    .equiv TIMER_BASE, 0x01c20c00
+    .equiv INTC_BASE,  0x01c20400
+
+    .equiv PE,         (0x24 * 4)
+    .equiv PORT_CFG0,  0x00
+    .equiv PORT_DATA,  0x10
+
+    .equiv INTC_BASE_ADDR_REG, 0x04
+    .equiv INTC_PEND_REG0,     0x10
+    .equiv INTC_PEND_REG1,     0x14
+    .equiv INTC_EN_REG0,       0x20
+    .equiv INTC_EN_REG1,       0x24
+    .equiv INTC_MASK_REG0,     0x30
+    .equiv INTC_MASK_REG1,     0x34
+    .equiv INTC_RESP_REG0,     0x40
+    .equiv INTC_RESP_REG1,     0x44
+    .equiv INTC_FF_REG0,       0x50
+    .equiv INTC_FF_REG1,       0x54
+
+    .equiv TMR_IRQ_EN_REG,      0x00
+    .equiv TMR_IRQ_STA_REG,     0x04
+    .equiv TMR1_CTRL_REG,       0x20
+    .equiv TMR1_INTV_VALUE_REG, 0x24
+    .equiv TMR1_CUR_VALUE_REG,  0x28
+
+    .arm
+    .text
+_start:
+    .long 0xea000016
+    .byte 'e', 'G', 'O', 'N', '.', 'B', 'T', '0'
+    .long 0, __spl_size
+    .byte 'S', 'P', 'L', 2
+    .long 0, 0
+    .long 0, 0, 0, 0, 0, 0, 0, 0
+    .long 0, 0, 0, 0, 0, 0, 0, 0
+  
+_vector:
+    b reset
+    b .
+    b .
+    b .
+    b .
+    b .
+    ldr pc, _irq
+    b .
+
+_irq: .word irq_handler
+
+irq_handler:
+    ldr r0, =GPIO_BASE
+    ldr r1, =0x00
+    str r1, [r0, #(PE + PORT_DATA)]
+    subs pc, lr, #4
+
+reset:
+    mrc p15, 0, r0, c1, c0, 0
+    bic r0, #(1 &lt;&lt; 13)
+    mcr p15, 0, r0, c1, c0, 0
+
+    adr r0, _vector
+    mrc p15, 0, r2, c1, c0, 0
+    ands r2, r2, #(1 &lt;&lt; 13)
+    ldreq r1, =0x00000000
+    ldrne r1, =0xffff0000
+    ldmia r0!, {r2-r8, r10}
+    stmia r1!, {r2-r8, r10}
+    ldmia r0!, {r2-r8, r10}
+    stmia r1!, {r2-r8, r10}
+
+    mrs r0, cpsr
+    bic r0, #0x80
+    msr cpsr_c, r0
+
+    ldr r0, =INTC_BASE
+    ldr r1, =(1 &lt;&lt; 14)
+    str r1, [r0, #INTC_EN_REG0]
+    ldr r1, =~(1 &lt;&lt; 14)
+    str r1, [r0, #INTC_MASK_REG0]
+
+    ldr r0, =GPIO_BASE
+    ldr r1, =0x100000
+    str r1, [r0, #(PE + PORT_CFG0)]
+    ldr r1, =0x20
+    str r1, [r0, #(PE + PORT_DATA)]
+
+    ldr r0, =TIMER_BASE
+    ldr r1, =256
+    str r1, [r0, #TMR1_INTV_VALUE_REG]
+    ldr r1, =(7 &lt;&lt; 4) | (1 &lt;&lt; 1) | 1
+    str r1, [r0, #TMR1_CTRL_REG]
+    ldr r1, =2
+    str r1, [r0, #TMR_IRQ_EN_REG]
+    str r1, [r0, #TMR_IRQ_STA_REG]
+
+    b .
+    .end
+</pre><br>
+<p>
+完成<br>
+<img src="trimui_asm_led/1.jpg" class="maxSize"><br>
+<img src="trimui_asm_led/2.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

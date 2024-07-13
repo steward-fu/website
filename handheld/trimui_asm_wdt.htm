@@ -1,0 +1,84 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - TRIMUI - Assembly - <b>Watchdog</b></h3>
+<hr size="1"><br>
+<p>
+參考資料：<br>
+http://nano.lichee.pro/<br>
+https://mangopi.org/mangopi_r<br><br>
+
+Work Flow<br>
+<img src="trimui_asm_timer0/1.jpg" class="maxSize"><br><br>
+
+暫存器<br>
+<img src="trimui_asm_timer0/2.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .global _start
+
+    .equiv GPIO_BASE,  0x01c20800 
+    .equiv TIMER_BASE, 0x01c20c00
+
+    .equiv PE,        (0x24 * 4)
+    .equiv PORT_CFG0, 0x00
+    .equiv PORT_DATA, 0x10
+
+    .equiv WDOG_IRQ_EN_REG,  0xa0
+    .equiv WDOG_IRQ_STA_REG, 0xa4
+    .equiv WDOG_CTRL_REG,    0xb0
+    .equiv WDOG_CFG_REG,     0xb4
+    .equiv WDOG_MODE_REG,    0xb8
+
+    .arm
+    .text
+_start:
+    .long 0xea000016
+    .byte 'e', 'G', 'O', 'N', '.', 'B', 'T', '0'
+    .long 0, __spl_size
+    .byte 'S', 'P', 'L', 2
+    .long 0, 0
+    .long 0, 0, 0, 0, 0, 0, 0, 0
+    .long 0, 0, 0, 0, 0, 0, 0, 0
+ 
+_vector:
+    b reset
+    b .
+    b .
+    b .
+    b .
+    b .
+    b .
+    b .
+ 
+reset:
+    ldr r0, =GPIO_BASE
+    ldr r1, =0x100000
+    str r1, [r0, #(PE + PORT_CFG0)]
+    ldr r1, =0x20
+    str r1, [r0, #(PE + PORT_DATA)]
+
+    ldr r0, =TIMER_BASE
+    ldr r1, =(0xa57 &lt;&lt; 1) | 1
+    str r1, [r0, #WDOG_CTRL_REG]
+    ldr r1, =1
+    str r1, [r0, #WDOG_CFG_REG]
+    ldr r1, =(1 &lt;&lt; 4) | 1
+    str r1, [r0, #WDOG_MODE_REG]
+0:
+    nop
+    b 0b
+    .end
+</pre>
+<p>
+P.S. 熄滅LED後，等待Watchdog(1秒)去重啟系統，不過由於程式是從RAM執行，因此，Reset後，不會有後續動作(LED亮)<br><br>
+
+完成<br>
+<img src="trimui_asm_led/1.jpg" class="maxSize"><br>
+<img src="trimui_asm_led/2.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
