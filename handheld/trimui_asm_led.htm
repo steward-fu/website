@@ -1,0 +1,190 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - TRIMUI - Assembly - <b>LED</b></h3>
+<hr size="1"><br>
+<p>
+參考資料：<br>
+http://nano.lichee.pro/<br>
+https://mangopi.org/mangopi_r<br><br>
+
+暫存器<br>
+<img src="trimui_asm_led/3.jpg" class="maxSize"><br><br>
+
+紅色LED是接到PE5<br>
+<img src="trimui_asm_led/4.jpg" class="maxSize"><br><br>
+
+輸出控制<br>
+<img src="trimui_asm_led/5.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .global _start
+   
+    .equiv GPIO_BASE, 0x01c20800 
+    .equiv PE,        (4 * 0x24)
+    .equiv PORT_CFG0, 0x00
+    .equiv PORT_DATA, 0x10
+    
+    .arm
+    .text
+_start:
+    .long 0xea000016
+    .byte 'e', 'G', 'O', 'N', '.', 'B', 'T', '0'
+    .long 0, __spl_size
+    .byte 'S', 'P', 'L', 2
+    .long 0, 0
+    .long 0, 0, 0, 0, 0, 0, 0, 0
+    .long 0, 0, 0, 0, 0, 0, 0, 0
+    
+_vector:
+    b reset
+    b .
+    b .
+    b .
+    b .
+    b .
+    b .
+    b .
+    
+reset:
+    ldr r0, =GPIO_BASE
+    ldr r1, =0x100000
+    str r1, [r0, #(PE + PORT_CFG0)]
+  
+0:
+    ldr r1, =0x20
+    str r1, [r0, #(PE + PORT_DATA)]
+    ldr r2, =500000
+1:
+    subs r2, #1
+    bne 1b
+    ldr r1, =0x00
+    str r1, [r0, #(PE + PORT_DATA)]
+    ldr r2, =500000
+2:
+    subs r2, #1
+    bne 2b
+    b 0b
+    .end
+</pre>
+<p>
+P.S. 紅色LED陰極連接到PE5，陽極則是連接到USB C，因此，必須插上USB C才可以測試<br><br>
+
+main.ld
+</p>
+<pre>
+OUTPUT_FORMAT("elf32-littlearm", "elf32-bigarm", "elf32-littlearm")
+OUTPUT_ARCH(arm)
+ENTRY(_start)
+
+MEMORY {
+    ram : ORIGIN = 0x00000000, LENGTH = 32M
+}
+
+SECTIONS {
+    .text :
+    {
+        PROVIDE(__spl_start = .);
+        *(.text*)
+        PROVIDE(__spl_end = .);
+        *(.init.text)
+        *(.exit.text)
+        *(.glue*)
+        *(.note.gnu.build-id)
+    } &gt; ram
+    PROVIDE(__spl_size = __spl_end - __spl_start);
+
+    .rodata ALIGN(8) :
+    {
+        PROVIDE(__rodata_start = .);
+        *(SORT_BY_ALIGNMENT(SORT_BY_NAME(.rodata*)))
+        PROVIDE(__rodata_end = .);
+    } &gt; ram
+
+    .data ALIGN(8) :
+    {
+        PROVIDE(__data_start = .);  
+        *(.data*)
+        . = ALIGN(8);
+            PROVIDE(__data_end = .);
+        PROVIDE(__image_end = .);
+    } &gt; ram
+
+    .bss ALIGN(8) (NOLOAD) :
+    {
+        PROVIDE(__bss_start = .);
+        *(.bss*)
+        *(.sbss*)
+        *(COMMON)
+        . = ALIGN(8);
+        PROVIDE(__bss_end = .);
+    } &gt; ram
+
+    .stab 0 : { *(.stab) }
+    .stabstr 0 : { *(.stabstr) }
+    .stab.excl 0 : { *(.stab.excl) }
+    .stab.exclstr 0 : { *(.stab.exclstr) }
+    .stab.index 0 : { *(.stab.index) }
+    .stab.indexstr 0 : { *(.stab.indexstr) }
+    .comment 0 : { *(.comment) }
+    .debug_abbrev 0 : { *(.debug_abbrev) }
+    .debug_info 0 : { *(.debug_info) }
+    .debug_line 0 : { *(.debug_line) }
+    .debug_pubnames 0 : { *(.debug_pubnames) }
+    .debug_aranges 0 : { *(.debug_aranges) }
+}
+</pre><br>
+
+<p>
+Makefile
+</p>
+<pre>
+all:
+	arm-none-eabi-as -mcpu=arm9 -o main.o main.s
+	arm-none-eabi-ld -T main.ld -o main.elf main.o
+	arm-none-eabi-objcopy -O binary main.elf main.bin
+	gcc mksunxi.c -o mksunxi
+	./mksunxi main.bin
+
+run:
+	sunxi-fel -p write 0 main.bin &amp;&amp; sunxi-fel exec 0
+
+clean:
+	rm -rf main.bin main.o main.elf
+</pre><br>
+
+<p>
+進入燒錄模式後，然後插入USB至電腦，可以找到如下裝置
+</p>
+<pre>
+$ lsusb
+    Bus 002 Device 081: ID 1f3a:efe8 Onda (unverified) V972 tablet in flashing mode
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ make
+    arm-none-eabi-as -mcpu=arm9 -o main.o main.s
+    arm-none-eabi-ld -T main.ld -o main.elf main.o
+    arm-none-eabi-objcopy -O binary main.elf main.bin
+    gcc mksunxi.c -o mksunxi
+    ./mksunxi main.bin
+    The bootloader head has been fixed, spl size is 512 bytes.
+
+$ make run
+    sunxi-fel -p write 0 main.bin &amp;&amp; sunxi-fel exec 0
+    100% [================================================]     1 kB,  146.0 kB/s
+</pre><br>
+
+<p>
+完成<br>
+<img src="trimui_asm_led/1.jpg" class="maxSize"><br>
+<img src="trimui_asm_led/2.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
