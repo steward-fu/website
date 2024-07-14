@@ -33,6 +33,7 @@ document.write('<script type="text/javascript" src="../scripts/shBrushCSharp.js"
 document.write('<script type="text/javascript" src="../scripts/shBrushCss.js"></script>');
 document.write('<script type="text/javascript" src="../scripts/shBrushDiff.js"></script>');
 document.write('<script type="text/javascript" src="../scripts/shBrushErlang.js"></script>');
+document.write('<script type="text/javascript" src="../scripts/shBrushGolang.js"></script>');
 document.write('<script type="text/javascript" src="../scripts/shBrushGroovy.js"></script>');
 document.write('<script type="text/javascript" src="../scripts/shBrushInf.js"></script>');
 document.write('<script type="text/javascript" src="../scripts/shBrushJavaFX.js"></script>');
