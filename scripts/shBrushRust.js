@@ -18,10 +18,10 @@
     typeof(require) != 'undefined' ? SyntaxHighlighter = require('shCore').SyntaxHighlighter : null;
 
     function Brush() {
-        var my_constant = 'MAX cmp';
-        var my_keyword =  'pub move if use struct else Some while async for fn impl as return in let None mut static';
-        var my_type = 'tokio thread response gen f64 rand Rng routing extract Extension sqlx anyhow Result String sqlite SqlitePool serde actix_web web u64 MyStruct App HttpResponse HttpServer Deserialize int Option Html Box ListNode usize i32 u32 std net SocketAddr Router axum Server str Solution Vec vec';
-        var my_function = 'length_of_longest_substring char_indices max is_some add_two_numbers two_sum spawn join thread_rng pow _pi post_create post_read post_update post_delete to_string get connect query fetch_all sort_list main push pop to post get_index post_test run expect Ok content_type body Form format sort as_mut unwrap len println route handler from bind serve await into_make_service as_ref is_none new sort_array';
+        var my_constant = 'MAX SDL_INIT_VIDEO SDL_SWSURFACE SDL_HWSURFACE';
+        var my_keyword =  '_hidden const extern crate pub move if use struct else Some while async for fn impl as return in let unsafe None mut static';
+        var my_type = 'SDL_RWops SDL_Rect SDL_Color SDL_Palette i16 u16 SDL_PixelFormat SDL_Surface c_void cmp c_uint c_int c_float c_uchar uint8_t uint16_t uint32_t int16_t int8_t int32_t libc types os arch c95 c_schar tokio thread response gen f64 rand Rng routing extract Extension sqlx anyhow Result String sqlite SqlitePool serde actix_web web u64 MyStruct App HttpResponse HttpServer Deserialize int Option Html Box ListNode usize i32 u32 std net SocketAddr Router axum Server str Solution Vec vec';
+        var my_function = 'SDL_LoadBMP SDL_BlitSurface boxRGBA SDL_FreeSurface SDL_LoadBMP_RW SDL_RWFromFile SDL_UpperBlit SDL_Init SDL_Delay SDL_Quit SDL_Flip SDL_InitSubSystem SDL_SetVideoMode stringRGBA SDL_FillRect as_ptr length_of_longest_substring char_indices max is_some add_two_numbers two_sum spawn join thread_rng pow _pi post_create post_read post_update post_delete to_string get connect query fetch_all sort_list main push pop to post get_index post_test run expect Ok content_type body Form format sort as_mut unwrap len println route handler from bind serve await into_make_service as_ref is_none new sort_array';
 
         this.regexList = [
             {regex: /^ *#.*/gm, css: 'my_preprocessor'},
