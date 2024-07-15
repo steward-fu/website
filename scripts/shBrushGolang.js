@@ -38,6 +38,6 @@
 
   Brush.prototype  = new SyntaxHighlighter.Highlighter();
   Brush.aliases  = ['go', 'golang'];
-  SyntaxHighlighter.brushes.Cpp = Brush;
+  SyntaxHighlighter.brushes.Golang = Brush;
   typeof(exports) != 'undefined' ? exports.Brush = Brush : null;
 })();

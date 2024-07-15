@@ -1,0 +1,72 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - OpenCV - Image Processing - <b>Find Contours</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://docs.opencv.org/master/d7/d9f/tutorial_linux_install.html<br><br>
+
+main.cpp
+</p>
+<pre class="brush:cpp">
+#include &lt;opencv2/imgproc.hpp&gt;
+#include &lt;opencv2/highgui.hpp&gt;
+#include &lt;math.h&gt;
+#include &lt;iostream&gt;
+
+using namespace cv;
+using namespace std;
+
+int main(int argc, char **argv)
+{
+    vector&lt;vector&lt;Point&gt; &gt; contours;
+
+    Mat img = imread("main.jpg", CV_8UC1);
+    if (img.empty())
+    {
+        printf("failed to load image\n");
+        return -1;
+    }
+    namedWindow("image", 1);
+    imshow("image", img);
+
+    findContours(img, contours, RETR_TREE, CHAIN_APPROX_SIMPLE);
+
+    Mat cnt_img = Mat::zeros(250, 250, CV_8UC3);
+    drawContours(cnt_img, contours, -1, Scalar(128, 255, 255));
+    namedWindow("contours", 1);
+    imshow("contours", cnt_img);
+    waitKey();
+    return 0;
+}
+</pre><br>
+
+<p>
+CMakeLists.txt
+</p>
+<pre>
+cmake_minimum_required(VERSION 2.8)
+project(main)
+find_package(OpenCV REQUIRED)
+include_directories(${OpenCV_INCLUDE_DIRS})
+add_executable(main main.cpp)
+target_link_libraries(main ${OpenCV_LIBS})
+</pre><br>
+
+<p>
+編譯並且執行
+</p>
+<pre>
+$ cmake .
+$ make
+$ ./main
+</pre><br>
+
+<p>
+完成<br>
+<img src="opencv_contours/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

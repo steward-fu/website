@@ -1,0 +1,116 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - OpenCV - Image Processing - <b>Shape Distance</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://docs.opencv.org/master/d7/d9f/tutorial_linux_install.html<br><br>
+
+main.cpp
+</p>
+<pre class="brush:cpp">
+#include &lt;opencv2/shape.hpp&gt;
+#include &lt;opencv2/imgcodecs.hpp&gt;
+#include &lt;opencv2/highgui.hpp&gt;
+#include &lt;opencv2/imgproc.hpp&gt;
+#include &lt;opencv2/core/utility.hpp&gt;
+#include &lt;iostream&gt;
+#include &lt;string&gt;
+
+using namespace std;
+using namespace cv;
+
+static vector&lt;Point&gt; simpleContour(const Mat &amp;currentQuery, int n = 300)
+{
+    vector&lt;vector&lt;Point&gt;&gt; _contoursQuery;
+    vector&lt;Point&gt; contoursQuery;
+    findContours(currentQuery, _contoursQuery, RETR_LIST, CHAIN_APPROX_NONE);
+    for (size_t border = 0; border &lt; _contoursQuery.size(); border++)
+    {
+        for (size_t p = 0; p &lt; _contoursQuery[border].size(); p++)
+        {
+            contoursQuery.push_back(_contoursQuery[border][p]);
+        }
+    }
+    int dummy = 0;
+    for (int add = (int)contoursQuery.size() - 1; add &lt; n; add++)
+    {
+        contoursQuery.push_back(contoursQuery[dummy++]);
+    }
+    cv::randShuffle(contoursQuery);
+    vector&lt;Point&gt; cont;
+    for (int i = 0; i &lt; n; i++)
+    {
+        cont.push_back(contoursQuery[i]);
+    }
+    return cont;
+}
+
+int main(int argc, char **argv)
+{
+    Size size(300, 300);
+
+    Mat src = imread("1.jpg", IMREAD_GRAYSCALE);
+    Mat srcToShow;
+    resize(src, srcToShow, size, 0, 0, INTER_LINEAR_EXACT);
+    imshow("src", srcToShow);
+    moveWindow("src", 0, 300);
+    vector&lt;Point&gt; csrc = simpleContour(src);
+    if (src.empty())
+    {
+        printf("failed to load 1.jpg\n");
+        return -1;
+    }
+
+    Mat dst = imread("2.jpg", IMREAD_GRAYSCALE);
+    Mat dstToShow;
+    resize(dst, dstToShow, size, 0, 0, INTER_LINEAR_EXACT);
+    imshow("dst", dstToShow);
+    moveWindow("dst", 305, 300);
+    vector&lt;Point&gt; cdst = simpleContour(dst);
+    if (dst.empty())
+    {
+        printf("failed to load 2.jpg\n");
+        return -1;
+    }
+
+    cv::Ptr&lt;cv::ShapeContextDistanceExtractor&gt; mysc = cv::createShapeContextDistanceExtractor();
+    float dis = mysc-&gt;computeDistance(csrc, cdst);
+    printf("distance: %f\n", dis);
+    waitKey();
+    destroyWindow("src");
+    destroyWindow("dst");
+    return 0;
+}
+</pre><br>
+
+<p>
+CMakeLists.txt
+</p>
+<pre>
+cmake_minimum_required(VERSION 2.8)
+project(main)
+find_package(OpenCV REQUIRED)
+include_directories(${OpenCV_INCLUDE_DIRS})
+add_executable(main main.cpp)
+target_link_libraries(main ${OpenCV_LIBS})
+</pre><br>
+
+<p>
+編譯並且執行
+</p>
+<pre>
+$ cmake .
+$ make
+$ ./main
+</pre><br>
+
+<p>
+完成<br>
+<img src="opencv_distance/1.jpg" class="maxSize"><br>
+Distance: 0.139355
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

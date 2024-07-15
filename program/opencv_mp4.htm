@@ -1,0 +1,70 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - OpenCV - Image Processing - <b>Play MP4</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://docs.opencv.org/master/d7/d9f/tutorial_linux_install.html<br>
+https://stackoverflow.com/questions/13709274/reading-video-from-file-opencv<br><br>
+
+main.cpp
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;opencv2/opencv.hpp&gt;
+#include &lt;opencv2/core/core.hpp&gt;
+#include &lt;opencv2/highgui/highgui.hpp&gt;
+
+using namespace cv;
+using std::string;
+
+int main(int argc, char **argv)
+{
+    Mat frame;
+    VideoCapture capture("main.mp4");
+
+    if (!capture.isOpened())
+    {
+        printf("failed to load mp4");
+        return -1;
+    }
+
+    namedWindow("w", 1);
+    while (1)
+    {
+        capture &gt;&gt; frame;
+        if (frame.empty())
+        {
+            break;
+        }
+        imshow("w", frame);
+        waitKey(20);
+    }
+    waitKey(0);
+    return 0;
+}
+</pre><br>
+
+<p>
+CMakeLists.txt
+</p>
+<pre>
+cmake_minimum_required(VERSION 2.8)
+project(main)
+find_package(OpenCV REQUIRED)
+include_directories(${OpenCV_INCLUDE_DIRS})
+add_executable(main main.cpp)
+target_link_libraries(main ${OpenCV_LIBS})
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ cmake .
+$ make
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
