@@ -2,46 +2,43 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head><script type="text/javascript" src="../page_head.js"></script>
 
-<h3><a href="../program.htm">程式語言</a> - OpenCV - Video Processing - <b>Play MP4</b></h3>
+<h3><a href="../program.htm">程式語言</a> - OpenCV - Image Processing - <b>Pixels Manipulation</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
-https://docs.opencv.org/master/d7/d9f/tutorial_linux_install.html<br>
-https://stackoverflow.com/questions/13709274/reading-video-from-file-opencv<br><br>
+https://docs.opencv.org/master/d7/d9f/tutorial_linux_install.html<br><br>
 
 main.cpp
 </p>
 <pre class="brush:cpp">
 #include &lt;stdio.h&gt;
 #include &lt;opencv2/opencv.hpp&gt;
-#include &lt;opencv2/core/core.hpp&gt;
-#include &lt;opencv2/highgui/highgui.hpp&gt;
 
 using namespace cv;
-using std::string;
 
 int main(int argc, char **argv)
 {
-    Mat frame;
-    VideoCapture capture("main.mp4");
+    Mat image;
 
-    if (!capture.isOpened())
+    image = imread("main.jpg", 1);
+    if (!image.data)
     {
-        printf("failed to load mp4");
+        printf("No image data \n");
         return -1;
     }
 
-    namedWindow("w", 1);
-    while (1)
+    for (int y = 0; y &lt; 50; y++)
     {
-        capture &gt;&gt; frame;
-        if (frame.empty())
+        for (int x = 0; x &lt; 100; x++)
         {
-            break;
+            image.at&lt;cv::Vec3b&gt;(y, x)[0] = 255;
+            image.at&lt;cv::Vec3b&gt;(y, x)[1] = 0;
+            image.at&lt;cv::Vec3b&gt;(y, x)[2] = 0;
         }
-        imshow("w", frame);
-        waitKey(20);
     }
+
+    namedWindow("show image", WINDOW_AUTOSIZE);
+    imshow("show image", image);
     waitKey(0);
     return 0;
 }
@@ -60,11 +57,17 @@ target_link_libraries(main ${OpenCV_LIBS})
 </pre><br>
 
 <p>
-編譯
+編譯並且執行
 </p>
 <pre>
 $ cmake .
 $ make
-</pre>
+$ ./main
+</pre><br>
+
+<p>
+完成<br>
+<img src="opencv_pixels/1.jpg" class="maxSize">
+</p>
 
 <br><script type="text/javascript" src="../tail.js"></script>

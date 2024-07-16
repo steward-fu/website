@@ -2,46 +2,35 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head><script type="text/javascript" src="../page_head.js"></script>
 
-<h3><a href="../program.htm">程式語言</a> - OpenCV - Video Processing - <b>Play MP4</b></h3>
+<h3><a href="../program.htm">程式語言</a> - OpenCV - Image Processing - <b>Gray Color</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
-https://docs.opencv.org/master/d7/d9f/tutorial_linux_install.html<br>
-https://stackoverflow.com/questions/13709274/reading-video-from-file-opencv<br><br>
+https://docs.opencv.org/master/d7/d9f/tutorial_linux_install.html<br><br>
 
 main.cpp
 </p>
 <pre class="brush:cpp">
 #include &lt;stdio.h&gt;
 #include &lt;opencv2/opencv.hpp&gt;
-#include &lt;opencv2/core/core.hpp&gt;
-#include &lt;opencv2/highgui/highgui.hpp&gt;
 
 using namespace cv;
-using std::string;
 
 int main(int argc, char **argv)
 {
-    Mat frame;
-    VideoCapture capture("main.mp4");
+    Mat original, gray;
+    original = imread("main.png", 1);
 
-    if (!capture.isOpened())
+    if (!original.data)
     {
-        printf("failed to load mp4");
+        printf("failed to load image\n");
         return -1;
     }
-
-    namedWindow("w", 1);
-    while (1)
-    {
-        capture &gt;&gt; frame;
-        if (frame.empty())
-        {
-            break;
-        }
-        imshow("w", frame);
-        waitKey(20);
-    }
+    cvtColor(original, gray, COLOR_BGR2GRAY);
+    namedWindow("show original", WINDOW_AUTOSIZE);
+    imshow("show original", original);
+    namedWindow("show gray", WINDOW_AUTOSIZE);
+    imshow("show gray", gray);
     waitKey(0);
     return 0;
 }
@@ -60,11 +49,17 @@ target_link_libraries(main ${OpenCV_LIBS})
 </pre><br>
 
 <p>
-編譯
+編譯並且執行
 </p>
 <pre>
 $ cmake .
 $ make
-</pre>
+$ ./main
+</pre><br>
+
+<p>
+完成<br>
+<img src="opencv_gray/1.jpg" class="maxSize">
+</p>
 
 <br><script type="text/javascript" src="../tail.js"></script>
