@@ -1,0 +1,66 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - Node.js - <b>如何透過Promise等待事件完成</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://stackoverflow.com/questions/5010288/how-to-make-a-function-wait-until-a-callback-has-been-called-using-node-js<br><br>
+
+main.js
+</p>
+<pre class="brush:javascript">
+var r = ''; 
+var vbox = require('virtualbox');
+
+vbox.list(function(vms, error) {
+    r = vms;
+});
+
+console.log('vm: %s', r);
+</pre><br>
+
+<p>
+執行
+</p>
+<pre>
+$ node main.js
+    [2023-08-15 01:14:04.539] [INFO] VirtualBox - linux
+    [2023-08-15 01:14:04.546] [INFO] VirtualBox - Listing VMs
+    vm: 
+</pre><br>
+
+<p>
+由於Node.js都是透過Callback處理方式(Asynchronous)，因此，如上面例子，當呼叫vbox.list()時，vbox.list()的動作已經完成，因此，會直接往下走，但是最終結果卻是要在Callback才會知道，遇到這種情況，一般會透過Event做等待，直到Callback處理完成後才把結果列印出來，不過，在Node.js的應用上，一般是使用Promise()做等待的動作，如下修改範例：
+</p>
+<pre class="brush:javascript">
+var vbox = require('virtualbox');
+
+async function start() {
+    var r = '';
+
+    await new Promise((resolve, reject) =&gt; {
+        vbox.list(function(vms, error) {
+            r = vms;
+            resolve('ok');
+        });
+    });
+
+    console.log('vm: %s', r);
+}
+
+start();
+</pre>
+<p>
+呼叫resolve()並且傳入隨意字串，代表允許Promise回傳成功的結果(代表Event已經完成)，反之，如果呼叫reject()並且傳入隨意字串，代表發生錯誤，Promise將會throw error，而error字串內容則是設定給reject()的字串<br><br>
+</p>
+<pre>
+$ node main.js
+    [2023-08-15 01:32:12.109] [INFO] VirtualBox - linux
+    [2023-08-15 01:32:12.115] [INFO] VirtualBox - Listing VMs
+    [2023-08-15 01:32:12.130] [INFO] VirtualBox - Virtualbox version detected as 6
+    vm: { '8591d090-e95a-423a-b99d-cf558bd0d245': [Object] }
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
