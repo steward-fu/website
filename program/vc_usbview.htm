@@ -1,0 +1,1227 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - Visual C++ 6.0 - <b>分析USBView</b></h3>
+<hr size="1"><br>
+<p>
+USBView程式是開發、Debug USB裝置必用的好用工具，該工具是Microsoft DDK的範常式式，該程式範例教導使用者如何寫一個搜尋、列舉USB裝置的程式，但是這個程式是使用Win32 API方式撰寫，沒有一定的底子的使用者確實不容易看懂，加上沒有驅動程式相關經驗的使用者來說，更是不容易瞭解它的運作流程，司徒剛好有看過並且修改過此程式，所以趁著還有些許記憶時，整理這一篇文章並分享給有需要的人<br><br>
+
+USBView位於<b>$DDK_ROOT\src\usb\usbview</b>資料夾<br>
+<img src="vc_usbview/1.jpg" class="maxSize"><br><br>
+
+Win32 API程式的進入點位於WinMain副程式(usbview.c)
+</p>
+<pre class="brush:cpp">
+int WINAPI WinMain (
+  HINSTANCE hInstance,
+  HINSTANCE hPrevInstance,
+  LPSTR     lpszCmdLine,
+  int       nCmdShow)
+{
+  MSG     msg;
+  HACCEL  hAccel;
+  ghInstance = hInstance;
+  ghSplitCursor = LoadCursor(ghInstance,
+  MAKEINTRESOURCE(IDC_SPLIT));
+
+  if(!ghSplitCursor){
+    OOPS();
+    return 0;
+  }
+  hAccel = LoadAccelerators(ghInstance,
+  MAKEINTRESOURCE(IDACCEL));
+
+  if(!hAccel){
+    OOPS();
+    return 0;
+  }
+
+  if(!CreateTextBuffer()){
+    return 0;
+  }
+
+  if(!CreateMainWindow(nCmdShow)){
+    return 0;
+  }
+
+  while(GetMessage(&amp;msg, NULL, 0, 0)){
+    if(!TranslateAccelerator(ghMainWnd,
+      hAccel,
+      &amp;msg) &amp;&amp;
+      !IsDialogMessage(ghMainWnd,
+      &amp;msg))
+    {
+      TranslateMessage(&amp;msg);
+      DispatchMessage(&amp;msg);
+    }
+  }
+  DestroyTextBuffer();
+  CHECKFORLEAKS();
+  return 1;
+}
+</pre>
+<p>
+WinMain副程式需要撰寫的程式內容就是一般Win32 API的處理流程，首先載入Cursor、Accelerator資源檔，接著呼叫CreateTextBuffer副程式配置記憶體，再來就是呼叫CreateMainWindow副程式產生主視窗，目前USBView是使用Dialog作為視窗基礎，所以視窗產生完畢後就是開始做訊息取得、分發的動作，也就是接下來的while迴圈內容，這些處理流程都是很制式的，因為視窗程式都是使用訊息作為傳遞的橋樑，而系統若要傳遞訊息給視窗程式，系統就會將訊息放在視窗的訊息緩衝區，所以主程式必須透過GetMessage函式取得訊息並分發給自己的主程式，那自己的主程式要如何收到訊息呢？在CreateMainWindow副程式會呼叫CreateDialog函式並且註冊一個Callback副程式，而該Callback副程式就是負責接收訊息的副程式<br><br>
+
+司徒把CreateMainWindow(usbview.c)列出來給大家看一下
+</p>
+<pre class="brush:cpp">
+BOOL CreateMainWindow(int nCmdShow)
+{
+  RECT rc;
+  InitCommonControls();
+
+  ghMainWnd = CreateDialog(ghInstance,
+    MAKEINTRESOURCE(IDD_MAINDIALOG),
+    NULL,
+    MainDlgProc);
+
+  if(ghMainWnd == NULL){
+    OOPS();
+    return FALSE;
+  }
+  GetWindowRect(ghMainWnd, &amp;rc);
+  gBarLocation = (rc.right - rc.left) / 3;
+  ResizeWindows(FALSE, 0);
+  ShowWindow(ghMainWnd, nCmdShow);
+  UpdateWindow(ghMainWnd);
+  return TRUE;
+}
+</pre>
+<p>
+接著如何繼續追蹤程式呢？總不可能每個副程式慢慢看，更不可能使用WinDbg追蹤，因為這樣也太累了，仔細想想，由於USBView是視窗程式，所以，全部的訊息一定會透過Callback副程式做後續處理，所以直接看Callback副程式絕對錯不了
+</p>
+<pre class="brush:cpp">
+LRESULT CALLBACK MainDlgProc (
+  HWND   hWnd,
+  UINT   uMsg,
+  WPARAM wParam,
+  LPARAM lParam)
+{
+  switch(uMsg){
+    HANDLE_MSG(hWnd, WM_INITDIALOG,     USBView_OnInitDialog);
+    HANDLE_MSG(hWnd, WM_CLOSE,          USBView_OnClose);
+    HANDLE_MSG(hWnd, WM_COMMAND,        USBView_OnCommand);
+    HANDLE_MSG(hWnd, WM_LBUTTONDOWN,    USBView_OnLButtonDown);
+    HANDLE_MSG(hWnd, WM_LBUTTONUP,      USBView_OnLButtonUp);
+    HANDLE_MSG(hWnd, WM_MOUSEMOVE,      USBView_OnMouseMove);
+    HANDLE_MSG(hWnd, WM_SIZE,           USBView_OnSize);
+    HANDLE_MSG(hWnd, WM_NOTIFY,         USBView_OnNotify);
+    HANDLE_MSG(hWnd, WM_DEVICECHANGE,   USBView_OnDeviceChange);
+  }
+  return 0;
+}
+</pre>
+<p>
+HANDLE_MSG是一個巨集，該巨集如下
+</p>
+<pre class="brush:cpp">
+#define HANDLE_MSG(hwnd, message, fn) /  
+  case (message): return HANDLE_##message((hwnd), (wParam), (lParam), (fn))
+</pre>
+<p>
+該巨集的意思就是將HANDLE_MSG轉換成<b>HANDLE_ + Message</b>，如：WM_CREATE將會轉換成HANDLE_WM_CREATE，而HANDLE_WM_CREATE也是一個巨集，如下定義
+</p>
+<pre class="brush:cpp">
+#define HANDLE_WM_CREATE(hwnd, wParam, lParam, fn) \
+  ((fn)((hwnd), (LPCREATESTRUCT)(lParam)) ? 0L : (LRESULT)-1L)
+</pre>
+<p>
+使用者看到這裡應該就可以知道，它其實只是做switch指令的判斷，並且執行fn副程式，然後return執行後的結果，如果使用者不想用這麼難懂的巨集，只要自己寫一個switch指令判斷就可以<br><br>
+
+司徒將目前USBView的訊息整理如下
+</p>
+<table>
+  <tr><th>訊息</th><th>功能</th></tr>
+  <tr><td>WM_INITDIALOG</td><td>視窗初始化訊息</td></tr>
+  <tr><td>WM_CLOSE</td><td>視窗結束訊息</td></tr>
+  <tr><td>WM_COMMAND</td><td>接收按鈕的訊息</td></tr>
+  <tr><td>WM_LBUTTONDOWN</td><td>滑鼠左鍵按下的訊息</td></tr>
+  <tr><td>WM_LBUTTONUP</td><td>滑鼠左鍵放開的訊息</td></tr>
+  <tr><td>WM_MOUSEMOVE</td><td>滑鼠移動的訊息</td></tr>
+  <tr><td>WM_SIZE</td><td>視窗縮放的訊息</td></tr>
+  <tr><td>WM_NOTIFY</td><td>系統通知的訊息</td></tr>
+  <tr><td>WM_DEVICECHANGE</td><td>註冊的裝置訊息</td></tr>
+</table>
+
+<p>
+整理完訊息之後，我們只需要看WM_INITDIALOG、WM_NOTIFY、WM_DEVICECHANGE這三個訊息就可以，因為其它訊息都是制式的處理手法，不會是我們分析的重點，接著我們先看WM_INITDIALOG(usbview.c)在做什麼
+</p>
+<pre class="brush:cpp">
+BOOL USBView_OnInitDialog (
+  HWND    hWnd,
+  HWND    hWndFocus,
+  LPARAM  lParam)
+{
+  HFONT                           hFont;
+  HIMAGELIST                      himl;
+  HICON                           hicon;
+  DEV_BROADCAST_DEVICEINTERFACE   broadcastInterface;
+
+
+  // Register to receive notification when a USB device is plugged in.
+  broadcastInterface.dbcc_size = sizeof(DEV_BROADCAST_DEVICEINTERFACE);
+  broadcastInterface.dbcc_devicetype = DBT_DEVTYP_DEVICEINTERFACE;
+
+  memcpy( &amp;(broadcastInterface.dbcc_classguid),
+    &amp;(GUID_CLASS_USB_DEVICE),
+    sizeof(struct _GUID));
+
+  gNotifyDevHandle = RegisterDeviceNotification(hWnd,
+    &amp;broadcastInterface,
+    DEVICE_NOTIFY_WINDOW_HANDLE);
+
+  // Now register for Hub notifications.
+  memcpy( &amp;(broadcastInterface.dbcc_classguid),
+    &amp;(GUID_CLASS_USBHUB),
+    sizeof(struct _GUID));
+
+  gNotifyHubHandle = RegisterDeviceNotification(hWnd,
+    &amp;broadcastInterface,
+    DEVICE_NOTIFY_WINDOW_HANDLE);
+
+  //end add
+  ghTreeWnd = GetDlgItem(hWnd, IDC_TREE);
+
+  //added
+  if((himl = ImageList_Create(15, 15,
+    FALSE, 2, 0)) == NULL)
+  {
+    OOPS();
+  }
+  hicon = LoadIcon(ghInstance, MAKEINTRESOURCE(IDI_ICON));
+  giGoodDevice = ImageList_AddIcon(himl, hicon);
+  hicon = LoadIcon(ghInstance, MAKEINTRESOURCE(IDI_BADICON));
+  giBadDevice = ImageList_AddIcon(himl, hicon);
+  hicon = LoadIcon(ghInstance, MAKEINTRESOURCE(IDI_COMPUTER));
+  giComputer = ImageList_AddIcon(himl, hicon);
+  hicon = LoadIcon(ghInstance, MAKEINTRESOURCE(IDI_HUB));
+  giHub = ImageList_AddIcon(himl, hicon);
+  hicon = LoadIcon(ghInstance, MAKEINTRESOURCE(IDI_NODEVICE));
+  giNoDevice = ImageList_AddIcon(himl, hicon);
+
+  TreeView_SetImageList(ghTreeWnd, himl, TVSIL_NORMAL);
+  // end add
+  ghEditWnd = GetDlgItem(hWnd, IDC_EDIT);
+  ghStatusWnd = GetDlgItem(hWnd, IDC_STATUS);
+  ghMainMenu = GetMenu(hWnd);
+
+  if(ghMainMenu == NULL){
+    OOPS();
+  }
+
+  hFont  = CreateFont(13,  8, 0, 0,
+    400, 0, 0, 0,
+    0,   1, 2, 1,
+    49,  TEXT("Courier"));
+
+  SendMessage(ghEditWnd,
+    WM_SETFONT,
+    (WPARAM) hFont,
+    0);
+
+  RefreshTree();
+  return FALSE;
+}
+</pre>
+<p>
+該副程式也很簡單，只是註冊USB Hub通知(透過RegisterDeviceNotification函式)並且產生TreeView視窗，而每個TreeView的Node也都有特定的圖示表示(透過LoadIcon和ImageList_AddIcon)，需要注意的是，透過RegisterDeviceNotification函式註冊的訊息，系統會使用WM_DEVICECHANGE訊息作回調，也就是當註冊的裝置插入或者拔除時，系統都會透過WM_DEVICECHANGE訊息通知主程式，那比較有問題的是GUID部份，使用者怎麼會知道有哪些GUID可以使用呢？其實這一些都是微軟定義的裝置GUID，它們位於USBIODef.h中
+</p>
+<pre class="brush:cpp">
+/* f18a0e88-c30c-11d0-8815-00a0c906bed8 */
+DEFINE_GUID(GUID_DEVINTERFACE_USB_HUB,    0xf18a0e88, 0xc30c, 0x11d0, 0x88, 0x15, 0x00, \
+  0xa0, 0xc9, 0x06, 0xbe, 0xd8);
+
+/* A5DCBF10-6530-11D2-901F-00C04FB951ED */
+DEFINE_GUID(GUID_DEVINTERFACE_USB_DEVICE, 0xA5DCBF10L, 0x6530, 0x11D2, 0x90, 0x1F, 0x00, \
+  0xC0, 0x4F, 0xB9, 0x51, 0xED);
+
+/* 3ABF6F2D-71C4-462a-8A92-1E6861E6AF27 */
+DEFINE_GUID(GUID_DEVINTERFACE_USB_HOST_CONTROLLER, 0x3abf6f2d, 0x71c4, 0x462a, 0x8a, 0x92, 0x1e, \
+  0x68, 0x61, 0xe6, 0xaf, 0x27);
+
+/* 4E623B20-CB14-11D1-B331-00A0C959BBD2 */
+DEFINE_GUID(GUID_USB_WMI_STD_DATA, 0x4E623B20L, 0xCB14, 0x11D1, 0xB3, 0x31, 0x00,\
+  0xA0, 0xC9, 0x59, 0xBB, 0xD2);
+
+/* 4E623B20-CB14-11D1-B331-00A0C959BBD2 */
+DEFINE_GUID(GUID_USB_WMI_STD_NOTIFICATION, 0x4E623B20L, 0xCB14, 0x11D1, 0xB3, 0x31, 0x00,\
+  0xA0, 0xC9, 0x59, 0xBB, 0xD2); 
+ 
+#define GUID_CLASS_USBHUB               GUID_DEVINTERFACE_USB_HUB
+#define GUID_CLASS_USB_DEVICE           GUID_DEVINTERFACE_USB_DEVICE
+#define GUID_CLASS_USB_HOST_CONTROLLER  GUID_DEVINTERFACE_USB_HOST_CONTROLLER
+</pre>
+<p>
+如果是自己開發的USB裝置以及驅動程式，使用者也可以使用這種註冊方式<br><br>
+
+我們已經知道WM_DEVICECHANGE是一個重要的副程式，所以它的程式碼可能會很大也很複雜，所以我們把它保留到最後再分析，我們先分析另一個WM_NOTIFY(usbview.c)副程式
+</p>
+<pre class="brush:cpp">
+LRESULT USBView_OnNotify (
+  HWND    hWnd,
+  int     DlgItem,
+  LPNMHDR lpNMHdr)
+{
+  if(lpNMHdr-&gt;code == TVN_SELCHANGED){
+    HTREEITEM hTreeItem;
+    hTreeItem = ((NM_TREEVIEW *)lpNMHdr)-&gt;itemNew.hItem;
+
+    if(hTreeItem){
+      UpdateEditControl(ghEditWnd,
+      ghTreeWnd,
+      hTreeItem);
+    }
+  }
+  return 0;
+}
+</pre>
+<p>
+使用者看到應該會嚇一跳，程式碼怎麼這麼簡單，因為該副程式只做TreeView的顯示處理，也就是當使用者點選某個裝置時，在右邊的EDIT視窗顯示相關訊息，所以顯示裝置訊息的程式就寫在UpdateEditControl副程式裡面，這一部份都只是附加文字到EDIT視窗而已，使用者自己看一下就可以知道了<br><br>
+
+接著我們看一下USBView最重要的副程式WM_DEVICECHANGE(usbview.c)
+</p>
+<pre class="brush:cpp">
+BOOL USBView_OnDeviceChange (
+  HWND  hwnd,
+  UINT  uEvent,
+  DWORD dwEventData)
+{
+  if(gDoAutoRefresh){
+    switch(uEvent){
+    case DBT_DEVICEARRIVAL:
+    case DBT_DEVICEREMOVECOMPLETE:
+      RefreshTree();
+      break;
+    }
+  }
+  return TRUE;
+}
+</pre>
+<p>
+該副程式判斷DBT_DEVICEARRIVAL、DBT_DEVICEREMOVECOMPLETE訊息並做列舉的動作，所以繼續往RefreshTree看下去<br><br>
+
+RefreshTree副程式(usbview.c)如下
+</p>
+<pre class="brush:cpp">
+VOID RefreshTree (VOID)
+{
+  CHAR  statusText[128];
+  ULONG devicesConnected;
+
+  // Clear the selection of the TreeView, so that when the tree is
+  // destroyed, the control won't try to constantly "shift" the
+  // selection to another item.
+  //
+  TreeView_SelectItem(ghTreeWnd, NULL);
+
+  // Clear the edit control
+  //
+  SetWindowText(ghEditWnd, "");
+
+  // Destroy the current contents of the TreeView
+  //
+  if(ghTreeRoot){
+    WalkTree(ghTreeRoot, CleanupItem, 0);
+    TreeView_DeleteAllItems(ghTreeWnd);
+    ghTreeRoot = NULL;
+  }
+
+  // Create the root tree node
+  //
+  ghTreeRoot = AddLeaf(TVI_ROOT, 0, "My Computer", ComputerIcon);
+
+  if(ghTreeRoot != NULL){
+    // Enumerate all USB buses and populate the tree
+    //
+    EnumerateHostControllers(ghTreeRoot, &amp;devicesConnected);
+
+    //
+    // Expand all tree nodes
+    //
+    WalkTree(ghTreeRoot, ExpandItem, 0);
+
+    // Update Status Line with number of devices connected
+    //
+    wsprintf(statusText, "Devices Connected: %d   Hubs Connected: %d",
+      devicesConnected, TotalHubs);
+    SetWindowText(ghStatusWnd, statusText);
+  }
+  else{
+    OOPS();
+  }
+}
+</pre>
+<p>
+該副程式把TreeView刪除重建並且呼叫EnumerateHostControllers副程式做USB Hub列舉的動作，所以繼續往EnumerateHostControllers副程式看下去<br><br>
+
+EnumerateHostControllers副程式(enum.c)如下
+</p>
+
+<pre class="brush:cpp">
+VOID EnumerateHostControllers (
+  HTREEITEM  hTreeParent,
+  ULONG     *DevicesConnected)
+{
+  char        HCName[16];
+  int         HCNum;
+  HANDLE      hHCDev;
+  PCHAR       leafName;
+
+  HDEVINFO                         deviceInfo;
+  SP_DEVICE_INTERFACE_DATA         deviceInfoData;
+  PSP_DEVICE_INTERFACE_DETAIL_DATA deviceDetailData;
+  ULONG                            index;
+  ULONG                            requiredLength;
+
+  TotalDevicesConnected = 0;
+  TotalHubs = 0;
+
+  // Iterate over some Host Controller names and try to open them.
+  //
+  for(HCNum = 0; HCNum &lt; NUM_HCS_TO_CHECK; HCNum++){
+    wsprintf(HCName, "\\\\.\\HCD%d", HCNum);
+    hHCDev = CreateFile(HCName,
+      GENERIC_WRITE,
+      FILE_SHARE_WRITE,
+      NULL,
+      OPEN_EXISTING,
+      0,
+      NULL);
+
+    // If the handle is valid, then we've successfully opened a Host
+    // Controller.  Display some info about the Host Controller itself,
+    // then enumerate the Root Hub attached to the Host Controller.
+    //
+    if(hHCDev != INVALID_HANDLE_VALUE){
+      leafName = HCName + sizeof("\\\\.\\") - sizeof("");
+      EnumerateHostController(hTreeParent,
+      hHCDev,
+      leafName);
+
+      CloseHandle(hHCDev);
+    }
+  }
+
+  // Now iterate over host controllers using the new GUID based interface
+  //
+  deviceInfo = SetupDiGetClassDevs((LPGUID)&amp;GUID_CLASS_USB_HOST_CONTROLLER,
+    NULL,
+    NULL,
+    (DIGCF_PRESENT | DIGCF_DEVICEINTERFACE));
+
+  if(deviceInfo != INVALID_HANDLE_VALUE){
+    deviceInfoData.cbSize = sizeof(SP_DEVICE_INTERFACE_DATA);
+
+    for(index=0;
+      SetupDiEnumDeviceInterfaces(deviceInfo,
+        0,
+        (LPGUID)&amp;GUID_CLASS_USB_HOST_CONTROLLER,
+        index,
+        &amp;deviceInfoData);
+        index++)
+    {
+      SetupDiGetDeviceInterfaceDetail(deviceInfo,
+        &amp;deviceInfoData,
+        NULL,
+        0,
+        &amp;requiredLength,
+        NULL);
+
+      deviceDetailData = GlobalAlloc(GPTR, requiredLength);
+      deviceDetailData-&gt;cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
+
+      SetupDiGetDeviceInterfaceDetail(deviceInfo,
+        &amp;deviceInfoData,
+        deviceDetailData,
+        requiredLength,
+        &amp;requiredLength,
+        NULL);
+
+      hHCDev = CreateFile(deviceDetailData-&gt;DevicePath,
+        GENERIC_WRITE,
+        FILE_SHARE_WRITE,
+        NULL,
+        OPEN_EXISTING,
+        0,
+        NULL);
+
+      // If the handle is valid, then we've successfully opened a Host
+      // Controller.  Display some info about the Host Controller itself,
+      // then enumerate the Root Hub attached to the Host Controller.
+      //
+      if(hHCDev != INVALID_HANDLE_VALUE){
+        leafName = deviceDetailData-&gt;DevicePath;
+        EnumerateHostController(hTreeParent,
+          hHCDev,
+          leafName);
+
+        CloseHandle(hHCDev);
+      }
+      GlobalFree(deviceDetailData);
+    }
+
+    SetupDiDestroyDeviceInfoList(deviceInfo);
+  }
+  *DevicesConnected = TotalDevicesConnected;
+}
+</pre>
+<p>
+該副程式要分成兩部份來看，第一部份是使用CreateFile函式去開啟HCD(Host Control Device)並且列舉USB裝置，而第二部份則是使用SetupAPI函式開啟HCD並且列舉USB裝置<br><br>
+
+為什麼會有這樣的區分呢？因為驅動程式載入時，驅動程式會使用SymbolLink或GUID註冊名稱給User Mode的應用程式開啟，如果是使用SymbolLink則必須使用第一種方式開啟，反之，若驅動程式使用GUID註冊，則User Mode的應用程式就必須使用SetupAPI函式去取得實際路徑<br><br>
+
+如果是使用SymbolLink則直接使用CreateFile函式開啟就可以了，如果是使用SetupAPI函式的方式開啟，則需要先取得GUID並且使用此GUID去搜尋是否有該裝置，如果有發現裝置則取得該裝置名稱，然後一樣使用CreateFile函式開啟即可<br><br>
+
+開啟HCD後，就呼叫EnumerateHostController(目前分析的副程式是EnumerateHostControllers，最後多一個s)做列舉裝置的動作，雖然分成兩種方式開啟HCD，但是緊接著都是一樣呼叫EnumerateHostController副程式處理，所以繼續往EnumerateHostController副程式分析<br><br>
+
+EnumerateHostController副程式(enum.c)如下
+</p>
+<pre class="brush:cpp">
+VOID EnumerateHostController (
+  HTREEITEM  hTreeParent,
+  HANDLE     hHCDev,
+  PCHAR      leafName)
+{
+  PCHAR       driverKeyName;
+  PCHAR       deviceDesc;
+  PCHAR       deviceId;
+  HTREEITEM   hHCItem;
+  PCHAR       rootHubName;
+  PLIST_ENTRY listEntry;
+  PUSBHOSTCONTROLLERINFO hcInfo;
+  PUSBHOSTCONTROLLERINFO hcInfoInList;
+
+  // Allocate a structure to hold information about this host controller.
+  //
+  hcInfo = (PUSBHOSTCONTROLLERINFO)ALLOC(sizeof(USBHOSTCONTROLLERINFO));
+  if(hcInfo != NULL){
+    hcInfo-&gt;DeviceInfoType = HostControllerInfo;
+    // Obtain the driver key name for this host controller.
+    //
+    driverKeyName = GetHCDDriverKeyName(hHCDev);
+    if(driverKeyName){
+      // Don't enumerate this host controller again if it already
+      // on the list of enumerated host controllers.
+      //
+      listEntry = EnumeratedHCListHead.Flink;
+      while(listEntry != &amp;EnumeratedHCListHead){
+        hcInfoInList = CONTAINING_RECORD(listEntry,
+        USBHOSTCONTROLLERINFO,
+        ListEntry);
+
+        if(strcmp(driverKeyName, hcInfoInList-&gt;DriverKey) == 0){
+          // Already on the list, exit
+          //
+          FREE(driverKeyName);
+          FREE(hcInfo);
+          return;
+        }
+
+        listEntry = listEntry-&gt;Flink;
+      }
+      // Obtain the device id string for this host controller.
+      // (Note: this a tmp global string buffer, make a copy of
+      // this string if it will used later.)
+      //
+      deviceId = DriverNameToDeviceDesc(driverKeyName, TRUE);
+      if(deviceId){
+        ULONG   ven, dev, subsys, rev;
+        if (sscanf(deviceId,
+          "PCI\\VEN_%x&amp;DEV_%x&amp;SUBSYS_%x&amp;REV_%x",
+          &amp;ven, &amp;dev, &amp;subsys, &amp;rev) != 4)
+        {
+          OOPS();
+        }
+        hcInfo-&gt;DriverKey = driverKeyName;
+        hcInfo-&gt;VendorID = ven;
+        hcInfo-&gt;DeviceID = dev;
+        hcInfo-&gt;SubSysID = subsys;
+        hcInfo-&gt;Revision = rev;
+      }
+      else{
+        OOPS();
+      }
+
+      // Obtain the device description string for this host controller.
+      // (Note, this a tmp global string buffer, make a copy of
+      // this string if it will be used later.)
+      //
+      deviceDesc = DriverNameToDeviceDesc(driverKeyName, FALSE);
+      if(deviceDesc){
+        leafName = deviceDesc;
+      }
+      else{
+        OOPS();
+      }
+
+      // Add this host controller to the USB device tree view.
+      //
+      hHCItem = AddLeaf(hTreeParent,
+        (LPARAM)hcInfo,
+        leafName,
+        GoodDeviceIcon);
+
+      if(hHCItem){
+        // Add this host controller to the list of enumerated
+        // host controllers.
+        //
+        InsertTailList(&amp;EnumeratedHCListHead,
+          &amp;hcInfo-&gt;ListEntry);
+
+        // Get the name of the root hub for this host
+        // controller and then enumerate the root hub.
+        //
+        rootHubName = GetRootHubName(hHCDev);
+        if(rootHubName != NULL){
+          EnumerateHub(hHCItem,
+            rootHubName,
+            NULL,      // ConnectionInfo
+            NULL,      // ConfigDesc
+            NULL,      // StringDescs
+            "RootHub"  // DeviceDesc
+          );
+        }
+        else{
+          // Failure obtaining root hub name.
+          OOPS();
+        }
+      }
+      else{
+        // Failure adding host controller to USB device tree
+        // view.
+        OOPS();
+        FREE(driverKeyName);
+        FREE(hcInfo);
+      }
+    }
+    else{
+      // Failure obtaining driver key name.
+      OOPS();
+      FREE(hcInfo);
+    }
+  }
+}
+</pre>
+<p>
+該副程式首先取得HCD的DriverKey名稱(透過GetHCDDriverKeyName副程式)，使用的是IOCTL_GET_HCD_DRIVERKEY_NAME，該IOCTL是微軟定義的，所有HCD都會支援此IOCTL(因為它是預設支援的IOCTL)，而取得的名稱就是HCD註冊在Registry的名稱，那為何要去取得Registry名稱呢？因為有此名稱才能存取Registry裡面的相關資訊，而一般Registry都會紀錄驅動程式的詳細資訊，如果使用者已經知道絕對路徑，那麼使用RegOpenKey函式開啟也可以達到相同的目的<br><br>
+
+接著呼叫DriverNameToDeviceDesc副程式(透過Registry方式)去取得晶片的名稱，該名稱就是顯示在TreeView上面的名稱，而GetHCDDriverKeyName副程式比較簡單，它使用IOCTL的方式去取得HCD的DriverKey名稱，至於DriverNameToDeviceDesc副程式(devnode.c)的部份，因為它比較特別，所以司徒需要好好解析它一下
+</p>
+<pre class="brush:cpp">
+PCHAR DriverNameToDeviceDesc (PCHAR DriverName, BOOLEAN DeviceId)
+{
+  DEVINST     devInst;
+  DEVINST     devInstNext;
+  CONFIGRET   cr;
+  ULONG       walkDone = 0;
+  ULONG       len;
+
+  // Get Root DevNode
+  //
+  cr = CM_Locate_DevNode(&amp;devInst,
+    NULL,
+    0);
+
+  if(cr != CR_SUCCESS){
+    return NULL;
+  }
+
+  // Do a depth first search for the DevNode with a matching
+  // DriverName value
+  //
+  while(!walkDone){
+    // Get the DriverName value
+    //
+    len = sizeof(buf);
+    cr = CM_Get_DevNode_Registry_Property(devInst,
+      CM_DRP_DRIVER,
+      NULL,
+      buf,
+      &amp;len,
+      0);
+
+    // If the DriverName value matches, return the DeviceDescription
+    //
+    if(cr == CR_SUCCESS &amp;&amp; _stricmp(DriverName, buf) == 0){
+      len = sizeof(buf);
+      if(DeviceId){
+        cr = CM_Get_Device_ID(devInst,
+        buf,
+        len,
+        0);
+      }
+      else{
+        cr = CM_Get_DevNode_Registry_Property(devInst,
+          CM_DRP_DEVICEDESC,
+          NULL,
+          buf,
+          &amp;len,
+          0);
+      }
+
+      if(cr == CR_SUCCESS){
+        return buf;
+      }
+      else{
+        return NULL;
+      }
+    }
+
+    // This DevNode didn't match, go down a level to the first child.
+    //
+    cr = CM_Get_Child(&amp;devInstNext,
+      devInst,
+      0);
+
+    if(cr == CR_SUCCESS){
+      devInst = devInstNext;
+      continue;
+    }
+
+    // Can't go down any further, go across to the next sibling.  If
+    // there are no more siblings, go back up until there is a sibling.
+    // If we can't go up any further, we're back at the root and we're
+    // done.
+    //
+    for(;;){
+      cr = CM_Get_Sibling(&amp;devInstNext,
+        devInst,
+        0);
+
+      if(cr == CR_SUCCESS){
+        devInst = devInstNext;
+        break;
+      }
+
+      cr = CM_Get_Parent(&amp;devInstNext,
+        devInst,
+        0);
+
+      if(cr == CR_SUCCESS){
+        devInst = devInstNext;
+      }
+      else{
+        walkDone = 1;
+        break;
+      }
+    }
+  }
+  return NULL;
+}
+</pre>
+
+<p>
+CM_xxx函數是關於Registry的相關操作，而某些CM_xxx函數是可以使用SetupAPI函式替代的<br><br>
+
+該副程式首先取得Node Handle(CM_Locate_DevNode)，接著取得Registry Property(CM_Get_DevNode_Registry_Property)，而Property可以有如下選項
+</p>
+<table>
+  <tr>
+    <th>旗標</th>
+    <th>說明</th>
+  </tr>
+  <tr>
+    <td>CM_DEVCAP_LOCKSUPPORTED</td>
+    <td>LockSupported</td>  
+  </tr>
+  <tr>
+    <td>CM_DEVCAP_EJECTSUPPORTED</td>
+    <td>EjectSupported</td>  
+  </tr>
+  <tr>
+    <td>CM_DEVCAP_REMOVABLE</td>
+    <td>Removable</td>  
+  </tr>
+  <tr>
+    <td>CM_DEVCAP_DOCKDEVICE</td>
+    <td>DockDevice</td>  
+  </tr>
+  <tr>
+    <td>CM_DEVCAP_UNIQUEID</td>
+    <td>UniqueID</td>  
+  </tr>
+  <tr>
+    <td>CM_DEVCAP_SILENTINSTALL</td>
+    <td>SilentInstall</td>  
+  </tr>
+  <tr>
+    <td>CM_DEVCAP_RAWDEVICEOK</td>
+    <td>RawDeviceOK</td>  
+  </tr>
+  <tr>
+    <td>CM_DEVCAP_SURPRISEREMOVALOK</td>
+    <td>SurpriseRemovalOK</td>  
+  </tr>
+  <tr>
+    <td>CM_DEVCAP_HARDWAREDISABLED</td>
+    <td>HardwareDisabled</td>  
+  </tr>
+  <tr>
+    <td>CM_DEVCAP_NONDYNAMIC</td>
+    <td>NonDynamic</td> 
+  </tr>
+</table>
+
+<p>
+這一些旗標是可以取得相關資訊的旗標，司徒要比較特別提到的是CM_Get_Parent這個函數，因為當我們取得的資料是HID裝置資料時，其實可以再使用一次CM_Get_Parent取得USB裝置資料，然後再使用一次CM_Get_Parent時，就可以取得Hub的裝置資料，CM_Get_Parent這個函數非常好用，因為一般我們寫User Mode的HID裝置列舉時，都會使用SetupDiEnumDeviceInfo函式去取得裝置資訊，但是，卻不知道如何取得USB裝置資料，所以這個時候只要呼叫CM_Get_Parent函式就可以取得USB裝置的資料，由於HID協定是USB最底層協定，它的上一層協定就是USB協定，所以才會有這樣的順序關係，範常式式如下
+</p>
+<pre class="brush:cpp">
+DWORD devInstParent;
+BOOLEAN bRet
+
+da.cbSize = sizeof(da);
+bRet = SetupDiEnumDeviceInfo(hDev, iEnumIndex, &amp;da);
+CM_Get_Device_ID(da.DevInst, pDeviceID, sizeof(TCHAR) * 255, 0);
+CM_Get_Parent(&amp;devInstParent, da.DevInst, 0);
+CM_Get_Device_ID(devInstParent, pDeviceID, sizeof(pDeviceID) * 255, 0);
+</pre>
+
+<p>
+此段程式可以使用在User Mode的HID列舉階段，透過該段程式就可以取得USB裝置的絕對路徑，因為HID裝置的操作和USB裝置的操作是不一樣的，所以一旦擁有USB裝置的Handle就可以非常方便使用其它相關函式<br><br>
+
+接著繼續往下分析，DriverNameToDeviceDesc副程式是取得裝置的描述名稱，如：人性化介面裝置，內部使用的方式也是透過CM_xxx函數，接著就是將取得的名稱顯示在TreeView上面，最重要的EnumerateHub副程式，因為它會繼續列舉每個Port的裝置<br><br>
+
+EnumerateHub副程式(enum.c)如下
+</p>
+<pre class="brush:cpp">
+VOID EnumerateHub (
+  HTREEITEM                           hTreeParent,
+  PCHAR                               HubName,
+  PUSB_NODE_CONNECTION_INFORMATION_EX ConnectionInfo,
+  PUSB_DESCRIPTOR_REQUEST             ConfigDesc,
+  PSTRING_DESCRIPTOR_NODE             StringDescs,
+  PCHAR                               DeviceDesc)
+{
+  PUSB_NODE_INFORMATION   hubInfo;
+  HANDLE                  hHubDevice;
+  HTREEITEM               hItem;
+  PCHAR                   deviceName;
+  BOOL                    success;
+  ULONG                   nBytes;
+  PVOID                   info;
+  CHAR                    leafName[512]; // XXXXX how big does this have to be?
+
+  // Initialize locals to not allocated state so the error cleanup routine
+  // only tries to cleanup things that were successfully allocated.
+  //
+  info        = NULL;
+  hubInfo     = NULL;
+  hHubDevice  = INVALID_HANDLE_VALUE;
+
+  // Allocate some space for a USBDEVICEINFO structure to hold the
+  // hub info, hub name, and connection info pointers.  GPTR zero
+  // initializes the structure for us.
+  //
+  if(ConnectionInfo != NULL){
+    info = ALLOC(sizeof(USBEXTERNALHUBINFO));
+  }
+  else{
+    info = ALLOC(sizeof(USBROOTHUBINFO));
+  }
+
+  if(info == NULL){
+    OOPS();
+    goto EnumerateHubError;
+  }
+
+  // Allocate some space for a USB_NODE_INFORMATION structure for this Hub,
+  //
+  hubInfo = (PUSB_NODE_INFORMATION)ALLOC(sizeof(USB_NODE_INFORMATION));
+  if(hubInfo == NULL){
+    OOPS();
+    goto EnumerateHubError;
+  }
+
+  // Keep copies of the Hub Name, Connection Info, and Configuration
+  // Descriptor pointers
+  //
+  if(ConnectionInfo != NULL){
+    ((PUSBEXTERNALHUBINFO)info)-&gt;DeviceInfoType = ExternalHubInfo;
+    ((PUSBEXTERNALHUBINFO)info)-&gt;HubInfo = hubInfo;
+    ((PUSBEXTERNALHUBINFO)info)-&gt;HubName = HubName;
+    ((PUSBEXTERNALHUBINFO)info)-&gt;ConnectionInfo = ConnectionInfo;
+    ((PUSBEXTERNALHUBINFO)info)-&gt;ConfigDesc = ConfigDesc;
+    ((PUSBEXTERNALHUBINFO)info)-&gt;StringDescs = StringDescs;
+  }
+  else{
+    ((PUSBROOTHUBINFO)info)-&gt;DeviceInfoType = RootHubInfo;
+    ((PUSBROOTHUBINFO)info)-&gt;HubInfo = hubInfo;
+    ((PUSBROOTHUBINFO)info)-&gt;HubName = HubName;
+  }
+
+  // Allocate a temp buffer for the full hub device name.
+  //
+  deviceName = (PCHAR)ALLOC(strlen(HubName) + sizeof("\\\\.\\"));
+  if(deviceName == NULL){
+    OOPS();
+    goto EnumerateHubError;
+  }
+
+  // Create the full hub device name
+  //
+  strcpy(deviceName, "\\\\.\\");
+  strcpy(deviceName + sizeof("\\\\.\\") - 1, HubName);
+
+  // Try to hub the open device
+  //
+  hHubDevice = CreateFile(deviceName,
+    GENERIC_WRITE,
+    FILE_SHARE_WRITE,
+    NULL,
+    OPEN_EXISTING,
+    0,
+    NULL);
+
+  // Done with temp buffer for full hub device name
+  //
+  FREE(deviceName);
+  if(hHubDevice == INVALID_HANDLE_VALUE){
+    OOPS();
+    goto EnumerateHubError;
+  }
+
+  //
+  // Now query USBHUB for the USB_NODE_INFORMATION structure for this hub.
+  // This will tell us the number of downstream ports to enumerate, among
+  // other things.
+  //
+  success = DeviceIoControl(hHubDevice,
+    IOCTL_USB_GET_NODE_INFORMATION,
+    hubInfo,
+    sizeof(USB_NODE_INFORMATION),
+    hubInfo,
+    sizeof(USB_NODE_INFORMATION),
+    &amp;nBytes,
+    NULL);
+
+  if(!success){
+    OOPS();
+    goto EnumerateHubError;
+  }
+
+  // Build the leaf name from the port number and the device description
+  //
+  if(ConnectionInfo){
+    wsprintf(leafName, "[Port%d] ", ConnectionInfo-&gt;ConnectionIndex);
+    strcat(leafName, ConnectionStatuses[ConnectionInfo-&gt;ConnectionStatus]);
+    strcat(leafName, " :  ");
+  }
+  else{
+    leafName[0] = 0;
+  }
+
+  if(DeviceDesc){
+    strcat(leafName, DeviceDesc);
+  }
+  else{
+    strcat(leafName, HubName);
+  }
+  // Now add an item to the TreeView with the PUSBDEVICEINFO pointer info
+  // as the LPARAM reference value containing everything we know about the
+  // hub.
+  //
+  hItem = AddLeaf(hTreeParent,
+    (LPARAM)info,
+    leafName,
+    HubIcon);
+
+  if(hItem == NULL){
+    OOPS();
+    goto EnumerateHubError;
+  }
+
+  // Now recursively enumrate the ports of this hub.
+  //
+  EnumerateHubPorts(
+    hItem,
+    hHubDevice,
+    hubInfo-&gt;u.HubInformation.HubDescriptor.bNumberOfPorts
+  );
+
+  CloseHandle(hHubDevice);
+  return;
+
+EnumerateHubError:
+  //
+  // Clean up any stuff that got allocated
+  //
+
+  if(hHubDevice != INVALID_HANDLE_VALUE){
+    CloseHandle(hHubDevice);
+    hHubDevice = INVALID_HANDLE_VALUE;
+  }
+
+  if(hubInfo){
+    FREE(hubInfo);
+  }
+
+  if(info){
+    FREE(info);
+  }
+
+  if(HubName){
+    FREE(HubName);
+  }
+
+  if(ConnectionInfo){
+    FREE(ConnectionInfo);
+  }
+
+  if(ConfigDesc){
+    FREE(ConfigDesc);
+  }
+
+  if(StringDescs != NULL){
+    PSTRING_DESCRIPTOR_NODE Next;
+    do{
+      Next = StringDescs-&gt;Next;
+      FREE(StringDescs);
+      StringDescs = Next;
+    }while(StringDescs != NULL);
+  }
+}
+</pre>
+<p>
+該副程式開啟Hub(不要跟之前的HCD搞混)並且取得Port的狀況(透過IOCTL_USB_GET_NODE_INFORMATION)，而這個Port資訊就是代表有幾個實際Port數，有了這個資訊後，就可以更進一步的取得每個Port的裝置資訊(透過EnumerateHubPorts副程式)，因此繼續往EnumerateHubPorts副程式分析，而EnumerateHubPorts副程式應該就是最後結尾的副程式了<br><br>
+
+EnumerateHubPorts副程式(enum.c)如下
+</p>
+<pre class="brush:cpp">
+VOID EnumerateHubPorts (
+  HTREEITEM   hTreeParent,
+  HANDLE      hHubDevice,
+  ULONG       NumPorts)
+{
+  HTREEITEM   hItem;
+  ULONG       index;
+  BOOL        success;
+
+  PUSB_NODE_CONNECTION_INFORMATION_EX connectionInfoEx;
+  PUSB_DESCRIPTOR_REQUEST             configDesc;
+  PSTRING_DESCRIPTOR_NODE             stringDescs;
+  PUSBDEVICEINFO                      info;
+
+  PCHAR driverKeyName;
+  PCHAR deviceDesc;
+  CHAR  leafName[512]; // XXXXX how big does this have to be?
+  int   icon;
+
+  // Loop over all ports of the hub.
+  //
+  // Port indices are 1 based, not 0 based.
+  //
+  for(index=1; index &lt;= NumPorts; index++){
+    ULONG nBytesEx;
+
+    // Allocate space to hold the connection info for this port.
+    // For now, allocate it big enough to hold info for 30 pipes.
+    //
+    // Endpoint numbers are 0-15.  Endpoint number 0 is the standard
+    // control endpoint which is not explicitly listed in the Configuration
+    // Descriptor.  There can be an IN endpoint and an OUT endpoint at
+    // endpoint numbers 1-15 so there can be a maximum of 30 endpoints
+    // per device configuration.
+    //
+    // Should probably size this dynamically at some point.
+    //
+    nBytesEx = sizeof(USB_NODE_CONNECTION_INFORMATION_EX) +
+      sizeof(USB_PIPE_INFO) * 30;
+
+    connectionInfoEx = (PUSB_NODE_CONNECTION_INFORMATION_EX)ALLOC(nBytesEx);
+
+    if(connectionInfoEx == NULL){
+      OOPS();
+      break;
+    }
+
+    //
+    // Now query USBHUB for the USB_NODE_CONNECTION_INFORMATION_EX structure
+    // for this port.  This will tell us if a device is attached to this
+    // port, among other things.
+    //
+    connectionInfoEx-&gt;ConnectionIndex = index;
+    success = DeviceIoControl(hHubDevice,
+      IOCTL_USB_GET_NODE_CONNECTION_INFORMATION_EX,
+      connectionInfoEx,
+      nBytesEx,
+      connectionInfoEx,
+      nBytesEx,
+      &amp;nBytesEx,
+      NULL);
+
+    if(!success){
+      PUSB_NODE_CONNECTION_INFORMATION    connectionInfo;
+      ULONG                               nBytes;
+
+      // Try using IOCTL_USB_GET_NODE_CONNECTION_INFORMATION
+      // instead of IOCTL_USB_GET_NODE_CONNECTION_INFORMATION_EX
+      //
+      nBytes = sizeof(USB_NODE_CONNECTION_INFORMATION) +
+        sizeof(USB_PIPE_INFO) * 30;
+
+      connectionInfo = (PUSB_NODE_CONNECTION_INFORMATION)ALLOC(nBytes);
+      connectionInfo-&gt;ConnectionIndex = index;
+      success = DeviceIoControl(hHubDevice,
+        IOCTL_USB_GET_NODE_CONNECTION_INFORMATION,
+        connectionInfo,
+        nBytes,
+        connectionInfo,
+        nBytes,
+        &amp;nBytes,
+        NULL);
+
+      if(!success){
+        OOPS();
+        FREE(connectionInfo);
+        FREE(connectionInfoEx);
+        continue;
+      }
+
+      // Copy IOCTL_USB_GET_NODE_CONNECTION_INFORMATION into
+      // IOCTL_USB_GET_NODE_CONNECTION_INFORMATION_EX structure.
+      //
+      connectionInfoEx-&gt;ConnectionIndex =
+      connectionInfo-&gt;ConnectionIndex;
+      connectionInfoEx-&gt;DeviceDescriptor =
+      connectionInfo-&gt;DeviceDescriptor;
+      connectionInfoEx-&gt;CurrentConfigurationValue =
+      connectionInfo-&gt;CurrentConfigurationValue;
+      connectionInfoEx-&gt;Speed =
+      connectionInfo-&gt;LowSpeed ? UsbLowSpeed : UsbFullSpeed;
+      connectionInfoEx-&gt;DeviceIsHub =
+      connectionInfo-&gt;DeviceIsHub;
+      connectionInfoEx-&gt;DeviceAddress =
+      connectionInfo-&gt;DeviceAddress;
+      connectionInfoEx-&gt;NumberOfOpenPipes =
+      connectionInfo-&gt;NumberOfOpenPipes;
+      connectionInfoEx-&gt;ConnectionStatus =
+      connectionInfo-&gt;ConnectionStatus;
+      memcpy(&amp;connectionInfoEx-&gt;PipeList[0],
+        &amp;connectionInfo-&gt;PipeList[0],
+      sizeof(USB_PIPE_INFO) * 30);
+
+      FREE(connectionInfo);
+    }
+
+    // Update the count of connected devices
+    //
+    if(connectionInfoEx-&gt;ConnectionStatus == DeviceConnected){
+      TotalDevicesConnected++;
+    }
+
+    if(connectionInfoEx-&gt;DeviceIsHub){
+      TotalHubs++;
+    }
+
+    // If there is a device connected, get the Device Description
+    //
+    deviceDesc = NULL;
+    if(connectionInfoEx-&gt;ConnectionStatus != NoDeviceConnected){
+      driverKeyName = GetDriverKeyName(hHubDevice,
+      index);
+
+      if(driverKeyName){
+        deviceDesc = DriverNameToDeviceDesc(driverKeyName, FALSE);
+        FREE(driverKeyName);
+      }
+    }
+
+    // If there is a device connected to the port, try to retrieve the
+    // Configuration Descriptor from the device.
+    //
+    if(gDoConfigDesc &amp;&amp;
+      connectionInfoEx-&gt;ConnectionStatus == DeviceConnected)
+    {
+      configDesc = GetConfigDescriptor(hHubDevice,
+        index,
+        0);
+    }
+    else{
+      configDesc = NULL;
+    }
+
+    if(configDesc != NULL &amp;&amp;
+      AreThereStringDescriptors(&amp;connectionInfoEx-&gt;DeviceDescriptor,
+      (PUSB_CONFIGURATION_DESCRIPTOR)(configDesc+1)))
+    {
+      stringDescs = GetAllStringDescriptors(
+        hHubDevice,
+        index,
+        &amp;connectionInfoEx-&gt;DeviceDescriptor,
+        (PUSB_CONFIGURATION_DESCRIPTOR)(configDesc+1));
+    }
+    else{
+      stringDescs = NULL;
+    }
+
+    // If the device connected to the port is an external hub, get the
+    // name of the external hub and recursively enumerate it.
+    //
+    if(connectionInfoEx-&gt;DeviceIsHub){
+      PCHAR extHubName;
+      extHubName = GetExternalHubName(hHubDevice,
+        index);
+
+      if(extHubName != NULL){
+        EnumerateHub(hTreeParent, //hPortItem,
+          extHubName,
+          connectionInfoEx,
+          configDesc,
+          stringDescs,
+          deviceDesc);
+      }
+    }
+    else{
+      // Allocate some space for a USBDEVICEINFO structure to hold the
+      // Config Descriptors, Strings Descriptors, and connection info
+      // pointers.  GPTR zero initializes the structure for us.
+      //
+      info = (PUSBDEVICEINFO) ALLOC(sizeof(USBDEVICEINFO));
+      if(info == NULL){
+        OOPS();
+        if(configDesc != NULL){
+          FREE(configDesc);
+        }
+        FREE(connectionInfoEx);
+        break;
+      }
+      info-&gt;DeviceInfoType = DeviceInfo;
+      info-&gt;ConnectionInfo = connectionInfoEx;
+      info-&gt;ConfigDesc = configDesc;
+      info-&gt;StringDescs = stringDescs;
+      wsprintf(leafName, "[Port%d] ", index);
+      strcat(leafName, ConnectionStatuses[connectionInfoEx-&gt;ConnectionStatus]);
+
+      if(deviceDesc){
+        strcat(leafName, " :  ");
+        strcat(leafName, deviceDesc);
+      }
+
+      if(connectionInfoEx-&gt;ConnectionStatus == NoDeviceConnected){
+        icon = NoDeviceIcon;
+      }
+      else if(connectionInfoEx-&gt;CurrentConfigurationValue){
+        icon = GoodDeviceIcon;
+      }
+      else{
+        icon = BadDeviceIcon;
+      }
+
+      hItem = AddLeaf(hTreeParent, //hPortItem,
+        (LPARAM)info,
+        leafName,
+        icon);
+    }
+  }
+}
+</pre>
+<p>
+該副程式取得每個Port的裝置資訊(透過IOCTL_USB_GET_NODE_CONNECTION_INFORMATION_EX或IOCTL_USB_GET_NODE_CONNECTION_INFORMATION)，將每個取得的裝置資訊(GetConfigDescriptor和GetAllStringDescriptors)加入TreeView中，這個副程式比較詭異的地方是再度呼叫EnumerateHub副程式，這樣會導致遞迴呼叫，司徒想了一下才知道，這是因為每個USB Hub可以繼續往下串接USB Hub(USB最多能支援127個裝置、USB Hub最大串接層數是6層)，所以使用遞迴反而可以讓程式更簡潔，不失為一個好的寫法，所以這一個部份應該是USBView的精髓所在<br><br>
+
+司徒認為分析到此應該有很多人還是搞不清楚，所以司徒就畫一個流程圖幫助大家構思它的整體運作<br>
+<img src="vc_usbview/2.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

@@ -1,0 +1,84 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - Visual C++ 6.0 - <b>UTF-8轉BIG-5</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://www.monster.com.tw/archives/811<br>
+http://manpages.ubuntu.com/manpages/bionic/zh_TW/man3/iconv_open.3.html<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;iconv.h&gt;
+#include &lt;string.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;sys/stat.h&gt;
+
+int main(int argc, char **argv)
+{
+    int x;
+    iconv_t cd;
+    char in_buf[255] = {0};
+    char out_buf[255] = {0};
+    char *sin = in_buf;
+    char *sout = out_buf;
+    size_t in_len = 0;
+    size_t out_len = sizeof(out_buf);
+
+    cd = iconv_open("big5", "utf-8");
+    if (cd == -1)
+    {
+        printf("failed to open iconv !\n");
+        return -1;
+    }
+
+    int fd = open("test.txt", O_RDONLY);
+    in_len = read(fd, in_buf, sizeof(in_buf));
+    close(fd);
+
+    printf("utf8: ");
+    for (x = 0; x &lt; in_len; x++)
+    {
+        printf("0x%x ", (unsigned char)in_buf[x]);
+    }
+    printf("\n");
+
+    iconv(cd, &amp;sin, &amp;in_len, &amp;sout, &amp;out_len);
+    iconv_close(cd);
+
+    printf("big5: ");
+    out_len = strlen(out_buf);
+    for (x = 0; x &lt; out_len; x++)
+    {
+        printf("0x%x ", (unsigned char)out_buf[x]);
+    }
+    printf("\n");
+    return 0;
+}
+</pre><br>
+
+<p>
+test.txt
+</p>
+<pre>
+司徒
+</pre><br>
+
+<p>
+執行結果
+</p>
+<pre>
+$ ./test 
+    utf8: 0xe5 0x8f 0xb8 0xe5 0xbe 0x92 0xa 
+    big5: 0xa5 0x71 0xae 0x7b 0xa
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

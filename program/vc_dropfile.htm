@@ -1,0 +1,47 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - Visual C++ 6.0 - <b>Drop File</b></h3>
+<hr size="1"><br>
+<p>
+可執行檔案(如：<b>*.exe</b>、<b>*.dll</b>)本身就可附加許多Resource，加上Resource檔案沒限定型態，因此，使用者也可以將可執行檔附加到可執行檔中，使用Visual Studio附加Resource是相當方便的做法，但是如何Drop該附加的檔案呢？其實也是相當容易，只要搜尋Resource並載入記憶體，接著寫到指定的地方就可以，司徒已經將這些步驟寫成一段副程式，使用者直接拿去使用即可，程式如下所示。<br><br>
+
+好用的Drop File副程式
+</p>
+<pre class="brush:cpp">
+void DropFile(DWORD dwID, TCHAR* pResType, TCHAR* pFileName)
+{
+  HMODULE hModule = GetModuleHandle(NULL);
+  HRSRC resource = FindResource(hModule, MAKEINTRESOURCE(dwID), pResType);
+  HGLOBAL hRSC = LoadResource(hModule, resource);
+  LPVOID lpResBuffer = (unsigned char*)::LockResource(hRSC);
+  DWORD dwFileSize = SizeofResource(hModule, resource);
+  HGLOBAL hGlobal = GlobalAlloc(GMEM_MOVEABLE, dwFileSize);
+  LPVOID pvData = GlobalLock(hGlobal);
+  memcpy(pvData, lpResBuffer, dwFileSize);
+  HANDLE hFile = CreateFile(pFileName, GENERIC_READ | GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+  if(hFile != INVALID_HANDLE_VALUE){
+    DWORD dwRet;
+    WriteFile(hFile, pvData, dwFileSize, &amp;dwRet, NULL);
+    CloseHandle(hFile);
+  }
+  GlobalUnlock(hGlobal);
+  GlobalFree(hGlobal);
+}
+</pre><br>
+
+<p>
+司徒使用一個例子說明一下，首先附加一個可執行檔到Resource，Type請使用APP(名稱可自定)，ID請使用IDR_APP1，結果如下所示：<br>
+<img src="vc_dropfile/1.jpg" class="maxSize"><br><br>
+
+使用方式如下所示
+</p>
+<pre class="brush:cpp">
+DropFile(IDR_APP1, _T("APP"), _T("C:\\demo.exe"));
+</pre>
+<p>
+執行上面DropFile副程式後，就可以將附加的Resource <b>IDA_APP1</b> drop到<b>c:\demo.exe</b>
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
