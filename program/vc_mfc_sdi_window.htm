@@ -1,0 +1,103 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - Visual C++ 6.0 - Microsoft Fundation Class (MFC) - Single Document Interface (SDI) - <b>Create Window</b></h3>
+<hr size="1"><br>
+<p>
+main.cpp
+</p>
+<pre class="brush:cpp">
+#define VC_EXTRALEAN
+
+#include &lt;afxwin.h&gt;
+#include &lt;afxext.h&gt;
+#include &lt;afxdisp.h&gt;
+#include &lt;afxdtctl.h&gt;
+#include &lt;afxcmn.h&gt;
+
+#include "res.h"
+
+class CMainFrame : public CFrameWnd
+{
+protected:
+    DECLARE_DYNAMIC(CMainFrame)
+
+public:
+    virtual BOOL PreCreateWindow(CREATESTRUCT &amp;cs);
+};
+
+IMPLEMENT_DYNAMIC(CMainFrame, CFrameWnd)
+
+BOOL CMainFrame::PreCreateWindow(CREATESTRUCT &amp;cs)
+{
+    if (!CFrameWnd::PreCreateWindow(cs))
+        return FALSE;
+
+    cs.cx = 300;
+    cs.cy = 300;
+    cs.lpszClass = AfxRegisterWndClass(0);
+    return TRUE;
+}
+
+class CMainApp : public CWinApp
+{
+public:
+    virtual BOOL InitInstance();
+};
+
+CMainApp theApp;
+	
+BOOL CMainApp::InitInstance()
+{
+    CMainFrame *pFrame = new CMainFrame;
+    m_pMainWnd = pFrame;
+
+    pFrame-&gt;LoadFrame(IDR_MAINFRAME, WS_OVERLAPPEDWINDOW, NULL, NULL);
+    pFrame-&gt;ShowWindow(SW_SHOW);
+    pFrame-&gt;UpdateWindow();
+    return TRUE;
+}
+</pre><br>
+
+<p>
+main.rc
+</p>
+<pre>
+#include "res.h"
+#include "afxres.h"
+
+IDR_MAINFRAME MENU PRELOAD DISCARDABLE 
+BEGIN
+    POPUP "&amp;Test"
+    BEGIN
+        MENUITEM "Run Test", ID_TEST
+    END
+END
+</pre><br>
+
+<p>
+res.h
+</p>
+<pre>
+#define IDR_MAINFRAME 100
+#define ID_TEST       101
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ export WINEPREFIX=/home/user/.wine_amd64
+
+$ box86 wine nmake -f main.mak clean
+$ box86 wine nmake -f main.mak
+$ box86 wine Debug/main.exe
+</pre><br>
+
+<p>
+完成<br>
+<img style="border:0px" src="vc_mfc_sdi_window/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
