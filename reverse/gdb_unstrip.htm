@@ -1,0 +1,90 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../reverse.htm">逆向工程</a> - GDB - <b>eu-unstrip</b></h3>
+<hr size="1"><br>
+<p>
+一般Release給客戶的檔案都是移掉Debug資訊的檔案，不過，在編譯Release檔案時，通常會額外編譯一份具有Debug Symbol的檔案，而在Debug時，雖然可以在GDB動態載入Debug Symbol，不過，還是不方便，其實elfutils提供一個好用的工具eu-unstrip，它可以把Debug Symbol塞回原本ELF檔案<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+ 
+int main(int argc, char** argv)
+{
+    printf("testing\n");
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ gcc main.c -o main
+$ gcc main.c -ggdb -o main.debug
+</pre><br>
+
+<p>
+模擬Release Build
+</p>
+<pre>
+$ strip main
+$ file main
+    main: ELF 64-bit LSB pie executable, x86-64, version 1 (SYSV), dynamically linked, BuildID[sha1]=44edbb6ef58938fde04de6b6943a640edeb37b77, stripped
+</pre><br>
+
+<p>
+Unstrip
+</p>
+<pre>
+$ eu-unstrip main main.debug
+$ mv main.debug main
+$ file main
+    main: ELF 64-bit LSB pie executable, x86-64, version 1 (SYSV), dynamically linked, BuildID[sha1]=44edbb6ef58938fde04de6b6943a640edeb37b77, with debug_info, not stripped
+</pre><br>
+
+<p>
+Debug
+</p>
+<pre>
+$ gdb main
+    GNU gdb (Debian 8.2.1-2+b3) 8.2.1
+    Copyright (C) 2018 Free Software Foundation, Inc.
+    License GPLv3+: GNU GPL version 3 or later &lt;http://gnu.org/licenses/gpl.html&gt;
+    This is free software: you are free to change and redistribute it.
+    There is NO WARRANTY, to the extent permitted by law.
+    Type "show copying" and "show warranty" for details.
+    This GDB was configured as "x86_64-linux-gnu".
+    Type "show configuration" for configuration details.
+    For bug reporting instructions, please see:
+    &lt;http://www.gnu.org/software/gdb/bugs/&gt;.
+    Find the GDB manual and other documentation resources online at:
+        &lt;http://www.gnu.org/software/gdb/documentation/&gt;.
+
+    For help, type "help".
+    Type "apropos word" to search for commands related to "word"...
+    Reading symbols from main...done.
+
+(gdb) b main
+    Breakpoint 1 at 0x1114: file main.c, line 5.
+
+(gdb) r
+    Starting program: /home/steward/Downloads/main
+
+    Program received signal SIGSEGV, Segmentation fault.
+    0x0000000000000001 in ?? ()
+
+(gdb) list
+    1	#include &lt;stdio.h&gt;
+    2
+    3	int main(int argc, char** argv)
+    4	{
+    5	    printf("testing\n");
+    6	    return 0;
+    7	}
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
