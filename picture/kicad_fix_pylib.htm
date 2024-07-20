@@ -1,0 +1,37 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../picture.htm">繪圖相關</a> - KiCAD - <b>解決Could NOT find PythonLibs問題</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://stackoverflow.com/questions/24174394/cmake-is-not-able-to-find-python-libraries<br><br>
+
+問題如下：
+</p>
+<pre>
+-- pybind11 v2.6.3 dev1
+-- Found PythonInterp: /usr/bin/python3 (found version "3.11.2")
+-- Found PythonInterp: /usr/bin/python3 (found suitable version "3.11.2", minimum required is "3.6")
+-- Check for installed Python Interpreter -- found
+-- Python module install path: lib/python3/dist-packages
+CMake Error at /usr/local/share/cmake-3.29/Modules/FindPackageHandleStandardArgs.cmake:230 (message):
+  Could NOT find PythonLibs (missing: PYTHON_INCLUDE_DIRS) (Required is at
+  least version "3.6")
+Call Stack (most recent call first):
+  /usr/local/share/cmake-3.29/Modules/FindPackageHandleStandardArgs.cmake:600 (_FPHSA_FAILURE_MESSAGE)
+  CMakeModules/FindPythonLibs.cmake:261 (find_package_handle_standard_args)
+  CMakeLists.txt:815 (find_package)
+</pre><br>
+
+<p>
+解法如下：
+</p>
+<pre>
+$ cmake .. \
+    -DPYTHON_INCLUDE_DIR=$(python -c "import sysconfig; print(sysconfig.get_path('include'))")  \
+    -DPYTHON_LIBRARY=$(python -c "import sysconfig; print(sysconfig.get_config_var('LIBDIR'))")
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
