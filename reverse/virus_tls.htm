@@ -1,0 +1,61 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../reverse.htm">逆向工程</a> - 樣本分析 - <b>如何製作TLS PE檔案</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://gclxry.com/article/tls-callback/<br>
+https://stackoverflow.com/questions/14538159/about-tls-callback-in-windows<br><br>
+
+TLS(Thread Local Storage)的Callback是一個比較特別的EntryPoint，此EntryPoint執行的時間，會比main()來得更早，也就是當使者執行PE檔案時，TLS EntryPoint會先被跑起來，接著才是main()，因此，是很多早期病毒使用的技巧之一，司徒今天使用一個簡單範例，說明如何製作這樣的執行檔案<br><br>
+
+main.cpp
+</p>
+<pre class="brush:cpp">
+#include "stdafx.h"
+#include &lt;windows.h&gt;
+
+#pragma comment(linker, "/INCLUDE:__tls_used")
+
+void NTAPI tls(PVOID module, DWORD reason, PVOID reserved)
+{
+    switch(reason){
+    case DLL_PROCESS_ATTACH:
+        MessageBox(NULL, "Run from TLS (DLL_PROCESS_ATTACH)", "Info", MB_OK);
+        break;
+    case DLL_THREAD_ATTACH:
+        MessageBox(NULL, "Run from TLS (DLL_THREAD_ATTACH)", "Info", MB_OK);
+        break;
+    case DLL_THREAD_DETACH:
+        MessageBox(NULL, "Run from TLS (DLL_THREAD_DETACH)", "Info", MB_OK);
+        break;
+    case DLL_PROCESS_DETACH:
+        MessageBox(NULL, "Run from TLS (DLL_PROCESS_DETACH)", "Info", MB_OK);
+        break;
+    }
+}
+
+#pragma data_seg(".CRT$XLB")
+PIMAGE_TLS_CALLBACK p_thread_callback_base = tls;
+#pragma data_seg()
+
+int main(int argc, char** argv)
+{
+    MessageBox(NULL, "Run from Main", "Info", MB_OK);
+    return 0;
+}
+</pre>
+<p>
+P.S. 使用VisualStudio編譯<br><br>
+
+完成<br>
+<img src="virus_tls/1.jpg" class="maxSize"><br><br>
+
+TLS EntryPoint<br>
+<img src="virus_tls/2.jpg" class="maxSize"><br>
+<img src="virus_tls/3.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
