@@ -1,0 +1,36 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - Visual C++ 6.0 - <b>解決Wine Read access denied for device L"\\??\\Z:\\"問題</b></h3>
+<hr size="1"><br>
+<p>
+問題：
+</p>
+<pre>
+wine: Read access denied for device L"\\??\\Z:\\", FS volume label and serial are not available.
+</pre><br>
+
+<p>
+原因：
+</p>
+<pre>
+$ ls -al /home/user/.wine_amd64/dosdevices/
+    total 8
+    drwxr-xr-x 2 steward steward 4096 Jul 22 22:50 .
+    drwxr-xr-x 4 steward steward 4096 Jul 22 23:04 ..
+    lrwxrwxrwx 1 steward steward   10 Jul 22 22:47 c: -&gt; ../drive_c
+    lrwxrwxrwx 1 steward steward   10 Jul 22 22:50 com1 -&gt; /dev/ttyS0
+    lrwxrwxrwx 1 steward steward   10 Jul 22 22:50 com2 -&gt; /dev/ttyS1
+    lrwxrwxrwx 1 steward steward   10 Jul 22 22:50 com3 -&gt; /dev/ttyS2
+    lrwxrwxrwx 1 steward steward   10 Jul 22 22:50 com4 -&gt; /dev/ttyS3
+    lrwxrwxrwx 1 steward steward    8 Jul 22 22:47 d:: -&gt; /dev/sdb
+    lrwxrwxrwx 1 steward steward    8 Jul 22 22:47 e:: -&gt; /dev/sr0
+    lrwxrwxrwx 1 steward steward    9 Jul 22 22:48 f:: -&gt; /dev/sdb1
+    lrwxrwxrwx 1 steward steward    1 Jul 22 22:47 z: -&gt; /
+</pre>
+<p>
+由於<b>z:</b>的Symbol Link是指向<b>/</b>，因此，一般使用者無法存取是正常現象，不過由於安裝檔案在搜尋可用空間時，如果<b>/</b>目錄下有很多檔案時，可能會耗費許多時間，這個時候就可以先砍掉<b>z:</b>的Symbol Link，然後將檔案複製到Wine drive_c下，然後安裝使用<b>c:\xxx</b>指定路徑即可，等待安裝完成後，再重新建立Symbol Link即可節省搜尋時間
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
