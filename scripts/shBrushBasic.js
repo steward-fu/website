@@ -37,6 +37,6 @@ this.regexList = [
 
 Brush.prototype  = new SyntaxHighlighter.Highlighter();
 Brush.aliases  = ['basic', 'vb'];
-SyntaxHighlighter.brushes.Cpp = Brush;
+SyntaxHighlighter.brushes.Basic = Brush;
 typeof(exports) != 'undefined' ? exports.Brush = Brush : null;
 })();
