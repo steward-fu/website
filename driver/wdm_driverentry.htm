@@ -1,0 +1,56 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - Windows Driver Model (WDM) - <b>驅動程式進入點DriverEntry()</b></h3>
+<hr size="1"><br>
+<p>
+C/C++程式的進入點是main()，而對於WDM驅動程式而言，它的進入點則是DriverEntry()，Microsoft規定DriverEntry()必須使用C語言方式Export，若是使用C++檔案(.cpp)撰寫，則必須使用<b>export "C"</b>關鍵字做修飾輸出，否則系統將無法正確載入驅動程式<br><br>
+
+DriverEntry()定義如下</p>
+<pre class="brush:cpp">
+NTSTATUS DriverEntry(PDRIVER_OBJECT, PUNICODE_STRING);
+</pre><br>
+
+<p>
+Windows系統透過呼叫DriverEntry()載入驅動程式並傳入兩個參數，第一個參數<b>PDRIVER_OBJECT</b>是指向該驅動程式的資料位置，該位置會包含驅動程式的所有資訊，這些資訊並非全部都提供給使用者使用，有些欄位是Undocumented的，保留給系統調度使用，Microsoft會隨Windows系統不同而做修改，因此，建議使用者不要使用這些Undocumented欄位的資料，另一個參數<b>PUNICODE_STRING</b>則是該驅動程式的Registry位置，驅動程式在安裝時，系統都會產生一個註冊表項目(位於<b>CurrentControlSet\Services\</b>)，該註冊表位置就是當Windows系統啟動時，用來載入驅動程式使用的，Windows系統依據註冊表來決定哪些驅動程式需要被載入以及載入的順序，因此，隨意修改註冊表，可能會導致驅動程式無法被正確載入，嚴重時，可能無法啟動系統<br><br>
+
+使用者需要注意的是，就算有多個相同的裝置(如：兩個一樣型號的USB滑鼠插入電腦)，系統只會在發現第一個裝置時，載入該驅動程式並產生一份Driver Object，之後發現的裝置，系統還是使用那份已經產生的Driver Object，使用者可能很好奇，相同裝置使用同一份Driver Object資料？那每個裝置的驅動程式資料不就互相干擾嗎？答案是：不會的，因為每個裝置必須產生自己的Device Object(跟Driver Object是不一樣的東西)，每個裝置的資料必須存在自己產生的Device Object中，因此，每個Device Object各代表不同的裝置<br><br>
+
+那在DriverEntry()，驅動程式需要做哪些事情呢？
+</p>
+
+<table>
+<tr>
+    <th class="width50">WDM驅動程式</th>
+    <th class="width50">Legacy驅動程式</th>
+</tr>
+<tr>
+    <td>需要註冊使用到的Callback副程式，如：AddDevice()、DriverUnload()等</td>
+    <td>除了需要註冊Callback副程式以外，還要產生Device Object，因為Legacy驅動程式沒有AddDevice() Callback，所以需要在DriverEntry()產生Device Object</td>
+</tr>
+</table><br>
+
+<p>
+範例： 
+</p>
+
+<pre class="brush:cpp">
+NTSTATUS DriverEntry(PDRIVER_OBJECT pOurDriver, PUNICODE_STRING pOurRegistry)
+{
+    pOurDriver-&gt;MajorFunction[IRP_MJ_PNP]     = IrpPnp;
+    pOurDriver-&gt;MajorFunction[IRP_MJ_CREATE]  = IrpCreate;
+    pOurDriver-&gt;MajorFunction[IRP_MJ_CLOSE]   = IrpClose;
+    pOurDriver-&gt;MajorFunction[IRP_MJ_READ]    = IrpRead;
+    pOurDriver-&gt;MajorFunction[IRP_MJ_WRITE]   = IrpWrite;
+    pOurDriver-&gt;DriverUnload                  = DriverUnload;
+    pOurDriver-&gt;DriverExtension-&gt;AddDevice = AddDevice;
+
+    return STATUS_SUCCESS;
+}
+</pre>
+<p>
+需要注意DriverEntry()的回傳值部份，因為回傳值會決定載入驅動程式的成功或失敗，另外，除了DriverEntry()名稱必須固定以外，其餘的Callback名稱都可以隨意命名
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
