@@ -49,7 +49,7 @@ document.write('<script type="text/javascript" src="../scripts/shBrushRuby.js"><
 document.write('<script type="text/javascript" src="../scripts/shBrushRust.js"></script>');
 document.write('<script type="text/javascript" src="../scripts/shBrushSass.js"></script>');
 document.write('<script type="text/javascript" src="../scripts/shBrushScad.js"></script>');
-document.write('<script type="text/javascript" src="../scripts/shBrushVb.js"></script>');
+document.write('<script type="text/javascript" src="../scripts/shBrushBasic.js"></script>');
 document.write('<script type="text/javascript" src="../scripts/shBrushVerilog.js"></script>');
 document.write('<script type="text/javascript" src="../scripts/shBrushScala.js"></script>');
 document.write('<script type="text/javascript" src="../scripts/shBrushSql.js"></script>');
