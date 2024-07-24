@@ -1,0 +1,61 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../driver.htm">驅動程式</a> - Windows NT Driver (Legacy) - BASIC - <b>Hello, world!</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/steward-fu/ddk<br><br>
+
+main.bas
+</p>
+<pre class="brush:basic">
+#include "ntdef.bi"
+#include "ntddk.bi"
+#include "ntstatus.bi"
+#include "ntoskrnl.bi"
+
+Declare Function DriverEntry stdcall Alias "DriverEntry"(ByVal pDriverObject As PDRIVER_OBJECT, ByVal pRegistryPath As PUNICODE_STRING) As NTSTATUS
+
+Sub Unload(ByVal DriverObject As PDRIVER_OBJECT)
+End Sub
+
+Function DriverEntry(ByVal pDriverObject As PDRIVER_OBJECT, ByVal pRegistryPath As PUNICODE_STRING) As NTSTATUS
+    DbgPrint(@!"Hello, world!")
+    with *pDriverObject
+        .DriverUnload = @Unload
+    end with
+    return STATUS_SUCCESS
+End Function
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+c:\&gt; c:\freebasic\fbc32.exe -c -i c:\freebasic\inc\w2k main.bas
+c:\&gt; c:\masm32\bin\link.exe main.o /driver /base:0x10000 /subsystem:native,5.01 /entry:GsDriverEntry@8 "c:\masm32\lib\wxp\i386\bufferoverflowk.lib" "c:\masm32\lib\wxp\i386\ntoskrnl.lib" /OUT:main.sys
+</pre><br>
+
+<p>
+在開始安裝驅動程式之前，我們需要先下載除錯工具，讓驅動程式的Debug訊息可以顯示在除錯工具上面，目前在Kernel Mode以及User Mode上，最佳的Debug輸出訊息工具是DbgView，該公司目前已經被Microsoft併購，所以可以從Microsoft網站下載，下載完後執行DbgView並將<b>Capture =&gt; Capture Kernel</b>選項打勾，接著<b>重啟</b>DbgView<br>
+<img src="wdm_asm_hello/1.jpg" class="maxSize"><br><br>
+
+Legacy(Nt-Style)驅動程式的安裝很方便，它是使用Service的方式安裝，因此，複製main.sys到<b>c:\windows\system32\drivers</b>資料夾下並輸入如下命令進行安裝
+</p>
+<pre>
+c:\&gt; sc create MyDriver binPath= "c:\windows\system32\drivers\main.sys" type= "kernel" start= "demand" error= "normal" Displayname= "MyDriver"
+c:\&gt; sc start MyDriver
+</pre>
+<p>
+P.S. 要記得在"="前面都需要一個空格<br><br>
+
+輸入完上列指令後，就可以看到輸出的<b>Hello, world!</b>字串<br>
+<img src="wdm_asm_hello/3.jpg" class="maxSize"><br><br>
+
+當然，使用者也可以使用Four-F撰寫的KmdManager進行安裝，開啟KmdManager後，載入main.sys後，選擇Register =&gt; Run即可<br>
+<img src="legacy_asm_hello/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
