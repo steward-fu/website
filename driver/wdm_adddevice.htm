@@ -1,0 +1,61 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - Windows Driver Model (WDM) - <b>系統透過呼叫AddDevice()來新增裝置</b></h3>
+<hr size="1"><br>
+<p>
+當系統找到對應的裝置(透過INF檔案安裝後)且驅動程式被系統成功載入後，AddDevice()就會被系統呼叫，而AddDevice()是在DriverEntry()裡面註冊的，所以系統才會知道AddDevice()位於何處，名稱不一定要用AddDevice，但是參數跟回傳值必須遵照Microsoft的定義，否則會有問題<br><br>
+
+AddDevice()定義如下</p>
+<pre class="brush:cpp">
+NTSTATUS AddDevice(PDRIVER_OBJECT, PDEVICE_OBJECT);
+</pre><br>
+
+<p>
+傳入的<b>PDRIVER_OBJECT</b>是該驅動程式的Driver Object，而<b>PDEVICE_OBJECT</b>則是位於下層的驅動程式Device Object，WDM驅動程式的架構是使用堆疊方式做驅動程式的添加、刪除，例如：如果使用者寫的是USB驅動程式，則下層可能就是USB Bus驅動程式，如果使用者寫的驅動程式只是一個虛擬的純軟體驅動程式，那麼下層驅動程式就是I/O Manager，由於使用堆疊的架構，所以WDM驅動程式又可以加入Upper Filter、Lower Filter Driver，Filter Driver的目的是提供I/O Request Packet(IRP)修改的功能，達到不需更改原始的驅動程式就可以做錯誤修正或者新增功能<br><br>
+
+那在AddDevice()需要做哪些事情呢？一般會產生一個新的Device Object並為該Device Object建立一條Symbolic Link，該Symbolic Link就是提供給User Application開啟(僅能使用CreateFile()開啟)，還記得呼叫CreateFile()時會提供一個名字嗎？這個用來開啟的名字就是驅動程式的Symbolic Link名稱<br><br>
+
+那問題又來了，有沒有可能其它驅動程式也使用同一個Symbolic Link名字呢？答案是，肯定會發生的，所以Microsoft建議使用GUID的方式註冊，使用者可以使用工具產生新的GUID名稱，並使用該GUID註冊裝置，避免名稱衝突，那User Application又該如何知道並開啟這個驅動程式呢？這時候就必須使用Setup API做GUID列舉並取得Symbolic Link名稱，作法稍微複雜一點，哪一種方式比較好呢？如果是使用Symbolic Link註冊名稱，User Application比較好寫，因為名稱已經固定，反之，使用GUID註冊的話，User Application需要列舉判斷後才能開啟，所以會比較不好寫，但是優點則是名稱不會衝突<br><br>
+
+最後一個步驟就是附加到下層驅動程式並且初始化相關旗標，這樣I/O Manager才可以開始處理相關IRP，為何要附加到下層驅動程式呢？這是因為Windows驅動程式本身就是堆疊架構(從DOS驅動程式開始)，因此，需要將自己的驅動程式接到這個堆疊上，而驅動程式傳遞資料的方式也是以堆疊方式處理，因此，要取得下層驅動程式的IRP指標時，是透過指標加減運算而得，如：IoGetNextIrpStackLocation()就是透過減掉IO_STACK_LOCATION而拿到的指標位置，目前只要先了解知道這個的觀念就可以，細節在之後可以慢慢體會<br><br>
+
+範例：
+</p>
+<pre class="brush:cpp">
+PDEVICE_OBJECT gNextDevice = NULL;
+
+NTSTATUS AddDevice(PDRIVER_OBJECT pMyDriver, PDEVICE_OBJECT pPhyDevice)
+{
+    PDEVICE_OBJECT pMyDevice;
+    UNICODE_STRING usSymboName;
+    UNICODE_STRING usDeviceName;
+
+    // Step 1
+    RtlInitUnicodeString(&amp;usDeviceName, L"\\Device\\MyDriver");
+    RtlInitUnicodeString(&amp;usSymboName, L"\\DosDevices\\MyDriver");
+    IoCreateDevice(pMyDriver, 0, &amp;usDeviceName, FILE_DEVICE_UNKNOWN, 0, FALSE, &amp;pMyDevice);
+    IoCreateSymbolicLink(&amp;usSymboName, &amp;usDeviceName);
+
+    // Step 2
+    gNextDevice = IoAttachDeviceToDeviceStack(pMyDevice, pPhyDevice);
+
+    // Step 3
+    pMyDevice-&gt;Flags&amp;= ~DO_DEVICE_INITIALIZING;
+    pMyDevice-&gt;Flags|= DO_BUFFERED_IO;
+    return STATUS_SUCCESS;
+}
+</pre>
+<p>
+Step 1：<br>
+產生一個Device Object(可自己決定名稱)，然後建立一條Symbolic Link(可自己決定名稱)，關於Device Object的位置，Windows將其放在一個特殊的資料夾內，用來統一管理，使用者可以使用WinObj程式去查看有哪些Device Object，而Symbolic Link的名稱則是放在DosDevices資料夾(位於GLOBAL??)，那User Application要如何知道完整路徑名稱並傳給CreateFile()呢？答案是加上<b>\.\\</b>關鍵字，在開啟COM Port時，一般需要使用CreateFile(<b>"\\.\\\\COM1"</b>, ...)的方式開啟，這就是代表完整路徑的意思，在寫COM Port程式時，不一定說是要大於COM9才能加<b>\.\\</b>路徑，其實從COM1就可以開始使用，因為那是Global的名稱表示方式<br><br>
+
+Step 2：<br>
+把剛剛產生的Device Object串接到堆疊中，這樣才可以開始處理I/O Request Packet(IRP)<br><br>
+
+Step 3：<br>
+初始化相關旗標，比較需要注意的是DO_BUFFERED_IO旗標，因為在做裝置讀寫時，User Application跟驅動程式是否共用同一塊Buffer是取決於該旗標，如果使用者設定成DO_BUFFERED_IO，則代表驅動程式有自己獨立一塊Buffer，驅動程式讀取完硬體資料後，會複製到它自己的Buffer，然後再複製到User Application的Buffer，所以速度會比較慢一些，如果要共用同一塊Buffer的話，需要把旗標設定成DO_DIRECT_IO
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
