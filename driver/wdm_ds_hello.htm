@@ -1,0 +1,201 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../driver.htm">驅動程式</a> - Windows Driver Model (WDM) - DriverWorks - <b>Hello, world!</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://wasm.in/<br>
+http://four-f.narod.ru/<br>
+https://github.com/steward-fu/ddk<br><br>
+
+main.cpp
+</p>
+<pre class="brush:cpp">
+#define VDW_MAIN
+
+#define DRIVER_FUNCTION_PNP
+#define DRIVER_FUNCTION_UNLOAD
+#define DRIVER_FUNCTION_ADD_DEVICE
+
+#include &lt;vdw.h&gt;
+
+class MyDevice : public KPnpDevice
+{
+	SAFE_DESTRUCTORS
+public:
+	MyDevice(PDEVICE_OBJECT PDO);
+    
+    DEVMEMBER_DISPATCHERS
+	NTSTATUS OnRemoveDevice(KIrp pIrp) const;
+    NTSTATUS DefaultPnp(KIrp pIrp);
+	NTSTATUS DefaultPower(KIrp pIrp);
+    
+protected:
+	KPnpLowerDevice m_pDevObj;
+};
+
+class MyDriver : public KDriver
+{
+	SAFE_DESTRUCTORS
+public:
+	NTSTATUS DriverEntry(PUNICODE_STRING RegistryPath);
+	NTSTATUS AddDevice(PDEVICE_OBJECT PDO);
+	VOID Unload(void);
+};
+
+MyDevice::MyDevice(PDEVICE_OBJECT PDO) : KPnpDevice(PDO, L"MyDriver", FILE_DEVICE_UNKNOWN)
+{
+	m_pDevObj.Initialize(this, PDO);
+	SetLowerDevice(&amp;m_pDevObj);
+	SetPnpPolicy();
+}
+
+NTSTATUS MyDevice::OnRemoveDevice(KIrp pIrp) const
+{
+	return STATUS_SUCCESS;
+}
+
+NTSTATUS MyDevice::DefaultPnp(KIrp pIrp)
+{
+	pIrp.ForceReuseOfCurrentStackLocationInCalldown();
+	return m_pDevObj.PnpCall(this, pIrp);
+}
+
+NTSTATUS MyDevice::DefaultPower(KIrp pIrp)
+{
+	return STATUS_SUCCESS;
+}
+
+KDebugOnlyTrace T("");
+
+DECLARE_DRIVER_CLASS(MyDriver, NULL)
+
+NTSTATUS MyDriver::DriverEntry(PUNICODE_STRING RegistryPath)
+{
+	T &lt;&lt; "Hello, world!";
+	return STATUS_SUCCESS;
+}
+
+NTSTATUS MyDriver::AddDevice(PDEVICE_OBJECT PDO)
+{
+    MyDevice *t = new (NonPagedPool) MyDevice(PDO);
+	return STATUS_SUCCESS;
+}
+
+VOID MyDriver::Unload(void)
+{
+	KDriver::Unload();
+}
+</pre><br>
+
+<p>
+sources
+</p>
+<pre>
+TARGETNAME=main
+TARGETTYPE=DRIVER
+TARGETPATH=obj
+DRIVERTYPE=WDM
+TARGETLIBS=$(DRIVERWORKS)\lib\*\checked\vdw_wdm.lib
+INCLUDES=$(DRIVERWORKS)\include;$(DRIVERWORKS)\source;C:\winddk\inc\ddk\wdm\wxp
+C_DEFINES=-DNTVERSION='WDM'
+LINK_LIB_IGNORE=4210
+SOURCES=main.cpp
+</pre><br>
+
+<p>
+makefile
+</p>
+<pre>
+!INCLUDE $(NTMAKEENV)\makefile.def
+</pre><br>
+
+<p>
+main.inf
+</p>
+<pre>
+[Version]
+Signature=$CHICAGO$
+Class=Unknown
+Provider=%MFGNAME%
+DriverVer=8/21/2019,1.0.0.0
+ 
+[Manufacturer]
+%MFGNAME%=DeviceList
+ 
+[DeviceList]
+%DESCRIPTION%=DriverInstall, *MyDriver
+ 
+[DestinationDirs]
+DefaultDestDir=10,System32\Drivers
+ 
+[SourceDisksFiles]
+main.sys=1,,,
+ 
+[SourceDisksNames]
+1=%INSTDISK%,,,
+ 
+[DriverInstall.NT]
+CopyFiles=DriverCopyFiles
+ 
+[DriverCopyFiles]
+main.sys,,,2
+ 
+[DriverInstall.NT.Services]
+AddService=FILEIO,2,DriverService
+ 
+[DriverService]
+ServiceType=1
+StartType=3
+ErrorControl=1
+ServiceBinary=%10%\system32\drivers\main.sys
+ 
+[DriverInstall.NT.HW]
+AddReg=DriverHwAddReg
+ 
+[DriverHwAddReg]
+HKR,,SampleInfo,,""
+ 
+[DriverInstall]
+AddReg=DriverAddReg
+CopyFiles=DriverCopyFiles
+ 
+[DriverAddReg]
+HKR,,DevLoader,,*ntkern
+HKR,,NTMPDriver,,main.sys
+ 
+[DriverInstall.HW]
+AddReg=DriverHwAddReg
+ 
+[Strings]
+MFGNAME="MyDriver"
+INSTDISK="MyDriver Disc"
+DESCRIPTION="MyDriver"
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+c:\winddk\bin\setenv.bat c:\winddk chk
+build -cefw
+</pre><br>
+
+<p>
+在開始安裝驅動程式之前，需要先下載除錯工具，讓驅動程式的Debug訊息可以顯示在除錯工具上面，目前最佳的Debug輸出訊息工具是DbgView，該公司目前已經被Microsoft併購，所以可以從Microsoft網站下載，下載完後執行DbgView並將<b>Capture =&gt; Capture Kernel</b>選項打勾，接著<b>重啟</b>DbgView<br>
+<img src="wdm_asm_hello/1.jpg" class="maxSize"><br><br>
+
+對於驅動程式的安裝工具，司徒目前使用NuMega公司製作的EzDriverInstaller，將main.sys和main.inf放在同一個目錄並執行EzDriverInstaller，選擇<b>File =&gt; Open...</b>(開啟main.inf檔案)，接著按<b>Add New Device</b>就可以在DbgView上面看到輸出訊息<br>
+<img src="wdm_asm_hello/2.jpg" class="maxSize"><br>
+<img src="wdm_asm_hello/3.jpg" class="maxSize"><br><br>
+
+Device Manager<br>
+<img src="wdm_asm_hello/4.jpg" class="maxSize"><br><br>
+
+Device Object<br>
+<img src="wdm_asm_hello/5.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
