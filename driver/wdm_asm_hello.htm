@@ -18,32 +18,32 @@ main.asm
 .386p
 .model flat, stdcall
 option casemap:none
- 
+  
 include c:\masm32\include\w2k\ntddk.inc
 include c:\masm32\include\w2k\ntstatus.inc
 include c:\masm32\include\w2k\ntoskrnl.inc
 include c:\masm32\include\w2k\ntddkbd.inc
 include c:\masm32\Macros\Strings.mac
-
-public DriverEntry
  
+public DriverEntry
+  
 .const
 DEV word "\","D","e","v","i","c","e","\","M","y","D","r","i","v","e","r",0
 MSG byte "Hello, world!",0
- 
+  
 .data
 pNextDevice PDEVICE_OBJECT 0
-  
+   
 .code
 AddDevice proc pMyDriver:PDRIVER_OBJECT, pPhyDevice:PDEVICE_OBJECT
     local pMyDevice:PDEVICE_OBJECT
     local suDevName:UNICODE_STRING
-
+ 
     invoke DbgPrint, offset MSG
     invoke RtlInitUnicodeString, addr suDevName, offset DEV
     invoke IoCreateDevice, pMyDriver, 0, addr suDevName, FILE_DEVICE_UNKNOWN, 0, FALSE, addr pMyDevice
     invoke IoAttachDeviceToDeviceStack, pMyDevice, pPhyDevice
-
+ 
     push eax
     pop pNextDevice
     mov eax, pMyDevice
@@ -52,32 +52,27 @@ AddDevice proc pMyDriver:PDRIVER_OBJECT, pPhyDevice:PDEVICE_OBJECT
     mov eax, STATUS_SUCCESS
     ret
 AddDevice endp
- 
+  
 Unload proc pMyDriver:PDRIVER_OBJECT
     ret
 Unload endp
- 
+  
 IrpPnp proc pMyDevice:PDEVICE_OBJECT, pIrp:PIRP
     IoGetCurrentIrpStackLocation pIrp
     movzx eax, (IO_STACK_LOCATION PTR [eax]).MinorFunction
-
-    .if eax == IRP_MN_START_DEVICE
-        mov eax, pIrp
-        mov (_IRP PTR [eax]).IoStatus.Status, STATUS_SUCCESS
-    .elseif eax == IRP_MN_REMOVE_DEVICE 
-        mov eax, pIrp
-        mov (_IRP PTR [eax]).IoStatus.Status, STATUS_SUCCESS
+ 
+    .if eax == IRP_MN_REMOVE_DEVICE
         invoke IoDetachDevice, pNextDevice
         invoke IoDeleteDevice, pMyDevice
         fastcall IofCompleteRequest, pIrp, IO_NO_INCREMENT
         ret
     .endif
-
+ 
     IoSkipCurrentIrpStackLocation pIrp
     invoke IoCallDriver, pNextDevice, pIrp
     ret
 IrpPnp endp
- 
+  
 DriverEntry proc pMyDriver:PDRIVER_OBJECT, pMyRegistry:PUNICODE_STRING
     mov eax, pMyDriver
     mov (DRIVER_OBJECT PTR [eax]).MajorFunction[IRP_MJ_PNP * (sizeof PVOID)], offset IrpPnp
@@ -90,9 +85,9 @@ DriverEntry endp
 end
 </pre>
 <p>
-<b>L65~71</b>：只有做Callback設定的動作，需要設定AddDevice、PNP、DriverUnload這三個Callback<br>
+<b>L60~66</b>：只有做Callback設定的動作，需要設定AddDevice、PNP、DriverUnload這三個Callback<br>
 <b>L22~36</b>：產生一個Device Object，用來管理新加入的裝置(純軟體虛擬裝置也算)，接著初使化相關旗標<br>
-<b>L44~61</b>：主要處理移除Device Object的動作，其餘Irp不處理，直接往下傳遞<br><br>
+<b>L44~56</b>：主要處理移除Device Object的動作，其餘Irp不處理，直接往下傳遞<br><br>
 
 main.inf
 </p>
