@@ -1,0 +1,103 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../phone.htm">手機</a> - F(x)tec Pro1 - Sailfish - Debian - <b>如何顯示鼠標</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/MeganerdDev/night-vision<br><br>
+
+步驟如下：
+</p>
+<pre>
+$ cd
+$ git clone https://github.com/MeganerdDev/night-vision
+$ cd night-vision
+$ ./build.sh
+$ cd build
+$ ./night-vision
+</pre><br>
+
+<p>
+night-vision.cpp
+</p>
+<pre class="brush:cpp">
+#include &lt;X11/Xlib.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;cstdlib&gt;
+
+int main(int argc, char* argv[])
+{
+    Display* display = XOpenDisplay(nullptr);
+    if (!display) return -1;
+
+    Window root = DefaultRootWindow(display);
+    int screen = DefaultScreen(display);
+    Colormap colormap = DefaultColormap(display, screen);
+
+    XColor bgColor, exactBgColor;
+    XAllocNamedColor(display, colormap, "#2D353B", &amp;bgColor, &amp;bgColor);
+
+    XColor crossColor, exactCrossColor;
+    XAllocNamedColor(display, colormap, "#6FA07E", &amp;crossColor, &amp;crossColor);
+
+    XColor borderColor, exactBorderColor;
+    XAllocNamedColor(display, colormap, "#485953", &amp;borderColor, &amp;borderColor);
+
+    Window window = XCreateSimpleWindow(display, root, 0, 0, 24, 24, 2,
+                                        borderColor.pixel, bgColor.pixel);
+
+    XSetWindowAttributes attrs;
+    attrs.override_redirect = True;
+    attrs.background_pixel = bgColor.pixel;
+    XChangeWindowAttributes(display, window, CWOverrideRedirect | CWBackPixel, &amp;attrs);
+
+    XMapRaised(display, window);
+
+    GC gc = XCreateGC(display, window, 0, nullptr);
+    XSetForeground(display, gc, crossColor.pixel);
+
+    int sleepTime = 100000; // Default sleep time in microseconds (100ms)
+    if (argc &gt; 1) {
+        sleepTime = atoi(argv[1]) * 1000; // Convert milliseconds to microseconds
+    }
+
+    int lastX = -1, lastY = -1; // Variables to track the last known mouse position
+    int minHeight = 0; // TODO: User-defined via dotfile settings
+
+    while (true) {
+        Window dummy;
+        int x, y, dummy2;
+        unsigned int dummy3;
+
+        if (XQueryPointer(display, root, &amp;dummy, &amp;dummy, &amp;x, &amp;y, &amp;dummy2, &amp;dummy2, &amp;dummy3)) {
+            if (x != lastX || y != lastY) { // Check if the mouse has actually moved
+                lastX = x;
+                lastY = y;
+                XMoveWindow(display, window, x - 12, y - 12); // Move the window only if necessary
+
+                XClearWindow(display, window);
+                for (int offset = -1; offset &lt;= 1; ++offset) {
+                    XDrawLine(display, window, gc, 12 + offset, 4, 12 + offset, 20);
+                    XDrawLine(display, window, gc, 4, 12 + offset, 20, 12 + offset);
+                }
+                XWindowAttributes winAttrs;
+                if (XGetWindowAttributes(display, root, &amp;winAttrs)) {
+                    if (winAttrs.height &gt;= minHeight) {
+                        XRaiseWindow(display, window); // Conditionally raise the cursor window
+                    }
+                }
+                XFlush(display);
+            }
+        }
+
+        usleep(sleepTime);
+    }
+
+    XCloseDisplay(display);
+    return 0;
+}
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
