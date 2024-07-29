@@ -1,0 +1,44 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../driver.htm">驅動程式</a> - Windows Driver Model (WDM) - 教學說明 - <b>4. User Application透過檔案系統跟驅動程式溝通</b></h3>
+<hr size="1"><br>
+<p>
+基本上，驅動程式(韌體)的功能就是做為User Application(軟體)和硬體的溝通橋樑，User Application可以透過很多種方式和驅動程式溝通，而最常用的溝通方式就是把驅動程式當做一個檔案來操作，User Application可以透過檔案讀寫的方式和驅動程式做資料交換，最後，驅動程式再把資料讀寫到硬體裝置上，而在Windows系統上，可以使用的Win32 API有CreateFile(檔案開啟)、ReadFile(讀取檔案)、WriteFile(寫入檔案)、CloseHandle(關閉檔案)等檔案操作的API，必須記得open()並不能用來開啟驅動程式，那User Application和驅動程式的串接過程是如何發生的呢？首先，驅動程式必須在DriverEntry()設定IRP_MJ_CREATE(<b>CreateFile</b>)、IRP_MJ_READ(<b>ReadFile</b>)、IRP_MJ_WRITE(<b>WriteFile</b>)、IRP_MJ_CLOSE(<b>CloseHandle</b>)的Callback副程式，接著驅動程式必須設定裝置要使用的名稱，可以是GUID或者Symbolic Link格式，最後，當User Application透過檔案系統開啟這個GUID或者Symbolic Link名稱時，I/O Manager就會幫忙串接到對應的驅動程式，此後，User Application就可以透過開啟的檔案Handle開始和驅動程式做資料交換<br><br>
+
+<b>操作步驟可以總結如下：</b><br>
+1. 安裝驅動程式時，驅動程式註冊檔案操作的Callback副程式<br>
+2. 驅動程式產生自己的Device Object並且設定GUID或Symbolic Link名稱<br>
+2. User Application開啟檔案(GUID或Symbolic Link名稱)時，I/O Manager會呼叫對應的驅動程式IRP_MJ_CREATE<br>
+3. User Application讀寫檔案時，I/O Manager會呼叫驅動程式的IRP_MJ_READ、IRP_MJ_WRITE<br>
+4. User Application關閉檔案時，I/O Manager會呼叫驅動程式的IRP_MJ_CLOSE<br><br>
+
+使用者可能好奇想問，為何User Application不直接跟硬體溝通就好，還要透過一個這麼複雜的驅動程式當作溝通橋樑呢？這是因為，當User Application可以直接跟硬體溝通時，會造成很多衝突以及訪問的優先順序問題，就像MS-DOS時代的混亂情形，而因為可以直接控制硬體，因此，寫出一個非惡意但具有破壞性的軟體時，是間接可以把一個操作系統搞壞掉，這也是為何要在Windows 98之後(正確來說，應該是MS-DOS時代就有)，架構出一個Windows驅動程式的原因，至少有一個溝通和協調的機制，當然，隨著Windows系統的發展，驅動程式的規定就會變得越來嚴格，這也是Microsoft致力於保護系統的最好方式<br><br>
+
+對應的溝通管道
+</p>
+<table>
+<tr>
+    <th>Win32 API</th>
+    <th>Kernel IRP</th>
+</tr>
+<tr>
+    <td>CreateFile()</td>
+    <td>IRP_MJ_CREATE</td>
+</tr>
+<tr>
+    <td>ReadFile()</td>
+    <td>IRP_MJ_READ</td>
+</tr>
+<tr>
+    <td>WriteFile()</td>
+    <td>IRP_MJ_WRITE</td>
+</tr>
+<tr>
+    <td>CloseHandle()</td>
+    <td>IRP_MJ_CLOSE</td>
+</tr>
+</table>
+
+<br><script type="text/javascript" src="../tail.js"></script>
