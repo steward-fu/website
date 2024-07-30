@@ -1,0 +1,87 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - ObjAsm - <b>如何取得Object Template Address</b></h3>
+<hr size="1"><br>
+<p>
+取得方式
+</p>
+<pre>
+mov esi, offset $ObjTmpl(XXX)
+</pre><br>
+
+<p>
+main.asm
+</p>
+<pre class="brush:asm">
+%include @Environ(OBJASM_PATH)\Code\Macros\Model.inc
+SysSetup OOP, WIN32, ANSI_STRING
+   
+MakeObjects Primer
+  
+    .const 
+Object Base, , Primer
+    VirtualMethod Print
+ObjectEnd
+   
+Object Child, , Base
+    RedefineMethod Print
+ObjectEnd
+   
+    .code
+PrintMsg proc uses esi, szInfo : POINTER
+    local r : DWORD
+    local dwLen : DWORD
+
+    mov dwLen, $invoke(strlen, szInfo)
+    invoke GetStdHandle, STD_OUTPUT_HANDLE
+    mov esi, eax
+    invoke WriteConsole, esi, szInfo, dwLen, addr r, NULL
+    ret
+PrintMsg endp
+
+Method Base.Print
+    jmp @f
+    szBaseInfo db "Base Class",10,0
+@@:
+
+    invoke PrintMsg, addr szBaseInfo
+MethodEnd
+  
+Method Child.Print
+    jmp @f
+    szChildInfo db "Child Class",10,0
+@@:
+
+    invoke PrintMsg, addr szChildInfo
+MethodEnd
+
+start proc
+    SysInit
+    mov esi, offset $ObjTmpl(Base)
+    OCall esi::Base.Print
+
+    mov esi, offset $ObjTmpl(Child)
+    OCall esi::Child.Print
+
+    mov esi, offset $ObjTmpl(Child)
+    OCall esi::Base.Print
+    SysDone
+    invoke ExitProcess, 0
+start endp
+   
+end
+</pre>
+<p>
+P.S. Link:<b>c:\objasm\Code\Lib\32\Windows\msvcrt.lib</b><br><br>
+
+結果
+</p>
+<pre>
+Base Class
+Child Class
+Child Class
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
