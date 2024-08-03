@@ -1,14 +1,16 @@
-﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head><script type="text/javascript" src="../page_head.js"></script>
 
-<h3><a href="../driver.htm">驅動程式</a> - Windows Driver Model (WDM) - 範例解說 - Assembly (MASM32) - <b>Handle IOCTL IRP</b></h3>
+<h3><a href="../driver.htm">驅動程式</a> - Windows Driver Model (WDM) - 範例解說 - Assembly (MASM32) - <b>Use Thread</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
 https://wasm.in/<br>
 http://four-f.narod.ru/<br>
-https://github.com/steward-fu/ddk<br><br>
+https://github.com/steward-fu/ddk<br>
+https://www.tutorialspoint.com/user-level-threads-and-kernel-level-threads<br>
+https://mropengate.blogspot.com/2015/01/operating-system-ch4-multithread.html<br><br>
 
 main.asm
 </p>
@@ -21,23 +23,55 @@ include c:\masm32\include\w2k\ntstatus.inc
 include c:\masm32\include\w2k\ntddk.inc
 include c:\masm32\include\w2k\ntoskrnl.inc
 include c:\masm32\include\w2k\ntddkbd.inc
-include c:\masm32\include\wxp\wdm.inc
 include c:\masm32\Macros\Strings.mac
 
 includelib c:\masm32\lib\wxp\i386\ntoskrnl.lib
-     
+ 
 public DriverEntry
-    
+ 
 MyDeviceExtension struct
+    bExit DWORD ?
+    pThread PVOID ?
     pNextDev PDEVICE_OBJECT ?
 MyDeviceExtension ends
  
-IOCTL_TEST equ CTL_CODE(FILE_DEVICE_UNKNOWN, 800h, METHOD_BUFFERED, FILE_ANY_ACCESS)
-
+IOCTL_START equ CTL_CODE(FILE_DEVICE_UNKNOWN, 800h, METHOD_BUFFERED, FILE_ANY_ACCESS)
+IOCTL_STOP  equ CTL_CODE(FILE_DEVICE_UNKNOWN, 801h, METHOD_BUFFERED, FILE_ANY_ACCESS)
+ 
 .const
-MSG_INFO byte "IOCTL_TEST",0
-
+MSG_START   byte "IOCTL_START",0 
+MSG_STOP    byte "IOCTL_STOP",0
+ 
 .code
+MyThread proc pParam : DWORD
+    local pStr : DWORD
+    local pDevExt : DWORD
+    local stTime : LARGE_INTEGER
+     
+    or stTime.HighPart, -1
+    mov stTime.LowPart, -10000000
+ 
+    invoke IoGetCurrentProcess
+    add eax, 174h
+    mov pStr, eax
+    invoke DbgPrint, $CTA0("Current process: %s"), pStr
+ 
+    mov eax, pParam
+    mov eax, (DEVICE_OBJECT ptr [eax]).DeviceExtension
+    push eax
+    pop pDevExt
+    mov eax, (MyDeviceExtension ptr [eax]).bExit
+    .while(eax != TRUE)
+        invoke KeDelayExecutionThread, KernelMode, FALSE, addr stTime
+        invoke DbgPrint, $CTA0("Sleep 1s")
+        mov eax, pDevExt
+        mov eax, (MyDeviceExtension ptr [eax]).bExit
+    .endw
+    invoke DbgPrint, $CTA0("Exit MyThread")
+    invoke PsTerminateSystemThread, STATUS_SUCCESS
+    ret
+MyThread endp
+ 
 IrpOpenClose proc pMyDevice : PDEVICE_OBJECT, pIrp : PIRP
     IoGetCurrentIrpStackLocation pIrp
     movzx eax, (IO_STACK_LOCATION ptr [eax]).MajorFunction
@@ -56,8 +90,11 @@ IrpOpenClose proc pMyDevice : PDEVICE_OBJECT, pIrp : PIRP
     ret
 IrpOpenClose endp
  
-IrpIOCTL proc pMyDevice : PDEVICE_OBJECT, pIrp : PIRP
+IrpIOCTL proc uses ebx pMyDevice : PDEVICE_OBJECT, pIrp : PIRP
+    local pBuf : DWORD
     local dwLen : DWORD
+    local hThread : DWORD
+    local pThread : PVOID
     local pDevExt : ptr MyDeviceExtension
  
     and dwLen, 0
@@ -67,8 +104,35 @@ IrpIOCTL proc pMyDevice : PDEVICE_OBJECT, pIrp : PIRP
  
     IoGetCurrentIrpStackLocation pIrp
     mov eax, (IO_STACK_LOCATION ptr [eax]).Parameters.DeviceIoControl.IoControlCode
-    .if eax == IOCTL_TEST
-        invoke DbgPrint, offset MSG_INFO
+    .if eax == IOCTL_START
+        invoke DbgPrint, offset MSG_START
+ 
+        mov ebx, pDevExt
+        and (MyDeviceExtension ptr [ebx]).bExit, 0
+ 
+        ; User Thread
+        invoke PsCreateSystemThread, addr hThread, THREAD_ALL_ACCESS, NULL, -1, NULL, offset MyThread, pMyDevice
+         
+        ; System Thread
+        ;invoke PsCreateSystemThread, addr hThread, THREAD_ALL_ACCESS, NULL, NULL, NULL, offset MyThread, pMyDevice
+         
+        .if eax == STATUS_SUCCESS
+            mov ebx, pDevExt
+            invoke ObReferenceObjectByHandle, hThread, THREAD_ALL_ACCESS, NULL, KernelMode, addr (MyDeviceExtension ptr [ebx]).pThread, NULL
+            invoke ZwClose, hThread
+        .endif
+ 
+    .elseif eax == IOCTL_STOP
+        invoke DbgPrint, offset MSG_STOP
+        mov ebx, pDevExt
+        mov (MyDeviceExtension ptr [ebx]).bExit, TRUE
+        push (MyDeviceExtension ptr [ebx]).pThread
+        pop pThread
+        mov eax, pThread
+        .if eax != NULL
+            invoke KeWaitForSingleObject, pThread, Executive, KernelMode, FALSE, NULL
+            invoke ObDereferenceObject, pThread
+        .endif
     .endif
  
     mov eax, pIrp
@@ -80,7 +144,7 @@ IrpIOCTL proc pMyDevice : PDEVICE_OBJECT, pIrp : PIRP
     ret
 IrpIOCTL endp
  
-IrpPnP proc pMyDevice : PDEVICE_OBJECT, pIrp : PIRP
+IrpPnp proc pMyDevice : PDEVICE_OBJECT, pIrp : PIRP
     local szSymName : UNICODE_STRING
     local pDevExt : ptr MyDeviceExtension
  
@@ -110,7 +174,7 @@ IrpPnP proc pMyDevice : PDEVICE_OBJECT, pIrp : PIRP
     mov eax, pDevExt
     invoke IoCallDriver, (MyDeviceExtension ptr [eax]).pNextDev, pIrp
     ret
-IrpPnP endp
+IrpPnp endp
  
 AddDevice proc pMyDriver : PDRIVER_OBJECT, pPhyDevice : PDEVICE_OBJECT
     local pMyDevice : PDEVICE_OBJECT
@@ -143,7 +207,7 @@ Unload endp
  
 DriverEntry proc pMyDriver : PDRIVER_OBJECT, pMyRegistry : PUNICODE_STRING
     mov eax, pMyDriver
-    mov (DRIVER_OBJECT ptr [eax]).MajorFunction[IRP_MJ_PNP            * (sizeof PVOID)], offset IrpPnP
+    mov (DRIVER_OBJECT ptr [eax]).MajorFunction[IRP_MJ_PNP            * (sizeof PVOID)], offset IrpPnp
     mov (DRIVER_OBJECT ptr [eax]).MajorFunction[IRP_MJ_CREATE         * (sizeof PVOID)], offset IrpOpenClose
     mov (DRIVER_OBJECT ptr [eax]).MajorFunction[IRP_MJ_CLOSE          * (sizeof PVOID)], offset IrpOpenClose
     mov (DRIVER_OBJECT ptr [eax]).MajorFunction[IRP_MJ_DEVICE_CONTROL * (sizeof PVOID)], offset IrpIOCTL
@@ -157,106 +221,51 @@ end
 </pre><br>
 
 <p>
-app.asm</b>
+app.asm
 </p>
 <pre class="brush:asm">
 .386p
 .model flat, stdcall
 option casemap:none
- 
+    
 include c:\masm32\include\windows.inc
 include c:\masm32\include\masm32.inc
 include c:\masm32\include\user32.inc
 include c:\masm32\include\msvcrt.inc
-include c:\masm32\include\shell32.inc
 include c:\masm32\include\kernel32.inc
 include c:\masm32\include\w2k\ntddkbd.inc
 include c:\masm32\Macros\Strings.mac
-
+     
 includelib c:\masm32\lib\user32.lib
 includelib c:\masm32\lib\masm32.lib
 includelib c:\masm32\lib\msvcrt.lib
-includelib c:\masm32\lib\shell32.lib
 includelib c:\masm32\lib\kernel32.lib
-
-IOCTL_TEST      equ CTL_CODE(FILE_DEVICE_UNKNOWN, 800h, METHOD_BUFFERED,   FILE_ANY_ACCESS)
-IOCTL_GET_BUF   equ CTL_CODE(FILE_DEVICE_UNKNOWN, 800h, METHOD_BUFFERED,   FILE_ANY_ACCESS)
-IOCTL_SET_BUF   equ CTL_CODE(FILE_DEVICE_UNKNOWN, 801h, METHOD_BUFFERED,   FILE_ANY_ACCESS)
-IOCTL_GET_DIR   equ CTL_CODE(FILE_DEVICE_UNKNOWN, 800h, METHOD_OUT_DIRECT, FILE_ANY_ACCESS)
-IOCTL_SET_DIR   equ CTL_CODE(FILE_DEVICE_UNKNOWN, 801h, METHOD_IN_DIRECT,  FILE_ANY_ACCESS)
-IOCTL_GET_NEI   equ CTL_CODE(FILE_DEVICE_UNKNOWN, 800h, METHOD_NEITHER,    FILE_ANY_ACCESS)
-IOCTL_SET_NEI   equ CTL_CODE(FILE_DEVICE_UNKNOWN, 801h, METHOD_NEITHER,    FILE_ANY_ACCESS)
-
-.const 
-DEV_NAME    db "\\.\MyDriver",0
-MSG_SEND    db "I am error",0
-MSG_WR      db "SET: %s, %d",10,13,0
-MSG_RD      db "GET: %s, %d",10,13,0
- 
-.data
-dwCode0     dd IOCTL_TEST
-dwCode1     dd IOCTL_TEST
+    
+IOCTL_START equ CTL_CODE(FILE_DEVICE_UNKNOWN, 800h, METHOD_BUFFERED, FILE_ANY_ACCESS)
+IOCTL_STOP  equ CTL_CODE(FILE_DEVICE_UNKNOWN, 801h, METHOD_BUFFERED, FILE_ANY_ACCESS)
 
 .data?
-hFile       dd ?
-dwRet       dd ?
-szBuffer    db 255 dup(?)
- 
+hFile dd ?
+dwRet dd ?
+    
 .code
 start:
-    invoke GetCommandLineW
-    invoke CommandLineToArgvW, eax, offset dwRet
-    
-    .if dwRet &gt; 1
-        invoke WideCharToMultiByte, CP_ACP, 0, dword ptr [eax + 4], -1, offset szBuffer, 255, 0, 0
-
-        invoke lstrcmp, $CTA0("BUF"), offset szBuffer
-        .if eax == 0
-            mov dwCode0, IOCTL_SET_BUF
-            mov dwCode1, IOCTL_GET_BUF
-        .endif
-        
-        invoke lstrcmp, $CTA0("DIR"), offset szBuffer
-        .if eax == 0
-            mov dwCode0, IOCTL_SET_DIR
-            mov dwCode1, IOCTL_GET_DIR
-        .endif
-        
-        invoke lstrcmp, $CTA0("NEI"), offset szBuffer
-        .if eax == 0
-            mov dwCode0, IOCTL_SET_NEI
-            mov dwCode1, IOCTL_GET_NEI
-        .endif
-    .endif
-
-    invoke CreateFile, offset DEV_NAME, GENERIC_READ or GENERIC_WRITE, FILE_SHARE_READ, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0
+    invoke CreateFile, $CTA0("\\\\.\\MyDriver"), GENERIC_READ or GENERIC_WRITE, FILE_SHARE_READ, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0
     mov hFile, eax
-
-    .if dwCode0 == IOCTL_TEST
-        invoke DeviceIoControl, hFile, IOCTL_TEST, NULL, 0, NULL, 0, offset dwRet, NULL
-    .else
-        invoke StrLen, offset MSG_SEND
-        mov dwRet, eax
-
-        invoke crt_printf, offset MSG_WR, offset MSG_SEND, dwRet
-        invoke DeviceIoControl, hFile, dwCode0, offset MSG_SEND, dwRet, NULL, 0, offset dwRet, NULL
-    
-        and dwRet, 0
-        invoke crt_memset, offset szBuffer, 0, 255
-        invoke DeviceIoControl, hFile, dwCode1, NULL, 0, offset szBuffer, 255, offset dwRet, NULL
-        invoke crt_printf, offset MSG_RD, offset szBuffer, dwRet
-    .endif
-
+    invoke DeviceIoControl, hFile, IOCTL_START, NULL, 0, NULL, 0, offset dwRet, NULL
+    invoke Sleep, 3000
+    invoke DeviceIoControl, hFile, IOCTL_STOP, NULL, 0, NULL, 0, offset dwRet, NULL
     invoke CloseHandle, hFile
     invoke ExitProcess, 0
+ 
 end start
 end
 </pre><br>
 
 <p>
 完成<br>
-<img src="wdm_asm_ioctl/1.jpg" class="maxSize"><br>
-<img src="wdm_asm_ioctl/2.jpg" class="maxSize">
+<img src="wdm_asm_thread/1.jpg" class="maxSize"><br>
+<img src="wdm_asm_thread/2.jpg" class="maxSize">
 </p>
 
 <br><script type="text/javascript" src="../tail.js"></script>
