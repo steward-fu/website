@@ -1,0 +1,484 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../driver.htm">驅動程式</a> - Windows Driver Model (WDM) - 使用範例 - Assembly (MASM32) - <b>Use Cancel-Safe IRP Queue(CSQ)</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://wasm.in/<br>
+http://four-f.narod.ru/<br>
+https://github.com/steward-fu/ddk<br><br>
+
+main.asm
+</p>
+<pre class="brush:asm">
+.386p
+.model flat, stdcall
+option casemap:none
+ 
+include c:\masm32\include\w2k\hal.inc
+include c:\masm32\include\w2k\ntstatus.inc
+include c:\masm32\include\w2k\ntddk.inc
+include c:\masm32\include\w2k\ntoskrnl.inc
+include c:\masm32\include\w2k\ntddkbd.inc
+include c:\masm32\include\wxp\csq.inc
+include c:\masm32\Macros\Strings.mac
+
+includelib c:\masm32\lib\w2k\hal.lib
+includelib c:\masm32\lib\w2k\ntoskrnl.lib
+includelib c:\masm32\lib\wxp\i386\csq.lib
+ 
+public DriverEntry
+ 
+MyDeviceExtension struct
+    stDPC KDPC &lt;&gt;
+    stCsq IO_CSQ &lt;&gt;
+    stTime KTIMER &lt;&gt;
+    stLock KSPIN_LOCK &lt;&gt;
+    stQueue LIST_ENTRY &lt;&gt;
+    pNextDev PDEVICE_OBJECT ?
+MyDeviceExtension ends
+ 
+IOCTL_QUEUE     equ CTL_CODE(FILE_DEVICE_UNKNOWN, 800h, METHOD_BUFFERED, FILE_ANY_ACCESS)
+IOCTL_PROCESS   equ CTL_CODE(FILE_DEVICE_UNKNOWN, 801h, METHOD_BUFFERED, FILE_ANY_ACCESS)
+ 
+.const
+MSG_QUEUE       byte "IOCTL_QUEUE",0
+MSG_PROCESS     byte "IOCTL_PROCESS",0
+ 
+.code
+CsqInsertIrp proc uses ebx ecx pCsqInfo : PIO_CSQ, pIrp : PIRP
+    local pDevExt : ptr DevExt
+     
+    invoke DbgPrint, $CTA0("CsqInsertIrp")
+     
+    ; CONTAINING_RECORD 
+    mov eax, pCsqInfo
+    sub eax, MyDeviceExtension.stCsq
+    mov pDevExt, eax
+ 
+    mov ebx, pDevExt
+    lea ebx, (MyDeviceExtension ptr [ebx]).stQueue
+    mov ecx, pIrp
+    lea ecx, (_IRP ptr [ecx]).Tail.Overlay.ListEntry
+    InsertTailList ebx, ecx
+    ret
+CsqInsertIrp endp
+ 
+CsqRemoveIrp proc pCsqInfo : PIO_CSQ, pIrp : PIRP
+    invoke DbgPrint, $CTA0("CsqRemoveIrp")
+    mov eax, pIrp
+    lea eax, (_IRP ptr [eax]).Tail.Overlay.ListEntry
+    RemoveEntryList eax
+    ret
+CsqRemoveIrp endp
+ 
+CsqCompleteCanceledIrp proc pCsqInfo : PIO_CSQ, pIrp : PIRP
+    local pDevExt : ptr MyDeviceExtension
+     
+    invoke DbgPrint, $CTA0("CsqCompleteCanceledIrp")
+     
+    ; CONTAINING_RECORD 
+    mov eax, pCsqInfo
+    sub eax, MyDeviceExtension.stCsq
+    mov pDevExt, eax
+ 
+    mov eax, pIrp
+    mov (_IRP ptr [eax]).IoStatus.Status, STATUS_CANCELLED
+    push 0
+    pop (_IRP ptr [eax]).IoStatus.Information 
+    fastcall IofCompleteRequest, eax, IO_NO_INCREMENT
+    ret
+CsqCompleteCanceledIrp endp
+ 
+CsqPeekNextIrp proc uses ebx pCsqInfo : PIO_CSQ, pIrp : PIRP, pPeekContext : PVOID
+    local nextIrp : ptr _IRP
+    local listHead : ptr LIST_ENTRY
+    local nextEntry : ptr LIST_ENTRY
+    local irpStack : PIO_STACK_LOCATION
+    local pDevExt : ptr MyDeviceExtension
+     
+    invoke DbgPrint, $CTA0("CsqPeekNextIrp")
+    mov nextIrp, NULL
+     
+    ; CONTAINING_RECORD 
+    mov eax, pCsqInfo
+    sub eax, MyDeviceExtension.stCsq
+    mov pDevExt, eax
+     
+    mov eax, pDevExt
+    lea eax, (MyDeviceExtension ptr [eax]).stQueue
+    mov listHead, eax
+     
+    mov eax, pIrp
+    .if eax == NULL
+        mov eax, listHead
+        push (LIST_ENTRY ptr [eax]).Flink
+        pop nextEntry 
+    .elseif
+        mov eax, pIrp
+        push (_IRP ptr [eax]).Tail.Overlay.ListEntry.Flink
+        pop nextEntry 
+    .endif
+     
+    mov eax, nextEntry
+    mov ebx, listHead
+    .while eax != ebx
+        ; nextIrp = CONTAINING_RECORD(nextEntry, IRP, Tail.Overlay.ListEntry)
+        mov eax, nextEntry
+        sub eax, _IRP.Tail.Overlay.ListEntry
+        mov nextIrp, eax
+ 
+        IoGetCurrentIrpStackLocation nextIrp
+        mov irpStack, eax
+         
+        mov eax, pPeekContext
+        .if eax != NULL
+            mov eax, irpStack
+            mov eax, (IO_STACK_LOCATION ptr [eax]).FileObject
+            mov ebx, pPeekContext
+            .if eax == ebx
+                .break
+            .endif
+        .elseif
+            .break
+        .endif
+         
+        mov nextIrp, NULL
+        mov eax, nextEntry
+        mov eax, (LIST_ENTRY ptr [eax]).Flink
+        mov nextEntry, eax
+         
+        mov eax, nextEntry
+        mov ebx, listHead
+    .endw
+    mov eax, nextIrp
+    ret
+CsqPeekNextIrp endp
+ 
+CsqAcquireLock proc uses ecx pCsqInfo : PIO_CSQ, pIrql : PKIRQL
+    local pDevExt : ptr MyDeviceExtension
+     
+    invoke DbgPrint, $CTA0("CsqAcquireLock")
+     
+    ; CONTAINING_RECORD 
+    mov eax, pCsqInfo
+    sub eax, MyDeviceExtension.stCsq
+    mov pDevExt, eax
+ 
+    mov eax, pDevExt
+    lea ecx, (MyDeviceExtension ptr [eax]).stLock
+    fastcall KfAcquireSpinLock, ecx
+    mov ecx, pIrql
+    mov [ecx], al
+    ret
+CsqAcquireLock endp
+ 
+CsqReleaseLock proc uses ecx edx pCsqInfo : PIO_CSQ, Irql : KIRQL
+    local pDevExt : ptr DevExt
+     
+    ; CONTAINING_RECORD 
+    mov eax, pCsqInfo
+    sub eax, MyDeviceExtension.stCsq
+    mov pDevExt, eax
+ 
+    mov dl, Irql
+    mov eax, pDevExt
+    lea ecx, (MyDeviceExtension ptr [eax]).stLock
+    .if dl == DISPATCH_LEVEL
+        fastcall KefReleaseSpinLockFromDpcLevel, ecx
+        push eax
+        invoke DbgPrint, $CTA0("CsqReleaseLock at DPC level\n")
+        pop eax
+    .else
+        and edx, 0FFh
+        fastcall KfReleaseSpinLock, ecx, edx
+        push eax
+        invoke DbgPrint, $CTA0("CsqReleaseLock at Passive level\n")
+        pop eax
+    .endif
+    ret
+CsqReleaseLock endp
+ 
+OnTimer proc uses ebx pDpc : PKDPC, pContext : PVOID, pArg1 : PVOID, PArg2 : PVOID
+    mov eax, pContext
+    mov eax, (DEVICE_OBJECT ptr [eax]).DeviceExtension
+    lea eax, (MyDeviceExtension ptr [eax]).stQueue
+    IsListEmpty eax
+    .if eax == TRUE
+        mov eax, pContext
+        mov eax, (DEVICE_OBJECT ptr [eax]).DeviceExtension
+        invoke KeCancelTimer, addr (MyDeviceExtension ptr [eax]).stTime
+        invoke DbgPrint, $CTA0("Finish")
+    .else
+        mov eax, pContext
+        mov eax, (DEVICE_OBJECT ptr [eax]).DeviceExtension
+        lea eax, (MyDeviceExtension ptr [eax]).stQueue
+        RemoveHeadList eax
+         
+        ; CONTAINING_RECORD 
+        sub eax, _IRP.Tail.Overlay.ListEntry
+        mov bl, (_IRP ptr [eax]).Cancel
+ 
+        .if bl != TRUE
+            mov (_IRP ptr [eax]).IoStatus.Status, STATUS_SUCCESS
+            push 0
+            pop (_IRP ptr [eax]).IoStatus.Information
+            fastcall IofCompleteRequest, eax, IO_NO_INCREMENT
+            mov eax, STATUS_SUCCESS
+            invoke DbgPrint, $CTA0("Complete Irp")
+        .else
+            mov (_IRP ptr [eax]).CancelRoutine, NULL
+            mov (_IRP ptr [eax]).IoStatus.Status, STATUS_CANCELLED
+            push 0
+            pop (_IRP ptr [eax]).IoStatus.Information
+            fastcall IofCompleteRequest, eax, IO_NO_INCREMENT
+            mov eax, STATUS_CANCELLED
+            invoke DbgPrint, $CTA0("Cancel Irp")
+        .endif
+    .endif
+    ret
+OnTimer endp
+ 
+IrpOpenClose proc pMyDevice : PDEVICE_OBJECT, pIrp : PIRP
+    IoGetCurrentIrpStackLocation pIrp
+    movzx eax, (IO_STACK_LOCATION ptr [eax]).MajorFunction
+    .if eax == IRP_MJ_CREATE
+        invoke DbgPrint, $CTA0("IRP_MJ_CREATE")
+    .elseif eax == IRP_MJ_CLOSE
+        invoke DbgPrint, $CTA0("IRP_MJ_CLOSE")
+    .endif
+ 
+    mov eax, pIrp
+    and (_IRP ptr [eax]).IoStatus.Information, 0
+    mov (_IRP ptr [eax]).IoStatus.Status, STATUS_SUCCESS
+    fastcall IofCompleteRequest, pIrp, IO_NO_INCREMENT
+    mov eax, STATUS_SUCCESS
+    ret
+IrpOpenClose endp
+ 
+IrpIOCTL proc uses ebx pMyDevice : PDEVICE_OBJECT, pIrp : PIRP
+    local pDevExt : ptr Dev_Ext
+    local stTimePeriod : LARGE_INTEGER
+ 
+    mov eax, pMyDevice
+    push (DEVICE_OBJECT ptr [eax]).DeviceExtension
+    pop pDevExt
+ 
+    IoGetCurrentIrpStackLocation pIrp
+    mov eax, (IO_STACK_LOCATION ptr [eax]).Parameters.DeviceIoControl.IoControlCode
+    .if eax == IOCTL_QUEUE
+        invoke DbgPrint, offset MSG_QUEUE
+         
+        mov ebx, pDevExt
+        lea ebx, (MyDeviceExtension ptr [ebx]).stCsq
+        invoke IoCsqInsertIrp, ebx, pIrp, NULL
+        mov eax, STATUS_PENDING
+        ret
+    .elseif eax == IOCTL_PROCESS
+        invoke DbgPrint, offset MSG_PROCESS
+        or stTimePeriod.HighPart, -1
+        mov stTimePeriod.LowPart, -10000000
+        mov ebx, pDevExt
+        invoke KeSetTimerEx, addr (MyDeviceExtension ptr [ebx]).stTime, stTimePeriod.LowPart, stTimePeriod.HighPart, 1000, addr (MyDeviceExtension ptr [ebx]).stDPC
+    .endif
+ 
+    mov eax, pIrp
+    mov (_IRP ptr [eax]).IoStatus.Status, STATUS_SUCCESS
+    and (_IRP ptr [eax]).IoStatus.Information, 0
+    fastcall IofCompleteRequest, pIrp, IO_NO_INCREMENT
+    mov eax, STATUS_SUCCESS
+    ret
+IrpIOCTL endp
+ 
+IrpPnp proc pMyDevice : PDEVICE_OBJECT, pIrp : PIRP
+    local szSymName : UNICODE_STRING
+    local pDevExt : ptr MyDeviceExtension
+ 
+    mov eax, pMyDevice
+    push (DEVICE_OBJECT ptr [eax]).DeviceExtension
+    pop pDevExt
+        
+    IoGetCurrentIrpStackLocation pIrp
+    movzx eax, (IO_STACK_LOCATION ptr [eax]).MinorFunction
+    .if eax == IRP_MN_START_DEVICE
+        mov eax, pIrp
+        mov (_IRP ptr [eax]).IoStatus.Status, STATUS_SUCCESS
+    .elseif eax == IRP_MN_REMOVE_DEVICE
+        invoke RtlInitUnicodeString, addr szSymName, $CTW0("\\DosDevices\\MyDriver")
+        invoke IoDeleteSymbolicLink, addr szSymName         
+        mov eax, pIrp
+        mov (_IRP ptr [eax]).IoStatus.Status, STATUS_SUCCESS
+ 
+        mov eax, pDevExt
+        invoke IoDetachDevice, (MyDeviceExtension ptr [eax]).pNextDev
+        invoke IoDeleteDevice, pMyDevice
+        fastcall IofCompleteRequest, pIrp, IO_NO_INCREMENT
+        ret
+    .endif
+    IoSkipCurrentIrpStackLocation pIrp
+ 
+    mov eax, pDevExt
+    invoke IoCallDriver, (MyDeviceExtension ptr [eax]).pNextDev, pIrp
+    ret
+IrpPnp endp
+ 
+AddDevice proc pMyDriver : PDRIVER_OBJECT, pPhyDevice : PDEVICE_OBJECT
+    local pMyDevice : PDEVICE_OBJECT
+    local szDevName : UNICODE_STRING
+    local szSymName : UNICODE_STRING
+ 
+    invoke RtlInitUnicodeString, addr szDevName, $CTW0("\\Device\\MyDriver")
+    invoke RtlInitUnicodeString, addr szSymName, $CTW0("\\DosDevices\\MyDriver")
+    invoke IoCreateDevice, pMyDriver, sizeof MyDeviceExtension, addr szDevName, FILE_DEVICE_UNKNOWN, 0, FALSE, addr pMyDevice
+    .if eax == STATUS_SUCCESS
+        invoke IoAttachDeviceToDeviceStack, pMyDevice, pPhyDevice
+        .if eax != NULL
+            push eax
+            mov eax, pMyDevice
+            mov eax, (DEVICE_OBJECT ptr [eax]).DeviceExtension
+            pop (MyDeviceExtension ptr [eax]).pNextDev
+ 
+            mov eax, pMyDevice
+            or (DEVICE_OBJECT ptr [eax]).Flags, DO_BUFFERED_IO
+            and (DEVICE_OBJECT ptr [eax]).Flags, not DO_DEVICE_INITIALIZING
+ 
+            mov eax, pMyDevice
+            mov eax, (DEVICE_OBJECT ptr [eax]).DeviceExtension
+            lea eax, (MyDeviceExtension ptr [eax]).stQueue
+            InitializeListHead eax
+ 
+            mov eax, pMyDevice
+            mov eax, (DEVICE_OBJECT ptr [eax]).DeviceExtension
+            invoke KeInitializeTimer, addr (MyDeviceExtension ptr [eax]).stTime
+ 
+            mov eax, pMyDevice
+            mov eax, (DEVICE_OBJECT ptr [eax]).DeviceExtension
+            invoke KeInitializeDpc, addr (MyDeviceExtension ptr [eax]).stDPC, offset OnTimer, pMyDevice
+ 
+            mov eax, pMyDevice
+            mov eax, (DEVICE_OBJECT ptr [eax]).DeviceExtension
+            lea eax, (MyDeviceExtension ptr [eax]).stCsq
+            invoke IoCsqInitialize, eax, offset CsqInsertIrp, offset CsqRemoveIrp, offset CsqPeekNextIrp, offset CsqAcquireLock, offset CsqReleaseLock, offset CsqCompleteCanceledIrp
+            invoke IoCreateSymbolicLink, addr szSymName, addr szDevName
+        .endif
+    .endif
+    ret
+AddDevice endp
+ 
+Unload proc pMyDriver : PDRIVER_OBJECT
+    ret
+Unload endp
+ 
+DriverEntry proc pMyDriver : PDRIVER_OBJECT, pMyRegistry : PUNICODE_STRING
+    mov eax, pMyDriver
+    mov (DRIVER_OBJECT ptr [eax]).MajorFunction[IRP_MJ_PNP            * (sizeof PVOID)], offset IrpPnp
+    mov (DRIVER_OBJECT ptr [eax]).MajorFunction[IRP_MJ_CREATE         * (sizeof PVOID)], offset IrpOpenClose
+    mov (DRIVER_OBJECT ptr [eax]).MajorFunction[IRP_MJ_CLOSE          * (sizeof PVOID)], offset IrpOpenClose
+    mov (DRIVER_OBJECT ptr [eax]).MajorFunction[IRP_MJ_DEVICE_CONTROL * (sizeof PVOID)], offset IrpIOCTL
+    mov (DRIVER_OBJECT ptr [eax]).DriverUnload, offset Unload
+    mov eax, (DRIVER_OBJECT ptr [eax]).DriverExtension
+    mov (DRIVER_EXTENSION ptr [eax]).AddDevice, AddDevice
+    mov eax, STATUS_SUCCESS
+    ret
+DriverEntry endp
+end
+</pre><br>
+
+<p>
+app.asm
+</p>
+<pre class="brush:asm">
+.386p
+.model flat, stdcall
+option casemap:none
+     
+include c:\masm32\include\windows.inc
+include c:\masm32\include\masm32.inc
+include c:\masm32\include\user32.inc
+include c:\masm32\include\msvcrt.inc
+include c:\masm32\include\kernel32.inc
+include c:\masm32\include\w2k\ntddkbd.inc
+include c:\masm32\Macros\Strings.mac
+        
+includelib c:\masm32\lib\user32.lib
+includelib c:\masm32\lib\masm32.lib
+includelib c:\masm32\lib\msvcrt.lib
+includelib c:\masm32\lib\kernel32.lib
+     
+IOCTL_QUEUE     equ CTL_CODE(FILE_DEVICE_UNKNOWN, 800h, METHOD_BUFFERED, FILE_ANY_ACCESS)
+IOCTL_PROCESS   equ CTL_CODE(FILE_DEVICE_UNKNOWN, 801h, METHOD_BUFFERED, FILE_ANY_ACCESS)
+
+.data?
+cnt     dd ?
+hFile   dd ?
+dwRet   dd ?
+event   dd 3 dup(?)
+ov      OVERLAPPED &lt;?&gt;
+    
+.code
+start:
+    invoke CreateFile, $CTA0("\\\\.\\MyDriver"), GENERIC_READ or GENERIC_WRITE, FILE_SHARE_READ, 0, OPEN_EXISTING, FILE_FLAG_OVERLAPPED or FILE_ATTRIBUTE_NORMAL, 0
+    mov hFile, eax
+
+    mov cnt, 3
+    invoke crt_memset, offset ov, 0, sizeof OVERLAPPED
+    .while cnt &gt; 0
+        invoke CreateEvent, NULL, TRUE, FALSE, NULL
+        mov ov.hEvent, eax
+
+        mov ecx, cnt
+        mov edi, offset event
+        mov [edi + ecx * 4], eax
+
+        invoke DeviceIoControl, hFile, IOCTL_QUEUE, NULL, 0, NULL, 0, offset dwRet, offset ov
+        invoke crt_printf, $CTA0("Queued event\n")
+        invoke CloseHandle, ov.hEvent
+        sub cnt, 1
+    .endw
+
+    invoke crt_printf, $CTA0("Processing All Events\n")
+    invoke DeviceIoControl, hFile, IOCTL_PROCESS, NULL, 0, NULL, 0, offset dwRet, NULL
+    invoke Sleep, 1000
+    invoke CancelIo, hFile
+
+    mov cnt, 3
+    .while cnt &gt; 0
+        mov ecx, cnt
+        mov edi, offset event
+        mov eax, [edi + ecx * 4]
+        mov ov.hEvent, eax
+
+        invoke WaitForSingleObject, ov.hEvent, INFINITE
+        invoke CloseHandle, ov.hEvent
+        invoke crt_printf, $CTA0("Complete\n")
+        sub cnt, 1
+    .endw
+        
+    invoke CloseHandle, hFile
+    invoke ExitProcess, 0
+end start
+end
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+del main.sys
+c:\masm32\bin\ml.exe /c /coff /Cp /Zi /Zd main.asm
+c:\masm32\bin\link.exe main.obj /driver /base:0x10000 /subsystem:native /entry:DriverEntry "c:\masm32\lib\wxp\i386\ntoskrnl.lib" /out:main.sys
+
+del app.exe
+c:\masm32\bin\ml.exe /c /coff /Cp /Zi /Zd app.asm
+c:\masm32\bin\link.exe /subsystem:console /version:4.0 /incremental:no /out:app.exe app.obj
+</pre><br>
+
+<p>
+完成<br>
+<img src="wdm_asm_csq/1.jpg" class="maxSize"><br>
+<img src="wdm_asm_csq/2.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
