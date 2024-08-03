@@ -1,0 +1,153 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../driver.htm">驅動程式</a> - Windows Driver Model (WDM) - 使用範例 - Assembly (MASM32) - <b>Use Semaphore</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://wasm.in/<br>
+http://four-f.narod.ru/<br>
+https://github.com/steward-fu/ddk<br><br>
+
+main.asm
+</p>
+<pre class="brush:asm">
+.386p
+.model flat, stdcall
+option casemap:none
+    
+include c:\masm32\include\w2k\hal.inc
+include c:\masm32\include\w2k\ntstatus.inc
+include c:\masm32\include\w2k\ntddk.inc
+include c:\masm32\include\w2k\ntoskrnl.inc
+include c:\masm32\include\w2k\ntddkbd.inc
+include c:\masm32\Macros\Strings.mac
+
+includelib c:\masm32\lib\wxp\i386\hal.lib
+includelib c:\masm32\lib\wxp\i386\ntoskrnl.lib
+ 
+public DriverEntry
+ 
+MAX_THREAD      equ 3
+MAX_SEMA_COUNT  equ 2
+MAX_SEMA_LIMIT  equ 2
+ 
+.data
+mySemaphore KSEMAPHORE &lt;&gt;
+pNextDev    PDEVICE_OBJECT 0
+ 
+.const
+MSG_ACQUIRING   byte "Thread%d, Acquiring Semaphore",0
+MSG_ACQUIRED    byte "Thread%d, Acquired Semaphore",0
+MSG_SLEEPING    byte "Thread%d, Sleeping",0
+MSG_RELEASING   byte "Thread%d, Releasing Semaphore",0
+MSG_RELEASED    byte "Thread%d, Released Semaphore",0
+ 
+.code
+MyThread proc pParam : DWORD
+    local cc : DWORD
+    local stTime : LARGE_INTEGER
+     
+    or stTime.HighPart, -1
+    mov stTime.LowPart, -10000000
+ 
+    invoke DbgPrint, offset MSG_ACQUIRING, pParam
+    invoke KeWaitForSingleObject, offset mySemaphore, Executive, KernelMode, FALSE, NULL
+    invoke DbgPrint, offset MSG_ACQUIRED, pParam
+    invoke DbgPrint, offset MSG_SLEEPING, pParam
+    invoke KeDelayExecutionThread, KernelMode, FALSE, addr stTime
+    invoke DbgPrint, offset MSG_RELEASING, pParam
+    invoke KeReadStateSemaphore, offset mySemaphore
+    mov cc, 0
+    .if eax &lt; MAX_SEMA_LIMIT
+        mov cc, 1
+    .endif
+    invoke KeReleaseSemaphore, offset mySemaphore, IO_NO_INCREMENT, cc, FALSE
+    invoke DbgPrint, offset MSG_RELEASED, pParam
+    invoke PsTerminateSystemThread, STATUS_SUCCESS
+    ret
+MyThread endp
+ 
+IrpPnp proc pMyDevice : PDEVICE_OBJECT, pIrp : PIRP
+    local szSymName : UNICODE_STRING
+ 
+    IoGetCurrentIrpStackLocation pIrp
+    movzx eax, (IO_STACK_LOCATION PTR [eax]).MinorFunction
+    .if eax == IRP_MN_START_DEVICE
+        mov eax, pIrp
+        mov (_IRP PTR [eax]).IoStatus.Status, STATUS_SUCCESS
+    .elseif eax == IRP_MN_REMOVE_DEVICE
+        invoke RtlInitUnicodeString, addr szSymName, $CTW0("\\DosDevices\\MyDriver")
+        invoke IoDeleteSymbolicLink, addr szSymName         
+        mov eax, pIrp
+        mov (_IRP PTR [eax]).IoStatus.Status, STATUS_SUCCESS
+        invoke IoDetachDevice, pNextDev
+        invoke IoDeleteDevice, pMyDevice
+        fastcall IofCompleteRequest, pIrp, IO_NO_INCREMENT
+        ret
+    .endif
+    IoSkipCurrentIrpStackLocation pIrp
+    invoke IoCallDriver, pNextDev, pIrp
+    ret
+IrpPnp endp
+ 
+AddDevice proc pMyDriver : PDRIVER_OBJECT, pPhyDevice : PDEVICE_OBJECT
+    local pMyDevice : PDEVICE_OBJECT
+    local szDevName : UNICODE_STRING
+    local szSymName : UNICODE_STRING
+ 
+    invoke RtlInitUnicodeString, addr szDevName, $CTW0("\\Device\\MyDriver")
+    invoke RtlInitUnicodeString, addr szSymName, $CTW0("\\DosDevices\\MyDriver")
+    invoke IoCreateDevice, pMyDriver, 0, addr szDevName, FILE_DEVICE_UNKNOWN, 0, FALSE, addr pMyDevice
+    .if eax == STATUS_SUCCESS
+        invoke IoAttachDeviceToDeviceStack, pMyDevice, pPhyDevice
+        .if eax != NULL
+            push eax
+            pop pNextDev
+ 
+            mov eax, pMyDevice
+            or (DEVICE_OBJECT PTR [eax]).Flags, DO_BUFFERED_IO
+            and (DEVICE_OBJECT PTR [eax]).Flags, not DO_DEVICE_INITIALIZING
+            invoke IoCreateSymbolicLink, addr szSymName, addr szDevName
+        .endif
+    .endif
+    ret
+AddDevice endp
+ 
+Unload proc pMyDriver : PDRIVER_OBJECT
+    ret
+Unload endp
+ 
+DriverEntry proc pMyDriver : PDRIVER_OBJECT, pMyRegistry : PUNICODE_STRING
+    local cnt : DWORD
+    local hThread : DWORD
+ 
+    mov eax, pMyDriver
+    mov (DRIVER_OBJECT PTR [eax]).MajorFunction[IRP_MJ_PNP * (sizeof PVOID)], offset IrpPnp
+    mov (DRIVER_OBJECT PTR [eax]).DriverUnload, offset Unload
+    mov eax, (DRIVER_OBJECT PTR [eax]).DriverExtension
+    mov (DRIVER_EXTENSION PTR [eax]).AddDevice, AddDevice
+ 
+    invoke KeInitializeSemaphore, offset mySemaphore, MAX_SEMA_COUNT, MAX_SEMA_LIMIT
+    mov cnt, 0
+th:
+    invoke PsCreateSystemThread, addr hThread, THREAD_ALL_ACCESS, NULL, -1, NULL, offset MyThread, cnt
+    .if eax == STATUS_SUCCESS
+        invoke ZwClose, hThread
+    .endif
+    inc cnt
+    cmp cnt, MAX_THREAD
+    jnz th
+    mov eax, STATUS_SUCCESS
+    ret
+DriverEntry endp
+end
+</pre><br>
+
+<p>
+完成<br>
+<img src="wdm_asm_semaphore/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

@@ -43,8 +43,8 @@ public DriverEntry
  
 MyDeviceExtension struct
     dwTimerCnt DWORD ?
-    stTimerDPC KDPC <>
-    stTimerObj KTIMER <>
+    stTimerDPC KDPC &lt;&gt;
+    stTimerObj KTIMER &lt;&gt;
     pNextDev PDEVICE_OBJECT ?
 MyDeviceExtension ends
  
@@ -85,10 +85,10 @@ IrpOpenClose endp
 IrpIOCTL proc uses ebx pMyDevice : PDEVICE_OBJECT, pIrp : PIRP
     local pBuf : DWORD
     local dwLen : DWORD
+    local pDevExt : ptr
     local hThread : DWORD
     local pThread : PVOID
     local stTimeCnt : LARGE_INTEGER
-    local pDevExt : ptr MyDeviceExtension
  
     and dwLen, 0
     mov eax, pMyDevice
@@ -123,8 +123,8 @@ IrpIOCTL proc uses ebx pMyDevice : PDEVICE_OBJECT, pIrp : PIRP
 IrpIOCTL endp
  
 IrpPnp proc pMyDevice : PDEVICE_OBJECT, pIrp : PIRP
+    local pDevExt : ptr
     local szSymName : UNICODE_STRING
-    local pDevExt : ptr MyDeviceExtension
  
     mov eax, pMyDevice
     push (DEVICE_OBJECT ptr [eax]).DeviceExtension

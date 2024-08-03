@@ -1,0 +1,33 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../driver.htm">驅動程式</a> - Windows Driver Model (WDM) - 教學說明 - <b>10. 同步化物件的使用說明</b></h3>
+<hr size="1"><br>
+<p>
+<b>Spink Lock</b><br>
+在多核心的環境中，有些程式區段，每次只能讓一顆CPU進入執行，這時候可以使用Spin Lock機制，Spin Lock一次只能有一個Lock，因此，當有一顆CPU取得Lock後，其餘CPU便無法取得Lock，在無法取得Lock狀況下，這些CPU會不斷嘗試取得Lock，因此，Spin Lock對於CPU資源的開銷是很大的，在寫Spin Lock程式時，必須注意不能Lock太久，否則將導致系統效能下降，同時，在取得Lock後，將會被提昇到DISPATCH_LEVEL執行，這是必須要注意的部份，使用步驟如下：<br>
+1. KeInitializeSpinLock()<br>
+2. KeAcquireSpinLock()<br>
+3. KeReleaseSpinLock()<br><br>
+
+<b>Event</b><br>
+Event的用法上，除了可以手動設定(NotificationEvent)之外，也可以設定成自動Reset機制(SynchronizationEvent)，使用步驟如下：<br>
+1. KeInitializeEvent()<br>
+2. KeWaitForSingleObject()<br>
+3. KeSetEvent()<br><br>
+
+<b>Mutex</b><br>
+Mutex是一個互斥的機制，有點類似Spin Lock，當有CPU取得Mutex後，其餘CPU會處於Wait狀態，而相較於Spin Lock，Mutex並不會讓CPU處於忙碌的狀態，也不會提升到DISPATCH_LEVEL，是一個相當適合用來做序列化的機制，使用步驟如下：<br>
+1. KeInitializeMutex()<br>
+2. KeWaitForSingleObject()<br>
+3. KeReleaseMutex()<br><br>
+
+<b>Semaphore</b><br>
+Semaphore可以想像成是集成多個Mutex的機制，Semaphore可以設定取得Lock的數量，不像Mutex只有單一個Lock限制，因此，如果程式區段有執行數量的限制時，Semaphore是一個相當適合的方式，值得注意的是，釋放Semaphore不能超過設定的數量，否則會有STATUS_SEMAPHORE_LIMIT_EXCEEDED，使用步驟如下：<br>
+1. KeInitializeSemaphore()<br>
+2. KeWaitForSingleObject()<br>
+3. KeReleaseSemaphore()
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

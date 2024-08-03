@@ -16,7 +16,7 @@ main.asm
 .386p
 .model flat, stdcall
 option casemap:none
- 
+  
 include c:\masm32\include\w2k\hal.inc
 include c:\masm32\include\w2k\ntstatus.inc
 include c:\masm32\include\w2k\ntddk.inc
@@ -24,13 +24,13 @@ include c:\masm32\include\w2k\ntoskrnl.inc
 include c:\masm32\include\w2k\ntddkbd.inc
 include c:\masm32\include\wxp\csq.inc
 include c:\masm32\Macros\Strings.mac
-
+ 
 includelib c:\masm32\lib\w2k\hal.lib
 includelib c:\masm32\lib\w2k\ntoskrnl.lib
 includelib c:\masm32\lib\wxp\i386\csq.lib
- 
+  
 public DriverEntry
- 
+  
 MyDeviceExtension struct
     stDPC KDPC &lt;&gt;
     stCsq IO_CSQ &lt;&gt;
@@ -39,25 +39,25 @@ MyDeviceExtension struct
     stQueue LIST_ENTRY &lt;&gt;
     pNextDev PDEVICE_OBJECT ?
 MyDeviceExtension ends
- 
+  
 IOCTL_QUEUE     equ CTL_CODE(FILE_DEVICE_UNKNOWN, 800h, METHOD_BUFFERED, FILE_ANY_ACCESS)
 IOCTL_PROCESS   equ CTL_CODE(FILE_DEVICE_UNKNOWN, 801h, METHOD_BUFFERED, FILE_ANY_ACCESS)
- 
+  
 .const
 MSG_QUEUE       byte "IOCTL_QUEUE",0
 MSG_PROCESS     byte "IOCTL_PROCESS",0
- 
+  
 .code
 CsqInsertIrp proc uses ebx ecx pCsqInfo : PIO_CSQ, pIrp : PIRP
-    local pDevExt : ptr DevExt
-     
+    local pDevExt : ptr
+      
     invoke DbgPrint, $CTA0("CsqInsertIrp")
-     
+      
     ; CONTAINING_RECORD 
     mov eax, pCsqInfo
     sub eax, MyDeviceExtension.stCsq
     mov pDevExt, eax
- 
+  
     mov ebx, pDevExt
     lea ebx, (MyDeviceExtension ptr [ebx]).stQueue
     mov ecx, pIrp
@@ -65,7 +65,7 @@ CsqInsertIrp proc uses ebx ecx pCsqInfo : PIO_CSQ, pIrp : PIRP
     InsertTailList ebx, ecx
     ret
 CsqInsertIrp endp
- 
+  
 CsqRemoveIrp proc pCsqInfo : PIO_CSQ, pIrp : PIRP
     invoke DbgPrint, $CTA0("CsqRemoveIrp")
     mov eax, pIrp
@@ -73,17 +73,17 @@ CsqRemoveIrp proc pCsqInfo : PIO_CSQ, pIrp : PIRP
     RemoveEntryList eax
     ret
 CsqRemoveIrp endp
- 
+  
 CsqCompleteCanceledIrp proc pCsqInfo : PIO_CSQ, pIrp : PIRP
-    local pDevExt : ptr MyDeviceExtension
-     
+    local pDevExt : ptr
+      
     invoke DbgPrint, $CTA0("CsqCompleteCanceledIrp")
-     
+      
     ; CONTAINING_RECORD 
     mov eax, pCsqInfo
     sub eax, MyDeviceExtension.stCsq
     mov pDevExt, eax
- 
+  
     mov eax, pIrp
     mov (_IRP ptr [eax]).IoStatus.Status, STATUS_CANCELLED
     push 0
@@ -91,26 +91,26 @@ CsqCompleteCanceledIrp proc pCsqInfo : PIO_CSQ, pIrp : PIRP
     fastcall IofCompleteRequest, eax, IO_NO_INCREMENT
     ret
 CsqCompleteCanceledIrp endp
- 
+  
 CsqPeekNextIrp proc uses ebx pCsqInfo : PIO_CSQ, pIrp : PIRP, pPeekContext : PVOID
-    local nextIrp : ptr _IRP
-    local listHead : ptr LIST_ENTRY
-    local nextEntry : ptr LIST_ENTRY
+    local nextIrp : ptr
+    local pDevExt : ptr
+    local listHead : ptr
+    local nextEntry : ptr
     local irpStack : PIO_STACK_LOCATION
-    local pDevExt : ptr MyDeviceExtension
-     
+      
     invoke DbgPrint, $CTA0("CsqPeekNextIrp")
     mov nextIrp, NULL
-     
+      
     ; CONTAINING_RECORD 
     mov eax, pCsqInfo
     sub eax, MyDeviceExtension.stCsq
     mov pDevExt, eax
-     
+      
     mov eax, pDevExt
     lea eax, (MyDeviceExtension ptr [eax]).stQueue
     mov listHead, eax
-     
+      
     mov eax, pIrp
     .if eax == NULL
         mov eax, listHead
@@ -121,7 +121,7 @@ CsqPeekNextIrp proc uses ebx pCsqInfo : PIO_CSQ, pIrp : PIRP, pPeekContext : PVO
         push (_IRP ptr [eax]).Tail.Overlay.ListEntry.Flink
         pop nextEntry 
     .endif
-     
+      
     mov eax, nextEntry
     mov ebx, listHead
     .while eax != ebx
@@ -129,10 +129,10 @@ CsqPeekNextIrp proc uses ebx pCsqInfo : PIO_CSQ, pIrp : PIRP, pPeekContext : PVO
         mov eax, nextEntry
         sub eax, _IRP.Tail.Overlay.ListEntry
         mov nextIrp, eax
- 
+  
         IoGetCurrentIrpStackLocation nextIrp
         mov irpStack, eax
-         
+          
         mov eax, pPeekContext
         .if eax != NULL
             mov eax, irpStack
@@ -144,29 +144,29 @@ CsqPeekNextIrp proc uses ebx pCsqInfo : PIO_CSQ, pIrp : PIRP, pPeekContext : PVO
         .elseif
             .break
         .endif
-         
+          
         mov nextIrp, NULL
         mov eax, nextEntry
         mov eax, (LIST_ENTRY ptr [eax]).Flink
         mov nextEntry, eax
-         
+          
         mov eax, nextEntry
         mov ebx, listHead
     .endw
     mov eax, nextIrp
     ret
 CsqPeekNextIrp endp
- 
+  
 CsqAcquireLock proc uses ecx pCsqInfo : PIO_CSQ, pIrql : PKIRQL
-    local pDevExt : ptr MyDeviceExtension
-     
+    local pDevExt : ptr
+      
     invoke DbgPrint, $CTA0("CsqAcquireLock")
-     
+      
     ; CONTAINING_RECORD 
     mov eax, pCsqInfo
     sub eax, MyDeviceExtension.stCsq
     mov pDevExt, eax
- 
+  
     mov eax, pDevExt
     lea ecx, (MyDeviceExtension ptr [eax]).stLock
     fastcall KfAcquireSpinLock, ecx
@@ -174,15 +174,15 @@ CsqAcquireLock proc uses ecx pCsqInfo : PIO_CSQ, pIrql : PKIRQL
     mov [ecx], al
     ret
 CsqAcquireLock endp
- 
+  
 CsqReleaseLock proc uses ecx edx pCsqInfo : PIO_CSQ, Irql : KIRQL
-    local pDevExt : ptr DevExt
-     
+    local pDevExt : ptr
+      
     ; CONTAINING_RECORD 
     mov eax, pCsqInfo
     sub eax, MyDeviceExtension.stCsq
     mov pDevExt, eax
- 
+  
     mov dl, Irql
     mov eax, pDevExt
     lea ecx, (MyDeviceExtension ptr [eax]).stLock
@@ -200,7 +200,7 @@ CsqReleaseLock proc uses ecx edx pCsqInfo : PIO_CSQ, Irql : KIRQL
     .endif
     ret
 CsqReleaseLock endp
- 
+  
 OnTimer proc uses ebx pDpc : PKDPC, pContext : PVOID, pArg1 : PVOID, PArg2 : PVOID
     mov eax, pContext
     mov eax, (DEVICE_OBJECT ptr [eax]).DeviceExtension
@@ -216,11 +216,11 @@ OnTimer proc uses ebx pDpc : PKDPC, pContext : PVOID, pArg1 : PVOID, PArg2 : PVO
         mov eax, (DEVICE_OBJECT ptr [eax]).DeviceExtension
         lea eax, (MyDeviceExtension ptr [eax]).stQueue
         RemoveHeadList eax
-         
+          
         ; CONTAINING_RECORD 
         sub eax, _IRP.Tail.Overlay.ListEntry
         mov bl, (_IRP ptr [eax]).Cancel
- 
+  
         .if bl != TRUE
             mov (_IRP ptr [eax]).IoStatus.Status, STATUS_SUCCESS
             push 0
@@ -240,7 +240,7 @@ OnTimer proc uses ebx pDpc : PKDPC, pContext : PVOID, pArg1 : PVOID, PArg2 : PVO
     .endif
     ret
 OnTimer endp
- 
+  
 IrpOpenClose proc pMyDevice : PDEVICE_OBJECT, pIrp : PIRP
     IoGetCurrentIrpStackLocation pIrp
     movzx eax, (IO_STACK_LOCATION ptr [eax]).MajorFunction
@@ -249,7 +249,7 @@ IrpOpenClose proc pMyDevice : PDEVICE_OBJECT, pIrp : PIRP
     .elseif eax == IRP_MJ_CLOSE
         invoke DbgPrint, $CTA0("IRP_MJ_CLOSE")
     .endif
- 
+  
     mov eax, pIrp
     and (_IRP ptr [eax]).IoStatus.Information, 0
     mov (_IRP ptr [eax]).IoStatus.Status, STATUS_SUCCESS
@@ -257,20 +257,20 @@ IrpOpenClose proc pMyDevice : PDEVICE_OBJECT, pIrp : PIRP
     mov eax, STATUS_SUCCESS
     ret
 IrpOpenClose endp
- 
+  
 IrpIOCTL proc uses ebx pMyDevice : PDEVICE_OBJECT, pIrp : PIRP
-    local pDevExt : ptr Dev_Ext
+    local pDevExt : ptr
     local stTimePeriod : LARGE_INTEGER
- 
+  
     mov eax, pMyDevice
     push (DEVICE_OBJECT ptr [eax]).DeviceExtension
     pop pDevExt
- 
+  
     IoGetCurrentIrpStackLocation pIrp
     mov eax, (IO_STACK_LOCATION ptr [eax]).Parameters.DeviceIoControl.IoControlCode
     .if eax == IOCTL_QUEUE
         invoke DbgPrint, offset MSG_QUEUE
-         
+          
         mov ebx, pDevExt
         lea ebx, (MyDeviceExtension ptr [ebx]).stCsq
         invoke IoCsqInsertIrp, ebx, pIrp, NULL
@@ -283,7 +283,7 @@ IrpIOCTL proc uses ebx pMyDevice : PDEVICE_OBJECT, pIrp : PIRP
         mov ebx, pDevExt
         invoke KeSetTimerEx, addr (MyDeviceExtension ptr [ebx]).stTime, stTimePeriod.LowPart, stTimePeriod.HighPart, 1000, addr (MyDeviceExtension ptr [ebx]).stDPC
     .endif
- 
+  
     mov eax, pIrp
     mov (_IRP ptr [eax]).IoStatus.Status, STATUS_SUCCESS
     and (_IRP ptr [eax]).IoStatus.Information, 0
@@ -291,15 +291,15 @@ IrpIOCTL proc uses ebx pMyDevice : PDEVICE_OBJECT, pIrp : PIRP
     mov eax, STATUS_SUCCESS
     ret
 IrpIOCTL endp
- 
+  
 IrpPnp proc pMyDevice : PDEVICE_OBJECT, pIrp : PIRP
+    local pDevExt : ptr
     local szSymName : UNICODE_STRING
-    local pDevExt : ptr MyDeviceExtension
- 
+  
     mov eax, pMyDevice
     push (DEVICE_OBJECT ptr [eax]).DeviceExtension
     pop pDevExt
-        
+         
     IoGetCurrentIrpStackLocation pIrp
     movzx eax, (IO_STACK_LOCATION ptr [eax]).MinorFunction
     .if eax == IRP_MN_START_DEVICE
@@ -310,7 +310,7 @@ IrpPnp proc pMyDevice : PDEVICE_OBJECT, pIrp : PIRP
         invoke IoDeleteSymbolicLink, addr szSymName         
         mov eax, pIrp
         mov (_IRP ptr [eax]).IoStatus.Status, STATUS_SUCCESS
- 
+  
         mov eax, pDevExt
         invoke IoDetachDevice, (MyDeviceExtension ptr [eax]).pNextDev
         invoke IoDeleteDevice, pMyDevice
@@ -318,17 +318,17 @@ IrpPnp proc pMyDevice : PDEVICE_OBJECT, pIrp : PIRP
         ret
     .endif
     IoSkipCurrentIrpStackLocation pIrp
- 
+  
     mov eax, pDevExt
     invoke IoCallDriver, (MyDeviceExtension ptr [eax]).pNextDev, pIrp
     ret
 IrpPnp endp
- 
+  
 AddDevice proc pMyDriver : PDRIVER_OBJECT, pPhyDevice : PDEVICE_OBJECT
     local pMyDevice : PDEVICE_OBJECT
     local szDevName : UNICODE_STRING
     local szSymName : UNICODE_STRING
- 
+  
     invoke RtlInitUnicodeString, addr szDevName, $CTW0("\\Device\\MyDriver")
     invoke RtlInitUnicodeString, addr szSymName, $CTW0("\\DosDevices\\MyDriver")
     invoke IoCreateDevice, pMyDriver, sizeof MyDeviceExtension, addr szDevName, FILE_DEVICE_UNKNOWN, 0, FALSE, addr pMyDevice
@@ -339,24 +339,24 @@ AddDevice proc pMyDriver : PDRIVER_OBJECT, pPhyDevice : PDEVICE_OBJECT
             mov eax, pMyDevice
             mov eax, (DEVICE_OBJECT ptr [eax]).DeviceExtension
             pop (MyDeviceExtension ptr [eax]).pNextDev
- 
+  
             mov eax, pMyDevice
             or (DEVICE_OBJECT ptr [eax]).Flags, DO_BUFFERED_IO
             and (DEVICE_OBJECT ptr [eax]).Flags, not DO_DEVICE_INITIALIZING
- 
+  
             mov eax, pMyDevice
             mov eax, (DEVICE_OBJECT ptr [eax]).DeviceExtension
             lea eax, (MyDeviceExtension ptr [eax]).stQueue
             InitializeListHead eax
- 
+  
             mov eax, pMyDevice
             mov eax, (DEVICE_OBJECT ptr [eax]).DeviceExtension
             invoke KeInitializeTimer, addr (MyDeviceExtension ptr [eax]).stTime
- 
+  
             mov eax, pMyDevice
             mov eax, (DEVICE_OBJECT ptr [eax]).DeviceExtension
             invoke KeInitializeDpc, addr (MyDeviceExtension ptr [eax]).stDPC, offset OnTimer, pMyDevice
- 
+  
             mov eax, pMyDevice
             mov eax, (DEVICE_OBJECT ptr [eax]).DeviceExtension
             lea eax, (MyDeviceExtension ptr [eax]).stCsq
@@ -366,11 +366,11 @@ AddDevice proc pMyDriver : PDRIVER_OBJECT, pPhyDevice : PDEVICE_OBJECT
     .endif
     ret
 AddDevice endp
- 
+  
 Unload proc pMyDriver : PDRIVER_OBJECT
     ret
 Unload endp
- 
+  
 DriverEntry proc pMyDriver : PDRIVER_OBJECT, pMyRegistry : PUNICODE_STRING
     mov eax, pMyDriver
     mov (DRIVER_OBJECT ptr [eax]).MajorFunction[IRP_MJ_PNP            * (sizeof PVOID)], offset IrpPnp
