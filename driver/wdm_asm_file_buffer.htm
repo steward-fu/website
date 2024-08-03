@@ -112,8 +112,8 @@ AddDevice proc pMyDriver : PDRIVER_OBJECT, pPhyDevice : PDEVICE_OBJECT
     local szDevName : UNICODE_STRING
     local szSymName : UNICODE_STRING
    
-    invoke RtlInitUnicodeString, addr szDevName, offset $CTW0("\\Device\\MyDriver")
-    invoke RtlInitUnicodeString, addr szSymName, offset $CTW0("\\DosDevices\\MyDriver")
+    invoke RtlInitUnicodeString, addr szDevName, $CTW0("\\Device\\MyDriver")
+    invoke RtlInitUnicodeString, addr szSymName, $CTW0("\\DosDevices\\MyDriver")
     invoke IoCreateDevice, pMyDriver, sizeof MyDeviceExtension, addr szDevName, FILE_DEVICE_UNKNOWN, 0, FALSE, addr pMyDevice
     .if eax == STATUS_SUCCESS
         invoke IoAttachDeviceToDeviceStack, pMyDevice, pPhyDevice
@@ -151,7 +151,7 @@ IrpPnp proc pMyDevice : PDEVICE_OBJECT, pIrp : PIRP
         mov eax, pIrp
         mov (_IRP ptr [eax]).IoStatus.Status, STATUS_SUCCESS
     .elseif eax == IRP_MN_REMOVE_DEVICE
-        invoke RtlInitUnicodeString, addr szSymName, offset $CTW0("\\DosDevices\\MyDriver")
+        invoke RtlInitUnicodeString, addr szSymName, $CTW0("\\DosDevices\\MyDriver")
         invoke IoDeleteSymbolicLink, addr szSymName     
         mov eax, pIrp
         mov (_IRP ptr [eax]).IoStatus.Status, STATUS_SUCCESS
@@ -159,6 +159,8 @@ IrpPnp proc pMyDevice : PDEVICE_OBJECT, pIrp : PIRP
         mov eax, pDevExt
         invoke IoDetachDevice, (MyDeviceExtension ptr [eax]).pNextDevice
         invoke IoDeleteDevice, pMyDevice
+        fastcall IofCompleteRequest, pIrp, IO_NO_INCREMENT
+        ret
     .endif
     IoSkipCurrentIrpStackLocation pIrp
      
