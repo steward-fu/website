@@ -1,8 +1,8 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head><script type="text/javascript" src="../page_head.js"></script>
 
-<h3><a href="../driver.htm">驅動程式</a> - Windows Driver Model (WDM) - 使用範例 - Assembly (MASM32) - <b>Use I/O Timer</b></h3>
+<h3><a href="../driver.htm">驅動程式</a> - Windows Driver Model (WDM) - 使用範例 - Assembly (MASM32) - <b>Handle StartIo IRP</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
@@ -10,10 +10,9 @@ https://wasm.in/<br>
 http://four-f.narod.ru/<br>
 https://github.com/steward-fu/ddk<br><br>
 
-I/O Timer是Windows內核提供的一個Timer，呼叫的間隔固定為每秒一次，使用步驟如下：<br>
-1. IoInitializeTimer()<br>
-2. IoStartTimer()<br>
-3. IoStopTimer()<br><br>
+StartIo提供一個序列化的機制，讓使用者可以依照順序處理IRP，這個機制對於某些只能序列處理資料的硬體相當有幫助，省去用軟體實現序列化的程式碼，StartIo使用步驟如下：<br>
+1. IoMarkIrpPending()<br>
+2. IoStartNextPacket()<br><br>
 
 main.asm
 </p>
@@ -33,73 +32,83 @@ includelib c:\masm32\lib\wxp\i386\ntoskrnl.lib
 public DriverEntry
  
 MyDeviceExtension struct
-    dwTimerCnt DWORD ?
     pNextDev PDEVICE_OBJECT ?
+    szBuffer byte 255 dup(?)
 MyDeviceExtension ends
- 
-IOCTL_START equ CTL_CODE(FILE_DEVICE_UNKNOWN, 800h, METHOD_BUFFERED, FILE_ANY_ACCESS)
-IOCTL_STOP  equ CTL_CODE(FILE_DEVICE_UNKNOWN, 801h, METHOD_BUFFERED, FILE_ANY_ACCESS)
- 
-.const
-MSG_START   byte "IOCTL_START",0
-MSG_STOP    byte "IOCTL_STOP",0
- 
-.code
-OnTimer proc pMyDevice : PDEVICE_OBJECT, pContext : PVOID
-    mov eax, pMyDevice
-    mov eax, (DEVICE_OBJECT ptr [eax]).DeviceExtension
-    inc (MyDeviceExtension ptr[eax]).dwTimerCnt
-    invoke DbgPrint, $CTA0("IoTimer: %d\n"), (MyDeviceExtension ptr[eax]).dwTimerCnt
-    ret
-OnTimer endp
- 
-IrpOpenClose proc pMyDevice : PDEVICE_OBJECT, pIrp : PIRP
-    IoGetCurrentIrpStackLocation pIrp
-    movzx eax, (IO_STACK_LOCATION ptr [eax]).MajorFunction
 
-    .if eax == IRP_MJ_CREATE
-        invoke DbgPrint, $CTA0("IRP_MJ_CREATE")
-    .elseif eax == IRP_MJ_CLOSE
-        invoke DbgPrint, $CTA0("IRP_MJ_CLOSE")
-    .endif
- 
-    mov eax, pIrp
-    and (_IRP ptr [eax]).IoStatus.Information, 0
-    mov (_IRP ptr [eax]).IoStatus.Status, STATUS_SUCCESS
-    fastcall IofCompleteRequest, pIrp, IO_NO_INCREMENT
-    mov eax, STATUS_SUCCESS
-    ret
-IrpOpenClose endp
- 
-IrpIOCTL proc pMyDevice : PDEVICE_OBJECT, pIrp : PIRP
+.code
+StartIo proc pMyDevice : PDEVICE_OBJECT, pIrp : PIRP
     local pBuf : DWORD
-    local hThread : DWORD
-    local pThread : PVOID
+    local dwLen : DWORD
     local pDevExt : ptr MyDeviceExtension
- 
+
     mov eax, pMyDevice
     push (DEVICE_OBJECT ptr [eax]).DeviceExtension
     pop pDevExt
- 
+     
+    mov eax, pIrp
+    push (_IRP ptr [eax]).AssociatedIrp.SystemBuffer
+    pop pBuf
+     
     IoGetCurrentIrpStackLocation pIrp
-    mov eax, (IO_STACK_LOCATION ptr [eax]).Parameters.DeviceIoControl.IoControlCode
-    .if eax == IOCTL_START
-        invoke DbgPrint, offset MSG_START
+    movzx eax, (IO_STACK_LOCATION ptr [eax]).MajorFunction
+    .if eax == IRP_MJ_WRITE
+        invoke DbgPrint, $CTA0("StartIo, IRP_MJ_WRITE")
+        IoGetCurrentIrpStackLocation pIrp
+        Push (IO_STACK_LOCATION ptr [eax]).Parameters.Write._Length
+        pop dwLen
+         
         mov eax, pDevExt
-        mov (MyDeviceExtension ptr[eax]).dwTimerCnt, 0
-        invoke IoStartTimer, pMyDevice
-    .elseif eax == IOCTL_STOP
-        invoke DbgPrint, offset MSG_STOP
-        invoke IoStopTimer, pMyDevice
+        invoke memcpy, addr (MyDeviceExtension ptr [eax]).szBuffer, pBuf, dwLen
+        invoke DbgPrint, $CTA0("Buffer: %s, Length: %d"), pBuf, dwLen
+    .elseif eax == IRP_MJ_READ
+        invoke DbgPrint, $CTA0("StartIo, IRP_MJ_READ")
+        mov eax, pDevExt
+        invoke strlen, addr (MyDeviceExtension ptr [eax]).szBuffer
+        mov dwLen, eax
+
+        mov eax, pDevExt
+        invoke memcpy, pBuf, addr (MyDeviceExtension ptr [eax]).szBuffer, dwLen
     .endif
- 
+     
     mov eax, pIrp
     mov (_IRP ptr [eax]).IoStatus.Status, STATUS_SUCCESS
-    and (_IRP ptr [eax]).IoStatus.Information,0 
+    push dwLen
+    pop (_IRP ptr [eax]).IoStatus.Information
     fastcall IofCompleteRequest, pIrp, IO_NO_INCREMENT
+    invoke IoStartNextPacket, pMyDevice, FALSE
     mov eax, STATUS_SUCCESS
     ret
-IrpIOCTL endp
+StartIo endp
+ 
+IrpFile proc pMyDevice : PDEVICE_OBJECT, pIrp : PIRP
+    IoGetCurrentIrpStackLocation pIrp
+    movzx eax, (IO_STACK_LOCATION ptr [eax]).MajorFunction
+
+    .if (eax == IRP_MJ_CREATE) || (eax == IRP_MJ_CLOSE) 
+        .if (eax == IRP_MJ_CREATE)
+            invoke DbgPrint, $CTA0("IRP_MJ_CREATE")
+        .else
+            invoke DbgPrint, $CTA0("IRP_MJ_CLOSE")
+        .endif
+        mov eax, pIrp
+        and (_IRP ptr [eax]).IoStatus.Information, 0
+        mov (_IRP ptr [eax]).IoStatus.Status, STATUS_SUCCESS
+        fastcall IofCompleteRequest, pIrp, IO_NO_INCREMENT
+        mov eax, STATUS_SUCCESS
+    .elseif (eax == IRP_MJ_READ) || (eax == IRP_MJ_WRITE)
+        .if (eax == IRP_MJ_READ)
+            invoke DbgPrint, $CTA0("IrpFile, IRP_MJ_READ")
+        .else
+            invoke DbgPrint, $CTA0("IrpFile, IRP_MJ_WRITE")
+        .endif
+        IoGetCurrentIrpStackLocation pIrp
+        IoMarkIrpPending pIrp
+        invoke IoStartPacket, pMyDevice, pIrp, 0, NULL
+        mov eax, STATUS_PENDING
+    .endif
+    ret
+IrpFile endp
  
 IrpPnp proc pMyDevice : PDEVICE_OBJECT, pIrp : PIRP
     local szSymName : UNICODE_STRING
@@ -152,9 +161,6 @@ AddDevice proc pMyDriver : PDRIVER_OBJECT, pPhyDevice : PDEVICE_OBJECT
             mov eax, pMyDevice
             or (DEVICE_OBJECT ptr [eax]).Flags, DO_BUFFERED_IO
             and (DEVICE_OBJECT ptr [eax]).Flags, not DO_DEVICE_INITIALIZING
-            mov eax, STATUS_SUCCESS
-             
-            invoke IoInitializeTimer, pMyDevice, offset OnTimer, NULL
             invoke IoCreateSymbolicLink, addr szSymName, addr szDevName
         .endif
     .endif
@@ -167,10 +173,12 @@ Unload endp
  
 DriverEntry proc pMyDriver : PDRIVER_OBJECT, pMyRegistry : PUNICODE_STRING
     mov eax, pMyDriver
-    mov (DRIVER_OBJECT ptr [eax]).MajorFunction[IRP_MJ_PNP            * (sizeof PVOID)], offset IrpPnp
-    mov (DRIVER_OBJECT ptr [eax]).MajorFunction[IRP_MJ_CREATE         * (sizeof PVOID)], offset IrpOpenClose
-    mov (DRIVER_OBJECT ptr [eax]).MajorFunction[IRP_MJ_CLOSE          * (sizeof PVOID)], offset IrpOpenClose
-    mov (DRIVER_OBJECT ptr [eax]).MajorFunction[IRP_MJ_DEVICE_CONTROL * (sizeof PVOID)], offset IrpIOCTL
+    mov (DRIVER_OBJECT ptr [eax]).MajorFunction[IRP_MJ_PNP    * (sizeof PVOID)], offset IrpPnp
+    mov (DRIVER_OBJECT ptr [eax]).MajorFunction[IRP_MJ_CREATE * (sizeof PVOID)], offset IrpFile
+    mov (DRIVER_OBJECT ptr [eax]).MajorFunction[IRP_MJ_CLOSE  * (sizeof PVOID)], offset IrpFile
+    mov (DRIVER_OBJECT ptr [eax]).MajorFunction[IRP_MJ_WRITE  * (sizeof PVOID)], offset IrpFile
+    mov (DRIVER_OBJECT ptr [eax]).MajorFunction[IRP_MJ_READ   * (sizeof PVOID)], offset IrpFile
+    mov (DRIVER_OBJECT ptr [eax]).DriverStartIo, offset StartIo
     mov (DRIVER_OBJECT ptr [eax]).DriverUnload, offset Unload
     mov eax, (DRIVER_OBJECT ptr [eax]).DriverExtension
     mov (DRIVER_EXTENSION ptr [eax]).AddDevice, AddDevice
@@ -181,52 +189,65 @@ end
 </pre><br>
 
 <p>
-app.asm
+app.asm</b>
 </p>
 <pre class="brush:asm">
 .386p
 .model flat, stdcall
 option casemap:none
-    
+ 
 include c:\masm32\include\windows.inc
 include c:\masm32\include\masm32.inc
 include c:\masm32\include\user32.inc
 include c:\masm32\include\msvcrt.inc
-include c:\masm32\include\kernel32.inc
-include c:\masm32\include\w2k\ntddkbd.inc
 include c:\masm32\Macros\Strings.mac
-     
+include c:\masm32\include\kernel32.inc
+ 
 includelib c:\masm32\lib\user32.lib
 includelib c:\masm32\lib\masm32.lib
 includelib c:\masm32\lib\msvcrt.lib
 includelib c:\masm32\lib\kernel32.lib
-    
-IOCTL_START equ CTL_CODE(FILE_DEVICE_UNKNOWN, 800h, METHOD_BUFFERED, FILE_ANY_ACCESS)
-IOCTL_STOP  equ CTL_CODE(FILE_DEVICE_UNKNOWN, 801h, METHOD_BUFFERED, FILE_ANY_ACCESS)
-
+ 
+.const
+MSG_INFO    db "I am error",0
+MSG_WRITE   db "WR: %s",10,13,0
+MSG_READ    db "RD: %s",10,13,0
+MSG_LEN     db "Length: %d",10,13,0
+ 
 .data?
-hFile dd ?
-dwRet dd ?
-    
+hFile       dd ?
+dwRet       dd ?
+szBuffer    db 256 dup(?)
+ 
 .code
 start:
     invoke CreateFile, $CTA0("\\\\.\\MyDriver"), GENERIC_READ or GENERIC_WRITE, FILE_SHARE_READ, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0
     mov hFile, eax
-        
-    invoke DeviceIoControl, hFile, IOCTL_START, NULL, 0, NULL, 0, offset dwRet, NULL
-    invoke Sleep, 3000
-    invoke DeviceIoControl, hFile, IOCTL_STOP, NULL, 0, NULL, 0, offset dwRet, NULL
- 
+
+    invoke wsprintf, offset szBuffer, offset MSG_INFO
+    invoke StrLen, offset szBuffer
+    mov dwRet, eax
+
+    invoke crt_printf, offset MSG_WRITE, offset szBuffer
+    invoke crt_printf, offset MSG_LEN, dwRet
+    invoke WriteFile, hFile, offset szBuffer, dwRet, offset dwRet, 0
+
+    invoke crt_memset, offset szBuffer, 0, 255
+    invoke ReadFile, hFile, offset szBuffer, 255, offset dwRet, 0
+    invoke crt_printf, offset MSG_READ, offset szBuffer
+    invoke crt_printf, offset MSG_LEN, dwRet
+
     invoke CloseHandle, hFile
     invoke ExitProcess, 0
+ 
 end start
 end
 </pre><br>
 
 <p>
 完成<br>
-<img src="wdm_asm_timer_io/1.jpg" class="maxSize"><br>
-<img src="wdm_asm_timer_io/2.jpg" class="maxSize">
+<img src="wdm_asm_startio/1.jpg" class="maxSize"><br>
+<img src="wdm_asm_startio/2.jpg" class="maxSize">
 </p>
 
 <br><script type="text/javascript" src="../tail.js"></script>
