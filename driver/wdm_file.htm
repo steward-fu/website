@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head><script type="text/javascript" src="../page_head.js"></script>
 
-<h3><a href="../driver.htm">驅動程式</a> - Windows Driver Model (WDM) - 教學說明 - <b>4. User Application透過檔案系統跟驅動程式溝通</b></h3>
+<h3><a href="../driver.htm">驅動程式</a> - Windows Driver Model (WDM) - 教學說明 - <b>4. User Application透過File跟驅動程式溝通</b></h3>
 <hr size="1"><br>
 <p>
 基本上，驅動程式(韌體)的功能就是做為User Application(軟體)和硬體的溝通橋樑，User Application可以透過很多種方式和驅動程式溝通，而最常用的溝通方式就是把驅動程式當做一個檔案來操作，User Application可以透過檔案讀寫的方式和驅動程式做資料交換，最後，驅動程式再把資料讀寫到硬體裝置上，而在Windows系統上，可以使用的Win32 API有CreateFile(檔案開啟)、ReadFile(讀取檔案)、WriteFile(寫入檔案)、CloseHandle(關閉檔案)等檔案操作的API，必須記得open()並不能用來開啟驅動程式，那User Application和驅動程式的串接過程是如何發生的呢？首先，驅動程式必須在DriverEntry()設定IRP_MJ_CREATE(<b>CreateFile</b>)、IRP_MJ_READ(<b>ReadFile</b>)、IRP_MJ_WRITE(<b>WriteFile</b>)、IRP_MJ_CLOSE(<b>CloseHandle</b>)的Callback副程式，接著驅動程式必須設定裝置要使用的名稱，可以是GUID或者Symbolic Link格式，最後，當User Application透過檔案系統開啟這個GUID或者Symbolic Link名稱時，I/O Manager就會幫忙串接到對應的驅動程式，此後，User Application就可以透過開啟的檔案Handle開始和驅動程式做資料交換<br><br>
