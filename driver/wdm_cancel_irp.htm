@@ -1,0 +1,31 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../driver.htm">驅動程式</a> - Windows Driver Model (WDM) - 教學說明 - <b>9. Cancel Irp的操作步驟</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://learn.microsoft.com/zh-tw/windows-hardware/drivers/kernel/cancel-safe-irp-queues<br><br>
+
+Cancel IRP本身就是一個很複雜的課題，因為有太多細節需要考慮，雖然複雜，不過簡單的邏輯判斷還是可以適用大多數的情境，那該如何簡單判斷呢？在處理該IRP時，如果該IRP沒有被Cancel，則處理並且完成該IRP，相反地，如果該IRP已經被Cancel，則Cancel Irp，是不是感覺司徒有說等於沒說，其實這是建議開發者不要自己實作複雜的Cancel IRP機制，因為Microsoft已經有提供一個很棒的框架給開發者使用，如果開發者還是想自己實作Cancel IRP時，簡單的做法如下：<br>
+1. CancelRoutine(NULL)<br>
+2. IoCompleteRequest(STATUS_CANCELLED)<br><br>
+
+Cancel-Safe IRP Queues(CSQ)是Microsoft提供的一個Cancel框架，這個框架概念就是讓使用者只專注在Cancel的資料處理上，而不是Cancel的同步處理上，畢竟每個人做出來的Cancel同步機制可能不同，但是原理應該是大同小異，因此，Microsoft提供了一個專門框架給驅動程式使用，Microsoft建議開發者使用這個框架來處理Cancel IRP，CSQ的處理流程如下：<br>
+<img src="wdm_cancel_irp/1.jpg" class="maxSize"><br><br>
+
+IoCsqRemoveNextIrp的控制流程<br>
+<img src="wdm_cancel_irp/2.jpg" class="maxSize"><br><br>
+
+IoCsqRemoveIrp的控制流程<br>
+<img src="wdm_cancel_irp/3.jpg" class="maxSize"><br><br>
+
+IoCsqInsertIrp的控制流程<br>
+<img src="wdm_cancel_irp/4.jpg" class="maxSize"><br><br>
+
+IoCsqInsertIrpEx的控制流程<br>
+<img src="wdm_cancel_irp/5.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
