@@ -1,0 +1,44 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../driver.htm">驅動程式</a> - Windows Driver Model (WDM) - 教學說明 - <b>5. IOCTL Buffer的使用策略</b></h3>
+<hr size="1"><br>
+<p>
+User Application和驅動程式必須定義一致的IOCTL，雙方才可以正確識別，IOCTL可以透過CTL_CODE()做定義，如下範例：
+</p>
+<pre class="brush:cpp">
+#define IOCTL_TEST CTL_CODE(FILE_DEVICE_UNKNOWN, 0x800, METHOD_BUFFERED, FILE_ANY_ACCESS)
+
+int __cdecl main(int argc, char **argv)
+{
+    ...
+    DeviceIoControl(hFile, IOCTL_TEST, NULL, 0, NULL, 0, &amp;dwRet, NULL);  
+    ...
+}
+</pre><br>
+
+<p>
+第三個參數用來描述Buffer的處理方式，分為Buffered、Direct和Neither三種處理方式，針對每種處理方式，司徒整理如下表格：
+</p>
+<table>
+<tr><th>使用方式</th><th>行為描述</th></tr>
+<tr><td>METHOD_BUFFERED</td><td>I/O Manager會新增一塊跟User Buffer一樣大小的記憶體，讀寫都需要由I/O Manager負責同步更新(進行複製的動作)</td></tr>
+<tr><td>METHOD_IN_DIRECT、METHOD_OUT_DIRECT</td><td>I/O Manager會Mapping User Buffer到一個MDL(Memory Description List)，驅動程式使用這個MDL進行操作，相較於METHOD_BUFFERED，因為資料不須由I/O Manager做複製的動作，因此，效率會比較好</td></tr>
+<tr><td>METHOD_NEITHER</td><td>I/O Manager會將Use Buffer Pointer，透過特殊操作後，再傳遞給驅動程式使用，因為，驅動程式可以直接存取User Buffer的資料，因此，效率是這三種方式裡面最好的一個</td></tr>
+</table><br>
+
+<p>
+驅動程式必須依據Buffer的設定去存取不同欄位的Pointer，這樣才可以正確存取到User Buffer
+</p>
+<table>
+<tr><th>使用方式</th><th>Buffer Type</th><th>Buffer Pointer</th><th>Buffer Length</th></tr>
+<tr><td rowspan="2">METHOD_BUFFERED</td><td>Input</td><td>(IRP)<br>AssociatedIrp.SystemBuffer</td><td>(IrpStack)<br>Parameters.DeviceIoControl.InputBufferLength</td></tr>
+<tr><td>Output</td><td>(IRP)<br>AssociatedIrp.SystemBuffer</td><td>(IrpStack)<br>Parameters.DeviceIoControl.OutputBufferLength</td></tr>
+<tr><td>METHOD_IN_DIRECT</td><td>Input</td><td>(MDL)<br>AssociatedIrp.SystemBuffer</td><td>(IrpStack)<br>Parameters.DeviceIoControl.InputBufferLength</td></tr>
+<tr><td>METHOD_OUT_DIRECT</td><td>Output</td><td>(MDL)<br>MmGetSystemAddressForMdlSafe</td><td>(IrpStack)<br>Parameters.DeviceIoControl.OutputBufferLength</td></tr>
+<tr><td rowspan="2">METHOD_NEITHER</td><td>Input</td><td>(IrpStack)<br>Parameters.DeviceIoControl.Type3InputBuffer</td><td>(IrpStack)<br>Parameters.DeviceIoControl.InputBufferLength</td></tr>
+<tr><td>Output</td><td>(IRP)<br>UserBuffer</td><td>(IrpStack)<br>Parameters.DeviceIoControl.OutputBufferLength</td></tr>
+</table>
+
+<br><script type="text/javascript" src="../tail.js"></script>

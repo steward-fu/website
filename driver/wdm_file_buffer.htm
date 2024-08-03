@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head><script type="text/javascript" src="../page_head.js"></script>
 
-<h3><a href="../driver.htm">驅動程式</a> - Windows Driver Model (WDM) - 教學說明 - <b>5. I/O Manager的File Buffer使用策略</b></h3>
+<h3><a href="../driver.htm">驅動程式</a> - Windows Driver Model (WDM) - 教學說明 - <b>5. File Buffer的使用策略</b></h3>
 <hr size="1"><br>
 <p>
 在AddDevice()中，當Create Device後，必須初始化相關旗標，其中有一個設定是關於I/O Manager的Buffer使用方式
@@ -37,15 +37,15 @@ szBuffer是User Buffer Pointer<br><br>
 <table>
 <tr><th>使用方式</th><th>行為描述</th></tr>
 <tr><td>DO_BUFFERED_IO</td><td>I/O Manager會新增一塊跟User Buffer一樣大小的記憶體，讀寫都需要由I/O Manager負責同步更新(進行複製的動作)</td></tr>
-<tr><td>DO_DIRECT_IO</td><td>I/O Manager會Mapping User Buffer到一個MDL(Memory Description List)，驅動程式使用這個MDL進行操作，相較於DO_BUFFERED_IO，因為資料不須由I/O Manager再去做複製的動作，因此，效率會比較好</td></tr>
-<tr><td>DO_NEITHER_IO</td><td>Microsoft沒有定義DO_NEITHER_IO這個旗標，而Neither I/O的意思是Neither Buffered Nor Direct I/O，因此，當沒有設定DO_BUFFERED_IO或DO_DIRECT_IO時，就會使用Neither的方式，使用這種方式時，I/O Manager會將Use Buffer Pointer，透過特殊操作後，再傳遞給驅動程式使用，因此，驅動程式可以直接存取User Buffer的資料</td></tr>
+<tr><td>DO_DIRECT_IO</td><td>I/O Manager會Mapping User Buffer到一個MDL(Memory Description List)，驅動程式使用這個MDL進行操作，相較於DO_BUFFERED_IO，因為資料不須由I/O Manager做複製的動作，因此，效率會比較好</td></tr>
+<tr><td>DO_NEITHER_IO</td><td>Microsoft沒有定義DO_NEITHER_IO這個旗標，而Neither I/O的意思是Neither Buffered Nor Direct I/O，因此，當沒有設定DO_BUFFERED_IO或DO_DIRECT_IO時，就會使用Neither的方式，使用這種方式時，I/O Manager會將Use Buffer Pointer，透過特殊操作後，再傳遞給驅動程式使用，因為，驅動程式可以直接存取User Buffer的資料，因此，效率是這三種方式裡面最好的一個</td></tr>
 </table><br>
 
 <p>
 驅動程式必須依據Buffer的設定去存取不同欄位的Pointer，這樣才可以正確存取到User Buffer
 </p>
 <table>
-<tr><th>使用方式</th><th>IRP</th><th>User Buffer Pointer</th><th>User Buffer Length</th></tr>
+<tr><th>使用方式</th><th>IRP</th><th>Buffer Pointer</th><th>Buffer Length</th></tr>
 <tr><td rowspan="2">DO_BUFFERED_IO</td><td>IRP_MJ_READ</td><td>(IRP)<br>AssociatedIrp.SystemBuffer</td><td>(IrpStack)<br>Parameters.Read.Length</td></tr>
 <tr><td>IRP_MJ_WRITE</td><td>(IRP)<br>AssociatedIrp.SystemBuffer</td><td>(IrpStack)<br>Parameters.Write.Length</td></tr>
 <tr><td rowspan="2">DO_DIRECT_IO(PIO)</td><td>IRP_MJ_READ</td><td>(MDL)<br>MmGetSystemAddressForMdlSafe</td><td>(MDL)<br>MmGetMdlByteCount</td></tr>
@@ -58,13 +58,13 @@ szBuffer是User Buffer Pointer<br><br>
 
 <p>
 DO_BUFFERED_IO的流程(IRP_MJ_READ)<br>
-<img src="wdm_buffer/1.jpg" class="maxSize"><br><br>
+<img src="wdm_file_buffer/1.jpg" class="maxSize"><br><br>
 
 DO_DIRECT_IO(PIO)的流程(IRP_MJ_READ)<br>
-<img src="wdm_buffer/2.jpg" class="maxSize"><br><br>
+<img src="wdm_file_buffer/2.jpg" class="maxSize"><br><br>
 
 DO_DIRECT_IO(DMA)的流程(IRP_MJ_READ)<br>
-<img src="wdm_buffer/3.jpg" class="maxSize">
+<img src="wdm_file_buffer/3.jpg" class="maxSize">
 </p>
 
 <br><script type="text/javascript" src="../tail.js"></script>
