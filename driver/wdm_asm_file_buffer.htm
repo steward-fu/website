@@ -16,37 +16,33 @@ main.asm
 .386p
 .model flat, stdcall
 option casemap:none
-   
+    
 include c:\masm32\include\w2k\ntstatus.inc
 include c:\masm32\include\w2k\ntddk.inc
 include c:\masm32\include\w2k\ntoskrnl.inc
 include c:\masm32\include\w2k\ntddkbd.inc
 include c:\masm32\Macros\Strings.mac
- 
+  
 includelib c:\masm32\lib\wxp\i386\ntoskrnl.lib
-   
+    
 public DriverEntry
-   
+    
 MyDeviceExtension struct
     pNextDevice PDEVICE_OBJECT ?
     szBuffer byte 255 dup(?)
 MyDeviceExtension ends
-  
-.const
-DEV_NAME word "\","D","e","v","i","c","e","\","M","y","D","r","i","v","e","r",0
-SYM_NAME word "\","D","o","s","D","e","v","i","c","e","s","\","M","y","D","r","i","v","e","r",0
-    
+ 
 .code
 IrpOpenClose proc pMyDevice : PDEVICE_OBJECT, pIrp : PIRP
     IoGetCurrentIrpStackLocation pIrp
     movzx eax, (IO_STACK_LOCATION ptr [eax]).MajorFunction
-     
+      
     .if eax == IRP_MJ_CREATE
         invoke DbgPrint, $CTA0("IRP_MJ_CREATE")
     .elseif eax == IRP_MJ_CLOSE
         invoke DbgPrint, $CTA0("IRP_MJ_CLOSE")
     .endif
-  
+   
     mov eax, pIrp
     and (_IRP ptr [eax]).IoStatus.Information, 0
     mov (_IRP ptr [eax]).IoStatus.Status, STATUS_SUCCESS
@@ -54,54 +50,54 @@ IrpOpenClose proc pMyDevice : PDEVICE_OBJECT, pIrp : PIRP
     mov eax, STATUS_SUCCESS
     ret
 IrpOpenClose endp
-   
+    
 IrpReadWrite proc uses ebx pMyDevice : PDEVICE_OBJECT, pIrp : PIRP
     local pBuf : dword
     local dwLen : dword
     local pDevExt : ptr MyDeviceExtension
-
+ 
     and dwLen, 0
     mov eax, pMyDevice
     push (DEVICE_OBJECT ptr [eax]).DeviceExtension
     pop pDevExt
-    
+     
     IoGetCurrentIrpStackLocation pIrp
     movzx eax, (IO_STACK_LOCATION ptr [eax]).MajorFunction
     .if eax == IRP_MJ_WRITE
         invoke DbgPrint, $CTA0("IRP_MJ_WRITE")
-      
+       
         IoGetCurrentIrpStackLocation pIrp
         push (IO_STACK_LOCATION ptr [eax]).Parameters.Write._Length
         pop dwLen
-    
+     
         mov eax, pIrp
         push (_IRP ptr [eax]).AssociatedIrp.SystemBuffer
         pop pBuf
         invoke DbgPrint, $CTA0("Buffer: %s, Length: %d"), pBuf, dwLen
-      
+       
         mov eax, pDevExt
         mov ebx, pBuf
         invoke memcpy, addr (MyDeviceExtension ptr [eax]).szBuffer, ebx, dwLen
     .elseif eax == IRP_MJ_READ
         invoke DbgPrint, $CTA0("IRP_MJ_READ")
-      
+       
         mov eax, pIrp
         push (_IRP ptr [eax]).AssociatedIrp.SystemBuffer
         pop pBuf
-      
+       
         mov eax, pMyDevice
         push (DEVICE_OBJECT ptr [eax]).DeviceExtension
         pop pDevExt
-    
+     
         mov eax, pDevExt
         mov ebx, pBuf
         invoke strcpy, ebx, addr (MyDeviceExtension ptr [eax]).szBuffer
-      
+       
         mov eax, pDevExt
         invoke strlen, addr (MyDeviceExtension ptr [eax]).szBuffer
         mov dwLen, eax
     .endif
-    
+     
     mov eax, pIrp
     push dwLen
     pop (_IRP ptr [eax]).IoStatus.Information
@@ -110,14 +106,14 @@ IrpReadWrite proc uses ebx pMyDevice : PDEVICE_OBJECT, pIrp : PIRP
     mov eax, STATUS_SUCCESS
     ret
 IrpReadWrite endp
-   
+    
 AddDevice proc pMyDriver : PDRIVER_OBJECT, pPhyDevice : PDEVICE_OBJECT
     local pMyDevice : PDEVICE_OBJECT
     local szDevName : UNICODE_STRING
     local szSymName : UNICODE_STRING
-  
-    invoke RtlInitUnicodeString, addr szDevName, offset DEV_NAME
-    invoke RtlInitUnicodeString, addr szSymName, offset SYM_NAME
+   
+    invoke RtlInitUnicodeString, addr szDevName, offset $CTW0("\\Device\\MyDriver")
+    invoke RtlInitUnicodeString, addr szSymName, offset $CTW0("\\DosDevices\\MyDriver")
     invoke IoCreateDevice, pMyDriver, sizeof MyDeviceExtension, addr szDevName, FILE_DEVICE_UNKNOWN, 0, FALSE, addr pMyDevice
     .if eax == STATUS_SUCCESS
         invoke IoAttachDeviceToDeviceStack, pMyDevice, pPhyDevice
@@ -126,7 +122,7 @@ AddDevice proc pMyDriver : PDRIVER_OBJECT, pPhyDevice : PDEVICE_OBJECT
             mov eax, pMyDevice
             mov eax, (DEVICE_OBJECT ptr [eax]).DeviceExtension
             pop (MyDeviceExtension ptr [eax]).pNextDevice
-        
+         
             mov eax, pMyDevice
             or (DEVICE_OBJECT ptr [eax]).Flags, DO_BUFFERED_IO
             and (DEVICE_OBJECT ptr [eax]).Flags, not DO_DEVICE_INITIALIZING
@@ -135,42 +131,42 @@ AddDevice proc pMyDriver : PDRIVER_OBJECT, pPhyDevice : PDEVICE_OBJECT
     .endif
     ret
 AddDevice endp
-    
+     
 Unload proc pMyDriver : PDRIVER_OBJECT
     ret
 Unload endp
-    
+     
 IrpPnp proc pMyDevice : PDEVICE_OBJECT, pIrp : PIRP
     local pDevExt : ptr MyDeviceExtension
     local szSymName : UNICODE_STRING
-    
+     
     mov eax, pMyDevice
     push (DEVICE_OBJECT ptr [eax]).DeviceExtension
     pop pDevExt
-    
+     
     IoGetCurrentIrpStackLocation pIrp
     movzx eax, (IO_STACK_LOCATION ptr [eax]).MinorFunction
-     
+      
     .if eax == IRP_MN_START_DEVICE
         mov eax, pIrp
         mov (_IRP ptr [eax]).IoStatus.Status, STATUS_SUCCESS
     .elseif eax == IRP_MN_REMOVE_DEVICE
-        invoke RtlInitUnicodeString, addr szSymName, offset SYM_NAME
+        invoke RtlInitUnicodeString, addr szSymName, offset $CTW0("\\DosDevices\\MyDriver")
         invoke IoDeleteSymbolicLink, addr szSymName     
         mov eax, pIrp
         mov (_IRP ptr [eax]).IoStatus.Status, STATUS_SUCCESS
-    
+     
         mov eax, pDevExt
         invoke IoDetachDevice, (MyDeviceExtension ptr [eax]).pNextDevice
         invoke IoDeleteDevice, pMyDevice
     .endif
     IoSkipCurrentIrpStackLocation pIrp
-    
+     
     mov eax, pDevExt
     invoke IoCallDriver, (MyDeviceExtension ptr [eax]).pNextDevice, pIrp
     ret
 IrpPnp endp
-    
+     
 DriverEntry proc pMyDriver : PDRIVER_OBJECT, pMyRegistry : PUNICODE_STRING
     mov eax, pMyDriver
     mov (DRIVER_OBJECT ptr [eax]).MajorFunction[IRP_MJ_PNP    * (sizeof PVOID)], offset IrpPnp
@@ -184,57 +180,6 @@ DriverEntry proc pMyDriver : PDRIVER_OBJECT, pMyRegistry : PUNICODE_STRING
     mov eax, STATUS_SUCCESS
     ret
 DriverEntry endp
-end
-</pre><br>
-
-<p>
-app.asm
-</p>
-<pre class="brush:asm">
-.386p
-.model flat, stdcall
-option casemap:none
- 
-include c:\masm32\include\windows.inc
-include c:\masm32\include\masm32.inc
-include c:\masm32\include\user32.inc
-include c:\masm32\include\msvcrt.inc
-include c:\masm32\include\kernel32.inc
- 
-includelib c:\masm32\lib\user32.lib
-includelib c:\masm32\lib\masm32.lib
-includelib c:\masm32\lib\msvcrt.lib
-includelib c:\masm32\lib\kernel32.lib
- 
-.const
-DEV_NAME    db "\\.\MyDriver",0
-MSG_SEND    db "I am error",0
-MSG_WR      db "WR: %s, %d",10,13,0
-MSG_RD      db "RD: %s, %d",10,13,0
- 
-.data?
-hFile       dd ?
-dwRet       dd ?
-szBuffer    db 255 dup(?)
- 
-.code
-start:
-    invoke CreateFile, offset DEV_NAME, GENERIC_READ or GENERIC_WRITE, FILE_SHARE_READ, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0
-    mov hFile, eax
- 
-    invoke StrLen, offset MSG_SEND
-    mov dwRet, eax
-
-    invoke crt_printf, offset MSG_WR, offset MSG_SEND, dwRet
-    invoke WriteFile, hFile, offset MSG_SEND, dwRet, offset dwRet, 0
-
-    invoke crt_memset, offset szBuffer, 0, 255
-    invoke ReadFile, hFile, offset szBuffer, 255, offset dwRet, 0
-    invoke crt_printf, offset MSG_RD, offset szBuffer, dwRet
-
-    invoke CloseHandle, hFile
-    invoke ExitProcess, 0
-end start
 end
 </pre><br>
 
