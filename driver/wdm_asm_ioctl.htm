@@ -16,38 +16,38 @@ main.asm
 .386p
 .model flat, stdcall
 option casemap:none
-    
+     
 include c:\masm32\include\w2k\ntstatus.inc
 include c:\masm32\include\w2k\ntddk.inc
 include c:\masm32\include\w2k\ntoskrnl.inc
 include c:\masm32\include\w2k\ntddkbd.inc
 include c:\masm32\include\wxp\wdm.inc
 include c:\masm32\Macros\Strings.mac
-
+ 
 includelib c:\masm32\lib\wxp\i386\ntoskrnl.lib
-     
+      
 public DriverEntry
-    
+     
 MyDeviceExtension struct
     pNextDev PDEVICE_OBJECT ?
 MyDeviceExtension ends
- 
+  
 IOCTL_TEST equ CTL_CODE(FILE_DEVICE_UNKNOWN, 800h, METHOD_BUFFERED, FILE_ANY_ACCESS)
-
+ 
 .const
 MSG_INFO byte "IOCTL_TEST",0
-
+ 
 .code
 IrpOpenClose proc pMyDevice : PDEVICE_OBJECT, pIrp : PIRP
     IoGetCurrentIrpStackLocation pIrp
     movzx eax, (IO_STACK_LOCATION ptr [eax]).MajorFunction
-
+ 
     .if eax == IRP_MJ_CREATE
         invoke DbgPrint, $CTA0("IRP_MJ_CREATE")
     .elseif eax == IRP_MJ_CLOSE
         invoke DbgPrint, $CTA0("IRP_MJ_CLOSE")
     .endif
- 
+  
     mov eax, pIrp
     and (_IRP ptr [eax]).IoStatus.Information, 0
     mov (_IRP ptr [eax]).IoStatus.Status, STATUS_SUCCESS
@@ -55,22 +55,17 @@ IrpOpenClose proc pMyDevice : PDEVICE_OBJECT, pIrp : PIRP
     mov eax, STATUS_SUCCESS
     ret
 IrpOpenClose endp
- 
+  
 IrpIOCTL proc pMyDevice : PDEVICE_OBJECT, pIrp : PIRP
     local dwLen : DWORD
-    local pDevExt : ptr
- 
+
     and dwLen, 0
-    mov eax, pMyDevice
-    push (DEVICE_OBJECT ptr [eax]).DeviceExtension
-    pop pDevExt
- 
     IoGetCurrentIrpStackLocation pIrp
     mov eax, (IO_STACK_LOCATION ptr [eax]).Parameters.DeviceIoControl.IoControlCode
     .if eax == IOCTL_TEST
         invoke DbgPrint, offset MSG_INFO
     .endif
- 
+  
     mov eax, pIrp
     mov (_IRP ptr [eax]).IoStatus.Status, STATUS_SUCCESS
     push dwLen
@@ -79,15 +74,15 @@ IrpIOCTL proc pMyDevice : PDEVICE_OBJECT, pIrp : PIRP
     mov eax, STATUS_SUCCESS
     ret
 IrpIOCTL endp
- 
+  
 IrpPnP proc pMyDevice : PDEVICE_OBJECT, pIrp : PIRP
     local pDevExt : ptr
     local szSymName : UNICODE_STRING
- 
+  
     mov eax, pMyDevice
     push (DEVICE_OBJECT ptr [eax]).DeviceExtension
     pop pDevExt
-        
+         
     IoGetCurrentIrpStackLocation pIrp
     movzx eax, (IO_STACK_LOCATION ptr [eax]).MinorFunction
     .if eax == IRP_MN_START_DEVICE
@@ -98,7 +93,7 @@ IrpPnP proc pMyDevice : PDEVICE_OBJECT, pIrp : PIRP
         invoke IoDeleteSymbolicLink, addr szSymName         
         mov eax, pIrp
         mov (_IRP ptr [eax]).IoStatus.Status, STATUS_SUCCESS
- 
+  
         mov eax, pDevExt
         invoke IoDetachDevice, (MyDeviceExtension ptr [eax]).pNextDev
         invoke IoDeleteDevice, pMyDevice
@@ -106,17 +101,17 @@ IrpPnP proc pMyDevice : PDEVICE_OBJECT, pIrp : PIRP
         ret
     .endif
     IoSkipCurrentIrpStackLocation pIrp
- 
+  
     mov eax, pDevExt
     invoke IoCallDriver, (MyDeviceExtension ptr [eax]).pNextDev, pIrp
     ret
 IrpPnP endp
- 
+  
 AddDevice proc pMyDriver : PDRIVER_OBJECT, pPhyDevice : PDEVICE_OBJECT
     local pMyDevice : PDEVICE_OBJECT
     local szDevName : UNICODE_STRING
     local szSymName : UNICODE_STRING
- 
+  
     invoke RtlInitUnicodeString, addr szDevName, $CTW0("\\Device\\MyDriver")
     invoke RtlInitUnicodeString, addr szSymName, $CTW0("\\DosDevices\\MyDriver")
     invoke IoCreateDevice, pMyDriver, sizeof MyDeviceExtension, addr szDevName, FILE_DEVICE_UNKNOWN, 0, FALSE, addr pMyDevice
@@ -127,7 +122,7 @@ AddDevice proc pMyDriver : PDRIVER_OBJECT, pPhyDevice : PDEVICE_OBJECT
             mov eax, pMyDevice
             mov eax, (DEVICE_OBJECT ptr [eax]).DeviceExtension
             pop (MyDeviceExtension ptr [eax]).pNextDev
- 
+  
             mov eax, pMyDevice
             or (DEVICE_OBJECT ptr [eax]).Flags, DO_BUFFERED_IO
             and (DEVICE_OBJECT ptr [eax]).Flags, not DO_DEVICE_INITIALIZING
@@ -136,11 +131,11 @@ AddDevice proc pMyDriver : PDRIVER_OBJECT, pPhyDevice : PDEVICE_OBJECT
     .endif
     ret
 AddDevice endp
- 
+  
 Unload proc pMyDriver : PDRIVER_OBJECT
     ret
 Unload endp
- 
+  
 DriverEntry proc pMyDriver : PDRIVER_OBJECT, pMyRegistry : PUNICODE_STRING
     mov eax, pMyDriver
     mov (DRIVER_OBJECT ptr [eax]).MajorFunction[IRP_MJ_PNP            * (sizeof PVOID)], offset IrpPnP
