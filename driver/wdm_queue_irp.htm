@@ -1,0 +1,31 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../driver.htm">驅動程式</a> - Windows Driver Model (WDM) - 教學說明 - <b>8. Queue IRP的操作步驟</b></h3>
+<hr size="1"><br>
+<p>
+驅動程式作為User Application跟硬體的溝通橋樑，最常遇到的問題就是硬體處理速度不夠快，導致驅動程式需要等待硬體完成後，再繼續處理下一筆資料，但是驅動程式如果要跟User Application溝通這些同步事情，會產生額外的等待時間，因此，為了達到比較好的處理效能，一般驅動程式做會Queue IRP的動作，讓處理的間隔可以縮到最小，這也是這篇教學要說明的東西<br><br>
+
+首先要考慮的事情就是，IRP應該儲存在哪裡呢？簡單的作法可以使用Windows驅動程式提供的List相關API，操作步驟如下：<br>
+1. InitializeListHead()<br>
+2. InsertHeadList()<br>
+3. IsListEmpty()<br>
+4. RemoveHeadList()<br><br>
+
+IRP是處裡資料的最小單位，一個IRP代表一筆需要處理的資料，因此，當硬體來不及處理資料時，驅動程式需要做Pending IRP的動作，讓User Application知道這筆資料稍後處理，Pending IRP的步驟如下：<br>
+1. IoMarkIrpPending()<br>
+2. IoCompleteRequest(STATUS_PENDING)<br><br>
+
+User Application如何知道資料是否處理完畢或者被Pending了呢？在CreateFile()時，如果沒有用FILE_FLAG_OVERLAPPED，則代表每一筆資料都是必須完成才會回傳，此種寫法也稱為Blocking方式，如：呼叫WriteFile()後，必須等待驅動程式完成該IRP後，WriteFile()才會完成並且繼續往下執行，否則呼叫WriteFile()後，會卡在這個Win32 API，相反地，如果CreateFile()使用FILE_FLAG_OVERLAPPED，而呼叫WriteFile()時，驅動程式回傳Pending，則WriteFile()會馬上回傳ERROR_IO_PENDING，告知User Application，該筆資料驅動程式會稍後處裡，此種寫法也稱為Non-Blocking方式，那如何得知該筆資料處理完畢了呢？當使用Non-Blocking寫法，會在WriteFile()傳入一個OVERLAPPED參數，該參數裡面有一個Event，用來告知是否已經處理完畢<br><br>
+
+Queue IRP流程:<br>
+1. InsertHeadList()<br>
+2. IoMarkIrpPending()<br>
+3. IoCompleteRequest(STATUS_PENDING)<br>
+4. IsListEmpty()<br>
+5. RemoveHeadList()<br>
+6. IoCompleteRequest(STATUS_SUCCESS)
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
