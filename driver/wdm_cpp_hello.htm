@@ -64,23 +64,6 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT pMyDriver, PUNICODE_STRING pMyRegistry)
 <b>L07~16</b>：產生一個Device Object，用來管理新加入的裝置(純軟體虛擬裝置也算)，接著初使化相關旗標<br>
 <b>L25~34</b>：主要處理移除Device Object的動作，其餘Irp不處理，直接往下傳遞<br><br>
 
-sources
-</p>
-<pre>
-TARGETNAME=main
-TARGETTYPE=DRIVER
-TARGETPATH=obj
-SOURCES=main.c
-</pre><br>
-
-<p>
-makefile
-</p>
-<pre>
-!INCLUDE $(NTMAKEENV)\makefile.def
-</pre><br>
-
-<p>
 main.inf
 </p>
 <pre>
@@ -147,8 +130,8 @@ DESCRIPTION="MyDriver"
 編譯
 </p>
 <pre>
-c:\winddk\bin\setenv.bat c:\winddk chk
-build -cefw
+"c:\winddk\bin\x86\cl.exe" -nologo -I"c:\winddk\inc\wxp" -I"c:\winddk\inc\ddk\wxp" -I"c:\winddk\inc\ddk\wdm\wxp" -I"c:\winddk\inc\crt" -D_X86_ /c /Zel /Gz main.c
+"c:\winddk\bin\x86\link.exe" -INCREMENTAL:NO -debug:FULL -debugtype:cv -driver -base:0x10000 -entry:DriverEntry@8 -subsystem:native,5.01 "c:\winddk\lib\wxp\i386\ntoskrnl.lib" -out:main.sys main.obj
 </pre><br>
 
 <p>
