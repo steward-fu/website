@@ -25,12 +25,12 @@ NTSTATUS AddDevice(PDRIVER_OBJECT pMyDriver, PDEVICE_OBJECT pPhyDevice)
 {
     PDEVICE_OBJECT pMyDevice = NULL;
     UNICODE_STRING usDeviceName = { 0 };
-    UNICODE_STRING usSymboName = { 0 };
+    UNICODE_STRING usSymbolName = { 0 };
  
     RtlInitUnicodeString(&amp;usDeviceName, DEV_NAME);
     IoCreateDevice(pMyDriver, 0, &amp;usDeviceName, FILE_DEVICE_UNKNOWN, 0, FALSE, &amp;pMyDevice);
-    RtlInitUnicodeString(&amp;usSymboName, SYM_NAME);
-    IoCreateSymbolicLink(&amp;usSymboName, &amp;usDeviceName);
+    RtlInitUnicodeString(&amp;usSymbolName, SYM_NAME);
+    IoCreateSymbolicLink(&amp;usSymbolName, &amp;usDeviceName);
     pNextDevice = IoAttachDeviceToDeviceStack(pMyDevice, pPhyDevice);
     pMyDevice-&gt;Flags &amp;= ~DO_DEVICE_INITIALIZING;
     pMyDevice-&gt;Flags |= DO_DIRECT_IO;
@@ -43,12 +43,12 @@ void Unload(PDRIVER_OBJECT pMyDriver)
  
 NTSTATUS IrpPnp(PDEVICE_OBJECT pMyDevice, PIRP pIrp)
 {
-    UNICODE_STRING usSymboName = {0};
+    UNICODE_STRING usSymbolName = {0};
     PIO_STACK_LOCATION pStack = IoGetCurrentIrpStackLocation(pIrp);
  
     if (pStack-&gt;MinorFunction == IRP_MN_REMOVE_DEVICE) {
-        RtlInitUnicodeString(&amp;usSymboName, SYM_NAME);
-        IoDeleteSymbolicLink(&amp;usSymboName);
+        RtlInitUnicodeString(&amp;usSymbolName, SYM_NAME);
+        IoDeleteSymbolicLink(&amp;usSymbolName);
         IoDetachDevice(pNextDevice);
         IoDeleteDevice(pMyDevice);
         IoCompleteRequest(pIrp, IO_NO_INCREMENT);
