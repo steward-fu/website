@@ -1,0 +1,73 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../driver.htm">驅動程式</a> - Windows Driver Model (WDM) - 使用範例 - C/C++ (DDK) - <b>Register Notification for Thread Creation</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://wasm.in/<br>
+http://four-f.narod.ru/<br>
+https://github.com/steward-fu/ddk<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;ntddk.h&gt;
+#include &lt;ntstrsafe.h&gt;
+    
+PDEVICE_OBJECT pNextDevice = NULL;
+ 
+void Handler(HANDLE ProcessId, HANDLE ThreadId, BOOLEAN Create)
+{
+    DbgPrint("PID:0x%08x, TID:0x%08x, Creation:%d", ProcessId, ThreadId, Create);
+}
+ 
+NTSTATUS AddDevice(PDRIVER_OBJECT pMyDriver, PDEVICE_OBJECT pPhyDevice)
+{
+    PDEVICE_OBJECT pMyDevice = NULL;
+    UNICODE_STRING usDeviceName = { 0 };
+    
+    RtlInitUnicodeString(&amp;usDeviceName, L"\\Device\\MyDriver");
+    IoCreateDevice(pMyDriver, 0, &amp;usDeviceName, FILE_DEVICE_UNKNOWN, 0, FALSE, &amp;pMyDevice);
+    pNextDevice = IoAttachDeviceToDeviceStack(pMyDevice, pPhyDevice);
+    pMyDevice-&gt;Flags &amp;= ~DO_DEVICE_INITIALIZING;
+    pMyDevice-&gt;Flags |= DO_BUFFERED_IO;
+    return STATUS_SUCCESS;
+}
+    
+void Unload(PDRIVER_OBJECT pMyDriver)
+{
+}
+    
+NTSTATUS IrpDispatch(PDEVICE_OBJECT pMyDevice, PIRP pIrp)
+{
+    PIO_STACK_LOCATION pStack = IoGetCurrentIrpStackLocation(pIrp);
+    
+    if (pStack-&gt;MinorFunction == IRP_MN_REMOVE_DEVICE) {
+        PsRemoveCreateThreadNotifyRoutine(Handler);
+        IoDetachDevice(pNextDevice);
+        IoDeleteDevice(pMyDevice);
+        IoCompleteRequest(pIrp, IO_NO_INCREMENT);
+        return STATUS_SUCCESS;
+    }
+    IoSkipCurrentIrpStackLocation(pIrp);
+    return IoCallDriver(pNextDevice, pIrp);
+}
+    
+NTSTATUS DriverEntry(PDRIVER_OBJECT pMyDriver, PUNICODE_STRING pMyRegistry)
+{
+    PsSetCreateThreadNotifyRoutine(Handler);
+    pMyDriver-&gt;MajorFunction[IRP_MJ_PNP] = IrpDispatch;
+    pMyDriver-&gt;DriverExtension-&gt;AddDevice = AddDevice;
+    pMyDriver-&gt;DriverUnload = Unload;
+    return STATUS_SUCCESS;
+}
+</pre><br>
+
+<p>
+完成<br>
+<img src="wdm_asm_thread_notify/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
