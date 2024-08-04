@@ -14,102 +14,80 @@ main.cpp
 </p>
 <pre class="brush:cpp">
 #define VDW_MAIN
-
+ 
 #define DRIVER_FUNCTION_PNP
 #define DRIVER_FUNCTION_UNLOAD
 #define DRIVER_FUNCTION_ADD_DEVICE
-
+ 
 #include &lt;vdw.h&gt;
-
+ 
 class MyDevice : public KPnpDevice
 {
-	SAFE_DESTRUCTORS
+    SAFE_DESTRUCTORS
 public:
-	MyDevice(PDEVICE_OBJECT PDO);
-    
+    MyDevice(PDEVICE_OBJECT pPhyDevice);
+     
     DEVMEMBER_DISPATCHERS
-	NTSTATUS OnRemoveDevice(KIrp pIrp) const;
+    NTSTATUS OnRemoveDevice(KIrp pIrp) const;
     NTSTATUS DefaultPnp(KIrp pIrp);
-	NTSTATUS DefaultPower(KIrp pIrp);
-    
+    NTSTATUS DefaultPower(KIrp pIrp);
+     
 protected:
-	KPnpLowerDevice m_pDevObj;
+    KPnpLowerDevice m_pMyDevice;
 };
-
+ 
 class MyDriver : public KDriver
 {
-	SAFE_DESTRUCTORS
+    SAFE_DESTRUCTORS
 public:
-	NTSTATUS DriverEntry(PUNICODE_STRING RegistryPath);
-	NTSTATUS AddDevice(PDEVICE_OBJECT PDO);
-	VOID Unload(void);
+    NTSTATUS DriverEntry(PUNICODE_STRING pMyRegistry);
+    NTSTATUS AddDevice(PDEVICE_OBJECT pPhyDevice);
+    VOID Unload(void);
 };
-
-MyDevice::MyDevice(PDEVICE_OBJECT PDO) : KPnpDevice(PDO, L"MyDriver", FILE_DEVICE_UNKNOWN)
+ 
+MyDevice::MyDevice(PDEVICE_OBJECT pPhyDevice) : KPnpDevice(pPhyDevice, L"MyDriver", FILE_DEVICE_UNKNOWN)
 {
-	m_pDevObj.Initialize(this, PDO);
-	SetLowerDevice(&amp;m_pDevObj);
-	SetPnpPolicy();
+    m_pMyDevice.Initialize(this, pPhyDevice);
+    SetLowerDevice(&amp;m_pMyDevice);
+    SetPnpPolicy();
 }
-
+ 
 NTSTATUS MyDevice::OnRemoveDevice(KIrp pIrp) const
 {
-	return STATUS_SUCCESS;
+    return STATUS_SUCCESS;
 }
-
+ 
 NTSTATUS MyDevice::DefaultPnp(KIrp pIrp)
 {
-	pIrp.ForceReuseOfCurrentStackLocationInCalldown();
-	return m_pDevObj.PnpCall(this, pIrp);
+    pIrp.ForceReuseOfCurrentStackLocationInCalldown();
+    return m_pMyDevice.PnpCall(this, pIrp);
 }
-
+ 
 NTSTATUS MyDevice::DefaultPower(KIrp pIrp)
 {
-	return STATUS_SUCCESS;
+    return STATUS_SUCCESS;
 }
-
+ 
 KDebugOnlyTrace T("");
-
+ 
 DECLARE_DRIVER_CLASS(MyDriver, NULL)
-
-NTSTATUS MyDriver::DriverEntry(PUNICODE_STRING RegistryPath)
+ 
+NTSTATUS MyDriver::DriverEntry(PUNICODE_STRING pMyRegistry)
 {
-	T &lt;&lt; "Hello, world!";
-	return STATUS_SUCCESS;
+    T &lt;&lt; "Hello, world!";
+    return STATUS_SUCCESS;
 }
-
-NTSTATUS MyDriver::AddDevice(PDEVICE_OBJECT PDO)
+ 
+NTSTATUS MyDriver::AddDevice(PDEVICE_OBJECT pPhyDevice)
 {
-    MyDevice *t = new (NonPagedPool) MyDevice(PDO);
-	return STATUS_SUCCESS;
+    MyDevice *t = new (NonPagedPool) MyDevice(pPhyDevice);
+    return STATUS_SUCCESS;
 }
-
+ 
 VOID MyDriver::Unload(void)
 {
-	KDriver::Unload();
+    KDriver::Unload();
 }
-</pre><br>
-
-<p>
-sources
-</p>
-<pre>
-TARGETNAME=main
-TARGETTYPE=DRIVER
-TARGETPATH=obj
-DRIVERTYPE=WDM
-TARGETLIBS=$(DRIVERWORKS)\lib\*\checked\vdw_wdm.lib
-INCLUDES=$(DRIVERWORKS)\include;$(DRIVERWORKS)\source;C:\winddk\inc\ddk\wdm\wxp
-C_DEFINES=-DNTVERSION='WDM'
-LINK_LIB_IGNORE=4210
-SOURCES=main.cpp
-</pre><br>
-
-<p>
-makefile
-</p>
-<pre>
-!INCLUDE $(NTMAKEENV)\makefile.def
 </pre><br>
 
 <p>
@@ -179,8 +157,8 @@ DESCRIPTION="MyDriver"
 編譯
 </p>
 <pre>
-c:\winddk\bin\setenv.bat c:\winddk chk
-build -cefw
+"c:\winddk\bin\x86\cl.exe" -nologo -I"c:\winddk\inc\wxp" -I"c:\winddk\inc\ddk\wxp" -I"c:\winddk\inc\ddk\wdm\wxp" -I"c:\winddk\inc\crt" -I"c:\numega\DriverWorks\include" -I"c:\numega\DriverWorks\source" -D_X86_ -DNTVERSION='WDM' -DDBG=1 /c /Zel /Gz main.cpp
+"c:\winddk\bin\x86\link.exe" -INCREMENTAL:NO -debug:FULL -debugtype:cv -driver -base:0x10000 -entry:DriverEntry@8 -subsystem:native,5.01 "c:\winddk\lib\wxp\i386\wdm.lib" "c:\winddk\lib\wxp\i386\ntoskrnl.lib" "c:\winddk\lib\wxp\i386\csq.lib" "c:\numega\DriverWorks\lib\i386\checked\vdw_wdm.lib" -out:main.sys main.obj
 </pre><br>
 
 <p>

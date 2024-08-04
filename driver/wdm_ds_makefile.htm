@@ -1,0 +1,19 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../driver.htm">驅動程式</a> - Windows Driver Model (WDM) - 使用範例 - C/C++ (DriverWorks) - <b>make.bat</b></h3>
+<hr size="1"><br>
+<pre>
+del main.sys
+"c:\winddk\bin\x86\cl.exe" -nologo -I"c:\winddk\inc\wxp" -I"c:\winddk\inc\ddk\wxp" -I"c:\winddk\inc\ddk\wdm\wxp" -I"c:\winddk\inc\crt" -I"c:\numega\DriverWorks\include" -I"c:\numega\DriverWorks\source" -D_X86_ -DNTVERSION='WDM' -DDBG=1 /c /Zel /Gz main.cpp
+"c:\winddk\bin\x86\link.exe" -INCREMENTAL:NO -debug:FULL -debugtype:cv -driver -base:0x10000 -entry:DriverEntry@8 -subsystem:native,5.01 "c:\winddk\lib\wxp\i386\wdm.lib" "c:\winddk\lib\wxp\i386\ntoskrnl.lib" "c:\winddk\lib\wxp\i386\csq.lib" "c:\numega\DriverWorks\lib\i386\checked\vdw_wdm.lib" -out:main.sys main.obj
+
+if exist app.c (
+    del app.exe
+    "c:\winddk\bin\x86\cl.exe" -nologo -I"c:\winddk\inc\wxp" -I"c:\winddk\inc\wxp" -I"c:\winddk\inc\crt" -D_X86_ -DWIN32_LEAN_AND_MEAN=1 /c /Zel /Gz app.c
+    "c:\winddk\bin\x86\link.exe" -incremental:no -debug:full -debugtype:cv -entry:mainCRTStartup -subsystem:console "c:\winddk\lib\wxp\i386\msvcrt.lib" "c:\winddk\lib\wxp\i386\advapi32.lib" "c:\winddk\lib\wxp\i386\kernel32.lib" -out:app.exe app.obj
+)
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
