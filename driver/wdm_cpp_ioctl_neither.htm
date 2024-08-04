@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head><script type="text/javascript" src="../page_head.js"></script>
 
-<h3><a href="../driver.htm">驅動程式</a> - Windows Driver Model (WDM) - 使用範例 - C/C++ (DDK) - <b>Choose DO_BUFFERED_IO for File IRP</b></h3>
+<h3><a href="../driver.htm">驅動程式</a> - Windows Driver Model (WDM) - 使用範例 - C/C++ (DDK) - <b>Choose METHOD_NEITHER for IOCTL IRP</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
@@ -15,9 +15,12 @@ main.c
 <pre class="brush:cpp">
 #include &lt;wdm.h&gt;
  
+#define IOCTL_GET CTL_CODE(FILE_DEVICE_UNKNOWN, 0x800, METHOD_NEITHER, FILE_ANY_ACCESS)
+#define IOCTL_SET CTL_CODE(FILE_DEVICE_UNKNOWN, 0x801, METHOD_NEITHER, FILE_ANY_ACCESS)
+ 
 #define DEV_NAME L"\\Device\\MyDriver"
 #define SYM_NAME L"\\DosDevices\\MyDriver"
- 
+
 char szBuffer[255] = {0};
 PDEVICE_OBJECT pNextDevice = NULL;
  
@@ -39,11 +42,12 @@ NTSTATUS AddDevice(PDRIVER_OBJECT pMyDriver, PDEVICE_OBJECT pPhyDevice)
  
 void Unload(PDRIVER_OBJECT pMyDriver)
 {
+    pMyDriver = pMyDriver;
 }
  
 NTSTATUS IrpPnp(PDEVICE_OBJECT pMyDevice, PIRP pIrp)
 {
-    UNICODE_STRING usSymboName = { 0 };
+    UNICODE_STRING usSymboName = {0};
     PIO_STACK_LOCATION pStack = IoGetCurrentIrpStackLocation(pIrp);
  
     if (pStack-&gt;MinorFunction == IRP_MN_REMOVE_DEVICE) {
@@ -58,29 +62,37 @@ NTSTATUS IrpPnp(PDEVICE_OBJECT pMyDevice, PIRP pIrp)
     return IoCallDriver(pNextDevice, pIrp);
 }
  
+NTSTATUS IrpIOCTL(PDEVICE_OBJECT pMyDevice, PIRP pIrp)
+{
+    ULONG dwLen = 0;
+    PIO_STACK_LOCATION pStack = IoGetCurrentIrpStackLocation(pIrp);
+ 
+    switch (pStack-&gt;Parameters.DeviceIoControl.IoControlCode) {
+    case IOCTL_SET:
+        DbgPrint("IOCTL_SET");
+        dwLen = pStack-&gt;Parameters.DeviceIoControl.InputBufferLength;
+        memcpy(szBuffer, pStack-&gt;Parameters.DeviceIoControl.Type3InputBuffer, dwLen);
+        DbgPrint("Buffer: %s, Length: %d", szBuffer, dwLen);
+        break;
+    case IOCTL_GET:
+        DbgPrint("IOCTL_GET");
+        dwLen = strlen(szBuffer);
+        memcpy(pIrp-&gt;UserBuffer, szBuffer, dwLen);
+        break;
+    }
+    pIrp-&gt;IoStatus.Status = STATUS_SUCCESS;
+    pIrp-&gt;IoStatus.Information = dwLen;
+    IoCompleteRequest(pIrp, IO_NO_INCREMENT);
+    return STATUS_SUCCESS;
+}
+ 
 NTSTATUS IrpFile(PDEVICE_OBJECT pMyDevice, PIRP pIrp)
 {
     PIO_STACK_LOCATION pStack = IoGetCurrentIrpStackLocation(pIrp);
  
     switch (pStack-&gt;MajorFunction) {
     case IRP_MJ_CREATE:
-        memset(szBuffer, 0, sizeof(szBuffer));
         DbgPrint("IRP_MJ_CREATE");
-        break;
-    case IRP_MJ_READ:
-        strcpy(pIrp-&gt;AssociatedIrp.SystemBuffer, szBuffer);
-        DbgPrint("IRP_MJ_READ");
-
-        pIrp-&gt;IoStatus.Status = STATUS_SUCCESS;
-        pIrp-&gt;IoStatus.Information = strlen(szBuffer);
-        break;
-    case IRP_MJ_WRITE:
-        strcpy(szBuffer, pIrp-&gt;AssociatedIrp.SystemBuffer);
-        DbgPrint("IRP_MJ_WRITE");
-        DbgPrint("Buffer: %s, Length: %d", szBuffer, pStack-&gt;Parameters.Write.Length);
-
-        pIrp-&gt;IoStatus.Status = STATUS_SUCCESS;
-        pIrp-&gt;IoStatus.Information = strlen(szBuffer);
         break;
     case IRP_MJ_CLOSE:
         DbgPrint("IRP_MJ_CLOSE");
@@ -92,12 +104,11 @@ NTSTATUS IrpFile(PDEVICE_OBJECT pMyDevice, PIRP pIrp)
  
 NTSTATUS DriverEntry(PDRIVER_OBJECT pMyDriver, PUNICODE_STRING pMyRegistry)
 {
-    pMyDriver-&gt;MajorFunction[IRP_MJ_PNP]    = IrpPnp;
-    pMyDriver-&gt;MajorFunction[IRP_MJ_CREATE] = IrpFile;
-    pMyDriver-&gt;MajorFunction[IRP_MJ_READ]   = IrpFile;
-    pMyDriver-&gt;MajorFunction[IRP_MJ_WRITE]  = IrpFile;
-    pMyDriver-&gt;MajorFunction[IRP_MJ_CLOSE]  = IrpFile;
-    pMyDriver-&gt;DriverExtension-&gt;AddDevice   = AddDevice;
+    pMyDriver-&gt;MajorFunction[IRP_MJ_PNP]            = IrpPnp;
+    pMyDriver-&gt;MajorFunction[IRP_MJ_CREATE]         = IrpFile;
+    pMyDriver-&gt;MajorFunction[IRP_MJ_CLOSE]          = IrpFile;
+    pMyDriver-&gt;MajorFunction[IRP_MJ_DEVICE_CONTROL] = IrpIOCTL;
+    pMyDriver-&gt;DriverExtension-&gt;AddDevice = AddDevice;
     pMyDriver-&gt;DriverUnload = Unload;
     return STATUS_SUCCESS;
 }
@@ -105,8 +116,8 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT pMyDriver, PUNICODE_STRING pMyRegistry)
 
 <p>
 完成<br>
-<img src="wdm_asm_file_buffer/1.jpg" class="maxSize"><br>
-<img src="wdm_asm_file_buffer/2.jpg" class="maxSize">
+<img src="wdm_asm_ioctl_buffer/1.jpg" class="maxSize"><br>
+<img src="wdm_asm_ioctl_buffer/2.jpg" class="maxSize">
 </p>
 
 <br><script type="text/javascript" src="../tail.js"></script>
