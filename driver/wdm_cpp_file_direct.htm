@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head><script type="text/javascript" src="../page_head.js"></script>
 
-<h3><a href="../driver.htm">驅動程式</a> - Windows Driver Model (WDM) - 使用範例 - C/C++ (DDK) - <b>Choose DO_BUFFERED_IO for File IRP</b></h3>
+<h3><a href="../driver.htm">驅動程式</a> - Windows Driver Model (WDM) - 使用範例 - C/C++ (DDK) - <b>Choose DO_DIRECT_IO for File IRP</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
@@ -18,7 +18,7 @@ main.c
 #define DEV_NAME L"\\Device\\MyDriver"
 #define SYM_NAME L"\\DosDevices\\MyDriver"
  
-char szBuffer[255] = {0};
+char szBuffer[255] = { 0 };
 PDEVICE_OBJECT pNextDevice = NULL;
  
 NTSTATUS AddDevice(PDRIVER_OBJECT pMyDriver, PDEVICE_OBJECT pPhyDevice)
@@ -33,7 +33,7 @@ NTSTATUS AddDevice(PDRIVER_OBJECT pMyDriver, PDEVICE_OBJECT pPhyDevice)
     IoCreateSymbolicLink(&amp;usSymboName, &amp;usDeviceName);
     pNextDevice = IoAttachDeviceToDeviceStack(pMyDevice, pPhyDevice);
     pMyDevice-&gt;Flags &amp;= ~DO_DEVICE_INITIALIZING;
-    pMyDevice-&gt;Flags |= DO_BUFFERED_IO;
+    pMyDevice-&gt;Flags |= DO_DIRECT_IO;
     return STATUS_SUCCESS;
 }
  
@@ -43,7 +43,7 @@ void Unload(PDRIVER_OBJECT pMyDriver)
  
 NTSTATUS IrpPnp(PDEVICE_OBJECT pMyDevice, PIRP pIrp)
 {
-    UNICODE_STRING usSymboName = { 0 };
+    UNICODE_STRING usSymboName = {0};
     PIO_STACK_LOCATION pStack = IoGetCurrentIrpStackLocation(pIrp);
  
     if (pStack-&gt;MinorFunction == IRP_MN_REMOVE_DEVICE) {
@@ -60,6 +60,8 @@ NTSTATUS IrpPnp(PDEVICE_OBJECT pMyDevice, PIRP pIrp)
  
 NTSTATUS IrpFile(PDEVICE_OBJECT pMyDevice, PIRP pIrp)
 {
+    ULONG len = 0;
+    PUCHAR pBuf = NULL;
     PIO_STACK_LOCATION pStack = IoGetCurrentIrpStackLocation(pIrp);
  
     switch (pStack-&gt;MajorFunction) {
@@ -68,19 +70,22 @@ NTSTATUS IrpFile(PDEVICE_OBJECT pMyDevice, PIRP pIrp)
         DbgPrint("IRP_MJ_CREATE");
         break;
     case IRP_MJ_READ:
-        strcpy(pIrp-&gt;AssociatedIrp.SystemBuffer, szBuffer);
+        pBuf = MmGetSystemAddressForMdlSafe(pIrp-&gt;MdlAddress, LowPagePriority);
+        strcpy(pBuf, szBuffer);
         DbgPrint("IRP_MJ_READ");
 
         pIrp-&gt;IoStatus.Status = STATUS_SUCCESS;
         pIrp-&gt;IoStatus.Information = strlen(szBuffer);
         break;
     case IRP_MJ_WRITE:
-        strcpy(szBuffer, pIrp-&gt;AssociatedIrp.SystemBuffer);
+        len = MmGetMdlByteCount(pIrp-&gt;MdlAddress);
+        pBuf = MmGetSystemAddressForMdlSafe(pIrp-&gt;MdlAddress, LowPagePriority);
+        strcpy(szBuffer, pBuf);
         DbgPrint("IRP_MJ_WRITE");
-        DbgPrint("Buffer: %s, Length: %d", szBuffer, pStack-&gt;Parameters.Write.Length);
+        DbgPrint("Buffer: %s, Length: %d", szBuffer, len);
 
         pIrp-&gt;IoStatus.Status = STATUS_SUCCESS;
-        pIrp-&gt;IoStatus.Information = strlen(szBuffer);
+        pIrp-&gt;IoStatus.Information = len;
         break;
     case IRP_MJ_CLOSE:
         DbgPrint("IRP_MJ_CLOSE");

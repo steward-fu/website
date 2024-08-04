@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head><script type="text/javascript" src="../page_head.js"></script>
 
-<h3><a href="../driver.htm">驅動程式</a> - Windows Driver Model (WDM) - 使用範例 - C/C++ (DDK) - <b>Choose DO_BUFFERED_IO for File IRP</b></h3>
+<h3><a href="../driver.htm">驅動程式</a> - Windows Driver Model (WDM) - 使用範例 - C/C++ (DDK) - <b>Choose DO_NEITHER_IO for File IRP</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
@@ -14,13 +14,13 @@ main.c
 </p>
 <pre class="brush:cpp">
 #include &lt;wdm.h&gt;
- 
+    
 #define DEV_NAME L"\\Device\\MyDriver"
 #define SYM_NAME L"\\DosDevices\\MyDriver"
  
 char szBuffer[255] = {0};
 PDEVICE_OBJECT pNextDevice = NULL;
- 
+        
 NTSTATUS AddDevice(PDRIVER_OBJECT pMyDriver, PDEVICE_OBJECT pPhyDevice)
 {
     PDEVICE_OBJECT pMyDevice = NULL;
@@ -33,19 +33,18 @@ NTSTATUS AddDevice(PDRIVER_OBJECT pMyDriver, PDEVICE_OBJECT pPhyDevice)
     IoCreateSymbolicLink(&amp;usSymboName, &amp;usDeviceName);
     pNextDevice = IoAttachDeviceToDeviceStack(pMyDevice, pPhyDevice);
     pMyDevice-&gt;Flags &amp;= ~DO_DEVICE_INITIALIZING;
-    pMyDevice-&gt;Flags |= DO_BUFFERED_IO;
     return STATUS_SUCCESS;
 }
- 
+    
 void Unload(PDRIVER_OBJECT pMyDriver)
 {
 }
- 
+    
 NTSTATUS IrpPnp(PDEVICE_OBJECT pMyDevice, PIRP pIrp)
 {
     UNICODE_STRING usSymboName = { 0 };
     PIO_STACK_LOCATION pStack = IoGetCurrentIrpStackLocation(pIrp);
- 
+    
     if (pStack-&gt;MinorFunction == IRP_MN_REMOVE_DEVICE) {
         RtlInitUnicodeString(&amp;usSymboName, SYM_NAME);
         IoDeleteSymbolicLink(&amp;usSymboName);
@@ -57,27 +56,30 @@ NTSTATUS IrpPnp(PDEVICE_OBJECT pMyDevice, PIRP pIrp)
     IoSkipCurrentIrpStackLocation(pIrp);
     return IoCallDriver(pNextDevice, pIrp);
 }
- 
+    
 NTSTATUS IrpFile(PDEVICE_OBJECT pMyDevice, PIRP pIrp)
 {
+    PUCHAR pBuf = NULL;
     PIO_STACK_LOCATION pStack = IoGetCurrentIrpStackLocation(pIrp);
- 
+    
     switch (pStack-&gt;MajorFunction) {
     case IRP_MJ_CREATE:
         memset(szBuffer, 0, sizeof(szBuffer));
         DbgPrint("IRP_MJ_CREATE");
         break;
     case IRP_MJ_READ:
-        strcpy(pIrp-&gt;AssociatedIrp.SystemBuffer, szBuffer);
+        pBuf = pIrp-&gt;UserBuffer;
+        strcpy(pBuf, szBuffer);
         DbgPrint("IRP_MJ_READ");
 
         pIrp-&gt;IoStatus.Status = STATUS_SUCCESS;
         pIrp-&gt;IoStatus.Information = strlen(szBuffer);
         break;
     case IRP_MJ_WRITE:
-        strcpy(szBuffer, pIrp-&gt;AssociatedIrp.SystemBuffer);
+        pBuf = pIrp-&gt;UserBuffer;
+        strcpy(szBuffer, pBuf);
         DbgPrint("IRP_MJ_WRITE");
-        DbgPrint("Buffer: %s, Length: %d", szBuffer, pStack-&gt;Parameters.Write.Length);
+        DbgPrint("Address: 0x%x, Length: %d", pBuf, pStack-&gt;Parameters.Write.Length);
 
         pIrp-&gt;IoStatus.Status = STATUS_SUCCESS;
         pIrp-&gt;IoStatus.Information = strlen(szBuffer);
@@ -89,7 +91,7 @@ NTSTATUS IrpFile(PDEVICE_OBJECT pMyDevice, PIRP pIrp)
     IoCompleteRequest(pIrp, IO_NO_INCREMENT);
     return STATUS_SUCCESS;
 }
- 
+    
 NTSTATUS DriverEntry(PDRIVER_OBJECT pMyDriver, PUNICODE_STRING pOurRegistry)
 {
     pMyDriver-&gt;MajorFunction[IRP_MJ_PNP]    = IrpPnp;
@@ -106,7 +108,7 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT pMyDriver, PUNICODE_STRING pOurRegistry)
 <p>
 完成<br>
 <img src="wdm_asm_file_buffer/1.jpg" class="maxSize"><br>
-<img src="wdm_asm_file_buffer/2.jpg" class="maxSize">
+<img src="wdm_asm_file_neither/1.jpg" class="maxSize">
 </p>
 
 <br><script type="text/javascript" src="../tail.js"></script>
