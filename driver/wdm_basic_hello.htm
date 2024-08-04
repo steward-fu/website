@@ -14,16 +14,16 @@ main.bas
 </p>
 <pre class="brush:basic">
 #include "wdm.bi"
-
-declare function DriverEntry stdcall alias "DriverEntry" (byval pDriverObject as PDRIVER_OBJECT, byval pRegistryPath as PUNICODE_STRING) as NTSTATUS
-
+ 
+declare function DriverEntry stdcall alias "DriverEntry" (byval pMyDriver as PDRIVER_OBJECT, byval pMyRegistry as PUNICODE_STRING) as NTSTATUS
+ 
 dim shared pNextDevice as PDEVICE_OBJECT = Null
-
+ 
 function AddDevice(byval pMyDriver as PDRIVER_OBJECT, byval pPhyDevice as PDEVICE_OBJECT) as NTSTATUS
     dim usDriverName as UNICODE_STRING
     dim pMyDevice as PDEVICE_OBJECT = null
     dim status as NTSTATUS = STATUS_SUCCESS
-
+ 
     RtlInitUnicodeString(@usDriverName, @wstr("\Device\MyDriver"))
     status = IoCreateDevice(pMyDriver, 0, @usDriverName, FILE_DEVICE_UNKNOWN, 0, FALSE, @pMyDevice)
     pNextDevice = IoAttachDeviceToDeviceStack(pMyDevice, pPhyDevice)
@@ -31,10 +31,10 @@ function AddDevice(byval pMyDriver as PDRIVER_OBJECT, byval pPhyDevice as PDEVIC
     (*pMyDevice).Flags = (*pMyDevice).Flags or DO_BUFFERED_IO
     return STATUS_SUCCESS
 end function
-
+ 
 function IrpDispatch(byval pMyDevice as PDEVICE_OBJECT, byval pIrp as PIRP) as NTSTATUS
     dim pStack as PIO_STACK_LOCATION
-
+ 
     pStack = IoGetCurrentIrpStackLocation(pIrp)
     If (*pStack).MinorFunction = IRP_MN_REMOVE_DEVICE then
         IoDetachDevice(pNextDevice)
@@ -42,20 +42,20 @@ function IrpDispatch(byval pMyDevice as PDEVICE_OBJECT, byval pIrp as PIRP) as N
         IoCompleteRequest(pIrp, IO_NO_INCREMENT)
         return STATUS_SUCCESS
     End If
-    
+     
     IoSkipCurrentIrpStackLocation(pIrp)
     return IoCallDriver(pNextDevice, pIrp)
 end function
-
-sub Unload(byval DriverObject as PDRIVER_OBJECT)
-end sub
  
-function DriverEntry(byval pDriverObject as PDRIVER_OBJECT, byval pRegistryPath as PUNICODE_STRING) as NTSTATUS
+sub Unload(byval pMyDriver as PDRIVER_OBJECT)
+end sub
+  
+function DriverEntry(byval pMyDriver as PDRIVER_OBJECT, byval pMyRegistry as PUNICODE_STRING) as NTSTATUS
     DbgPrint(@!"Hello, world!")
-    
-    (*pDriverObject).DriverUnload = @Unload
-    (*pDriverObject).MajorFunction(IRP_MJ_PNP) = @IrpDispatch
-    (*(*pDriverObject).DriverExtension).AddDevice = @AddDevice
+     
+    (*pMyDriver).DriverUnload = @Unload
+    (*pMyDriver).MajorFunction(IRP_MJ_PNP) = @IrpDispatch
+    (*(*pMyDriver).DriverExtension).AddDevice = @AddDevice
     return STATUS_SUCCESS
 end function
 </pre>
