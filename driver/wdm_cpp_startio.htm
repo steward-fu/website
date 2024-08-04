@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head><script type="text/javascript" src="../page_head.js"></script>
 
-<h3><a href="../driver.htm">驅動程式</a> - Windows Driver Model (WDM) - 使用範例 - C/C++ (DDK) - <b>Use I/O Timer</b></h3>
+<h3><a href="../driver.htm">驅動程式</a> - Windows Driver Model (WDM) - 使用範例 - C/C++ (DDK) - <b>Handle StartIo IRP</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
@@ -15,19 +15,35 @@ main.c
 <pre class="brush:cpp">
 #include &lt;wdm.h&gt;
  
-#define IOCTL_START CTL_CODE(FILE_DEVICE_UNKNOWN, 0x800, METHOD_BUFFERED, FILE_ANY_ACCESS)
-#define IOCTL_STOP  CTL_CODE(FILE_DEVICE_UNKNOWN, 0x801, METHOD_BUFFERED, FILE_ANY_ACCESS)
- 
 #define DEV_NAME L"\\Device\\MyDriver"
 #define SYM_NAME L"\\DosDevices\\MyDriver"
  
-ULONG dwTimerCnt = 0;
+char szBuffer[255] = {0};
+ULONG dwBufferLength = 0;
 PDEVICE_OBJECT pNextDevice = NULL;
  
-VOID OnTimer(PDEVICE_OBJECT pMyDevice, PVOID pContext)
+VOID StartIo(struct _DEVICE_OBJECT *pMyDriver, struct _IRP *pIrp)
 {
-    dwTimerCnt += 1;
-    DbgPrint("IoTimer: %d", dwTimerCnt);
+    ULONG dwLen = 0;
+    PIO_STACK_LOCATION pStack = IoGetCurrentIrpStackLocation(pIrp);
+
+    switch (pStack-&gt;MajorFunction) {
+    case IRP_MJ_READ:
+        dwLen = strlen(szBuffer);
+        strcpy(pIrp-&gt;AssociatedIrp.SystemBuffer, szBuffer);
+        DbgPrint("StartIo, IRP_MJ_READ");
+        break;
+    case IRP_MJ_WRITE:
+        dwLen = pStack-&gt;Parameters.Write.Length;
+        strcpy(szBuffer, pIrp-&gt;AssociatedIrp.SystemBuffer);
+        DbgPrint("StartIo, IRP_MJ_WRITE");
+        DbgPrint("Buffer: %s, Length: %d", szBuffer, dwLen);
+        break;
+    }
+    pIrp-&gt;IoStatus.Status = STATUS_SUCCESS;
+    pIrp-&gt;IoStatus.Information = dwLen;
+    IoCompleteRequest(pIrp, IO_NO_INCREMENT);
+    IoStartNextPacket(pMyDriver, FALSE);
 }
  
 NTSTATUS AddDevice(PDRIVER_OBJECT pMyDriver, PDEVICE_OBJECT pPhyDevice)
@@ -43,8 +59,6 @@ NTSTATUS AddDevice(PDRIVER_OBJECT pMyDriver, PDEVICE_OBJECT pPhyDevice)
     pNextDevice = IoAttachDeviceToDeviceStack(pMyDevice, pPhyDevice);
     pMyDevice-&gt;Flags &amp;= ~DO_DEVICE_INITIALIZING;
     pMyDevice-&gt;Flags |= DO_BUFFERED_IO;
-     
-    IoInitializeTimer(pMyDevice, OnTimer, NULL);
     return STATUS_SUCCESS;
 }
  
@@ -53,7 +67,7 @@ void Unload(PDRIVER_OBJECT pMyDriver)
     pMyDriver = pMyDriver;
 }
  
-NTSTATUS IrpPnp(PDEVICE_OBJECT pMyDevice, PIRP pIrp)
+NTSTATUS IrpPnp(PDEVICE_OBJECT pMyDriver, PIRP pIrp)
 {
     UNICODE_STRING usSymbolName = { 0 };
     PIO_STACK_LOCATION pStack = IoGetCurrentIrpStackLocation(pIrp);
@@ -62,7 +76,7 @@ NTSTATUS IrpPnp(PDEVICE_OBJECT pMyDevice, PIRP pIrp)
         RtlInitUnicodeString(&amp;usSymbolName, SYM_NAME);
         IoDeleteSymbolicLink(&amp;usSymbolName);
         IoDetachDevice(pNextDevice);
-        IoDeleteDevice(pMyDevice);
+        IoDeleteDevice(pMyDriver);
         IoCompleteRequest(pIrp, IO_NO_INCREMENT);
         return STATUS_SUCCESS;
     }
@@ -70,30 +84,7 @@ NTSTATUS IrpPnp(PDEVICE_OBJECT pMyDevice, PIRP pIrp)
     return IoCallDriver(pNextDevice, pIrp);
 }
  
-NTSTATUS IrpIOCTL(PDEVICE_OBJECT pMyDevice, PIRP pIrp)
-{
-    HANDLE hThread = NULL;
-    NTSTATUS status = STATUS_SUCCESS;
-    PIO_STACK_LOCATION pStack = IoGetCurrentIrpStackLocation(pIrp);
- 
-    switch (pStack-&gt;Parameters.DeviceIoControl.IoControlCode) {
-    case IOCTL_START:
-        DbgPrint("IOCTL_START");
-        dwTimerCnt = 0;
-        IoStartTimer(pMyDevice);
-        break;
-    case IOCTL_STOP:
-        DbgPrint("IOCTL_STOP");
-        IoStopTimer(pMyDevice);
-        break;
-    }
-    pIrp-&gt;IoStatus.Information = 0;
-    pIrp-&gt;IoStatus.Status = STATUS_SUCCESS;
-    IoCompleteRequest(pIrp, IO_NO_INCREMENT);
-    return STATUS_SUCCESS;
-}
- 
-NTSTATUS IrpFile(PDEVICE_OBJECT pMyDevice, PIRP pIrp)
+NTSTATUS IrpFile(PDEVICE_OBJECT pMyDriver, PIRP pIrp)
 {
     PIO_STACK_LOCATION pStack = IoGetCurrentIrpStackLocation(pIrp);
  
@@ -101,6 +92,16 @@ NTSTATUS IrpFile(PDEVICE_OBJECT pMyDevice, PIRP pIrp)
     case IRP_MJ_CREATE:
         DbgPrint("IRP_MJ_CREATE");
         break;
+    case IRP_MJ_WRITE:
+        DbgPrint("IrpFile, IRP_MJ_WRITE");
+        IoMarkIrpPending(pIrp);
+        IoStartPacket(pMyDriver, pIrp, 0, NULL);
+        return STATUS_PENDING;
+    case IRP_MJ_READ:
+        DbgPrint("IrpFile, IRP_MJ_READ");
+        IoMarkIrpPending(pIrp);
+        IoStartPacket(pMyDriver, pIrp, 0, NULL);
+        return STATUS_PENDING;
     case IRP_MJ_CLOSE:
         DbgPrint("IRP_MJ_CLOSE");
         break;
@@ -111,11 +112,13 @@ NTSTATUS IrpFile(PDEVICE_OBJECT pMyDevice, PIRP pIrp)
  
 NTSTATUS DriverEntry(PDRIVER_OBJECT pMyDriver, PUNICODE_STRING pMyRegistry)
 {
-    pMyDriver-&gt;MajorFunction[IRP_MJ_PNP]            = IrpPnp;
-    pMyDriver-&gt;MajorFunction[IRP_MJ_CREATE]         = IrpFile;
-    pMyDriver-&gt;MajorFunction[IRP_MJ_CLOSE]          = IrpFile;
-    pMyDriver-&gt;MajorFunction[IRP_MJ_DEVICE_CONTROL] = IrpIOCTL;
-    pMyDriver-&gt;DriverExtension-&gt;AddDevice = AddDevice;
+    pMyDriver-&gt;MajorFunction[IRP_MJ_PNP]    = IrpPnp;
+    pMyDriver-&gt;MajorFunction[IRP_MJ_CREATE] = IrpFile;
+    pMyDriver-&gt;MajorFunction[IRP_MJ_WRITE]  = IrpFile;
+    pMyDriver-&gt;MajorFunction[IRP_MJ_READ]   = IrpFile;
+    pMyDriver-&gt;MajorFunction[IRP_MJ_CLOSE]  = IrpFile;
+    pMyDriver-&gt;DriverExtension-&gt;AddDevice   = AddDevice;
+    pMyDriver-&gt;DriverStartIo = StartIo;
     pMyDriver-&gt;DriverUnload = Unload;
     return STATUS_SUCCESS;
 }
@@ -129,18 +132,23 @@ app.c</b>
 #include &lt;stdio.h&gt;
 #include &lt;stdlib.h&gt;
  
-#define IOCTL_START CTL_CODE(FILE_DEVICE_UNKNOWN, 0x800, METHOD_BUFFERED, FILE_ANY_ACCESS)
-#define IOCTL_STOP  CTL_CODE(FILE_DEVICE_UNKNOWN, 0x801, METHOD_BUFFERED, FILE_ANY_ACCESS)
- 
 int main(int argc, char **argv)
 {
+    DWORD dwLen = 0;
     DWORD dwRet = 0;
     HANDLE hFile = NULL;
- 
+    char szBuffer[255] = { "I am error" };
+    
     hFile = CreateFile("\\\\.\\MyDriver", GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
-    DeviceIoControl(hFile, IOCTL_START, NULL, 0, NULL, 0, &amp;dwRet, NULL);
-    Sleep(3000);
-    DeviceIoControl(hFile, IOCTL_STOP, NULL, 0, NULL, 0, &amp;dwRet, NULL);
+    dwLen = strlen(szBuffer);
+    printf("WR: %s\n", szBuffer);
+    printf("Length: %d\n", dwLen);
+    WriteFile(hFile, szBuffer, dwLen, &amp;dwRet, NULL);
+ 
+    memset(szBuffer, 0, sizeof(szBuffer));
+    ReadFile(hFile, szBuffer, sizeof(szBuffer), &amp;dwRet, NULL);
+    printf("RD: %s\n", szBuffer);
+    printf("Length: %d\n", dwRet);
     CloseHandle(hFile);
     return 0;
 }
@@ -148,8 +156,8 @@ int main(int argc, char **argv)
 
 <p>
 完成<br>
-<img src="wdm_asm_timer_io/1.jpg" class="maxSize"><br>
-<img src="wdm_asm_timer_io/2.jpg" class="maxSize">
+<img src="wdm_asm_startio/1.jpg" class="maxSize"><br>
+<img src="wdm_asm_startio/2.jpg" class="maxSize">
 </p>
 
 <br><script type="text/javascript" src="../tail.js"></script>

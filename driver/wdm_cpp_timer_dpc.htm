@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head><script type="text/javascript" src="../page_head.js"></script>
 
-<h3><a href="../driver.htm">驅動程式</a> - Windows Driver Model (WDM) - 使用範例 - C/C++ (DDK) - <b>Use I/O Timer</b></h3>
+<h3><a href="../driver.htm">驅動程式</a> - Windows Driver Model (WDM) - 使用範例 - C/C++ (DDK) - <b>Use DPC Timer</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
@@ -21,13 +21,16 @@ main.c
 #define DEV_NAME L"\\Device\\MyDriver"
 #define SYM_NAME L"\\DosDevices\\MyDriver"
  
+ 
 ULONG dwTimerCnt = 0;
+KDPC stTimerDPC = { 0 };
+KTIMER stTimerObj = { 0 };
 PDEVICE_OBJECT pNextDevice = NULL;
  
-VOID OnTimer(PDEVICE_OBJECT pMyDevice, PVOID pContext)
+VOID OnTimer(struct _KDPC *Dpc, PVOID pContext, PVOID Arg1, PVOID Arg2)
 {
     dwTimerCnt += 1;
-    DbgPrint("IoTimer: %d", dwTimerCnt);
+    DbgPrint("DpcTimer: %d\n", dwTimerCnt);
 }
  
 NTSTATUS AddDevice(PDRIVER_OBJECT pMyDriver, PDEVICE_OBJECT pPhyDevice)
@@ -44,7 +47,8 @@ NTSTATUS AddDevice(PDRIVER_OBJECT pMyDriver, PDEVICE_OBJECT pPhyDevice)
     pMyDevice-&gt;Flags &amp;= ~DO_DEVICE_INITIALIZING;
     pMyDevice-&gt;Flags |= DO_BUFFERED_IO;
      
-    IoInitializeTimer(pMyDevice, OnTimer, NULL);
+    KeInitializeTimer(&amp;stTimerObj);
+    KeInitializeDpc(&amp;stTimerDPC, OnTimer, pMyDevice);
     return STATUS_SUCCESS;
 }
  
@@ -57,7 +61,7 @@ NTSTATUS IrpPnp(PDEVICE_OBJECT pMyDevice, PIRP pIrp)
 {
     UNICODE_STRING usSymbolName = { 0 };
     PIO_STACK_LOCATION pStack = IoGetCurrentIrpStackLocation(pIrp);
- 
+
     if (pStack-&gt;MinorFunction == IRP_MN_REMOVE_DEVICE) {
         RtlInitUnicodeString(&amp;usSymbolName, SYM_NAME);
         IoDeleteSymbolicLink(&amp;usSymbolName);
@@ -72,19 +76,20 @@ NTSTATUS IrpPnp(PDEVICE_OBJECT pMyDevice, PIRP pIrp)
  
 NTSTATUS IrpIOCTL(PDEVICE_OBJECT pMyDevice, PIRP pIrp)
 {
-    HANDLE hThread = NULL;
-    NTSTATUS status = STATUS_SUCCESS;
+    LARGE_INTEGER stTimeCnt = { 0 };
     PIO_STACK_LOCATION pStack = IoGetCurrentIrpStackLocation(pIrp);
  
     switch (pStack-&gt;Parameters.DeviceIoControl.IoControlCode) {
     case IOCTL_START:
         DbgPrint("IOCTL_START");
         dwTimerCnt = 0;
-        IoStartTimer(pMyDevice);
+        stTimeCnt.HighPart |= -1;
+        stTimeCnt.LowPart = -10000000;
+        KeSetTimerEx(&amp;stTimerObj, stTimeCnt, 1000, &amp;stTimerDPC);
         break;
     case IOCTL_STOP:
         DbgPrint("IOCTL_STOP");
-        IoStopTimer(pMyDevice);
+        KeCancelTimer(&amp;stTimerObj);
         break;
     }
     pIrp-&gt;IoStatus.Information = 0;
@@ -148,8 +153,8 @@ int main(int argc, char **argv)
 
 <p>
 完成<br>
-<img src="wdm_asm_timer_io/1.jpg" class="maxSize"><br>
-<img src="wdm_asm_timer_io/2.jpg" class="maxSize">
+<img src="wdm_asm_timer_dpc/1.jpg" class="maxSize"><br>
+<img src="wdm_asm_timer_dpc/2.jpg" class="maxSize">
 </p>
 
 <br><script type="text/javascript" src="../tail.js"></script>
