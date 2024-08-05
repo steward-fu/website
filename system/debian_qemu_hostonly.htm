@@ -1,0 +1,41 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../system.htm">系統</a> - Debian - QEMU - <b>如何設定Host-only網卡</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://alberand.com/host-only-networking-set-up-for-qemu-hypervisor.html<br><br>
+
+步驟如下：
+</p>
+<pre>
+$ sudo ip link add br0 type bridge
+$ sudo ip addr flush dev br0
+$ sudo ip addr add 192.168.100.50/24 brd 192.168.100.255 dev br0
+$ sudo ip tuntap add mode tap user $(whoami)
+$ ip tuntap show
+
+$ sudo ip link set tap0 master br0
+$ sudo ip link set dev br0 up
+$ sudo ip link set dev tap0 up
+$ sudo dnsmasq --interface=br0 --bind-interfaces --dhcp-range=192.168.100.50,192.168.100.254
+</pre><br>
+
+<p>
+QEMU設置網卡的方式可以任選其中一個
+</p>
+<pre>
+$ qemu -device e1000,netdev=network0,mac=00:00:00:00:00:00 -netdev tap,id=network0,ifname=tap0,script=no,downscript=no
+$ qemu -device virtio-net-pci,netdev=n0,mac=FE:9c:37:4a:2c:93 -netdev tap,id=n0,ifname=tap0,script=no,downscript=no
+</pre><br>
+
+<p>
+設定Guest IP in QEMU
+</p>
+<pre>
+$ sudo ip addr add 192.168.100.224/24 broadcast 192.168.100.255 dev eth0
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
