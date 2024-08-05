@@ -1,0 +1,129 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../driver.htm">驅動程式</a> - Windows Driver Model (WDM) - 使用範例 - Pascal (DDDK) - <b>Use Mutex</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://wasm.in/<br>
+http://four-f.narod.ru/<br>
+https://github.com/steward-fu/ddk<br><br>
+
+main.pas
+</p>
+<pre class="brush:pas">
+unit main;
+ 
+interface
+    uses
+        DDDK;
+         
+    const
+        MAX_THREAD = 3;
+        DEV_NAME = '\Device\MyDriver';
+        SYM_NAME = '\DosDevices\MyDriver';
+ 
+    function _DriverEntry(pMyDriver : PDRIVER_OBJECT; pMyRegistry : PUNICODE_STRING) : NTSTATUS; stdcall;
+ 
+implementation
+var
+    myMutex : KMUTEX;
+    pNextDevice : PDEVICE_OBJECT;
+ 
+procedure MyThread(pParam : Pointer); stdcall;
+var
+    tt : LARGE_INTEGER;
+    
+begin
+    tt.HighPart := tt.HighPart or -1;
+    tt.LowPart := ULONG(-10000000);
+
+    DbgPrint('Thread%d, Acquiring Mutex', [ULONG(pParam)]);
+    KeWaitForSingleObject(@myMutex, Executive, KernelMode, FALSE, nil);
+    DbgPrint('Thread%d, Acquired Mutex', [ULONG(pParam)]);
+
+    DbgPrint('Thread%d, Sleeping', [ULONG(pParam)]);
+    KeDelayExecutionThread(KernelMode, FALSE, @tt);
+
+    DbgPrint('Thread%d, Releasing Mutex', [ULONG(pParam)]);
+    KeReleaseMutex(@myMutex, FALSE);
+    DbgPrint('Thread%d, Released Mutex', [ULONG(pParam)]);
+
+    PsTerminateSystemThread(STATUS_SUCCESS);
+end;
+ 
+procedure Unload(pMyDriver : PDRIVER_OBJECT); stdcall;
+begin
+end;
+ 
+function IrpPnp(pMyDevice : PDEVICE_OBJECT; pIrp : PIRP) : NTSTATUS; stdcall;
+var
+    pStack : PIO_STACK_LOCATION;
+    suSymName : UNICODE_STRING;
+            
+begin
+    pStack := IoGetCurrentIrpStackLocation(pIrp);
+    if pStack^.MinorFunction = IRP_MN_REMOVE_DEVICE then
+        begin
+            RtlInitUnicodeString(@suSymName, SYM_NAME);
+            IoDetachDevice(pNextDevice);
+            IoDeleteDevice(pMyDevice);
+            IoDeleteSymbolicLink(@suSymName);
+            IoCompleteRequest(pIrp, IO_NO_INCREMENT);
+            Result := STATUS_SUCCESS;
+        end
+    else
+        begin
+            IoSkipCurrentIrpStackLocation(pIrp);
+            Result := IoCallDriver(pNextDevice, pIrp);
+        end;
+end;
+ 
+function AddDevice(pMyDriver : PDRIVER_OBJECT; pPhyDevice : PDEVICE_OBJECT) : NTSTATUS; stdcall;
+var
+    suDevName : UNICODE_STRING;
+    suSymName : UNICODE_STRING;
+    pMyDevice : PDEVICE_OBJECT;
+     
+begin
+    RtlInitUnicodeString(@suDevName, DEV_NAME);
+    RtlInitUnicodeString(@suSymName, SYM_NAME);
+    IoCreateDevice(pMyDriver, 0, @suDevName, FILE_DEVICE_UNKNOWN, 0, FALSE, pMyDevice);
+    pNextDevice := IoAttachDeviceToDeviceStack(pMyDevice, pPhyDevice);
+    pMyDevice^.Flags := pMyDevice^.Flags or DO_BUFFERED_IO;
+    pMyDevice^.Flags := pMyDevice^.Flags and not DO_DEVICE_INITIALIZING;
+    Result := IoCreateSymbolicLink(@suSymName, @suDevName);
+end;
+ 
+function _DriverEntry(pMyDriver : PDRIVER_OBJECT; pMyRegistry : PUNICODE_STRING) : NTSTATUS; stdcall;
+var
+    cc : ULONG;
+    hThread : Handle;
+    status : NTSTATUS;
+ 
+begin
+    pMyDriver^.MajorFunction[IRP_MJ_PNP] := @IrpPnp;
+    pMyDriver^.DriverExtension^.AddDevice := @AddDevice;
+    pMyDriver^.DriverUnload := @Unload;
+ 
+    KeInitializeMutex(@myMutex, 0);
+    for cc := 0 to (MAX_THREAD - 1) do
+    begin
+        status:= PsCreateSystemThread(@hThread, THREAD_ALL_ACCESS, nil, Handle(-1), nil, MyThread, Pointer(cc));
+        if NT_SUCCESS(status) then
+        begin
+            ZwClose(hThread);
+        end;
+    end;
+    Result := STATUS_SUCCESS;
+end;
+end.
+</pre><br>
+
+<p>
+完成<br>
+<img src="wdm_asm_mutex/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
