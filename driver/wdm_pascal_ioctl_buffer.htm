@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head><script type="text/javascript" src="../page_head.js"></script>
 
-<h3><a href="../driver.htm">驅動程式</a> - Windows Driver Model (WDM) - 使用範例 - Pascal (DDDK) - <b>Handle File IRP</b></h3>
+<h3><a href="../driver.htm">驅動程式</a> - Windows Driver Model (WDM) - 使用範例 - Pascal (DDDK) - <b>Choose METHOD_BUFFERED for IOCTL IRP</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
@@ -22,12 +22,16 @@ interface
     const
         DEV_NAME = '\Device\MyDriver';
         SYM_NAME = '\DosDevices\MyDriver';
+
+        IOCTL_SET = (FILE_DEVICE_UNKNOWN shl 16) or (FILE_ANY_ACCESS shl 14) or ($800 shl 2) or (METHOD_BUFFERED);
+        IOCTL_GET = (FILE_DEVICE_UNKNOWN shl 16) or (FILE_ANY_ACCESS shl 14) or ($801 shl 2) or (METHOD_BUFFERED);
  
     function _DriverEntry(pMyDriver : PDRIVER_OBJECT; pMyRegistry : PUNICODE_STRING) : NTSTATUS; stdcall;
  
 implementation
 var
     pNextDevice : PDEVICE_OBJECT;
+    szBuf : array[0..255] of char;
      
 procedure Unload(pMyDriver : PDRIVER_OBJECT); stdcall;
 begin
@@ -42,23 +46,54 @@ begin
     case pStack^.MajorFunction of
     IRP_MJ_CREATE:
         DbgPrint('IRP_MJ_CREATE', []);
-    IRP_MJ_READ:
-        DbgPrint('IRP_MJ_READ', []);
-    IRP_MJ_WRITE:
-        DbgPrint('IRP_MJ_WRITE', []);
     IRP_MJ_CLOSE:
         DbgPrint('IRP_MJ_CLOSE', []);
     end;
      
-    IoCompleteRequest(pIrp, IO_NO_INCREMENT);
     Result := STATUS_SUCCESS;
+    pIrp^.IoStatus.Status := Result;
+    pIrp^.IoStatus.Information := 0;
+    IoCompleteRequest(pIrp, IO_NO_INCREMENT);
+end;
+ 
+function IrpIOCTL(pMyDevice : PDeviceObject; pIrp : PIrp) : NTSTATUS; stdcall;
+var
+    dwLen : ULONG;
+    dwCode : ULONG;
+    pStack : PIO_STACK_LOCATION;
+    
+begin
+    dwLen := 0;
+    pStack := IoGetCurrentIrpStackLocation(pIrp);
+    dwCode := pStack^.Parameters.DeviceIoControl.IoControlCode;
+
+    case dwCode of
+    IOCTL_GET:
+        begin
+            DbgPrint('IOCTL_GET', []);
+            dwLen := strlen(@szBuf[0]);
+            memcpy(pIrp^.AssociatedIrp.SystemBuffer, @szBuf[0], dwLen);
+        end;
+    IOCTL_SET:
+        begin
+            DbgPrint('IOCTL_SET', []);
+            dwLen := pStack^.Parameters.DeviceIoControl.InputBufferLength;
+            memcpy(@szBuf[0], pIrp^.AssociatedIrp.SystemBuffer, dwLen);
+            DbgPrint('Buffer: %s, Length: %d', [szBuf, dwLen]);
+        end;
+    end;
+        
+    Result := STATUS_SUCCESS;
+    pIrp^.IoStatus.Information := dwLen;
+    pIrp^.IoStatus.Status := Result;
+    IoCompleteRequest(pIrp, IO_NO_INCREMENT);
 end;
  
 function IrpPnp(pMyDevice : PDEVICE_OBJECT; pIrp : PIRP) : NTSTATUS; stdcall;
 var
     pStack : PIO_STACK_LOCATION;
     suSymName : UNICODE_STRING;
-     
+        
 begin
     pStack := IoGetCurrentIrpStackLocation(pIrp);
     if pStack^.MinorFunction = IRP_MN_REMOVE_DEVICE then
@@ -95,12 +130,11 @@ end;
  
 function _DriverEntry(pMyDriver : PDRIVER_OBJECT; pMyRegistry : PUNICODE_STRING) : NTSTATUS; stdcall;
 begin
-    pMyDriver^.MajorFunction[IRP_MJ_PNP]     := @IrpPnp;
-    pMyDriver^.MajorFunction[IRP_MJ_CREATE]  := @IrpFile;
-    pMyDriver^.MajorFunction[IRP_MJ_READ]    := @IrpFile;
-    pMyDriver^.MajorFunction[IRP_MJ_WRITE]   := @IrpFile;
-    pMyDriver^.MajorFunction[IRP_MJ_CLOSE]   := @IrpFile;
-    pMyDriver^.DriverExtension^.AddDevice    := @AddDevice;
+    pMyDriver^.MajorFunction[IRP_MJ_PNP]            := @IrpPnp;
+    pMyDriver^.MajorFunction[IRP_MJ_CREATE]         := @IrpFile;
+    pMyDriver^.MajorFunction[IRP_MJ_CLOSE]          := @IrpFile;
+    pMyDriver^.MajorFunction[IRP_MJ_DEVICE_CONTROL] := @IrpIOCTL;
+    pMyDriver^.DriverExtension^.AddDevice := @AddDevice;
     pMyDriver^.DriverUnload := @Unload;
     Result := STATUS_SUCCESS;
 end;
@@ -108,44 +142,9 @@ end.
 </pre><br>
 
 <p>
-app.pas</b>
-</p>
-<pre class="brush:pas">
-program main;
- 
-{$APPTYPE CONSOLE}
- 
-uses
-    Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms, Dialogs;
- 
-var
-    hFile : DWORD;
-    dwRet : DWORD;
-    dwLen : DWORD;
-    szBuffer : array[0..255] of char;
- 
-begin
-    hFile := CreateFile('\\.\MyDriver', GENERIC_READ or GENERIC_WRITE, FILE_SHARE_READ, nil, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
-
-    StrCopy(szBuffer, 'I am error');
-    dwLen := strlen(szBuffer);
-
-    WriteLn(Output, Format('WR: %s, %d', [szBuffer, dwLen]));
-    WriteFile(hFile, szBuffer, dwLen, dwRet, nil);
-
-    dwRet := 0;
-    ZeroMemory(@szBuffer[0], sizeof(szBuffer));
-    ReadFile(hFile, szBuffer, dwLen, dwRet, nil);
-    WriteLn(Output, Format('RD: %s, %d', [szBuffer, dwRet]));
-
-    CloseHandle(hFile);
-end.
-</pre><br>
-
-<p>
 完成<br>
-<img src="wdm_asm_file/1.jpg" class="maxSize"><br>
-<img src="wdm_asm_file/2.jpg" class="maxSize">
+<img src="wdm_asm_ioctl_buffer/1.jpg" class="maxSize"><br>
+<img src="wdm_asm_ioctl_buffer/2.jpg" class="maxSize">
 </p>
 
 <br><script type="text/javascript" src="../tail.js"></script>
