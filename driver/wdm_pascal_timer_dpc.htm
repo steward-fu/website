@@ -1,0 +1,194 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../driver.htm">驅動程式</a> - Windows Driver Model (WDM) - 使用範例 - Pascal (DDDK) - <b>Use DPC Timer</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://wasm.in/<br>
+http://four-f.narod.ru/<br>
+https://github.com/steward-fu/ddk<br><br>
+
+main.pas
+</p>
+<pre class="brush:pas">
+unit main;
+ 
+interface
+    uses
+        DDDK;
+         
+    const
+        DEV_NAME = '\Device\MyDriver';
+        SYM_NAME = '\DosDevices\MyDriver';
+
+        IOCTL_START = (FILE_DEVICE_UNKNOWN shl 16) or (FILE_ANY_ACCESS shl 14) or ($800 shl 2) or (METHOD_BUFFERED);
+        IOCTL_STOP  = (FILE_DEVICE_UNKNOWN shl 16) or (FILE_ANY_ACCESS shl 14) or ($801 shl 2) or (METHOD_BUFFERED);
+ 
+    function _DriverEntry(pMyDriver : PDRIVER_OBJECT; pMyRegistry : PUNICODE_STRING) : NTSTATUS; stdcall;
+ 
+implementation
+var
+    cnt : ULONG;
+    dpc : TKDpc;
+    obj : KTIMER;
+    pNextDevice : PDEVICE_OBJECT;
+ 
+procedure OnTimer(Dpc : KDPC; pContext : Pointer; pArg1 : Pointer; pArg2 : Pointer); stdcall;
+begin
+    cnt := cnt + 1;
+    DbgPrint('DpcTimer: %d', [cnt]);
+end;
+ 
+procedure Unload(pMyDriver : PDRIVER_OBJECT); stdcall;
+begin
+end;
+ 
+function IrpFile(pMyDevice : PDEVICE_OBJECT; pIrp : PIRP) : NTSTATUS; stdcall;
+var
+    pStack : PIO_STACK_LOCATION;
+     
+begin
+    pStack := IoGetCurrentIrpStackLocation(pIrp);
+    case pStack^.MajorFunction of
+    IRP_MJ_CREATE:
+        DbgPrint('IRP_MJ_CREATE', []);
+    IRP_MJ_CLOSE:
+        DbgPrint('IRP_MJ_CLOSE', []);
+    end;
+     
+    Result := STATUS_SUCCESS;
+    pIrp^.IoStatus.Status := Result;
+    pIrp^.IoStatus.Information := 0;
+    IoCompleteRequest(pIrp, IO_NO_INCREMENT);
+end;
+ 
+function IrpIOCTL(pMyDevice : PDeviceObject; pIrp : PIrp) : NTSTATUS; stdcall;
+var
+    code : ULONG;
+    tt : LARGE_INTEGER;
+    pStack : PIO_STACK_LOCATION;
+        
+begin
+    pStack := IoGetCurrentIrpStackLocation(pIrp);
+    code := pStack^.Parameters.DeviceIoControl.IoControlCode;
+    case code of
+    IOCTL_START:
+        begin
+            DbgPrint('IOCTL_START', []);
+            cnt := 0;
+            tt.HighPart := tt.HighPart or -1;
+            tt.LowPart := ULONG(-10000000);
+            KeSetTimerEx(@obj, tt.LowPart, tt.HighPart, 1000, @dpc);
+        end;
+    IOCTL_STOP:
+        begin
+            DbgPrint('IOCTL_STOP', []);
+            KeCancelTimer(@obj);
+        end;
+    end;
+        
+    Result := STATUS_SUCCESS;
+    pIrp^.IoStatus.Information := 0;
+    pIrp^.IoStatus.Status := Result;
+    IoCompleteRequest(pIrp, IO_NO_INCREMENT);
+end;
+ 
+function IrpPnp(pMyDevice : PDEVICE_OBJECT; pIrp : PIRP) : NTSTATUS; stdcall;
+var
+    pStack : PIO_STACK_LOCATION;
+    suSymName : UNICODE_STRING;
+           
+begin
+    pStack := IoGetCurrentIrpStackLocation(pIrp);
+    if pStack^.MinorFunction = IRP_MN_REMOVE_DEVICE then
+        begin
+            RtlInitUnicodeString(@suSymName, SYM_NAME);
+            IoDetachDevice(pNextDevice);
+            IoDeleteDevice(pMyDevice);
+            IoDeleteSymbolicLink(@suSymName);
+            IoCompleteRequest(pIrp, IO_NO_INCREMENT);
+            Result := STATUS_SUCCESS;
+        end
+    else
+        begin
+            IoSkipCurrentIrpStackLocation(pIrp);
+            Result := IoCallDriver(pNextDevice, pIrp);
+        end;
+end;
+ 
+function AddDevice(pMyDriver : PDRIVER_OBJECT; pPhyDevice : PDEVICE_OBJECT) : NTSTATUS; stdcall;
+var
+    suDevName : UNICODE_STRING;
+    suSymName : UNICODE_STRING;
+    pMyDevice : PDEVICE_OBJECT;
+     
+begin
+    RtlInitUnicodeString(@suDevName, DEV_NAME);
+    RtlInitUnicodeString(@suSymName, SYM_NAME);
+    IoCreateDevice(pMyDriver, 0, @suDevName, FILE_DEVICE_UNKNOWN, 0, FALSE, pMyDevice);
+    pNextDevice := IoAttachDeviceToDeviceStack(pMyDevice, pPhyDevice);
+    pMyDevice^.Flags := pMyDevice^.Flags or DO_BUFFERED_IO;
+    pMyDevice^.Flags := pMyDevice^.Flags and not DO_DEVICE_INITIALIZING;
+    KeInitializeTimer(@obj);
+    KeInitializeDpc(@dpc, OnTimer, pMyDevice);
+    Result := IoCreateSymbolicLink(@suSymName, @suDevName);
+end;
+ 
+function _DriverEntry(pMyDriver : PDRIVER_OBJECT; pMyRegistry : PUNICODE_STRING) : NTSTATUS; stdcall;
+begin
+    pMyDriver^.MajorFunction[IRP_MJ_PNP]            := @IrpPnp;
+    pMyDriver^.MajorFunction[IRP_MJ_CREATE]         := @IrpFile;
+    pMyDriver^.MajorFunction[IRP_MJ_CLOSE]          := @IrpFile;
+    pMyDriver^.MajorFunction[IRP_MJ_DEVICE_CONTROL] := @IrpIOCTL;
+    pMyDriver^.DriverExtension^.AddDevice := @AddDevice;
+    pMyDriver^.DriverUnload := @Unload;
+    Result := STATUS_SUCCESS;
+end;
+end.
+</pre><br>
+
+<p>
+app.pas
+</p>
+<pre class="brush:pas">
+program main;
+ 
+{$APPTYPE CONSOLE}
+ 
+uses
+    Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms, Dialogs;
+ 
+const
+    METHOD_BUFFERED = 0;
+    METHOD_IN_DIRECT = 1;
+    METHOD_OUT_DIRECT = 2;
+    METHOD_NEITHER = 3;
+
+    FILE_ANY_ACCESS = 0;
+    FILE_DEVICE_UNKNOWN = $22;
+
+    IOCTL_START = (FILE_DEVICE_UNKNOWN shl 16) or (FILE_ANY_ACCESS shl 14) or ($800 shl 2) or (METHOD_BUFFERED);
+    IOCTL_STOP  = (FILE_DEVICE_UNKNOWN shl 16) or (FILE_ANY_ACCESS shl 14) or ($801 shl 2) or (METHOD_BUFFERED);
+ 
+var
+    hFile : DWORD;
+    dwRet : DWORD;
+ 
+begin
+    hFile:= CreateFile('\\.\MyDriver', GENERIC_READ or GENERIC_WRITE, FILE_SHARE_READ, nil, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
+    DeviceIoControl(hFile, IOCTL_START, nil, 0, nil, 0, dwRet, nil);
+    Sleep(3000);
+    DeviceIoControl(hFile, IOCTL_STOP, nil, 0, nil, 0, dwRet, nil);
+    CloseHandle(hFile);
+end.
+</pre><br>
+
+<p>
+完成<br>
+<img src="wdm_asm_timer_dpc/1.jpg" class="maxSize"><br>
+<img src="wdm_asm_timer_dpc/2.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
