@@ -1,0 +1,50 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../system.htm">系統</a> - Automotive Stream Distribution (AutoSD) - <b>安裝系統(QEMU x64)</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://autosd.sig.centos.org/AutoSD-9/nightly/sample-images/<br>
+https://alberand.com/host-only-networking-set-up-for-qemu-hypervisor.html<br><br>
+
+安裝步驟：
+</p>
+<pre>
+$ sudo ip link add br0 type bridge
+$ sudo ip addr flush dev br0
+$ sudo ip addr add 192.168.100.50/24 brd 192.168.100.255 dev br0
+$ sudo ip tuntap add mode tap user $(whoami)
+$ ip tuntap show
+
+$ sudo ip link set tap0 master br0
+$ sudo ip link set dev br0 up
+$ sudo ip link set dev tap0 up
+$ sudo dnsmasq --interface=br0 --bind-interfaces --dhcp-range=192.168.100.50,192.168.100.254
+
+$ cd
+$ wget https://autosd.sig.centos.org/AutoSD-9/nightly/sample-images/auto-osbuild-qemu-autosd9-developer-regular-x86_64-1400453310.596a2b05.qcow2.xz
+$ xz -d auto-osbuild-qemu-autosd9-developer-regular-x86_64-1400453310.596a2b05.qcow2.xz
+</pre>
+<p>
+P.S. root:password<br><br>
+
+NAT網卡方式
+</p>
+<pre>
+$ qemu-system-x86_64 -drive file=/usr/share/OVMF/OVMF_CODE.fd,if=pflash,format=raw,unit=0,readonly=on -drive file=/usr/share/OVMF/OVMF_VARS.fd,if=pflash,format=raw,unit=1,snapshot=on,readonly=off -smp 4 -m 2G -machine q35 -cpu qemu64,+ssse3,+sse4.1,+sse4.2,+popcnt -device virtio-net-pci,netdev=n0,mac=FE:9c:37:4a:2c:93 -netdev user,id=n0,net=10.0.2.0/24,hostfwd=tcp::2222-:22 -drive file=auto-osbuild-qemu-autosd9-developer-regular-x86_64-1392927111.596a2b05.qcow2,index=0,media=disk,format=qcow2,if=virtio,id=rootdisk,snapshot=off
+</pre>
+<p>
+P.S. 'ssh root@127.0.0.1 -p 2222'<br><br>
+
+Host-only網卡方式
+</p>
+<pre>
+$ qemu-system-x86_64 -drive file=/usr/share/OVMF/OVMF_CODE.fd,if=pflash,format=raw,unit=0,readonly=on -drive file=/usr/share/OVMF/OVMF_VARS.fd,if=pflash,format=raw,unit=1,snapshot=on,readonly=off -smp 4 -m 2G -machine q35 -cpu qemu64,+ssse3,+sse4.1,+sse4.2,+popcnt -device virtio-net-pci,netdev=n0,mac=FE:9c:37:4a:2c:93 -netdev tap,id=n0,ifname=tap0,script=no,downscript=no -drive file=auto-osbuild-qemu-autosd9-developer-regular-x86_64-1392927111.596a2b05.qcow2,index=0,media=disk,format=qcow2,if=virtio,id=rootdisk,snapshot=off
+</pre>
+<p>
+P.S. 'ssh root@127.0.0.1'
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
