@@ -1,0 +1,110 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../driver.htm">驅動程式</a> - MS-DOS Device Driver (MDD) - 使用範例 - Assembly (MASM) - <b>Hello, world!</b></h3>
+<hr size="1"><br>
+<p>
+main.asm
+</p>
+<pre class="brush:asm">
+cseg segment para public 'code'
+MyDriver proc far
+    assume cs:cseg, es:cseg, ds:cseg
+
+    NextDriver  dd -1
+    Attribute   dw 8000h
+    Strategy    dw MyStrategy
+    Interrupt   dw MyInterrupt
+    DriverName  db 'MyDriver'
+
+    RhOffset    dw ?
+    RhSegment   dw ?
+    bootmsg     db 'Hello, world!', 0dh, 0ah, '$'
+    CmdTable    dw Init
+
+MyStrategy:
+    mov cs:RhSegment, es
+    mov cs:RhOffset, bx
+    ret
+
+MyInterrupt:
+    cld
+    push ds
+    push es
+    push ax
+    push bx
+    push cx
+    push dx
+    push di
+    push si
+
+    mov al, es:[bx]+2
+    cmp al, 0
+    jnz SkipCurRequest
+    rol al, 1
+    lea di, CmdTable
+    mov ah, 0
+    add di, ax
+    jmp word ptr[di]
+
+Init:
+    lea dx, bootmsg
+    mov ah, 9
+    int 21h
+    lea ax, Exit
+    mov es:[bx]+0eh, ax
+    push cs
+    pop ax
+    mov es:[bx]+10h, ax
+    mov es:word ptr 3[bx], 0100h
+    jmp CompleteCmd
+
+SkipCurRequest:
+    mov es:word ptr 3[bx], 8103h
+    jmp CompleteCmd
+
+CompleteCmd:
+    mov bx, cs:RhOffset
+    mov es, cs:RhSegment
+    pop si
+    pop di
+    pop dx
+    pop cx
+    pop bx
+    pop ax
+    pop es
+    pop ds
+    ret
+
+Exit:
+MyDriver endp
+cseg ends
+end
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+C:&gt; masm main.asm
+C:&gt; link main.obj
+C:&gt; exe2bin main.exe
+</pre>
+<p>
+P.S. 編譯程式記得在<b>C:\</b>編譯<br><br>
+
+開機自動載入驅動程式<br>
+<img style="border:0px" src="mdd_asm_hello/1.jpg" class="maxSize"><br><br>
+
+使用Pause讓命令暫停執行，避免Debug Log被洗掉<br>
+<img style="border:0px" src="mdd_asm_hello/2.jpg" class="maxSize"><br><br>
+
+完成<br>
+<img style="border:0px" src="mdd_asm_hello/3.jpg" class="maxSize"><br><br>
+
+使用<b>mem /d | more</b>就可以看到MyDriver驅動程式<br>
+<img style="border:0px" src="mdd_asm_hello/4.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
