@@ -1,0 +1,77 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../driver.htm">驅動程式</a> - Windows NT Driver (Legacy) - 使用範例 - Assembly (MASM32) - <b>Hello, world!</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://wasm.in/<br>
+http://four-f.narod.ru/<br>
+https://github.com/steward-fu/ddk<br><br>
+
+使用Assembly語言寫驅動程式是一件相當挑戰的事情，畢竟討論資源相對稀少，加上Assembly語言的可讀性比C/C++差以及Microsoft提供的Include及範例程式都是以C/C++語言為主，因此，比較少人想要使用Assembly語言開發驅動程式，雖然比較乏味、難度也比較高，不過若能排除這個困難，使用組合語言寫出一支WDM驅動程式，細心品味Assembly語言的優雅，那將是一件意義非凡的事情，Microsoft Assembly語言經過多次改進，目前已經可以支援高階語法，如：If、While、Struct等語法，越來越高階，所以不該再把Assembly語言，想像是落後的語言，想對每個細節的瞭解，Assembly語言還是最佳的選擇，司徒接著就介紹如何使用Assembly語言寫一支<b>Hello, world!</b>驅動程式，畢竟<b>Hello, world!</b>還是最經典以及簡單的入門首選<br><br>
+
+main.asm
+</p>
+<pre class="brush:asm">
+.386p
+.model flat, stdcall
+option casemap:none
+
+include c:\masm32\include\w2k\ntstatus.inc
+include c:\masm32\include\w2k\ntddk.inc
+include c:\masm32\include\w2k\ntoskrnl.inc
+include c:\masm32\include\w2k\ntddkbd.inc
+include c:\masm32\Macros\Strings.mac
+
+includelib c:\masm32\lib\wxp\i386\ntoskrnl.lib
+
+public DriverEntry
+
+.code
+Unload proc pMyDriver : PDRIVER_OBJECT
+    ret
+Unload endp
+ 
+DriverEntry proc pMyDriver : PDRIVER_OBJECT, pMyRegistry : PUNICODE_STRING
+    invoke DbgPrint, $CTA0("Hello, world\:")
+
+    mov eax, pMyDriver
+    mov (DRIVER_OBJECT PTR [eax]).DriverUnload, offset Unload
+    mov eax, STATUS_SUCCESS
+    ret
+DriverEntry endp
+end
+</pre>
+<p>
+<b>L21~25</b>：只有做Callback設定的動作，需要設定DriverUnload這個Callback<br><br>
+
+編譯
+</p>
+<pre>
+"c:\masm32\bin\ml.exe" /c /coff /Cp /Zi /Zd main.asm
+"c:\masm32\bin\link.exe" main.obj /driver /base:0x10000 /debug /debugtype:cv /pdb:main.pdb /subsystem:native /entry:DriverEntry "c:\masm32\lib\wxp\i386\ntoskrnl.lib" /out:main.sys
+</pre><br>
+
+<p>
+在開始安裝驅動程式之前，我們需要先下載除錯工具，讓驅動程式的Debug訊息可以顯示在除錯工具上面，目前在Kernel Mode以及User Mode上，最佳的Debug輸出訊息工具是DbgView，該公司目前已經被Microsoft併購，所以可以從Microsoft網站下載，下載完後執行DbgView並將<b>Capture =&gt; Capture Kernel</b>選項打勾，接著<b>重啟</b>DbgView<br>
+<img src="wdm_asm_hello/1.jpg" class="maxSize"><br><br>
+
+Legacy(NT-Style)驅動程式的安裝很方便，它是使用Service的方式安裝，因此，複製main.sys到<b>c:\windows\system32\drivers</b>資料夾下並輸入如下命令進行安裝
+</p>
+<pre>
+c:\&gt; sc create MyDriver binPath= "c:\windows\system32\drivers\main.sys" type= "kernel" start= "demand" error= "normal" Displayname= "MyDriver"
+c:\&gt; sc start MyDriver
+</pre>
+<p>
+P.S. 要記得在"="前面都需要一個空格<br><br>
+
+輸入完上列指令後，就可以看到輸出的<b>Hello, world!</b>字串<br>
+<img src="wdm_asm_hello/3.jpg" class="maxSize"><br><br>
+
+如果要更方便測試，建議使用Four-F撰寫的KmdManager<br>
+<img src="nt_asm_hello/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
