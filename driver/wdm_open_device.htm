@@ -1,0 +1,81 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../driver.htm">驅動程式</a> - Windows Driver Model (WDM) - <b>如何在User Mode開啟"\Device\"下的驅動程式(非Symbolic Link)</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://www.exploit-db.com/exploits/37052/<br>
+https://msdn.microsoft.com/en-us/library/windows/desktop/aa365247(v=vs.85).aspx<br>
+https://googleprojectzero.blogspot.tw/2016/02/the-definitive-guide-on-win32-to-nt.html<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;windows.h&gt;
+#include &lt;winternl.h&gt;
+#include &lt;stdio.h&gt;
+
+#pragma comment(lib, "ntdll.lib")
+
+void WINAPI RtlInitUnicodeString(PUNICODE_STRING target, LPCWSTR source)
+{
+    if ((target-&gt;Buffer = (LPWSTR)source))
+    {
+        target-&gt;Length = wcslen(source) * sizeof(WCHAR);
+        target-&gt;MaximumLength = target-&gt;Length + sizeof(WCHAR);
+    }
+    else
+    {
+        target-&gt;Length = target-&gt;MaximumLength = 0;
+    }
+}
+
+int __cdecl main(int argc, CHAR *argv[])
+{
+    typedef NTSTATUS(__stdcall * NT_OPEN_FILE)(PHANDLE FileHandle, ACCESS_MASK DesiredAccess, POBJECT_ATTRIBUTES ObjectAttributes, PIO_STATUS_BLOCK IoStatusBlock, ULONG ShareAccess, ULONG OpenOptions);
+    NT_OPEN_FILE NtOpenFileStruct;
+
+    PVOID Info;
+    HMODULE hModule = LoadLibrary("ntdll.dll");
+    NtOpenFileStruct = (NT_OPEN_FILE)GetProcAddress(hModule, "NtOpenFile");
+
+    if (NtOpenFileStruct == NULL)
+    {
+        return -1;
+    }
+
+    HANDLE hCF = CreateFile("\\Device\\CNG", MAXIMUM_ALLOWED, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
+
+    printf("CreateFile(\"\\Device\\CNG\"): (handle:0x%X, err:0x%x)\n", hCF, GetLastError());
+    if (hCF != (HANDLE)-1)
+    {
+        CloseHandle(hCF);
+    }
+
+    UNICODE_STRING filename;
+    RtlInitUnicodeString(&amp;filename, L"\\Device\\CNG");
+
+    OBJECT_ATTRIBUTES obja;
+    obja.Attributes = 0x40;
+    obja.ObjectName = &amp;filename;
+    obja.Length = 0x18;
+    obja.RootDirectory = NULL;
+    obja.SecurityDescriptor = NULL;
+    obja.SecurityQualityOfService = NULL;
+
+    IO_STATUS_BLOCK iostatusblock;
+    HANDLE hCNG = NULL;
+    NTSTATUS stat = NtOpenFileStruct(&amp;hCNG, 0x100001, &amp;obja, &amp;iostatusblock, 7, 0x20);
+
+    printf("NtOpenFileStruct(\"\\Device\\CNG\"): (status:0x%x)\n", stat);
+    if (stat == 0)
+    {
+        CloseHandle(hCNG);
+    }
+    return 0;
+}
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

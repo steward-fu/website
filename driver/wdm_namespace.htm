@@ -1,0 +1,419 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../driver.htm">驅動程式</a> - Windows Driver Model (WDM) - <b>NT Namespace("\\.\"、"\??\")轉置測試</b></h3>
+<hr size="1"><br>
+<p>
+NT Namespace<br>
+<img src="wdm_namespace/1.jpg" class="maxSize"><br><br>
+
+轉置支援表格整理如下：
+</p>
+<table border=1>
+<tr>
+    <th>Namespace</th>
+    <th>支援轉置</th>
+    <th>說明</th>
+</tr>
+<tr>
+    <td>\\.\</td>
+    <td>Yes</td>
+    <td>Win32 Device Namespace，指到NT Namespace的GLOBAL??資料夾，只能使用Win32 API相關的API呼叫，如：CreateFile()</td>
+</tr>
+<tr>
+    <td>\??\</td>
+    <td>Yes</td>
+    <td>指到NT Namespace根目錄，Windows XP不支援</td>
+</tr>
+<tr>
+    <td>\??\GLOBALROOT\</td>
+    <td>Yes</td>
+    <td>指到NT Namespace根目錄，Windows XP不支援</td>
+</tr>
+<tr>
+    <td>\\?\</td>
+    <td>No</td>
+    <td>指到NT Namespace根目錄，Windows APIs會把\\?\改成\??\</td>
+</tr>
+<tr>
+    <td>\GLOBAL??\</td>
+    <td>Yes</td>
+    <td>指到NT Namespace的GLOBAL??資料夾</td>
+</tr>
+<tr>
+    <td>\Device\</td>
+    <td>Yes</td>
+    <td>指到NT Namespace的Device資料夾</td>
+</tr>
+<tr>
+    <td>\DosDevices\</td>
+    <td>Yes</td>
+    <td>指到NT Namespace的GLOBAL??資料夾</td>
+</tr>
+</table>
+<p>
+P.S. 轉置代表會把<b>/</b>字元改成<b>\</b>字元，Windows XP呼叫RtlDosPathNameToNtPathName_U(), Windows 7呼叫RtlDosPathNameToRelativeNtPathName()<br><br>
+
+測試程式
+</p>
+<pre class="brush:cpp">
+#include &lt;windows.h&gt;
+#include &lt;winternl.h&gt;
+#include &lt;stdio.h&gt;
+
+#pragma comment(lib, "ntdll.lib")
+
+typedef NTSTATUS(__stdcall *NT_OPEN_FILE)(PHANDLE FileHandle, ACCESS_MASK DesiredAccess, POBJECT_ATTRIBUTES ObjectAttributes, PIO_STATUS_BLOCK IoStatusBlock, ULONG ShareAccess, ULONG OpenOptions);
+
+void WINAPI RtlInitUnicodeString(PUNICODE_STRING target, LPCWSTR source)
+{
+    if ((target-&gt;Buffer = (LPWSTR)source))
+    {
+        target-&gt;Length = wcslen(source) * sizeof(WCHAR);
+        target-&gt;MaximumLength = target-&gt;Length + sizeof(WCHAR);
+    }
+    else
+    {
+        target-&gt;Length = target-&gt;MaximumLength = 0;
+    }
+}
+
+void DoNtOpenFile(wchar_t *name)
+{
+    PVOID Info;
+    NT_OPEN_FILE NtOpenFileStruct;
+    HMODULE hModule = LoadLibrary("ntdll.dll");
+    NtOpenFileStruct = (NT_OPEN_FILE)GetProcAddress(hModule, "NtOpenFile");
+
+    if (NtOpenFileStruct != NULL)
+    {
+        UNICODE_STRING filename;
+        RtlInitUnicodeString(&amp;filename, name);
+
+        OBJECT_ATTRIBUTES obj;
+        obj.Attributes = 0x40;
+        obj.ObjectName = &amp;filename;
+        obj.Length = 0x18;
+        obj.RootDirectory = NULL;
+        obj.SecurityDescriptor = NULL;
+        obj.SecurityQualityOfService = NULL;
+
+        IO_STATUS_BLOCK iostatusblock;
+        HANDLE hFile = NULL;
+        NTSTATUS stat = NtOpenFileStruct(&amp;hFile, 0x100001, &amp;obj, &amp;iostatusblock, 7, 0x20);
+
+        printf("NtOpenFileStruct(%S): (status:0x%x)\n", name, stat);
+        if (stat == 0)
+        {
+            CloseHandle(hFile);
+        }
+    }
+}
+
+void DoCreateFile(char *name)
+{
+    HANDLE hFile = CreateFile(name, MAXIMUM_ALLOWED, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
+
+    printf("CreateFile(%s): (handle:0x%x, err:0x%x)\n", name, hFile, GetLastError());
+    if (hFile != (HANDLE)-1)
+    {
+        CloseHandle(hFile);
+    }
+}
+
+int __cdecl main(int argc, char *argv[])
+{
+    // device namespace
+    DoCreateFile("\\\\.\\ndis");
+    DoCreateFile("\\??\\ndis");
+    DoCreateFile("\\??\\GLOBALROOT\\ndis");
+    DoCreateFile("\\\\?\\ndis");
+    DoCreateFile("\\GLOBAL??\\ndis");
+    DoCreateFile("\\Device\\ndis");
+    DoCreateFile("\\DosDevices\\ndis");
+    DoCreateFile("ndis");
+    printf("\n");
+
+    DoNtOpenFile(L"\\\\.\\ndis");
+    DoNtOpenFile(L"\\??\\ndis");
+    DoNtOpenFile(L"\\??\\GLOBALROOT\\ndis");
+    DoNtOpenFile(L"\\\\?\\ndis");
+    DoNtOpenFile(L"\\GLOBAL??\\ndis");
+    DoNtOpenFile(L"\\Device\\ndis");
+    DoNtOpenFile(L"\\DosDevices\\ndis");
+    DoNtOpenFile(L"ndis");
+    printf("\n");
+
+    // file namespace
+    DoCreateFile("\\\\.\\c:\\test\\test.txt");
+    DoCreateFile("\\??\\c:\\test\\test.txt");
+    DoCreateFile("\\??\\GLOBALROOT\\c:\\test\\test.txt");
+    DoCreateFile("\\\\?\\c:\\test\\test.txt");
+    DoCreateFile("\\GLOBAL??\\c:\\test\\test.txt");
+    DoCreateFile("\\Device\\c:\\test\\test.txt");
+    DoCreateFile("\\DosDevices\\c:\\test\\test.txt");
+    DoCreateFile("c:\\test\\test.txt");
+    printf("\n");
+
+    DoNtOpenFile(L"\\\\.\\c:\\test\\test.txt");
+    DoNtOpenFile(L"\\??\\c:\\test\\test.txt");
+    DoNtOpenFile(L"\\??\\GLOBALROOT\\c:\\test\\test.txt");
+    DoNtOpenFile(L"\\\\?\\c:\\test\\test.txt");
+    DoNtOpenFile(L"\\GLOBAL??\\c:\\test\\test.txt");
+    DoNtOpenFile(L"\\Device\\c:\\test\\test.txt");
+    DoNtOpenFile(L"\\DosDevices\\c:\\test\\test.txt");
+    DoNtOpenFile(L"c:\\test\\test.txt");
+    printf("\n");
+
+    // c:\test/test.txt
+    DoCreateFile("\\\\.\\c:\\test/test.txt");
+    DoCreateFile("\\??\\c:\\test/test.txt");
+    DoCreateFile("\\??\\GLOBALROOT\\c:\\test/test.txt");
+    DoCreateFile("\\\\?\\c:\\test/test.txt");
+    DoCreateFile("\\GLOBAL??\\c:\\test/test.txt");
+    DoCreateFile("\\Device\\c:\\test/test.txt");
+    DoCreateFile("\\DosDevices\\c:\\test/test.txt");
+    DoCreateFile("c:\\test/test.txt");
+    return 0;
+}
+</pre><br>
+
+<p>
+Device Namespace測試
+</p>
+
+<table border="1">
+<tr>
+    <th>Before CreateFile()</th>
+    <th>In CreateFile()</th>
+</tr>
+<tr>
+    <td>\\.\ndis</td>
+    <td>\??\ndis</td>
+</tr>
+<tr>
+    <td>\??\ndis</td>
+    <td>\??\c:\??\ndis</td>
+</tr>
+<tr>
+    <td>\??\GLOBALROOT\ndis</td>
+    <td>\??\c:\??\GLOBALROOT\ndis</td>
+</tr>
+<tr>
+    <td>\\?\ndis</td>
+    <td>\??\ndis</td>
+</tr>
+<tr>
+    <td>\GLOBAL??\ndis</td>
+    <td>\??\c:\GLOBAL??\ndis</td>
+</tr>
+<tr>
+    <td>\Device\ndis</td>
+    <td>\??\c:\Device\ndis</td>
+</tr>
+<tr>
+    <td>\DosDevices\ndis</td>
+    <td>\??\c:\DosDevices\ndis</td>
+</tr>
+<tr>
+    <td>ndis</td>
+    <td>\??\${CURRENT_DIR}\ndis</td>
+</tr>
+<tr>
+    <th>Before NtOpenFileStruct()</th>
+    <th>In NtOpenFileStruct()</th>
+</tr>
+<tr>
+    <td>\\.\ndis</td>
+    <td>\\.\ndis</td>
+</tr>
+<tr>
+    <td>\??\ndis</td>
+    <td>\??\ndis</td>
+</tr>
+<tr>
+    <td>\??\GLOBALROOT\ndis</td>
+    <td>\??\GLOBALROOT\ndis</td>
+</tr>
+<tr>
+    <td>\\?\ndis</td>
+    <td>\\?\ndis</td>
+</tr>
+<tr>
+    <td>\GLOBAL??\ndis</td>
+    <td>\GLOBAL??\ndis</td>
+</tr>
+<tr>
+    <td>\Device\ndis</td>
+    <td>\Device\ndis</td>
+</tr>
+<tr>
+    <td>\DosDevices\ndis</td>
+    <td>\DosDevices\ndis</td>
+</tr>
+<tr>
+    <td>ndis</td>
+    <td>ndis</td>
+</tr>
+</table><br>
+
+<p>
+File Namespace測試
+</p>
+
+<table border="1">
+<tr>
+    <th>Before CreateFile()</th>
+    <th>In CreateFile()</th>
+</tr>
+<tr>
+    <td>\\.\c:\test\test.txt</td>
+    <td>\??\c:\test\test.txt</td>
+</tr>
+<tr>
+    <td>\??\c:\test\test.txt</td>
+    <td>\??\c:\??\c:\test\test.txt</td>
+</tr>
+<tr>
+    <td>\??\GLOBALROOT\c:\test\test.txt</td>
+    <td>\??\c:\??\GLOBALROOT\c:\test\test.txt</td>
+</tr>
+<tr>
+    <td>\\?\c:\test\test.txt</td>
+    <td>\??\c:\test\test.txt</td>
+</tr>
+<tr>
+    <td>\GLOBAL??\c:\test\test.txt</td>
+    <td>\??\c:\GLOBAL??\c:\test\test.txt</td>
+</tr>
+<tr>
+    <td>\Device\c:\test\test.txt</td>
+    <td>\??\c:\Device\c:\test\test.txt</td>
+</tr>
+<tr>
+    <td>\DosDevices\c:\test\test.txt</td>
+    <td>\??\c:\DosDevices\c:\test\test.txt</td>
+</tr>
+<tr>
+    <td>c:\test\test.txt</td>
+    <td>\??\c:\test\test.txt</td>
+</tr>
+<tr>
+    <th>Before NtOpenFileStruct()</th>
+    <th>In NtOpenFileStruct()</th>
+</tr>
+<tr>
+    <td>\\.\c:\test\test.txt</td>
+    <td>\\.\c:\test\test.txt</td>
+</tr>
+<tr>
+    <td>\??\c:\test\test.txt</td>
+    <td>\??\c:\test\test.txt</td>
+</tr>
+<tr>
+    <td>\??\GLOBALROOT\c:\test\test.txt</td>
+    <td>\??\GLOBALROOT\c:\test\test.txt</td>
+</tr>
+<tr>
+    <td>\\?\c:\test\test.txt</td>
+    <td>\\?\c:\test\test.txt</td>
+</tr>
+<tr>
+    <td>\GLOBAL??\c:\test\test.txt</td>
+    <td>\GLOBAL??\c:\test\test.txt</td>
+</tr>
+<tr>
+    <td>\Device\c:\test\test.txt</td>
+    <td>\Device\c:\test\test.txt</td>
+</tr>
+<tr>
+    <td>\DosDevices\c:\test\test.txt</td>
+    <td>\DosDevices\c:\test\test.txt</td>
+</tr>
+<tr>
+    <td>c:\test\test.txt</td>
+    <td>c:\test\test.txt</td>
+</tr>
+</table><br>
+
+<p>
+轉置測試
+</p>
+
+<table border="1">
+<tr>
+    <th>Before CreateFile()</th>
+    <th>In CreateFile()</th>
+</tr>
+<tr>
+    <td>\\.\c:\test/test.txt</td>
+    <td>\??\c:\test\test.txt</td>
+</tr>
+<tr>
+    <td>\??\c:\test/test.txt</td>
+    <td>\??\c:\??\c:\test\test.txt</td>
+</tr>
+<tr>
+    <td>\??\GLOBALROOT\c:\test/test.txt</td>
+    <td>\??\c:\??\GLOBALROOT\c:\test\test.txt</td>
+</tr>
+<tr>
+    <td>\\?\c:\test/test.txt</td>
+    <td>\??\c:\test/test.txt</td>
+</tr>
+<tr>
+    <td>\GLOBAL??\c:\test/test.txt</td>
+    <td>\??\c:\GLOBAL??\c:\test\test.txt</td>
+</tr>
+<tr>
+    <td>\Device\c:\test/test.txt</td>
+    <td>\??\c:\Device\c:\test\test.txt</td>
+</tr>
+<tr>
+    <td>\DosDevices\c:\test/test.txt</td>
+    <td>\??\c:\DosDevices\c:\test\test.txt</td>
+</tr>
+<tr>
+    <td>c:\test/test.txt</td>
+    <td>\??\c:\test\test.txt</td>
+</tr>
+<tr>
+    <th>Before NtOpenFileStruct()</th>
+    <th>In NtOpenFileStruct()</th>
+</tr>
+<tr>
+    <td>\\.\c:\test/test.txt</td>
+    <td>\\.\c:\test/test.txt</td>
+</tr>
+<tr>
+    <td>\??\c:\test/test.txt</td>
+    <td>\??\c:\test/test.txt</td>
+</tr>
+<tr>
+    <td>\??\GLOBALROOT\c:\test/test.txt</td>
+    <td>\??\GLOBALROOT\c:\test/test.txt</td>
+</tr>
+<tr>
+    <td>\\?\c:\test/test.txt</td>
+    <td>\\?\c:\test/test.txt</td>
+</tr>
+<tr>
+    <td>\GLOBAL??\c:\test/test.txt</td>
+    <td>\GLOBAL??\c:\test/test.txt</td>
+</tr>
+<tr>
+    <td>\Device\c:\test/test.txt</td>
+    <td>\Device\c:\test/test.txt</td>
+</tr>
+<tr>
+    <td>\DosDevices\c:\test/test.txt</td>
+    <td>\DosDevices\c:\test/test.txt</td>
+</tr>
+<tr>
+    <td>c:\test/test.txt</td>
+    <td>c:\test/test.txt</td>
+</tr>
+</table>
+
+<br><script type="text/javascript" src="../tail.js"></script>
