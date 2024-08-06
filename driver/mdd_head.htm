@@ -1,0 +1,143 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../driver.htm">驅動程式</a> - MS-DOS Device Driver (MDD) - 教學說明 - <b>1. 檔頭資訊</b></h3>
+<hr size="1"><br>
+<p>
+驅動程式的檔頭資訊是用來設定Callback副程式以及描述驅動程式的屬性
+</p>
+<table>
+<tr>
+    <th>欄位</th>
+    <th>長度</th>
+    <th>描述</th>
+</tr>
+<tr>
+    <td>NextDriver</td>
+    <td>4 Bytes</td>
+    <td>指向下一個驅動程式的位置，如果沒有下層驅動程式，設定-1即可</td>
+</tr>
+<tr>
+    <td>Attribute</td>
+    <td>2 Bytes</td>
+    <td>描述驅動程式的屬性</td>
+</tr>
+<tr>
+    <td>Strategy</td>
+    <td>2 Bytes</td>
+    <td>Callback副程式</td>
+</tr>
+<tr>
+    <td>Interrupt</td>
+    <td>2 Bytes</td>
+    <td>Callback副程式</td>
+</tr>
+<tr>
+    <td>DriverName</td>
+    <td>8 Bytes</td>
+    <td>驅動程式的名稱，可以使用<b>mem /d</b>指令查看，不足8個字元時，其餘要補上空白字元</td>
+</tr>
+</table><br>
+
+<p>
+Attribute的欄位屬性
+</p>
+<table>
+<tr>
+    <th>位元</th>
+    <th>說明</th>
+</tr>
+<tr>
+    <td>0</td>
+    <td>0 - Not Standard Input Device<br>1 - Standard Input Device</td>
+</tr>
+<tr>
+    <td>1</td>
+    <td>0 - Not Standard Output Device<br>1 - Standard Output Device</td>
+</tr>
+<tr>
+    <td>2</td>
+    <td>0 - Not NUL Device<br>1 - NUL Device</td>
+</tr>
+<tr>
+    <td>3</td>
+    <td>0 - Not Clock Device<br>1 - Clock Device</td>
+</tr>
+<tr>
+    <td>4</td>
+    <td>0 - <br>1 - Fast Console I/O</td>
+</tr>
+<tr>
+    <td>5</td>
+    <td>0 - <br>1 - Reserved</td>
+</tr>
+<tr>
+    <td>6</td>
+    <td>0 - <br>1 - Generic IOCTL</td>
+</tr>
+<tr>
+    <td>7</td>
+    <td>0 - <br>1 - IOCTL Query</td>
+</tr>
+<tr>
+    <td>8</td>
+    <td>0 - <br>1 - Reserved</td>
+</tr>
+<tr>
+    <td>9</td>
+    <td>0 - <br>1 - Reserved</td>
+</tr>
+<tr>
+    <td>10</td>
+    <td>0 - <br>1 - Reserved</td>
+</tr>
+<tr>
+    <td>11</td>
+    <td>0 - Not Support Removable Media<br>1 - Supports Removable Media</td>
+</tr>
+<tr>
+    <td>12</td>
+    <td>0 - <br>1 - Reserved</td>
+</tr>
+<tr>
+    <td>13</td>
+    <td>0 - IBM Format Block Device<br>1 - Non-IBM Format Block Device</td>
+</tr>
+<tr>
+    <td>14</td>
+    <td>0 - Not Support IOCTL<br>1 - Supports IOCTL</td>
+</tr>
+<tr>
+    <td>15</td>
+    <td>0 - Block Device<br>1 - Character Device</td>
+</tr>
+</table><br>
+
+<p>
+範例如下：
+</p>
+<pre class="brush:asm">
+cseg segment para public 'code'
+    MyDriver proc far
+        assume cs:cseg, es:cseg, ds:cseg
+        NextDriver dd -1
+        Attribute  dw 8000h
+        Strategy   dw MyStrategy
+        Interrupt  dw MyInterrupt
+        DriverName db 'MyDriver'
+
+    MyStrategy:
+        ret
+
+    MyInterrupt:
+        ret  
+    MyDriver endp
+cseg ends
+end
+</pre>
+<p>
+系統呼叫驅動程式是採取兩個階段的呼叫方式，所謂兩個階段的意思就是，系統會先呼叫Strategy Callback副程式並且把要傳遞給驅動程式的資料放在ES:BX位址，所以，Strategy Callback副程式就類似預處理動作，呼叫完Strategy Callback副程式後，系統接著呼叫Interrupt Callback副程式，當Interrupt Callback副程式被呼叫時，驅動程式本身就必需去參考剛剛Strategy Callback副程式儲存的ES:BX資料，這樣驅動程式就會知道系統要它去執行什麼樣的Command，而ES:BX資料就是所謂的I/O Request Packet(IRP)
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
