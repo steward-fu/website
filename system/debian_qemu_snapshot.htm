@@ -1,0 +1,26 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../system.htm">系統</a> - Debian - QEMU - <b>如何儲存、載入Snapshot</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://serverfault.com/questions/889163/combine-snapshot-and-loadvm-snap-id-in-qemu-system<br><br>
+
+儲存Snapshot：
+</p>
+<pre>
+$ qemu-system-i386 -hda xxx.qcow2 -boot c -cpu coreduo -m 1024 -vga cirrus -net nic,model=pcnet -rtc base=localtime -accel tcg -no-hpet -serial none -parallel none -monitor stdio -snapshot
+
+(qemu) migrate "exec: gzip -c &gt; myvm.gz"
+</pre><br>
+
+<p>
+載入Snapshot：
+</p>
+<pre>
+$ qemu-system-i386 -hda xxx.qcow2 -boot c -cpu coreduo -m 1024 -vga cirrus -net nic,model=pcnet -rtc base=localtime -accel tcg -no-hpet -serial none -parallel none -monitor stdio -incoming "exec: gzip -c -d myvm.gz" -snapshot
+</pre><br>
+
+<br><script type="text/javascript" src="../tail.js"></script>
