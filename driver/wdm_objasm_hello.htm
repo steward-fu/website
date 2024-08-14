@@ -1,0 +1,170 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../driver.htm">驅動程式</a> - Windows Driver Model (WDM) - 使用範例 - Assembly (ObjAsm) - <b>Hello, world!</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://wasm.in/<br>
+http://four-f.narod.ru/<br>
+https://github.com/steward-fu/ddk<br><br>
+
+main.asm
+</p>
+<pre class="brush:asm">
+%include @Environ(OBJASM_PATH)/Code/Macros/Model.inc
+
+SysSetup OOP, DDK32, ANSI_STRING
+
+MakeObjects Primer, KDriver, KPnpDevice, KPnpLowerDevice
+
+Object MyDriver, , KDriver
+    RedefineMethod Unload
+    RedefineMethod AddDevice, PDEVICE_OBJECT
+    RedefineMethod DriverEntry, PUNICODE_STRING
+    RedefineMethod DriverIrpDispatch, PIRP
+ObjectEnd
+
+Object MyDevice, , KPnpDevice
+    RedefineMethod Init, PDEVICE_OBJECT
+    RedefineMethod DefaultPnp, PKIrp
+    RedefineMethod DeviceIrpDispatch, PIRP
+
+    Embed m_pMyLowerDevice, KPnpLowerDevice
+ObjectEnd
+
+DECLARE_DRIVER_CLASS MyDriver, $OfsCStr("MyDriver")
+
+Method MyDriver.DriverEntry, uses esi, pMyRegistry : PUNICODE_STRING
+    mov eax, STATUS_SUCCESS
+MethodEnd
+
+Method MyDriver.AddDevice, uses esi, pPhyDevice : PDEVICE_OBJECT
+    T $OfsCStr("Hello, world%c"), 21h
+
+    New MyDevice
+    push eax
+    OCall eax::MyDevice.Init, pPhyDevice
+    pop eax
+MethodEnd
+
+Method MyDriver.DriverIrpDispatch, uses esi, pMyIrp : PIRP
+    SetObject esi
+    OCall DriverObject
+    mov eax, (DRIVER_OBJECT ptr [eax]).DeviceObject
+    mov eax, (DEVICE_OBJECT ptr [eax]).DeviceExtension
+    OCall eax::MyDevice.DeviceIrpDispatch, pMyIrp
+MethodEnd
+
+Method MyDriver.Unload, uses esi
+    ACall Unload
+MethodEnd
+
+Method MyDevice.Init, uses esi, pPhyDevice : PDEVICE_OBJECT
+    ACall Init, $OfsCStrW("\Device\MyDriver"), FILE_DEVICE_UNKNOWN, NULL, 0, DO_BUFFERED_IO
+
+    SetObject esi
+    OCall [esi].m_pMyLowerDevice::KPnpLowerDevice.Initialize, [esi].m_pMyDevice, pPhyDevice
+    OCall SetLowerDevice, addr [esi].m_pMyLowerDevice
+MethodEnd
+
+Method MyDevice.DeviceIrpDispatch, uses esi, pMyIrp : PIRP
+    ACall DeviceIrpDispatch, pMyIrp
+MethodEnd
+
+Method MyDevice.DefaultPnp, uses esi, I : PKIrp
+    SetObject esi
+    OCall I::KIrp.ForceReuseOfCurrentStackLocationInCalldown
+    OCall [esi].m_pMyLowerDevice::KLowerDevice.PnpCall, I
+MethodEnd
+end
+</pre><br>
+
+<p>
+main.inf
+</p>
+<pre>
+[Version]
+Signature=$CHICAGO$
+Class=Unknown
+Provider=%MFGNAME%
+DriverVer=8/21/2019,1.0.0.0
+ 
+[Manufacturer]
+%MFGNAME%=DeviceList
+ 
+[DeviceList]
+%DESCRIPTION%=DriverInstall, *MyDriver
+ 
+[DestinationDirs]
+DefaultDestDir=10,System32\Drivers
+ 
+[SourceDisksFiles]
+main.sys=1,,,
+ 
+[SourceDisksNames]
+1=%INSTDISK%,,,
+ 
+[DriverInstall.NT]
+CopyFiles=DriverCopyFiles
+ 
+[DriverCopyFiles]
+main.sys,,,2
+ 
+[DriverInstall.NT.Services]
+AddService=FILEIO,2,DriverService
+ 
+[DriverService]
+ServiceType=1
+StartType=3
+ErrorControl=1
+ServiceBinary=%10%\system32\drivers\main.sys
+ 
+[DriverInstall.NT.HW]
+AddReg=DriverHwAddReg
+ 
+[DriverHwAddReg]
+HKR,,SampleInfo,,""
+ 
+[DriverInstall]
+AddReg=DriverAddReg
+CopyFiles=DriverCopyFiles
+ 
+[DriverAddReg]
+HKR,,DevLoader,,*ntkern
+HKR,,NTMPDriver,,main.sys
+ 
+[DriverInstall.HW]
+AddReg=DriverHwAddReg
+ 
+[Strings]
+MFGNAME="MyDriver"
+INSTDISK="MyDriver Disc"
+DESCRIPTION="MyDriver"
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+"c:\objasm\build\tools\assembler\uasm32.exe" /coff /c -q /less /nomlib /FwNUL /Zi /Zd main.asm
+"c:\masm32\bin\link.exe" main.obj /driver /base:0x10000 /debug /debugtype:cv /pdb:main.pdb /subsystem:native /entry:DriverEntry "c:\masm32\lib\wxp\i386\ntoskrnl.lib" /out:main.sys
+</pre><br>
+
+<p>
+在開始安裝驅動程式之前，需要先下載除錯工具，讓驅動程式的Debug訊息可以顯示在除錯工具上面，目前最佳的Debug輸出訊息工具是DbgView，該公司目前已經被Microsoft併購，所以可以從Microsoft網站下載，下載完後執行DbgView並將<b>Capture =&gt; Capture Kernel</b>選項打勾，接著<b>重啟</b>DbgView<br>
+<img src="wdm_asm_hello/1.jpg" class="maxSize"><br><br>
+
+對於驅動程式的安裝工具，司徒目前使用NuMega公司製作的EzDriverInstaller，將main.sys和main.inf放在同一個目錄並執行EzDriverInstaller，選擇<b>File =&gt; Open...</b>(開啟main.inf檔案)，接著按<b>Add New Device</b>就可以在DbgView上面看到輸出訊息<br>
+<img src="wdm_asm_hello/2.jpg" class="maxSize"><br>
+<img src="wdm_asm_hello/3.jpg" class="maxSize"><br><br>
+
+Device Manager<br>
+<img src="wdm_asm_hello/4.jpg" class="maxSize"><br><br>
+
+Device Object<br>
+<img src="wdm_asm_hello/5.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
