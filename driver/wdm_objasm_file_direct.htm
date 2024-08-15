@@ -38,7 +38,7 @@ Object MyDevice, , KPnpDevice
 
     Embed m_pMyLowerDevice, KPnpLowerDevice
 
-    DefineVariable Buffer, BYTE, 255 dup(0)
+    DefineVariable m_Buffer, BYTE, 255 dup(0)
 ObjectEnd
 
 DECLARE_DRIVER_CLASS MyDriver, $OfsCStr("MyDriver")
@@ -106,7 +106,7 @@ Method MyDevice.Read, uses esi, I : PKIrp
     MmGetSystemAddressForMdlSafe pMdl, LowPagePriority
     mov pBuffer, eax
 
-    invoke strcpy, pBuffer, addr [esi].Buffer
+    invoke strcpy, pBuffer, addr [esi].m_Buffer
     invoke strlen, pBuffer
     mov dwSize, eax
 
@@ -134,7 +134,7 @@ Method MyDevice.Write, uses esi, I : PKIrp
     MmGetSystemAddressForMdlSafe pMdl, LowPagePriority
     mov pBuffer, eax
 
-    invoke strcpy, addr [esi].Buffer, pBuffer
+    invoke strcpy, addr [esi].m_Buffer, pBuffer
 
     OCall I::KIrp.Information
     push dwSize
