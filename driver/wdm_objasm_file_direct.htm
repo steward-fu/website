@@ -1,8 +1,8 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head><script type="text/javascript" src="../page_head.js"></script>
 
-<h3><a href="../driver.htm">驅動程式</a> - Windows Driver Model (WDM) - 使用範例 - Assembly (ObjAsm) - <b>Choose DO_BUFFERED_IO for File IRP</b></h3>
+<h3><a href="../driver.htm">驅動程式</a> - Windows Driver Model (WDM) - 使用範例 - Assembly (ObjAsm) - <b>Choose DO_DIRECT_IO for File IRP</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
@@ -67,7 +67,7 @@ Method MyDriver.Unload, uses esi
 MethodEnd
 
 Method MyDevice.Init, uses esi, pPhyDevice : PDEVICE_OBJECT
-    ACall Init, $OfsCStrW("\Device\MyDriver"), FILE_DEVICE_UNKNOWN, $OfsCStrW("\DosDevices\MyDriver"), 0, DO_BUFFERED_IO
+    ACall Init, $OfsCStrW("\Device\MyDriver"), FILE_DEVICE_UNKNOWN, $OfsCStrW("\DosDevices\MyDriver"), 0, DO_DIRECT_IO
 
     SetObject esi
     OCall [esi].m_pMyLowerDevice::KPnpLowerDevice.Initialize, [esi].m_pMyDevice, pPhyDevice
@@ -93,13 +93,17 @@ Method MyDevice.Create, uses esi, I : PKIrp
 MethodEnd
 
 Method MyDevice.Read, uses esi, I : PKIrp
+    local pMdl : POINTER
     local dwSize : DWORD
     local pBuffer : POINTER
 
     T $OfsCStr("IRP_MJ_READ")
 
     SetObject esi
-    OCall I::KIrp.BufferedReadDest
+    OCall I::KIrp.Mdl
+    mov pMdl, eax
+
+    MmGetSystemAddressForMdlSafe pMdl, LowPagePriority
     mov pBuffer, eax
 
     invoke strcpy, pBuffer, addr [esi].Buffer
@@ -114,17 +118,20 @@ Method MyDevice.Read, uses esi, I : PKIrp
 MethodEnd
 
 Method MyDevice.Write, uses esi, I : PKIrp
+    local pMdl : POINTER
     local dwSize : DWORD
     local pBuffer : POINTER
 
     T $OfsCStr("IRP_MJ_WRITE")
 
     SetObject esi
-    OCall I::KIrp.WriteSize
-    push dword ptr [eax]
-    pop dwSize
+    OCall I::KIrp.Mdl
+    mov pMdl, eax
 
-    OCall I::KIrp.BufferedWriteSource
+    MmGetMdlByteCount pMdl
+    mov dwSize, eax
+
+    MmGetSystemAddressForMdlSafe pMdl, LowPagePriority
     mov pBuffer, eax
 
     invoke strcpy, addr [esi].Buffer, pBuffer
