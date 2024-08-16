@@ -1,0 +1,35 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../umpc.htm">微電腦</a> - King Jim Pomera DM250 - <b>Build Kernel</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://www.ekesete.net/log/?p=9504<br>
+https://haruka.cafe/posts/it/p000157/<br>
+https://github.com/ichinomoto/dm200_tools<br>
+https://qiita.com/alt-core/items/0467dca2f4b50d3e3003<br><br>
+
+步驟如下：
+</p>
+<pre>
+$ cd
+$ wget https://github.com/steward-fu/website/releases/download/ldd/arm_gcc-4.9.tar.gz
+$ tar xvf arm_gcc-4.9.tar.gz
+$ sudo mv gcc-4.9 /opt
+$ export PATH=/opt/gcc-4.9/bin/:$PATH
+
+$ git clone https://github.com/ichinomoto/dm200_debian_kernel
+$ cd dm200_debian_kernel
+$ git checkout dm250_dev
+$ ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- make dm250_defconfig
+$ vim scripts/dtc/dtc-lexer.lex.c +640
+    extern YYLTYPE yylloc;
+
+$ ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- make dm250_defconfig
+$ ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- make zImage -j4
+$ ./mkkrnlimg arch/arm/boot/zImage kernel.img
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
