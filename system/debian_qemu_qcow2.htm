@@ -2,34 +2,23 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head><script type="text/javascript" src="../page_head.js"></script>
 
-<h3><a href="../system.htm">系統</a> - Debian - QEMU - <b>安裝Windows 98</b></h3>
+<h3><a href="../system.htm">系統</a> - Debian - QEMU - <b>如何掛載QCOW2</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
 https://archive.org/details/windows-98-se-isofile<br>
 https://www.lysator.liu.se/~jonass/qemu_win98.html<br><br>
 
-步驟如下：
-</p>
-<pre>
-$ qemu-img create -f qcow2 win98.qcow2 1G
-$ qemu-img create -f qcow2 data.qcow2 1G
-$ qemu-system-i386 -hda win98.qcow2 -cdrom win98se.iso -boot c -cpu coreduo -m 512 -vga cirrus -net nic,model=pcnet -rtc base=localtime -accel tcg -no-hpet -device AC97 -drive file=data.qcow2 -serial none -parallel none
-</pre>
-<p>
-P.S. 安裝完成後再掛載data.qcow2<br><br>
-
-掛載data.qcow2
+Mount
 </p>
 <pre>
 $ sudo modprobe nbd max_part=8
-$ sudo qemu-nbd --connect=/dev/nbd0 data.qcow2 
-$ sudo fdisk /dev/nbd0 -l
+$ sudo qemu-nbd --connect=/dev/nbd0 xxx.qcow2 
 $ sudo mount /dev/nbd0p1 /mnt
 </pre><br>
 
 <p>
-卸載data.qcow2
+Unmount
 </p>
 <pre>
 $ sudo umount /mnt
