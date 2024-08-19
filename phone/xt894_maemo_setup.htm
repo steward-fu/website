@@ -1,0 +1,49 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../phone.htm">手機</a> - Motorola XT894 - Maemo Leste - <b>安裝系統</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://guidelinuxphone.wordpress.com/droid4-ubuntu-bring-up-rootfs/<br><br>
+
+步驟如下：<br>
+1. 下載檔案
+</p>
+<pre>
+$ sudo apt-get install fastboot
+$ cd
+$ wget https://maedevu.maemo.org/images/droid4/VRZ_XT894_9.8.2O-72_VZW-18-8_CFC.xml.zip
+$ wget https://maedevu.maemo.org/images/droid4/flash-droid-4-fw.sh
+$ wget https://github.com/tmlind/droid4-kexecboot/blob/master/utags-mmcblk1p13.bin
+$ wget https://github.com/tmlind/droid4-kexecboot/blob/master/2019-03-08/droid4-kexecboot.img
+$ unzip VRZ_XT894_9.8.2O-72_VZW-18-8_CFC.xml.zip
+</pre><br>
+
+<p>
+2. 按住<b>電源 + 音量上 + 音量下</b>，選擇進入Fastboot模式<br>
+3. 安裝Kexecboot
+</p>
+<pre>
+$ pushd VRZ_XT894_9.8.2O-72_VZW-18-8_CFC.xml
+$ sudo bash ../flash-droid-4-fw.sh
+$ popd
+$ sudo fastboot flash mbm VRZ_XT894_9.8.2O-72_VZW-18-8_CFC.xml/allow-mbmloader-flashing-mbm.bin
+$ sudo fastboot reboot-bootloader
+$ sudo fastboot flash bpsw droid4-kexecboot.img
+$ sudo fastboot flash utags utags-mmcblk1p13.bin
+$ sudo fastboot reboot
+</pre><br>
+
+<p>
+4. 燒錄到記憶卡
+</p>
+<pre>
+$ cd
+$ wget https://maedevu.maemo.org/images/droid4/20200323/maemo-leste-1.0-armhf-droid4-20200323.img.xz
+$ xzcat maemo-leste-1.0-armhf-droid4-20200323.img.xz | sudo dd status=progress bs=1M of=/dev/xxx
+$ sync
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

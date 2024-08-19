@@ -1,62 +1,47 @@
-﻿<!--
- ____________________________________________________________
-|                                                            |
-|    DESIGN + Pat Heard { http://fullahead.org }             |
-|      DATE + 2006.09.12                                     |
-| COPYRIGHT + Free use if this notice is kept in place.      |
-|____________________________________________________________|
-
--->
-
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
-    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
-<head>
-  <title>司徒的教學網站</title>
-  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
-  <meta name="author" content="fullahead.org" />
-  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
-  <meta name="description" content="A valid, XHTML 1.0 template" />
-  <meta name="robots" content="index, follow, noarchive" />
-  <meta name="googlebot" content="noarchive" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+<head><script type="text/javascript" src="../page_head.js"></script>
 
-  <link rel="shortcut icon" href="../../website.ico">
-  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
-  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
-  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
-  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
-  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
-  
-  <script type="text/javascript" src="../../scripts/shCore.js"></script>
-  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
-
-  <!-- Conditional comment to apply opacity fix for IE #content background.
-       Invalid CSS, but can be removed without harming design -->
-  <!--[if gt IE 5]>
-  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
-  <![endif]-->
-</head>
-
-<body>
-<script type="text/javascript">SyntaxHighlighter.all();</script>
-<div id="wrapper">
-<div id="content">
-<script type="text/javascript" src="../../header.js"></script>
-<div id="page">
-<h3>Motorola XT894 &gt;&gt; Alpine</h3>
-<p><b>安裝系統</b></p>
-<hr size="1">
+<h3><a href="../phone.htm">手機</a> - Motorola XT894 - Alpine - <b>安裝系統</b></h3>
+<hr size="1"><br>
 <p>
 參考資訊：<br>
-1. <a href="https://guidelinuxphone.wordpress.com/">alpine</a><br><br>
+https://guidelinuxphone.wordpress.com/<br><br>
 
 步驟如下：<br>
-1. 燒錄<a href="install_maemo.htm">kexecboot</a><br>
-2. 製作系統
+1. 下載檔案
+</p>
+<pre>
+$ sudo apt-get install fastboot
+$ cd
+$ wget https://maedevu.maemo.org/images/droid4/VRZ_XT894_9.8.2O-72_VZW-18-8_CFC.xml.zip
+$ wget https://maedevu.maemo.org/images/droid4/flash-droid-4-fw.sh
+$ wget https://github.com/tmlind/droid4-kexecboot/blob/master/utags-mmcblk1p13.bin
+$ wget https://github.com/tmlind/droid4-kexecboot/blob/master/2019-03-08/droid4-kexecboot.img
+$ unzip VRZ_XT894_9.8.2O-72_VZW-18-8_CFC.xml.zip
+</pre><br>
+
+<p>
+2. 按住<b>電源 + 音量上 + 音量下</b>，選擇進入Fastboot模式<br>
+3. 安裝Kexecboot
+</p>
+<pre>
+$ pushd VRZ_XT894_9.8.2O-72_VZW-18-8_CFC.xml
+$ sudo bash ../flash-droid-4-fw.sh
+$ popd
+$ sudo fastboot flash mbm VRZ_XT894_9.8.2O-72_VZW-18-8_CFC.xml/allow-mbmloader-flashing-mbm.bin
+$ sudo fastboot reboot-bootloader
+$ sudo fastboot flash bpsw droid4-kexecboot.img
+$ sudo fastboot flash utags utags-mmcblk1p13.bin
+$ sudo fastboot reboot
+</pre><br>
+
+<p>
+4. 製作系統
 </p>
 <pre>
 $ sudo apt-get install qemu-user-static -y
+
 $ cd
 $ wget -P archives/basic_rootfs/alpine/ -c http://dl-cdn.alpinelinux.org/alpine/v3.11/releases/armv7/alpine-minirootfs-3.11.3-armv7.tar.gz
 $ git clone https://github.com/omerlle/droid4-bringup.git archives/droid4_bringup
@@ -77,8 +62,8 @@ $ sudo chroot ${droid_rootfs} sh
 # apk add bash openrc udev openssh python3 alsa-utils util-linux rsync xorg-server xinit i3wm evince xterm tmux eog linux-headers build-base python3-dev sqlite kbd libqmi emacs linux-firmware wpa_supplicant bluez wireless-tools
 # pip3 install --upgrade pip
 # pip3 install evdev
-# echo droid4 > /etc/hostname
-# echo "127.0.0.1 droid4" >> /etc/hosts
+# echo droid4 &gt; /etc/hostname
+# echo "127.0.0.1 droid4" &gt;&gt; /etc/hosts
 # sed -i 's/^#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
 # rc-update add devfs sysinit
 # rc-update add sysfs boot
@@ -90,9 +75,9 @@ $ sudo chroot ${droid_rootfs} sh
 # rc-update add droid4-usb default
 # rc-update add droid4-modem-app default
 # rc-update add droid4-buttons-handle default
-# echo "/dev/mmcblk0p3 /root/user_data vfat defaults" >> /etc/fstab
-# sqlite3 /root/.droid4/hardware.db < /usr/local/share/droid4/python3_packages/hardware/config/hardware_db.back
-# sqlite3 /tmp/modem.db < /usr/local/share/droid4/python3_packages/modem/config/modem_db.back
+# echo "/dev/mmcblk0p3 /root/user_data vfat defaults" &gt;&gt; /etc/fstab
+# sqlite3 /root/.droid4/hardware.db &lt; /usr/local/share/droid4/python3_packages/hardware/config/hardware_db.back
+# sqlite3 /tmp/modem.db &lt; /usr/local/share/droid4/python3_packages/modem/config/modem_db.back
 # passwd
 # exit
 
@@ -102,7 +87,7 @@ $ sudo cp archives/firmware/ti-connectivity/TIInit_10.6.15.bts ${droid_rootfs}/l
 </pre><br>
 
 <p>
-燒錄到記憶卡(zImage、omap4-droid4-xt894.dtb需先編譯好)：
+5. 燒錄到記憶卡(zImage、omap4-droid4-xt894.dtb需先編譯好)
 </p>
 <pre>
 $ export sdcard="mmcblk0"
@@ -134,16 +119,5 @@ $ sudo mv ${droid_rootfs}/tmp/modem.db mnt/droid4/modem/dynamic_data/
 $ sync
 $ sudo umount mnt
 </pre>
-<p>
-P.S. 插入XT894後開機即可。
-</p>
 
-<p>
-<br><a href="../../phone.htm">返回上一頁</a>
-</p>
-
-</div>
-</div>
-</div>
-</body>
-</html>
+<br><script type="text/javascript" src="../tail.js"></script>
