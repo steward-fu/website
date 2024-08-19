@@ -52,6 +52,7 @@ All of files or resources used on my website can be found from the following lin
 [![](img/photos/n900.jpg)](https://github.com/steward-fu/website/releases/tag/n900)
 [![](img/photos/pro1.jpg)](https://github.com/steward-fu/website/releases/tag/pro1)
 [![](img/photos/pro1x.jpg)](https://github.com/steward-fu/website/releases/tag/pro1-x)
+[![](img/photos/xt894.jpg)](https://github.com/steward-fu/website/releases/tag/xt894)
 [![](img/photos/xt897.jpg)](https://github.com/steward-fu/website/releases/tag/xt897)
 [![](img/photos/pixel3axl.jpg)](https://github.com/steward-fu/website/releases/tag/pixel-3a-xl)
 [![](img/photos/pinephone.jpg)](https://github.com/steward-fu/website/releases/tag/pinephone)
