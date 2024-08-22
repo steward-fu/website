@@ -1,0 +1,33 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../phone.htm">手機</a> - Motorola XT897 - CM 10.2 - <b>如何更新Kernel</b></h3>
+<hr size="1"><br>
+<p>
+步驟如下：<br>
+1. 更新Boot磁區
+</p>
+<pre>
+$ su
+# dd if=/dev/block/platform/msm_sdcc.1/by-name/boot of=boot.img
+# mkdir boot
+# unpackbootimg -i boot.img -o boot
+# cd boot
+# cp xxx boot.img-kernel
+# mkbootimg --kernel boot.img-kernel --ramdisk boot.img-ramdisk --cmdline "console=/dev/null androidboot.hardware=qcom user_debug=31 loglevel=1 zcache" --base 0x80200000 --kernel_offset 0x8000 --ramdisk_offset 0x1600000 --second_offset 0xf00000 --tags_offset 0x100 --pagesize 2048 -o boot.img
+# dd if=boot.img of=/dev/block/platform/msm_sdcc.1/by-name/boot bs=1
+# sync
+</pre>
+<p>
+P.S. xxx就是新的zImage<br><br>
+
+2. 更新Kernel Module檔案<br>
+</p>
+<pre>
+# mount -o remount,rw /system
+# cp xxx/*.ko /system/lib/modules/
+# sync
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
