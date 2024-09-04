@@ -1,0 +1,35 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../phone.htm">手機</a> - Motorola XT894 - Sailfish OS - <b>解決SSL certificate issues</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://forum.sailfishos.org/t/guide-fix-certificate-issues-on-sailfishos/8910<br>
+https://docs.sailfishos.org/Support/Help_Articles/Managing_Sailfish_OS/Updating_Sailfish_OS/<br><br>
+
+步驟如下：
+</p>
+<pre>
+$ devel-su
+# curl -kLO https://releases.jolla.com/releases/4.0.1.48/jolla/armv7hl/oss/noarch/ca-certificates-2018.2.26-1.2.1.jolla.noarch.rpm
+
+# ssu re 3.4.0.24
+# ssu ur
+# zypper ref
+# zypper install p11-kit
+# pkcon install-local ca-certificates-2018.2.26-1.2.1.jolla.noarch.rpm
+
+# vim /usr/share/ssu/features.d/adaptation-community.ini 
+    [adaptation-community]
+    repos = adaptation-community
+    pattern = Feature community adaptation
+    description = Enable ssu for community ports
+
+    [repositories]
+    adaptation-community = 
+    http://repo.merproject.org/obs/nemo:/devel:/hw:/motorola:/maserati/sailfishos_%(release)/
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
