@@ -1,0 +1,87 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../phone.htm">手機</a> - F(x)tec Pro1 X - Sailfish OS - LXC - <b>安裝Box86/64 + Wine</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://raw.githubusercontent.com/ThieuMinh26/Proot-Setup/main/Box86-64_Wine86-64.sh<br><br>
+
+司徒目前是在LXC(Debian 12 ARM64)環境下使用box86/64 + wine，主要的目的只是想要使用MASM32寫一些教學程式，因此，只要可以顯示出Windows視窗就可以達到司徒的要求，所以司徒並沒有針對效能做測試，因此，這邊給出的安裝方式是基於網友提供的腳本，比較特別的是，司徒在LXC環境下，同時安裝wine(aarch64) + wine(amd64)兩個版本<br><br>
+
+安裝方式如下：
+</p>
+<pre>
+#!/bin/bash
+
+# Enable Multiarch
+sudo dpkg --add-architecture armhf
+sudo apt update -y
+sudo apt upgrade -y
+
+# Install related kits
+sudo apt install -y gpg xz-utils
+
+# OpenGL
+sudo apt install -y libgl1:armhf libgl1:arm64
+
+# - These packages are needed for running box86/wine-i386
+sudo apt install -y libasound2:armhf libc6:armhf libglib2.0-0:armhf libgphoto2-6:armhf libgphoto2-port12:armhf libgstreamer-plugins-base1.0-0:armhf libgstreamer1.0-0:armhf libpcap0.8:armhf libpulse0:armhf libsane1:armhf libudev1:armhf libunwind8:armhf libusb-1.0-0:armhf libx11-6:armhf libxext6:armhf ocl-icd-libopencl1:armhf libopencl1:armhf ocl-icd-libopencl1:armhf libopencl-1.2-1:armhf libasound2-plugins:armhf libncurses6:armhf libcap2-bin:armhf libcups2:armhf libdbus-1-3:armhf libfontconfig1:armhf libfreetype6:armhf libglu1-mesa:armhf libglu1:armhf libgnutls30:armhf libgssapi-krb5-2:armhf libjpeg8:armhf libkrb5-3:armhf libodbc1:armhf libosmesa6:armhf libsdl2-2.0-0:armhf libv4l-0:armhf libxcomposite1:armhf libxcursor1:armhf libxfixes3:armhf libxi6:armhf libxinerama1:armhf libxrandr2:armhf libxrender1:armhf libxxf86vm1:armhf
+
+# sudo apt install -y libasound2:armhf libc6:armhf libglib2.0-0:armhf libgphoto2-6:armhf libgphoto2-port12:armhf libgstreamer-plugins-base1.0-0:armhf libgstreamer1.0-0:armhf libpcap0.8:armhf libpulse0:armhf libsane1:armhf libudev1:armhf libunwind8:armhf libusb-1.0-0:armhf libx11-6:armhf libxext6:armhf ocl-icd-libopencl1:armhf libopencl1:armhf ocl-icd-libopencl1:armhf libopencl-1.2-1:armhf libasound2-plugins:armhf libncurses6:armhf libcap2-bin:armhf libcups2:armhf libdbus-1-3:armhf libfontconfig1:armhf libfreetype6:armhf libglu1-mesa:armhf libglu1:armhf libgnutls30:armhf libgssapi-krb5-2:armhf libjpeg62-turbo:armhf libkrb5-3:armhf libodbc1:armhf libosmesa6:armhf libsdl2-2.0-0:armhf libv4l-0:armhf libxcomposite1:armhf libxcursor1:armhf libxfixes3:armhf libxi6:armhf libxinerama1:armhf libxrandr2:armhf libxrender1:armhf libxxf86vm1:armhf
+
+# - These packages are needed for running box64/wine-amd64
+sudo apt install -y libasound2:arm64 libc6:arm64 libglib2.0-0:arm64 libgphoto2-6:arm64 libgphoto2-port12:arm64 libgstreamer-plugins-base1.0-0:arm64 libgstreamer1.0-0:arm64 libpcap0.8:arm64 libpulse0:arm64 libsane1:arm64 libudev1:arm64 libunwind8:arm64 libusb-1.0-0:arm64 libx11-6:arm64 libxext6:arm64 ocl-icd-libopencl1:arm64 libopencl1:arm64 ocl-icd-libopencl1:arm64 libopencl-1.2-1:arm64 libasound2-plugins:arm64 libncurses6:arm64 libcap2-bin:arm64 libcups2:arm64 libdbus-1-3:arm64 libfontconfig1:arm64 libfreetype6:arm64 libglu1-mesa:arm64 libglu1:arm64 libgnutls30:arm64 libgssapi-krb5-2:arm64 libjpeg8:arm64 libkrb5-3:arm64 libodbc1:arm64 libosmesa6:arm64 libsdl2-2.0-0:arm64 libv4l-0:arm64 libxcomposite1:arm64 libxcursor1:arm64 libxfixes3:arm64 libxi6:arm64 libxinerama1:arm64 libxrandr2:arm64 libxrender1:arm64 libxxf86vm1:arm64
+
+# sudo apt install -y libasound2:arm64 libc6:arm64 libglib2.0-0:arm64 libgphoto2-6:arm64 libgphoto2-port12:arm64 libgstreamer-plugins-base1.0-0:arm64 libgstreamer1.0-0:arm64 libpcap0.8:arm64 libpulse0:arm64 libsane1:arm64 libudev1:arm64 libunwind8:arm64 libusb-1.0-0:arm64 libx11-6:arm64 libxext6:arm64 ocl-icd-libopencl1:arm64 libopencl1:arm64 ocl-icd-libopencl1:arm64 libopencl-1.2-1:arm64 libasound2-plugins:arm64 libncurses6:arm64 libcap2-bin:arm64 libcups2:arm64 libdbus-1-3:arm64 libfontconfig1:arm64 libfreetype6:arm64 libglu1-mesa:arm64 libglu1:arm64 libgnutls30:arm64 libgssapi-krb5-2:arm64 libjpeg62-turbo:arm64 libkrb5-3:arm64 libodbc1:arm64 libosmesa6:arm64 libsdl2-2.0-0:arm64 libv4l-0:arm64 libxcomposite1:arm64 libxcursor1:arm64 libxfixes3:arm64 libxi6:arm64 libxinerama1:arm64 libxrandr2:arm64 libxrender1:arm64 libxxf86vm1:arm64
+
+# Clean
+sudo apt clean
+sudo apt autoremove -y
+sudo rm -rf ~/wine
+
+# Install Box86
+sudo wget https://ryanfortner.github.io/box86-debs/box86.list -O /etc/apt/sources.list.d/box86.list
+wget -O- https://ryanfortner.github.io/box86-debs/KEY.gpg | sudo gpg --dearmor -o /usr/share/keyrings/box86-debs-archive-keyring.gpg
+sudo apt update &amp;&amp; sudo apt install box86 -y
+
+# Install Box64
+sudo wget https://ryanfortner.github.io/box64-debs/box64.list -O /etc/apt/sources.list.d/box64.list
+wget -O- https://ryanfortner.github.io/box64-debs/KEY.gpg | sudo gpg --dearmor -o /usr/share/keyrings/box64-debs-archive-keyring.gpg
+sudo apt update &amp;&amp; sudo apt install box64 -y
+
+# Wine-amd64
+cd
+mkdir ~/wine
+cd ~/wine
+wget https://github.com/Kron4ek/Wine-Builds/releases/download/8.0/wine-8.0-amd64.tar.xz
+tar -xvf *.tar.xz
+mv ~/wine/wine*/* ~/wine
+rm -rf wine*
+cd
+
+# Install symlinks
+sudo ln -s ~/wine/bin/wine /usr/local/bin/wine
+sudo ln -s ~/wine/bin/wine64 /usr/local/bin/wine64
+sudo chmod +x /usr/local/bin/wine /usr/local/bin/wine64
+
+echo "done !"
+</pre><br>
+
+<p>
+執行wine(aarch64)版本
+</p>
+<pre>
+$ WINEPREFIX=~/.wine_arm64 /usr/bin/wine xxx
+</pre><br>
+
+<p>
+執行wine(amd64)版本
+</p>
+<pre>
+$ WINEPREFIX=~/.wine_amd64 box86 wine xxx
+$ WINEPREFIX=~/.wine_amd64 box64 wine64 xxx
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
