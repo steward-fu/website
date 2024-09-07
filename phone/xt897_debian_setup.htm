@@ -1,0 +1,38 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../phone.htm">手機</a> - Motorola XT897 - Debian 8 - <b>安裝系統</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://wiki.ubuntu.com/ARM/RootfsFromScratch/QemuDebootstrap<br><br>
+
+由於XT897的UART已經被PostMarketOS團隊找出來，因此，對於移植系統來說，將會相當方便除錯，司徒最大的目標是在XT897跑Native Debian系統，把XT897當作一台可攜的開發機器，為此，司徒將移植過程紀錄下來，而目前XT897的Kernel版號都是3.0.xxx，這個Kernel版號只能上到Debian Jessie，因此，司徒基於debootstrap製作Jessie系統<br><br>
+
+步驟如下(PC)：
+</p>
+<pre>
+$ cd
+$ sudo debootstrap --arch armhf --foreign jessie jessie
+$ sudo cp /usr/bin/qemu-arm-static jessie/usr/bin
+$ sudo mount -o bind /dev jessie/dev
+$ sudo mount -o bind /sys jessie/sys
+$ sudo mount -o bind /proc jessie/proc
+$ sudo vim jessie/etc/resolv.conf
+    nameserver 8.8.8.8
+
+$ sudo chroot jessie /bin/bash
+
+I have no name!@debian:/# /debootstrap/debootstrap --second-stage
+I have no name!@debian:/# passwd root
+I have no name!@debian:/# adduser xxx
+I have no name!@debian:/# exit
+
+$ sudo umount jessie/dev
+</pre>
+<p>
+P.S. 將製作完成的Jessie複製到MicroSD(ext3)，再配合修改的Kernel就可以看到tty登入畫面
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

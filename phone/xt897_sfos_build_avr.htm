@@ -1,0 +1,68 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../phone.htm">手機</a> - Motorola XT897 - Sailfish OS - <b>Build AVR GCC</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://wiki.vandenbussche.nl/index.php/Building_AVR_GCC<br><br>
+
+步驟如下：
+</p>
+<pre>
+$ sudo zypper install gmp-devel mpfr-devel mpc-devel
+
+$ cd 
+$ wget https://ftp.gnu.org/gnu/binutils/binutils-2.26.tar.gz
+$ tar xvf binutils-2.26.tar.gz
+$ cd binutils-2.26
+$ mkdir obj-avr
+$ cd obj-avr 
+$ ../configure --target=avr --program-prefix="avr-"
+$ make
+$ sudo make install
+
+$ cd
+$ wget https://ftp.gnu.org/gnu/gcc/gcc-4.3.4/gcc-core-4.3.4.tar.bz2
+$ tar xvf gcc-core-4.3.4.tar.bz2
+$ cd gcc-4.3.4
+$ vim gcc/toplev.h +176
+    /*
+    extern inline int 
+    floor_log2 (unsigned HOST_WIDE_INT x)
+    {
+    return x ? HOST_BITS_PER_WIDE_INT - 1 - (int) CLZ_HWI (x) : -1; 
+    }
+
+    extern inline int 
+    exact_log2 (unsigned HOST_WIDE_INT x)
+    {
+    return x == (x &amap; -x) &amp;&amp; x ? (int) CTZ_HWI (x) : -1; 
+    }
+    */
+
+$ mkdir obj-avr
+$ cd obj-avr
+$ ../configure --target=avr --program-prefix="avr-" --enable-languages=c --disable-libssp
+$ make
+$ sudo make install
+
+$ cd 
+$ wget http://mirror.yongbok.net/nongnu/avr-libc/old-releases/avr-libc-1.6.8.tar.bz2
+$ tar xvf avr-libc-1.6.8.tar.bz2
+$ cd avr-libc-1.6.8
+$ ./configure --host=avr
+$ make
+$ sudo make install
+
+$ cd
+$ wget http://download.savannah.gnu.org/releases/avrdude/avrdude-6.3.tar.gz
+$ tar xvf avrdude-6.3.tar.gz
+$ cd avrdude-6.3
+$ ./configure
+$ make
+$ sudo make install
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

@@ -1,0 +1,83 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../phone.htm">手機</a> - Motorola XT897 - Debian 8 - <b>關於msm_fb_pan_idle crash問題</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+http://simons-hackbits.blogspot.com/2014/11/debian-on-nexus-7-experimenting-with.html<br><br>
+
+開啟framebuffer console後，msm_fb會有如下問題：
+</p>
+<pre>
+[   32.002166,1] Console: switching to colour frame buffer device 67x60
+[   32.068548,0] panel_enable is called
+[   32.196398,0]  MIPI panel Manufacture_id = 0x83
+[   32.196398,0]  MIPI panel Controller_ver = 0x5
+[   32.196459,0]  MIPI panel Controller_drv_ver = 0x5
+[   32.196551,0] panel_enable completed. Power_mode =0x98
+[   32.197924,0] mdp4_csc_config: Block type 10 isn't supported by CSC.
+[   32.198473,0] mdp4_fetch_cfg: dmap=47 vg=47
+[   83.965298,0] BUG: scheduling while atomic: modprobe/331/0x00000002
+[   83.965328,0] Modules linked in: fbcon(+) bitblit fbcon_rotate fbcon_ccw fbcon_ud fbcon_cw softcursor font evbug atmxt
+[   83.965420,0] [&lt;c006027c&gt;] (unwind_backtrace+0x0/0xfc) from [&lt;c0848d0c&gt;] (__schedule+0x780/0x9f0)
+[   83.965481,0] [&lt;c0848d0c&gt;] (__schedule+0x780/0x9f0) from [&lt;c0849674&gt;] (schedule_timeout+0x1c0/0x364)
+[   83.965542,0] [&lt;c0849674&gt;] (schedule_timeout+0x1c0/0x364) from [&lt;c08483e4&gt;] (wait_for_common+0x108/0x19c)
+[   83.965573,0] [&lt;c08483e4&gt;] (wait_for_common+0x108/0x19c) from [&lt;c03a36ac&gt;] (msm_fb_pan_idle+0x54/0xcc)
+[   83.965603,0] [&lt;c03a36ac&gt;] (msm_fb_pan_idle+0x54/0xcc) from [&lt;c03a3f18&gt;] (msm_fb_pan_display_ex+0x104/0x1e8)
+[   83.965664,0] [&lt;c03a3f18&gt;] (msm_fb_pan_display_ex+0x104/0x1e8) from [&lt;c03a4040&gt;] (msm_fb_pan_display+0x44/0x54)
+[   83.965695,0] [&lt;c03a4040&gt;] (msm_fb_pan_display+0x44/0x54) from [&lt;c03a4388&gt;] (msm_fb_imageblit.part.6+0x64/0x74)
+[   83.965756,0] [&lt;c03a4388&gt;] (msm_fb_imageblit.part.6+0x64/0x74) from [&lt;bf02fba8&gt;] (bit_putcs+0x244/0x3e8 [bitblit])
+[   83.965817,0] [&lt;bf02fba8&gt;] (bit_putcs+0x244/0x3e8 [bitblit]) from [&lt;bf034cf0&gt;] (fbcon_putcs+0xf4/0x124 [fbcon])
+[   83.965878,0] [&lt;bf034cf0&gt;] (fbcon_putcs+0xf4/0x124 [fbcon]) from [&lt;bf03812c&gt;] (fbcon_redraw.isra.12+0x194/0x1cc [fbcon])
+[   83.965939,0] [&lt;bf03812c&gt;] (fbcon_redraw.isra.12+0x194/0x1cc [fbcon]) from [&lt;bf03835c&gt;] (fbcon_scroll+0x1f8/0xda8 [fbcon])
+[   83.966000,0] [&lt;bf03835c&gt;] (fbcon_scroll+0x1f8/0xda8 [fbcon]) from [&lt;c0412100&gt;] (scrup+0xf8/0x104)
+[   83.966030,0] [&lt;c0412100&gt;] (scrup+0xf8/0x104) from [&lt;c0412194&gt;] (lf+0x88/0x90)
+[   83.966091,0] [&lt;c0412194&gt;] (lf+0x88/0x90) from [&lt;c0412f7c&gt;] (vt_console_print+0x27c/0x390)
+[   83.966122,0] [&lt;c0412f7c&gt;] (vt_console_print+0x27c/0x390) from [&lt;c00d9060&gt;] (__call_console_drivers+0xe0/0x108)
+[   83.966183,0] [&lt;c00d9060&gt;] (__call_console_drivers+0xe0/0x108) from [&lt;c00d9ad4&gt;] (console_unlock+0xe8/0x214)
+[   83.966213,0] [&lt;c00d9ad4&gt;] (console_unlock+0xe8/0x214) from [&lt;c04145b4&gt;] (take_over_console+0x84/0x88)
+[   83.966274,0] [&lt;c04145b4&gt;] (take_over_console+0x84/0x88) from [&lt;bf03f194&gt;] (fb_console_init+0x194/0x1dc [fbcon])
+[   83.966336,0] [&lt;bf03f194&gt;] (fb_console_init+0x194/0x1dc [fbcon]) from [&lt;c0053684&gt;] (do_one_initcall+0x138/0x190)
+[   83.966366,0] [&lt;c0053684&gt;] (do_one_initcall+0x138/0x190) from [&lt;c0116ec0&gt;] (sys_init_module+0xc20/0x1d70)
+[   83.966427,0] [&lt;c0116ec0&gt;] (sys_init_module+0xc20/0x1d70) from [&lt;c0059080&gt;] (ret_fast_syscall+0x0/0x30)
+</pre><br>
+
+<p>
+drivers/tty/vt/vt.c
+</p>
+<pre>
+2483 static void vt_console_print(struct console *co, const char *b, unsigned count)
+2484 {
+2485     struct vc_data *vc = vc_cons[fg_console].d;
+2486     unsigned char c;
+2487     static DEFINE_SPINLOCK(printing_lock);
+2488     const ushort *start;
+2489     ushort cnt = 0;
+2490     ushort myx;
+2491     int kmsg_console;
+2492     
+2493     /* console busy or not yet initialized */
+2494     if (!printable)
+2495         return;
+2496     if (!spin_trylock(&amp;printing_lock))
+2497         return;
+</pre>
+<p>
+2496行做spin_trylock的動作，但是，在msm_fb_pan_idle()卻做了sleep的動作，導致crash<br><br>
+
+Workaround：
+</p>
+<pre>
+DEFINE_SEMAPHORE(msm_fb_pan_sem);
+static int msm_fb_pan_idle(struct msm_fb_data_type *mfd)
+{
+    return 0;
+}
+</pre>
+<p>
+P.S. 由於fbcon有太多地方需要修改，司徒最後決定直接修改msm_fb_pan_idle()，VSYNC部份，之後可以添加FBIO_WAITFORVSYNC支援
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

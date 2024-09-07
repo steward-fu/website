@@ -1,0 +1,64 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../phone.htm">手機</a> - Motorola XT897 - Sailfish OS - <b>為何Framebuffer更新很慢</b></h3>
+<hr size="1"><br>
+<p>
+drivers/video/msm/msm_fb.c
+</p>
+<pre>
+2014 static int msm_fb_pan_display(struct fb_var_screeninfo *var,
+2015                   struct fb_info *info)
+2016 {
+2017     struct mdp_display_commit disp_commit;
+2018     memset(&amp;amp;disp_commit, 0, sizeof(disp_commit));
+2019     disp_commit.var = *var;
+2020     disp_commit.wait_for_finish = TRUE;
+2021     return msm_fb_pan_display_ex(info, &amp;disp_commit);
+2022 }
+</pre><br>
+
+<p>
+disp_commit.wait_for_finish的設定值會決定是否須等待完成
+</p>
+<pre>
+1992     if (wait_for_finish)
+1993         msm_fb_pan_idle(mfd);
+1994     return ret;
+</pre><br>
+
+<p>
+比較好的作法是使用FBIO_WAITFORVSYNC，而在FBIOPAN_DISPLAY時，先將控制權交還User Application
+</p>
+<pre>
+1904 DEFINE_SEMAPHORE(msm_fb_pan_sem);
+1905 static int msm_fb_pan_idle(struct msm_fb_data_type *mfd)
+1906 {
+1907     int ret = 0;
+1908
+1909     mutex_lock(&amp;mfd-&gt;sync_mutex);
+1910     if (mfd-&gt;is_committing) {
+1911         mutex_unlock(&amp;mfd-&gt;sync_mutex);
+1912         ret = wait_for_completion_interruptible_timeout(
+1913                 &amp;mfd-&gt;commit_comp,
+1914             msecs_to_jiffies(WAIT_DISP_OP_TIMEOUT));
+1915         if (ret &lt; 0)
+1916             ret = -ERESTARTSYS;
+1917         else if (!ret)
+1918             pr_err("%s wait for commit_comp timeout %d %d",
+1919                 __func__, ret, mfd-&gt;is_committing);
+1920         if (ret &lt;= 0) {
+1921             mutex_lock(&amp;mfd-&gt;sync_mutex);
+1922             mfd-&gt;is_committing = 0;
+1923             complete_all(&amp;mfd-&gt;commit_comp);
+1924             mutex_unlock(&amp;mfd-&gt;sync_mutex);
+1925         }
+1926     } else {
+1927         mutex_unlock(&amp;mfd-&gt;sync_mutex);
+1928     }
+1929     return ret;
+1930 }
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

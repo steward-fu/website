@@ -1,0 +1,49 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../phone.htm">手機</a> - Motorola XT897 - Sailfish OS - <b>Build GCC 4.8.2</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://gist.github.com/unity-car-tutorials/0ce692a5ecb06c656182<br><br>
+
+步驟如下：<br>
+1. 手動掛載SWAP 2GB<br>
+2. 編譯安裝coreutils(<b>/usr/bin/install</b>記得symlink到<b>/usr/local/bin/install</b>)<br>
+3. 執行如下命令
+</p>
+<pre>
+$ export GCC_VERSION="4.8.2"
+$ export WORKDIR="/home/nemo/Downloads/gcc-${GCC_VERSION}"
+$ export INSTALLDIR="/opt/gcc-${GCC_VERSION}"
+
+$ rm -rf ${WORKDIR}
+$ mkdir -p ${WORKDIR}
+
+$ cd $WORKDIR
+$ wget http://www.netgull.com/gcc/releases/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.bz2
+$ tar -xf gcc-${GCC_VERSION}.tar.bz2
+
+$ cd gcc-${GCC_VERSION}
+$ ./contrib/download_prerequisites
+ 
+$ cd ..
+$ mkdir gcc-build
+$ cd gcc-build
+ 
+$ ../gcc-${GCC_VERSION}/configure --prefix=${INSTALLDIR} --enable-shared --enable-threads=posix --enable-__cxa_atexit --enable-clocale=gnu --enable-languages=c,c++ --disable-multilib --with-arch=armv7-a --with-float=hard --with-fpu=vfpv3-d16
+$ make
+    cfns.gperf:101:1: error: 'const char* libc_name_p(const char*, unsigned int)' redeclared inline with 'gnu_inline' attribute
+    cfns.gperf:26:14: note: 'const char* libc_name_p(const char*, unsigned int)' previously declared here
+    cfns.gperf:26:14: warning: inline function 'const char* libc_name_p(const char*, unsigned int)' used but never defined
+
+$ vim ../gcc-4.8.2/gcc/cp/cfns.h
+    55: //inline
+    126: //inline
+
+$ make
+$ sudo make install
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
