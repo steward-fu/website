@@ -1,0 +1,41 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../phone.htm">手機</a> - Motorola XT897 - Sailfish OS - <b>為何OpenGL Framerate只有30fps</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://stackoverflow.com/questions/33304351/sdl2-fast-pixel-manipulation<br><br>
+
+使用如下程式查找支援的格式：
+</p>
+<pre>
+SDL_RendererInfo info;
+SDL_GetRendererInfo(renderer, &amp;info);
+std::cout &lt;&lt; "Renderer name: " &lt;&lt; info.name &lt;&lt; std::endl;
+std::cout &lt;&lt; "Texture formats: " &lt;&lt; std::endl;
+for(Uint32 i=0; i&lt;info.num_texture_formats; i++) {
+    std::cout &lt;&lt; SDL_GetPixelFormatName( info.texture_formats[i] ) &lt;&lt; std::endl;
+}
+</pre><br>
+
+<p>
+得到如下資訊：
+</p>
+<pre>
+SDL_PIXELFORMAT_ARGB8888
+SDL_PIXELFORMAT_ABGR8888
+SDL_PIXELFORMAT_RGB888
+SDL_PIXELFORMAT_BGR888
+SDL_PIXELFORMAT_YV12
+SDL_PIXELFORMAT_IYUV
+SDL_PIXELFORMAT_NV12
+SDL_PIXELFORMAT_NV21
+SDL_PIXELFORMAT_UNKNOWN
+</pre>
+<p>
+P.S. 司徒這時候才發現，原來SDL_PIXELFORMAT_RGB565並沒有支援，這部分的轉換是由CPU完成，導致效能下降，改成SDL_PIXELFORMAT_ARGB8888後，即可解決問題
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
