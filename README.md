@@ -71,6 +71,7 @@ All of files or resources used on my website can be found from the following lin
 [![](img/photos/d88.jpg)](https://github.com/steward-fu/website/releases/tag/iriver-d88)
 [![](img/photos/d8.jpg)](https://github.com/steward-fu/website/releases/tag/iriver-d8)
 [![](img/photos/d88.jpg)](https://github.com/steward-fu/website/releases/tag/iriver-d88)
+[![](img/photos/astro.jpg)](https://github.com/steward-fu/website/releases/tag/astro)
 [![](img/photos/cosmo.jpg)](https://github.com/steward-fu/website/releases/tag/cosmo)
 [![](img/photos/gemini-pda.jpg)](https://github.com/steward-fu/website/releases/tag/gemini-pda)
 [![](img/photos/n810.jpg)](https://github.com/steward-fu/website/releases/tag/n810)
