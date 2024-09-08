@@ -1,0 +1,30 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../phone.htm">手機</a> - Cosmo Communicator - Debian - <b>Build Kernel 4.4.146</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://www.oesf.org/forum/index.php?topic=36321.0<br>
+https://www.mygnu.de/2020/02/exfat-support-for-the-cosmo-communicator/<br><br>
+
+步驟如下：
+</p>
+<pre>
+$ sudo apt install build-essential libncurses-dev bison flex libssl-dev libelf-dev bc git gcc-aarch64-linux-gnu libfdt-dev clang
+$ mkdir cosmo
+$ cd cosmo
+$ mkdir KERNEL_OUT
+
+$ git clone https://github.com/gemian/cosmo-linux-kernel-4.4.git
+$ cd cosmo-linux-kernel-4.4/
+$ vim Makefile
+  KBUILD_CFLAGS   := -w -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
+
+$ make O=../KERNEL_OUT ARCH=arm64 k71v1_64_bsp_defconfig
+$ make O=../KERNEL_OUT ARCH=arm64 CC=clang CLANG_TRIPLE=aarch64-linux-gnu- CROSS_COMPILE=aarch64-linux-gnu- menuconfig
+$ make O=../KERNEL_OUT ARCH=arm64 CC=clang CLANG_TRIPLE=aarch64-linux-gnu- CROSS_COMPILE=aarch64-linux-gnu- all
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

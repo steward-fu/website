@@ -1,0 +1,33 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../phone.htm">手機</a> - Cosmo Communicator - Android - <b>Build Kernel 4.4.146</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://www.oesf.org/forum/index.php?topic=36338.0<br>
+https://www.mygnu.de/2020/02/exfat-support-for-the-cosmo-communicator/<br><br>
+
+Debian x64
+</p>
+<pre>
+$ cd
+$ sudo apt-get install gcc-aarch64* clang build-essential libncurses-dev bison flex libssl-dev libelf-dev bc git gcc-aarch64-linux-gnu python
+$ wget https://github.com/steward-fu/website/releases/download/cosmo/cosmo-android-kernel-v25_source.tar.gz
+$ tar xvf cosmo_kernel-v25_source.tar.gz
+
+$ mkdir KERNEL_OUT
+$ make O=../KERNEL_OUT -C kernel ARCH=arm64 k71v1_64_bsp_defconfig
+$ cd kernel
+$ make -j4 O=../KERNEL_OUT ARCH=arm64 CC=clang CLANG_TRIPLE=aarch64-linux-gnu- CROSS_COMPILE=aarch64-linux-gnu- all
+
+$ cd ../packing
+$ ./mkbootimg --kernel ../KERNEL_OUT/arch/arm64/boot/Image.gz-dtb --ramdisk root-boot.img-ramdisk --base 0x40078000 --second_offset 0x00e88000 --cmdline "bootopt=64S3,32N2,64N2 buildvariant=user veritykeyid=id:7e4333f9bba00adfe0ede979e28ed1920492b40f" --kernel_offset 0x00008000 --ramdisk_offset 0x14f88000 --tags_offset 0x13f88000 --pagesize 2048 -o mykernel.img
+$ cp mykernel.img ../cosmo-customos-installer/
+</pre>
+<p>
+P.S. 將cosmo-customos-installer資料夾複製到MicroSD根目錄，進入官方Recovery後，選擇<b>Install MyKernel</b>
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

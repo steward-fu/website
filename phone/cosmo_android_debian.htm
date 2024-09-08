@@ -1,0 +1,57 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../phone.htm">手機</a> - Cosmo Communicator - Android - <b>安裝Debian系統</b></h3>
+<hr size="1"><br>
+<p>
+步驟如下：<br>
+1. 安裝Linux Deploy、XServer XSDL<br>
+2. MicroSD第二分區使用ext4<br>
+3. Linux Deploy配置
+</p>
+<pre>
+Properties: linux
+BOOTSTRAP
+Distribution: Debian
+Architecture: armhf
+Distribution: buster
+Source Path: http://ftp.debian.org/debian
+Installation type: Partition
+Installation path: /dev/block/mmcblk1p2
+File system: ext4
+SSH
+Enable: Checked
+</pre>
+<p>
+4. XServer XSDL配置：1080x540、DPIx2<br>
+5. Termux
+</p>
+<pre>
+Titan:/ $ su
+Titan:/ # termux
+~ # mount -o remount,rw /
+~ # vim /system/bin/cli
+    #!/system/bin/sh
+    if [ `whoami` != "root" ]; then
+        echo "run me as root"
+        exit
+    fi
+
+    /data/data/ru.meefik.linuxdeploy/files/bin/linuxdeploy -p linux start -m
+    ssh xxx@127.0.0.1
+    /data/data/ru.meefik.linuxdeploy/files/bin/linuxdeploy -p linux stop -u
+
+~ # chmod a+x /system/bin/cli
+~ # mount -o remount,ro /
+~ # cli
+xxx@localhost:~$
+xxx@localhost:~$ DISPLAY=:0 startxfce4
+</pre><br>
+
+<p>
+完成<br>
+<img src="cosmo_android_debian/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

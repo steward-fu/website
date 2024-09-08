@@ -1,0 +1,49 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../phone.htm">手機</a> - Cosmo Communicator - Debian - <b>解決/bin/sh: 1: scripts/dtc/dtc_overlay: Exec format error問題</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://www.oesf.org/forum/index.php?topic=36540.0<br><br>
+
+問題如下：
+</p>
+<pre>
+/bin/sh: 1: scripts/dtc/dtc_overlay: Exec format error
+/bin/sh: 1: scripts/dtc/ufdt_apply_overlay: Exec format error
+</pre><br>
+
+<p>
+解法如下：
+</p>
+<pre>
+$ sudo apt install pkg-config
+
+$ cd
+$ git clone https://git.kernel.org/pub/scm/utils/dtc/dtc.git
+$ cd dtc
+$ sudo make install PREFIX=/usr
+$ make check
+
+$ cd
+$ mkdir libufdt
+$ cd libufdt
+$ wget https://github.com/steward-fu/cosmo/releases/download/v1.0/libufdt-refs_heads_master.tar.gz
+$ tar -xvf libufdt-refs_heads_master.tar.gz
+$ cd sysdeps
+$ gcc -shared libufdt_sysdeps_posix.c -Iinclude -fPIC -o libufdt_sysdeps.so
+$ sudo cp libufdt_sysdeps.so /usr/lib
+$ cd ..
+$ gcc -c ufdt_convert.c ufdt_node.c ufdt_node_pool.c ufdt_overlay.c ufdt_prop_dict.c -Iinclude -Isysdeps/include -fPIC
+$ gcc -shared ufdt_convert.o ufdt_node.o ufdt_node_pool.o ufdt_overlay.o ufdt_prop_dict.o -lfdt -o libufdt.so
+$ sudo cp libufdt.so /usr/lib
+$ cd tests/src
+$ gcc ufdt_overlay_test_app.c util.c -I../../include -I../../sysdeps/include -lufdt -lufdt_sysdeps -o ufdt_apply_overlay
+</pre>
+<p>
+P.S. 將編譯後的dtc(dtc_overlay)、ufdt_apply_overlay覆蓋掉原本的檔案
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
