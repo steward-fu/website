@@ -1,0 +1,51 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../phone.htm">手機</a> - Gemini PDA 4G - Android - Termux - <b>Build SDCC 3.8.0</b></h3>
+<hr size="1"><br>
+<p>
+必須先自己編譯安裝gputils(支援PIC14、PIC16)和libboost(SDCC需要)
+</p>
+<pre>
+$ cd
+$ wget https://sourceforge.net/projects/sdcc/files/sdcc/3.8.0/sdcc-src-3.8.0.tar.bz2/download -O sdcc.tar.bz2
+$ tar xvf sdcc.tar.bz2
+$ cd sdcc-3.8.0
+$ ./configure --prefix=$PREFIX
+$ make
+    make[4]: *** [Makefile:477: build/ds390/libfloat.lib] Segmentation fault
+
+$ cd device/lib/mcs51/
+$ make
+    ../../../bin/sdar -rcD ../build//mcs51.lib crtstart.rel crtxinit.rel crtxclear.rel crtclear.rel
+    crtpagesfr.rel crtbank.rel crtcall.rel crtxstack.rel crtxpush.rel crtxpushr0.rel crtxpop.rel
+    crtxpopr0.rel gptr_cmp.rel
+    make: *** [Makefile:40: ../build//mcs51.lib] Segmentation fault
+    make: *** Deleting file '../build//mcs51.lib'
+
+$ ltrace ../../../bin/sdar -rcD test.lib crtstart.rel
+    ...
+    fopen64("test.lib", "r")                         = 0x71d3a13018
+    fileno(0xffffffffd3a13018 &lt;no return ...&gt;
+    --- SIGSEGV (Segmentation fault) ---
+    unexpected breakpoint at 0x71d40547f8
+    --- SIGSEGV (Segmentation fault) ---
+    +++ killed by SIGSEGV +++
+
+$ cd 
+$ cd sdcc-3.8.0
+$ vim support/sdbinutils/bfd/configure +15860
+    #for ac_func in ftello ftello64 fseeko fseeko64 fopen64
+    for ac_func in ftello fseeko
+
+$ make distclean
+$ ./configure --prefix=$PREFIX
+$ make
+$ make install
+$ sdcc --version
+    SDCC : mcs51/z80/z180/r2k/r3ka/gbz80/tlcs90/ds390/pic16/pic14/TININative/ds400/hc08/s08/stm8 3.8.0 #10562 (Linux)
+    published under GNU General Public License (GPL)
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

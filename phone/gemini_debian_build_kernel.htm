@@ -1,0 +1,1094 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../phone.htm">手機</a> - Gemini PDA 4G - Android - Linux Deploy - <b>Build Kernel 3.18.41</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/dguidipc/gemini-android-kernel-3.18<br>
+https://github.com/gemian/gemini-keyboard-apps/wiki/KernelCompilation<br><br>
+
+步驟如下：
+</p>
+<pre>
+$ cd
+$ sudo apt-get install gcc-aarch64*
+$ git clone https://github.com/dguidipc/gemini-android-kernel-3.18
+$ cd gemini-android-kernel-3.18
+</pre><br>
+
+<p>
+Patch Kernel 3.18.41
+</p>
+<pre>
+diff -Naur old/kernel-3.18/arch/arm64/configs/aeon6797_6m_n_defconfig new/kernel-3.18/arch/arm64/configs/aeon6797_6m_n_defconfig
+--- old/kernel-3.18/arch/arm64/configs/aeon6797_6m_n_defconfig	2018-08-21 21:27:44.000000000 +0800
++++ new/kernel-3.18/arch/arm64/configs/aeon6797_6m_n_defconfig	2018-11-21 22:08:27.333067035 +0800
+@@ -1,4 +1,4 @@
+-CONFIG_CROSS_COMPILE="aarch64-linux-android-"
++CONFIG_CROSS_COMPILE="aarch64-linux-gnu-"
+ # CONFIG_LOCALVERSION_AUTO is not set
+ CONFIG_AUDIT=y
+ CONFIG_NO_HZ=y
+@@ -543,4 +543,4 @@
+ CONFIG_LIBCRC32C=y
+ 
+ CONFIG_USB_USBNET=y
+-CONFIG_USB_RTL8152=y
+\ No newline at end of file
++CONFIG_USB_RTL8152=y
+diff -Naur old/kernel-3.18/drivers/input/touchscreen/mediatek/Makefile new/kernel-3.18/drivers/input/touchscreen/mediatek/Makefile
+--- old/kernel-3.18/drivers/input/touchscreen/mediatek/Makefile	2018-08-21 21:27:44.000000000 +0800
++++ new/kernel-3.18/drivers/input/touchscreen/mediatek/Makefile	2018-11-21 21:57:54.130459418 +0800
+@@ -12,16 +12,16 @@
+ 
+ #obj-$(CONFIG_TOUCHSCREEN_MTK)	+=  GT1151/
+ obj-$(CONFIG_TOUCHSCREEN_MTK_NT36xxx)	+=  aeon_nt36xxx/
+-obj-$(CONFIG_TOUCHSCREEN_MTK_GT1151TB)	+=  GT1151TB/
+-obj-$(CONFIG_TOUCHSCREEN_MTK_GT910)	+=  GT910/
+-obj-$(CONFIG_TOUCHSCREEN_MTK_GT9XXTB_HOTKNOT)	+=  GT9XXTB_hotknot/
+-obj-$(CONFIG_TOUCHSCREEN_MTK_GT9XX_HOTKNOT)	+=  GT9XX_hotknot/
+-obj-$(CONFIG_TOUCHSCREEN_MTK_GT9XX_HOTKNOT_PHONE)	+=  GT9XX_hotknot_phone/
+-obj-$(CONFIG_TOUCHSCREEN_MTK_SYNAPTICS_I2C_RMI4)	+=  synaptics_i2c_rmi4/
+-obj-$(CONFIG_TOUCHSCREEN_MTK_GT928)	+=  GT928/
+-obj-$(CONFIG_TOUCHSCREEN_MTK_GT9XX_HOTKNOT_SCP)	+=  GT9XX_hotknot_scp/
+-obj-$(CONFIG_TOUCHSCREEN_MTK_GT911)	+=  GT911/
+-obj-$(CONFIG_TOUCHSCREEN_MTK_FT5X0X)	+=  ft5x0x/
+-obj-$(CONFIG_TOUCHSCREEN_MTK_SYNAPTICS_3320_50) +=  synaptics_3320_50/
+-obj-$(CONFIG_TOUCHSCREEN_MTK_GT9271TB_HOTKNOT) +=  GT9271TB_hotknot/
+-obj-$(CONFIG_TOUCHSCREEN_UNIFIED_DRIVER_4)	+=  unified_driver_4/
+\ No newline at end of file
++#obj-$(CONFIG_TOUCHSCREEN_MTK_GT1151TB)	+=  GT1151TB/
++#obj-$(CONFIG_TOUCHSCREEN_MTK_GT910)	+=  GT910/
++#obj-$(CONFIG_TOUCHSCREEN_MTK_GT9XXTB_HOTKNOT)	+=  GT9XXTB_hotknot/
++#obj-$(CONFIG_TOUCHSCREEN_MTK_GT9XX_HOTKNOT)	+=  GT9XX_hotknot/
++#obj-$(CONFIG_TOUCHSCREEN_MTK_GT9XX_HOTKNOT_PHONE)	+=  GT9XX_hotknot_phone/
++#obj-$(CONFIG_TOUCHSCREEN_MTK_SYNAPTICS_I2C_RMI4)	+=  synaptics_i2c_rmi4/
++#obj-$(CONFIG_TOUCHSCREEN_MTK_GT928)	+=  GT928/
++#obj-$(CONFIG_TOUCHSCREEN_MTK_GT9XX_HOTKNOT_SCP)	+=  GT9XX_hotknot_scp/
++#obj-$(CONFIG_TOUCHSCREEN_MTK_GT911)	+=  GT911/
++#obj-$(CONFIG_TOUCHSCREEN_MTK_FT5X0X)	+=  ft5x0x/
++#obj-$(CONFIG_TOUCHSCREEN_MTK_SYNAPTICS_3320_50) +=  synaptics_3320_50/
++#obj-$(CONFIG_TOUCHSCREEN_MTK_GT9271TB_HOTKNOT) +=  GT9271TB_hotknot/
++#obj-$(CONFIG_TOUCHSCREEN_UNIFIED_DRIVER_4)	+=  unified_driver_4/
+diff -Naur old/kernel-3.18/drivers/misc/mediatek/accelerometer/lsm6ds3-new/lsm6ds3-int.c new/kernel-3.18/drivers/misc/mediatek/accelerometer/lsm6ds3-new/lsm6ds3-int.c
+--- old/kernel-3.18/drivers/misc/mediatek/accelerometer/lsm6ds3-new/lsm6ds3-int.c	2018-08-21 21:27:44.000000000 +0800
++++ new/kernel-3.18/drivers/misc/mediatek/accelerometer/lsm6ds3-new/lsm6ds3-int.c	2018-11-21 15:37:47.793687858 +0800
+@@ -457,8 +457,9 @@
+ 	    num = 0;
+ 	    buf[num++] = reg_addr;
+     	for (idx = 0; idx &lt; len; idx++)
+-        	buf[num++] = data[idx];
+-		mutex_lock(&amp;lsm6ds3_mutex);
++        buf[num++] = data[idx];
++      
++		  mutex_lock(&amp;lsm6ds3_mutex);
+ 	    ret = i2c_master_send(client, buf, num);
+ 	    mutex_unlock(&amp;lsm6ds3_mutex);
+     	if (ret &lt; 0) {
+diff -Naur old/kernel-3.18/drivers/misc/mediatek/base/power/Makefile new/kernel-3.18/drivers/misc/mediatek/base/power/Makefile
+--- old/kernel-3.18/drivers/misc/mediatek/base/power/Makefile	2018-08-21 21:27:44.000000000 +0800
++++ new/kernel-3.18/drivers/misc/mediatek/base/power/Makefile	2018-11-21 21:58:23.954399265 +0800
+@@ -36,7 +36,7 @@
+ obj-$(CONFIG_ARCH_MT8127) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
+ obj-$(CONFIG_MACH_MT2701) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
+ obj-$(CONFIG_ARCH_MT7623) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
+-obj-$(CONFIG_MT2701_DCM)  += mt2701_dcm/
++#obj-$(CONFIG_MT2701_DCM)  += mt2701_dcm/
+ obj-$(CONFIG_MACH_MT2701) += hps/v1/
+ obj-$(CONFIG_ARCH_MT7623) += hps/v1/
+ obj-$(CONFIG_ARCH_MT8127) += hps/v1/
+diff -Naur old/kernel-3.18/drivers/misc/mediatek/base/power/mt6797/mt_ocp.c new/kernel-3.18/drivers/misc/mediatek/base/power/mt6797/mt_ocp.c
+--- old/kernel-3.18/drivers/misc/mediatek/base/power/mt6797/mt_ocp.c	2018-08-21 21:27:44.000000000 +0800
++++ new/kernel-3.18/drivers/misc/mediatek/base/power/mt6797/mt_ocp.c	2018-11-21 15:39:52.921344501 +0800
+@@ -635,10 +635,10 @@
+ 		*Leakage = 127999;
+ 
+ 
+-if (ocp_opt.ocp_cluster2_enable == 0)
+-	goto Label;
+-if ((cpu_online(8) == 0) &amp;&amp; (cpu_online(9) == 0))
+-	goto Label;
++  if (ocp_opt.ocp_cluster2_enable == 0)
++	  goto Label;
++  if ((cpu_online(8) == 0) &amp;&amp; (cpu_online(9) == 0))
++	  goto Label;
+ 
+ 	/* CapTotAct:  Q8.12 -&gt; integer  */
+ 	spin_lock(&amp;reset_lock);
+@@ -756,15 +756,15 @@
+ int BigOCPMAFAct(unsigned int *CapMAFAct)
+ {
+ 
+-if (ocp_read_field(OCPAPBSTATUS01, 0:0) == 1)
+-	*CapMAFAct = (ocp_read_field(OCPAPBSTATUS03, 18:0) * 1000) &gt;&gt; 12; /* mA*/
+-else
+-	*CapMAFAct = 0x0;
++  if (ocp_read_field(OCPAPBSTATUS01, 0:0) == 1)
++    *CapMAFAct = (ocp_read_field(OCPAPBSTATUS03, 18:0) * 1000) &gt;&gt; 12; /* mA*/
++  else
++    *CapMAFAct = 0x0;
+ 
+ 	if (HW_API_DEBUG_ON)
+ 		ocp_info("ocp: big CapMAFAct=%d\n",  *CapMAFAct);
+ 
+-return 0;
++  return 0;
+ }
+ 
+ 
+@@ -2797,39 +2797,39 @@
+ 
+ static int ocp_cluster0_capture_proc_show(struct seq_file *m, void *v)
+ {
+-seq_printf(m, "Cluster 0 OCP flag = %d\n", ocp_opt.ocp_cluster0_flag);
+-seq_printf(m, "Cluster 0 OCP Enable = %d\n", ocp_opt.ocp_cluster0_enable);
+-seq_puts(m, "Cluster 0 capture function:\n");
+-seq_printf(m, "IntEnDis     = 0x%x\n", ocp_status[0].IntEnDis);
+-seq_printf(m, "IRQ1         = 0x%x\n", ocp_status[0].IRQ1);
+-seq_printf(m, "IRQ0         = 0x%x\n", ocp_status[0].IRQ0);
+-seq_printf(m, "CapToLkg     = %d mA\n", ocp_status[0].CapToLkg);
+-seq_printf(m, "CapOCCGPct   = %d %%\n", ocp_status[0].CapOCCGPct);
+-seq_printf(m, "CaptureValid = %d\n", ocp_status[0].CaptureValid);
+-seq_printf(m, "CapTotAct    = %d mA\n", ocp_status[0].CapTotAct);
+-seq_printf(m, "CapMAFAct    = %d mA\n", ocp_status[0].CapMAFAct);
+-seq_printf(m, "AvgPwrValid  = %d\n", ocp_status[0].CGAvgValid);
+-seq_printf(m, "AvgAct       = %llu mA\n", ocp_status[0].CGAvg);
+-seq_printf(m, "AvgLkg       = %llu mA\n", ocp_status[0].AvgLkg);
+-seq_printf(m, "TopRawLkg    = %d\n", ocp_status[0].TopRawLkg);
+-seq_printf(m, "CPU0RawLkg   = %d\n", ocp_status[0].CPU0RawLkg);
+-seq_printf(m, "CPU1RawLkg   = %d\n", ocp_status[0].CPU1RawLkg);
+-seq_printf(m, "CPU2RawLkg   = %d\n", ocp_status[0].CPU2RawLkg);
+-seq_printf(m, "CPU3RawLkg   = %d\n", ocp_status[0].CPU3RawLkg);
+-
+-if (Reg_Debug_on) {
+-	int i;
+-
+-	for (i = 0; i &lt; 524 ; i += 4)
+-		seq_printf(m, "Addr: 0x%x = %x\n", (MP0_OCP_IRQSTATE + i), ocp_read(MP0_OCP_IRQSTATE + i));
+-
+-		seq_printf(m, "Addr: 0x102217FC = %x\n", ocp_read(MP0_OCP_GENERAL_CTRL));
+-		seq_printf(m, "Addr: 0x10221250 = %x\n", ocp_read(MP0_OCP_DBG_ACT_L));
+-		seq_printf(m, "Addr: 0x10221254 = %x\n", ocp_read(MP0_OCP_DBG_ACT_H));
+-		seq_printf(m, "Addr: 0x10221260 = %x\n", ocp_read(MP0_OCP_DBG_LKG_L));
+-		seq_printf(m, "Addr: 0x10221264 = %x\n", ocp_read(MP0_OCP_DBG_LKG_H));
+-}
+-return 0;
++  seq_printf(m, "Cluster 0 OCP flag = %d\n", ocp_opt.ocp_cluster0_flag);
++  seq_printf(m, "Cluster 0 OCP Enable = %d\n", ocp_opt.ocp_cluster0_enable);
++  seq_puts(m, "Cluster 0 capture function:\n");
++  seq_printf(m, "IntEnDis     = 0x%x\n", ocp_status[0].IntEnDis);
++  seq_printf(m, "IRQ1         = 0x%x\n", ocp_status[0].IRQ1);
++  seq_printf(m, "IRQ0         = 0x%x\n", ocp_status[0].IRQ0);
++  seq_printf(m, "CapToLkg     = %d mA\n", ocp_status[0].CapToLkg);
++  seq_printf(m, "CapOCCGPct   = %d %%\n", ocp_status[0].CapOCCGPct);
++  seq_printf(m, "CaptureValid = %d\n", ocp_status[0].CaptureValid);
++  seq_printf(m, "CapTotAct    = %d mA\n", ocp_status[0].CapTotAct);
++  seq_printf(m, "CapMAFAct    = %d mA\n", ocp_status[0].CapMAFAct);
++  seq_printf(m, "AvgPwrValid  = %d\n", ocp_status[0].CGAvgValid);
++  seq_printf(m, "AvgAct       = %llu mA\n", ocp_status[0].CGAvg);
++  seq_printf(m, "AvgLkg       = %llu mA\n", ocp_status[0].AvgLkg);
++  seq_printf(m, "TopRawLkg    = %d\n", ocp_status[0].TopRawLkg);
++  seq_printf(m, "CPU0RawLkg   = %d\n", ocp_status[0].CPU0RawLkg);
++  seq_printf(m, "CPU1RawLkg   = %d\n", ocp_status[0].CPU1RawLkg);
++  seq_printf(m, "CPU2RawLkg   = %d\n", ocp_status[0].CPU2RawLkg);
++  seq_printf(m, "CPU3RawLkg   = %d\n", ocp_status[0].CPU3RawLkg);
++
++  if (Reg_Debug_on) {
++    int i;
++
++    for (i = 0; i &lt; 524 ; i += 4)
++      seq_printf(m, "Addr: 0x%x = %x\n", (MP0_OCP_IRQSTATE + i), ocp_read(MP0_OCP_IRQSTATE + i));
++
++    seq_printf(m, "Addr: 0x102217FC = %x\n", ocp_read(MP0_OCP_GENERAL_CTRL));
++    seq_printf(m, "Addr: 0x10221250 = %x\n", ocp_read(MP0_OCP_DBG_ACT_L));
++    seq_printf(m, "Addr: 0x10221254 = %x\n", ocp_read(MP0_OCP_DBG_ACT_H));
++    seq_printf(m, "Addr: 0x10221260 = %x\n", ocp_read(MP0_OCP_DBG_LKG_L));
++    seq_printf(m, "Addr: 0x10221264 = %x\n", ocp_read(MP0_OCP_DBG_LKG_H));
++  }
++  return 0;
+ }
+ 
+ static ssize_t ocp_cluster0_capture_proc_write(struct file *file, const char __user *buffer, size_t count, loff_t *pos)
+@@ -2946,38 +2946,38 @@
+ 
+ static int ocp_cluster1_capture_proc_show(struct seq_file *m, void *v)
+ {
+-seq_printf(m, "Cluster 1 OCP flag = %d\n", ocp_opt.ocp_cluster1_flag);
+-seq_printf(m, "Cluster 1 OCP Enable = %d\n", ocp_opt.ocp_cluster1_enable);
+-seq_puts(m, "Cluster 1 capture function:\n");
+-seq_printf(m, "IntEnDis     = 0x%x\n", ocp_status[1].IntEnDis);
+-seq_printf(m, "IRQ1         = 0x%x\n", ocp_status[1].IRQ1);
+-seq_printf(m, "IRQ0         = 0x%x\n", ocp_status[1].IRQ0);
+-seq_printf(m, "CapToLkg     = %d mA\n", ocp_status[1].CapToLkg);
+-seq_printf(m, "CapOCCGPct   = %d %%\n", ocp_status[1].CapOCCGPct);
+-seq_printf(m, "CaptureValid = %d\n", ocp_status[1].CaptureValid);
+-seq_printf(m, "CapTotAct    = %d mA\n", ocp_status[1].CapTotAct);
+-seq_printf(m, "CapMAFAct    = %d mA\n", ocp_status[1].CapMAFAct);
+-seq_printf(m, "AvgPwrValid  = %d\n", ocp_status[1].CGAvgValid);
+-seq_printf(m, "AvgAct       = %llu mA\n", ocp_status[1].CGAvg);
+-seq_printf(m, "AvgLkg       = %llu mA\n", ocp_status[1].AvgLkg);
+-seq_printf(m, "TopRawLkg    = %d\n", ocp_status[1].TopRawLkg);
+-seq_printf(m, "CPU0RawLkg   = %d\n", ocp_status[1].CPU0RawLkg);
+-seq_printf(m, "CPU1RawLkg   = %d\n", ocp_status[1].CPU1RawLkg);
+-seq_printf(m, "CPU2RawLkg   = %d\n", ocp_status[1].CPU2RawLkg);
+-seq_printf(m, "CPU3RawLkg   = %d\n", ocp_status[1].CPU3RawLkg);
+-
+-if (Reg_Debug_on) {
+-	int i;
+-
+-	for (i = 0; i &lt; 524; i += 4)
+-		seq_printf(m, "Addr: 0x%x = %x\n", (MP1_OCP_IRQSTATE + i), ocp_read(MP1_OCP_IRQSTATE + i));
+-
+-		seq_printf(m, "Addr: 0x102237FC = %x\n", ocp_read(MP1_OCP_GENERAL_CTRL));
+-		seq_printf(m, "Addr: 0x10223250 = %x\n", ocp_read(MP1_OCP_DBG_ACT_L));
+-		seq_printf(m, "Addr: 0x10223254 = %x\n", ocp_read(MP1_OCP_DBG_ACT_H));
+-		seq_printf(m, "Addr: 0x10223260 = %x\n", ocp_read(MP1_OCP_DBG_LKG_L));
+-		seq_printf(m, "Addr: 0x10223264 = %x\n", ocp_read(MP1_OCP_DBG_LKG_H));
+-}
++  seq_printf(m, "Cluster 1 OCP flag = %d\n", ocp_opt.ocp_cluster1_flag);
++  seq_printf(m, "Cluster 1 OCP Enable = %d\n", ocp_opt.ocp_cluster1_enable);
++  seq_puts(m, "Cluster 1 capture function:\n");
++  seq_printf(m, "IntEnDis     = 0x%x\n", ocp_status[1].IntEnDis);
++  seq_printf(m, "IRQ1         = 0x%x\n", ocp_status[1].IRQ1);
++  seq_printf(m, "IRQ0         = 0x%x\n", ocp_status[1].IRQ0);
++  seq_printf(m, "CapToLkg     = %d mA\n", ocp_status[1].CapToLkg);
++  seq_printf(m, "CapOCCGPct   = %d %%\n", ocp_status[1].CapOCCGPct);
++  seq_printf(m, "CaptureValid = %d\n", ocp_status[1].CaptureValid);
++  seq_printf(m, "CapTotAct    = %d mA\n", ocp_status[1].CapTotAct);
++  seq_printf(m, "CapMAFAct    = %d mA\n", ocp_status[1].CapMAFAct);
++  seq_printf(m, "AvgPwrValid  = %d\n", ocp_status[1].CGAvgValid);
++  seq_printf(m, "AvgAct       = %llu mA\n", ocp_status[1].CGAvg);
++  seq_printf(m, "AvgLkg       = %llu mA\n", ocp_status[1].AvgLkg);
++  seq_printf(m, "TopRawLkg    = %d\n", ocp_status[1].TopRawLkg);
++  seq_printf(m, "CPU0RawLkg   = %d\n", ocp_status[1].CPU0RawLkg);
++  seq_printf(m, "CPU1RawLkg   = %d\n", ocp_status[1].CPU1RawLkg);
++  seq_printf(m, "CPU2RawLkg   = %d\n", ocp_status[1].CPU2RawLkg);
++  seq_printf(m, "CPU3RawLkg   = %d\n", ocp_status[1].CPU3RawLkg);
++
++  if (Reg_Debug_on) {
++    int i;
++
++    for (i = 0; i &lt; 524; i += 4)
++      seq_printf(m, "Addr: 0x%x = %x\n", (MP1_OCP_IRQSTATE + i), ocp_read(MP1_OCP_IRQSTATE + i));
++
++    seq_printf(m, "Addr: 0x102237FC = %x\n", ocp_read(MP1_OCP_GENERAL_CTRL));
++    seq_printf(m, "Addr: 0x10223250 = %x\n", ocp_read(MP1_OCP_DBG_ACT_L));
++    seq_printf(m, "Addr: 0x10223254 = %x\n", ocp_read(MP1_OCP_DBG_ACT_H));
++    seq_printf(m, "Addr: 0x10223260 = %x\n", ocp_read(MP1_OCP_DBG_LKG_L));
++    seq_printf(m, "Addr: 0x10223264 = %x\n", ocp_read(MP1_OCP_DBG_LKG_H));
++  }
+ 
+ return 0;
+ }
+diff -Naur old/kernel-3.18/drivers/misc/mediatek/base/power/ppm_v1/inc/mt_ppm_internal.h new/kernel-3.18/drivers/misc/mediatek/base/power/ppm_v1/inc/mt_ppm_internal.h
+--- old/kernel-3.18/drivers/misc/mediatek/base/power/ppm_v1/inc/mt_ppm_internal.h	2018-08-21 21:27:44.000000000 +0800
++++ new/kernel-3.18/drivers/misc/mediatek/base/power/ppm_v1/inc/mt_ppm_internal.h	2018-11-21 15:41:44.361048548 +0800
+@@ -31,7 +31,7 @@
+ #include &lt;linux/sched.h&gt;
+ 
+ #include "mach/mt_ppm_api.h"
+-#include "mt_ppm_platform.h"
++#include "../src/mach/mt6797/mt_ppm_platform.h"
+ 
+ /*==============================================================*/
+ /* Definitions							*/
+diff -Naur old/kernel-3.18/drivers/misc/mediatek/base/power/spm_v2/mt_idle.c new/kernel-3.18/drivers/misc/mediatek/base/power/spm_v2/mt_idle.c
+--- old/kernel-3.18/drivers/misc/mediatek/base/power/spm_v2/mt_idle.c	2018-08-21 21:27:44.000000000 +0800
++++ new/kernel-3.18/drivers/misc/mediatek/base/power/spm_v2/mt_idle.c	2018-11-21 15:46:33.808310880 +0800
+@@ -2367,7 +2367,7 @@
+ 			mcidle_time_critera = param;
+ 
+ 		return count;
+-	} else if (!kstrtoint(cmd_buf, 10, &amp;param) == 1) {
++	} else if (!kstrtoint(cmd_buf, 10, &amp;param)) {
+ 		idle_switch[IDLE_TYPE_MC] = param;
+ 
+ 		return count;
+@@ -2497,7 +2497,7 @@
+ 			dpidle_dump_log = param;
+ 
+ 		return count;
+-	} else if (!kstrtoint(cmd_buf, 10, &amp;param) == 1) {
++	} else if (!kstrtoint(cmd_buf, 10, &amp;param)) {
+ 		idle_switch[IDLE_TYPE_DP] = param;
+ 
+ 		return count;
+@@ -2636,7 +2636,7 @@
+ 			idle_dbg("sodi3_flags = 0x%x\n", sodi3_flags);
+ 		}
+ 		return count;
+-	} else if (!kstrtoint(cmd_buf, 10, &amp;param) == 1) {
++	} else if (!kstrtoint(cmd_buf, 10, &amp;param)) {
+ 		idle_switch[IDLE_TYPE_SO3] = param;
+ 		return count;
+ 	}
+@@ -2762,7 +2762,7 @@
+ 			idle_dbg("sodi_flags = 0x%x\n", sodi_flags);
+ 		}
+ 		return count;
+-	} else if (!kstrtoint(cmd_buf, 10, &amp;param) == 1) {
++	} else if (!kstrtoint(cmd_buf, 10, &amp;param)) {
+ 		idle_switch[IDLE_TYPE_SO] = param;
+ 		return count;
+ 	}
+@@ -2844,7 +2844,7 @@
+ 			disable_slidle_by_bit(param);
+ 
+ 		return count;
+-	} else if (!kstrtoint(userbuf, 10, &amp;param) == 1) {
++	} else if (!kstrtoint(userbuf, 10, &amp;param)) {
+ 		idle_switch[IDLE_TYPE_SL] = param;
+ 		return count;
+ 	}
+diff -Naur old/kernel-3.18/drivers/misc/mediatek/cameraisp/src/mt6797/camera_fdvt.c new/kernel-3.18/drivers/misc/mediatek/cameraisp/src/mt6797/camera_fdvt.c
+--- old/kernel-3.18/drivers/misc/mediatek/cameraisp/src/mt6797/camera_fdvt.c	2018-08-21 21:27:44.000000000 +0800
++++ new/kernel-3.18/drivers/misc/mediatek/cameraisp/src/mt6797/camera_fdvt.c	2018-11-21 15:48:06.644081161 +0800
+@@ -882,7 +882,7 @@
+ 		err = compat_FD_get_register_data(data32, data);
+ 		if (err)
+ 			return err;
+-			ret = file-&gt;f_op-&gt;unlocked_ioctl(file, FDVT_IOC_G_WAITIRQ, (unsigned long)data);
++	  ret = file-&gt;f_op-&gt;unlocked_ioctl(file, FDVT_IOC_G_WAITIRQ, (unsigned long)data);
+ 		err = compat_FD_put_register_data(data32, data);
+ 		return ret ? ret : err;
+ 	}
+diff -Naur old/kernel-3.18/drivers/misc/mediatek/cameraisp/src/mt6797/camera_isp.c new/kernel-3.18/drivers/misc/mediatek/cameraisp/src/mt6797/camera_isp.c
+--- old/kernel-3.18/drivers/misc/mediatek/cameraisp/src/mt6797/camera_isp.c	2018-08-21 21:27:44.000000000 +0800
++++ new/kernel-3.18/drivers/misc/mediatek/cameraisp/src/mt6797/camera_isp.c	2018-11-21 15:47:27.500177700 +0800
+@@ -7261,7 +7261,7 @@
+ 			LOG_ERR("get module fail\n");
+ 			Ret = -EFAULT;
+ 		} else {
+-			if (copy_to_user((void *)Param, &amp;g_DmaErr_CAM[DebugFlag[0]], sizeof(MUINT32)*nDMA_ERR) != 0) {
++			if (copy_to_user((void *)Param, (void *)&amp;g_DmaErr_CAM[DebugFlag[0]], sizeof(MUINT32)*nDMA_ERR) != 0) {
+ 				LOG_ERR("get dma_err fail\n");
+ 			}
+ 
+diff -Naur old/kernel-3.18/drivers/misc/mediatek/cmdq/v2/cmdq_def.h new/kernel-3.18/drivers/misc/mediatek/cmdq/v2/cmdq_def.h
+--- old/kernel-3.18/drivers/misc/mediatek/cmdq/v2/cmdq_def.h	2018-08-21 21:27:44.000000000 +0800
++++ new/kernel-3.18/drivers/misc/mediatek/cmdq/v2/cmdq_def.h	2018-11-21 15:49:07.199932650 +0800
+@@ -22,7 +22,7 @@
+ #ifdef CMDQ_COMMON_ENG_SUPPORT
+ #include "cmdq_engine_common.h"
+ #else
+-#include "cmdq_engine.h"
++#include "mt6797/cmdq_engine.h"
+ #endif
+ 
+ #define CMDQ_SPECIAL_SUBSYS_ADDR (99)
+diff -Naur old/kernel-3.18/drivers/misc/mediatek/connectivity/common/common_main/core/stp_core.c new/kernel-3.18/drivers/misc/mediatek/connectivity/common/common_main/core/stp_core.c
+--- old/kernel-3.18/drivers/misc/mediatek/connectivity/common/common_main/core/stp_core.c	2018-08-21 21:27:44.000000000 +0800
++++ new/kernel-3.18/drivers/misc/mediatek/connectivity/common/common_main/core/stp_core.c	2018-11-21 15:50:51.867678057 +0800
+@@ -2080,19 +2080,19 @@
+ 				stp_core_ctx.parser.nak = 0;	/* disable NAK */
+ 			else
+ 				stp_core_ctx.parser.nak = (*p_data &amp; 0x80) &gt;&gt; 7;
+-				stp_core_ctx.parser.type = (*p_data &amp; 0x70) &gt;&gt; 4;
+-				stp_core_ctx.parser.length = (*p_data &amp; 0x0f) &lt;&lt; 8;
+-				stp_core_ctx.rx_buf[1] = *p_data;
+-				/* Geoge FIXME: WHY comment the following line? */
+-				/*stp_core_ctx.rx_counter++; */
+-				if (stp_core_ctx.parser.nak)
+-					STP_ERR_FUNC("MTKSTP_NAK TRUE: mtk_wcn_stp_parser_data, buff = %x\n", *p_data);
++      stp_core_ctx.parser.type = (*p_data &amp; 0x70) &gt;&gt; 4;
++      stp_core_ctx.parser.length = (*p_data &amp; 0x0f) &lt;&lt; 8;
++      stp_core_ctx.rx_buf[1] = *p_data;
++      /* Geoge FIXME: WHY comment the following line? */
++      /*stp_core_ctx.rx_counter++; */
++      if (stp_core_ctx.parser.nak)
++        STP_ERR_FUNC("MTKSTP_NAK TRUE: mtk_wcn_stp_parser_data, buff = %x\n", *p_data);
+ 
+-				if (stp_core_ctx.parser.type &lt; MTKSTP_MAX_TASK_NUM)
+-					stp_change_rx_state(MTKSTP_LENGTH);
+-				else
+-					stp_change_rx_state(MTKSTP_SYNC);
+-				break;
++      if (stp_core_ctx.parser.type &lt; MTKSTP_MAX_TASK_NUM)
++        stp_change_rx_state(MTKSTP_LENGTH);
++      else
++        stp_change_rx_state(MTKSTP_SYNC);
++      break;
+ 
+ 		case MTKSTP_LENGTH:
+ 			/* (*sys_dbg_print)("MTKSTP_LENGTH : mtk_wcn_stp_parser_data, buff = %x", *p_data); */
+diff -Naur old/kernel-3.18/drivers/misc/mediatek/connectivity/wlan/gen3/mgmt/scan.c new/kernel-3.18/drivers/misc/mediatek/connectivity/wlan/gen3/mgmt/scan.c
+--- old/kernel-3.18/drivers/misc/mediatek/connectivity/wlan/gen3/mgmt/scan.c	2018-08-21 21:27:44.000000000 +0800
++++ new/kernel-3.18/drivers/misc/mediatek/connectivity/wlan/gen3/mgmt/scan.c	2018-11-21 15:53:20.107059789 +0800
+@@ -1927,7 +1927,7 @@
+ 	} else
+ 		ucindex = 0;
+ 
+-		return ucindex;
++	return ucindex;
+ }
+ 
+ /*----------------------------------------------------------------------------*/
+diff -Naur old/kernel-3.18/drivers/misc/mediatek/connectivity/wlan/gen3/os/linux/hif/ahb_sdioLike/sdio_bus_driver.c new/kernel-3.18/drivers/misc/mediatek/connectivity/wlan/gen3/os/linux/hif/ahb_sdioLike/sdio_bus_driver.c
+--- old/kernel-3.18/drivers/misc/mediatek/connectivity/wlan/gen3/os/linux/hif/ahb_sdioLike/sdio_bus_driver.c	2018-08-21 21:27:44.000000000 +0800
++++ new/kernel-3.18/drivers/misc/mediatek/connectivity/wlan/gen3/os/linux/hif/ahb_sdioLike/sdio_bus_driver.c	2018-11-21 15:52:23.527400740 +0800
+@@ -350,9 +350,9 @@
+ 
+     reg = sdio_f0_readb(func, SDIO_CCCR_IOEx, &amp;ret);
+     if (ret)
+-        goto err;
++      goto err;
+ 
+-	reg &amp;= ~(1 &lt;&lt; func-&gt;num);
++	  reg &amp;= ~(1 &lt;&lt; func-&gt;num);
+ 
+ 
+     sdio_f0_writeb(func, reg, SDIO_CCCR_IOEx, &amp;ret);
+diff -Naur old/kernel-3.18/drivers/misc/mediatek/eccci/port_ctlmsg.c new/kernel-3.18/drivers/misc/mediatek/eccci/port_ctlmsg.c
+--- old/kernel-3.18/drivers/misc/mediatek/eccci/port_ctlmsg.c	2018-08-21 21:27:44.000000000 +0800
++++ new/kernel-3.18/drivers/misc/mediatek/eccci/port_ctlmsg.c	2018-11-21 15:54:18.830726353 +0800
+@@ -109,8 +109,8 @@
+ 	case C2K_STATUS_QUERY_MSG:
+ 	case C2K_CCISM_SHM_INIT_ACK:
+ 	case C2K_FLOW_CTRL_MSG:
+-	if (port-&gt;md_id == MD_SYS3)
+-		ret = c2k_msg_handler(port, skb);
++	  if (port-&gt;md_id == MD_SYS3)
++		  ret = c2k_msg_handler(port, skb);
+ 		break;
+ 	default:
+ 		CCCI_ERROR_LOG(port-&gt;md_id, KERN, "receive unknown data from CCCI_CONTROL_RX = %d\n", ccci_h-&gt;data[1]);
+diff -Naur old/kernel-3.18/drivers/misc/mediatek/ext_disp/extd_debug.c new/kernel-3.18/drivers/misc/mediatek/ext_disp/extd_debug.c
+--- old/kernel-3.18/drivers/misc/mediatek/ext_disp/extd_debug.c	2018-08-21 21:27:44.000000000 +0800
++++ new/kernel-3.18/drivers/misc/mediatek/ext_disp/extd_debug.c	2018-11-21 15:55:34.946321518 +0800
+@@ -28,7 +28,7 @@
+ #include "ddp_reg.h"
+ #include "ddp_info.h"
+ #include "extd_hdmi.h"
+-#include "external_display.h"
++#include "mt6797/external_display.h"
+ 
+ /*extern DDP_MODULE_DRIVER *ddp_modules_driver[DISP_MODULE_NUM];*/
+ /* --------------------------------------------------------------------------- */
+diff -Naur old/kernel-3.18/drivers/misc/mediatek/ext_disp/extd_factory.c new/kernel-3.18/drivers/misc/mediatek/ext_disp/extd_factory.c
+--- old/kernel-3.18/drivers/misc/mediatek/ext_disp/extd_factory.c	2018-08-21 21:27:44.000000000 +0800
++++ new/kernel-3.18/drivers/misc/mediatek/ext_disp/extd_factory.c	2018-11-21 15:57:46.065685155 +0800
+@@ -17,7 +17,7 @@
+ #include "extd_log.h"
+ #include "extd_factory.h"
+ #include "extd_info.h"
+-#include "external_display.h"
++#include "mt6797/external_display.h"
+ 
+ #include "dpi_dvt_test.h"
+ 
+diff -Naur old/kernel-3.18/drivers/misc/mediatek/ext_disp/extd_hdmi.c new/kernel-3.18/drivers/misc/mediatek/ext_disp/extd_hdmi.c
+--- old/kernel-3.18/drivers/misc/mediatek/ext_disp/extd_hdmi.c	2018-08-21 21:27:44.000000000 +0800
++++ new/kernel-3.18/drivers/misc/mediatek/ext_disp/extd_hdmi.c	2018-11-21 15:56:28.162054707 +0800
+@@ -73,13 +73,13 @@
+ 
+ #include "disp_session.h"
+ 
+-#include "extd_platform.h"
++#include "mt6797/extd_platform.h"
+ #include "extd_hdmi.h"
+ #include "extd_factory.h"
+ #include "extd_log.h"
+ #include "extd_utils.h"
+ #include "extd_hdmi_types.h"
+-#include "external_display.h"
++#include "mt6797/external_display.h"
+ 
+ #ifdef CONFIG_MTK_SMARTBOOK_SUPPORT
+ #include &lt;linux/sbsuspend.h&gt;
+diff -Naur old/kernel-3.18/drivers/misc/mediatek/ext_disp/extd_multi_control.c new/kernel-3.18/drivers/misc/mediatek/ext_disp/extd_multi_control.c
+--- old/kernel-3.18/drivers/misc/mediatek/ext_disp/extd_multi_control.c	2018-08-21 21:27:44.000000000 +0800
++++ new/kernel-3.18/drivers/misc/mediatek/ext_disp/extd_multi_control.c	2018-11-21 15:57:18.269814331 +0800
+@@ -16,8 +16,8 @@
+ 
+ #include "extd_multi_control.h"
+ #include "disp_drv_platform.h"
+-#include "external_display.h"
+-#include "extd_platform.h"
++#include "mt6797/external_display.h"
++#include "mt6797/extd_platform.h"
+ #include "extd_log.h"
+ #include "mtk_ovl.h"
+ 
+diff -Naur old/kernel-3.18/drivers/misc/mediatek/imgsensor/src/mt6797/kd_sensorlist.c new/kernel-3.18/drivers/misc/mediatek/imgsensor/src/mt6797/kd_sensorlist.c
+--- old/kernel-3.18/drivers/misc/mediatek/imgsensor/src/mt6797/kd_sensorlist.c	2018-08-21 21:27:44.000000000 +0800
++++ new/kernel-3.18/drivers/misc/mediatek/imgsensor/src/mt6797/kd_sensorlist.c	2018-11-21 16:00:53.996877624 +0800
+@@ -3946,49 +3946,49 @@
+ 
+ bool _hwPowerOn(PowerType type, int powerVolt)
+ {
+-    bool ret = FALSE;
+-    struct regulator *reg = NULL;
++  bool ret = FALSE;
++  struct regulator *reg = NULL;
+ 
+-    PK_DBG("[_hwPowerOn]powertype:%d powerId:%d\n", type, powerVolt);
+-    if (type == AVDD) {
+-	reg = regVCAMA;
+-    } else if (type == DVDD) {
+-	reg = regVCAMD;
+-    } else if (type == DOVDD) {
+-	reg = regVCAMIO;
+-    } else if (type == AFVDD) {
+-	reg = regVCAMAF;
+-    }else if (type == SUB_AVDD) {
+-	reg = regSubVCAMA;
+-    } else if (type == SUB_DVDD) {
+-	reg = regSubVCAMD;
+-    } else if (type == SUB_DOVDD) {
+-	reg = regSubVCAMIO;
+-    } else if (type == MAIN2_AVDD) {
+-	reg = regMain2VCAMA;
+-    } else if (type == MAIN2_DVDD) {
+-	reg = regMain2VCAMD;
+-    } else if (type == MAIN2_DOVDD) {
+-	reg = regMain2VCAMIO;
+-    }else
+-    	return ret;
++  PK_DBG("[_hwPowerOn]powertype:%d powerId:%d\n", type, powerVolt);
++  if (type == AVDD) {
++    reg = regVCAMA;
++  } else if (type == DVDD) {
++    reg = regVCAMD;
++  } else if (type == DOVDD) {
++    reg = regVCAMIO;
++  } else if (type == AFVDD) {
++    reg = regVCAMAF;
++  }else if (type == SUB_AVDD) {
++    reg = regSubVCAMA;
++  } else if (type == SUB_DVDD) {
++    reg = regSubVCAMD;
++  } else if (type == SUB_DOVDD) {
++    reg = regSubVCAMIO;
++  } else if (type == MAIN2_AVDD) {
++    reg = regMain2VCAMA;
++  } else if (type == MAIN2_DVDD) {
++    reg = regMain2VCAMD;
++  } else if (type == MAIN2_DOVDD) {
++    reg = regMain2VCAMIO;
++  }else
++    return ret;
+ 
+-	if (!IS_ERR(reg)) {
+-		if (regulator_set_voltage(reg , powerVolt, powerVolt) != 0) {
+-			PK_DBG("[_hwPowerOn]fail to regulator_set_voltage, powertype:%d powerId:%d\n", type, powerVolt);
+-			return ret;
+-	}
+-		if (regulator_enable(reg) != 0) {
+-			PK_DBG("[_hwPowerOn]fail to regulator_enable, powertype:%d powerId:%d\n", type, powerVolt);
+-	    return ret;
+-	}
+-	ret = true;
+-    } else {
+-		PK_ERR("[_hwPowerOn]IS_ERR_OR_NULL powertype:%d reg %p\n", type,reg);
+-		return ret;
++  if (!IS_ERR(reg)) {
++    if (regulator_set_voltage(reg , powerVolt, powerVolt) != 0) {
++      PK_DBG("[_hwPowerOn]fail to regulator_set_voltage, powertype:%d powerId:%d\n", type, powerVolt);
++      return ret;
+     }
++    if (regulator_enable(reg) != 0) {
++      PK_DBG("[_hwPowerOn]fail to regulator_enable, powertype:%d powerId:%d\n", type, powerVolt);
++      return ret;
++    }
++    ret = true;
++  } else {
++    PK_ERR("[_hwPowerOn]IS_ERR_OR_NULL powertype:%d reg %p\n", type,reg);
++    return ret;
++  }
+ 
+-	return ret;
++  return ret;
+ }
+ 
+ bool _hwPowerDown(PowerType type)
+diff -Naur old/kernel-3.18/drivers/misc/mediatek/include/mt-plat/mt6797/include/mach/mt_thermal.h new/kernel-3.18/drivers/misc/mediatek/include/mt-plat/mt6797/include/mach/mt_thermal.h
+--- old/kernel-3.18/drivers/misc/mediatek/include/mt-plat/mt6797/include/mach/mt_thermal.h	2018-08-21 21:27:44.000000000 +0800
++++ new/kernel-3.18/drivers/misc/mediatek/include/mt-plat/mt6797/include/mach/mt_thermal.h	2018-11-21 15:35:57.590002401 +0800
+@@ -24,7 +24,7 @@
+ 
+ #include "mt-plat/sync_write.h"
+ #include "mtk_thermal_typedefs.h"
+-#include "mt_gpufreq.h"
++#include "../../../../base/power/mt6797/mt_gpufreq.h"
+ 
+ /*
+ Bank0 : BIG     (TS_MCU1)
+diff -Naur old/kernel-3.18/drivers/misc/mediatek/include/mt-plat/sd_misc.h new/kernel-3.18/drivers/misc/mediatek/include/mt-plat/sd_misc.h
+--- old/kernel-3.18/drivers/misc/mediatek/include/mt-plat/sd_misc.h	2018-08-21 21:27:44.000000000 +0800
++++ new/kernel-3.18/drivers/misc/mediatek/include/mt-plat/sd_misc.h	2018-11-21 18:34:18.242205923 +0800
+@@ -23,7 +23,7 @@
+ #include &lt;linux/mmc/sd.h&gt;
+ #endif
+ 
+-#include &lt;mt_sd.h&gt;
++#include "../../../../mmc/host/mediatek/mt6797/mt_sd.h"
+ 
+ #ifndef FPGA_PLATFORM
+ extern void msdc_set_driving(struct msdc_host *host, struct msdc_hw *hw, bool sd_18);
+diff -Naur old/kernel-3.18/drivers/misc/mediatek/m4u/2.0/m4u_pgtable.h new/kernel-3.18/drivers/misc/mediatek/m4u/2.0/m4u_pgtable.h
+--- old/kernel-3.18/drivers/misc/mediatek/m4u/2.0/m4u_pgtable.h	2018-08-21 21:27:44.000000000 +0800
++++ new/kernel-3.18/drivers/misc/mediatek/m4u/2.0/m4u_pgtable.h	2018-11-21 17:15:38.948969807 +0800
+@@ -14,7 +14,7 @@
+ #ifndef __M4U_PGTABLE_H__
+ #define __M4U_PGTABLE_H__
+ 
+-#include "m4u_reg.h"
++#include "../mt6797/m4u_reg.h"
+ 
+ /* ================================================================= */
+ /* 2 level pagetable: pgd -&gt; pte */
+diff -Naur old/kernel-3.18/drivers/misc/mediatek/m4u/2.0/m4u_v2.h new/kernel-3.18/drivers/misc/mediatek/m4u/2.0/m4u_v2.h
+--- old/kernel-3.18/drivers/misc/mediatek/m4u/2.0/m4u_v2.h	2018-08-21 21:27:44.000000000 +0800
++++ new/kernel-3.18/drivers/misc/mediatek/m4u/2.0/m4u_v2.h	2018-11-21 17:14:55.737206622 +0800
+@@ -15,7 +15,7 @@
+ #define __M4U_V2_H__
+ #include &lt;linux/ioctl.h&gt;
+ #include &lt;linux/fs.h&gt;
+-#include "m4u_port.h"
++#include "../mt6797/m4u_port.h"
+ #include &lt;linux/scatterlist.h&gt;
+ 
+ typedef int M4U_PORT_ID;
+diff -Naur old/kernel-3.18/drivers/misc/mediatek/m4u/mt6797/m4u_hw.c new/kernel-3.18/drivers/misc/mediatek/m4u/mt6797/m4u_hw.c
+--- old/kernel-3.18/drivers/misc/mediatek/m4u/mt6797/m4u_hw.c	2018-08-21 21:27:44.000000000 +0800
++++ new/kernel-3.18/drivers/misc/mediatek/m4u/mt6797/m4u_hw.c	2018-11-21 17:18:36.932040551 +0800
+@@ -2193,10 +2193,10 @@
+ 	if (irq == gM4uDev-&gt;irq_num[0]) {
+ 		m4u_base = gM4UBaseAddr[0];
+ 		m4u_index = 0;
+-	} else if (irq == gM4uDev-&gt;irq_num[1]) {
++	}/* else if (irq == gM4uDev-&gt;irq_num[1]) {
+ 		m4u_base = gM4UBaseAddr[1];
+ 		m4u_index = 1;
+-	} else {
++	} */else {
+ 		M4UMSG("MTK_M4U_isr(), Invalid irq number %d\n", irq);
+ 		return -1;
+ 	}
+diff -Naur old/kernel-3.18/drivers/misc/mediatek/Makefile new/kernel-3.18/drivers/misc/mediatek/Makefile
+--- old/kernel-3.18/drivers/misc/mediatek/Makefile	2018-08-21 21:27:44.000000000 +0800
++++ new/kernel-3.18/drivers/misc/mediatek/Makefile	2018-11-21 21:58:48.762348658 +0800
+@@ -85,7 +85,7 @@
+ obj-$(CONFIG_MTK_LEDS)	+= leds/
+ obj-$(CONFIG_CUSTOM_KERNEL_CHARGEPUMP) += chargepump/
+ obj-$(CONFIG_MTK_VIBRATOR)	+= vibrator/
+-obj-$(CONFIG_MTK_SM100)	+= tc1_interface/vib_drv/
++#obj-$(CONFIG_MTK_SM100)	+= tc1_interface/vib_drv/
+ obj-$(CONFIG_MTK_ACCDET)	+= accdet/
+ obj-$(CONFIG_MTK_ECCCI_C2K) += c2k_usb/
+ obj-y += irtx/
+diff -Naur old/kernel-3.18/drivers/misc/mediatek/mu3d/hal/mu3d_hal_hw.h new/kernel-3.18/drivers/misc/mediatek/mu3d/hal/mu3d_hal_hw.h
+--- old/kernel-3.18/drivers/misc/mediatek/mu3d/hal/mu3d_hal_hw.h	2018-08-21 21:27:44.000000000 +0800
++++ new/kernel-3.18/drivers/misc/mediatek/mu3d/hal/mu3d_hal_hw.h	2018-11-21 17:34:16.443773909 +0800
+@@ -158,7 +158,7 @@
+ #include "ssusb_usb3_sys_csr_c_header.h"
+ #include "ssusb_usb2_csr_c_header.h"
+ #include "ssusb_sifslv_ippc_c_header.h"
+-#include "mtk-phy.h"
++#include "../mu3phy/mtk-phy.h"
+ 
+ #ifdef EXT_VBUS_DET
+ #define FPGA_REG 0xf0008098
+diff -Naur old/kernel-3.18/drivers/misc/mediatek/performance/perfmgr/mt6797/perfmgr_boost.c new/kernel-3.18/drivers/misc/mediatek/performance/perfmgr/mt6797/perfmgr_boost.c
+--- old/kernel-3.18/drivers/misc/mediatek/performance/perfmgr/mt6797/perfmgr_boost.c	2018-08-21 21:27:44.000000000 +0800
++++ new/kernel-3.18/drivers/misc/mediatek/performance/perfmgr/mt6797/perfmgr_boost.c	2018-11-21 17:35:05.555564700 +0800
+@@ -175,7 +175,7 @@
+ 		else /* min */
+ 			perfmgr_scn_list[FORCELIMIT_TYPE_VR].data[i/2].min_core = data;
+ 
+-			i++;
++		i++;
+ 	}
+ 
+ 	perfmgr_forcelimit_cpu_core(FORCELIMIT_TYPE_VR, CLUSTER_NUM, perfmgr_scn_list[FORCELIMIT_TYPE_VR].data);
+diff -Naur old/kernel-3.18/drivers/misc/mediatek/power/mt6797/pmic.c new/kernel-3.18/drivers/misc/mediatek/power/mt6797/pmic.c
+--- old/kernel-3.18/drivers/misc/mediatek/power/mt6797/pmic.c	2018-08-21 21:27:44.000000000 +0800
++++ new/kernel-3.18/drivers/misc/mediatek/power/mt6797/pmic.c	2018-11-21 17:36:00.543331202 +0800
+@@ -167,7 +167,7 @@
+ 
+ int pmic_force_vcore_pwm(bool enable)
+ {
+-	int val, val1, val2, ret;
++	int val=0, val1=0, val2=0, ret=0;
+ 
+ 	ret = pmic_read_interface_nolock(0x44e, &amp;val, 0xFFFF, 0x0);
+ 	ret = pmic_read_interface_nolock(0x450, &amp;val1, 0xFFFF, 0x0);
+diff -Naur old/kernel-3.18/drivers/misc/mediatek/scp/mt6797/scp_excep.c new/kernel-3.18/drivers/misc/mediatek/scp/mt6797/scp_excep.c
+--- old/kernel-3.18/drivers/misc/mediatek/scp/mt6797/scp_excep.c	2018-08-21 21:27:44.000000000 +0800
++++ new/kernel-3.18/drivers/misc/mediatek/scp/mt6797/scp_excep.c	2018-11-21 17:36:46.631136046 +0800
+@@ -438,26 +438,26 @@
+ 	if (type == EXCEP_RUNTIME)
+ 		type = (is_scp_ready()) ? EXCEP_RUNTIME : EXCEP_BOOTUP;
+ 
+-		switch (type) {
+-		case EXCEP_LOAD_FIRMWARE:
+-			scp_prepare_aed("scp firmware load exception", &amp;aed);
+-			break;
+-		case EXCEP_RESET:
+-			scp_prepare_aed_dump("scp reset exception", &amp;aed);
+-			break;
+-		case EXCEP_BOOTUP:
+-			scp_get_log(1);
+-			scp_prepare_aed_dump("scp boot exception", &amp;aed);
+-			break;
+-		case EXCEP_RUNTIME:
+-			scp_get_log(1);
+-			scp_prepare_aed_dump("scp runtime exception", &amp;aed);
+-			break;
+-		default:
+-			scp_get_log(1);
+-			scp_prepare_aed_dump("scp unknown exception", &amp;aed);
+-			break;
+-	}
++  switch (type) {
++  case EXCEP_LOAD_FIRMWARE:
++    scp_prepare_aed("scp firmware load exception", &amp;aed);
++    break;
++  case EXCEP_RESET:
++    scp_prepare_aed_dump("scp reset exception", &amp;aed);
++    break;
++  case EXCEP_BOOTUP:
++    scp_get_log(1);
++    scp_prepare_aed_dump("scp boot exception", &amp;aed);
++    break;
++  case EXCEP_RUNTIME:
++    scp_get_log(1);
++    scp_prepare_aed_dump("scp runtime exception", &amp;aed);
++    break;
++  default:
++    scp_get_log(1);
++    scp_prepare_aed_dump("scp unknown exception", &amp;aed);
++    break;
++  }
+ 
+ 	pr_debug("%s", aed.detail);
+ 
+diff -Naur old/kernel-3.18/drivers/misc/mediatek/uart/include/mtk_uart.h new/kernel-3.18/drivers/misc/mediatek/uart/include/mtk_uart.h
+--- old/kernel-3.18/drivers/misc/mediatek/uart/include/mtk_uart.h	2018-08-21 21:27:44.000000000 +0800
++++ new/kernel-3.18/drivers/misc/mediatek/uart/include/mtk_uart.h	2018-11-21 17:37:48.602874340 +0800
+@@ -18,7 +18,7 @@
+ #include &lt;mach/mt_reg_base.h&gt;
+ #endif
+ #include &lt;mt-plat/sync_write.h&gt;
+-#include "platform_uart.h"
++#include "../mt6797/platform_uart.h"
+ 
+ /*---------------------------------------------------------------------------*/
+ #if defined(ENABLE_VFIFO_DEBUG)
+diff -Naur old/kernel-3.18/drivers/misc/mediatek/uart/include/mtk_uart_intf.h new/kernel-3.18/drivers/misc/mediatek/uart/include/mtk_uart_intf.h
+--- old/kernel-3.18/drivers/misc/mediatek/uart/include/mtk_uart_intf.h	2018-08-21 21:27:44.000000000 +0800
++++ new/kernel-3.18/drivers/misc/mediatek/uart/include/mtk_uart_intf.h	2018-11-21 17:38:21.150737187 +0800
+@@ -14,7 +14,7 @@
+ #ifndef __MTK_UART_INTF_H__
+ #define __MTK_UART_INTF_H__
+ 
+-#include "platform_uart.h"
++#include "../mt6797/platform_uart.h"
+ #include &lt;linux/platform_device.h&gt;
+ /*---------------------------------------------------------------------------*/
+ /* fiq debugger */
+diff -Naur old/kernel-3.18/drivers/misc/mediatek/usb11/mt6797/musbfsh_core.h new/kernel-3.18/drivers/misc/mediatek/usb11/mt6797/musbfsh_core.h
+--- old/kernel-3.18/drivers/misc/mediatek/usb11/mt6797/musbfsh_core.h	2018-08-21 21:27:44.000000000 +0800
++++ new/kernel-3.18/drivers/misc/mediatek/usb11/mt6797/musbfsh_core.h	2018-11-21 17:39:11.502525378 +0800
+@@ -72,10 +72,10 @@
+ #define MUSBFSH_HWVERS_1900	0x784
+ #define MUSBFSH_HWVERS_2000	0x800
+ 
+-#include "musbfsh.h"
+-#include "musbfsh_io.h"
+-#include "musbfsh_regs.h"
+-#include "musbfsh_debug.h"
++#include "../musbfsh.h"
++#include "../musbfsh_io.h"
++#include "../musbfsh_regs.h"
++#include "../musbfsh_debug.h"
+ 
+ /* HOST ROLE */
+ 
+diff -Naur old/kernel-3.18/drivers/misc/mediatek/video/common/mtkfb_fence.h new/kernel-3.18/drivers/misc/mediatek/video/common/mtkfb_fence.h
+--- old/kernel-3.18/drivers/misc/mediatek/video/common/mtkfb_fence.h	2018-08-21 21:27:44.000000000 +0800
++++ new/kernel-3.18/drivers/misc/mediatek/video/common/mtkfb_fence.h	2018-11-21 18:29:25.158211623 +0800
+@@ -17,7 +17,7 @@
+ #include &lt;linux/mutex.h&gt;
+ #include &lt;linux/list.h&gt;
+ #include "disp_session.h"
+-#include "disp_drv_platform.h"
++#include "../../mt6797/videox/disp_drv_platform.h"
+ 
+ #if defined(COMMON_DISP_LOG)
+ #include "disp_recorder.h"
+diff -Naur old/kernel-3.18/drivers/misc/mediatek/video/common/rdma10/ddp_rdma.h new/kernel-3.18/drivers/misc/mediatek/video/common/rdma10/ddp_rdma.h
+--- old/kernel-3.18/drivers/misc/mediatek/video/common/rdma10/ddp_rdma.h	2018-08-21 21:27:44.000000000 +0800
++++ new/kernel-3.18/drivers/misc/mediatek/video/common/rdma10/ddp_rdma.h	2018-11-21 17:52:41.947152842 +0800
+@@ -17,8 +17,8 @@
+ #include &lt;mt-plat/sync_write.h&gt;
+ #include &lt;linux/types.h&gt;
+ /* #include &lt;mach/mt_reg_base.h&gt; */
+-#include "ddp_info.h"
+-#include "ddp_hal.h"
++#include "../../mt6797/dispsys/ddp_info.h"
++#include "../../mt6797/dispsys/ddp_hal.h"
+ 
+ extern unsigned long long rdma_start_time[];
+ extern unsigned long long rdma_end_time[];
+diff -Naur old/kernel-3.18/drivers/misc/mediatek/video/common/wdma10/ddp_wdma.h new/kernel-3.18/drivers/misc/mediatek/video/common/wdma10/ddp_wdma.h
+--- old/kernel-3.18/drivers/misc/mediatek/video/common/wdma10/ddp_wdma.h	2018-08-21 21:27:44.000000000 +0800
++++ new/kernel-3.18/drivers/misc/mediatek/video/common/wdma10/ddp_wdma.h	2018-11-21 17:55:15.406518348 +0800
+@@ -14,8 +14,8 @@
+ #ifndef _DDP_WDMA_H_
+ #define _DDP_WDMA_H_
+ 
+-#include "ddp_hal.h"
+-#include "ddp_info.h"
++#include "../../mt6797/dispsys/ddp_hal.h"
++#include "../../mt6797/dispsys/ddp_info.h"
+ 
+ /* start module */
+ int wdma_start(DISP_MODULE_ENUM module, void *handle);
+diff -Naur old/kernel-3.18/drivers/misc/mediatek/video/mt6797/dispsys/ddp_dsi.h new/kernel-3.18/drivers/misc/mediatek/video/mt6797/dispsys/ddp_dsi.h
+--- old/kernel-3.18/drivers/misc/mediatek/video/mt6797/dispsys/ddp_dsi.h	2018-08-21 21:27:44.000000000 +0800
++++ new/kernel-3.18/drivers/misc/mediatek/video/mt6797/dispsys/ddp_dsi.h	2018-11-21 18:30:12.410225532 +0800
+@@ -18,7 +18,7 @@
+ 
+ #include "lcm_drv.h"
+ #include "ddp_hal.h"
+-#include "fbconfig_kdebug_x.h"
++#include "../videox/fbconfig_kdebug_x.h"
+ 
+ #ifdef __cplusplus
+ extern "C" {
+diff -Naur old/kernel-3.18/drivers/misc/mediatek/video/mt6797/dispsys/ddp_ovl.c new/kernel-3.18/drivers/misc/mediatek/video/mt6797/dispsys/ddp_ovl.c
+--- old/kernel-3.18/drivers/misc/mediatek/video/mt6797/dispsys/ddp_ovl.c	2018-08-21 21:27:44.000000000 +0800
++++ new/kernel-3.18/drivers/misc/mediatek/video/mt6797/dispsys/ddp_ovl.c	2018-11-21 17:51:36.007425703 +0800
+@@ -781,16 +781,17 @@
+ 			* if we switch ovl to nonsec BUT its setting is still sec */
+ 			for (i = 0; i &lt; ovl_layer_num(module); i++)
+ 				ovl_layer_switch(module, i, 0, nonsec_switch_handle);
+-				/*in fact, dapc/port_sec will be disabled by cmdq */
+-				cmdqRecSecureEnablePortSecurity(nonsec_switch_handle, (1LL &lt;&lt; cmdq_engine));
+-				/* cmdqRecSecureEnableDAPC(handle, (1LL &lt;&lt; cmdq_engine)); */
+-				/*cmdqRecSetEventToken(nonsec_switch_handle, cmdq_event_nonsec_end);*/
+-				/*cmdqRecFlushAsync(nonsec_switch_handle);*/
+-				cmdqRecFlush(nonsec_switch_handle);
+-				cmdqRecDestroy(nonsec_switch_handle);
+-				/*cmdqRecWait(handle, cmdq_event_nonsec_end);*/
+-				DDPMSG("[SVP] switch ovl%d to nonsec\n", ovl_idx);
+-			}
++			
++      /*in fact, dapc/port_sec will be disabled by cmdq */
++      cmdqRecSecureEnablePortSecurity(nonsec_switch_handle, (1LL &lt;&lt; cmdq_engine));
++      /* cmdqRecSecureEnableDAPC(handle, (1LL &lt;&lt; cmdq_engine)); */
++      /*cmdqRecSetEventToken(nonsec_switch_handle, cmdq_event_nonsec_end);*/
++      /*cmdqRecFlushAsync(nonsec_switch_handle);*/
++      cmdqRecFlush(nonsec_switch_handle);
++      cmdqRecDestroy(nonsec_switch_handle);
++      /*cmdqRecWait(handle, cmdq_event_nonsec_end);*/
++      DDPMSG("[SVP] switch ovl%d to nonsec\n", ovl_idx);
++    }
+ 		ovl_is_sec[ovl_idx] = 0;
+ 	}
+ 
+diff -Naur old/kernel-3.18/drivers/misc/mediatek/video/mt6797/dispsys/ddp_ufoe.c new/kernel-3.18/drivers/misc/mediatek/video/mt6797/dispsys/ddp_ufoe.c
+--- old/kernel-3.18/drivers/misc/mediatek/video/mt6797/dispsys/ddp_ufoe.c	2018-08-21 21:27:44.000000000 +0800
++++ new/kernel-3.18/drivers/misc/mediatek/video/mt6797/dispsys/ddp_ufoe.c	2018-11-21 17:59:15.497526772 +0800
+@@ -168,7 +168,7 @@
+ 
+ 	if (ufoe_enable) {
+ 		if (lr_mode_en == 0) {
+-			if (compress_ratio == 3) {
++			if (compress_ratio == true/*3*/) {
+ 				unsigned int internal_width = width + width % 4;
+ 
+ 				if (internal_width % 6 != 0) {
+diff -Naur old/kernel-3.18/drivers/misc/mediatek/video/mt6797/videox/disp_drv_log.h new/kernel-3.18/drivers/misc/mediatek/video/mt6797/videox/disp_drv_log.h
+--- old/kernel-3.18/drivers/misc/mediatek/video/mt6797/videox/disp_drv_log.h	2018-08-21 21:27:44.000000000 +0800
++++ new/kernel-3.18/drivers/misc/mediatek/video/mt6797/videox/disp_drv_log.h	2018-11-21 17:56:49.898127961 +0800
+@@ -13,8 +13,8 @@
+ 
+ #ifndef __DISP_DRV_LOG_H__
+ #define __DISP_DRV_LOG_H__
+-#include "display_recorder.h"
+-#include "ddp_debug.h"
++#include "../dispsys/display_recorder.h"
++#include "../dispsys/ddp_debug.h"
+ 
+ #if 0 /*set 1 to output log to mobilelog */
+ #define DISP_LOG_PRINT(level, sub_module, fmt, arg...)      \
+diff -Naur old/kernel-3.18/drivers/misc/mediatek/video/mt6797/videox/disp_drv_platform.h new/kernel-3.18/drivers/misc/mediatek/video/mt6797/videox/disp_drv_platform.h
+--- old/kernel-3.18/drivers/misc/mediatek/video/mt6797/videox/disp_drv_platform.h	2018-08-21 21:27:44.000000000 +0800
++++ new/kernel-3.18/drivers/misc/mediatek/video/mt6797/videox/disp_drv_platform.h	2018-11-21 17:57:27.501972656 +0800
+@@ -25,9 +25,9 @@
+ #include "mt-plat/sync_write.h"
+ #include "disp_assert_layer.h"
+ 
+-#include "ddp_hal.h"
+-#include "ddp_drv.h"
+-#include "ddp_path.h"
++#include "../dispsys/ddp_hal.h"
++#include "../dispsys/ddp_drv.h"
++#include "../dispsys/ddp_path.h"
+ 
+ /* #include &lt;mach/mt6585_pwm.h&gt; */
+ /* #include &lt;mach/boot.h&gt; */
+diff -Naur old/kernel-3.18/drivers/misc/mediatek/video/mt6797/videox/fbconfig_kdebug_x.h new/kernel-3.18/drivers/misc/mediatek/video/mt6797/videox/fbconfig_kdebug_x.h
+--- old/kernel-3.18/drivers/misc/mediatek/video/mt6797/videox/fbconfig_kdebug_x.h	2018-08-21 21:27:44.000000000 +0800
++++ new/kernel-3.18/drivers/misc/mediatek/video/mt6797/videox/fbconfig_kdebug_x.h	2018-11-21 17:58:04.793818666 +0800
+@@ -15,7 +15,7 @@
+ #define __FBCONFIG_KDEBUG_H
+ 
+ #include &lt;linux/types.h&gt;
+-#include "ddp_ovl.h"
++#include "../dispsys/ddp_ovl.h"
+ 
+ void PanelMaster_Init(void);
+ void PanelMaster_Deinit(void);
+diff -Naur old/kernel-3.18/drivers/misc/mediatek/video/mt6797/videox/primary_display.h new/kernel-3.18/drivers/misc/mediatek/video/mt6797/videox/primary_display.h
+--- old/kernel-3.18/drivers/misc/mediatek/video/mt6797/videox/primary_display.h	2018-08-21 21:27:44.000000000 +0800
++++ new/kernel-3.18/drivers/misc/mediatek/video/mt6797/videox/primary_display.h	2018-11-21 17:42:15.493754603 +0800
+@@ -14,8 +14,8 @@
+ #ifndef _PRIMARY_DISPLAY_H_
+ #define _PRIMARY_DISPLAY_H_
+ 
+-#include "ddp_hal.h"
+-#include "ddp_manager.h"
++#include "../dispsys/ddp_hal.h"
++#include "../dispsys/ddp_manager.h"
+ #include &lt;linux/types.h&gt;
+ #include "disp_session.h"
+ #include "disp_lcm.h"
+diff -Naur old/kernel-3.18/drivers/mtd/mtd_blkdevs.c new/kernel-3.18/drivers/mtd/mtd_blkdevs.c
+--- old/kernel-3.18/drivers/mtd/mtd_blkdevs.c	2018-08-21 21:27:44.000000000 +0800
++++ new/kernel-3.18/drivers/mtd/mtd_blkdevs.c	2018-11-21 18:35:22.834180477 +0800
+@@ -97,7 +97,7 @@
+ 	if (req-&gt;cmd_flags &amp; REQ_DISCARD)
+ 		return tr-&gt;discard(dev, block, nsect);
+ 
+-	switch(rq_data_dir(req)) {
++	switch(rq_data_dir(req) ? 1 : 0) {
+ 	case READ:
+ 		for (; nsect &gt; 0; nsect--, block++, buf += tr-&gt;blksize)
+ 			if (tr-&gt;readsect(dev, block, buf))
+diff -Naur old/kernel-3.18/drivers/power/mediatek/switch_charging.c new/kernel-3.18/drivers/power/mediatek/switch_charging.c
+--- old/kernel-3.18/drivers/power/mediatek/switch_charging.c	2018-08-21 21:27:44.000000000 +0800
++++ new/kernel-3.18/drivers/power/mediatek/switch_charging.c	2018-11-21 18:36:48.118136952 +0800
+@@ -369,7 +369,7 @@
+ 	if (BMT_status.charger_type == STANDARD_HOST || BMT_status.charger_type == CHARGING_HOST)
+ 		return usb_unlimited;
+ 
+-		return false;
++	return false;
+ }
+ 
+ void set_usb_current_unlimited(bool enable)
+diff -Naur old/kernel-3.18/drivers/staging/android/ion/ion.c new/kernel-3.18/drivers/staging/android/ion/ion.c
+--- old/kernel-3.18/drivers/staging/android/ion/ion.c	2018-08-21 21:27:44.000000000 +0800
++++ new/kernel-3.18/drivers/staging/android/ion/ion.c	2018-11-21 18:42:41.633868445 +0800
+@@ -703,7 +703,7 @@
+ 		WARN(1, "%s: invalid handle passed to free.\n", __func__);
+ 		return;
+ 	}
+-	if (!handle-&gt;user_ref_count &gt; 0) {
++	if (!handle-&gt;user_ref_count) {
+ 		WARN(1, "%s: User does not have access!\n", __func__);
+ 		return;
+ 	}
+diff -Naur old/kernel-3.18/fs/exofs/Kconfig.ore new/kernel-3.18/fs/exofs/Kconfig.ore
+--- old/kernel-3.18/fs/exofs/Kconfig.ore	1970-01-01 08:00:00.000000000 +0800
++++ new/kernel-3.18/fs/exofs/Kconfig.ore	2018-08-21 21:27:44.000000000 +0800
+@@ -0,0 +1,14 @@
++# ORE - Objects Raid Engine (libore.ko)
++#
++# Note ORE needs to "select ASYNC_XOR". So Not to force multiple selects
++# for every ORE user we do it like this. Any user should add itself here
++# at the "depends on EXOFS_FS || ..." with an ||. The dependencies are
++# selected here, and we default to "ON". So in effect it is like been
++# selected by any of the users.
++config ORE
++	tristate
++	depends on EXOFS_FS || PNFS_OBJLAYOUT
++	select ASYNC_XOR
++	select RAID6_PQ
++	select ASYNC_PQ
++	default SCSI_OSD_ULD
+diff -Naur old/kernel-3.18/kernel/trace/trace_output.c new/kernel-3.18/kernel/trace/trace_output.c
+--- old/kernel-3.18/kernel/trace/trace_output.c	2018-08-21 21:27:44.000000000 +0800
++++ new/kernel-3.18/kernel/trace/trace_output.c	2018-11-21 15:38:24.649585345 +0800
+@@ -978,7 +978,7 @@
+ 			      field-&gt;ret.calltime,
+ 			      field-&gt;ret.rettime,
+ 			      field-&gt;ret.overrun,
+-			      field-&gt;ret.depth));
++			      field-&gt;ret.depth))
+ 		return TRACE_TYPE_PARTIAL_LINE;
+ 
+ 	return TRACE_TYPE_HANDLED;
+diff -Naur old/kernel-3.18/Makefile new/kernel-3.18/Makefile
+--- old/kernel-3.18/Makefile	2018-08-21 21:27:44.000000000 +0800
++++ new/kernel-3.18/Makefile	2018-11-21 14:46:52.826322232 +0800
+@@ -1495,13 +1495,13 @@
+ 	@echo $(KBUILD_IMAGE)
+ 
+ # Clear a bunch of variables before executing the submake
+-tools/: FORCE
+-	$(Q)mkdir -p $(objtree)/tools
+-	$(Q)$(MAKE) LDFLAGS= MAKEFLAGS="$(filter --j% -j,$(MAKEFLAGS))" O=$(objtree) subdir=tools -C $(src)/tools/
++#tools/: FORCE
++#	$(Q)mkdir -p $(objtree)/tools
++#	$(Q)$(MAKE) LDFLAGS= MAKEFLAGS="$(filter --j% -j,$(MAKEFLAGS))" O=$(objtree) subdir=tools -C $(src)/tools/
+ 
+-tools/%: FORCE
+-	$(Q)mkdir -p $(objtree)/tools
+-	$(Q)$(MAKE) LDFLAGS= MAKEFLAGS="$(filter --j% -j,$(MAKEFLAGS))" O=$(objtree) subdir=tools -C $(src)/tools/ $*
++#tools/%: FORCE
++#	$(Q)mkdir -p $(objtree)/tools
++#	$(Q)$(MAKE) LDFLAGS= MAKEFLAGS="$(filter --j% -j,$(MAKEFLAGS))" O=$(objtree) subdir=tools -C $(src)/tools/ $*
+ 
+ # Single targets
+ # ---------------------------------------------------------------------------
+diff -Naur old/kernel-3.18/net/ipv6/ip6_fib.c new/kernel-3.18/net/ipv6/ip6_fib.c
+--- old/kernel-3.18/net/ipv6/ip6_fib.c	2018-08-21 21:27:44.000000000 +0800
++++ new/kernel-3.18/net/ipv6/ip6_fib.c	2018-11-21 18:47:29.913582993 +0800
+@@ -966,7 +966,7 @@
+ 		fib6_start_gc(info-&gt;nl_net, rt);
+ 		if (!(rt-&gt;rt6i_flags &amp; RTF_CACHE))
+ 			fib6_prune_clones(info-&gt;nl_net, pn);
+-			rt-&gt;dst.flags &amp;= ~DST_NOCACHE;
++		rt-&gt;dst.flags &amp;= ~DST_NOCACHE;
+ 	}
+ 
+ out:
+@@ -1003,8 +1003,8 @@
+ st_failure:
+ 	if (fn &amp;&amp; !(fn-&gt;fn_flags &amp; (RTN_RTINFO|RTN_ROOT)))
+ 		fib6_repair_tree(info-&gt;nl_net, fn);
+-if (!(rt-&gt;dst.flags &amp; DST_NOCACHE))
+-	dst_free(&amp;rt-&gt;dst);
++  if (!(rt-&gt;dst.flags &amp; DST_NOCACHE))
++	  dst_free(&amp;rt-&gt;dst);
+ 	return err;
+ #endif
+ }
+</pre><br>
+
+<p>
+編譯Kernel
+</p>
+<pre>
+$ make ARCH=arm64 aeon6797_6m_n_defconfig
+$ make ARCH=arm64 menuconfig
+</pre>
+<p>
+<img src="gemini_android_build_kernel/1.jpg" class="maxSize"><br>
+<img src="gemini_android_build_kernel/2.jpg" class="maxSize"><br>
+P.S. 為了可以掛載自己編譯的Kernel(*.ko)，<b>Enable loadable module support</b>必須開啟
+</p><br>
+
+<pre>
+$ make ARCH=arm64 -j8
+$ ls arch/arm64/boot/
+    dts  Image  Image.gz  Image.gz-dtb  install.sh  Makefile
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

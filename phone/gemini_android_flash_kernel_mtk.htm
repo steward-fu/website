@@ -1,0 +1,53 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../phone.htm">手機</a> - Gemini PDA 4G - Android - <b>Flash Kernel Image(MTK Tool)</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/dguidipc/gemini-android-kernel-3.18<br>
+http://support.planetcom.co.uk/index.php/Android_Flashing_Guide<br>
+https://github.com/gemian/gemini-keyboard-apps/wiki/KernelCompilation<br>
+https://github.com/CyanogenMod/android_system_core/tree/cm-14.1/mkbootimg<br><br>
+
+由於Android Kernel的ramdisk檔案無法相容於Gemini PDA(Debain)，因此，最快的方式就是提取Android系統既有的檔案，過程說明如下<br>
+1. TWRP Backup boot partition(boot.emmc.win)<br>
+2. Debian x64(Image.gz-dtb)
+</p>
+<pre>
+$ cd
+$ git clone https://github.com/CyanogenMod/android_system_core
+$ sudo cp android_system_core/mkbootimg/mkbootimg /usr/bin/
+$ sudo cp android_system_core/mkbootimg/unpackbootimg /usr/bin/
+$ mkdir unpack
+$ cd unpack
+$ unpackbootimg -i xxx/boot.emmc.win
+    Android magic found at: 0
+    BOARD_KERNEL_CMDLINE bootopt=64S3,32N2,64N2 buildvariant=user
+    BOARD_KERNEL_BASE 00000000
+    BOARD_RAMDISK_OFFSET 04f80000
+    BOARD_SECOND_OFFSET 00e80000
+    BOARD_TAGS_OFFSET 03f80000
+    BOARD_PAGE_SIZE 2048
+    BOARD_SECOND_SIZE 0
+    BOARD_DT_SIZE 0
+
+$ ls
+    boot.emmc.win-base           boot.emmc.win-name            boot.emmc.win-ramdisk.gz      boot.emmc.win-tags_offset
+    boot.emmc.win-cmdline        boot.emmc.win-os_patch_level  boot.emmc.win-ramdisk_offset  boot.emmc.win-zImage
+    boot.emmc.win-dt             boot.emmc.win-os_version      boot.emmc.win-second          boot.emmc.win-zImage.fdt
+    boot.emmc.win-kernel_offset  boot.emmc.win-pagesize        boot.emmc.win-second_offset   boot.emmc.win-zImage.gunzip
+
+$ mkbootimg --kernel xxx/Image.gz-dtb --ramdisk boot.emmc.win-ramdisk.gz --base 0x40080000 --second_offset 0x00e80000 --cmdline "bootopt=64S3,32N2,64N2 log_buf_len=4M" --kernel_offset 0x00000000 --ramdisk_offset 0x04f80000 --tags_offset 0x03f80000 --pagesize 2048 -o linux_boot.img
+</pre><br>
+
+<p>
+燒錄linux_boot.img<br>
+<img src="gemini_android_flash_kernel_mtk/1.jpg" class="maxSize"><br><br>
+
+完成<br>
+<img src="gemini_android_flash_kernel_mtk/2.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

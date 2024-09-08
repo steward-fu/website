@@ -1,0 +1,135 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../phone.htm">手機</a> - Gemini PDA 4G - Android - Termux - <b>使用openocd燒錄STM32F103</b></h3>
+<hr size="1"><br>
+<p>
+led.S
+</p>
+<pre class="brush:asm">
+    .thumb
+    .syntax unified
+    .equ GPIOC_CRH,   0x40011004
+    .equ GPIOC_ODR,   0x4001100c
+    .equ RCC_APB2ENR, 0x40021018
+    .equ STACKINIT,   0x20005000
+    .equ LEDDELAY,    800000
+
+    .global _start
+    .section .text
+    .org 0x0
+    .word STACKINIT
+    .word _start
+
+    .org 0x100
+    .thumb_func
+_start:
+    ldr r6, =RCC_APB2ENR
+    mov r0, 0x10
+    str r0, [r6]
+    ldr r6, =GPIOC_CRH
+    ldr r0, =0x44344444
+    str r0, [r6]
+    mov r2, 0
+    mov r3, 0x2000
+    ldr r6, =GPIOC_ODR
+loop:
+    str r2, [r6]
+    ldr r1, =LEDDELAY
+delay1:
+    subs r1, 1
+    bne delay1
+    str r3, [r6]
+    ldr r1, =LEDDELAY
+delay2:
+    subs r1, 1
+    bne delay2
+    b loop
+</pre><br>
+
+<p>
+led.ld
+</p>
+<pre>
+SECTIONS
+{
+    . = 0x0;
+    .text : 
+    {
+        *(.text)
+    }
+    .data : 
+    {
+        *(.data)
+        *(.rom)
+    }
+    . = 0x20000000;
+    .ram : { *(.ram) }
+ 
+    .bss : 
+    {
+        *(.bss)
+        *(.ram)
+    }
+}
+</pre><br>
+
+<p>
+Makefile
+</p>
+<pre>
+all:
+	arm-none-eabi-as -mcpu=cortex-m3 -mthumb -mthumb-interwork -o led.o led.S
+	arm-none-eabi-ld -T led.ld -o led.elf led.o
+	arm-none-eabi-objcopy -O binary led.elf led.bin
+
+clean:
+	rm -rf led.o
+	rm -rf led.elf
+	rm -rf led.bin
+</pre><br>
+
+<p> 
+編譯(Linux Deploy)
+</p>
+<pre>
+$ make
+    arm-none-eabi-as -mcpu=cortex-m3 -mthumb -mthumb-interwork -o led.o led.S
+    arm-none-eabi-ld -T led.ld -o led.elf led.o
+    arm-none-eabi-objcopy -O binary led.elf led.bin
+</pre><br>
+
+<p>
+接腳：
+</p>
+<table>
+<tr><th>ST-Link V2</th><th>STM32</th></tr>
+<tr><td>GND</td><td>GND</td></tr>
+<tr><td>3.3V</td><td>3.3V</td></tr>
+<tr><td>SWCLK</td><td>SWCLK</td></tr>
+<tr><td>SWDIO</td><td>SWDIO</td></tr>
+</table>
+<p>
+<img src="gemini_termux_stm32/1.jpg" class="maxSize"><br><br>
+
+燒錄
+</p>
+<pre>
+$ tsudo openocd -f /data/data/com.termux/files/usr/share/openocd/scripts/interface/stlink-v2.cfg -f /data/data/com.termux/files/usr/share/openocd/scripts/target/stm32f1x.cfg
+
+$ telnet localhost 4444
+&gt; halt
+&gt; flash erase_sector 0 0 0
+&gt; flash write_bank 0 /data/data/com.termux/files/home/led.bin 0
+&gt; reset init
+&gt; resume 
+</pre><br>
+
+<p>
+完成<br>
+<img src="gemini_termux_stm32/2.jpg" class="maxSize"><br>
+<img src="gemini_termux_stm32/3.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

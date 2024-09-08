@@ -1,0 +1,96 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../phone.htm">手機</a> - Gemini PDA 4G - Android - Termux - <b>使用stcgal燒錄STC15W4K56S4</b></h3>
+<hr size="1"><br>
+<p>
+開發板<br>
+<img src="gemini_termux_stc/1.jpg" class="maxSize"><br><br>
+
+接腳：
+</p>
+<table>
+<tr><th>STC</th><th>PL2303</th></tr>
+<tr><td>GND</td><td>GND</td></tr>
+<tr><td>P3.0</td><td>UART TX</td></tr>
+<tr><td>P3.1</td><td>UART RX</td></tr>
+</table>
+<p>
+<img src="gemini_termux_stc/2.jpg" class="maxSize"><br><br>
+
+安裝stcgal
+</p>
+
+<pre>
+$ cd
+$ pkg install libtool automake pkg-config root-repo python
+$ git clone https://github.com/grigorig/stcgal
+$ cd stcgal
+$ ./setup.py build
+$ ./setup.py install
+</pre><br>
+
+<p>
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;8051.h&gt;
+#include &lt;compiler.h&gt;
+SFR(P5, 0xC8);
+  
+void delay(unsigned long cnt)
+{
+    while (cnt--);
+}
+  
+void main(void)
+{
+    while (1) {
+        P5 = 0xff;
+        delay(1000000);
+        P5 = 0x00;
+        delay(1000000);
+    }
+}
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ sdcc main.c
+</pre><br>
+
+<p>
+main.ihx
+</p>
+<pre>
+:03000000020006F5
+:03005F0002000399
+:0300030002008573
+:20006200AC82AD83AEF0FF8C008D018E028F031CBCFF091DBDFF051EBEFF011FE8494A4BC8
+:1F00820070E52275C8FF90424075F00FE412006275C80090424075F00FE412006280E44F
+:06003500E478FFF6D8FD9F
+:200013007900E94400601B7A009000A5780175A000E493F2A308B8000205A0D9F4DAF275EE
+:02003300A0FF2C
+:20003B007800E84400600A790175A000E4F309D8FC7800E84400600C7900900001E4F0A3C3
+:04005B00D8FCD9FAFA
+:0D0006007581071200A1E58260030200036E
+:0400A1007582002242
+:00000001FF
+</pre><br>
+
+<p>
+燒錄
+</p>
+<pre>
+$ tsudo stcgal -p /dev/ttyMT0 -P stc15 main.ihx
+</pre><br>
+
+<p>
+完成<br>
+<img src="gemini_termux_stc/3.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
