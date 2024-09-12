@@ -1,0 +1,102 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../phone.htm">手機</a> - Fujitsu LOOX F-07C - x86 - <b>安裝Arch Linux(LXDE)</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://wakamesoba98.blogspot.com/2014/02/f-07c-1.html<br><br>
+
+安裝步驟：<br>
+1. 插入USB無線網卡<br>
+2. 安裝Lubuntu用來產生Bootable Partition
+</p>
+<pre>
+/dev/mmcblk0p1 29G  System(Bootable)
+/dev/mmcblk0p5 0.8G Swap
+</pre><br>
+
+<p>
+3. 安裝Arch Linux
+</p>
+<pre>
+# mkfs.ext4 /dev/mmcblk0p1
+# mkswap /dev/mmcblk0p5
+# mount /dev/mmcblk0p1 /mnt
+# wifi-menu
+# vim /etc/pacman.d/mirrorlist
+Server=http://ftp.tku.edu.tw/Linux/ArchLinux/$repo/os/$arch
+Server=http://archlinux.cs.nctu.edu.tw/$repo/os/$arch
+
+# pacman -Syy
+# pacstrap /mnt base
+# genfstab -p -U /mnt &gt; /mnt/etc/fstab
+# arch-chroot /mnt
+
+[chroot] passwd
+[chroot] echo arch &gt; /etc/hostname
+[chroot] ln -s /usr/share/zoneinfo/Asia/Taipei /etc/localtime
+[chroot] nano /etc/locale.gen
+en_US.UTF-8 UTF-8
+zh_CN.UTF-8 UTF-8
+zh_TW.UTF-8 UTF-8
+
+[chroot] locale-gen
+[chroot] nano /etc/locale.conf
+LANG="en_US.UTF-8"
+
+[chroot] pacman -S xf86-input-synaptics xorg-server grub 
+[chroot] pacman -S net-tools wpa_supplicant wireless_tools networkmanager network-manager-applet gnome-keyring
+[chroot] pacman -S lxde obconf openbox lxdm lxde-common gamin cpupower
+[chroot] systemctl enable NetworkManager.service
+[chroot] systemctl enable wpa_supplicant.service
+[chroot] systemctl enable lxdm.service
+
+[chroot] mkinitcpio -p linux
+[chroot] grub-install --target=i386-pc --recheck /dev/mmcblk0
+[chroot] grub-mkconfig -o /boot/grub/grub.cfg
+
+[chroot] nano /etc/X11/xorg.conf.d/20-gpudriver.conf
+Section "Device"
+    Identifier "gma500_gfx"
+    Driver "modesetting"
+EndSection
+
+[chroot] nano /etc/X11/xorg.conf.d/40-monitor.conf
+Section "Monitor"
+    Identifier "LVDS-0"
+    Option "Rotate" "right"
+EndSection
+
+[chroot] nano /etc/X11/xorg.conf.d/50-invertaxes.conf
+Section "InputClass"
+    Identifier "Invert Touchscreen"
+    MatchProduct "FUJITSU FOMA F07C"
+    MatchIsTouchscreen "on"
+    MatchDevicePath "/dev/input/event*"
+    Option "SwapAxes" "true"
+    Option "InvertX" "false"
+    Option "InvertY" "true"
+EndSection
+
+[chroot] nano /etc/modprobe.d/snd_hda_intel.conf
+options snd-hda-intel enable_msi=0
+options snd-hda-intel model=auto
+
+[chroot] nano /etc/default/cpupower
+governor='ondemand'
+min_freq="600 MHz"
+max_freq="1.20 GHz"
+
+[chroot] nano /etc/default/grub
+GRUB_CMDLINE_LINUX="fbcon=rotate:1 sdhci.debug_quirks=0x40 processor.ignore_ppc=1"
+
+[chroot] grub-mkconfig -o /boot/grub/grub.cfg
+[chroot] exit
+
+# umount /mnt
+# reboot
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

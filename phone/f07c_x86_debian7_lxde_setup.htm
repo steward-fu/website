@@ -1,0 +1,96 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../phone.htm">手機</a> - Fujitsu LOOX F-07C - x86 - <b>安裝Debian 7.0(LXDE)</b></h3>
+<hr size="1"><br>
+<p>
+1. 製作Debian 7.0 LXDE USB開機片<br>
+2. 開機進入BIOS(F12)並選擇USB開機<br>
+3. 安裝Debian 7.0系統<br>
+<img src="f07c_x86_debian7_lxde_setup/1.jpg" class="maxSize"><br>
+<img src="f07c_x86_debian7_lxde_setup/2.jpg" class="maxSize"><br>
+<img src="f07c_x86_debian7_lxde_setup/8.jpg" class="maxSize"><br>
+<img src="f07c_x86_debian7_lxde_setup/3.jpg" class="maxSize"><br>
+<img src="f07c_x86_debian7_lxde_setup/4.jpg" class="maxSize"><br>
+<img src="f07c_x86_debian7_lxde_setup/5.jpg" class="maxSize"><br>
+<img src="f07c_x86_debian7_lxde_setup/6.jpg" class="maxSize"><br><br>
+
+4. 安裝完成後，開啟Terminal並輸入如下指令建立資料夾
+</p>
+<pre>
+# apt-get update
+# apt-get install xserver-xorg-video-fbdev xserver-xorg-video-modesetting linux-cpupower cpufrequtils
+# mkdir /etc/X11/xorg.conf.d
+</pre><br>
+
+<p>
+5. 新增螢幕配置檔案
+</p>
+<pre>
+# vim /etc/X11/xorg.conf.d/20-gpudriver.conf
+    Section "Device"
+        Identifier "gma500_gfx"
+        Driver "fbdev"
+        Option "Rotate" "CW"
+    EndSection
+
+# vim /etc/X11/xorg.conf.d/40-monitor.conf
+    Section "Monitor"
+        Identifier "LVDS-0"
+        Option "Rotate" "right"
+    EndSection
+
+# vim /etc/X11/xorg.conf.d/50-invertaxes.conf
+    Section "InputClass"
+        Identifier "Invert Touchscreen"
+        MatchProduct "FUJITSU FOMA F07C"
+        MatchIsTouchscreen "on"
+        MatchDevicePath "/dev/input/event*"
+        Option "SwapAxes" "true"
+        Option "InvertX" "false"
+        Option "InvertY" "true"
+    EndSection
+</pre><br>
+
+<p>
+6. 設定開機後執行：畫面旋轉、跳過SDIO WIFI驅動程式匹配、CPU速度
+</p>
+<pre>
+# vim /etc/default/grub
+    GRUB_CMDLINE_LINUX="fbcon=rotate:1 sdhci.debug_quirks=0x40 processor.ignore_ppc=1"
+
+# grub-mkconfig -o /boot/grub/grub.cfg
+</pre><br>
+
+<p>
+7. 設定音效裝置(必須在Symbian模式下，使用<b>Fn2 + 右鍵</b>開啟Speaker)
+</p>
+<pre>
+# vim /etc/modprobe.d/snd_hda_intel.conf
+    options snd-hda-intel enable_msi=0
+    options snd-hda-intel model=auto
+</pre><br>
+
+<p>
+8. 設定最大CPU速度
+</p>
+<pre>
+# vim /etc/init.d/cpufrequtils
+    GOVERNOR='ondemand'
+    MIN_FREQ="600MHz"
+    MAX_FREQ="1.20GHz"
+</pre><br>
+
+<p>
+9. 完成
+</p>
+<pre>
+# reboot
+</pre>
+
+<p>
+<img src="f07c_x86_debian7_lxde_setup/7.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
