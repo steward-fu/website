@@ -1,0 +1,119 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../phone.htm">手機</a> - Blackberry Passport - Core Native (C/C++) - <b>Build PPSSPP 0.9.9</b></h3>
+<hr size="1"><br>
+<p>
+1. 確定NDK Toolchain是4.8.3版本<br>
+2. 使用如下指令編譯：
+</p>
+<pre>
+$ cd
+$ git clone -b v0.9.9 https://github.com/hrydgard/ppsspp
+$ cd ppsspp
+$ git submodule update --init --recursive
+$ source ~/bbndk/bbndk-env*.sh
+$ cd Blackberry
+$ vim build.sh
+    #!/bin/bash
+    rm -rf CMake*
+    BB_OS=`cat ${QNX_TARGET}/etc/qversion 2&gt;/dev/null`
+    if [ -z "$BB_OS" ]; then
+        echo "Could not find your Blackberry NDK. Please source bbndk-env.sh"
+        exit 1
+    fi
+    echo "Building for Blackberry ${BB_OS}"
+    # Set up cmake with GCC 4.6.3 cross-compiler from PATH
+    CC=ntoarmv7-gcc CXX=ntoarmv7-g++ cmake -DCMAKE_TOOLCHAIN_FILE=bb.toolchain.cmake -DBLACKBERRY=${BB_OS} ..
+    # Compile and create unsigned PPSSPP.bar with debugtoken
+    DEBUG="-devMode -debugToken ${HOME}/debugtoken.bar"
+    make -j4 &amp;&amp; blackberry-nativepackager -package PPSSPP.bar bar-descriptor.xml $DEBUG
+
+$ vim ../CMakeLists.txt
+    # Detect CPU from CMAKE configuration. Toolchains should set this up
+    if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "^arm")
+        set(ARM ON)
+    endif()
+
+    if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "^armv7")
+        set(ARMV7 ON)
+    endif()
+
+    set(ARM ON)
+    set(ARMV7 ON)
+
+    # Remove soon?
+    set(USE_FFMPEG ON)
+
+    if(ARM OR SIMULATOR)
+        set(USING_EGL ON)
+        set(MOBILE_DEVICE ON)
+    endif()
+    if (NOT ARM) # Assume x86
+        set(X86 ON)
+    endif()
+    set(X86 OFF)
+ 
+$ ./build.sh
+</pre><br>
+
+<p>
+奇怪的是，編譯後都是無法執行的，PPSSPPBlackberry都會Crash，然後訊息都是如下，完全看不出是那個Library的問題，因此，司徒只好把所有static library改成shared library來找問題，最終找出是ffmpeg的問題，過程修改如下：
+</p>
+<pre>
+Process 14352626 (PPSSPPBlackberry) terminated SIGSEGV code=2 fltno=11 ip=01b9c8f8 mapaddr=0004f8f8. ref=1103a960
+</pre><br>
+
+<p>
+把ffmpeg改成shared library
+</p>
+<pre>
+$ cd ffmpeg
+$ vim blackberry-build.sh
+    #--disable-shared \
+    #--enable-static \
+    --enable-shared \
+
+$ ./blackberry-build.sh
+$ cd ../Blackberry
+$ mkdir -p lib
+$ cp ../ffmpeg/blackberry/armv7/lib/*.so* .
+$ cp ../ffmpeg/blackberry/armv7/lib/*.so* lib
+$ vim CMakeFiles/PPSSPPBlackberry.dir/link.txt
+    ntoarmv7-g++ -march=armv7-a -mfpu=neon -mcpu=cortex-a9 -std=c++11 -g CMakeFiles/PPSSPPBlackberry.dir/UI/NativeApp.cpp.o CMakeFiles/PPSSPPBlackberry.dir/UI/BackgroundAudio.cpp.o CMakeFiles/PPSSPPBlackberry.dir/UI/DevScreens.cpp.o CMakeFiles/PPSSPPBlackberry.dir/UI/EmuScreen.cpp.o CMakeFiles/PPSSPPBlackberry.dir/android/jni/TestRunner.cpp.o CMakeFiles/PPSSPPBlackberry.dir/UI/GameInfoCache.cpp.o CMakeFiles/PPSSPPBlackberry.dir/UI/MainScreen.cpp.o CMakeFiles/PPSSPPBlackberry.dir/UI/MiscScreens.cpp.o CMakeFiles/PPSSPPBlackberry.dir/UI/GameScreen.cpp.o CMakeFiles/PPSSPPBlackberry.dir/UI/GameSettingsScreen.cpp.o CMakeFiles/PPSSPPBlackberry.dir/UI/TiltAnalogSettingsScreen.cpp.o CMakeFiles/PPSSPPBlackberry.dir/UI/TiltEventProcessor.cpp.o CMakeFiles/PPSSPPBlackberry.dir/UI/TouchControlLayoutScreen.cpp.o CMakeFiles/PPSSPPBlackberry.dir/UI/TouchControlVisibilityScreen.cpp.o CMakeFiles/PPSSPPBlackberry.dir/UI/GamepadEmu.cpp.o CMakeFiles/PPSSPPBlackberry.dir/UI/UIShader.cpp.o CMakeFiles/PPSSPPBlackberry.dir/UI/OnScreenDisplay.cpp.o CMakeFiles/PPSSPPBlackberry.dir/UI/ControlMappingScreen.cpp.o CMakeFiles/PPSSPPBlackberry.dir/UI/Store.cpp.o CMakeFiles/PPSSPPBlackberry.dir/UI/CwCheatScreen.cpp.o CMakeFiles/PPSSPPBlackberry.dir/UI/InstallZipScreen.cpp.o CMakeFiles/PPSSPPBlackberry.dir/UI/ui_atlas.cpp.o -o PPSSPPBlackberry lib/libCore.a lib/libCommon.a lib/libnative.a lib/liblibzip.a lib/libpng17.a lib/librg_etc1.a lib/libvjson.a lib/libstb_vorbis.a lib/libsnappy.a lib/libkirk.a lib/libcityhash.a lib/libxbrz.a lib/libxxhash.a libstdc++.a libbps.so.3 libc.so.3 libEGL.so.1 libGLESv2.so.1 libiconv.so.1 libm.so.2 libOpenAL.so.1 libscreen.so.1 libsocket.so.3 libz.so libz.so.2 libavcodec.so libavformat.so libavcodec.so libavutil.so libswresample.so libswscale.so
+
+$ make -j 4
+    ntoarmv7-g++: error: libstdc++.a: No such file or directory
+    ntoarmv7-g++: error: libbps.so.3: No such file or directory
+    ntoarmv7-g++: error: libc.so.3: No such file or directory
+    ntoarmv7-g++: error: libEGL.so.1: No such file or directory
+    ntoarmv7-g++: error: libGLESv2.so.1: No such file or directory
+    ntoarmv7-g++: error: libiconv.so.1: No such file or directory
+    ntoarmv7-g++: error: libm.so.2: No such file or directory
+    ntoarmv7-g++: error: libOpenAL.so.1: No such file or directory
+    ntoarmv7-g++: error: libscreen.so.1: No such file or directory
+    ntoarmv7-g++: error: libsocket.so.3: No such file or directory
+    ntoarmv7-g++: error: libz.so: No such file or directory
+    ntoarmv7-g++: error: libz.so.2: No such file or directory
+</pre>
+<p>
+P.S. 以上這些檔案可以從bbndk裡面找到，然後複製到目前資料夾以及lib資料夾即可<br><br>
+
+接著打包Bar檔案
+</p>
+<pre>
+$ vim bar-descriptor.xml
+    &lt;asset path="lib"&gt;lib&lt;/asset&gt;
+    &lt;env var="LD_LIBRARY_PATH" value="app/native/lib"/&gt;
+
+$ DEBUG="-devMode -debugToken ${HOME}/.rim/debugtoken_q30.bar"
+$ blackberry-nativepackager -package PPSSPP.bar bar-descriptor.xml $DEBUG
+</pre><br>
+
+<p>
+完成<br>
+<img src="q30_ndk_build_ppsspp-0.9.9/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

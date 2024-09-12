@@ -1,0 +1,92 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../phone.htm">手機</a> - Blackberry Passport - Core Native (C/C++) - SDL v1.2 - <b>Load Image</b></h3>
+<hr size="1"><br>
+<p>
+main.cpp
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;SDL.h&gt;
+#include &lt;SDL_image.h&gt;
+
+int main(int argc, char* args[])
+{
+    if (SDL_Init(SDL_INIT_VIDEO) != 0) {
+        printf("%s, failed to SDL_Init\n", __func__);
+        return -1;
+    }
+
+    SDL_Surface* screen = NULL;
+    screen = SDL_SetVideoMode(1440, 1440, 32, SDL_HWSURFACE | SDL_DOUBLEBUF);
+    if (screen == NULL) {
+        printf("%s, failed to SDL_SetVideMode\n", __func__);
+        return -1;
+    }
+
+    SDL_Surface* png = IMG_Load("app/native/main.png");
+    if (png == NULL) {
+        printf("%s, failed to IMG_Load\n", __func__);
+        return -1;
+    }
+
+    SDL_ShowCursor(0);
+    SDL_BlitSurface(png, NULL, screen, NULL);
+    SDL_Flip(screen);
+    SDL_Delay(30000);
+    SDL_FreeSurface(png);
+    SDL_Quit();
+    return 0;    
+}
+</pre><br>
+
+<p>
+bar-descriptor.xml
+</p>
+<pre>
+&lt;?xml version="1.0" encoding="utf-8" standalone="no"?&gt;
+&lt;qnx xmlns="http://www.qnx.com/schemas/application/1.0"&gt;
+    &lt;id&gt;com.steward.sdl.ch3&lt;/id&gt;
+    &lt;name&gt;ch3&lt;/name&gt;
+    &lt;filename&gt;ch3&lt;/filename&gt;
+    &lt;versionNumber&gt;1.0.0&lt;/versionNumber&gt;
+    &lt;buildId&gt;1&lt;/buildId&gt;
+    &lt;description&gt;Lesson 3. Extension Libraries and Loading Other Image Formats&lt;/description&gt;
+
+    &lt;author&gt;Steward&lt;/author&gt;
+    &lt;authorId&gt;gYAAgGE4qaHzBnzEAu8JKe4G1OI&lt;/authorId&gt;
+
+    &lt;asset path="main" entry="true" type="Qnx/Elf"&gt;main&lt;/asset&gt;
+    &lt;asset path="main.png"&gt;main.png&lt;/asset&gt;
+    &lt;asset path="lib" type="Qnx/Elf"&gt;lib&lt;/asset&gt;
+
+    &lt;permission system="true"&gt;run_native&lt;/permission&gt;
+    &lt;env var="LD_LIBRARY_PATH" value="app/native/lib"/&gt;
+&lt;/qnx&gt;
+</pre><br>
+
+<p>
+Makefile
+</p>
+<pre>
+main: main.cpp
+	ntoarmv7-gcc main.cpp -g -o main lib/libSDL-1.2.so.11 -Iinclude lib/libSDL_image-1.2.so.8 libwebp.a
+	blackberry-nativepackager -package main.bar bar-descriptor.xml -devMode -debugToken ${HOME}/.rim/debugtoken_q30.bar
+	#gcc main.cpp -o main -lSDL -I/usr/include/SDL
+
+clean:
+	rm -rf main
+	rm -rf main.bar
+</pre><br>
+
+<p>
+完成<br>
+<img src="q30_ndk_sdl_image/1.jpg" class="maxSize"><br>
+<img src="q30_ndk_sdl_image/2.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

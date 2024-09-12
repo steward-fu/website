@@ -1,0 +1,50 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../phone.htm">手機</a> - Blackberry Passport - Core Native (C/C++) - <b>Build SDL_image 1.2.12</b></h3>
+<hr size="1"><br>
+<p>
+步驟如下：
+</p>
+<pre>
+$ cd
+$ wget https://www.libsdl.org/projects/SDL_image/release/SDL_image-1.2.12.tar.gz
+$ tar xvf SDL_image-1.2.12.tar.gz
+$ cd SDL_image-1.2.12
+$ source ~/bbndk/bbndk-env_10_3_1_995.sh
+$ export TARGETMACH=arm-unknown-nto-qnx8.0.0eabi
+$ export BUILDMACH=i686-pc-linux-gnu
+$ export CROSS=arm-unknown-nto-qnx8.0.0eabi
+$ export CC=${CROSS}-gcc
+$ export LD=${CROSS}-ld
+$ export AS=${CROSS}-as
+$ export CXX=${CROSS}-g++
+$ ./configure --host=$TARGETMACH --prefix=$QNX_TARGET
+$ make
+    IMG_webp.c:45:25: fatal error: webp/decode.h: No such file or directory
+
+$ vim Makefile +90
+    DEFAULT_INCLUDES = -I. -I$(QNX_TARGET)/include
+
+$ make
+    ntoarm-ld: cannot find -lwebp
+    ntoarm-ld: cannot find -lSDL
+
+$ vim Makefile +157
+    IMG_LIBS = -lpng -lz $(QNX_TARGET)/lib/libwebp.a
+
+$ vim Makefile +169
+    LIBS =  $(QNX_TARGET)/lib/libSDL.so
+
+$ vim Makefile +172
+    LIBWEBP_LIBS = $(QNX_TARGET)/lib/libwebp.a
+
+$ vim Makefile +205
+    SDL_LIBS = $(QNX_TARGET)/lib/libSDL.so
+
+$ make
+$ make install
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

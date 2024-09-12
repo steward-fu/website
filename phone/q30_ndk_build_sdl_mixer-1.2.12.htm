@@ -1,0 +1,40 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../phone.htm">手機</a> - Blackberry Passport - Core Native (C/C++) - <b>Build SDL_mixer 1.2.12</b></h3>
+<hr size="1"><br>
+<p>
+步驟如下：
+</p>
+<pre>
+$ cd
+$ wget https://www.libsdl.org/projects/SDL_mixer/release/SDL_mixer-1.2.12.tar.gz
+$ tar xvf SDL_mixer-1.2.12.tar.gz
+$ cd SDL_mixer-1.2.12
+$ source ~/bbndk/bbndk-env_10_3_1_995.sh
+$ export TARGETMACH=arm-unknown-nto-qnx8.0.0eabi
+$ export BUILDMACH=i686-pc-linux-gnu
+$ export CROSS=arm-unknown-nto-qnx8.0.0eabi
+$ export CC=${CROSS}-gcc
+$ export LD=${CROSS}-ld
+$ export AS=${CROSS}-as
+$ export CXX=${CROSS}-g++
+$ ./configure --host=$TARGETMACH --prefix=$QNX_TARGET
+$ make
+    dynamic_mod.h:24:20: fatal error: mikmod.h: No such file or directory
+
+$ vim Makefile +25
+    EXTRA_CFLAGS = -I$(QNX_TARGET)/include/ -D_GNU_SOURCE=1 -D_GNU_SOURCE=1 -D_REENTRANT -I/usr/include/SDL -fvisibility=hidden -DHAVE_FORK -DCMD_MUSIC -DWAV_MUSIC -DMOD_MUSIC -DMID_MUSIC -DUSE_TIMIDITY_MIDI -I$(srcdir)/timidity -DHAVE_SIGNAL_H
+
+$ vim Makefile +27
+    EXTRA_LDFLAGS = $(QNX_TARGET)/lib/libSDL.so -L/usr/lib $(QNX_TARGET)/lib/libmikmod.a -lm
+  
+$ vim Makefile +34
+    SDL_LIBS = $(QNX_TARGET)/lib/libSDL.so
+
+$ make
+$ make install
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

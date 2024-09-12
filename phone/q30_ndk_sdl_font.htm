@@ -1,0 +1,110 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../phone.htm">手機</a> - Blackberry Passport - Core Native (C/C++) - SDL v1.2 - <b>Open Font</b></h3>
+<hr size="1"><br>
+<p>
+main.cpp
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;SDL.h&gt;
+#include &lt;SDL_image.h&gt;
+#include &lt;SDL_ttf.h&gt;
+
+int main(int argc, char* args[])
+{
+    int loop = 1;
+    SDL_Event event;
+
+    if (SDL_Init(SDL_INIT_VIDEO) != 0) {
+        printf("%s, failed to SDL_Init\n", __func__);
+        return -1;
+    }
+
+    SDL_Surface* screen = NULL;
+    screen = SDL_SetVideoMode(1440, 1440, 32, SDL_HWSURFACE | SDL_DOUBLEBUF);
+    if (screen == NULL) {
+        printf("%s, failed to SDL_SetVideMode\n", __func__);
+        return -1;
+    }
+    SDL_FillRect(screen, &amp;screen-&gt;clip_rect, SDL_MapRGB(screen-&gt;format, 0xff, 0xff, 0xff));
+
+    if (TTF_Init() == -1) {
+        printf("failed to TTF_Init\n");
+        return -1;
+    }
+
+    SDL_Rect of = {0}; 
+    SDL_Color textColor = {0xff, 0, 0};
+    TTF_Font *font = TTF_OpenFont("app/native/lato.ttf", 100);
+    SDL_Surface *msg = TTF_RenderText_Solid(font, "Lesson 7. True Type Fonts", textColor);
+
+    of.x = 100;
+    of.y = 600;
+    SDL_BlitSurface(msg, NULL, screen, &amp;of);
+
+    SDL_ShowCursor(0);
+    SDL_Flip(screen);
+    while (loop) {
+        while (SDL_PollEvent(&amp;event)) {
+            if (event.type == SDL_KEYDOWN) {
+                loop = 0;
+            }
+        }
+    }
+    TTF_CloseFont(font);
+    SDL_FreeSurface(msg);
+    TTF_Quit();
+    SDL_Quit();
+    return 0;    
+}
+</pre><br>
+
+<p>
+bar-descriptor.xml
+</p>
+<pre>
+&lt;?xml version="1.0" encoding="utf-8" standalone="no"?&gt;
+&lt;qnx xmlns="http://www.qnx.com/schemas/application/1.0"&gt;
+    &lt;id&gt;com.steward.sdl.ch7&lt;/id&gt;
+    &lt;name&gt;ch7&lt;/name&gt;
+    &lt;filename&gt;ch7&lt;/filename&gt;
+    &lt;versionNumber&gt;1.0.0&lt;/versionNumber&gt;
+    &lt;buildId&gt;1&lt;/buildId&gt;
+    &lt;description&gt;Lesson 7. True Type Fonts&lt;/description&gt;
+
+    &lt;author&gt;Steward&lt;/author&gt;
+    &lt;authorId&gt;gYAAgGE4qaHzBnzEAu8JKe4G1OI&lt;/authorId&gt;
+
+    &lt;asset path="main" entry="true" type="Qnx/Elf"&gt;main&lt;/asset&gt;
+    &lt;asset path="lato.ttf"&gt;lato.ttf&lt;/asset&gt;
+    &lt;asset path="lib" type="Qnx/Elf"&gt;lib&lt;/asset&gt;
+
+    &lt;permission system="true"&gt;run_native&lt;/permission&gt;
+    &lt;env var="LD_LIBRARY_PATH" value="app/native/lib"/&gt;
+&lt;/qnx&gt;
+</pre><br>
+
+<p>
+Makefile
+</p>
+<pre>
+main: main.cpp
+	ntoarmv7-gcc main.cpp -g -o main lib/libSDL-1.2.so.11 -Iinclude lib/libSDL_image-1.2.so.8 lib/libSDL_ttf-2.0.so.10 $(QNX_TARGET)/lib/libwebp.a
+	blackberry-nativepackager -package main.bar bar-descriptor.xml -devMode -debugToken ${HOME}/.rim/debugtoken_q30.bar
+
+clean:
+	rm -rf main
+	rm -rf main.bar
+</pre><br>
+
+<p>
+完成<br>
+<img src="q30_ndk_sdl_font/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
