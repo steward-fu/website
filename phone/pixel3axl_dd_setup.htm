@@ -1,0 +1,63 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../phone.htm">手機</a> - Google Pixel 3a XL - Droidian - <b>安裝系統</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/junocomp/linux-pixel-3a<br><br>
+
+步驟如下：<br>
+1. 刷Android 9到A、B分區
+</p>
+<pre>
+$ cd
+$ wget https://github.com/steward-fu/website/releases/download/pixel-3a-xl/platform-tools_r33.0.3-linux.zip
+$ unzip platform-tools_r33.0.3-linux.zip
+$ export PATH=~/platform-tools:$PATH
+
+$ wget https://github.com/steward-fu/website/releases/download/pixel-3a-xl/bonito-pq3b.190801.002-factory-61a2836d.zip
+$ unzip bonito-pq3b.190801.002-factory-61a2836d.zip
+$ cd bonito-pq3b.190801.002
+$ vim flash-all.sh
+    #if ! grep -q partition-exists $(which fastboot); then
+    #  echo "fastboot too old; please download the latest version at https://developer.android.com/studio/releases/platform-tools.html"
+    #  exit 1
+    #fi
+
+$ fastboot -ab
+$ fastboot reboot bootloader
+$ ./flash-all.sh
+
+$ fastboot -aa
+$ fastboot reboot bootloader
+$ ./flash-all.sh
+</pre>
+<p>
+P.S. 刷完flash-all.sh後，記得要手動進入fastboot模式<br><br>
+
+2. 刷Droidian到A分區
+</p>
+<pre>
+$ cd
+$ wget https://github.com/droidian-images/rootfs-api28gsi-all/releases/download/droidian%2Fbullseye%2F23/droidian-rootfs-api28gsi-arm64_20211127.zip
+$ wget https://github.com/droidian-images/rootfs-api28gsi-all/releases/download/droidian%2Fbullseye%2F23/droidian-adaptation-google-sargo-arm64_20211127.zip
+$ wget https://dl.twrp.me/sargo/twrp-3.4.0-0-sargo.img
+
+$ fastboot -aa
+$ fastboot reboot bootloader
+$ fastboot format:ext4 userdata
+$ fastboot boot twrp-3.4.0-0-sargo.img
+
+$ adb sideload droidian-rootfs-api28gsi-arm64_20211127.zip
+$ adb sideload droidian-adaptation-google-sargo-arm64_20211127.zip
+</pre>
+<p>
+P.S. 要執行sideload前，記得先在TWRP執行sideload選項，然後USB線記得拔插<br><br>
+
+Droidian的Terminal比Ubunt Touch好用，加上Droidian可以真正使用到48GB空間，比起Ubunt Touch更適合開發者使用，不過，Droidian系統相對不穩定<br>
+<img src="pixel3axl_dd_setup/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

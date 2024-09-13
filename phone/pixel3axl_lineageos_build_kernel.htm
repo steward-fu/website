@@ -1,0 +1,38 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../phone.htm">手機</a> - Google Pixel 3a XL - LineageOS - <b>Build Kernel 4.9.336</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/JunASAKA/kernel_google_msm-4.9_KernelSU<br>
+https://stackoverflow.com/questions/62805049/error-compiling-latest-android-10-kernel-for-pixel-3xl-b1c1-defconfig-error<br><br>
+
+步驟如下：
+</p>
+<pre>
+$ sudo apt install build-essential libncurses-dev bison flex libssl-dev libelf-dev bc git gcc-aarch64-linux-gnu libfdt-dev clang
+
+$ cd
+$ wget https://github.com/steward-fu/website/releases/download/pixel-3a-xl/lineageos_linux-x86.tar.gz
+$ tar xvf lineageos_linux-x86.tar.gz
+
+$ wget https://github.com/steward-fu/website/releases/download/pixel-3a-xl/lineageos_kernel.tar.gz
+$ tar xvf lineageos_kernel.tar.gz
+$ cd kernel
+$ export PATH=~/linux-x86/bin/:$PATH
+$ ARCH=arm64 make CC=clang CLANG_TRIPLE=aarch64-linux-gnu- CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabihf- pixel3axl_defconfig
+$ ARCH=arm64 make CC=clang CLANG_TRIPLE=aarch64-linux-gnu- CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabihf- all -j4
+
+$ wget https://github.com/steward-fu/website/releases/download/pixel-3a-xl/lineageos_flash.tar.gz
+$ tar xvf lineageos_flash.tar.gz
+$ cd flash
+$ cp ../kernel/arch/arm64/boot/Image.lz4-dtb .
+$ ./run.sh
+</pre>
+<p>
+P.S. 進入fastboot後，刷入boot_new.img即可
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
