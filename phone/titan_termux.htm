@@ -1,0 +1,42 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../phone.htm">手機</a> - Unihertz Titan - <b>如何從ADB Shell執行Termux</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/termux/termux-app/issues/77<br><br>
+
+步驟如下：
+</p>
+<pre>
+$ adb shell
+$ su
+# mount -o remount,rw /
+# vi /system/bin/termux
+    #!/system/bin/sh
+    export PREFIX='/data/data/com.termux/files/usr'
+    export HOME='/data/data/com.termux/files/home'
+    export LD_LIBRARY_PATH='/data/data/com.termux/files/usr/lib'
+    export PATH="/data/data/com.termux/files/usr/bin:/data/data/com.termux/files/usr/bin/applets:$PATH"
+    export LANG='en_US.UTF-8'
+    export SHELL='/data/data/com.termux/files/usr/bin/bash'
+    cd "$HOME"
+    exec "$SHELL" -l
+
+# chmod a+x /system/bin/termux
+# mount -o remount,ro /
+</pre><br>
+
+<p>
+從ADB Shell執行Termux
+</p>
+<pre>
+$ adb shell
+127|Titan:/ $ su
+127|Titan:/ # termux
+~ #
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
