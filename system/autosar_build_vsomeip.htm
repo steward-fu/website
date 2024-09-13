@@ -1,0 +1,44 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../system.htm">系統</a> - AUTOSAR - SOME/IP - <b>Build vsomeip 3.1.16.1</b></h3>
+<hr size="1"><br>
+<p>
+參考資料：<br>
+https://github.com/COVESA/vsomeip<br>
+https://github.com/COVESA/vsomeip/wiki/vsomeip-in-10-minutes<br><br>
+
+Dockerfile
+</p>
+<pre>
+FROM ubuntu:18.04
+
+RUN apt-get update
+RUN apt-get install git vim sudo build-essential make cmake libboost-all-dev net-tools python3 scapy python3-pip tcpdump -y
+RUN pip3 install scapy
+RUN git clone https://github.com/COVESA/vsomeip /vsomeip
+RUN cd /vsomeip &amp;&amp; git checkout 3.1.16.1
+RUN mkdir /vsomeip/build
+RUN cd /vsomeip/build &amp;&amp; cmake -DENABLE_SIGNAL_HANDLING=1 -DENABLE_MULTIPLE_ROUTING_MANAGERS=1 .. &amp;&amp; make -j2 &amp;&amp; make install
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ sudo docker build -t someip .
+$ sudo docker run -it --rm -v `pwd`:/myfolder someip /bin/bash
+
+# cd /vsomeip/build/examples
+# make
+</pre><br>
+
+<p>
+如果要刪除該Docker Image，使用如下指令
+</p>
+<pre>
+$ sudo docker image rm someip
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
