@@ -1,0 +1,26 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../system.htm">系統</a> - CentOS - <b>解決postgresql: new encoding (UTF8) ...問題</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://techjourney.net/convert-postgresql-template0-template1-encoding-to-utf8-sql_ascii-incompatible/<br><br>
+
+步驟如下：
+</p>
+<pre>
+$ sudo su - postgres psql
+    postgres=# update pg_database set datallowconn = TRUE where datname = 'template0';
+    postgres=# \c template0
+    postgres=# update pg_database set datistemplate = FALSE where datname = 'template1';
+    postgres=# drop database template1;
+    postgres=# create database template1 with encoding = 'UTF-8' lc_collate = 'en_US.UTF8' lc_ctype = 'en_US.UTF8' template = template0;
+    postgres=# update pg_database set datistemplate = TRUE where datname = 'template1';
+    postgres=# \c template1
+    postgres=# update pg_database set datallowconn = FALSE where datname = 'template0';
+    postgres=# \q
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
