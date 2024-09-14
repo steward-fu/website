@@ -1,0 +1,31 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../system.htm">系統</a> - Docker - <b>如何啟一個有root權限的Container</b></h3>
+<hr size="1"><br>
+<p>
+參考資料：<br>
+https://docs.docker.com/engine/security/seccomp/<br><br>
+
+如下：
+</p>
+<pre>
+# docker run --rm -it --security-opt seccomp=unconfined debian unshare --map-root-user /bin/bash
+c302264da7c7:/# cat /proc/$$/status | grep -i cap
+    CapInh: 0000000000000000
+    CapPrm: 000001ffffffffff
+    CapEff: 000001ffffffffff
+    CapBnd: 000001ffffffffff
+    CapAmb: 0000000000000000
+
+# docker run --rm -it --privileged debian /bin/bash
+e4fa0f72dea4:/# cat /proc/$$/status | grep -i cap
+    CapInh: 0000003fffffffff
+    CapPrm: 0000003fffffffff
+    CapEff: 0000003fffffffff
+    CapBnd: 0000003fffffffff
+    CapAmb: 0000000000000000
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

