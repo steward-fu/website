@@ -1,0 +1,98 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../system.htm">系統</a> - Debian - <b>Build ARM binutils(Static Link)</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/andrew-d/static-binaries/blob/master/binutils/arm/build.sh<br><br>
+
+run.sh
+</p>
+<pre>
+#!/bin/bash
+set -e
+set -o pipefail
+set -x
+
+BINUTILS_VERSION=2.39
+
+function build_binutils() {
+    rm -rf build
+    mkdir build
+    cd build
+
+    curl -LO http://ftp.gnu.org/gnu/binutils/binutils-${BINUTILS_VERSION}.tar.gz
+    tar xzvf binutils-${BINUTILS_VERSION}.tar.gz
+
+    mkdir build
+    cd build
+
+    TMPFILE=`pwd`/configure.output
+    ../binutils-${BINUTILS_VERSION}/configure --help &gt; $TMPFILE
+
+    CONFIGURE_OPTS=""
+    for opt in disable-nls enable-static-link disable-shared-plugins disable-dynamicplugin disable-tls disable-pie; do
+        grep -qs $opt $TMPFILE &amp;&amp; CONFIGURE_OPTS="$CONFIGURE_OPTS --$opt"
+    done
+    for opt in enable-static; do
+        grep -qs $opt $TMPFILE &amp;&amp; CONFIGURE_OPTS="$CONFIGURE_OPTS --$opt=yes"
+    done
+    for opt in enable-shared; do
+        grep -qs $opt $TMPFILE &amp;&amp; CONFIGURE_OPTS="$CONFIGURE_OPTS --$opt=no"
+    done
+    rm -f $TMPFILE
+
+    CC='arm-linux-gnueabi-gcc -static -fPIC' \
+    CXX='arm-linux-gnueabi-g++ -static -static-libstdc++ -fPIC' \
+    LD='arm-linux-gnueabi-ld' \
+    ../binutils-${BINUTILS_VERSION}/configure --target=arm-linux-gnueabi --prefix=`pwd` ${CONFIGURE_OPTS}
+
+    make
+    make clean
+    make LDFLAGS=-all-static
+    OUTPUT_FILES="ar nm-new objcopy objdump ranlib readelf size strings"
+    for f in ${OUTPUT_FILES};
+    do
+        arm-linux-gnueabi-strip binutils/$f
+    done
+    arm-linux-gnueabi-strip ld/ld-new
+    arm-linux-gnueabi-strip gas/as-new
+}
+
+function doit() {
+    build_binutils
+
+    rm -rf output
+    mkdir output
+
+    OUT_DIR=output/`uname | tr 'A-Z' 'a-z'`/`uname -m`
+    mkdir -p $OUT_DIR
+
+    for f in ar objcopy objdump ranlib readelf size strings;
+    do
+        cp binutils/$f $OUT_DIR/
+    done
+    cp binutils/nm-new $OUT_DIR/nm
+    cp ld/ld-new $OUT_DIR/ld
+    cp gas/as-new $OUT_DIR/as
+    echo "finished !"
+}
+
+doit
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ sudo apt-get install gcc-arm-linux-gnueabi* texinfo file -y
+
+$ chmod a+x ./run.sh
+$ ./run.sh
+$ ls build/build/output/linux/*/
+    ar  as  ld  nm  objcopy  objdump  ranlib  readelf  size  strings
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

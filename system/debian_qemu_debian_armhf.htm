@@ -1,0 +1,42 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../system.htm">系統</a> - Debian - QEMU - <b>安裝Debian 10(armhf)</b></h3>
+<hr size="1"><br>
+<p>
+參考資料：<br>
+https://people.debian.org/~aurel32/qemu/armhf/<br>
+https://blog.ihomura.cn/2020/11/12/%E5%9C%A8qemu-system%E4%B8%8A%E8%B7%91arm-Debian/<br><br>
+
+步驟如下(console only)：
+</p>
+<pre>
+$ sudo apt-get install qemu qemu-utils qemu-system-arm -y
+$ cd
+$ wget https://cdimage.debian.org/cdimage/archive/10.8.0/armhf/iso-cd/debian-10.8.0-armhf-xfce-CD-1.iso
+$ sudo mount debian-10.8.0-armhf-xfce-CD-1.iso /mnt
+$ cp /mnt/install.ahf/vmlinuz .
+$ cp /mnt/install.ahf/initrd.gz .
+$ sudo umount /mnt
+$ qemu-img create disk.img 10G
+$ qemu-system-arm -m 1024 -cpu cortex-a15 -smp 2 -M virt -kernel vmlinuz -initrd initrd.gz -nographic -drive if=none,file=disk.img,id=hd0,format=raw -device virtio-blk-device,drive=hd0 -drive if=none,file=debian-10.8.0-armhf-xfce-CD-1.iso,id=cdrom,media=cdrom -device virtio-scsi-device -device scsi-cd,drive=cdrom
+</pre><br>
+
+<p>
+如果不想手動安裝，可以使用aurel32做好的Image，步驟如下：
+</p>
+<pre>
+$ cd
+$ wget https://people.debian.org/~aurel32/qemu/armhf/vmlinuz-3.2.0-4-vexpress
+$ wget https://people.debian.org/~aurel32/qemu/armhf/initrd.img-3.2.0-4-vexpress
+$ wget https://people.debian.org/~aurel32/qemu/armhf/debian_wheezy_armhf_desktop.qcow2
+$ qemu-system-arm -M vexpress-a9 -kernel vmlinuz-3.2.0-4-vexpress -initrd initrd.img-3.2.0-4-vexpress -drive if=sd,file=debian_wheezy_armhf_desktop.qcow2 -append "root=/dev/mmcblk0p2"
+</pre><br>
+
+<p>
+root:root, user:user<br>
+<img src="debian_qemu_debian_armhf/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

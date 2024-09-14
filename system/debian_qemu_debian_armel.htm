@@ -1,0 +1,63 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../system.htm">系統</a> - Debian - QEMU - <b>安裝Debian 8(armel)</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://people.debian.org/~aurel32/qemu/armel/<br><br>
+
+步驟如下：
+</p>
+<pre>
+$ sudo apt-get install qemu qemu-utils qemu-system-arm -y
+
+$ cd
+$ wget http://ftp.us.debian.org/debian/dists/Debian8.11/main/installer-armel/current/images/versatile/netboot/initrd.gz
+$ wget http://ftp.us.debian.org/debian/dists/Debian8.11/main/installer-armel/current/images/versatile/netboot/vmlinuz-3.16.0-6-versatile
+$ qemu-img create disk.img 10G
+$ qemu-system-arm -M versatilepb -m 256M -kernel vmlinuz-3.16.0-6-versatile -initrd initrd.gz -hda disk.img
+</pre>
+<p>
+<img src="debian_qemu_debian_armel/1.jpg" class="maxSize"><br>
+接著就一路安裝到底<br><br>
+
+安裝完成後，記得提取initrd和vmlinuz
+</p>
+<pre>
+$ sudo losetup -f disk.img
+$ sudo kpartx -a /dev/loop0
+$ sudo mount /dev/mapper/loop0p1 /mnt/
+$ cp /mnt/boot/initrd.img-3.16.0-6-versatile .
+$ cp /mnt/boot/vmlinuz-3.16.0-6-versatile .
+$ sudo umount /mnt 
+$ sudo kpartx -d /dev/loop0
+$ sudo losetup -d /dev/loop0
+</pre><br>
+
+<p>
+接著就可以正常開機
+</p>
+<pre>
+$ qemu-system-arm -M versatilepb -m 256M -boot c -kernel vmlinuz-3.16.0-6-versatile -initrd initrd.img-3.16.0-6-versatile -hda disk.img -append "root=/dev/sda1"
+</pre>
+<p>
+<img src="debian_qemu_debian_armel/2.jpg" class="maxSize"><br><br>
+
+如果不想手動安裝，可以使用aurel32做好的Image，步驟如下：
+</p>
+<pre>
+$ cd
+$ wget https://people.debian.org/~aurel32/qemu/armel/initrd.img-3.2.0-4-versatile
+$ wget https://people.debian.org/~aurel32/qemu/armel/vmlinuz-3.2.0-4-versatile
+$ wget https://people.debian.org/~aurel32/qemu/armel/debian_wheezy_armel_desktop.qcow2
+$ qemu-system-arm -M versatilepb -kernel vmlinuz-3.2.0-4-versatile -initrd initrd.img-3.2.0-4-versatile -hda debian_wheezy_armel_desktop.qcow2 -append "root=/dev/sda1"
+</pre><br>
+
+<p>
+root:root, user:user<br>
+<img src="debian_qemu_debian_armel/3.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
