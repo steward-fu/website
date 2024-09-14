@@ -1,0 +1,56 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../system.htm">系統</a> - Debian - Performance - <b>如何使用GProf找出程式耗時的副程式</b></h3>
+<hr size="1"><br>
+<p>
+測試程式
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;unistd.h&gt;
+
+void test1(void)
+{
+    for (int x = 0; x &lt; 5000; x++);
+}
+
+void test2(void)
+{
+    usleep(1);
+}
+
+void test3(void)
+{
+    usleep(100);
+}
+
+int main(int argc, char** argv)
+{
+    int cnt = 10000;
+
+    while (cnt--) {
+        test1();
+        test2();
+        test3();
+    }
+}
+</pre><br>
+
+<p>
+編譯並且執行
+</p>
+<pre>
+$ gcc -pg -g -no-pie main.c -o test
+$ ./test
+$ gprof -b test gmon.out
+</pre><br>
+
+<p>
+完成<br>
+<img src="debian_perf_gprof/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

@@ -1,0 +1,54 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../system.htm">系統</a> - Debian - Kernel - <b>Extract vmlinuz.bin</b></h3>
+<hr size="1"><br>
+<p>
+拆解後的Body才可以拿來逆向分析，而載入的起始位址可以從<b>/proc/iomem</b>得知，Symbols則可以從<b>/proc/kallsyms</b>拿到：
+</p>
+<pre>
+$ file vmlinuz.bin
+    vmlinuz.bin: data
+
+$ od -A d -t x1 vmlinuz.bin | grep '1f 8b 08'
+    0014384 1f 8b 08 00 00 00 00 00 02 03 ec bd 0d 74 1c e5
+
+$ dd if=vmlinuz.bin of=head bs=1 count=14384
+    14384+0 records in
+    14384+0 records out
+    14384 bytes (14 kB, 14 KiB) copied, 0.0405731 s, 355 kB/s
+
+$ dd if=vmlinuz.bin of=body bs=1 skip=14384
+    2710256+0 records in
+    2710256+0 records out
+    2710256 bytes (2.7 MB, 2.6 MiB) copied, 5.79015 s, 468 kB/s
+
+$ file body
+    body: gzip compressed data, max compression, from Unix
+
+$ zcat body &gt; body_ext
+$ file body_ext 
+    body_ext: data
+
+$ strings body_ext | grep Linux
+    Linux version 3.12.0-dingux (steward@debian) (gcc version 4.9.1 (Buildroot 2014.08-g252c9b7dd-dirty) ) #1 Sat May 2 14:36:13 CST 2020
+    $PLATFORM$Linux$
+    No init found.  Try passing init= option to kernel. See Linux Documentation/init.txt for guidance.
+    Linux
+    6Linux video capture interface: v2.00
+    6Advanced Linux Sound Architecture Driver Initialized.
+    Advanced Linux Sound Architecture Driver Version k%s.
+    Linux
+</pre>
+<p>
+P.S. od計算出來的'1f 8b 08'需要加上偏移位置，這個範例剛好是從起始開始，所以是14384 + 0<br><br>
+
+合併回去原本vmlinuz.bin
+</p>
+<pre>
+$ gzip -9 -n body_ext
+$ cat head body_ext.gz &gt; vmlinuz_new.bin
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

@@ -1,0 +1,44 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../system.htm">系統</a> - Debian - Performance - <b>解決Perf_event_open(..., PERF_FLAG_FD_CLOEXEC) failed with unexpected error 13問題</b></h3>
+<hr size="1"><br>
+<p>
+問題如下：
+</p>
+<pre>
+Warning:
+PID/TID switch overriding SYSTEM
+perf_event_open(..., PERF_FLAG_FD_CLOEXEC) failed with unexpected error 13 (Permission denied)
+perf_event_open(..., 0) failed unexpectedly with error 13 (Permission denied)
+Error:
+You may not have permission to collect stats.
+
+Consider tweaking /proc/sys/kernel/perf_event_paranoid,
+which controls use of the performance events system by
+unprivileged users (without CAP_SYS_ADMIN).
+
+The current value is 3:
+
+  -1: Allow use of (almost) all events by all users
+      Ignore mlock limit after perf_event_mlock_kb without CAP_IPC_LOCK
+&gt;= 0: Disallow ftrace function tracepoint by users without CAP_SYS_ADMIN
+      Disallow raw tracepoint access by users without CAP_SYS_ADMIN
+&gt;= 1: Disallow CPU event access by users without CAP_SYS_ADMIN
+&gt;= 2: Disallow kernel profiling by users without CAP_SYS_ADMIN
+
+To make this setting permanent, edit /etc/sysctl.conf too, e.g.:
+
+	kernel.perf_event_paranoid = -1
+</pre><br>
+
+<p>
+解法如下：
+</p>
+<pre>
+$ su
+# echo 1 &gt; /proc/sys/kernel/perf_event_paranoid
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

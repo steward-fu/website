@@ -1,0 +1,64 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../system.htm">系統</a> - Debian - Memory - <b>如何使用KCacheGrind查看呼叫順序</b></h3>
+<hr size="1"><br>
+<p>
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;unistd.h&gt;
+ 
+void test1(void)
+{
+    for (int x = 0; x &lt; 100; x++);
+}
+ 
+void test2(void)
+{
+    usleep(1);
+}
+ 
+void test3(void)
+{
+    usleep(100);
+}
+ 
+int main(int argc, char** argv)
+{
+    while (1) {
+        test1();
+        test2();
+        test3();
+    }
+}
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ gcc main.c -o main -ggdb
+$ valgrind --tool=callgrind ./main
+    ==7937== Callgrind, a call-graph generating cache profiler
+    ==7937== Copyright (C) 2002-2017, and GNU GPL'd, by Josef Weidendorfer et al.
+    ==7937== Using Valgrind-3.14.0 and LibVEX; rerun with -h for copyright info
+    ==7937== Command: ./main
+    ==7937== 
+    ==7937== For interactive control, run 'callgrind_control -h'.
+</pre><br>
+
+<p>
+按下<b>Ctrl + C</b>結束並且執行如下程式
+</p>
+<pre>
+$ kcachegrind callgrind.out.xxx
+</pre>
+<p>
+<img src="debian_mem_kcachegrind/1.jpg" size="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

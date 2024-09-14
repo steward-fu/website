@@ -1,0 +1,45 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../system.htm">系統</a> - Debian - Memory - <b>如何使用ValGrind找出Memory Leak</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://stackoverflow.com/questions/5134891/how-do-i-use-valgrind-to-find-memory-leaks<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+ 
+void test(void)
+{
+    malloc(1024);
+}
+ 
+int main(int argc, char** argv)
+{
+    test();
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ gcc main.c -o main -ggdb
+$ valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --verbose --log-file=log.txt ./main
+$ vim log.txt
+    ==3025== 1,024 bytes in 1 blocks are definitely lost in loss record 1 of 1
+    ==3025==    at 0x483577F: malloc (vg_replace_malloc.c:299)
+    ==3025==    by 0x109142: test (main.c:6)
+    ==3025==    by 0x109159: main (main.c:11)
+</pre>
+<p>
+P.S. 如果沒有debug symbol，valgrind將無法正確解析出副程式名稱
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
