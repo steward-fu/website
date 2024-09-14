@@ -1,0 +1,33 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../system.htm">系統</a> - Debian - <b>解決Implicit declaration of function major問題</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/hishamhm/htop/issues/663<br><br>
+
+問題如下：
+</p>
+<pre>
+qemu/linux-user/strace.c: In function ‘print_mknod’:
+qemu/linux-user/strace.c:1050:39: warning: implicit declaration of function ‘major’ [-Wimplicit-function-declaration]
+         print_raw_param("makedev(%d", major(arg2), 0);
+                                       ^~~~~
+qemu/linux-user/strace.c:1050:39: warning: nested extern declaration of ‘major’ [-Wnested-externs]
+qemu/linux-user/strace.c:1051:32: warning: implicit declaration of function ‘minor’; did you mean ‘mknod’? [-Wimplicit-function-declaration]
+         print_raw_param("%d)", minor(arg2), 1);
+                                ^~~~~
+                                mknod
+qemu/linux-user/strace.c:1051:32: warning: nested extern declaration of ‘minor’ [-Wnested-externs]
+</pre><br>
+
+<p>
+解法如下：
+</p>
+<pre>
+#include &lt;sys/sysmacros.h&gt;
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

@@ -1,0 +1,54 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../system.htm">系統</a> - Debian - <b>解決Cannot get content of gir1.2-ibus-1.0問題</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=770265<br><br>
+
+問題如下：
+</p>
+<pre>
+Setting up gir1.2-ibus-1.0:amd64 (1.5.14-3) ...
+dpkg-query: error: --listfiles needs a valid package name but 'gir1.2-ibus-1.0' is not: ambiguous package name 'gir1.2-ibus-1.0' with more than one installed instance
+
+Use --help for help about querying packages.
+Traceback (most recent call last):
+    File "/usr/bin/py3compile", line 290, in <module>
+        main()
+    File "/usr/bin/py3compile", line 270, in main
+        options.force, options.optimize, e_patterns)
+    File "/usr/bin/py3compile", line 154, in compile
+        for fn, versions_to_compile in filter_files(files, e_patterns, versions):
+    File "/usr/bin/py3compile", line 106, in filter_files
+        for fn in files:
+    File "/usr/share/python3/debpython/files.py", line 71, in filter_public
+        for fn in files:
+    File "/usr/share/python3/debpython/files.py", line 53, in from_package
+        raise Exception("cannot get content of %s" % package_name)
+
+Exception: cannot get content of gir1.2-ibus-1.0
+dpkg: error processing package gir1.2-ibus-1.0:amd64 (--configure):
+    subprocess installed post-installation script returned error exit status 1
+Errors were encountered while processing:
+    gir1.2-ibus-1.0:amd64
+E: Sub-process /usr/bin/dpkg returned an error code (1)
+</pre><br>
+
+<p>
+解法如下：
+</p>
+<pre>
+$ sudo vim /usr/share/python3/debpython/files.py +53
+    #if process.returncode != 0:
+        #raise Exception("cannot get content of %s" % package_name)
+
+$ sudo apt-get remove --purge gir1.2-ibus-1.0*
+$ sudo vim /usr/share/python3/debpython/files.py +53
+    if process.returncode != 0:
+        raise Exception("cannot get content of %s" % package_name)
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

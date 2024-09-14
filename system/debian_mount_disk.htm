@@ -1,0 +1,50 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../system.htm">系統</a> - Debian - <b>如何掛載分割表檔案</b></h3>
+<hr size="1"><br>
+<p>
+Mount
+</p>
+<pre>
+# losetup -v -f sample.img 
+    Loop device is /dev/loop0
+
+# kpartx -v -a sample.img
+    add map loop0p1 (252:2): 0 983040 linear  /dev/loop0 24576
+    add map loop0p2 (252:3): 0 266240 linear  /dev/loop0 1007616
+    add map loop0p3 (252:4): 0 40960 linear   /dev/loop0 1273856
+    add map loop0p4 (252:5): 0 2097152 linear /dev/loop0 1314816
+
+# mount /dev/mapper/loop0p1 rootfs
+# mount /dev/mapper/loop0p2 appfs
+# mount /dev/mapper/loop0p3 cfgfs
+# mount /dev/mapper/loop0p4 otherfs
+</pre><br>
+
+<p>
+Unmount
+</p>
+<pre>
+# kpartx -v -d /dev/loop0
+    del devmap : loop0p4
+    del devmap : loop0p3
+    del devmap : loop0p2
+    del devmap : loop0p1
+
+# losetup -d /dev/loop0
+</pre><br>
+
+<p>
+如果想要查看File Type，可以使用<b>file -s</b>查看(感謝Lucas的告知)
+</p>
+<pre>
+$ sudo file -s /dev/dm-*
+    /dev/dm-0: DOS/MBR boot sector, code offset 0x3c+2, OEM-ID "mkfs.fat", sectors/cluster 4, reserved sectors 4, root entries 512, Media descriptor 0xf8, sectors/FAT 128, sectors/track 32, heads 64, sectors 131072 (volumes &gt; 32 MB), serial number 0x41f6aa55, unlabeled, FAT (16 bit)
+    /dev/dm-1: Linux rev 1.0 ext2 filesystem data, UUID=8895657a-58c3-41b3-b7fa-2d023e87b05d (large files)
+    /dev/dm-2: Linux rev 1.0 ext3 filesystem data, UUID=8cc4a911-c84a-405f-a866-ebd2be7ec56e (large files)
+    /dev/dm-3: Linux/i386 swap file (new style), version 1 (4K pages), size 16127 pages, no label, UUID=83554e44-f124-44e2-8b01-7e4a07406f41
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
