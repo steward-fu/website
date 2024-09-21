@@ -1,0 +1,49 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../umpc.htm">微電腦</a> - iRiver Dicple D88 - <b>如何關閉背光</b></h3>
+<hr size="1"><br>
+<p>
+main.c<br>
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;sys/fcntl.h&gt; 
+#include &lt;sys/stat.h&gt;
+#include &lt;sys/ioctl.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;linux/ioctl.h&gt;
+ 
+#define PM_POWER_DOWN           0xfacf
+#define PM_SLEEP_DOWN           0xfbcf
+#define PM_SLEEP_FLAG_CLR       0xfbdf
+#define PM_GET_PIN_STATUS       0xfccf
+#define PM_SLEEP_SET_ALARM      0xfdcf
+#define PM_GET_PWR_PROC_FLAG    0xfecf
+#define PM_GET_BRIGHTNESS       0xfeff
+#define FBIODISPOFF             0x468a
+#define FBIODISPON              0x4689
+#define FBIOSETBACKLIGHT        0x4688
+#define FBIODISPDIS             0x468d
+#define FBIODISPENA             0x468e
+#define FBIODISP_IPUENA         0x468f
+
+int main(int argc, char **argv)
+{
+    int fd = -1;
+  
+    fd = open("/dev/fb0", O_RDWR);
+    if (fd &gt; 0) {
+        ioctl(fd, FBIODISPOFF, 0);
+        usleep(3000000);
+        ioctl(fd, FBIODISP_IPUENA, 0);
+        close(fd);
+    }
+    return;
+}
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

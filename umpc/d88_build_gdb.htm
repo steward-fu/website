@@ -1,0 +1,107 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../umpc.htm">微電腦</a> - iRiver Dicple D88 - <b>Build GDB</b></h3>
+<hr size="1"><br>
+<pre>
+$ export PATH=/opt/retrofw/bin:$PATH
+
+$ cd
+$ wget https://ftp.gnu.org/gnu/gdb/gdb-8.0.tar.gz
+$ tar -pxzf gdb-8.0.tar.gz
+$ cd gdb-8.0
+$ export INSTALLDIR=~/Downloads/gdb_install
+$ export PATH=$INSTALLDIR/bin:$PATH
+$ export TARGETMACH=mipsel-linux
+$ export BUILDMACH=i686-pc-linux-gnu
+$ export CROSS=mipsel-linux
+$ export CC=${CROSS}-gcc
+$ export LD=${CROSS}-ld
+$ export AS=${CROSS}-as
+$ ./configure --prefix=$INSTALLDIR --host=$TARGETMACH --disable-tui --enable-static=yes
+$ make LDFLAGS=-static -j4
+      nrun.o libsim.a ../../bfd/libbfd.a ../../opcodes/libopcodes.a ../../intl/libintl.a ../../libiberty/libiberty.a -lm -lnsl  -L../../zlib -lz  
+    /opt/retrofw/mipsel-buildroot-linux-uclibc/sysroot/usr/lib/libc.a(libintl.os): In function `_nl_expand_alias':
+    libintl.c:(.text+0x1a4): multiple definition of `_nl_expand_alias'
+    ../../intl/libintl.a(localealias.o):/home/steward/Downloads/gdb-8.0/intl/localealias.c:153: first defined here
+    collect2: error: ld returned 1 exit status
+    make[3]: *** [Makefile:324: run] Error 1
+    make[3]: Leaving directory '/home/steward/Downloads/gdb-8.0/sim/mips'
+    make[2]: *** [Makefile:129: all] Error 1
+    make[2]: Leaving directory '/home/steward/Downloads/gdb-8.0/sim'
+    make[1]: *** [Makefile:8240: all-sim] Error 2
+    make[1]: Leaving directory '/home/steward/Downloads/gdb-8.0'
+    make: *** [Makefile:851: all] Error 2
+
+$ vim intl/localealias.c +153
+    /*
+    const char *
+    _nl_expand_alias (name)
+        const char *name;
+    {
+      static const char *locale_alias_path;
+      struct alias_map *retval;
+      const char *result = NULL;
+      size_t added;
+
+    #ifdef _LIBC
+      __libc_lock_lock (lock);
+    #endif
+
+      if (locale_alias_path == NULL)
+        locale_alias_path = LOCALE_ALIAS_PATH;
+
+      do
+        {
+          struct alias_map item;
+
+          item.alias = name;
+
+          if (nmap &gt; 0)
+        retval = (struct alias_map *) bsearch (&amp;item, map, nmap,
+                               sizeof (struct alias_map),
+                               (int (*) PARAMS ((const void *,
+                                     const void *))
+                            ) alias_compare);
+          else
+        retval = NULL;
+
+          if (retval != NULL)
+        {
+          result = retval-&gt;value;
+          break;
+        }
+
+          added = 0;
+          while (added == 0 &amp;&amp; locale_alias_path[0] != '\0')
+        {
+          const char *start;
+
+          while (locale_alias_path[0] == PATH_SEPARATOR)
+            ++locale_alias_path;
+          start = locale_alias_path;
+
+          while (locale_alias_path[0] != '\0'
+             &amp;&amp; locale_alias_path[0] != PATH_SEPARATOR)
+            ++locale_alias_path;
+
+          if (start &lt; locale_alias_path)
+            added = read_alias_file (start, locale_alias_path - start);
+        }
+        }
+      while (added != 0);
+
+    #ifdef _LIBC
+      __libc_lock_unlock (lock);
+    #endif
+
+      return result;
+    }
+    */
+
+$ make LDFLAGS=-static -j4
+$ make install
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

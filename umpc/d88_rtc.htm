@@ -1,0 +1,78 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../umpc.htm">微電腦</a> - iRiver Dicple D88 - <b>RTC取得、設定</b></h3>
+<hr size="1"><br>
+<p>
+參考資料：<br>
+https://kernel.googlesource.com/pub/scm/utils/util-linux/util-linux/+/v2.11b/hwclock/rtc.c<br><br>
+
+讀取
+</p>
+<pre class="brush:cpp">
+#include &lt;ctime&gt;
+#include &lt;sys/time.h&gt;
+#include &lt;linux/rtc.h&gt;
+#include &lt;sys/ioctl.h&gt;
+
+void get_rtc(void)
+{
+    char buf[80] = {0};
+    int fd = open("/dev/rtc", O_RDWR);
+
+    if (fd &gt; 0) {
+        struct tm tstruct = {0};
+        ioctl(fd, RTC_RD_TIME, &amp;tstruct);
+        close(fd);
+
+        time_t t = mktime(&amp;tstruct);
+        struct timeval tv = {t, 0};
+        settimeofday(&amp;tv, NULL);
+
+        system("hwclock --systohc &amp;");
+        strftime(buf, sizeof(buf), "%F %R", &amp;tstruct);
+    }
+}
+</pre><br>
+
+<p>
+更新
+</p>
+<pre class="brush:cpp">
+#include &lt;ctime&gt;
+#include &lt;sys/time.h&gt;
+#include &lt;linux/rtc.h&gt;
+#include &lt;sys/ioctl.h&gt;
+
+void set_rtc(const char* timestamp)
+{
+	int imonth, iday, iyear, ihour, iminute;
+	sscanf(timestamp, "%d-%d-%d %d:%d", &amp;iyear, &amp;imonth, &amp;iday, &amp;ihour, &amp;iminute);
+	struct tm datetime = {0};
+
+	datetime.tm_year = iyear - 1900;
+	datetime.tm_mon  = imonth - 1;
+	datetime.tm_mday = iday;
+	datetime.tm_hour = ihour;
+	datetime.tm_min  = iminute;
+	datetime.tm_sec  = 0;
+
+	if (datetime.tm_year &lt; 0) {
+        datetime.tm_year = 0;
+    }
+
+	time_t t = mktime(&amp;datetime);
+    struct timeval tv = {t, 0};
+    settimeofday(&amp;tv, NULL);
+    system("hwclock --systohc &amp;");
+
+    int fd = open("/dev/rtc", O_RDWR);
+    if (fd &gt; 0) {
+        ioctl(fd, RTC_SET_TIME, t);
+        close(fd);
+    }
+}
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

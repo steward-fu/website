@@ -1,0 +1,32 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../umpc.htm">微電腦</a> - iRiver Dicple D88 - <b>Patch Kernel(d8key_init)</b></h3>
+<hr size="1"><br>
+<p>
+Unpack uImage
+</p>
+<pre>
+$ dd if=uImage of=kernel.bin bs=1 skip=64
+$ zcat kernel.bin &gt; body
+</pre><br>
+
+<p>
+iRiver官方Kernel<br>
+<img src="d88_patch_d8key/1.jpg" class="maxSize"><br><br>
+
+iRiver官方Kernel的鍵盤驅動程式有太多問題，因此，司徒決定將預設的鍵盤驅動程式拔掉，替換成自己的鍵盤驅動程式，只要在d8key_init()進入後，直接return就可以，記得a0要設定成0，然後jr後面需要一個nop，d88_patch_d8key後如下圖<br>
+<img src="d88_patch_d8key/2.jpg" class="maxSize"><br><br>
+
+Stock vs Patched<br>
+<img src="d88_patch_d8key/3.jpg" class="maxSize"><br><br>
+
+Repack uImage
+</p>
+<pre>
+$ gzip -n -9 body
+$ mkimage -A mips -O linux -T kernel -C gzip -a 80010000 -e 80271310 -n uImage -d body.gz uImage
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

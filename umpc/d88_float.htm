@@ -1,0 +1,99 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../umpc.htm">微電腦</a> - iRiver Dicple D88 - <b>如何改善Double、Float的執行速度</b></h3>
+<hr size="1"><br>
+<p>
+感謝QQ群友詩諾比，發現在JZ4755使用double變數時，執行速度嚴重拖慢，司徒找了一下資料，發現新增一些編譯選項可以優化double變數的執行速度，如下程式是由詩諾比提供的測試程式<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+typedef signed char s8;
+typedef signed short s16;
+typedef signed long s32;
+
+typedef unsigned char u8;
+typedef unsigned short u16;
+typedef unsigned long u32;
+
+#define PI                  3.14159265f
+#define LGE_FREQ            8000  // 22050/8000/11025
+#define SND_BUF_SIZE        512
+#define RTTTL_NOTES_COUNT   53  //(1+4+48)
+
+const s16 rtttl_notes[RTTTL_NOTES_COUNT] = {
+    0,    50,   100,  150,  200,
+    262,  277,  294,  311,  330,  349,  370,  392,  415,  440,  466,  494,
+    523,  554,  587,  622,  659,  698,  740,  784,  831,  880,  932,  988,
+    1047, 1109, 1175, 1245, 1319, 1397, 1480, 1568, 1661, 1760, 1865, 1976,
+    2093, 2217, 2349, 2489, 2637, 2794, 2960, 3136, 3322, 3520, 3729, 3951
+};
+
+u16 snd_len[RTTTL_NOTES_COUNT];
+s8 snd_tab[RTTTL_NOTES_COUNT][SND_BUF_SIZE];
+
+void rtttl_init(void)
+{
+    int wsize, qsize, fsize, rsize;
+    int i, n, max_len = 0;
+
+    memset(snd_tab[0], 0, SND_BUF_SIZE);
+    snd_len[0] = 128;
+    for (i = 1; i &lt; sizeof(rtttl_notes) / sizeof(rtttl_notes[0]); i++) {
+        s8* tab = snd_tab[i];
+        s16 freq = rtttl_notes[i];
+        u16 m = 0;
+        double d_max = 1;
+        s8 v = 0;
+        for (n = 0; n &lt; SND_BUF_SIZE; n++) {
+            double d;
+            double r = n * freq / (double)LGE_FREQ;
+            d = r - (int)r;
+            if (r &gt;= 1) {
+                if (d &lt; d_max) {
+                    d_max = d;
+                    m = n;
+                }
+            }
+            tab[n] = 127 * sin(2 * PI * r);
+        }
+        snd_len[i] = m;
+    }
+}
+
+int main(int argc, char **argv)
+{
+    rtttl_init();
+    printf("%ld, %ld\n", snd_tab[1][0], snd_len[1]);
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ gcc main.c -o main -lm
+$ time ./main
+    real    0m8.247s
+    user    0m0.780s
+    sys     0m7.430s
+</pre><br>
+
+<p>
+新增編譯選項
+</p>
+<pre>
+$ gcc -mips32 -mtune=mips32 -G0 -fomit-frame-pointer -ffunction-sections -ffast-math -msoft-float -msingle-float -O3 main.c -o main -lm
+$ time ./main
+    real    0m1.543s
+    user    0m0.260s
+    sys     0m1.280s
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

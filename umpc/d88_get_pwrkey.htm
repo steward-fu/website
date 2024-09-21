@@ -1,0 +1,94 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../umpc.htm">微電腦</a> - iRiver Dicple D88 - <b>如何取得電源按鍵的狀態</b></h3>
+<hr size="1"><br>
+<p>
+pwrkey.c
+</p>
+<pre class="brush:cpp">
+#include &lt;linux/module.h&gt;
+#include &lt;linux/sched.h&gt;
+#include &lt;linux/timer.h&gt;
+#include &lt;linux/major.h&gt;
+#include &lt;linux/fcntl.h&gt;
+#include &lt;linux/mm.h&gt;
+#include &lt;linux/slab.h&gt;
+#include &lt;linux/init.h&gt;
+#include &lt;linux/delay.h&gt;
+#include &lt;linux/fs.h&gt;
+#include &lt;linux/spinlock.h&gt;
+#include &lt;linux/pm.h&gt;
+#include &lt;linux/pm_legacy.h&gt;
+#include &lt;linux/cdev.h&gt;
+#include &lt;linux/init.h&gt;
+#include &lt;linux/device.h&gt;
+#include &lt;asm/io.h&gt;
+#include &lt;asm/uaccess.h&gt;
+#include &lt;asm/jzsoc.h&gt;
+ 
+#define NAME           "pwrkey"
+#define GPIO_PW_I      GPIO_WAKEUP
+#define POWEROFF_PIN   GPIO_PW_I
+
+static struct device *mydev = NULL;
+static struct class *myclass = NULL;
+
+static unsigned int read_gpio_pin(void)
+{
+    unsigned int try_loop = 1000;
+
+    unsigned int t, v;
+    unsigned int i;
+    
+    i = try_loop;
+
+    v = t = 0;
+
+    while (i--) {
+        t = __gpio_get_pin(POWEROFF_PIN);
+        if (v != t)
+            i = try_loop;
+        
+        v = t;
+    }
+    
+    return v;
+}
+
+static ssize_t pwrkey_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+    return sprintf(buf, "%d\n", read_gpio_pin());
+}
+static DEVICE_ATTR(pwrkey, 664, pwrkey_show, NULL);
+
+int ldd_init(void)
+{
+    int r = 0;
+
+    myclass = class_create(THIS_MODULE, NAME);
+    mydev = device_create(myclass, NULL, MKDEV(168, 0), "%s", NAME);
+    r = device_create_file(mydev, &amp;dev_attr_pwrkey);
+    return 0;
+}
+  
+void ldd_exit(void)
+{
+    device_remove_file(mydev, &amp;dev_attr_pwrkey);
+    device_destroy(myclass, MKDEV(168, 0));
+    class_destroy(myclass);
+}
+  
+module_init(ldd_init);
+module_exit(ldd_exit);
+
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("Steward Fu");
+MODULE_DESCRIPTION("Powerkey driver for d88 handheld");  
+</pre>
+<p>
+P.S. /sys/class/pwrkey/pwrkey/pwrkey
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

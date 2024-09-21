@@ -1,0 +1,47 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../umpc.htm">微電腦</a> - iRiver Dicple D88 - <b>Reverse Kernel</b></h3>
+<hr size="1"><br>
+<p>
+Unpack uImage
+</p>
+<pre>
+$ dd if=uImage of=kernel.bin bs=1 skip=64
+$ zcat kernel.bin &gt; body
+</pre><br>
+
+<p>
+d88 kallsym
+</p>
+<pre>
+# cat /proc/kallsyms | head
+    80010400 t run_init_process
+    80010400 T _stext
+    80010418 t init_post
+    80010500 t try_name
+    80010718 T name_to_dev_t
+    80010a90 T calibrate_delay
+    80010c60 T prom_getcmdline
+    80010c6c T prom_getenv
+    80010c74 T str2hexnum
+    80010cc8 T str2eaddr
+
+# cat /proc/kallsyms | grep d8key_init
+    8033452c t d8key_init
+</pre><br>
+
+<p>
+開啟IDA Pro並且選擇mipsl<br>
+<img src="d88_reverse_kernel/1.jpg" class="maxSize"><br><br>
+
+由於前面0x400是中斷表，因此，設定位址從0x80010000開始<br>
+<img src="d88_reverse_kernel/2.jpg" class="maxSize"><br><br>
+
+0x8033452c = d8key_init<br>
+<img src="d88_reverse_kernel/3.jpg" class="maxSize"><br>
+P.S. 參考kallsym就可以開始逆向分析
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
