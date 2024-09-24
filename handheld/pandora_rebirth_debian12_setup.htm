@@ -5,6 +5,11 @@
 <h3><a href="../index.htm">掌機</a> - Pandora(Rebirth) - Debian 12 - <b>安裝系統</b></h3>
 <hr size="1"><br>
 <p>
+參考資訊：<br>
+https://forum.odroid.com/viewtopic.php?t=34252<br>
+https://wiki.ubuntu.com/X/InputCoordinateTransformation<br>
+https://stackoverflow.com/questions/44797694/where-is-rc-local-in-debian-9-debian-stretch<br><br>
+
 步驟如下：
 </p>
 <pre>
@@ -22,7 +27,7 @@ $ sudo chroot bookworm
     deb http://ftp.debian.org/debian bookworm main contrib non-free
 
 # apt-get update
-# apt-get install vim sudo lxde obconf openbox lxdm lxde-common xbindkeys xdotool console-data locales fbset -y
+# apt-get install vim sudo lxde obconf openbox lxdm lxde-common xbindkeys xdotool console-data locales fbset libts-dev libts-bin zenity -y
 # dpkg-reconfigure locales
 
 # vim /home/user/.xbindkeysrc
@@ -200,6 +205,30 @@ $ sudo chroot bookworm
 
 # systemctl edit --full systemd-journald
     #NoNewPrivileges=yes
+
+# vim /usr/share/X11/xorg.conf.d/99-calibration.conf
+    Section "InputClass"
+        Identifier "calibration"
+        MatchProduct "touchscreen"
+        Option "SwapAxes" "1"
+        Option "TransformationMatrix" "-1.08 0 1.04 0 -1.14 1.07 0 0 1"
+    EndSection
+
+# vim /etc/rc.local
+    #!/bin/sh -e
+    chmod 0777 /dev/fb*
+    chmod 0777 /dev/mem
+    chmod 0777 /dev/input/*
+    /usr/pandora/scripts/op_gamma.sh 1.35
+    /usr/pandora/scripts/op_videofir.sh none
+    swapon /dev/mmcblk0p2
+    #systemctl enable serial-getty@ttyO2.service
+    #systemctl start serial-getty@ttyO2.service
+    exit 0
+
+# chmod +x /etc/rc.local
+# systemctl daemon-reload
+# systemctl start rc-local
 
 # exit
 
