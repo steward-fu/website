@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head><script type="text/javascript" src="../page_head.js"></script>
 
-<h3><a href="../index.htm">掌機</a> - Pandora(Rebirth) - SuperZaxxon - OpenGL ES 2.0 - <b>Get Version</b></h3>
+<h3><a href="../index.htm">掌機</a> - Pandora(Rebirth) - SuperZaxxon - OpenGL ES 2.0 - <b>Fill Color</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
@@ -16,11 +16,13 @@ main.c
 #include &lt;SDL2/SDL.h&gt;
 #include &lt;GLES2/gl2.h&gt;
  
+const char *vShaderSrc = "void main(void){}";
+const char *fShaderSrc = "void main(void){}";
+ 
 int main(int argc, char **argv)
 {
     SDL_Window *window = NULL;
     SDL_GLContext context = {0};
-    const GLubyte *version = NULL;
 
     setenv("SDL_VIDEO_GLES2", "1", 1);
     setenv("SDL_VIDEO_GL_DRIVER", "libGLESv2.so", 1);
@@ -32,9 +34,36 @@ int main(int argc, char **argv)
  
     window = SDL_CreateWindow("main", 0, 0, 320, 240, SDL_WINDOW_OPENGL);
     context = SDL_GL_CreateContext(window);
-    version = glGetString(GL_VERSION);
-    printf("Version:%s\n", version);
+ 
+    GLuint vShader = 0;
+    GLuint fShader = 0;
+    GLuint pObject = 0;
+ 
+    vShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(vShader, 1, &amp;vShaderSrc, NULL);
+    glCompileShader(vShader);
+ 
+    fShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(fShader, 1, &amp;fShaderSrc, NULL);
+    glCompileShader(fShader);
+ 
+    pObject = glCreateProgram();
+    glAttachShader(pObject, vShader);
+    glAttachShader(pObject, fShader);
+    glLinkProgram(pObject);
+    glUseProgram(pObject);
+    
+    glViewport(0, 0, 320, 240);
+    glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+ 
+    SDL_GL_SwapWindow(window);
+    system("fbgrab main.png");
+    SDL_Delay(30000);
+ 
+    SDL_DestroyWindow(window);
     SDL_GL_DeleteContext(context);
+    SDL_Quit();
     return 0;
 }
 </pre><br>
@@ -44,11 +73,12 @@ int main(int argc, char **argv)
 </p>
 <pre>
 $ gcc main.c -o main -lSDL2 -lGLESv2 -I/mnt/utmp/codeblocks/usr/include
+$ op_runfbapp ./main
+</pre><br>
 
-$ export SDL_VIDEO_GLES2=1
-$ export SDL_VIDEO_GL_DRIVER=libGLESv2.so
-$ ./main
-    Version:OpenGL ES 2.0
-</pre>
+<p>
+完成<br>
+<img src="pandora_rebirth_superzaxxon_es2_fill/1.jpg" class="maxSize">
+</p>
 
 <br><script type="text/javascript" src="../tail.js"></script>
