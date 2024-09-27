@@ -13,28 +13,53 @@ main.c
 <pre class="brush:cpp">
 #include &lt;stdio.h&gt;
 #include &lt;stdlib.h&gt;
-#include &lt;SDL2/SDL.h&gt;
+#include &lt;stdbool.h&gt;
+#include &lt;string.h&gt;
+#include &lt;dlfcn.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;EGL/egl.h&gt;
 #include &lt;GLES2/gl2.h&gt;
  
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
-    SDL_Window *window = NULL;
-    SDL_GLContext context = {0};
-    const GLubyte *version = NULL;
-
-    setenv("SDL_VIDEO_GLES2", "1", 1);
-    setenv("SDL_VIDEO_GL_DRIVER", "libGLESv2.so", 1);
+    EGLint egl_major = 0;
+    EGLint egl_minor = 0;
+    EGLint num_configs = 0;
+    EGLConfig configs = {0};
+    EGLDisplay display = EGL_NO_DISPLAY;
+    EGLSurface surface = EGL_NO_SURFACE;
+    EGLContext context = EGL_NO_CONTEXT;
+    EGLint config_attribs[] = {
+        EGL_SURFACE_TYPE,    EGL_WINDOW_BIT,
+        EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+        EGL_RED_SIZE,   5,
+        EGL_GREEN_SIZE, 6,
+        EGL_BLUE_SIZE,  5,
+        EGL_ALPHA_SIZE, 0,
+        EGL_NONE
+    };
+    EGLint window_attributes[] = { 
+        EGL_RENDER_BUFFER, EGL_BACK_BUFFER,
+        EGL_NONE
+    };
+    EGLint const context_attributes[] = {
+        EGL_CONTEXT_CLIENT_VERSION, 2,
+        EGL_NONE,
+    };
+  
+    display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
+    eglInitialize(display, &amp;egl_major, &amp;egl_minor);
+    eglChooseConfig(display, config_attribs, &amp;configs, 1, &amp;num_configs);
+    surface = eglCreateWindowSurface(display, configs, 0, window_attributes);
+    context = eglCreateContext(display, configs, EGL_NO_CONTEXT, context_attributes);
+    eglMakeCurrent(display, surface, surface, context);
  
-    SDL_Init(SDL_INIT_VIDEO);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+    printf("%s\n", glGetString(GL_VERSION));
  
-    window = SDL_CreateWindow("main", 0, 0, 320, 240, SDL_WINDOW_OPENGL);
-    context = SDL_GL_CreateContext(window);
-    version = glGetString(GL_VERSION);
-    printf("Version:%s\n", version);
-    SDL_GL_DeleteContext(context);
+    eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+    eglDestroyContext(display, context);
+    eglDestroySurface(display, surface);
+    eglTerminate(display);
     return 0;
 }
 </pre><br>
@@ -43,10 +68,7 @@ int main(int argc, char **argv)
 編譯、執行
 </p>
 <pre>
-$ gcc main.c -o main -lSDL2 -lGLESv2 -I/mnt/utmp/codeblocks/usr/include
-
-$ export SDL_VIDEO_GLES2=1
-$ export SDL_VIDEO_GL_DRIVER=libGLESv2.so
+$ gcc main.c -o main -lGLESv2 -lEGL
 $ ./main
     Version:OpenGL ES 2.0
 </pre>
