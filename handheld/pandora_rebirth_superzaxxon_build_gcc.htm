@@ -1,0 +1,85 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - Pandora(Rebirth) - SuperZaxxon - <b>Build GCC 9.3.0</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://gist.github.com/jeetsukumaran/5224956<br><br>
+
+run.sh
+</p>
+<pre>
+#! /bin/bash
+
+GCC_VERSION="9.3.0"
+WORKDIR="$HOME/src/"
+INSTALLDIR="/platform"
+
+## NOTE: XCode must be installed (through App Store) and the following run to install command-line tools.
+## THIS IS IMPORTANT! Among other things, it creates '/usr/include' and installs the system header files.
+# xcode-select --install
+
+# get the source code
+cd $WORKDIR
+wget http://www.netgull.com/gcc/releases/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.gz
+tar -xvf gcc-${GCC_VERSION}.tar.gz
+
+# download the prerequisites
+cd gcc-${GCC_VERSION}
+./contrib/download_prerequisites
+
+# create the build directory
+cd ..
+mkdir gcc-build
+cd gcc-build
+
+# build
+../gcc-${GCC_VERSION}/configure                      \
+    --prefix=${INSTALLDIR}                           \
+    --enable-shared                                  \
+    --enable-threads=posix                           \
+    --enable-__cxa_atexit                            \
+    --enable-clocale=gnu                             \
+    --enable-languages=all                           \
+    --disable-multilib                               \
+&amp;&amp; make 
+#&amp;&amp; make install
+
+# Notes
+#
+#   --enable-shared --enable-threads=posix --enable-__cxa_atexit: 
+#       These parameters are required to build the C++ libraries to published standards.
+#   
+#   --enable-clocale=gnu: 
+#       This parameter is a failsafe for incomplete locale data.
+#   
+#   --disable-multilib: 
+#       This parameter ensures that files are created for the specific
+#       architecture of your computer.
+#        This will disable building 32-bit support on 64-bit systems where the
+#        32 bit version of libc is not installed and you do not want to go
+#        through the trouble of building it. Diagnosis: "Compiler build fails
+#        with fatal error: gnu/stubs-32.h: No such file or directory"
+#   
+#   --with-system-zlib: 
+#       Uses the system zlib instead of the bundled one. zlib is used for
+#       compressing and uncompressing GCC's intermediate language in LTO (Link
+#       Time Optimization) object files.
+#   
+#   --enable-languages=all
+#   --enable-languages=c,c++,fortran,go,objc,obj-c++: 
+#       This command identifies which languages to build. You may modify this
+#       command to remove undesired language
+</pre><br>
+
+<p>
+編譯方式：
+</p>
+<pre>
+$ chmod a+x ./run.sh
+$ ./run.sh
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
