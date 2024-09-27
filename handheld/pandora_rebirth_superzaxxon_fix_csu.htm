@@ -1,0 +1,35 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - Pandora(Rebirth) - SuperZaxxon - <b>解決Undefined reference to __libc_csu_fini問題</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://stackoverflow.com/questions/6656317/linking-a-c-program-directly-with-ld-fails-with-undefined-reference-to-libc-c<br><br>
+
+問題如下：
+</p>
+<pre>
+Thread model: posix
+gcc version 9.3.0 (GCC)
+configure:3859: $? = 0
+configure:3879: checking whether the C compiler works
+configure:3901: gcc-build/./gcc/xgcc -Bgcc-build/./gcc/ -B/opt/gcc-9.3.0/armv7l-unknown-linux-gnueabi/bin/ -B/opt/gcc-9.3.0/armv7l-unknown-linux-gnueabi/lib/ -isystem /opt/gcc-9.3.0/armv7l-unknown-linux-gnueabi/include -isystem /opt/gcc-9.3.0/armv7l-unknown-linux-gnueabi/sys-include   -fno-checking -g -O2   conftest.c  &gt;&amp;5
+/usr/lib/crt1.o: In function `_start':
+init.c:(.text+0x2c): undefined reference to `__libc_csu_fini'
+init.c:(.text+0x34): undefined reference to `__libc_csu_init'
+collect2: error: ld returned 1 exit status
+configure:3905: $? = 1
+configure:3943: result: no
+</pre><br>
+
+<p>
+解法如下：
+</p>
+<pre>
+$ vim gcc-9.3.0/libgomp/configure +3534
+    LDFLAGS='/usr/lib/libc_nonshared.a'
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
