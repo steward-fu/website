@@ -24,6 +24,7 @@ All of files or resources used on my website can be found from the following lin
 [![](img/photos/a380.jpg)](https://github.com/steward-fu/website/releases/tag/a380)
 [![](img/photos/gcw0.jpg)](https://github.com/steward-fu/website/releases/tag/gcw0)
 [![](img/photos/ggm.jpg)](https://github.com/steward-fu/website/releases/tag/ggm)
+[![](img/photos/gb60.jpg)](https://github.com/steward-fu/website/releases/tag/gb60)
 [![](img/photos/ga330.jpg)](https://github.com/steward-fu/website/releases/tag/ga330)
 [![](img/photos/fc3000.jpg)](https://github.com/steward-fu/website/releases/tag/fc3000)
 [![](img/photos/pocketgo.jpg)](https://github.com/steward-fu/website/releases/tag/pocketgo)
