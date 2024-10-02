@@ -2,11 +2,11 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head><script type="text/javascript" src="../page_head.js"></script>
 
-<h3><a href="../index.htm">掌機</a> - Miyoo A30 - C/C++ - OpenGL ES 2.0 - <b>Convert ARGB to RGBA(Shader)</b></h3>
+<h3><a href="../index.htm">掌機</a> - Pandora(Rebirth) - SuperZaxxon - OpenGL ES 2.0 - <b>Use Global Alpha Setting(Shader)</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
-https://www.khronos.org/assets/uploads/books/openglr_es_20_programming_guide_sample.pdf<br><br>
+https://pandorawiki.org/GLES<br><br>
 
 main.c
 </p>
@@ -19,30 +19,31 @@ main.c
 #include &lt;unistd.h&gt;
 #include &lt;EGL/egl.h&gt;
 #include &lt;GLES2/gl2.h&gt;
- 
-#define LCD_W   480
-#define LCD_H   640
- 
-const char *vShaderSrc =
-    "attribute vec4 a_position;   \n"
-    "attribute vec2 a_texCoord;   \n"
-    "varying vec2 v_texCoord;     \n"
-    "void main()                  \n"
-    "{                            \n"
-    "   gl_Position = a_position; \n"
-    "   v_texCoord = a_texCoord;  \n"
-    "}                            \n";
    
+#define LCD_W   800
+#define LCD_H   480
+   
+const char *vShaderSrc =
+    "attribute vec4 a_position;    \n"
+    "attribute vec2 a_texCoord;    \n"
+    "varying vec2 v_texCoord;      \n"
+    "void main()                   \n"
+    "{                             \n"
+    "    gl_Position = a_position; \n"
+    "    v_texCoord = a_texCoord;  \n"
+    "}                             \n";
+     
 const char *fShaderSrc =
     "precision mediump float;                                  \n"
     "varying vec2 v_texCoord;                                  \n"
+    "uniform float s_alpha;                                    \n"
     "uniform sampler2D s_texture;                              \n"
     "void main()                                               \n"
     "{                                                         \n"
     "    vec3 tex = texture2D(s_texture, v_texCoord).bgr;      \n"
-    "    gl_FragColor = vec4(tex, 1.0);                        \n"
+    "    gl_FragColor = vec4(tex, s_alpha);                    \n"
     "}                                                         \n";
- 
+   
 int main(int argc, char** argv)
 {
     EGLint egl_major = 0;
@@ -55,10 +56,10 @@ int main(int argc, char** argv)
     EGLint config_attribs[] = {
         EGL_SURFACE_TYPE,    EGL_WINDOW_BIT,
         EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
-        EGL_RED_SIZE,   8,  
-        EGL_GREEN_SIZE, 8,
-        EGL_BLUE_SIZE,  8,  
-        EGL_ALPHA_SIZE, 8,
+        EGL_RED_SIZE,   5,
+        EGL_GREEN_SIZE, 6,
+        EGL_BLUE_SIZE,  5,
+        EGL_ALPHA_SIZE, 0,
         EGL_NONE
     };
     EGLint window_attributes[] = { 
@@ -73,13 +74,13 @@ int main(int argc, char** argv)
     GLuint fShader = 0;
     GLuint pObject = 0;
     GLint compiled = 0;
- 
+   
     int x = 0;
     int y = 0;
     uint32_t *p = NULL;
-    GLuint texID = 0;
+    GLuint texID[2] = {0};
     GLubyte *buf = NULL;
- 
+   
     GLfloat vVertices[] = {
        -1.0f,  1.0f, 0.0f,      0.0f,  0.0f,
        -1.0f, -1.0f, 0.0f,      0.0f,  1.0f,
@@ -87,57 +88,70 @@ int main(int argc, char** argv)
         1.0f,  1.0f, 0.0f,      1.0f,  0.0f
     };
     GLushort indices[] = {0, 1, 2, 0, 2, 3};
- 
+   
     display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
     eglInitialize(display, &amp;egl_major, &amp;egl_minor);
     eglChooseConfig(display, config_attribs, &amp;configs, 1, &amp;num_configs);
     surface = eglCreateWindowSurface(display, configs, 0, window_attributes);
     context = eglCreateContext(display, configs, EGL_NO_CONTEXT, context_attributes);
     eglMakeCurrent(display, surface, surface, context);
- 
+   
     vShader = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vShader, 1, &amp;vShaderSrc, NULL);
     glCompileShader(vShader);
     glGetShaderiv(vShader, GL_COMPILE_STATUS, &amp;compiled);
- 
+   
     fShader = glCreateShader(GL_FRAGMENT_SHADER);
     glShaderSource(fShader, 1, &amp;fShaderSrc, NULL);
     glCompileShader(fShader);
     glGetShaderiv(fShader, GL_COMPILE_STATUS, &amp;compiled);
-  
+    
     pObject = glCreateProgram();
     glAttachShader(pObject, vShader);
     glAttachShader(pObject, fShader);
     glLinkProgram(pObject);
     glUseProgram(pObject);
- 
+   
     GLint posLoc = glGetAttribLocation(pObject, "a_position");
     GLint texLoc = glGetAttribLocation(pObject, "a_texCoord");
     GLint samLoc = glGetUniformLocation(pObject, "s_texture");
- 
-    glGenTextures(1, &amp;texID);
+    GLint alphaLoc = glGetUniformLocation(pObject, "s_alpha");
+   
+    glGenTextures(2, texID);
     glViewport(0, 0, LCD_W, LCD_H);
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
- 
+   
     uint32_t col[] = {0xffff0000, 0xff00ff00, 0xff0000ff};
- 
+   
     buf = malloc(LCD_W * LCD_H * 4);
     p = (uint32_t *)buf;
     for (y = 0; y &lt; LCD_H; y++) {
         for (x = 0; x &lt; LCD_W; x++) {
-            *p++ = col[x / 160];
+            *p++ = col[x / (LCD_W / 3)];
         }
     }
-    glBindTexture(GL_TEXTURE_2D, texID);
+    glBindTexture(GL_TEXTURE_2D, texID[0]);
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, LCD_W, LCD_H, 0, GL_RGBA, GL_UNSIGNED_BYTE, buf);
  
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, texID);
+    p = (uint32_t *)buf;
+    for (y = 0; y &lt; LCD_H; y++) {
+        for (x = 0; x &lt; LCD_W; x++) {
+            *p++ = 0;
+        }
+    }
+    glBindTexture(GL_TEXTURE_2D, texID[1]);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, LCD_W, LCD_H, 0, GL_RGBA, GL_UNSIGNED_BYTE, buf);
  
+    glUniform1f(alphaLoc, 1.0);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texID[0]);
     glVertexAttribPointer(posLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), vVertices);
     glVertexAttribPointer(texLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &amp;vVertices[3]);
     glEnableVertexAttribArray(posLoc);
@@ -145,11 +159,34 @@ int main(int argc, char** argv)
     glUniform1i(samLoc, 0);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, indices);
  
+    vVertices[0] = 0.0;
+    vVertices[1] = 0.0;
+ 
+    vVertices[5] = vVertices[0];
+    vVertices[6] = 0.5;
+ 
+    vVertices[10] = 0.5;
+    vVertices[11] = vVertices[6];
+ 
+    vVertices[15] = vVertices[10];
+    vVertices[16] = vVertices[1];
+ 
+    glUniform1f(alphaLoc, 0.5);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable(GL_BLEND);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texID[1]);
+    glVertexAttribPointer(posLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), vVertices);
+    glVertexAttribPointer(texLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &amp;vVertices[3]);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, indices);
+    glDisable(GL_BLEND);
+ 
     eglSwapBuffers(display, surface);
+    system("fbgrab main.png");
     sleep(3);
  
     free(buf);
-    glDeleteTextures(1, &amp;texID);
+    glDeleteTextures(2, texID);
     eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
     eglDestroyContext(display, context);
     eglDestroySurface(display, surface);
@@ -159,15 +196,16 @@ int main(int argc, char** argv)
 </pre><br>
 
 <p>
-編譯
+編譯、執行
 </p>
 <pre>
-$ /opt/a30/bin/arm-linux-gcc main.c -o test -lGLESv2 -lEGL -ldl
+$ gcc main.c -o main -lGLESv2 -lEGL
+$ op_runfbapp ./main
 </pre><br>
 
 <p>
 完成<br>
-<img src="miyoo_a30_cpp_es_rotate2/1.jpg" class="maxSize">
+<img src="pandora_rebirth_superzaxxon_es2_alpha/1.jpg" class="maxSize">
 </p>
 
 <br><script type="text/javascript" src="../tail.js"></script>

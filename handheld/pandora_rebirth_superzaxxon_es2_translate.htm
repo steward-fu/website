@@ -2,11 +2,11 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head><script type="text/javascript" src="../page_head.js"></script>
 
-<h3><a href="../index.htm">掌機</a> - Miyoo A30 - C/C++ - OpenGL ES 2.0 - <b>Rotate Position(Shader)</b></h3>
+<h3><a href="../index.htm">掌機</a> - Pandora(Rebirth) - SuperZaxxon - OpenGL ES 2.0 - <b>Translate Position</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
-https://www.khronos.org/assets/uploads/books/openglr_es_20_programming_guide_sample.pdf<br><br>
+https://pandorawiki.org/GLES<br><br>
 
 main.c
 </p>
@@ -19,19 +19,21 @@ main.c
 #include &lt;unistd.h&gt;
 #include &lt;EGL/egl.h&gt;
 #include &lt;GLES2/gl2.h&gt;
+  
+#define LCD_W   800
+#define LCD_H   480
  
-#define LCD_W   480
-#define LCD_H   640
-
 const char *vShaderSrc = 
     "attribute vec4 vPosition;    \n"
     "void main(void)              \n"
     "{                            \n"
     "    const float angle = 90.0 * (3.1415 * 2.0) / 360.0;                                                                            \n"
     "    mat4 rot = mat4(cos(angle), -sin(angle), 0.0, 0.0, sin(angle), cos(angle), 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0); \n"
-    "    gl_Position = vPosition * rot; \n"
+    "    mat4 sca = mat4(1.5, 0.0, 0.0, 0.0, 0.0, 1.5, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0);                              \n"
+    "    mat4 tra = mat4(1.0, 0.0, 0.0, 0.8, 0.0, 1.0, 0.0, 0.8, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0);                              \n"
+    "    gl_Position = vPosition * rot * sca * tra; \n"
     "}";
- 
+  
 const char *fShaderSrc =
     "#ifdef GL_ES               \n"
     "precision mediump float;   \n"
@@ -41,7 +43,7 @@ const char *fShaderSrc =
     "{                          \n"
     "    gl_FragColor = vColor; \n"
     "}";
-
+ 
 int main(int argc, char** argv)
 {
     EGLint egl_major = 0;
@@ -54,10 +56,10 @@ int main(int argc, char** argv)
     EGLint config_attribs[] = {
         EGL_SURFACE_TYPE,    EGL_WINDOW_BIT,
         EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
-        EGL_RED_SIZE,   8,  
-        EGL_GREEN_SIZE, 8,
-        EGL_BLUE_SIZE,  8,  
-        EGL_ALPHA_SIZE, 8,
+        EGL_RED_SIZE,   5,
+        EGL_GREEN_SIZE, 6,
+        EGL_BLUE_SIZE,  5,
+        EGL_ALPHA_SIZE, 0,
         EGL_NONE
     };
     EGLint window_attributes[] = { 
@@ -77,47 +79,48 @@ int main(int argc, char** argv)
         -0.5f, -0.5f, 0.0f,
          0.5f, -0.5f, 0.0f
     };
- 
+  
     display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
     eglInitialize(display, &amp;egl_major, &amp;egl_minor);
     eglChooseConfig(display, config_attribs, &amp;configs, 1, &amp;num_configs);
     surface = eglCreateWindowSurface(display, configs, 0, window_attributes);
     context = eglCreateContext(display, configs, EGL_NO_CONTEXT, context_attributes);
     eglMakeCurrent(display, surface, surface, context);
- 
+  
     vShader = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vShader, 1, &amp;vShaderSrc, NULL);
     glCompileShader(vShader);
     glGetShaderiv(vShader, GL_COMPILE_STATUS, &amp;compiled);
- 
+  
     fShader = glCreateShader(GL_FRAGMENT_SHADER);
     glShaderSource(fShader, 1, &amp;fShaderSrc, NULL);
     glCompileShader(fShader);
     glGetShaderiv(fShader, GL_COMPILE_STATUS, &amp;compiled);
-  
+   
     pObject = glCreateProgram();
     glAttachShader(pObject, vShader);
     glAttachShader(pObject, fShader);
     glLinkProgram(pObject);
     glUseProgram(pObject);
- 
+  
     glViewport(0, 0, LCD_W, LCD_H);
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
-
+ 
     GLuint vp = glGetAttribLocation(pObject, "vPosition");
     glVertexAttribPointer(vp, 3, GL_FLOAT, GL_FALSE, 0, vVertices);
     glEnableVertexAttribArray(vp);
- 
+  
     GLuint vc = glGetUniformLocation(pObject, "vColor");
     glUniform4f(vc, 1.0f, 0.0f, 0.0f, 1.0f);
- 
+  
     glViewport(0, 0, LCD_W, LCD_H);
     glClear(GL_COLOR_BUFFER_BIT);
     glDrawArrays(GL_TRIANGLES, 0, 3);
     eglSwapBuffers(display, surface);
+    system("fbgrab main.png");
     sleep(3);
- 
+  
     eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
     eglDestroyContext(display, context);
     eglDestroySurface(display, surface);
@@ -127,15 +130,16 @@ int main(int argc, char** argv)
 </pre><br>
 
 <p>
-編譯
+編譯、執行
 </p>
 <pre>
-$ /opt/a30/bin/arm-linux-gcc main.c -o test -lGLESv2 -lEGL -ldl
+$ gcc main.c -o main -lGLESv2 -lEGL
+$ op_runfbapp ./main
 </pre><br>
 
 <p>
 完成<br>
-<img src="miyoo_a30_cpp_es_rotate/1.jpg" class="maxSize">
+<img src="pandora_rebirth_superzaxxon_es2_translate/1.jpg" class="maxSize">
 </p>
 
 <br><script type="text/javascript" src="../tail.js"></script>

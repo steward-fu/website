@@ -2,11 +2,11 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head><script type="text/javascript" src="../page_head.js"></script>
 
-<h3><a href="../index.htm">掌機</a> - Miyoo A30 - C/C++ - OpenGL ES 2.0 - <b>Convert ARGB to RGBA(Shader)</b></h3>
+<h3><a href="../index.htm">掌機</a> - Pandora(Rebirth) - SuperZaxxon - OpenGL ES 2.0 - <b>Draw Texture</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
-https://www.khronos.org/assets/uploads/books/openglr_es_20_programming_guide_sample.pdf<br><br>
+https://pandorawiki.org/GLES<br><br>
 
 main.c
 </p>
@@ -20,18 +20,18 @@ main.c
 #include &lt;EGL/egl.h&gt;
 #include &lt;GLES2/gl2.h&gt;
  
-#define LCD_W   480
-#define LCD_H   640
+#define LCD_W   800
+#define LCD_H   480
  
 const char *vShaderSrc =
-    "attribute vec4 a_position;   \n"
-    "attribute vec2 a_texCoord;   \n"
-    "varying vec2 v_texCoord;     \n"
-    "void main()                  \n"
-    "{                            \n"
-    "   gl_Position = a_position; \n"
-    "   v_texCoord = a_texCoord;  \n"
-    "}                            \n";
+    "attribute vec4 a_position;    \n"
+    "attribute vec2 a_texCoord;    \n"
+    "varying vec2 v_texCoord;      \n"
+    "void main()                   \n"
+    "{                             \n"
+    "    gl_Position = a_position; \n"
+    "    v_texCoord = a_texCoord;  \n"
+    "}                             \n";
    
 const char *fShaderSrc =
     "precision mediump float;                                  \n"
@@ -39,7 +39,7 @@ const char *fShaderSrc =
     "uniform sampler2D s_texture;                              \n"
     "void main()                                               \n"
     "{                                                         \n"
-    "    vec3 tex = texture2D(s_texture, v_texCoord).bgr;      \n"
+    "    vec3 tex = texture2D(s_texture, v_texCoord).rgb;      \n"
     "    gl_FragColor = vec4(tex, 1.0);                        \n"
     "}                                                         \n";
  
@@ -55,10 +55,10 @@ int main(int argc, char** argv)
     EGLint config_attribs[] = {
         EGL_SURFACE_TYPE,    EGL_WINDOW_BIT,
         EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
-        EGL_RED_SIZE,   8,  
-        EGL_GREEN_SIZE, 8,
-        EGL_BLUE_SIZE,  8,  
-        EGL_ALPHA_SIZE, 8,
+        EGL_RED_SIZE,   5,
+        EGL_GREEN_SIZE, 6,
+        EGL_BLUE_SIZE,  5,
+        EGL_ALPHA_SIZE, 0,
         EGL_NONE
     };
     EGLint window_attributes[] = { 
@@ -126,7 +126,7 @@ int main(int argc, char** argv)
     p = (uint32_t *)buf;
     for (y = 0; y &lt; LCD_H; y++) {
         for (x = 0; x &lt; LCD_W; x++) {
-            *p++ = col[x / 160];
+            *p++ = col[x / (LCD_W / 3)];
         }
     }
     glBindTexture(GL_TEXTURE_2D, texID);
@@ -146,6 +146,7 @@ int main(int argc, char** argv)
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, indices);
  
     eglSwapBuffers(display, surface);
+    system("fbgrab main.png");
     sleep(3);
  
     free(buf);
@@ -159,15 +160,16 @@ int main(int argc, char** argv)
 </pre><br>
 
 <p>
-編譯
+編譯、執行
 </p>
 <pre>
-$ /opt/a30/bin/arm-linux-gcc main.c -o test -lGLESv2 -lEGL -ldl
+$ gcc main.c -o main -lGLESv2 -lEGL
+$ op_runfbapp ./main
 </pre><br>
 
 <p>
 完成<br>
-<img src="miyoo_a30_cpp_es_rotate2/1.jpg" class="maxSize">
+<img src="pandora_rebirth_superzaxxon_es2_texture/1.jpg" class="maxSize">
 </p>
 
 <br><script type="text/javascript" src="../tail.js"></script>
