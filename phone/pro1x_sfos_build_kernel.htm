@@ -8,6 +8,37 @@
 參考資料：<br>
 https://github.com/sailfish-on-fxtecpro1/kernel-adaptation-halium-qx1050<br><br>
 
+build.sh
+</p>
+<pre>
+#!/bin/bash
+if [ ! -d "clang" ]; then
+    git clone --depth=1 https://github.com/kdrag0n/proton-clang clang
+fi
+
+if [ ! -d "gcc" ]; then
+    git clone --depth=1 https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-android-4.9 gcc
+fi
+
+if [ ! -d "gcc32" ]; then
+    git clone --depth=1 https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_arm_arm-linux-androideabi-4.9 gcc32
+fi
+
+KERNEL_DIR=$(pwd)
+IMAGE="${KERNEL_DIR}/out/arch/arm64/boot/Image"
+TANGGAL=$(date +"%Y%m%d-%H")
+PATH="${KERNEL_DIR}/clang/bin:${KERNEL_DIR}/gcc/bin:${KERNEL_DIR}/gcc32/bin:${PATH}"
+
+export ARCH=arm64
+export KBUILD_BUILD_HOST=debian
+export KBUILD_BUILD_USER=steward
+
+make O=out ARCH=arm64 CC=clang CLANG_TRIPLE=aarch64-linux-gnu- CROSS_COMPILE=aarch64-linux-android- CROSS_COMPILE_ARM32=arm-linux-androideabi- pro1x_defconfig
+make O=out ARCH=arm64 CC=clang CLANG_TRIPLE=aarch64-linux-gnu- CROSS_COMPILE=aarch64-linux-android- CROSS_COMPILE_ARM32=arm-linux-androideabi- Image.gz modules -j4
+make O=out INSTALL_MOD_PATH=mod ARCH=arm64 CC=clang CLANG_TRIPLE=aarch64-linux-gnu- CROSS_COMPILE=aarch64-linux-android- CROSS_COMPILE_ARM32=arm-linux-androideabi- modules_install -j4
+</pre><br>
+
+<p>
 步驟如下：
 </p>
 <pre>
