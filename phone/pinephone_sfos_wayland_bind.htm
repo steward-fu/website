@@ -1,0 +1,63 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../phone.htm">手機</a> - PINE64 PinePhone - Sailfish OS - Wayland (Client) - <b>Bind Compositor</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://jan.newmarch.name/Wayland/index.html<br>
+https://wayland.freedesktop.org/docs/html/apa.html<br>
+https://bugaevc.gitbooks.io/writing-wayland-clients/content/<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+#include &lt;wayland-client.h&gt;
+   
+struct wl_compositor *comp = NULL;
+   
+void cb_handle(void *dat, struct wl_registry *reg, uint32_t id, const char *intf, uint32_t ver)
+{
+    if (strcmp(intf, "wl_compositor") == 0) {
+        comp = wl_registry_bind(reg, id, &amp;wl_compositor_interface, 3);
+    }
+}
+    
+void cb_remove(void *dat, struct wl_registry *reg, uint32_t id)
+{
+}
+    
+int main(int argc, char **argv)
+{
+    struct wl_display *dis = wl_display_connect(NULL);
+    struct wl_registry *reg = wl_display_get_registry(dis);
+    struct wl_registry_listener cb = {
+        .global = cb_handle,
+        .global_remove = cb_remove
+    };
+    
+    wl_registry_add_listener(reg, &amp;cb, NULL);
+    wl_display_dispatch(dis);
+    wl_display_roundtrip(dis);
+    printf("comp=0x%08x\n", comp);
+ 
+    wl_registry_destroy(reg);
+    wl_compositor_destroy(comp);
+    wl_display_disconnect(dis);
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ gcc main.c -o main -lwayland-client
+$ ./main
+    comp=0x2f10a320
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

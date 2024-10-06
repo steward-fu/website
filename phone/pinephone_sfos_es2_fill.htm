@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head><script type="text/javascript" src="../page_head.js"></script>
 
-<h3><a href="../phone.htm">手機</a> - Motorola XT894 - Sailfish OS - Wayland (OpenGL ES 2.0) - <b>Fill Color</b></h3>
+<h3><a href="../phone.htm">手機</a> - PINE64 PinePhone - Sailfish OS - Wayland (OpenGL ES 2.0) - <b>Fill Color</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
@@ -16,19 +16,19 @@ main.c
 <pre class="brush:cpp">
 #include &lt;string.h&gt;
 #include &lt;stdlib.h&gt;
-
+ 
 #include &lt;wayland-server.h&gt;
 #include &lt;wayland-client.h&gt;
 #include &lt;wayland-client-protocol.h&gt;
 #include &lt;wayland-egl.h&gt;
-
+ 
 #include &lt;EGL/egl.h&gt;
 #include &lt;EGL/eglplatform.h&gt;
 #include &lt;GLES2/gl2.h&gt;
-
-#define LCD_W   540
-#define LCD_H   960
-
+ 
+#define LCD_W   720
+#define LCD_H   1440
+ 
 struct wl_shell *wl_shell = NULL;
 struct wl_region *wl_region = NULL;
 struct wl_display *wl_display = NULL;
@@ -37,7 +37,7 @@ struct wl_registry *wl_registry = NULL;
 struct wl_egl_window *wl_egl_window = NULL;
 struct wl_compositor *wl_compositor = NULL;
 struct wl_shell_surface *wl_shell_surface = NULL;
-
+ 
 static void global_registry_handler(void *data, struct wl_registry *registry, uint32_t id, const char *interface, uint32_t version)
 {
     if (strcmp(interface, "wl_compositor") == 0) {
@@ -47,16 +47,16 @@ static void global_registry_handler(void *data, struct wl_registry *registry, ui
         wl_shell = wl_registry_bind(registry, id, &amp;wl_shell_interface, 1);
     }
 }
-
+ 
 static void global_registry_remover(void *data, struct wl_registry *registry, uint32_t id)
 {
 }
-
+ 
 const struct wl_registry_listener listener = {
     global_registry_handler,
     global_registry_remover
 };
-
+ 
 int main(int argc, char **argv)
 {
     wl_display = wl_display_connect(NULL);
@@ -71,7 +71,7 @@ int main(int argc, char **argv)
     wl_region_add(wl_region, 0, 0, LCD_W, LCD_H);
     wl_surface_set_opaque_region(wl_surface, wl_region);
     wl_egl_window = wl_egl_window_create(wl_surface, LCD_W, LCD_H);
-
+ 
     EGLContext egl_context;
     EGLSurface egl_surface;
     EGLint egl_numConfigs;
@@ -97,30 +97,30 @@ int main(int argc, char **argv)
     egl_surface = eglCreateWindowSurface(egl_display, egl_config, wl_egl_window, NULL);
     egl_context = eglCreateContext(egl_display, egl_config, EGL_NO_CONTEXT, egl_context_attribs);
     eglMakeCurrent(egl_display, egl_surface, egl_surface, egl_context);
-
+ 
     int cc = 60;
     while (cc--) {
         wl_display_dispatch_pending(wl_display);
-        switch (cc % 3) {
-        case 0:
-            glClearColor(1.0, 0.0, 0.0, 1.0);
+	    switch (cc % 3) {
+	    case 0:
+        	glClearColor(1.0, 0.0, 0.0, 1.0);
             break;
-        case 1:
-            glClearColor(0.0, 1.0, 0.0, 1.0);
+	    case 1:
+        	glClearColor(0.0, 1.0, 0.0, 1.0);
             break;
-        case 2:
-            glClearColor(0.0, 0.0, 1.0, 1.0);
+	    case 2:
+        	glClearColor(0.0, 0.0, 1.0, 1.0);
             break;
-        }
+	    }
         glClear(GL_COLOR_BUFFER_BIT);
         eglSwapBuffers(egl_display, egl_surface);
     }
-
+ 
     eglDestroySurface(egl_display, egl_surface);
     eglDestroyContext(egl_display, egl_context);
     wl_egl_window_destroy(wl_egl_window);
     eglTerminate(egl_display);
- 
+  
     wl_region_destroy(wl_region);
     wl_shell_surface_destroy(wl_shell_surface);
     wl_shell_destroy(wl_shell);

@@ -1,0 +1,69 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../phone.htm">手機</a> - PINE64 PinePhone - Sailfish OS - Wayland (Client) - <b>Add Listener</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://jan.newmarch.name/Wayland/index.html<br>
+https://wayland.freedesktop.org/docs/html/apa.html<br>
+https://bugaevc.gitbooks.io/writing-wayland-clients/content/<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;wayland-client.h&gt;
+   
+void cb_handle(void *dat, struct wl_registry *reg, uint32_t id, const char *intf, uint32_t ver)
+{
+    printf("%s, intf:%s, ver:%u, id:%u\n", __func__, intf, ver, id);
+}
+   
+void cb_remove(void *dat, struct wl_registry *reg, uint32_t id)
+{
+    printf("%s, %u\n", __func__, id);
+}
+   
+int main(int argc, char **argv)
+{
+    struct wl_display *dis = wl_display_connect(NULL);
+    struct wl_registry *reg = wl_display_get_registry(dis);
+    struct wl_registry_listener cb = {
+        .global = cb_handle,
+        .global_remove = cb_remove
+    };
+   
+    wl_registry_add_listener(reg, &amp;cb, NULL);
+    wl_display_dispatch(dis);
+    wl_display_roundtrip(dis);
+ 
+    wl_registry_destroy(reg);
+    wl_display_disconnect(dis);
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ gcc main.c -o main -lwayland-client
+$ ./main
+    cb_handle, intf:wl_compositor, ver:3, id:1
+    cb_handle, intf:wl_data_device_manager, ver:1, id:2
+    cb_handle, intf:wl_shm, ver:1, id:3
+    cb_handle, intf:qt_hardware_integration, ver:1, id:4
+    cb_handle, intf:wl_drm, ver:2, id:5
+    cb_handle, intf:qt_surface_extension, ver:1, id:6
+    cb_handle, intf:qt_touch_extension, ver:1, id:7
+    cb_handle, intf:qt_windowmanager, ver:1, id:8
+    cb_handle, intf:wl_seat, ver:3, id:9
+    cb_handle, intf:wl_output, ver:2, id:10
+    cb_handle, intf:wl_shell, ver:1, id:11
+    cb_handle, intf:lipstick_recorder_manager, ver:1, id:12
+    cb_handle, intf:alien_manager, ver:1, id:13
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
