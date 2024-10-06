@@ -1,0 +1,137 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../phone.htm">手機</a> - Motorola XT894 - Sailfish OS - Wayland (OpenGL ES 2.0) - <b>Get Version</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://jan.newmarch.name/Wayland/index.html<br>
+https://wayland.freedesktop.org/docs/html/apa.html<br>
+https://bugaevc.gitbooks.io/writing-wayland-clients/content/<br>
+https://gist.github.com/Miouyouyou/ca15af1c7f2696f66b0e013058f110b4<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;wayland-egl.h&gt;
+#include &lt;wayland-client.h&gt;
+#include &lt;EGL/egl.h&gt;
+#include &lt;GLES2/gl2.h&gt;
+
+#define LCD_W   560
+#define LCD_H   960
+ 
+struct wl_shell *shell = NULL;
+struct wl_display *dis = NULL;
+struct wl_surface *surf = NULL;
+struct wl_registry *reg = NULL;
+struct wl_region *regn = NULL;
+struct wl_compositor *comp = NULL;
+struct wl_egl_window *egl_win = NULL;
+struct wl_shell_surface *shell_surf = NULL;
+ 
+EGLConfig egl_conf = 0;
+EGLContext egl_ctx = 0;
+EGLDisplay egl_dis = 0;
+EGLSurface egl_surf = 0;
+ 
+EGLint egl_attribs[] = {
+    EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
+    EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+    EGL_RED_SIZE,   8,
+    EGL_GREEN_SIZE, 8,
+    EGL_BLUE_SIZE,  8,
+    EGL_NONE
+};
+ 
+EGLint ctx_attribs[] = {
+    EGL_CONTEXT_CLIENT_VERSION, 
+    2, 
+    EGL_NONE
+};
+ 
+void cb_handle(void *dat, struct wl_registry *reg, uint32_t id, const char *intf, uint32_t ver)
+{
+    if (strcmp(intf, "wl_compositor") == 0) {
+        comp = wl_registry_bind(reg, id, &amp;wl_compositor_interface, 3);
+    }
+    else if (strcmp(intf, "wl_shell") == 0) {
+        shell = wl_registry_bind(reg, id, &amp;wl_shell_interface, 1);
+    }
+}
+ 
+void cb_remove(void *dat, struct wl_registry *reg, uint32_t id)
+{
+}
+ 
+struct wl_registry_listener cb = {
+    .global = cb_handle,
+    .global_remove = cb_remove
+};
+ 
+int main(int argc, char **argv)
+{
+    dis = wl_display_connect(NULL);
+    reg = wl_display_get_registry(dis);
+ 
+    wl_registry_add_listener(reg, &amp;cb, NULL);
+    wl_display_dispatch(dis);
+    wl_display_roundtrip(dis);
+ 
+    surf = wl_compositor_create_surface(comp);
+    shell_surf = wl_shell_get_shell_surface(shell, surf);
+    wl_shell_surface_set_toplevel(shell_surf);
+ 
+    regn = wl_compositor_create_region(comp);
+    wl_region_add(regn, 0, 0, LCD_W, LCD_H);
+    wl_surface_set_opaque_region(surf, regn);
+    egl_win = wl_egl_window_create(surf, LCD_W, LCD_H);
+ 
+    EGLConfig cfg = 0;
+    EGLint major = 0, minor = 0, cnt = 0;
+ 
+    egl_dis = eglGetDisplay((EGLNativeDisplayType)dis);
+    eglInitialize(egl_dis, &amp;major, &amp;minor);
+    eglGetConfigs(egl_dis, NULL, 0, &amp;cnt);
+    eglChooseConfig(egl_dis, egl_attribs, &amp;cfg, 1, &amp;cnt);
+    egl_surf = eglCreateWindowSurface(egl_dis, cfg, egl_win, NULL);
+    egl_ctx = eglCreateContext(egl_dis, cfg, EGL_NO_CONTEXT, ctx_attribs);
+    eglMakeCurrent(egl_dis, egl_surf, egl_surf, egl_ctx);
+    printf("egl_diplay = 0x%08x\n", egl_dis);
+    printf("egl major:%d, minor:%d\n", major, minor);
+ 
+    glClearColor(1.0, 0.0, 0.0, 1.0);
+    glClear(GL_COLOR_BUFFER_BIT);
+    eglSwapBuffers(egl_dis, egl_surf);
+ 
+    eglTerminate(egl_dis);
+    eglDestroySurface(egl_dis, egl_surf);
+    eglDestroyContext(egl_dis, egl_ctx);
+    wl_egl_window_destroy(egl_win);
+     
+    wl_region_destroy(regn);
+    wl_shell_surface_destroy(shell_surf);
+    wl_shell_destroy(shell);
+    wl_surface_destroy(surf);
+    wl_compositor_destroy(comp);
+    wl_registry_destroy(reg);
+    wl_display_disconnect(dis);
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ gcc main.c -o main -lwayland-client -lwayland-egl -lEGL -lGLESv2
+$ ./main
+    egl_diplay = 0x00000001
+    egl major:1, minor:4
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
