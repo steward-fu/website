@@ -1,0 +1,173 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../phone.htm">手機</a> - Motorola XT894 - Sailfish OS - Wayland Client - <b>Ping Pong</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://jan.newmarch.name/Wayland/index.html<br>
+https://wayland.freedesktop.org/docs/html/apa.html<br>
+https://bugaevc.gitbooks.io/writing-wayland-clients/content/<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdint.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+#include &lt;sys/mman.h&gt;
+#include &lt;syscall.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;wayland-client.h&gt;
+   
+#define WIDTH       540
+#define HEIGHT      960
+#define STRIDE      (WIDTH * 2)
+#define SIZE        (STRIDE * HEIGHT)
+#define SHM_NAME    "/tmp/shm"
+
+uint16_t *addr = NULL;
+struct wl_shm *shm = NULL;
+struct wl_buffer *buf = NULL;
+struct wl_shell *shell = NULL;
+struct wl_display *dis = NULL;
+struct wl_surface *surf = NULL;
+struct wl_registry *reg = NULL;
+struct wl_shm_pool *pool = NULL;
+struct wl_callback *frame = NULL;
+struct wl_compositor *comp = NULL;
+struct wl_shell_surface *shell_surf = NULL;
+  
+void cb_remove(void *dat, struct wl_registry *reg, uint32_t id);
+void cb_redraw(void *dat, struct wl_callback *cb, uint32_t time);
+void cb_handle(void *dat, struct wl_registry *reg, uint32_t id, const char *intf, uint32_t ver);
+ 
+static void cb_ping(void *dat, struct wl_shell_surface *shell_surf, uint32_t serial)
+{
+    wl_shell_surface_pong(shell_surf, serial);
+}
+ 
+static void cb_configure(void *dat, struct wl_shell_surface *shell_surf, uint32_t edges, int32_t w, int32_t h)
+{
+}
+ 
+static void cb_popup_done(void *dat, struct wl_shell_surface *shell_surf)
+{
+}
+ 
+static const struct wl_shell_surface_listener cb_shell_surf = {
+    cb_ping,
+    cb_configure,
+    cb_popup_done
+};
+ 
+const struct wl_callback_listener cb_frame = {
+    cb_redraw
+};
+  
+struct wl_registry_listener cb_global = {
+    .global = cb_handle,
+    .global_remove = cb_remove
+};
+   
+void cb_redraw(void *dat, struct wl_callback *cb, uint32_t time)
+{
+    static int cnt = 0;
+    wl_callback_destroy(frame);
+    wl_surface_damage(surf, 0, 0, WIDTH, HEIGHT);
+  
+    int x = 0, y = 0;
+    uint16_t *p = addr;
+    uint16_t col[] = {0xf800, 0x7e0, 0x1f};
+    for (y = 0; y &lt; HEIGHT; y++) {
+        for (x = 0; x &lt; WIDTH; x++) {
+            *p++ = col[cnt % 3];
+        }
+    }
+    cnt+= 1;
+  
+    frame = wl_surface_frame(surf);
+    wl_surface_attach(surf, buf, 0, 0);
+    wl_callback_add_listener(frame, &amp;cb_frame, NULL);
+    wl_surface_commit(surf);
+}
+  
+void cb_handle(void *dat, struct wl_registry *reg, uint32_t id, const char *intf, uint32_t ver)
+{
+    if (strcmp(intf, "wl_compositor") == 0) {
+        comp = wl_registry_bind(reg, id, &amp;wl_compositor_interface, 1);
+    }
+    else if (strcmp(intf, "wl_shm") == 0) {
+        shm = wl_registry_bind(reg, id, &amp;wl_shm_interface, 1);
+    }
+    else if (strcmp(intf, "wl_shell") == 0) {
+        shell = wl_registry_bind(reg, id, &amp;wl_shell_interface, 1);
+    }
+}
+   
+void cb_remove(void *dat, struct wl_registry *reg, uint32_t id)
+{
+}
+  
+int main(int argc, char **argv)
+{
+    int fd = -1;
+  
+    dis = wl_display_connect(NULL);
+    reg = wl_display_get_registry(dis);
+  
+    wl_registry_add_listener(reg, &amp;cb_global, NULL);
+    wl_display_dispatch(dis);
+    wl_display_roundtrip(dis);
+    surf = wl_compositor_create_surface(comp);
+    shell_surf = wl_shell_get_shell_surface(shell, surf);
+    wl_shell_surface_set_toplevel(shell_surf);
+  
+    fd = open(SHM_NAME, O_RDWR | O_EXCL | O_CREAT);
+    ftruncate(fd, SIZE);
+  
+    addr = mmap(NULL, SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    pool = wl_shm_create_pool(shm, fd, SIZE);
+    buf = wl_shm_pool_create_buffer(pool, 0, WIDTH, HEIGHT, STRIDE, WL_SHM_FORMAT_RGB565);
+    wl_shm_pool_destroy(pool);
+ 
+    wl_shell_surface_set_toplevel(shell_surf);
+    wl_shell_surface_add_listener(shell_surf, &amp;cb_shell_surf, NULL);
+ 
+    frame = wl_surface_frame(surf);
+    wl_callback_add_listener(frame, &amp;cb_frame, NULL);
+  
+    wl_surface_attach(surf, buf, 0, 0);
+    wl_surface_commit(surf);
+ 
+    while (1) {
+        wl_display_dispatch(dis);
+    }
+  
+    wl_callback_destroy(frame);
+    wl_shell_surface_destroy(shell_surf);
+    wl_shell_destroy(shell);
+    wl_surface_destroy(surf);
+    wl_buffer_destroy(buf);
+    wl_shm_destroy(shm);
+    wl_compositor_destroy(comp);
+    wl_registry_destroy(reg);
+    wl_display_disconnect(dis);
+    munmap(addr, SIZE);
+    close(fd);
+    unlink(SHM_NAME);
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ gcc main.c -o main -lwayland-client
+$ ./main
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

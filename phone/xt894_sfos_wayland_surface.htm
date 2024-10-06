@@ -1,0 +1,87 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../phone.htm">手機</a> - Motorola XT894 - Sailfish OS - Wayland Client - <b>Create Surface</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://jan.newmarch.name/Wayland/index.html<br>
+https://wayland.freedesktop.org/docs/html/apa.html<br>
+https://bugaevc.gitbooks.io/writing-wayland-clients/content/<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+#include &lt;wayland-client.h&gt;
+ 
+struct wl_shell *shell = NULL;
+struct wl_display *dis = NULL;
+struct wl_surface *surf = NULL;
+struct wl_registry *reg = NULL;
+struct wl_compositor *comp = NULL;
+struct wl_shell_surface *shell_surf = NULL;
+    
+void cb_handle(void *dat, struct wl_registry *reg, uint32_t id, const char *intf, uint32_t ver)
+{
+    if (strcmp(intf, "wl_compositor") == 0) {
+        comp = wl_registry_bind(reg, id, &amp;wl_compositor_interface, 3);
+    }
+    else if (strcmp(intf, "wl_shell") == 0) {
+        shell = wl_registry_bind(reg, id, &amp;wl_shell_interface, 1);
+    }
+}
+     
+void cb_remove(void *dat, struct wl_registry *reg, uint32_t id)
+{
+}
+     
+struct wl_registry_listener cb = {
+    .global = cb_handle,
+    .global_remove = cb_remove
+};
+ 
+int main(int argc, char **argv)
+{
+    dis = wl_display_connect(NULL);
+    reg = wl_display_get_registry(dis);
+ 
+    wl_registry_add_listener(reg, &amp;cb, NULL);
+    wl_display_roundtrip(dis);
+    printf("comp = 0x%08x\n", comp);
+    printf("shell = 0x%08x\n", shell);
+ 
+    surf = wl_compositor_create_surface(comp);
+    printf("surf = 0x%08x\n", surf);
+ 
+    shell_surf = wl_shell_get_shell_surface(shell, surf);
+    printf("shell_surf = 0x%08x\n", shell_surf);
+ 
+    wl_shell_surface_set_toplevel(shell_surf);
+    wl_display_roundtrip(dis);
+ 
+    wl_shell_surface_destroy(shell_surf);
+    wl_shell_destroy(shell);
+    wl_surface_destroy(surf);
+    wl_compositor_destroy(comp);
+    wl_registry_destroy(reg);
+    wl_display_disconnect(dis);
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ gcc main.c -o main -lwayland-client
+$ ./main
+    comp = 0x01dafcf8
+    shell = 0x01dafdf0
+    surf = 0x01db02c0
+    shell_surf = 0x01db0370
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
