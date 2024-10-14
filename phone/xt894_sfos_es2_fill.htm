@@ -98,23 +98,12 @@ int main(int argc, char **argv)
     egl_context = eglCreateContext(egl_display, egl_config, EGL_NO_CONTEXT, egl_context_attribs);
     eglMakeCurrent(egl_display, egl_surface, egl_surface, egl_context);
 
-    int cc = 60;
-    while (cc--) {
-        wl_display_dispatch_pending(wl_display);
-        switch (cc % 3) {
-        case 0:
-            glClearColor(1.0, 0.0, 0.0, 1.0);
-            break;
-        case 1:
-            glClearColor(0.0, 1.0, 0.0, 1.0);
-            break;
-        case 2:
-            glClearColor(0.0, 0.0, 1.0, 1.0);
-            break;
-        }
-        glClear(GL_COLOR_BUFFER_BIT);
-        eglSwapBuffers(egl_display, egl_surface);
-    }
+    wl_display_dispatch_pending(wl_display);
+    glViewport(0, 0, LCD_W, LCD_H);
+    glClearColor(1.0, 0.0, 0.0, 1.0);
+    glClear(GL_COLOR_BUFFER_BIT);
+    eglSwapBuffers(egl_display, egl_surface);
+    usleep(3000000);
 
     eglDestroySurface(egl_display, egl_surface);
     eglDestroyContext(egl_display, egl_context);
