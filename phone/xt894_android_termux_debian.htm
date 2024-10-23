@@ -1,0 +1,47 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../phone.htm">手機</a> - Motorola XT894 - Android - <b>如何安裝Debian系統</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://ivonblog.com/en-us/posts/termux-proot-distro-debian/<br><br>
+
+步驟如下：
+</p>
+<pre>
+$ pkg update
+$ pkg upgrade
+$ termux-setup-storage
+
+$ pkg install proot-distro pulseaudio vim x11-repo
+$ proot-distro install debian
+
+$ proot-distro login debian --user root --shared-tmp
+
+# apt-get update
+# apt-get install locales sudo vim nano
+# dpkg-reconfigure locales
+
+# passwd
+# groupadd storage
+# groupadd wheel
+# groupadd video
+# useradd -m -g users -G wheel,audio,video,storage -s /bin/bash user
+# passwd user
+# apt-get install xfce4 xfce4-goodies dbus-x11
+# exit
+
+$ pulseaudio --start --load="module-native-protocol-tcp auth-ip-acl=127.0.0.1 auth-anonymous=1" --exit-idle-time=-1
+$ pacmd load-module module-native-protocol-tcp auth-ip-acl=127.0.0.1 auth-anonymous=1
+$ export DISPLAY=:0
+$ termux-x11 :0 -ac
+
+$ proot-distro login debian --user user --shared-tmp
+$ export DISPLAY=:0
+$ PULSE_SERVER=tcp:127.0.0.1
+$ dbus-launch --exit-with-session startxfce4
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
