@@ -1,0 +1,134 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../phone.htm">手機</a> - Motorola XT894 - CM 11 - <b>QEMU按鍵修改</b></h3>
+<hr size="1"><br>
+<p>
+ui/gtk.c
+</p>
+<pre class="brush:cpp">
+diff --git a/ui/gtk.c b/ui/gtk.c
+index e96e15435a..f277c0ab36 100644
+--- a/ui/gtk.c
++++ b/ui/gtk.c
+@@ -116,7 +116,7 @@
+ #endif
+ 
+ 
+-#define HOTKEY_MODIFIERS        (GDK_CONTROL_MASK | GDK_MOD1_MASK)
++#define HOTKEY_MODIFIERS        (GDK_CONTROL_MASK) // | GDK_MOD1_MASK)
+ 
+ static const guint16 *keycode_map;
+ static size_t keycode_maplen;
+@@ -282,7 +282,7 @@ static void gd_update_caption(GtkDisplayState *s)
+ 
+     if (s-&gt;ptr_owner != NULL &amp;&amp;
+         s-&gt;ptr_owner-&gt;window == NULL) {
+-        grab = _(" - Press Ctrl+Alt+G to release grab");
++        grab = _(" - Press Ctrl+G to release grab");
+     }
+ 
+     if (is_paused) {
+@@ -1092,6 +1092,11 @@ static gboolean gd_key_event(GtkWidget *widget, GdkEventKey *key, void *opaque)
+     GtkDisplayState *s = vc-&gt;s;
+     int qcode;
+ 
++    int handled = 0;
++    int keydown = 0;
++    static int alt_down = 0;
++    static int shift_down = 0;
++
+     if (s-&gt;ignore_keys) {
+         s-&gt;ignore_keys = (key-&gt;type == GDK_KEY_PRESS);
+         return TRUE;
+@@ -1118,6 +1123,87 @@ static gboolean gd_key_event(GtkWidget *widget, GdkEventKey *key, void *opaque)
+ 
+     qcode = gd_map_keycode(key-&gt;hardware_keycode);
+ 
++    handled = 0;
++    keydown = (key-&gt;type == GDK_KEY_PRESS);
++    //printf("%d, %d, %d\n", key-&gt;hardware_keycode, qcode, keydown);
++    switch (qcode) {
++    case 1: // lshift
++    case 2: // rshift
++        shift_down = keydown;
++        break;
++    case 4: // alt
++        handled = 1;
++        alt_down = keydown;
++        return FALSE;
++    case 5: // lctrl
++        break;
++    case 56:
++        if (alt_down) {
++            // '&lt;'
++            qkbd_state_key_event(vc-&gt;gfx.kbd, 1, 1);
++            qkbd_state_key_event(vc-&gt;gfx.kbd, 56, keydown);
++            qkbd_state_key_event(vc-&gt;gfx.kbd, 1, 0);
++            handled = 1;
++        }
++        else if (shift_down) {
++            // '&lt;'
++            qkbd_state_key_event(vc-&gt;gfx.kbd, 1, 0);
++            qkbd_state_key_event(vc-&gt;gfx.kbd, 45, keydown);
++            handled = 1;
++        }
++        break;
++    case 57:
++        if (alt_down) {
++            // '&gt;'
++            qkbd_state_key_event(vc-&gt;gfx.kbd, 1, 1);
++            qkbd_state_key_event(vc-&gt;gfx.kbd, 57, keydown);
++            qkbd_state_key_event(vc-&gt;gfx.kbd, 1, 0);
++            handled = 1;
++        }
++        break;
++    case 43:
++        if (alt_down) {
++            // '['
++            qkbd_state_key_event(vc-&gt;gfx.kbd, 33, keydown);
++            handled = 1;
++        }
++        break;
++    case 44:
++        if (alt_down) {
++            // ']'
++            qkbd_state_key_event(vc-&gt;gfx.kbd, 34, keydown);
++            handled = 1;
++        }
++        break;
++    case 46:
++        if (alt_down) {
++            // '`'
++            qkbd_state_key_event(vc-&gt;gfx.kbd, 47, keydown);
++            handled = 1;
++        }
++        break;
++    case 58:
++        if (alt_down) {
++            // '\'
++            qkbd_state_key_event(vc-&gt;gfx.kbd, 48, keydown);
++            handled = 1;
++        }
++        break;
++    case 9:
++        if (alt_down) {
++            // '|'
++            qkbd_state_key_event(vc-&gt;gfx.kbd, 1, 1);
++            qkbd_state_key_event(vc-&gt;gfx.kbd, 48, keydown);
++            qkbd_state_key_event(vc-&gt;gfx.kbd, 1, 0);
++            handled = 1;
++        }
++        break;
++    }
++
++    if (handled) {
++        return TRUE;
++    }
++
+     trace_gd_key_event(vc-&gt;label, key-&gt;hardware_keycode, qcode,
+                        (key-&gt;type == GDK_KEY_PRESS) ? "down" : "up"); 
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
