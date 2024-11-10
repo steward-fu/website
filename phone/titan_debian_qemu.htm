@@ -1,0 +1,534 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../phone.htm">手機</a> - Unihertz Titan (TEE-EMMC) - Debian - <b>QEMU按鍵修改</b></h3>
+<hr size="1"><br>
+<p>
+ui/gtk.c
+</p>
+<pre class="brush:cpp">
+diff --git a/ui/gtk.c b/ui/gtk.c
+index 692ccc7bbb..f0fd23d07a 100644
+--- a/ui/gtk.c
++++ b/ui/gtk.c
+@@ -116,7 +116,7 @@
+ #endif
+ 
+ 
+-#define HOTKEY_MODIFIERS        (GDK_CONTROL_MASK | GDK_MOD1_MASK)
++#define HOTKEY_MODIFIERS        (GDK_CONTROL_MASK) // | GDK_MOD1_MASK)
+ 
+ static const guint16 *keycode_map;
+ static size_t keycode_maplen;
+@@ -282,7 +282,7 @@ static void gd_update_caption(GtkDisplayState *s)
+ 
+     if (s-&gt;ptr_owner != NULL &amp;&amp;
+         s-&gt;ptr_owner-&gt;window == NULL) {
+-        grab = _(" - Press Ctrl+Alt+G to release grab");
++        grab = _(" - Press Ctrl+G to release grab");
+     }
+ 
+     if (is_paused) {
+@@ -1092,6 +1092,11 @@ static gboolean gd_key_event(GtkWidget *widget, GdkEventKey *key, void *opaque)
+     GtkDisplayState *s = vc-&gt;s;
+     int qcode;
+ 
++    int handled = 0;
++    int keydown = 0;
++    static int ralt_down = 0;
++    static int lalt_down = 0;
++
+     if (s-&gt;ignore_keys) {
+         s-&gt;ignore_keys = (key-&gt;type == GDK_KEY_PRESS);
+         return TRUE;
+@@ -1117,6 +1122,486 @@ static gboolean gd_key_event(GtkWidget *widget, GdkEventKey *key, void *opaque)
+     }
+ 
+     qcode = gd_map_keycode(key-&gt;hardware_keycode);
++    handled = 0;
++    keydown = (key-&gt;type == GDK_KEY_PRESS);
++    //printf("%d, %d\n", qcode, keydown);
++    switch (qcode) {
++    case 3: // LALT
++        lalt_down = keydown;
++        return FALSE;
++    case 4: // RALT
++        ralt_down = keydown;
++        return FALSE;
++    case 117: // LCTRL
++        // Escape
++        //qkbd_state_key_event(vc-&gt;gfx.kbd, 8, keydown);
++
++        // LATL
++        qkbd_state_key_event(vc-&gt;gfx.kbd, 3, keydown);
++        return TRUE;
++    case 23: // 'q'
++        if (lalt_down) {
++            // ':'
++            if (keydown) {
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 2, keydown);
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 45, keydown);
++            }
++            else {
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 45, keydown);
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 2, keydown);
++            }
++            handled = 1;
++        }
++        if (ralt_down) {
++            // ';'
++            qkbd_state_key_event(vc-&gt;gfx.kbd, 45, keydown);
++            handled = 1;
++        }
++        break;
++    case 24: // 'w'
++        if (lalt_down) {
++            // '/'
++            qkbd_state_key_event(vc-&gt;gfx.kbd, 58, keydown);
++            handled = 1;
++        }
++        if (ralt_down) {
++            // up
++            qkbd_state_key_event(vc-&gt;gfx.kbd, 100, keydown);
++            handled = 1;
++        }
++        break;
++    case 25: // 'e'
++        if (lalt_down) {
++            // '_'
++            if (keydown) {
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 2, keydown);
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 19, keydown);
++            }
++            else {
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 19, keydown);
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 2, keydown);
++            }
++            handled = 1;
++        }
++        break;
++    case 26: // 'r'
++        if (lalt_down) {
++            // '-'
++            qkbd_state_key_event(vc-&gt;gfx.kbd, 19, keydown);
++            handled = 1;
++        }
++        if (ralt_down) {
++            // '~'
++            if (keydown) {
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 2, keydown);
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 47, keydown);
++            }
++            else {
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 47, keydown);
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 2, keydown);
++            }
++            handled = 1;
++        }
++        break;
++    case 27: // 't'
++        if (lalt_down) {
++            // '('
++            if (keydown) {
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 2, keydown);
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 17, keydown);
++            }
++            else {
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 17, keydown);
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 2, keydown);
++            }
++            handled = 1;
++        }
++        if (ralt_down) {
++            // '['
++            qkbd_state_key_event(vc-&gt;gfx.kbd, 33, keydown);
++            handled = 1;
++        }
++        break;
++    case 28: // 'y'
++        if (lalt_down) {
++            // ')'
++            if (keydown) {
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 2, keydown);
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 18, keydown);
++            }
++            else {
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 18, keydown);
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 2, keydown);
++            }
++            handled = 1;
++        }
++        if (ralt_down) {
++            // ']'
++            qkbd_state_key_event(vc-&gt;gfx.kbd, 34, keydown);
++            handled = 1;
++        }
++        break;
++    case 29: // 'u'
++        if (lalt_down) {
++            // '1'
++            qkbd_state_key_event(vc-&gt;gfx.kbd, 9, keydown);
++            handled = 1;
++        }
++        if (ralt_down) {
++            // '%'
++            if (keydown) {
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 2, keydown);
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 13, keydown);
++            }
++            else {
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 13, keydown);
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 2, keydown);
++            }
++            handled = 1;
++        }
++        break;
++    case 30: // 'i'
++        if (lalt_down) {
++            // '2'
++            qkbd_state_key_event(vc-&gt;gfx.kbd, 10, keydown);
++            handled = 1;
++        }
++        if (ralt_down) {
++            // PageUp
++            qkbd_state_key_event(vc-&gt;gfx.kbd, 96, keydown);
++            handled = 1;
++        }
++        break;
++    case 31: // 'o'
++        if (lalt_down) {
++            // '3'
++            qkbd_state_key_event(vc-&gt;gfx.kbd, 11, keydown);
++            handled = 1;
++        }
++        if (ralt_down) {
++            // '\\'
++            qkbd_state_key_event(vc-&gt;gfx.kbd, 48, keydown);
++            handled = 1;
++        }
++        break;
++    case 32: // 'p'
++        if (lalt_down) {
++            // '0'
++            qkbd_state_key_event(vc-&gt;gfx.kbd, 18, keydown);
++            handled = 1;
++        }
++        break;
++    case 36: // 'a'
++        if (lalt_down) {
++            // '@'
++            if (keydown) {
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 2, keydown);
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 10, keydown);
++            }
++            else {
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 10, keydown);
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 2, keydown);
++            }
++            handled = 1;
++        }
++        if (ralt_down) {
++            // LEFT
++            qkbd_state_key_event(vc-&gt;gfx.kbd, 99, keydown);
++            handled = 1;
++        }
++        break;
++    case 37: // 's'
++        if (lalt_down) {
++            // '\''
++            qkbd_state_key_event(vc-&gt;gfx.kbd, 46, keydown);
++            handled = 1;
++        }
++        if (ralt_down) {
++            // DOWN
++            qkbd_state_key_event(vc-&gt;gfx.kbd, 101, keydown);
++            handled = 1;
++        }
++        break;
++    case 38: // 'd'
++        if (lalt_down) {
++            // '"'
++            if (keydown) {
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 2, keydown);
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 46, keydown);
++            }
++            else {
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 46, keydown);
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 2, keydown);
++            }
++            handled = 1;
++        }
++        if (ralt_down) {
++            // RIGHT
++            qkbd_state_key_event(vc-&gt;gfx.kbd, 102, keydown);
++            handled = 1;
++        }
++        break;
++    case 39: // 'f'
++        if (lalt_down) {
++            // '+'
++            if (keydown) {
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 2, keydown);
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 20, keydown);
++            }
++            else {
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 20, keydown);
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 2, keydown);
++            }
++            handled = 1;
++        }
++        if (ralt_down) {
++            // '&amp;'
++            if (keydown) {
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 2, keydown);
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 15, keydown);
++            }
++            else {
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 15, keydown);
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 2, keydown);
++            }
++            handled = 1;
++        }
++        break;
++    case 40: // 'g'
++        if (lalt_down) {
++            // '*'
++            if (keydown) {
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 2, keydown);
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 16, keydown);
++            }
++            else {
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 16, keydown);
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 2, keydown);
++            }
++            handled = 1;
++        }
++        if (ralt_down) {
++            // '{'
++            if (keydown) {
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 2, keydown);
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 33, keydown);
++            }
++            else {
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 33, keydown);
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 2, keydown);
++            }
++            handled = 1;
++        }
++        break;
++    case 41: // 'h'
++        if (lalt_down) {
++            // '#'
++            if (keydown) {
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 2, keydown);
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 11, keydown);
++            }
++            else {
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 11, keydown);
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 2, keydown);
++            }
++            handled = 1;
++        }
++        if (ralt_down) {
++            // '}'
++            if (keydown) {
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 2, keydown);
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 34, keydown);
++            }
++            else {
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 34, keydown);
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 2, keydown);
++            }
++            handled = 1;
++        }
++        break;
++    case 42: // 'j'
++        if (lalt_down) {
++            // '4'
++            qkbd_state_key_event(vc-&gt;gfx.kbd, 12, keydown);
++            handled = 1;
++        }
++        if (ralt_down) {
++            // HOME
++            qkbd_state_key_event(vc-&gt;gfx.kbd, 95, keydown);
++            handled = 1;
++        }
++        break;
++    case 43: // 'k'
++        if (lalt_down) {
++            // '5'
++            qkbd_state_key_event(vc-&gt;gfx.kbd, 13, keydown);
++            handled = 1;
++        }
++        if (ralt_down) {
++            // PageDown
++            qkbd_state_key_event(vc-&gt;gfx.kbd, 97, keydown);
++            handled = 1;
++        }
++        break;
++    case 44: // 'l'
++        if (lalt_down) {
++            // '6'
++            qkbd_state_key_event(vc-&gt;gfx.kbd, 14, keydown);
++            handled = 1;
++        }
++        if (ralt_down) {
++            // End
++            qkbd_state_key_event(vc-&gt;gfx.kbd, 98, keydown);
++            handled = 1;
++        }
++        break;
++    case 49: // 'z'
++        if (lalt_down) {
++            // '!'
++            if (keydown) {
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 2, keydown);
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 9, keydown);
++            }
++            else {
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 9, keydown);
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 2, keydown);
++            }
++            handled = 1;
++        }
++        if (ralt_down) {
++            // '|'
++            if (keydown) {
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 2, keydown);
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 48, keydown);
++            }
++            else {
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 48, keydown);
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 2, keydown);
++            }
++            handled = 1;
++        }
++        break;
++    case 50: // 'x'
++        if (lalt_down) {
++            // '?'
++            if (keydown) {
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 2, keydown);
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 58, keydown);
++            }
++            else {
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 58, keydown);
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 2, keydown);
++            }
++            handled = 1;
++        }
++        break;
++    case 51: // 'c'
++        if (lalt_down) {
++            // ','
++            qkbd_state_key_event(vc-&gt;gfx.kbd, 56, keydown);
++            handled = 1;
++        }
++        if (ralt_down) {
++            // '`'
++            qkbd_state_key_event(vc-&gt;gfx.kbd, 47, keydown);
++            handled = 1;
++        }
++        break;
++    case 52: // 'v'
++        if (lalt_down) {
++            // '.'
++            qkbd_state_key_event(vc-&gt;gfx.kbd, 57, keydown);
++            handled = 1;
++        }
++        if (ralt_down) {
++            // '&lt;'
++            if (keydown) {
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 2, keydown);
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 56, keydown);
++            }
++            else {
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 56, keydown);
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 2, keydown);
++            }
++            handled = 1;
++        }
++        break;
++    case 53: // 'b'
++        if (lalt_down) {
++            // '7'
++            qkbd_state_key_event(vc-&gt;gfx.kbd, 15, keydown);
++            handled = 1;
++        }
++        if (ralt_down) {
++            // '&gt;'
++            if (keydown) {
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 2, keydown);
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 57, keydown);
++            }
++            else {
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 57, keydown);
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 2, keydown);
++            }
++            handled = 1;
++        }
++        break;
++    case 54: // 'n'
++        if (lalt_down) {
++            // '8'
++            qkbd_state_key_event(vc-&gt;gfx.kbd, 16, keydown);
++            handled = 1;
++        }
++        if (ralt_down) {
++            // '^'
++            if (keydown) {
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 2, keydown);
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 14, keydown);
++            }
++            else {
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 14, keydown);
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 2, keydown);
++            }
++            handled = 1;
++        }
++        break;
++    case 55: // 'm'
++        if (lalt_down) {
++            // '9'
++            qkbd_state_key_event(vc-&gt;gfx.kbd, 17, keydown);
++            handled = 1;
++        }
++        if (ralt_down) {
++            // '$'
++            if (keydown) {
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 2, keydown);
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 12, keydown);
++            }
++            else {
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 12, keydown);
++                qkbd_state_key_event(vc-&gt;gfx.kbd, 2, keydown);
++            }
++            handled = 1;
++        }
++        break;
++    case 21: // BACKSPACE
++        if (lalt_down) {
++            // TAB
++            qkbd_state_key_event(vc-&gt;gfx.kbd, 22, keydown);
++            handled = 1;
++        }
++        break;
++    case 60: // SPACE
++        if (lalt_down) {
++            // '='
++            qkbd_state_key_event(vc-&gt;gfx.kbd, 20, keydown);
++            handled = 1;
++        }
++        break;
++    }
++
++    if (handled) {
++        return TRUE;
++    }
+ 
+     trace_gd_key_event(vc-&gt;label, key-&gt;hardware_keycode, qcode,
+                        (key-&gt;type == GDK_KEY_PRESS) ? "down" : "up");
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
