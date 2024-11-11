@@ -1,56 +1,13 @@
-﻿<!--
- ____________________________________________________________
-|                                                            |
-|    DESIGN + Pat Heard { http://fullahead.org }             |
-|      DATE + 2006.09.12                                     |
-| COPYRIGHT + Free use if this notice is kept in place.      |
-|____________________________________________________________|
-
--->
-
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
-    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
-<head>
-  <title>司徒的教學網站</title>
-  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
-  <meta name="author" content="fullahead.org" />
-  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
-  <meta name="description" content="A valid, XHTML 1.0 template" />
-  <meta name="robots" content="index, follow, noarchive" />
-  <meta name="googlebot" content="noarchive" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+<head><script type="text/javascript" src="../page_head.js"></script>
 
-  <link rel="shortcut icon" href="../../website.ico">
-  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
-  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
-  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
-  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
-  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
-  
-  <script type="text/javascript" src="../../scripts/shCore.js"></script>
-  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
-
-  <!-- Conditional comment to apply opacity fix for IE #content background.
-       Invalid CSS, but can be removed without harming design -->
-  <!--[if gt IE 5]>
-  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
-  <![endif]-->
-</head>
-
-<body>
-<script type="text/javascript">SyntaxHighlighter.all();</script>
-<div id="wrapper">
-<div id="content">
-<script type="text/javascript" src="../../header.js"></script>
-<div id="page">
-<h3>Linux Device Driver &gt;&gt; SystemTap</h3>
-<p><b> 解析oneshot執行流程</b></p>
-<hr size="1">
+<h3><a href="../driver.htm">驅動程式</a> - Linux Device Driver(LDD) - SystemTap - <b>解析Oneshot執行流程</b></h3>
+<hr size="1"><br>
 <p>
 參考資訊：<br>
-1. <a href="https://sourceware.org/systemtap/SystemTap_Beginners_Guide/index.html">document</a><br>
-2. <a href="https://sourceware.org/systemtap/ftp/releases/">source code</a><br><br>
+https://sourceware.org/systemtap/ftp/releases/<br>
+https://sourceware.org/systemtap/SystemTap_Beginners_Guide/index.html<br><br>
 
 main.stp
 </p>
@@ -65,7 +22,7 @@ probe oneshot
 編譯成C語言
 </p>
 <pre>
-$ stap main.stp -p3 > main.c
+$ stap main.stp -p3 &gt; main.c
 </pre><br>
 
 <p>
@@ -160,9 +117,9 @@ static int _stp_procfs_register_ctl_channel_fs(void)
 {
     ...
 #ifdef STAPCONF_PROC_OPS
-    de = proc_create(".cmd", 0600, _stp_procfs_module_dir, &_stp_ctl_proc_ops_cmd);
+    de = proc_create(".cmd", 0600, _stp_procfs_module_dir, &amp;_stp_ctl_proc_ops_cmd);
 #else
-    de = proc_create(".cmd", 0600, _stp_procfs_module_dir, &_stp_ctl_fops_cmd);
+    de = proc_create(".cmd", 0600, _stp_procfs_module_dir, &amp;_stp_ctl_fops_cmd);
 #endif
     ...
 }
@@ -202,15 +159,15 @@ static ssize_t _stp_ctl_write_cmd(struct file *file, const char __user *buf, siz
     case STP_START:
     {
         static struct _stp_msg_start st;
-        if (count &lt; sizeof(st)) {
+        if (count &amp;lt; sizeof(st)) {
             rc = 0; // ?
             goto out;
         }
-        if (copy_from_user(&amp;st, buf, sizeof(st))) {
+        if (copy_from_user(&amp;amp;st, buf, sizeof(st))) {
             rc = -EFAULT;
             goto out;
         }
-        _stp_handle_start(&st);
+        _stp_handle_start(&amp;st);
     }
     break;
     ...
@@ -224,7 +181,7 @@ _stp_handle_start() <b>runtime/transport/transport.c</b>
 static void _stp_handle_start(struct _stp_msg_start *st)
 {
     ...
-    st->res = systemtap_module_init();
+    st-&gt;res = systemtap_module_init();
     ...
 }
 </pre><br>
@@ -236,9 +193,9 @@ systemtap_module_init() <b>main.c</b>
 static int systemtap_module_init (void)
 {
     ...
-    for (i=0; i&lt;1; i++) {
-        struct stap_be_probe* stp = &amp;stap_be_probes[i];
-        if (stp->type == 0)
+    for (i=0; i&amp;lt;1; i++) {
+        struct stap_be_probe* stp = &amp;amp;stap_be_probes[i];
+        if (stp-&gt;type == 0)
             enter_be_probe(stp); /* rc = 0 */
     }
     ...
@@ -276,12 +233,4 @@ static void probe_6334(struct context * __restrict__ c)
 STP_START是由staprun發起
 </p>
 
-<p>
-<br><a href="../../driver.htm">返回上一頁</a>
-</p>
-
-</div>
-</div>
-</div>
-</body>
-</html>
+<br><script type="text/javascript" src="../tail.js"></script>
