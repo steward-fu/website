@@ -1,0 +1,77 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../driver.htm">驅動程式</a> - Linux Device Driver(LDD) - Fanotify - <b>監看某個特定資料夾的OPEN事件</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://stackoverflow.com/questions/20990842/fanotify-monitor-one-specific-folder-not-the-whole-filesystem<br>
+https://stackoverflow.com/questions/1835947/how-do-i-program-for-linuxs-new-fanotify-file-system-monitoring-feature<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;fcntl.h&gt;
+#include &lt;limits.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;sys/fanotify.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;sys/types.h&gt;
+
+int main(int argc, char **argv)
+{
+    int fan = -1;
+    char buf[4096] = {0};
+    char path[255] = {0};
+    char fdpath[32] = {0};
+    ssize_t buflen = 0, linklen = 0;
+    struct fanotify_event_metadata *metadata = NULL;
+
+    fan = fanotify_init(FAN_CLASS_NOTIF, O_RDONLY);
+    fanotify_mark(fan, FAN_MARK_ADD, FAN_OPEN | FAN_EVENT_ON_CHILD, AT_FDCWD, "/tmp");
+
+    while (1) {
+        buflen = read(fan, buf, sizeof(buf));
+        metadata = (struct fanotify_event_metadata*)&amp;buf;
+
+        while (FAN_EVENT_OK(metadata, buflen)) {
+            if (metadata-&gt;mask &amp; FAN_Q_OVERFLOW) {
+                continue;
+            }
+            sprintf(fdpath, "/proc/self/fd/%d", metadata-&gt;fd);
+            linklen = readlink(fdpath, path, sizeof(path) - 1);
+            path[linklen] = '\0';
+            printf("%s opened by process %d.\n", path, (int)metadata-&gt;pid);
+            close(metadata-&gt;fd);
+            metadata = FAN_EVENT_NEXT(metadata, buflen);
+        }
+    }
+}
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ gcc main.c -o test
+$ sudo ./test
+</pre><br>
+
+<p>
+接著在另一個視窗輸入如下命令
+</p>
+<pre>
+$ touch /tmp/test
+</pre><br>
+
+<p>
+結果
+</p>
+<pre>
+/tmp/test opened by process 15410.
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
