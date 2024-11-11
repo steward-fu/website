@@ -1,0 +1,57 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../driver.htm">驅動程式</a> - Linux Device Driver(LDD) - <b>如何使用Sysfs</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://www.kernel.org/doc/html/latest/filesystems/sysfs.html<br><br>
+
+範例：
+</p>
+<pre class="brush:cpp">
+static ssize_t test_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+    return sprintf(buf, "%d\n", 0x1234);
+}
+
+static ssize_t test_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+{
+    int rc = -1;
+    unsigned long v = 0;
+
+    rc = kstrtoul(buf, 0, &amp;v);
+    if (rc) {
+        return rc;
+    }
+
+    printk("set value: %ld\n", v);
+    return count;
+}
+static DEVICE_ATTR_RW(test);
+
+static int xxx_probe(struct platform_device *pdev)
+{
+    // ...
+    device_create_file(&amp;pdev-&gt;dev, &amp;dev_attr_test);
+}
+
+static int xxx_remove(struct platform_device *pdev)
+{
+    // ...
+    device_remove_file(&amp;pdev-&gt;dev, &amp;dev_attr_test);
+}
+</pre><br>
+
+<p>
+用法：
+</p>
+<pre>
+$ cat /sys/devices/xxx/test
+    0x1234
+
+$ echo 0x1234 &gt; /sys/devices/xxx/test
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
