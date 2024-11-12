@@ -1,0 +1,71 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../driver.htm">驅動程式</a> - Linux Device Driver(LDD) - <b>Kernel command line(CONFIG_CMDLINE)加上"--"</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://www.kernel.org/doc/html/latest/admin-guide/kernel-parameters.html<br><br>
+
+在Kernel command line加上"--"，代表"--"後面的參數是要傳遞給init用的，如下範例：
+</p>
+<pre>
+CONFIG_CMDLINE="console=ttyS1,115200 rootwait root=/dev/mmcblk0p1 ro fstype=vfat init=/mininit -- test1=0 test2=1"
+</pre><br>
+
+<p>
+init/main.c
+</p>
+<pre class="brush:cpp">
+/* Anything after -- gets handed straight to init. */
+static int __init set_init_arg(char *param, char *val, const char *unused, void *arg)
+{
+    unsigned int i;
+
+    if (panic_later)
+        return 0;
+
+    repair_env_string(param, val, unused, NULL);
+
+    for (i = 0; argv_init[i]; i++) {
+        if (i == MAX_INIT_ARGS) {
+            panic_later = "init";
+            panic_param = param;
+            return 0;
+        }
+    }
+    argv_init[i] = param;
+    printk("%s, param %d: %s\n", __func__, i, param);
+    return 0;
+}
+</pre>
+<p>
+set_init_arg()會解析"--"後面的參數<br><br>
+
+把傳遞給init的參數列印出來
+</p>
+<pre class="brush:cpp">
+static int run_init_process(const char *init_filename)
+{
+    argv_init[0] = init_filename;
+
+    printk("argv[1]: %s\n", argv_init[1]);
+    printk("argv[2]: %s\n", argv_init[2]);
+    return do_execve(getname_kernel(init_filename), (const char __user *const __user *)argv_init, (const char __user *const __user *)envp_init);
+}
+</pre><br>
+
+<p>
+結果
+</p>
+<pre>
+[    0.000000] Kernel command line: console=ttyS1,115200 rootwait root=/dev/mmcblk0p1 ro fstype=vfat init=/mininit -- test1=0 test2=1
+[    0.000000] set_init_arg, param 1: test1=0
+[    0.000000] set_init_arg, param 2: test2=1
+...
+[    1.320000] argv[1]: test1=0
+[    1.320000] argv[2]: test2=1
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
