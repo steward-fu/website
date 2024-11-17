@@ -1,0 +1,71 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../driver.htm">驅動程式</a> - Linux Device Driver(LDD) - <b>解決Unknown relocation: 10問題</b></h3>
+<hr size="1"><br>
+<p>
+問題如下：
+</p>
+<pre>
+# insmod test.ko 
+[    7.175590] hello: unknown relocation: 10
+[    7.206189] hello: unknown relocation: 10
+insmod: can't insert 'test.ko': invalid module format
+</pre><br>
+
+<p>
+定位到位置在<b>arch/arm/kernel/module.c</b>
+</p>
+<pre class="brush:cpp">
+    default:
+      pr_err("%s: unknown relocation: %u\n",
+             module-&gt;name, ELF32_R_TYPE(rel-&gt;r_info));
+      return -ENOEXEC;
+    }
+  }
+  return 0;
+}
+</pre><br>
+
+<p>
+定義值如下：
+</p>
+<pre class="brush:cpp">
+#define R_ARM_THM_CALL 10
+</pre><br>
+
+<p>
+往回找一下，發現在同一段
+</p>
+<pre class="brush:cpp">
+#ifdef CONFIG_THUMB2_KERNEL
+  case R_ARM_THM_CALL:
+  case R_ARM_THM_JUMP24:
+</pre><br>
+
+<p>
+THUMB2沒有被Enable<br>
+<img src="ldd_fix_thumb2/1.jpg" class="maxSize"><br>
+Enable後，再度編譯Kernel，出現很多編譯問題...<br><br>
+
+最後，司徒發現原來是export造成的問題，原本的export如下：
+</p>
+<pre>
+export ARCH=arm
+export CROSS=arm-linux-gnueabihf-
+export CC=${CROSS}gcc
+export LD=${CROSS}ld
+export AS=${CROSS}as
+export CXX=${CROSS}g++
+</pre><br>
+
+<p>
+改成如下即可
+</p>
+<pre>
+export ARCH=arm
+export CROSS_COMPILE=arm-linux-gnueabihf-
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

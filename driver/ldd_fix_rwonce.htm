@@ -1,0 +1,37 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../driver.htm">驅動程式</a> - Linux Device Driver(LDD) - <b>解決Fatal error: asm/rwonce.h file not found問題</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://lore.kernel.org/lkml/CAK7LNAQ8h7zxhfndBqYRWXkaWVynH7GpBvDPLcVMZ1VEyUUX7A@mail.gmail.com/T/<br><br>
+
+問題如下：
+</p>
+<pre>
+In file included from samples/bpf/xdp_adjust_tail_kern.c:15:
+In file included from ./include/linux/in.h:19:
+In file included from ./include/uapi/linux/in.h:24:
+In file included from ./include/linux/socket.h:8:
+In file included from ./include/linux/uio.h:8:
+In file included from ./include/linux/kernel.h:8:
+In file included from ./include/linux/linkage.h:7:
+In file included from ./include/linux/export.h:43:
+./include/linux/compiler.h:248:10: fatal error: 'asm/rwonce.h' file not found
+#include &lt;asm/rwonce.h&gt;
+         ^~~~~~~~~~~~~~
+1 error generated.
+^Cmake[1]: *** [samples/bpf/Makefile:315: samples/bpf/xdp_adjust_tail_kern.o] Interrupt
+</pre><br>
+
+<p>
+解法如下：
+</p>
+<pre>
+$ vim tools/bpf/Makefile +11
+    CFLAGS += -Wall -O2 -I$(srctree)/usr/include
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

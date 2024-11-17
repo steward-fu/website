@@ -1,0 +1,48 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../driver.htm">驅動程式</a> - Linux Device Driver(LDD) - <b>如何替換開機圖片</b></h3>
+<hr size="1"><br>
+<p>
+1. 把圖片轉成ppm(224色)並且放到<b>drivers/video/logo/logo_xxx_clut224.ppm</b><br>
+2. drivers/video/logo/Makefile
+</p>
+<pre>
+obj-$(CONFIG_LOGO_XXX_CLUT224) += logo_xxx_clut224.o
+</pre><br>
+
+<p>
+3. drivers/video/logo/Kconfig
+</p>
+<pre>
+config LOGO_XXX_CLUT224
+    bool "xxx logo"
+    default y
+</pre><br>
+
+<p>
+4. drivers/video/logo/logo.c
+</p>
+<pre class="brush:cpp">
+const struct linux_logo * __init_refok fb_find_logo(int depth)
+{
+    ...
+    #ifdef CONFIG_LOGO_XXX_CLUT224
+        logo = &amp;logo_xxx_clut224;
+    #endif
+    ...
+}
+</pre><br>
+
+<p>
+5. 如果發生找不到該變數時，修改<b>drivers/video/logo/logo_xxx_clut224.c</b>的變數名稱成<b>logo_linux_clut224</b>
+</p>
+<pre class="brush:cpp">
+const struct linux_logo logo_linux_clut224 __initconst = {
+</pre>
+<p>
+<img src="ldd_boot_logo/1.jpg" class="maxSize"><br>
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

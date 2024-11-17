@@ -1,0 +1,53 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../driver.htm">驅動程式</a> - Linux Device Driver(LDD) - <b>解決Error: test_attr__enabled undeclared問題</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/nevermosby/linux-bpf-learning/blob/master/bpf/perf-sys.h<br><br>
+
+問題如下：
+</p>
+<pre>
+$ make M=samples/bpf
+    make -C /usr/src/linux-source-4.19/samples/bpf/../../tools/lib/bpf/ RM='rm -rf' LDFLAGS= srctree=/usr/src/linux-source-4.19/samples/bpf/../../ O=
+    Warning: Kernel ABI header at 'tools/include/uapi/linux/bpf.h' differs from latest version at 'include/uapi/linux/bpf.h'
+    Warning: Kernel ABI header at 'tools/include/uapi/linux/netlink.h' differs from latest version at 'include/uapi/linux/netlink.h'
+      HOSTCC  samples/bpf/bpf_load.o
+    In file included from ./tools/perf/perf-sys.h:9,
+                     from samples/bpf/bpf_load.c:29:
+    ./tools/perf/perf-sys.h: In function ‘sys_perf_event_open’:
+    ./tools/perf/perf-sys.h:68:15: error: ‘test_attr__enabled’ undeclared (first use in this function)
+      if (unlikely(test_attr__enabled))
+                   ^~~~~~~~~~~~~~~~~~
+    ./tools/include/linux/compiler.h:74:43: note: in definition of macro ‘unlikely’
+     # define unlikely(x)  __builtin_expect(!!(x), 0)
+                                               ^
+    ./tools/perf/perf-sys.h:68:15: note: each undeclared identifier is reported only once for each function it appears in
+      if (unlikely(test_attr__enabled))
+                   ^~~~~~~~~~~~~~~~~~
+    ./tools/include/linux/compiler.h:74:43: note: in definition of macro ‘unlikely’
+     # define unlikely(x)  __builtin_expect(!!(x), 0)
+                                               ^
+    In file included from samples/bpf/bpf_load.c:29:
+    ./tools/perf/perf-sys.h:69:3: warning: implicit declaration of function ‘test_attr__open’ [-Wimplicit-function-declaration]
+       test_attr__open(attr, pid, cpu, fd, group_fd, flags);
+       ^~~~~~~~~~~~~~~
+    make[1]: *** [scripts/Makefile.host:107: samples/bpf/bpf_load.o] Error 1
+    make: *** [Makefile:1564: _module_samples/bpf] Error 2
+</pre><br>
+
+<p>
+解法如下：
+</p>
+<pre>
+$ vim tools/perf/perf-sys.h
+    67  #ifdef HAVE_ATTR_TEST
+    68      //if (unlikely(test_attr__enabled))
+    69      //test_attr__open(attr, pid, cpu, fd, group_fd, flags);
+    70  #endif
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
