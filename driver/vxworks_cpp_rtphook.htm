@@ -2,12 +2,11 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head><script type="text/javascript" src="../page_head.js"></script>
 
-<h3><a href="../driver.htm">驅動程式</a> - VxWorks - 23.09 - C/C++ - <b>Task Hook</b></h3>
+<h3><a href="../driver.htm">驅動程式</a> - VxWorks - C/C++ - <b>Register RTP Hook</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
 https://zhuanlan.zhihu.com/p/597577575<br>
-https://cloud.tencent.com/developer/article/1460923<br>
 https://studies.ac.upc.edu/doctorat/ENGRAP/VxWorks-device-drivers.htm<br>
 https://forums.windriver.com/t/vxworks-software-development-kit-sdk/43<br>
 https://mail.prz-rzeszow.pl/~ssamolej/vxworks/vxworks_kernel_programmers_guide_6.6.pdf<br>
@@ -18,48 +17,37 @@ main.c
 </p>
 <pre class="brush:cpp">
 #include &lt;stdio.h&gt;
-#include &lt;taskLib.h&gt;
-#include &lt;taskHookLib.h&gt;
-#include &lt;private/taskLibP.h&gt;
+#include &lt;private/rtpLibP.h&gt;
 
-int create_hook(WIND_TCB *pNewTcb)
+STATUS create_hook(const char *rtpFileName, const char *argv[], const char *envp[], 
+    int priority, size_t uStackSize, int options, int taskOptions)
 {
+    printf("%s, %s\n", __func__, rtpFileName);
     return OK;
 }
 
-void cont_hook(WIND_TCB *pNewTcb)
+void delete_hook(const RTP_ID rtpId, const int exitCode)
 {
+    printf("%s\n", __func__);
 }
 
-void stop_hook(WIND_TCB *pNewTcb)
+void init_hook(const RTP_ID rtpId)
 {
+    printf("%s\n", __func__);
 }
 
-int switch_hook(WIND_TCB *pOldTcb, WIND_TCB *pNewTcb)
+STATUS post_hook(const RTP_ID rtpId)
 {
-    return OK;
-}
-
-void swap_hook(WIND_TCB *pOldTcb, WIND_TCB *pNewTcb)
-{
-}
-
-int delete_hook(WIND_TCB *pTcb)
-{
-    WIND_TCB *self = (WIND_TCB*)taskIdSelf();
-
-    printf("%s: %s\n", __func__, self-&gt;objCore.name);
+    printf("%s\n", __func__);
     return OK;
 }
 
 int add_hook(void)
 {
-    taskCreateHookAdd(create_hook);
-    taskContHookAdd(cont_hook);
-    taskStopHookAdd(stop_hook);
-    taskSwapHookAdd(switch_hook);
-    taskSwitchHookAdd(switch_hook);
-    taskDeleteHookAdd(delete_hook);
+    rtpPreCreateHookAdd(create_hook, FALSE);
+    rtpInitCompleteHookAdd(init_hook, FALSE);
+    rtpPostCreateHookAdd(post_hook, FALSE);
+    rtpDeleteHookAdd(delete_hook, FALSE);
     return OK;
 }
 </pre><br>
@@ -95,7 +83,9 @@ $ wr-cc main.c -o main -dkm
 -&gt; cmd
 
 [vxWorks *]# app
-    delete_hook: tJobTask
+    create_hook, ./app
+    post_hook
+    init_hook
 
 [vxWorks *]# C
 

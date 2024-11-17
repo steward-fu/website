@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head><script type="text/javascript" src="../page_head.js"></script>
 
-<h3><a href="../driver.htm">驅動程式</a> - VxWorks - 23.09 - C/C++ - <b>Syscall Hook (Entry and Exit)</b></h3>
+<h3><a href="../driver.htm">驅動程式</a> - VxWorks - C/C++ - <b>Register Task Hook</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
@@ -18,60 +18,60 @@ main.c
 </p>
 <pre class="brush:cpp">
 #include &lt;stdio.h&gt;
-#include &lt;string.h&gt;
-#include &lt;syscall.h&gt;
-#include &lt;syscallLib.h&gt;
-#include &lt;private/rtpLibP.h&gt;
-#include &lt;private/syscallLibP.h&gt;
-#include &lt;syscallTbl.h&gt;
+#include &lt;taskLib.h&gt;
+#include &lt;taskHookLib.h&gt;
+#include &lt;private/taskLibP.h&gt;
 
-static int cc = 0;
-
-int entry_hook(const SYSCALL_ENTRY_STATE *pState)
+int create_hook(WIND_TCB *pNewTcb)
 {
-    if (pState-&gt;scn == SCN__open) {
-        const char *p = (const char *)pState-&gt;args[0];
-
-        if ((p[0] == 'm') &amp;&amp; (p[1] == 'a') &amp;&amp; (p[2] == 'i') &amp;&amp; (p[3] == 'n')) {
-            cc = 100;
-        }
-    }
     return OK;
 }
 
-void exit_hook(long returnValue)
+void cont_hook(WIND_TCB *pNewTcb)
 {
 }
 
-int print_cc(void)
+void stop_hook(WIND_TCB *pNewTcb)
 {
-    printf("cc %d\n", cc);
+}
+
+int switch_hook(WIND_TCB *pOldTcb, WIND_TCB *pNewTcb)
+{
+    return OK;
+}
+
+void swap_hook(WIND_TCB *pOldTcb, WIND_TCB *pNewTcb)
+{
+}
+
+int delete_hook(WIND_TCB *pTcb)
+{
+    WIND_TCB *self = (WIND_TCB*)taskIdSelf();
+
+    printf("%s: %s\n", __func__, self-&gt;objCore.name);
     return OK;
 }
 
 int add_hook(void)
 {
-    syscallEntryHookAdd(entry_hook, FALSE); 
-    syscallExitHookAdd(exit_hook, FALSE); 
+    taskCreateHookAdd(create_hook);
+    taskContHookAdd(cont_hook);
+    taskStopHookAdd(stop_hook);
+    taskSwapHookAdd(switch_hook);
+    taskSwitchHookAdd(switch_hook);
+    taskDeleteHookAdd(delete_hook);
     return OK;
 }
-</pre>
-<p>
-P.S. 不能在syscallEntryHook()裏面呼叫任何libc的函數<br><br>
+</pre><br>
 
+<p>
 app.c
 </p>
 <pre class="brush:cpp">
 #include &lt;stdio.h&gt;
-#include &lt;unistd.h&gt;
-#include &lt;fcntl.h&gt;
 
 int main(int argc, char **argv)
 {
-    int fd = -1;
-
-    fd = open("main", O_RDONLY);
-    close(fd);
     return 0;
 }
 </pre><br>
@@ -92,17 +92,12 @@ $ wr-cc main.c -o main -dkm
 
 -&gt; add_hook
 
--&gt; print_cc
-    cc 0
-
 -&gt; cmd
 
 [vxWorks *]# app
+    delete_hook: tJobTask
 
 [vxWorks *]# C
-
--&gt; print_cc
-    cc 100
 
 -&gt; unld "main"
 </pre>
