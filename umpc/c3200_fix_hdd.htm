@@ -1,0 +1,46 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../umpc.htm">微電腦</a> - SHARP Zaurus SL-C3200 - <b>解決HDD not initialized問題</b></h3>
+<hr size="1"><br>
+<p>
+問題的原因在於，Zaurus開機會檢查<b>/dev/hda1</b>以及<b>/dev/hda2</b>的<b>.sys</b>資料夾檔案，如果發現不存在，就會顯示<b>HDD not initialized</b>並且停止執行，可以使用如下方式解決：<br>
+1. 解開harddisk.zip(在recovery_c3200.zip)並且複製到SDCard<br>
+2. 使用Cacko安裝檔案進入<b>console shell</b>模式<br>
+3. 使用如下方式重新格式化
+</p>
+<pre>
+# fdisk /dev/hda
+    /dev/hda1  Start 1  End 20 83 System Linux
+    /dev/hda2  Start 21 End 40 83 System Linux
+    /dev/hda3  Start 41 End 11905 c System Win95 FAT32 (LBA)
+</pre>
+<p>
+4. 重新開機並且再次進入Cacko <b>console shell</b>模式<br>
+5. 使用如下方式複製檔案
+</p>
+<pre>
+# mke2fs -j /dev/hda1
+# mke2fs -j /dev/hda2
+# mkfs.vfat -F 32 /dev/hda3
+# mkdir /mnt/hda
+
+# mount /dev/hda1 /mnt/hda
+# mkdir /mnt/hda/.sys
+# cp /mnt/card/hdd1sys/hdimage2.tgz /mnt/hda/.sys/
+# cp /mnt/card/hdd1sys/hdlist1.dat /mnt/hda/.sys/
+# umount /mnt/hda
+
+# mount /dev/hda2 /mnt/hda
+# mkdir /mnt/hda/.sys
+# cp /mnt/card/hdd2sys/contlist.dat /mnt/hda/.sys/
+# cp /mnt/card/hdd2sys/hdlist2.dat /mnt/hda/.sys/
+# cp /mnt/card/hdd2sys/hdlist3.dat /mnt/hda/.sys/
+# umount /mnt/hda
+
+# rm -rf /mnt/hda
+# reboot
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
