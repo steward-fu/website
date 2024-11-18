@@ -1,0 +1,96 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../system.htm">系統</a> - VxWorks - <b>如何透過GDB Debug</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://forums.windriver.com/t/vxworks-software-development-kit-sdk/43<br>
+https://d13321s3lxgewa.cloudfront.net/downloads/wrsdk-vxworks7-docs/2309/README_qemu.html<br><br>
+
+下載SDK
+</p>
+<pre>
+$ cd
+$ wget https://d13321s3lxgewa.cloudfront.net/wrsdk-vxworks7-qemu-1.13.2.tar.bz2
+$ tar xvf wrsdk-vxworks7-qemu-1.13.2.tar.bz2
+$ source ~/wrsdk-vxworks7-qemu/sdkenv.sh
+$ wr-cc --version
+    clang version 16.0.0.1
+</pre><br>
+
+<p>
+app.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+
+int main(int argc, char **argv)
+{
+    printf("GDB Test\n");
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ wr-cc app.c -o app -ggdb
+</pre><br>
+
+<p>
+啟動QEMU
+</p>
+<pre>
+$ cd
+$ sudo python3 -m pyftpdlib -p 21 -u target -P vxTarget -i 127.0.0.1 -d $HOME -w
+
+$ cd ~/wrsdk-vxworks7-qemu
+$ qemu-system-x86_64 -m 512M -kernel vxsdk/bsps/itl_generic_3_0_0_3/vxWorks \
+    -net nic -net user,hostfwd=tcp::1534-:1534,hostfwd=tcp::2345-:2345 \
+    -display none -serial stdio -monitor none \
+    -append "bootline:fs(0,0)host:vxWorks h=10.0.2.2 e=10.0.2.15 u=target pw=vxTarget o=gei0"
+</pre><br>
+
+<p>
+GDB Debug
+</p>
+<pre>
+$ gdb
+
+(gdb) target extended-remote tcp:127.0.0.1:2345
+    Remote debugging using tcp:127.0.0.1:2345
+
+(gdb) file app
+    Reading symbols from app...
+
+(gdb) b main
+    Breakpoint 1 at 0x201416: file app.c, line 5.
+
+(gdb) set remote exec-file /host.host/app
+(gdb) r
+    Starting program: /home/steward/Downloads/app 
+    Reading /lib/ld64.so.1 from remote target...
+    warning: File transfers from remote targets can be slow. Use "set sysroot" to access files locally instead.
+    warning: Unable to find dynamic linker breakpoint function.
+    GDB will be unable to debug shared library initializers
+    and track explicitly loaded dynamic code.
+    Reading /host.host/app from remote target...
+    Reading /lib/libc.so.1 from remote target...
+
+    Breakpoint 1, main (argc=1, argv=0x266000) at app.c:5
+    5	    printf("GDB Test\n");
+
+(gdb) list
+    1	#include &lt;stdio.h&gt;
+    2	
+    3	int main(int argc, char **argv)
+    4	{
+    5	    printf("GDB Test\n");
+    6	    return 0;
+    7	}
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
