@@ -1,0 +1,90 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../system.htm">系統</a> - VxWorks - <b>如何透過DBG Debug</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://forums.windriver.com/t/vxworks-software-development-kit-sdk/43<br>
+https://d13321s3lxgewa.cloudfront.net/downloads/wrsdk-vxworks7-docs/2309/README_qemu.html<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;iosLib.h&gt;
+ 
+int myProbe(void)
+{
+    printf("Test\n");
+    return OK;
+}
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ source ~/wrsdk-vxworks7-qemu/sdkenv.sh
+$ wr-cc --version
+    clang version 16.0.0.1
+
+$ wr-cc main.c -o main -dkm -ggdb
+</pre><br>
+
+<p>
+啟動QEMU
+</p>
+<pre>
+$ cd
+$ sudo python3 -m pyftpdlib -p 21 -u target -P vxTarget -i 127.0.0.1 -d $HOME -w
+
+$ cd ~/wrsdk-vxworks7-qemu
+$ qemu-system-x86_64 -m 512M -kernel vxsdk/bsps/itl_generic_3_0_0_3/vxWorks \
+    -net nic -net user,hostfwd=tcp::1534-:1534,hostfwd=tcp::2345-:2345 \
+    -display none -serial stdio -monitor none \
+    -append "bootline:fs(0,0)host:vxWorks h=10.0.2.2 e=10.0.2.15 u=target pw=vxTarget o=gei0"
+</pre><br>
+
+<p>
+Debug DKM
+</p>
+<pre>
+-&gt; ld &lt; main
+-&gt; b myProbe
+-&gt; period 1,myProbe
+    Break at 0xffffffff8c5a60a0: myProbe             Task: 0xffff8000001f9810 (t1)
+
+-&gt; l
+                myProbe:
+    0xffffffff8c5a60a0  55                      PUSH           %RBP
+    0xffffffff8c5a60a1  48 89 e5                MOV            %RBP, %RSP
+    0xffffffff8c5a60a4  48 c7 c7 b6 60 5a 8c    MOV            %RDI, $0x8c5a60b6
+    0xffffffff8c5a60ab  31 c0                   XOR            %EAX, %EAX
+    0xffffffff8c5a60ad  e8 de 3f 00 f4          CALL           printf
+    0xffffffff8c5a60b2  31 c0                   XOR            %EAX, %EAX
+    0xffffffff8c5a60b4  5d                      POP            %RBP
+    0xffffffff8c5a60b5  c3                      RET            
+    0xffffffff8c5a60b6  54                      PUSH           %RSP
+    0xffffffff8c5a60b7  65 73 74                JNB            0xffffffff8c5a612f
+    value = 0 = 0x0
+
+-&gt; so
+    rax        = 0x0000000000000000   r8         = 0x0000000000000000
+    rbx        = 0x0000000000000000   r9         = 0x0000000000000000
+    rcx        = 0x0000000000000000   r10        = 0xffffffff8c5a60a0
+    rdx        = 0x0000000000000000   r11        = 0x0000000000000000
+    rsi        = 0x0000000000000000   r12        = 0x0000000000000000
+    rdi        = 0x0000000000000000   r13        = 0x0000000000000000
+    rsp        = 0xffff80000c2c2f10   r14        = 0x0000000000000000
+    rbp        = 0xffff80000c2c2f70   r15        = 0x0000000000000000
+    pc         = 0xffffffff8c5a60a1   eflags     = 0x0000000000000282
+    tlsbase    = 0xffff80000c305fb0
+    0xffffffff8c5a60a1  48 89 e5                MOV            %RBP, %RSP
+
+-&gt; c
+    Test
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
