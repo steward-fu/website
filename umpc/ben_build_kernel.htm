@@ -1,0 +1,31 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../umpc.htm">微電腦</a> - Ben Nanonote - <b>Build Kernel</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/kyak/qi-kernel/tree/jz-3.3<br><br>
+</p>
+<pre>
+$ cd
+$ wget https://github.com/steward-fu/website/releases/download/a320/cc-dx.tar.gz
+$ tar xvf cc-dx.tar.gz
+$ sudo mv a320 /opt
+$ export PATH=/opt/a320/usr/bin/:$PATH
+
+$ git clone https://github.com/kyak/qi-kernel
+$ cd qi-kernel
+$ git checkout jz-3.3
+$ export ARCH=mips
+$ export CROSS_COMPILE=mipsel-linux-
+$ make qi_lb60_defconfig
+$ make vmlinux.bin
+
+$ gzip -9 -f arch/mips/boot/vmlinux.bin
+$ mkimage -A mips -O linux -T kernel -a 0x80010000 -C gzip -e 0x`${CROSS_COMPILE}nm vmlinux | grep " kernel_entry" | cut -f1 -d ' '` -n 'Ben NanoNote Linux Kernel' -d arch/mips/boot/vmlinux.bin.gz uImage
+$ sudo usbboot -c "boot;nprog 1024 uImage 0 0 -n"
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
