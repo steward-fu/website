@@ -71,6 +71,7 @@ All of files or resources used on my website can be found from the following lin
 [![](img/photos/zipit2.jpg)](https://github.com/steward-fu/website/releases/tag/zipit-z2)
 [![](img/photos/pc-z1.jpg)](https://github.com/steward-fu/website/releases/tag/pc-z1)
 [![](img/photos/pc-t1.jpg)](https://github.com/steward-fu/website/releases/tag/pc-t1)
+[![](img/photos/m1.jpg)](https://github.com/steward-fu/website/releases/tag/m1)
 [![](img/photos/gpdwin.jpg)](https://github.com/steward-fu/website/releases/tag/gpdwin)
 [![](img/photos/gpdwin2.jpg)](https://github.com/steward-fu/website/releases/tag/gpdwin2)
 [![](img/photos/micropc.jpg)](https://github.com/steward-fu/website/releases/tag/gpdmicro)
