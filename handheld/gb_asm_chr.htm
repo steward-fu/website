@@ -1,0 +1,115 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - Game Boy - Assembly - <b>Character RAM(Tile)</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://bgb.bircd.org/<br>
+https://github.com/gbdev/rgbds<br>
+https://github.com/sinamas/gambatte<br>
+https://github.com/lancekindle/DMGreport<br><br>
+
+每個像素使用2bits表示(上下bit)<br>
+<img src="gb_asm_chr/1.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+LCDC        equ $ff40
+LCDCF_OBJ8  equ %00000000
+LCDCF_OBJON equ %00000010
+IE          equ $ffff
+IEF_VBLANK  equ %00000001
+ 
+section "vblank", rom0[$0040]
+    reti
+   
+section "lcdc", rom0[$0048]
+    reti
+   
+section "timer", rom0[$0050]
+    reti
+   
+section "serial", rom0[$0058]
+    reti
+   
+section "joypad", rom0[$0060]
+    reti
+   
+section "entry", rom0[$0100]
+    nop
+    jp _start
+   
+section "header", rom0[$0104]
+    db $ce, $ed, $66, $66, $cc, $0d, $00, $0b, $03, $73, $00, $83, $00, $0c, $00, $0d
+    db $00, $08, $11, $1f, $88, $89, $00, $0e, $dc, $cc, $6e, $e6, $dd, $dd, $d9, $99
+    db $bb, $bb, $67, $63, $6e, $0e, $ec, $cc, $dd, $dc, $99, $9f, $bb, $b9, $33, $3e
+    db "0123456789abcde"
+    db 0
+    db 0, 0
+    db 0
+    db 0
+    db 0
+    db 0
+    db 1
+    db $33
+    db 0
+    db 0
+    dw 0
+   
+_start:
+    di
+    ld sp, $ffff
+    ld a, IEF_VBLANK
+    ld [IE], a
+    ei
+
+    halt
+    halt
+
+    ld a, [LCDC]
+    or LCDCF_OBJON
+    or LCDCF_OBJ8
+    ld [LCDC], a
+
+    ld d, 16
+    ld bc, tile
+    ld hl, $8000
+copy_tile:
+    ld a, [bc]
+    ld [hl+], a
+    inc bc
+    dec d
+    jr nz, copy_tile
+
+    jp @
+ 
+tile:
+    db %11111111
+    db %11111111
+    db %01111110
+    db %01111110
+    db %00111100
+    db %00111100
+    db %00011000
+    db %00011000
+    db %00011000
+    db %00011000
+    db %00111100
+    db %00111100
+    db %01111110
+    db %01111110
+    db %11111111
+    db %11111111
+</pre>
+<p>
+每個像素使用2bits表示(上下bit)，因此，一個8x8的CHR需要複製16Bytes<br><br>
+
+完成<br>
+<img src="gb_asm_chr/2.jpg" class="maxSize"><br>
+<img src="gb_asm_chr/3.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

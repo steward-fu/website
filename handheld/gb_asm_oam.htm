@@ -1,0 +1,102 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - Game Boy - Assembly - <b>Object Attribute Memory(OAM)</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://bgb.bircd.org/<br>
+https://github.com/gbdev/rgbds<br>
+https://github.com/sinamas/gambatte<br>
+https://github.com/lancekindle/DMGreport<br><br>
+
+OBJ0~OBJ39，共40個OBJ可以使用<br>
+<img src="gb_asm_oam/1.jpg" class="maxSize"><br><br>
+
+8x8、8x16<br>
+<img src="gb_asm_oam/2.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+OAMRAM      equ $fe00
+LCDC        equ $ff40
+LCDCF_OBJ8  equ %00000000
+LCDCF_OBJON equ %00000010
+IE          equ $ffff
+IEF_VBLANK  equ %00000001
+ 
+section "vblank", rom0[$0040]
+    reti
+  
+section "lcdc", rom0[$0048]
+    reti
+  
+section "timer", rom0[$0050]
+    reti
+  
+section "serial", rom0[$0058]
+    reti
+  
+section "joypad", rom0[$0060]
+    reti
+  
+section "entry", rom0[$0100]
+    nop
+    jp _start
+  
+section "header", rom0[$0104]
+    db $ce, $ed, $66, $66, $cc, $0d, $00, $0b, $03, $73, $00, $83, $00, $0c, $00, $0d
+    db $00, $08, $11, $1f, $88, $89, $00, $0e, $dc, $cc, $6e, $e6, $dd, $dd, $d9, $99
+    db $bb, $bb, $67, $63, $6e, $0e, $ec, $cc, $dd, $dc, $99, $9f, $bb, $b9, $33, $3e
+    db "0123456789abcde"
+    db 0
+    db 0, 0
+    db 0
+    db 0
+    db 0
+    db 0
+    db 1
+    db $33
+    db 0
+    db 0
+    dw 0
+  
+_start:
+    di
+    ld sp, $ffff
+    ld a, IEF_VBLANK
+    ld [IE], a
+    ei
+
+    halt
+    halt
+
+    ld a, [LCDC]
+    or LCDCF_OBJON
+    or LCDCF_OBJ8
+    ld [LCDC], a
+
+    ld hl, OAMRAM + 0
+    ld [hl], 30
+    ld hl, OAMRAM + 1
+    ld [hl], 30
+    ld hl, OAMRAM + 2
+    ld [hl], $19
+    ld hl, OAMRAM + 3
+    ld [hl], 0
+
+    jp @
+</pre>
+<p>
+設定OBJ0的位置(y:30, x:30)、CHR(0x19)、屬性(0)，CHR其實就是一般稱呼的Tile，而Sprite則是由Tile組合而成的圖形<br><br>
+
+完成<br>
+<img src="gb_asm_oam/3.jpg" class="maxSize"><br><br>
+
+由於OAM並沒有全部被初始化，開機後的內容是隨機，這也是為何有很多雜點的原因<br>
+<img src="gb_asm_oam/4.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
