@@ -1,0 +1,82 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../driver.htm">驅動程式</a> - Linux Device Driver(LDD) - Assembly (MIPSel) - <b>開發環境</b></h3>
+<hr size="1"><br>
+<p>
+目前市面上可以購買到的MIPS開發板確實不多，司徒選定的MIPS開發板如下：<br>
+<img src="ldd_mips_asm_setup/1.jpg" class="maxSize"><br><br>
+
+需要一條USB轉UART傳輸線，目前司徒使用PL2303傳輸線：<br>
+<img src="ldd_mips_asm_setup/4.jpg" class="maxSize"><br><br>
+
+連接開發板與UART
+</p>
+<table>
+<tr><th>LinkIt Smart7688</th><th>PL2303</th></tr>
+<tr><td>GND</td><td>黑線</td></tr>
+<tr><td>P9</td><td>綠線</td></tr>
+<tr><td>P8</td><td>白線</td></tr>
+</table>
+<p>
+<img src="ldd_mips_asm_setup/2.jpg" class="maxSize"><br><br>
+
+為了避免發生驅動無法掛載的問題，需要自己編譯一次Kernel
+</p>
+<pre>
+$ cd
+$ wget https://github.com/steward-fu/website/releases/download/ldd/mips_gcc-8.30.tar.gz
+$ tar xvf mips_gcc-8.30.tar.gz
+$ sudo mv gcc-8.30 /opt/
+
+$ wget https://github.com/steward-fu/website/releases/download/ldd/mips_kernel.tar.gz
+$ tar xvf mips_kernel.tar.gz
+$ cd kernel
+$ ./run.sh
+</pre><br>
+
+<p>
+更新系統，步驟如下：<br>
+1. 準備USB隨身碟並且格式化成FAT32<br>
+2. 複製編譯後的<b>lks7688.img</b>到USB隨身碟<br>
+3. 插入USB隨身碟到LinkIt Smart7688的USB Port<br>
+<img src="ldd_mips_asm_setup/3.jpg" class="maxSize"><br>
+4. 按住WiFi按鈕<br>
+5. 接上USB電源<br> 
+6. 5秒後鬆開WiFi按鈕(第一次WiFi LED滅時)<br><br>
+
+更新過程
+</p>
+<pre>
+Register 1111 NbrPorts 1
+USB EHCI 1.00
+scanning bus 0 for devices... 2 USB Device(s) found
+       scanning bus for storage devices... 1 Storage Device(s) found
+reading lks7688.img
+.......................................................
+
+3145732 bytes read
+writing lks7688.img to flash
+................................................
+................................................
+</pre><br>
+
+<p>
+更新完成後，使用minicom(57600bps)就可以看到如下資訊：
+</p>
+<pre>
+Welcome to MT7688
+mt7688 login:
+</pre>
+<p>
+P.S. 輸入root即可進入系統<br><br>
+
+檢查一下Kernel號碼以及編譯者的資訊，如果沒有問題，那代表開發環境已經準備好了
+</p>
+<pre>
+# cat /proc/version 
+    Linux version 3.18.44 (steward@debian) (gcc version 7.4.0 (Buildroot 2019.02.4) ) #2 Tue Dec 19 07:29:26 EST 2023
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
