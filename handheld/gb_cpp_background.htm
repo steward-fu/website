@@ -1,0 +1,65 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - Game Boy - C/C++ - <b>Background</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://bgb.bircd.org/<br>
+https://github.com/mrombout/gbdk_playground<br>
+http://gbdk.sourceforge.net/doc/html/book01.html<br><br>
+
+Tile設定
+</p>
+<pre class="brush:cpp">
+void set_bkg_data(UBYTE first_tile, UBYTE nb_tiles, unsigned char *data);
+</pre>
+<p>
+第一個參數是Tile位置(0~255)<br>
+第二個參數是需要複製多少個Tile像素(0代表256個)，每個Tile像素是8x8(16 Bytes)<br>
+第三個參數是Tile來源位置<br><br>
+
+Tile指定
+</p>
+<pre class="brush:cpp">
+void set_bkg_tiles(UBYTE x, UBYTE y, UBYTE w, UBYTE h, unsigned char *tiles);
+</pre>
+<p>
+第一個參數是x位置<br>
+第二個參數是y位置<br>
+第三個參數是Tile寬(W)的數量<br>
+第四個參數是Tile高(H)的數量<br>
+第五個參數是Tile Map，大小必須是WxH，Map描述Tile的索引<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;gb/gb.h&gt;
+  
+unsigned char tile[] = {
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55,
+    0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55,
+};
+ 
+unsigned char map[] = {
+    1, 0, 1, 1, 0, 1,
+};
+ 
+void main(void)
+{
+    VBK_REG = 0;
+    set_bkg_data(0, 2, tile);
+    set_bkg_tiles(0, 8, 6, 1, map);
+    SHOW_BKG;
+}
+</pre><br>
+
+<p>
+完成<br>
+<img src="gb_cpp_background/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
