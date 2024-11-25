@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head><script type="text/javascript" src="../page_head.js"></script>
 
-<h3><a href="../driver.htm">驅動程式</a> - Linux Device Driver (LDD) - Assembly (MIPSel) - <b>Hello, world!</b></h3>
+<h3><a href="../driver.htm">驅動程式</a> - Linux Device Driver (LDD) - Assembly (ARM) - <b>Hello, world!</b></h3>
 <hr size="1"><br>
 <p>
 <b>Hello, world!</b>是一個相當經典的入門教學範例，從這個範例的框架，使用者可以一探Linux Kernel的精簡之美，當然，它主要表達的目的，更多是對於操作環境的熟悉<br><br>
@@ -10,20 +10,8 @@
 ldd.S
 </p>
 <pre class="brush:asm">
-    .set noreorder
-
     .global init_module
     .global cleanup_module
-
-    .macro push arg:req
-        addiu $sp, -4
-        sw \arg, 0($sp)
-    .endm
-
-    .macro pop arg:req
-        lw \arg, 0($sp)
-        addiu $sp, 4
-    .endm
 
     .section .modinfo, "ae"
 __UNIQUE_ID_0: .asciz "license=GPL"
@@ -37,34 +25,28 @@ msg_unload: .asciz "Unload it\n"
     .align 2
     .section .text
 init_module:
-    push $ra
-    la $a0, msg_load
-    jal printk
-    nop
-    pop $ra
-    jr $ra
-    move $v0, $0
+    push {lr}
+    ldr r0, =msg_load
+    bl printk
+    mov r0, #0
+    pop {pc}
 
 cleanup_module:
-    push $ra
-    la $a0, msg_unload
-    jal printk
-    nop
-    pop $ra 
-    jr $ra
-    move $v0, $0
+    push {lr}
+    ldr r0, =msg_unload
+    bl printk
+    pop {pc}
+    .end
 </pre>
 <p>
-<b>init_module</b>: 系統載入驅動程式時，第一時間呼叫使用<br>
-<b>cleanup_module</b>: 卸載驅動程式時，最後時間被系統呼叫使用<br><br>
-
-MIPS Assembly最擾人的地方就屬<b>Branch Delay Slot</b>，意思就是，執行Branch指令後，它的下一個指令會先被執行，然後才執行Branch指令(延遲一個指令)，這也是為何<b>jal printk</b>後面要有一個nop，如果沒有加這個nop，<b>pop $ra</b>就會被執行，導致呼叫printk後，無法回到正常的位置，而<b>jr $ra</b>指令後面的<b>move $v0, $0</b>也是這樣的意思，這是由於MIPS架構因素所致，剛接觸MIPS Assembly的使用者需要特別注意這個問題<br><br>
+<b>init_module</b>: 載入驅動程式時，系統會呼叫使用<br>
+<b>cleanup_module</b>: 卸載驅動程式時，系統會呼叫使用<br><br>
 
 Makefile
 </p>
 <pre>
-export ARCH=mips
-export CROSS_COMPILE=/opt/gcc-8.30/bin/mipsel-linux-
+export ARCH=arm
+export CROSS_COMPILE=/opt/gcc-4.9/bin/arm-linux-gnueabihf-
 export AS=${CROSS_COMPILE}as
 
 KERNEL=$(HOME)/kernel
@@ -73,7 +55,7 @@ obj-m += main.o
 main-objs:= ldd.o
 
 all:
-	$(AS) -o ldd.o ldd.S -msoft-float
+	$(AS) -o ldd.o ldd.S
 	make -C $(KERNEL) M=$(PWD) modules
 
 clean:
@@ -85,7 +67,7 @@ clean:
 </p>
 <pre>
 $ make
-    mipsel-linux-as -o ldd.o ldd.S
+    arm-linux-gnueabihf-as -o ldd.o ldd.S
     make -C kernel M=hello modules
     make[1]: Entering directory 'kernel'
         AS [M]  hello/ldd.o
@@ -97,10 +79,10 @@ $ make
     make[1]: Leaving directory 'kernel'
 </pre><br>
 <p>
-接著複製<b>main.ko</b>到USB隨身碟，將USB插入開發板，開機進入系統後，執行如下指令掛載驅動程式
+把<b>main.ko</b>放到MicroSD第一分區，進入系統後，執行如下指令
 </p>
 <pre>
-# insmod /mnt/main.ko 
+# insmod /boot/main.ko 
     Hello, world!
 </pre><br>
 

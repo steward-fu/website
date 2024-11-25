@@ -1,0 +1,67 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../driver.htm">驅動程式</a> - Linux Device Driver (LDD) - Assembly (ARM) - <b>開發環境</b></h3>
+<hr size="1"><br>
+<p>
+目前市面上，有許多ARM的開發板可以選擇使用，使用者可以選擇自己喜愛的款式，當然也可以使用QEMU測試，目前司徒選定的開發板如下：<br>
+<img src="ldd_arm_asm_setup/1.jpg" class="maxSize"><br><br>
+
+需要一條USB轉UART傳輸線，目前司徒使用PL2303傳輸線：<br>
+<img src="ldd_arm_asm_setup/2.jpg" class="maxSize"><br><br>
+
+需要焊接排針，把GND、U0-TX、U0-RX三根腳位連接到PL2303<br>
+<img src="ldd_arm_asm_setup/3.jpg" class="maxSize"><br><br>
+
+接線如下：
+</p>
+<table>
+<tr><th>PocketBeagle</th><th>PL2303</th></tr>
+<tr><td>GND</td><td>黑線</td></tr>
+<tr><td>U0-TX</td><td>白線</td></tr>
+<tr><td>U0-RX</td><td>綠線</td></tr>
+</table><br>
+
+<p>
+製作MicroSD開機系統
+</p>
+<pre>
+$ cd
+$ wget https://github.com/steward-fu/website/releases/download/ldd/arm_sdcard.img
+$ sudo dd if=arm_sdcard.img of=/dev/sdX bs=1M
+</pre><br>
+
+<p>
+將MicroSD插入PocketBeagle，連結PL2303到電腦並且開啟minicom(115200bps)，就可以看到如下畫面
+</p>
+<pre>
+Welcome to PocketBeagle
+pocketbeagle login: 
+</pre>
+<p>
+P.S. 輸入root就可以進入系統<br><br>
+
+為了避免發生驅動無法掛載的問題，需要自己編譯一次Kernel
+</p>
+<pre>
+$ cd
+$ wget https://github.com/steward-fu/website/releases/download/ldd/arm_gcc-4.9.tar.gz
+$ tar xvf arm_gcc-4.9.tar.gz
+$ sudo mv gcc-4.9 /opt
+
+$ export PATH=/opt/gcc-4.9/bin:$PATH
+$ arm-linux-gnueabihf-gcc -v
+    gcc version 4.9.4 (Linaro GCC 4.9-2017.01)
+
+$ wget https://github.com/steward-fu/website/releases/download/ldd/arm_kernel-4.14.108.tar.gz
+$ tar xvf arm_kernel-4.14.108.tar.gz
+$ cd kernel
+$ ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- make pocketbeagle_defconfig
+$ ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- make zImage dtbs -j4
+</pre>
+<p>
+P.S. 將編譯後的<b>arch/arm/boot/zImage</b>、<b>arch/arm/boot/dts/am335x-pocketbeagle.dtb</b>覆蓋到MicroSD第一分區的檔案
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

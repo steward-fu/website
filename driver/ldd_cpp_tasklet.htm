@@ -1,0 +1,81 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../driver.htm">驅動程式</a> - Linux Device Driver (LDD) - C/C++ (PocketBeagle) - <b>Tasklet</b></h3>
+<hr size="1"><br>
+<p>
+tasklet也是屬於softirq的一種，差別在於執行順序是排在softirq後面且不會有重複進入問題(reentrant)，加上不是靜態編譯，因此，不需要特別修改Kernel就可以使用，因此，是一種相當適合應用在高優先級別的延遲處理機制，當然，高優先級別的機制是不適合處理太過耗時的東西，這點還是需要特別注意<br><br>
+
+使用步驟：
+</p>
+<pre>
+1. tasklet_init()
+2. tasklet_schedule()
+3. tasklet_kill()
+</pre><br>
+
+<p>
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;linux/init.h&gt;
+#include &lt;linux/device.h&gt;
+#include &lt;linux/module.h&gt;
+#include &lt;linux/delay.h&gt;
+#include &lt;linux/kernel.h&gt;
+#include &lt;linux/errno.h&gt;
+#include &lt;linux/mm.h&gt;
+#include &lt;linux/gpio.h&gt;
+#include &lt;linux/interrupt.h&gt;
+
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("Steward Fu");
+MODULE_DESCRIPTION("Linux Driver");
+ 
+#define BUTTON 27
+
+struct tasklet_struct mytask = {0};
+
+void tasklet_handler(unsigned long data)
+{
+    printk("%s\n", __func__);
+}
+
+static irqreturn_t irq_handler(int irq, void *arg)
+{
+    tasklet_schedule(&amp;mytask);
+    return IRQ_HANDLED;
+}
+
+int ldd_init(void)
+{
+    tasklet_init(&amp;mytask, tasklet_handler, 0);
+    request_irq(gpio_to_irq(BUTTON), irq_handler, IRQF_TRIGGER_RISING, "gpio_irq", NULL);
+    return 0;
+}
+ 
+void ldd_exit(void)
+{
+    free_irq(gpio_to_irq(BUTTON), NULL);
+    tasklet_kill(&amp;mytask);
+}
+ 
+module_init(ldd_init);
+module_exit(ldd_exit);
+</pre>
+<p>
+<b>ldd_init</b>: 設定GPIO中斷以及tasklet延遲處理副程式<br>
+<b>irq_handler</b>: 安排一個tasklet延遲處理<br>
+<b>tasklet_handler</b>: 列印字串<br>
+<b>ldd_exit</b>: 釋放中斷資源以及刪除tasklet<br><br>
+
+完成<br>
+<img src="ldd_cpp_gpio_input/3.jpg" class="maxSize"><br>
+<img src="ldd_cpp_gpio_input/4.jpg" class="maxSize">
+</p>
+<pre>
+# tasklet_handler
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

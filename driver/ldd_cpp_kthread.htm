@@ -1,0 +1,75 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../driver.htm">驅動程式</a> - Linux Device Driver (LDD) - C/C++ (PocketBeagle) - <b>KThread</b></h3>
+<hr size="1"><br>
+<p>
+Thread是執行的最小單位，在多核CPU上，產生的Thread可以同時的運作，這意謂著使用Thread技術可以用來改善效能，但是，每個Thread間的資料同步則是另一個課題<br><br>
+
+使用步驟：
+</p>
+<pre>
+1. kthread_create()
+2. wake_up_process()
+3. kthread_should_stop()
+4. kthread_stop()
+</pre><br>
+
+<p>
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;linux/init.h&gt;
+#include &lt;linux/device.h&gt;
+#include &lt;linux/module.h&gt;
+#include &lt;linux/delay.h&gt;
+#include &lt;linux/kthread.h&gt;
+
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("Steward Fu");
+MODULE_DESCRIPTION("Linux Driver");
+
+struct task_struct *mykthread = NULL;
+
+static int kthread_handler(void *data)
+{
+    printk("%s++\n", __func__);
+    while (!kthread_should_stop()) {
+        msleep(100);
+    }
+    printk("%s--\n", __func__);
+    return 0;
+}
+
+int ldd_init(void)
+{
+    mykthread = kthread_create(kthread_handler, NULL, "mykthread");
+    wake_up_process(mykthread);
+    return 0;
+}
+ 
+void ldd_exit(void)
+{
+    kthread_stop(mykthread);
+}
+ 
+module_init(ldd_init);
+module_exit(ldd_exit);
+</pre>
+<p>
+<b>ldd_init</b>: 產生多個Thread並且執行<br>
+<b>kthread_handler</b>: 列印字串<br>
+<b>ldd_exit</b>: 停止Thread執行<br><br>
+
+測試
+</p>
+<pre>
+# insmod /boot/main.ko
+    kthread_handler++
+
+# rmmod main
+    kthread_handler--
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

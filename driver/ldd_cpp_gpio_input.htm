@@ -1,0 +1,88 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../driver.htm">驅動程式</a> - Linux Device Driver (LDD) - C/C++ (PocketBeagle) - <b>GPIO Input</b></h3>
+<hr size="1"><br>
+<p>
+由於PocketBeagle板上的Power按鍵是透過PMIC連接，因此，需要連接另一個按鍵來使用，司徒選定27腳位，如下圖：<br>
+<img src="ldd_cpp_gpio_input/2.jpg" class="maxSize"><br><br>
+
+連接27腳位到+3.3V<br>
+<img src="ldd_cpp_gpio_input/1.jpg" class="maxSize"><br><br>
+
+在此篇範例中，司徒使用Timer做按鍵檢查，當按鍵被按下時，點亮LED，反之則熄滅LED，因此，需要使用Linux Kernel的GPIO操作函數以及Timer，針對GPIO的輸入應用，步驟如下：
+</p>
+<pre>
+1. gpio_request()
+2. gpio_direction_input()
+3. gpio_get_value()
+4. gpio_free()
+</pre><br>
+
+<p>
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;linux/init.h&gt;
+#include &lt;linux/device.h&gt;
+#include &lt;linux/module.h&gt;
+#include &lt;linux/delay.h&gt;
+#include &lt;linux/kernel.h&gt;
+#include &lt;linux/errno.h&gt;
+#include &lt;linux/mm.h&gt;
+#include &lt;linux/gpio.h&gt;
+
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("Steward Fu");
+MODULE_DESCRIPTION("Linux Driver");
+ 
+#define BUTTON   27
+#define USR3_LED ((32 * 1) + 24)
+
+static int period = 100;
+static struct timer_list timer = {0};
+
+void timer_handler(unsigned long unused)
+{
+    int state = 0;
+     
+    state = gpio_get_value(BUTTON);
+    gpio_set_value(USR3_LED, state);
+    mod_timer(&amp;timer, jiffies + msecs_to_jiffies(period));
+}
+ 
+int ldd_init(void)
+{
+    gpio_request(USR3_LED, "USR3");
+    gpio_direction_output(USR3_LED, 1);
+
+    gpio_request(BUTTON, "BTN");
+    gpio_direction_input(BUTTON);
+  
+    setup_timer(&amp;timer, timer_handler, 0);
+    mod_timer(&amp;timer, jiffies + msecs_to_jiffies(period));
+    return 0;
+}
+ 
+void ldd_exit(void)
+{
+    del_timer(&amp;timer);
+    gpio_free(BUTTON);
+    gpio_free(USR3_LED);
+}
+ 
+module_init(ldd_init);
+module_exit(ldd_exit);
+</pre>
+<p>
+<b>ldd_init</b>: 初始化GPIO以及Timer<br>
+<b>timer_handler</b>: 取得按鍵狀態並且設定到USR3 LED<br>
+<b>ldd_exit</b>: 釋放GPIO以及Timer資源<br><br>
+
+完成<br>
+<img src="ldd_cpp_gpio_input/3.jpg" class="maxSize"><br>
+<img src="ldd_cpp_gpio_input/4.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

@@ -1,0 +1,72 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../driver.htm">驅動程式</a> - Linux Device Driver (LDD) - C/C++ (PocketBeagle) - <b>IRQ</b></h3>
+<hr size="1"><br>
+<p>
+中斷本身是一種高優先權處理的機制，一旦硬體中斷觸發後，系統會馬上跳到使用者設定的Callback執行，在Callback中，不應該執行太過耗時的程式，否則將拖垮系統效能，這是由於Context Switch優先級一般會比中斷來得低，在中斷副程式尚未將權限交回給系統時，系統無法做Context Switch(單核心系統來說)，也就是其它程式將無法被系統執行，Context Switch是系統交換程式執行的意思<br><br>
+
+使用步驟：
+</p>
+<pre>
+1. gpio_to_irq()
+2. request_irq()
+3. free_irq()
+</pre>
+<p>
+request_irq()其實就是呼叫request_threaded_irq()，只是bottom-half傳入NULL<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;linux/init.h&gt;
+#include &lt;linux/device.h&gt;
+#include &lt;linux/module.h&gt;
+#include &lt;linux/delay.h&gt;
+#include &lt;linux/kernel.h&gt;
+#include &lt;linux/errno.h&gt;
+#include &lt;linux/mm.h&gt;
+#include &lt;linux/gpio.h&gt;
+#include &lt;linux/interrupt.h&gt;
+
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("Steward Fu");
+MODULE_DESCRIPTION("Linux Driver");
+ 
+#define BUTTON 27
+
+static irqreturn_t irq_handler(int irq, void *arg)
+{
+    printk("%s\n", __func__);
+    return IRQ_HANDLED;
+}
+
+int ldd_init(void)
+{
+    request_irq(gpio_to_irq(BUTTON), irq_handler, IRQF_TRIGGER_RISING, "gpio_irq", NULL);
+    return 0;
+}
+ 
+void ldd_exit(void)
+{
+    free_irq(gpio_to_irq(BUTTON), NULL);
+}
+ 
+module_init(ldd_init);
+module_exit(ldd_exit);
+</pre>
+<p>
+<b>ldd_init</b>: 設定中斷並且使用上緣觸發方式(IRQF_TRIGGER_RISING)<br>
+<b>irq_handler</b>: 輸出中斷訊息<br>
+<b>ldd_exit</b>: 釋放中斷<br><br>
+
+完成<br>
+<img src="ldd_cpp_gpio_input/3.jpg" class="maxSize"><br>
+<img src="ldd_cpp_gpio_input/4.jpg" class="maxSize">
+</p>
+<pre>
+# irq_handler
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

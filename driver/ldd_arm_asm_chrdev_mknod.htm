@@ -1,65 +1,26 @@
-﻿<!--
- ____________________________________________________________
-|                                                            |
-|    DESIGN + Pat Heard { http://fullahead.org }             |
-|      DATE + 2006.09.12                                     |
-| COPYRIGHT + Free use if this notice is kept in place.      |
-|____________________________________________________________|
-
--->
-
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
-    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
-<head>
-  <title>司徒的教學網站</title>
-  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
-  <meta name="author" content="fullahead.org" />
-  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
-  <meta name="description" content="A valid, XHTML 1.0 template" />
-  <meta name="robots" content="index, follow, noarchive" />
-  <meta name="googlebot" content="noarchive" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+<head><script type="text/javascript" src="../page_head.js"></script>
 
-  <link rel="shortcut icon" href="../../website.ico">
-  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
-  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
-  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
-  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
-  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
-  
-  <script type="text/javascript" src="../../scripts/shCore.js"></script>
-  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
-
-  <!-- Conditional comment to apply opacity fix for IE #content background.
-       Invalid CSS, but can be removed without harming design -->
-  <!--[if gt IE 5]>
-  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
-  <![endif]-->
-</head>
-
-<body>
-<script type="text/javascript">SyntaxHighlighter.all();</script>
-<div id="wrapper">
-<div id="content">
-<script type="text/javascript" src="../../header.js"></script>
-<div id="page">
-<h3>Linux Device Driver &gt;&gt; Assembly (ARM) &gt;&gt; chrdev</h3>
-<p><b>mknod</b></p>
-<hr size="1">
+<h3><a href="../driver.htm">驅動程式</a> - Linux Device Driver (LDD) - Assembly (ARM) - Char Device - <b>Device Node</b></h3>
+<hr size="1"><br>
 <p>
 參考資訊：<br>
-1. <a href="https://github.com/steward-fu/website/releases/tag/ldd">ldd</a><br>
-2. <a href="https://linux-kernel-labs.github.io/refs/heads/master/labs/device_drivers.html">device_drivers</a><br><br>
+https://linux-kernel-labs.github.io/refs/heads/master/labs/device_drivers.html<br><br>
 
 User Application可以透過檔案操作方式跟驅動程式溝通，在Linux Kernel中，將檔案分成字元驅動程式(Char)和區塊驅動程式(Block)兩大類，主要區別在於傳輸方式，可以把字元驅動程式想像成每次傳輸都是以1個Byte為單位，而區塊驅動程式則是多個Bytes為單位，如：512 Bytes，User Application可以透過open()、read()、write()、ioctl()、close()跟字元驅動程式溝通，那User Application怎麼知道路徑在哪呢？答案是Symbolic Link(/dev/xxx)，那Symbolic Link又如何連結到字元驅動程式呢？答案是Major、Minor號碼，Major、Minor號碼是驅動程式的裝置索引，字元驅動程式在被系統載入時，會註冊Major和Minor號碼，使用者可以透過mknod工具，去建立一個Symbolic Link(名稱可以由使用者隨意取)並且綁定到字元驅動程式的這個Major、Minor號碼，完成連接的管道<br><br>
 
-字元驅動程式建立步驟：<br>
-1. alloc_chrdev_region()<br>
-2. cdev_init()<br>
-3. cdev_add()<br>
-4. cdev_del()<br>
-5. unregister_chrdev_region()<br><br>
+字元驅動程式建立步驟：
+</p>
+<pre>
+1. alloc_chrdev_region()
+2. cdev_init()
+3. cdev_add()
+4. cdev_del()
+5. unregister_chrdev_region()
+</pre>
+<p>
+alloc_chrdev_region()可以取得空閒的裝置號碼，如果想要自訂Major號碼，可以使用register_chrdev_region()<br><br>
 
 ldd.S
 </p>
@@ -238,8 +199,6 @@ cleanup_module:
 <b>myclose</b>: 對應User Application的close()<br>
 <b>cleanup_module</b>: 刪除字元驅動程式<br><br>
 
-alloc_chrdev_region()可以取得空閒的裝置號碼，如果想要自訂Major號碼，可以使用register_chrdev_region()<br><br>
-
 安裝驅動
 </p>
 <pre>
@@ -253,6 +212,7 @@ make node
 </p>
 <pre>
 # mknod /dev/myfile c 243 0
+
 # ls -al /dev/myfile
     crw-r--r--    1 root     root      243,   0 Jan  1 00:00 /dev/myfile
 </pre>
@@ -265,14 +225,6 @@ P.S. 建立Symbolic符號，供User Application開啟使用<br><br>
 # echo "" &gt; /dev/myfile
     myopen
     sh: write error: Invalid argument myclose
-</pre><br>
+</pre>
 
-<p>
-<br><a href="../../driver.htm">返回上一頁</a>
-</p>
-
-</div>
-</div>
-</div>
-</body>
-</html>
+<br><script type="text/javascript" src="../tail.js"></script>

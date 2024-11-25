@@ -1,0 +1,87 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../driver.htm">驅動程式</a> - Linux Device Driver (LDD) - C/C++ (PocketBeagle) - <b>Hello, world!</b></h3>
+<hr size="1"><br>
+<p>
+<b>Hello, world!</b>是一個相當經典的入門教學範例，從這個範例的框架，使用者可以一探Linux Kernel的精簡之美，當然，它主要表達的目的，更多是對於操作環境的熟悉<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;linux/init.h&gt;
+#include &lt;linux/device.h&gt;
+#include &lt;linux/module.h&gt;
+
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("Steward Fu");
+MODULE_DESCRIPTION("Linux Driver");
+ 
+int ldd_init(void)
+{
+    printk("Hello, world!\n");
+    return 0;
+}
+ 
+void ldd_exit(void)
+{
+    printk("Unload it\n");
+}
+ 
+module_init(ldd_init);
+module_exit(ldd_exit);
+</pre>
+<p>
+<b>ldd_init</b>: 載入驅動程式時，系統會呼叫使用<br>
+<b>ldd_exit</b>: 卸載驅動程式時，系統會呼叫使用<br><br>
+
+Makefile
+</p>
+<pre>
+export ARCH=arm
+export CROSS_COMPILE=/opt/gcc-4.9/bin/arm-linux-gnueabihf-
+
+KERNEL=$(HOME)/kernel
+
+obj-m += main.o
+
+all:
+	make -C $(KERNEL) M=$(PWD) modules
+
+clean:
+	make -C $(KERNEL) M=$(PWD) clean
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ make
+    make -C kernel M=hello modules
+    make[1]: Entering directory 'kernel'
+        CC [M]  hello/main.o
+        Building modules, stage 2.
+        MODPOST 1 modules
+        CC      hello/main.mod.o
+        LD [M]  hello/main.ko
+    make[1]: Leaving directory 'kernel'
+</pre><br>
+
+<p>
+把<b>main.ko</b>放到MicroSD第一分區，進入系統後，執行如下指令
+</p>
+<pre>
+# insmod /boot/main.ko
+    Hello, world!
+</pre><br>
+
+<p>
+卸載驅動程式
+</p>
+<pre>
+# rmmod main
+    Unload it
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

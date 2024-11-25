@@ -1,62 +1,11 @@
-﻿<!--
- ____________________________________________________________
-|                                                            |
-|    DESIGN + Pat Heard { http://fullahead.org }             |
-|      DATE + 2006.09.12                                     |
-| COPYRIGHT + Free use if this notice is kept in place.      |
-|____________________________________________________________|
-
--->
-
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
-    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
-<head>
-  <title>司徒的教學網站</title>
-  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
-  <meta name="author" content="fullahead.org" />
-  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
-  <meta name="description" content="A valid, XHTML 1.0 template" />
-  <meta name="robots" content="index, follow, noarchive" />
-  <meta name="googlebot" content="noarchive" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+<head><script type="text/javascript" src="../page_head.js"></script>
 
-  <link rel="shortcut icon" href="../../website.ico">
-  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
-  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
-  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
-  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
-  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
-  
-  <script type="text/javascript" src="../../scripts/shCore.js"></script>
-  <script type="text/javascript" src="../../scripts/shBrushAsm.js"></script>
-
-  <!-- Conditional comment to apply opacity fix for IE #content background.
-       Invalid CSS, but can be removed without harming design -->
-  <!--[if gt IE 5]>
-  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
-  <![endif]-->
-</head>
-
-<body>
-<script type="text/javascript">SyntaxHighlighter.all();</script>
-<div id="wrapper">
-<div id="content">
-<script type="text/javascript" src="../../header.js"></script>
-<div id="page">
-<h3>Linux Device Driver &gt;&gt; Assembly (ARM) &gt;&gt; chrdev</h3>
-<p><b>read、write</b></p>
-<hr size="1">
+<h3><a href="../driver.htm">驅動程式</a> - Linux Device Driver (LDD) - Assembly (ARM) - Char Device - <b>Device I/O Control</b></h3>
+<hr size="1"><br>
 <p>
-參考資訊：<br>
-1. <a href="https://github.com/steward-fu/website/releases/tag/ldd">ldd</a><br>
-2. <a href="https://www.aps-web.jp/en/ca-en/21578/#anchor2">anchor2</a><br><br>
-
-User Application可以透過read()、write()傳送資料給驅動程式，但是需要注意的地方是，在Linux Kernel中，如果要存取User Application傳送過來的資料時，必須使用copy_to_user()、copy_from_user()，而不是一般的memcpy()或者直接指標操作，否則會導致驅動程式崩潰，這是因為Linux Kernel和User Application是位於不同保護空間，因此，在存取User Application資料時，必須確保該資料已經被Map且位於記憶體<br><br>
-
-使用方式：<br>
-1. arm_copy_to_user()<br>
-2. arm_copy_from_user()<br><br>
+User Application除了透過read()、write()跟驅動程式傳送資料之外，也可以使用以控制為主的ioctl()去跟驅動程式溝通<br><br>
 
 ldd.S
 </p>
@@ -163,11 +112,9 @@ mycdev:    .space cdev_l
 myfops:    .space file_operations_l
 chr_name:  .asciz "myfile"
 open_msg:  .asciz "myopen\n"
-write_msg: .asciz "mywrite, %s\n"
-read_msg:  .asciz "myread, %s\n"
+ioctl_msg: .asciz "myioctl, 0x%x\n"
 close_msg: .asciz "myclose\n"
 myclass:   .dcb 4
-mybuf:     .dcb 255
 
     .align 2
     .section .text
@@ -178,47 +125,12 @@ myopen:
     mov r0, #0
     pop {pc}
 
-myread:
-    push {r4, lr}
-
-    mov r4, r1
-    ldr r0, =mybuf
-    bl strlen
-    mov r2, r0
-
-    ldr r0, =0x55555555
-    mcr p15, 0, r0, c3, c0, 0
-    isb sy
-
-    mov r0, r4
-    ldr r1, =mybuf
-    bl arm_copy_to_user
-    mov r4, r0
-
-    ldr r0, =read_msg
-    ldr r1, =mybuf
+myioctl:
+    push {lr}
+    ldr r0, =ioctl_msg
     bl printk
-
-    mov r0, r4
-    pop {r4, pc}
-
-mywrite:
-    push {r4, lr}
-
-    ldr r0, =0x55555555
-    mcr p15, 0, r0, c3, c0, 0
-    isb sy
-
-    ldr r0, =mybuf
-    bl arm_copy_from_user
-    mov r4, r0
-
-    ldr r0, =write_msg
-    ldr r1, =mybuf
-    bl printk
-
-    mov r0, r4
-    pop {r4, pc}
+    mov r0, #0
+    pop {pc}
 
 myclose:
     push {lr}
@@ -234,14 +146,11 @@ init_module:
     add r1, r0, #file_operations.open
     ldr r2, =myopen
     str r2, [r1]
+    add r1, r0, #file_operations.unlocked_ioctl
+    ldr r2, =myioctl
+    str r2, [r1]
     add r1, r0, #file_operations.release
     ldr r2, =myclose
-    str r2, [r1]
-    add r1, r0, #file_operations.read
-    ldr r2, =myread
-    str r2, [r1]
-    add r1, r0, #file_operations.write
-    ldr r2, =mywrite
     str r2, [r1]
 
     ldr r0, =base
@@ -303,37 +212,54 @@ cleanup_module:
 <p>
 <b>init_module</b>: 建立字元驅動程式<br>
 <b>myopen</b>: 僅列印字串<br>
-<b>mywrite</b>: 儲存並且列印User Application傳送的字串<br>
-<b>myread</b>: 複製儲存的字串給User Application並且列印出來<br>
+<b>myioctl</b>: 僅列印字串<br>
 <b>myclose</b>: 僅列印字串<br>
 <b>cleanup_module</b>: 刪除字元驅動程式<br><br>
 
-在做arm_copy_to_user()、arm_copy_from_user()之前，必須先設定Domain Access Control Register<br><br>
-
-寫入字串
+app.S
 </p>
-<pre>
-# echo "test" &gt; /dev/myfile
-    mywrite, test
-</pre>
-<p>
-P.S. 按下<b>Ctrl+C</b>停止<br><br>
+<pre class="brush:asm">
+    .global main
 
-讀取字串
-</p>
-<pre>
-# cat /dev/myfile
-    myopen
-    myread, test
-    myclose
+    .section .data
+dev_name: .asciz "/dev/myfile"
+
+    .align 2
+    .section .text
+main:
+    push {r4, lr}
+    ldr r0, =dev_name
+    mov r1, #2
+    bl open
+    mov r4, r0
+
+    ldr r1, =0xc0050000
+    mov r2, #0
+    bl ioctl
+
+    mov r0, r4
+    bl close
+
+    mov r0, #0
+    pop {r4, pc}
 </pre><br>
 
 <p>
-<br><a href="../../driver.htm">返回上一頁</a>
+編譯App
 </p>
+<pre>
+$ arm-linux-gnueabihf-gcc app.S -o app -static
+</pre><br>
 
-</div>
-</div>
-</div>
-</body>
-</html>
+<p>
+測試
+</p>
+<pre>
+# insmod /boot/main.ko
+# /boot/app
+    myopen
+    myioctl, 0xc0050000
+    myclose
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

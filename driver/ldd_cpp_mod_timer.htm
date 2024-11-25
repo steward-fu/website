@@ -1,0 +1,77 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../driver.htm">驅動程式</a> - Linux Device Driver (LDD) - C/C++ (PocketBeagle) - <b>Timer</b></h3>
+<hr size="1"><br>
+<p>
+Timer是一種Callback機制，提供使用者設定片段時間後觸發的方式，Timer有區分一次性或者週期性，Linux Kernel提供的mod_timer()是屬於一次性，而Timer時間則是使用jiffies計算，jiffies是一個Global變數，該變數用來紀錄時間的中斷次數(從開機後)，可以搭配msecs_to_jiffies()計算出需要的時間間隔<br><br>
+
+使用步驟：
+</p>
+<pre>
+1. setup_timer()
+2. mod_timer()
+3. del_timer()
+</pre><br>
+
+<p>
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;linux/init.h&gt;
+#include &lt;linux/device.h&gt;
+#include &lt;linux/module.h&gt;
+#include &lt;linux/delay.h&gt;
+#include &lt;linux/kernel.h&gt;
+#include &lt;linux/errno.h&gt;
+#include &lt;linux/mm.h&gt;
+#include &lt;linux/gpio.h&gt;
+ 
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("Steward Fu");
+MODULE_DESCRIPTION("Linux Driver");
+  
+#define USR3_LED ((32 * 1) + 24)
+ 
+static int period = 300;
+static struct timer_list timer = {0};
+ 
+void timer_handler(unsigned long unused)
+{
+    static int state = 0;
+      
+    state ^= 1;
+    gpio_set_value(USR3_LED, state);
+    mod_timer(&amp;timer, jiffies + msecs_to_jiffies(period));
+}
+  
+int ldd_init(void)
+{
+    gpio_request(USR3_LED, "USR3");
+    gpio_direction_output(USR3_LED, 1);
+    setup_timer(&amp;timer, timer_handler, 0);
+    mod_timer(&amp;timer, jiffies + msecs_to_jiffies(period));
+    return 0;
+}
+  
+void ldd_exit(void)
+{
+    del_timer(&amp;timer);
+    gpio_free(USR3_LED);
+}
+  
+module_init(ldd_init);
+module_exit(ldd_exit);
+</pre>
+<p>
+<b>ldd_init</b>: 設定GPIO以及Timer，msecs_to_jiffies()設定的內容，司徒直接使用PERIOD常數設定<br>
+<b>timer_handler</b>: 閃爍LED之外，由於mod_timer()是屬於一次性，因此，只要再次設定就可以變成週期性Timer<br>
+<b>ldd_exit</b>: 刪除GPIO以及Timer資源<br><br>
+
+完成<br>
+<img src="ldd_cpp_gpio_output/2.jpg" class="maxSize"><br>
+<img src="ldd_cpp_gpio_output/3.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

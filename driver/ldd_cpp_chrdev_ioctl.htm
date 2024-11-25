@@ -1,0 +1,122 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../driver.htm">驅動程式</a> - Linux Device Driver (LDD) - C/C++ (PocketBeagle) - Char Device - <b>Device I/O Control</b></h3>
+<hr size="1"><br>
+<p>
+User Application除了透過read()、write()跟驅動程式傳送資料之外，也可以使用以控制為主的ioctl()去跟驅動程式溝通<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;linux/cdev.h&gt;
+#include &lt;linux/init.h&gt;
+#include &lt;linux/device.h&gt;
+#include &lt;linux/module.h&gt;
+
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("Steward Fu");
+MODULE_DESCRIPTION("Linux Driver");
+
+static int base = 0;
+static struct cdev mycdev;
+static struct class *myclass = NULL;
+
+static int myopen(struct inode *inode, struct file *file)
+{
+    printk("%s\n", __func__);
+    return 0;
+}
+
+static int myclose(struct inode *inode, struct file *file)
+{
+    printk("%s\n", __func__);
+    return 0;
+}
+
+static long myioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+{
+    printk("%s, 0x%x\n", __func__, cmd);
+    return 0;
+}
+
+static const struct file_operations myfops = {
+    .owner = THIS_MODULE,
+    .open = myopen,
+    .release = myclose,
+    .unlocked_ioctl = myioctl,
+};
+
+int ldd_init(void)
+{
+    alloc_chrdev_region(&amp;base, 0, 1, "myfile");
+    myclass = class_create(THIS_MODULE, "myfile");
+    device_create(myclass, NULL, base, NULL, "myfile");
+    cdev_init(&amp;mycdev, &amp;myfops);
+    cdev_add(&amp;mycdev, base, 1);
+    return 0;
+}
+ 
+void ldd_exit(void)
+{
+    cdev_del(&amp;mycdev);
+    device_destroy(myclass, base);
+    class_destroy(myclass);
+    unregister_chrdev_region(base, 1);
+}
+ 
+module_init(ldd_init);
+module_exit(ldd_exit);
+</pre>
+<p>
+<b>ldd_init</b>: 建立字元驅動程式<br>
+<b>myopen</b>: 僅列印字串<br>
+<b>myioctl</b>: 僅列印字串<br>
+<b>myclose</b>: 僅列印字串<br>
+<b>ldd_exit</b>: 刪除字元驅動程式<br><br>
+
+app.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;sys/fcntl.h&gt; 
+#include &lt;sys/stat.h&gt;
+#include &lt;sys/ioctl.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;linux/ioctl.h&gt;
+
+#define MY_IOCTL _IOWR(0x100, 0, unsigned long)
+
+int main(int argc, char **argv)
+{
+    int fd = 0;
+
+    fd = open("/dev/myfile", O_RDWR);
+    ioctl(fd, MY_IOCTL, 0);
+    close(fd);
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯App
+</p>
+<pre>
+$ arm-linux-gnueabihf-gcc app.c -o app -static
+</pre><br>
+
+<p>
+測試
+</p>
+<pre>
+# insmod /boot/main.ko
+# /boot/app
+    myopen
+    myioctl, 0xc0050000
+    myclose
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

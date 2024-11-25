@@ -1,0 +1,131 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../driver.htm">驅動程式</a> - Linux Device Driver (LDD) - Assembly (ARM) - <b>Tasklet</b></h3>
+<hr size="1"><br>
+<p>
+tasklet也是屬於softirq的一種，差別在於執行順序是排在softirq後面且不會有重複進入問題(reentrant)，加上不是靜態編譯，因此，不需要特別修改Kernel就可以使用，因此，是一種相當適合應用在高優先級別的延遲處理機制，當然，高優先級別的機制是不適合處理太過耗時的東西，這點還是需要特別注意<br><br>
+
+使用步驟：
+</p>
+<pre>
+1. tasklet_init()
+2. _test_and_set_bit()
+3. __tasklet_schedule()
+4. tasklet_kill()
+</pre><br>
+
+<p>
+ldd.S
+</p>
+<pre class="brush:asm">
+    .global init_module
+    .global cleanup_module
+
+    .equ BUTTON,              27
+    .equ IRQF_TRIGGER_RISING, 1
+    .equ TASKLET_STATE_SCHED, 0
+    .equ TASKLET_STATE_RUN,   1
+
+    .section .modinfo, "ae"
+__UNIQUE_ID_0: .asciz "license=GPL"
+__UNIQUE_ID_1: .asciz "author=Steward Fu"
+__UNIQUE_ID_2: .asciz "description=Linux Driver"
+
+    .equ tasklet.next,  0
+    .equ tasklet.state, 4
+    .equ tasklet.count, 8
+    .equ tasklet.func,  12
+    .equ tasklet.data,  16
+
+    .struct 0
+tasklet_s:
+    i0: .struct . + 4
+    i1: .struct . + 4
+    i2: .struct . + 4
+    i3: .struct . + 4
+    i4: .struct . + 4
+tasklet_e:
+tasklet_l = tasklet_e - tasklet_s
+
+    .section .data
+btn_irq:  .dcb 4
+irq_name: .asciz "gpio_irq"
+task_msg: .asciz "tasklet_handler\n"
+mytask:   .space tasklet_l
+
+    .align 2
+    .section .text
+tasklet_handler:
+    push {lr}
+    ldr r0, =task_msg
+    bl printk
+    pop {pc}
+
+irq_handler:
+    push {lr}
+    mov r0, #TASKLET_STATE_SCHED
+    ldr r1, =mytask
+    add r1, #tasklet.state
+    bl _test_and_set_bit
+    cmp r0, #0
+    bne irq_exit
+    ldr r0, =mytask
+    bl __tasklet_schedule
+irq_exit:
+    mov r0, #1
+    pop {pc}
+
+init_module:
+    push {r4, r5, lr}
+
+    ldr r0, =mytask
+    ldr r1, =tasklet_handler
+    mov r2, #0
+    bl tasklet_init
+
+    mov r0, #BUTTON
+    bl gpio_to_desc
+    bl gpiod_to_irq
+    ldr r1, =btn_irq
+    str r0, [r1]
+
+    ldr r1, =irq_handler
+    mov r2, #0
+    mov r3, #IRQF_TRIGGER_RISING
+    ldr r4, =irq_name
+    mov r5, #0
+    push {r4, r5}
+    bl request_threaded_irq
+    pop {r4, r5}
+
+    mov r0, #0
+    pop {r4, r5, pc}
+
+cleanup_module:
+    push {lr}
+    ldr r0, =btn_irq
+    ldr r0, [r0]
+    mov r1, #0
+    bl free_irq
+    ldr r0, =mytask
+    bl tasklet_kill
+    pop {pc}
+    .end
+</pre>
+<p>
+<b>init_module</b>: 設定GPIO中斷以及tasklet延遲處理副程式<br>
+<b>irq_handler</b>: 安排一個tasklet延遲處理<br>
+<b>tasklet_handler</b>: 列印字串<br>
+<b>cleanup_module</b>: 釋放中斷資源以及刪除tasklet<br><br>
+
+完成<br>
+<img src="ldd_cpp_gpio_input/3.jpg" class="maxSize"><br>
+<img src="ldd_cpp_gpio_input/4.jpg" class="maxSize">
+</p>
+<pre>
+# tasklet_handler
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
