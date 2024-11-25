@@ -1,0 +1,58 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - Game Boy Color - C/C++ - <b>Hello, world!</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://bgb.bircd.org/<br>
+https://github.com/mrombout/gbdk_playground<br>
+http://gbdk.sourceforge.net/doc/html/book01.html<br><br>
+
+Palette(BG)設定
+</p>
+<pre class="brush:cpp">
+void set_bkg_palette(UINT8 first_palette, UINT8 nb_palettes, UINT16 *rgb_data) NONBANKED;
+</pre>
+<p>
+第一個參數是Palette目標位置(0~7)<br>
+第二個參數是需要複製多少個Palette(1~8)<br>
+第三個參數是Palette來源位置<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;gb/gb.h&gt;
+#include &lt;gb/cgb.h&gt;
+
+unsigned short palette[] = {RGB_YELLOW, RGB_RED, RGB_GREEN, RGB_BLUE};
+
+void main(void)
+{
+    set_bkg_palette(0, 1, palette);
+    printf("Hello, world!");
+}
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ export PATH=$PATH:/opt/gbdk/bin
+$ lcc -o main.gb main.c
+$ printf '\x80' | dd of=main.gb bs=1 seek=323 count=1 conv=notrunc
+$ rgbfix -v -p0 main.gb
+</pre>
+<p>
+由於gbdk的makebin在x64環境無法正確執行，因此，司徒使用printf加上dd做0x143的修正，最後再使用rgbfix做checksum修正<br><br>
+
+執行bgb.exe，然後在bgb視窗上，按滑鼠右鍵，選擇<b>Load ROM...</b>，載入main.gb<br>
+<img src="gbc_cpp_hello/1.jpg" class="maxSize"><br><br>
+
+在bgb視窗上按滑鼠右鍵，選擇<b>Other</b> =&gt; <b>VRAM Viewer</b>，可以查看目前設定的Palette<br>
+<img src="gbc_cpp_hello/2.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
