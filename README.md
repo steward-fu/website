@@ -64,6 +64,7 @@ All of files or resources used on my website can be found from the following lin
 [![](img/photos/titan.jpg)](https://github.com/steward-fu/website/releases/tag/titan)
 [![](img/photos/titan-pocket.jpg)](https://github.com/steward-fu/website/releases/tag/titan-pocket)
 [![](img/photos/nes.jpg)](https://github.com/steward-fu/website/releases/tag/nes)
+[![](img/photos/snes.jpg)](https://github.com/steward-fu/website/releases/tag/snes)
 [![](img/photos/dm250.jpg)](https://github.com/steward-fu/website/releases/tag/dm250)
 [![](img/photos/c700.jpg)](https://github.com/steward-fu/website/releases/tag/zaurus)
 [![](img/photos/pw-sh3.jpg)](https://github.com/steward-fu/website/releases/tag/brain)
