@@ -40,6 +40,8 @@ Object MyDevice, , KPnpDevice
     RedefineMethod DefaultPnp, PKIrp
     RedefineMethod DeviceIrpDispatch, PIRP
 
+    VirtualMethod ThreadHandler, POINTER
+
     DefineVariable m_Exit, BOOLEAN, FALSE
 
     Embed m_Thread, KSystemThread
@@ -104,7 +106,7 @@ Method MyDevice.DeviceControl, uses esi, I : PKIrp
     .if code == IOCTL_START
         T $OfsCStr("IOCTL_START")
         mov [esi].m_Exit, FALSE
-        OCall [esi].m_Thread::KSystemThread.Start, offset MyThread, pSelf, THREAD_ALL_ACCESS
+        OCall [esi].m_Thread::KSystemThread.Start, $MethodAddr([esi]::MyDevice.ThreadHandler), pSelf, THREAD_ALL_ACCESS
     .elseif code == IOCTL_STOP
         T $OfsCStr("IOCTL_STOP")
         mov [esi].m_Exit, TRUE
@@ -122,7 +124,7 @@ Method MyDevice.Close, uses esi, I : PKIrp
     OCall I::KIrp.PnpComplete, STATUS_SUCCESS, IO_NO_INCREMENT
 MethodEnd
 
-MyThread proc pSelf : PMyDevice
+Method MyDevice.ThreadHandler, uses esi, this : POINTER
     local pStr : DWORD
     local stTime : LARGE_INTEGER
 
@@ -134,16 +136,16 @@ MyThread proc pSelf : PMyDevice
     mov pStr, eax
     T $OfsCStr("Current process: %s"), pStr
  
-    SetObject esi, MyDevice, pSelf
+    SetObject esi
     .while [esi].m_Exit == FALSE
         invoke KeDelayExecutionThread, KernelMode, FALSE, addr stTime
         T $OfsCStr("Sleep 1s")
     .endw
 
     T $OfsCStr("Exit MyThread")
+    SetObject esi
     OCall [esi].m_Thread::KSystemThread.Terminate, STATUS_SUCCESS
-    ret
-MyThread endp
+MethodEnd
 end
 </pre><br>
 
