@@ -1,0 +1,27 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - Miyoo Flip - <b>Repack boot.img</b></h3>
+<hr size="1"><br>
+<pre>
+#!/bin/sh
+BOARD_KERNEL_BASE=0x10000000
+BOARD_PAGE_SIZE=2048
+BOARD_HASH_TYPE="sha1"
+BOARD_KERNEL_OFFSET=0x00008000
+BOARD_RAMDISK_OFFSET=0xf0000000
+BOARD_SECOND_OFFSET=0x00f00000
+BOARD_TAGS_OFFSET=0x00000100
+
+rm -rf boot_new.img
+mkbootimg --kernel Image.gz --second boot.img-second --base $BOARD_KERNEL_BASE --kernel_offset $BOARD_KERNEL_OFFSET --ramdisk_offset $BOARD_RAMDISK_OFFSET --second_offset $BOARD_SECOND_OFFSET --pagesize $BOARD_PAGE_SIZE --hash $BOARD_HASH_TYPE -o boot_new.img
+
+xrock extra maskrom --rc4 off --sram rk3566_ddr_1056MHz_v1.18.bin --delay 10 --rc4 off --dram rk356x_usbplug_v1.17.bin --delay 10
+sleep 3
+xrock flash write $((0x700000/512)) boot_new.img
+sleep 3
+xrock reset
+</pre><br>
+
+<br><script type="text/javascript" src="../tail.js"></script>
