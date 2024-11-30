@@ -1,0 +1,46 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - Miyoo Flip - <b>Extract Kernel Image</b></h3>
+<hr size="1"><br>
+<p>
+步驟如下：<br>
+1. 進入MASKROM模式<br>
+2. 執行下命令
+</p>
+<pre>
+$ wget https://github.com/steward-fu/website/releases/download/miyoo-flip/rk3566_ddr_1056MHz_v1.18.bin
+$ wget https://github.com/steward-fu/website/releases/download/miyoo-flip/rk356x_usbplug_v1.17.bin
+$ xrock extra maskrom --rc4 off --sram rk3566_ddr_1056MHz_v1.18.bin --delay 10 --rc4 off --dram rk356x_usbplug_v1.17.bin --delay 10
+$ xrock flash read $((0x700000/512)) $(((0x2d00000-0x700000)/512)) boot.img
+$ file boot.img 
+    boot.img: Android bootimg, kernel (0x10008000), second stage (0x10f00000), page size: 2048
+
+$ unpackbootimg -i boot.img -o unpack
+    BOARD_KERNEL_CMDLINE 
+    BOARD_KERNEL_BASE 10000000
+    BOARD_NAME 
+    BOARD_PAGE_SIZE 2048
+    BOARD_HASH_TYPE sha1
+    BOARD_KERNEL_OFFSET 00008000
+    BOARD_RAMDISK_OFFSET f0000000
+    BOARD_SECOND_OFFSET 00f00000
+    BOARD_TAGS_OFFSET 00000100
+
+$ cd unpack
+$ file boot.img-zImage 
+    boot.img-zImage: LZ4 compressed data (v1.4+)
+
+$ lz4 -d boot.img-zImage raw
+    Stream followed by undecodable data at position 15605836 
+    boot.img-zImage      : decoded 36440576 bytes                                  
+
+$ file raw 
+    raw: Linux kernel ARM64 boot executable Image, little-endian, 4K pages
+
+$ strings raw | grep Linux
+    Linux version 5.10.160 (raymanfeng@nuc) (aarch64-none-linux-gnu-gcc (GNU Toolchain for the A-profile Architecture 10.3-2021.07 (arm-10.29)) 10.3.1 20210621, GNU ld (GNU Toolchain for the A-profile Architecture 10.3-2021.07 (arm-10.29)) 2.36.1.20210621) #81 SMP Sun Sep 15 10:48:10 CST 2024
+</pre><br>
+
+<br><script type="text/javascript" src="../tail.js"></script>
