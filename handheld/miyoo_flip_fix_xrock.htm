@@ -1,0 +1,47 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - Miyoo Flip - <b>解決xrock usb bulk send error問題</b></h3>
+<hr size="1"><br>
+<p>
+問題如下：
+</p>
+<pre>
+$ ./xrock extra maskrom --rc4 off --sram ../rk3566_ddr_1056MHz_v1.18.bin --delay 10 --rc4 off --dram ../rk356x_usbplug_v1.17.bin --delay 10
+$ ./xrock flash
+    Flash info:
+        Manufacturer: Samsung (0)
+        Capacity: 127MB
+        Sector size: 512
+        Sector count: 261120
+        Block size: 128KB
+        Page size: 2KB
+        ECC bits: 0
+        Access time: 40
+        Flash CS: &lt;0&gt;
+        Flash ID: 53 4e 41 4e 44
+
+$ ./xrock flash read 0 261120 spi.img
+    usb bulk send error
+</pre><br>
+
+<p>
+解法如下：
+</p>
+<pre>
+$ vim rock.c
+    static inline void usb_bulk_recv(libusb_device_handle * hdl, int ep, void * buf, size_t len) 
+    {
+        int r, bytes;
+
+        while(len &gt; 0) 
+        {    
+            r = libusb_bulk_transfer(hdl, ep, (void *)buf, /*len*/512, &amp;bytes, 2000);
+
+$ make
+$ ./xrock flash read 0 261120 spi.img
+    100% [================================================] 127.500 MB, 7.458 MB/s
+</pre><br>
+
+<br><script type="text/javascript" src="../tail.js"></script>
