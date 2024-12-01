@@ -1,0 +1,106 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - Rockchip RK3399 (NanoPi NEO4) - Assembly - <b>LED</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/xboot/xrock<br>
+https://github.com/trebisky/Rockchip<br>
+https://wiki.friendlyelec.com/wiki/index.php/NanoPi_NEO4<br>
+https://courses.cs.washington.edu/courses/cse469/19wi/arm64.pdf<br>
+https://www.rockchip.fr/Rockchip%20RK3399%20TRM%20V1.3%20Part2.pdf<br><br>
+
+LED腳位<br>
+<img src="nanopi-neo4_asm_led/1.jpg" class="maxSize"><br><br>
+
+GPIO Register<br>
+<img src="nanopi-neo4_asm_led/2.jpg" class="maxSize"><br><br>
+
+Data、Direction<br>
+<img src="nanopi-neo4_asm_led/3.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .global _start
+
+    .equ GPIO0_BASE, 0xff720000
+    .equ PA_DAT, (GPIO0_BASE + 0x00)
+    .equ PA_DIR, (GPIO0_BASE + 0x04)
+
+    .text
+_start:
+    b reset
+
+    .org 0x100
+reset:
+    ldr x0, =PA_DIR
+    ldr w1, =0xffffffff
+    str w1, [x0]
+
+    ldr x0, =PA_DAT
+    ldr w1, =0xffffffff
+0:
+    eor w2, w2, w1
+    str w2, [x0]
+    ldr w3, =1000000
+1:
+    subs w3, w3, #1
+    bne 1b
+    b 0b
+    .end
+</pre><br>
+
+<p>
+main.ld
+</p>
+<pre>
+MEMORY {
+    RAM : ORIGIN = 0, LENGTH = 64K
+}
+
+SECTIONS {
+    .text : { *(.text*) } &gt; RAM
+    .data : { *(.data*) } &gt; RAM
+    .bss : { *(.bss*) } &gt; RAM
+}
+</pre><br>
+
+<p>
+Makefile
+</p>
+<pre>
+all:
+	aarch64-linux-gnu-as -mcpu=cortex-a53 -o main.o main.s
+	aarch64-linux-gnu-ld -T main.ld -o main.elf main.o
+	aarch64-linux-gnu-objcopy -O binary main.elf main.bin
+
+run:
+	xrock extra maskrom --rc4 on --sram main.bin
+
+clean:
+	rm -rf main.bin main.o main.elf
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ make
+    aarch64-linux-gnu-as -mcpu=cortex-a53 -o main.o main.s
+    aarch64-linux-gnu-ld -T main.ld -o main.elf main.o
+    aarch64-linux-gnu-objcopy -O binary main.elf main.bin
+
+$ make run
+    xrock extra maskrom --rc4 on --sram main.bin
+</pre><br>
+
+<p>
+完成<br>
+<img src="nanopi-neo4_asm_led/4.jpg" class="maxSize"><br>
+<img src="nanopi-neo4_asm_led/5.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
