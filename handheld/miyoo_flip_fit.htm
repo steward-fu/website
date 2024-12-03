@@ -1,0 +1,168 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - Miyoo Flip - <b>Repack U-Boot FIT Image</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://opensource.rock-chips.com/wiki_Main_Page<br><br>
+
+方法如下：
+</p>
+<pre>
+$ ./mkimage -f u-boot.its -E uboot.itb
+$ cat uboot.itb &gt; uboot.img
+$ truncate -s %2048K uboot.img
+$ cat uboot.itb &gt; uboot.img
+$ truncate -s %2048K uboot.img
+</pre><br>
+
+<p>
+u-boot.its
+</p>
+<pre>
+/*
+ * Copyright (C) 2020 Rockchip Electronic Co.,Ltd
+ *
+ * Simple U-boot fit source file containing ATF/OP-TEE/U-Boot/dtb/MCU
+ */
+
+/dts-v1/;
+
+/ {
+	description = "FIT Image with ATF/OP-TEE/U-Boot/MCU";
+	#address-cells = &lt;1&gt;;
+
+	images {
+
+		uboot {
+			description = "U-Boot";
+			data = /incbin/("u-boot-nodtb.bin");
+			type = "standalone";
+			arch = "arm64";
+			os = "U-Boot";
+			compression = "none";
+			load = &lt;0x00a00000&gt;;
+			hash {
+				algo = "sha256";
+			};
+		};
+		atf-1 {
+			description = "ARM Trusted Firmware";
+			data = /incbin/("./bl31_0x00040000.bin");
+			type = "firmware";
+			arch = "arm64";
+			os = "arm-trusted-firmware";
+			compression = "none";
+			load = &lt;0x00040000&gt;;
+			hash {
+				algo = "sha256";
+			};
+		};
+		atf-2 {
+			description = "ARM Trusted Firmware";
+			data = /incbin/("./bl31_0xfdcc1000.bin");
+			type = "firmware";
+			arch = "arm64";
+			os = "arm-trusted-firmware";
+			compression = "none";
+			load = &lt;0xfdcc1000&gt;;
+			hash {
+				algo = "sha256";
+			};
+		};
+		atf-3 {
+			description = "ARM Trusted Firmware";
+			data = /incbin/("./bl31_0x0006b000.bin");
+			type = "firmware";
+			arch = "arm64";
+			os = "arm-trusted-firmware";
+			compression = "none";
+			load = &lt;0x0006b000&gt;;
+			hash {
+				algo = "sha256";
+			};
+		};
+		atf-4 {
+			description = "ARM Trusted Firmware";
+			data = /incbin/("./bl31_0xfdcd0000.bin");
+			type = "firmware";
+			arch = "arm64";
+			os = "arm-trusted-firmware";
+			compression = "none";
+			load = &lt;0xfdcd0000&gt;;
+			hash {
+				algo = "sha256";
+			};
+		};
+		atf-5 {
+			description = "ARM Trusted Firmware";
+			data = /incbin/("./bl31_0xfdcce000.bin");
+			type = "firmware";
+			arch = "arm64";
+			os = "arm-trusted-firmware";
+			compression = "none";
+			load = &lt;0xfdcce000&gt;;
+			hash {
+				algo = "sha256";
+			};
+		};
+		atf-6 {
+			description = "ARM Trusted Firmware";
+			data = /incbin/("./bl31_0x00069000.bin");
+			type = "firmware";
+			arch = "arm64";
+			os = "arm-trusted-firmware";
+			compression = "none";
+			load = &lt;0x00069000&gt;;
+			hash {
+				algo = "sha256";
+			};
+		};
+		optee {
+			description = "OP-TEE";
+			data = /incbin/("tee.bin");
+			type = "firmware";
+			arch = "arm64";
+			os = "op-tee";
+			compression = "none";
+			
+			load = &lt;0x8400000&gt;;
+			hash {
+				algo = "sha256";
+			};
+		};
+		fdt {
+			description = "U-Boot dtb";
+			data = /incbin/("./u-boot.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha256";
+			};
+		};
+	};
+
+	configurations {
+		default = "conf";
+		conf {
+			description = "rk3568-evb";
+			rollback-index = &lt;0x0&gt;;
+			firmware = "atf-1";
+			loadables = "uboot", "atf-2", "atf-3", "atf-4", "atf-5", "atf-6", "optee";
+			
+			fdt = "fdt";
+			signature {
+				algo = "sha256,rsa2048";
+				
+				key-name-hint = "dev";
+				sign-images = "fdt", "firmware", "loadables";
+			};
+		};
+	};
+};
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
