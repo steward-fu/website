@@ -1,0 +1,114 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - Miyoo Flip - Assembly - <b>LED</b></h3>
+<hr size="1"><br>
+<p>
+綠色LED是連接到GPIO0-12腳位，GPIO0的映射位址如下：<br>
+<img src="miyoo_flip_asm_led/1.jpg" class="maxSize"><br><br>
+
+Register<br>
+<img src="miyoo_flip_asm_led/2.jpg" class="maxSize"><br><br>
+
+Data-Low<br>
+<img src="miyoo_flip_asm_led/3.jpg" class="maxSize"><br><br>
+
+Data-High<br>
+<img src="miyoo_flip_asm_led/4.jpg" class="maxSize"><br><br>
+
+Direction Low and High<br>
+<img src="miyoo_flip_asm_led/5.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .equ GPIO0_BASE, 0xFDD60000
+    .equ GPIO1_BASE, 0xFE740000
+    .equ GPIO2_BASE, 0xFE750000
+    .equ GPIO3_BASE, 0xFE760000
+    .equ GPIO4_BASE, 0xFE770000
+
+    .global	_start
+_start:
+    b reset
+
+reset:
+    ldr x0, =GPIO0_BASE
+    ldr w1, =0xffffffff
+    str w1, [x0, #8]
+    str w1, [x0, #12]
+
+    ldr w1, =(1 &lt;&lt; 12)
+    ldr w2, =0xffff0000
+0:
+    eor w2, w2, w1
+    str w2, [x0, #0]
+    str w2, [x0, #4]
+    ldr x5, =0x3ffffff
+1:
+    subs x5, x5, #1
+    bne 1b
+    b 0b
+    .end
+</pre><br>
+
+<p>
+main.ld
+</p>
+<pre>
+MEMORY {
+    RAM : ORIGIN = 0, LENGTH = 64K
+}
+
+SECTIONS {
+    .text : { *(.text*) } &gt; RAM
+    .data : { *(.data*) } &gt; RAM
+    .bss : { *(.bss*) } &gt; RAM
+}
+</pre><br>
+
+<p>
+Makefile
+</p>
+<pre>
+all:
+	aarch64-linux-gnu-as -mcpu=cortex-a53 -o main.o main.s
+	aarch64-linux-gnu-ld -T main.ld -o main.elf main.o
+	aarch64-linux-gnu-objcopy -O binary main.elf main.bin
+	./mkimage -f main.its -E main.itb
+	cat main.itb &gt; main.img
+	truncate -s %2048K main.img
+	cat main.itb &gt; main.img
+	truncate -s %2048K main.img
+
+flash:
+	xrock extra maskrom --rc4 off --sram rk3566_ddr_1056MHz_v1.18.bin --delay 10 --rc4 off --dram rk356x_usbplug_v1.17.bin --delay 10
+	sleep 1
+	xrock flash write 6144 main.img
+	xrock reset
+
+clean:
+	rm -rf main.bin main.o main.elf main.img main.itb
+</pre><br>
+
+<p>
+接著讓Miyoo Flip進入MASKROM模式後，執行如下命令：
+</p>
+<pre>
+$ make
+$ make flash
+    xrock extra maskrom --rc4 off --sram rk3566_ddr_1056MHz_v1.18.bin --delay 10 --rc4 off --dram rk356x_usbplug_v1.17.bin --delay 10
+    sleep 1
+    xrock flash write 6144 main.img
+    100% [================================================] 2.000 MB, 1.320 MB/s         
+    xrock reset
+</pre><br>
+
+<p>
+完成<br>
+<img src="miyoo_flip_asm_led/6.jpg" class="maxSize"><br>
+<img src="miyoo_flip_asm_led/7.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
