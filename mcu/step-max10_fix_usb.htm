@@ -1,0 +1,30 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - Altera 10M02SCM (小脚丫STEP-MAX10) - <b>解決USB-Blaster無法偵測到的問題(Linux)</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://rocketboards.org/foswiki/Documentation/UsingUSBBlasterUnderLinux<br>
+https://unix.stackexchange.com/questions/39370/how-to-reload-udev-rules-without-reboot<br><br>
+
+USB-Blaster在Debian下出現<b>Unable to scan device chain. Can't scan JTAG chain</b>時，可以透過添加udev rule解決，步驟如下：
+</p>
+<pre>
+$ sudo vim /etc/udev/rules.d/92-usbblaster.rules
+    # USB-Blaster
+    SUBSYSTEM=="usb", ATTRS{idVendor}=="09fb", ATTRS{idProduct}=="6001", MODE="0666"
+    SUBSYSTEM=="usb", ATTRS{idVendor}=="09fb", ATTRS{idProduct}=="6002", MODE="0666"
+
+    SUBSYSTEM=="usb", ATTRS{idVendor}=="09fb", ATTRS{idProduct}=="6003", MODE="0666"
+
+    # USB-Blaster II
+    SUBSYSTEM=="usb", ATTRS{idVendor}=="09fb", ATTRS{idProduct}=="6010", MODE="0666"
+    SUBSYSTEM=="usb", ATTRS{idVendor}=="09fb", ATTRS{idProduct}=="6810", MODE="0666"
+
+$ sudo udevadm control --reload-rules
+$ sudo udevadm trigger
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
