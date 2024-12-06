@@ -1,0 +1,46 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - Allwinner H3 (NanoPi M1) - <b>如何初始化R_GPIO</b></h3>
+<hr size="1"><br>
+<p>
+參考資料：<br>
+https://wiki.iagent.no/wiki/AR100<br>
+https://wiki.friendlyelec.com/wiki/index.php/NanoPi_M1<br>
+https://forum.armbian.com/topic/5051-nanopi-neo2-cpu-frequency-issue/page/2/<br>
+https://github.com/friendlyarm/u-boot/tree/sunxi-v2017.x/arch/arm/include/asm/arch-sunxi<br><br>
+
+似乎每次遇到抄襲別人東西的時候就會缺少說明文件，Allwinner的R_GPIO(R_PIO)就是一個例子，在使用Allwinner H3 R_GPIO之前，PIO_GATING(BUS_CLK_GATING_REG2)必須先開啟，接著初始化PRCM相關暫存器，可惜，這部份並沒有說明文件，因此，只能去看U-Boot如何做的，然後照抄一遍
+</p>
+<pre class="brush:asm">
+  .equ PRCM,      0x01f01400
+  .equ CCU,       0x01c20000
+  .equ PIO,       0x01c20800
+
+  .equ BUS_CLK_GATING_REG2,  (CCU + 0x68)
+  .equ PRCM_APB0_GATE,       (PRCM + 0x28)
+  .equ PRCM_APB0_RESET,      (PRCM + 0xb0)
+  .equ PRCM_SEC_SWITCH,      (PRCM + 0x1d0)
+
+reset:
+  ldr r0, =BUS_CLK_GATING_REG2
+  ldr r1, [r0]
+  orr r1, #(1 &lt;&lt; 5)
+  str r1, [r0]
+
+  ldr r0, =PRCM_SEC_SWITCH
+  ldr r1, =(1 &lt;&lt; 2) | (1 &lt;&lt; 1) | (1 &lt;&lt; 0)
+  str r1, [r0]
+
+  ldr r0, =PRCM_APB0_GATE
+  ldr r1, [r0]
+  orr r1, #(1 &lt;&lt; 0)
+  str r1, [r0]
+
+  ldr r0, =PRCM_APB0_RESET
+  ldr r1, =(1 &lt;&lt; 0)
+  str r1, [r0]
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
