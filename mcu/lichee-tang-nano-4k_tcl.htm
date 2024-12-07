@@ -1,0 +1,134 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - GOWIN Semiconductor GW1NSR-LV4CQN48PC6/I5 (Lichee Tang Nano 4K) - <b>如何透過gw_sh編譯專案</b></h3>
+<hr size="1"><br>
+<p>
+main.gprj
+</p>
+<pre>
+&lt;?xml version="1" encoding="UTF-8"?&gt;
+&lt;!DOCTYPE GOWIN&gt;
+&lt;Project&gt;
+    &lt;Template&gt;FPGA&lt;/Template&gt;
+    &lt;Version&gt;5&lt;/Version&gt;
+    &lt;Device name="GW1NSR-4C" pn="GW1NSR-LV4CQN48PC6/I5"&gt;gw1nsr4c-000&lt;/Device&gt;
+    &lt;FileList&gt;
+        &lt;File path="main.v" type="file.verilog" enable="1"/&gt;
+        &lt;File path="main.cst" type="file.cst" enable="1"/&gt;
+    &lt;/FileList&gt;
+&lt;/Project&gt;
+</pre><br>
+
+<p>
+main.v
+</p>
+<pre class="brush:verilog">
+module led (
+    input sys_clk,
+    input sys_rst_n,
+    output reg led
+);
+
+reg [23:0] counter;
+
+always @(posedge sys_clk or negedge sys_rst_n) begin
+    if (!sys_rst_n)
+        counter &lt;= 24'd0;
+    else if (counter &lt; 24'd1350_0000)
+        counter &lt;= counter + 1;
+    else
+        counter &lt;= 24'd0;
+end
+
+always @(posedge sys_clk or negedge sys_rst_n) begin
+    if (!sys_rst_n)
+        led &lt;= 1'b1;
+    else if (counter == 24'd1350_0000)
+        led &lt;= ~led;
+end
+
+endmodule
+</pre><br>
+
+<p>
+main.cst
+</p>
+<pre>
+IO_LOC "led" 10;
+IO_PORT "led" PULL_MODE=NONE DRIVE=8;
+IO_LOC "sys_rst_n" 15;
+IO_PORT "sys_rst_n" PULL_MODE=UP;
+IO_LOC "sys_clk" 45;
+IO_PORT "sys_clk" PULL_MODE=UP;
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ /opt/gowin/IDE/bin/gw_sh
+*** GOWIN Tcl Command Line Console  *** 
+% open_project main.gprj
+    Open project /tmp/gg/main.gprj finished
+
+% run all
+    GowinSynthesis start
+    Running parser ...
+    Analyzing Verilog file '/tmp/gg/main.v'
+    Compiling module 'led'("/tmp/gg/main.v":1)
+    WARN  (EX3791) : Expression size 25 truncated to fit in target size 24("/tmp/gg/main.v":11)
+    NOTE  (EX0101) : Current top module is "led"
+    [5%] Running netlist conversion ...
+    Running device independent optimization ...
+    [10%] Optimizing Phase 0 completed
+    [15%] Optimizing Phase 1 completed
+    [25%] Optimizing Phase 2 completed
+    Running inference ...
+    [30%] Inferring Phase 0 completed
+    [40%] Inferring Phase 1 completed
+    [50%] Inferring Phase 2 completed
+    [55%] Inferring Phase 3 completed
+    Running technical mapping ...
+    [60%] Tech-Mapping Phase 0 completed
+    [65%] Tech-Mapping Phase 1 completed
+    [75%] Tech-Mapping Phase 2 completed
+    [80%] Tech-Mapping Phase 3 completed
+    [90%] Tech-Mapping Phase 4 completed
+    [95%] Generate netlist file "/tmp/gg/impl/gwsynthesis/main.vg" completed
+    [100%] Generate report file "/tmp/gg/impl/gwsynthesis/main_syn.rpt.html" completed
+    GowinSynthesis finish
+    Reading netlist file: "/tmp/gg/impl/gwsynthesis/main.vg"
+    Parsing netlist file "/tmp/gg/impl/gwsynthesis/main.vg" completed
+    Processing netlist completed
+    Reading constraint file: "/tmp/gg/main.cst"
+    Physical Constraint parsed completed
+    Running placement......
+    [10%] Placement Phase 0 completed
+    [20%] Placement Phase 1 completed
+    [30%] Placement Phase 2 completed
+    WARN  (TA1132) :  'sys_clk' was determined to be a clock but was not created.
+    [50%] Placement Phase 3 completed
+    Running routing......
+    [60%] Routing Phase 0 completed
+    [70%] Routing Phase 1 completed
+    [80%] Routing Phase 2 completed
+    WARN  (PR1014) : Generic routing resource will be used to clock signal 'sys_clk_d' by the specified constraint. And then it may lead to the excessive delay or skew
+    [90%] Routing Phase 3 completed
+    Running timing analysis......
+    [95%] Timing analysis completed
+    Placement and routing completed
+    Bitstream generation in progress......
+    Bitstream generation completed
+    Running power analysis......
+    [100%] Power analysis completed
+    Generate file "/tmp/gg/impl/pnr/main.power.html" completed
+    Generate file "/tmp/gg/impl/pnr/main.pin.html" completed
+    Generate file "/tmp/gg/impl/pnr/main.rpt.html" completed
+    Generate file "/tmp/gg/impl/pnr/main.rpt.txt" completed
+    Generate file "/tmp/gg/impl/pnr/main.tr.html" completed
+    Sat Dec  7 12:28:20 2024
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
