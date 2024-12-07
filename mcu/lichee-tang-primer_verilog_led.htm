@@ -5,7 +5,7 @@
 <h3><a href="../mcu.htm">微處理器</a> - Anlogic EG4S20BG256 (Lichee Tang Primer) - Verilog - <b>LED</b></h3>
 <hr size="1"><br>
 <p>
-開啟TD
+GUI模式
 </p>
 <pre>
 $ /opt/td/bin/td -gui
@@ -13,7 +13,7 @@ $ /opt/td/bin/td -gui
 <p>
 <img src="lichee-tang-primer_verilog_led/1.jpg" class="maxSize"><br><br>
 
-New Project...<br>
+New Project<br>
 <img src="lichee-tang-primer_verilog_led/2.jpg" class="maxSize"><br><br>
 
 EG4 EG4S20B256<br>
@@ -25,17 +25,29 @@ New Source<br>
 main.v
 </p>
 <pre class="brush:verilog">
-module main(btn, led);
+module main(clk, led);
+    
+input clk;
+output reg led;
+reg [25:0] clk_cnt;
  
-input btn;
-output led;
-assign led = btn;
- 
+initial begin
+    led = 0;
+    clk_cnt = 0;
+end
+  
+always @(posedge clk) begin
+    clk_cnt = clk_cnt + 1;
+    if (clk_cnt &gt; 24000000) begin
+        clk_cnt = 0;
+        led = ~led;
+    end
+end
 endmodule
 </pre><br>
 
 <p>
-Ctrl+S<br>
+存檔<br>
 <img src="lichee-tang-primer_verilog_led/5.jpg" class="maxSize"><br><br>
 
 New<br>
@@ -44,24 +56,22 @@ New<br>
 main.adc<br>
 </p>
 <pre class="brush:verilog">
-set_pin_assignment {btn} {location=k16;}
-set_pin_assignment {led} {location=r3;}
+set_pin_assignment { clk } { location = k14; }
+set_pin_assignment { led } { location = r3;  }
 </pre><br>
 
 <p>
-Ctrl+S<br>
+存檔<br>
 <img src="lichee-tang-primer_verilog_led/7.jpg" class="maxSize"><br><br>
 
-Add ADC File<br>
+添加ADC<br>
 <img src="lichee-tang-primer_verilog_led/8.jpg" class="maxSize"><br><br>
 
 main.adc<br>
 <img src="lichee-tang-primer_verilog_led/16.jpg" class="maxSize"><br><br>
 
 Run<br>
-<img src="lichee-tang-primer_verilog_led/9.jpg" class="maxSize"><br><br>
-
-led.bit<br>
+<img src="lichee-tang-primer_verilog_led/9.jpg" class="maxSize"><br>
 <img src="lichee-tang-primer_verilog_led/10.jpg" class="maxSize"><br><br>
 
 Download<br>
@@ -73,8 +83,9 @@ Download<br>
 接著滑鼠點一下main.bit，讓Run按鈕可以顯示<br>
 <img src="lichee-tang-primer_verilog_led/13.jpg" class="maxSize"><br><br>
 
-按下Run燒錄(假如要燒錄到Flash記憶體，請把Mode從JTAG改成<b>PROGRAM FLASH</b>)<br>
-<img src="lichee-tang-primer_verilog_led/14.jpg" class="maxSize"><br><br>
+按下Run下載<br>
+<img src="lichee-tang-primer_verilog_led/14.jpg" class="maxSize"><br>
+P.S. 如果要燒錄到Flash記憶體，Mode要改成<b>PROGRAM FLASH</b><br><br>
 
 完成<br>
 <img src="lichee-tang-primer_verilog_led/15.jpg" class="maxSize"><br>
