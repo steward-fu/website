@@ -8,71 +8,96 @@
 參考資訊：<br>
 https://www.stepfpga.com/doc/step-mxo2%E5%85%A5%E9%97%A8%E6%95%99%E7%A8%8B<br><br>
 
-新增專案<br>
-<img src="step-mxo2_vhdl_led/1.jpg" class="maxSize"><br><br>
-
-專案名稱<br>
-<img src="step-mxo2_vhdl_led/2.jpg" class="maxSize"><br><br>
-
-Next<br>
-<img src="step-mxo2_vhdl_led/3.jpg" class="maxSize"><br><br>
-
-LCMX02-4000HC、CSGBA132<br>
-<img src="step-mxo2_vhdl_led/4.jpg" class="maxSize"><br><br>
-
-Next<br>
-<img src="step-mxo2_vhdl_led/5.jpg" class="maxSize"><br><br>
-
-專案建立完成<br>
-<img src="step-mxo2_vhdl_led/6.jpg" class="maxSize"><br><br>
-
-接著新增VHDL檔案<br>
-<img src="step-mxo2_vhdl_led/7.jpg" class="maxSize"><br>
-<img src="step-mxo2_vhdl_led/8.jpg" class="maxSize"><br><br>
-
 main.vhd
 </p>
-<pre class="brush: pas">
-module main(btn, led);
+<pre class="brush:pascal">
+library ieee;
+use ieee.std_logic_1164.all;
+ 
+entity main is
+    port(
+        clk : in std_logic;
+		led : out std_logic_vector(0 to 7) := "11111111"
+	);
+end main;
+ 
+architecture logic of main is
+	signal val: std_logic_vector(0 to 7) := "11111111";
+	signal clk_cnt : integer := 0;
+ 
+begin
+    process(clk) is
+    begin
+		if (clk'event and clk = '1') then
+			clk_cnt &lt;= clk_cnt + 1;
+		end if;
+ 
+		if (clk_cnt &gt;= 12000000) then
+			clk_cnt &lt;= 0;
+			led &lt;= val;
 
-input btn;
-output led;
-assign led = btn;
+			val &lt;= not val;
+		end if;
+	end process;
+end logic;
+</pre><br>
 
-endmodule
-</pre>
 <p>
-Button輸入就當做LED輸出<br><br>
+New =&gt; Project<br>
+<img src="step-mxo2_vhdl_led/1.jpg" class="maxSize"><br><br>
 
-用滑鼠點擊Synthesize Design<br>
-<img src="step-mxo2_vhdl_led/20.jpg" class="maxSize"><br><br>
+Name<br>
+<img src="step-mxo2_vhdl_led/2.jpg" class="maxSize"><br><br>
 
-設定腳位<br>
-<img src="step-mxo2_vhdl_led/11.jpg" class="maxSize"><br><br>
+加入main.vhd<br>
+<img src="step-mxo2_vhdl_led/3.jpg" class="maxSize"><br><br>
 
-btn(L14)、led(N13)<br>
-<img src="step-mxo2_vhdl_led/12.jpg" class="maxSize"><br><br>
+選擇型號<br>
+<img src="step-mxo2_vhdl_led/4.jpg" class="maxSize"><br><br>
 
-在左邊的Process Tab裡面，把所有項目句選<br>
+Lattice LSE<br>
+<img src="step-mxo2_vhdl_led/5.jpg" class="maxSize"><br><br>
+
+用滑鼠Double Click箭頭部份<br>
+<img src="step-mxo2_vhdl_led/6.jpg" class="maxSize"><br><br>
+
+完成合成<br>
+<img src="step-mxo2_vhdl_led/7.jpg" class="maxSize"><br><br>
+
+Tools =&gt; Spreadsheet View<br>
+<img src="step-mxo2_vhdl_led/8.jpg" class="maxSize"><br><br>
+
+編輯腳位<br>
 <img src="step-mxo2_vhdl_led/9.jpg" class="maxSize"><br><br>
 
-使用滑鼠雙擊<b>Export Files</b><br>
+用滑鼠Double Click其餘部份，讓全部變成綠色狀態<br>
 <img src="step-mxo2_vhdl_led/10.jpg" class="maxSize"><br><br>
 
-接著插入FPGA開發板並且確認電腦可以正確識別，如錯誤，記得安裝驅動程式<br>
-<img src="step-mxo2_vhdl_led/15.jpg" class="maxSize"><br><br>
+燒錄
+</p>
+<pre>
+$ openFPGALoader -m -d /dev/ttyUSB0 main_impl1.jed 
+    empty
+    write to ram
+    No cable or board specified: using direct ft2232 interface
+    Can't read iSerialNumber field from FTDI: considered as empty string
+    Jtag frequency : requested 6.00MHz   -&gt; real 6.00MHz  
+    Open file DONE
+    Parse file DONE
+    Enable configuration: DONE
+    SRAM erase: DONE
+    Enable configuration: DONE
+    Flash erase: DONE
+    Writing data: [==================================================] 100.00%
+    Done
+    Write program Done: DONE
+    Disable configuration: DONE
+</pre><br>
 
-開啟燒錄頁面<br>
-<img src="step-mxo2_vhdl_led/13.jpg" class="maxSize"><br>
-<img src="step-mxo2_vhdl_led/14.jpg" class="maxSize"><br>
-<img src="step-mxo2_vhdl_led/16.jpg" class="maxSize"><br><br>
-
-燒錄<br>
-<img src="step-mxo2_vhdl_led/17.jpg" class="maxSize"><br><br>
-
+<p>
 完成<br>
-<img src="step-mxo2_vhdl_led/18.jpg" class="maxSize"><br>
-<img src="step-mxo2_vhdl_led/19.jpg" class="maxSize">
+<img src="step-mxo2_vhdl_led/11.jpg" class="maxSize"><br>
+<img src="step-mxo2_vhdl_led/12.jpg" class="maxSize">
 </p>
 
 <br><script type="text/javascript" src="../tail.js"></script>
