@@ -1,0 +1,66 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - NXP MC68HC908JB8 - Assembly - <b>Button</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://www.sparetimelabs.com/funwith08/funwith08.php<br>
+https://www.nxp.com/docs/en/data-sheet/MC68HC908JB8.pdf<br>
+https://github.com/ixaxaar/sdcc/blob/master/sdas/doc/asmlnk.txt<br>
+https://hackaday.io/project/167952-semyon/log/169905-blink-with-sdas<br>
+https://www.nxp.com/files-static/microcontrollers/doc/ref_manual/HCS08RMV1.pdf<br><br>
+
+PTE<br>
+<img src="mc68hc908jb8_asm_btn/1.jpg" class="maxSize"><br><br>
+
+DDRE<br>
+<img src="mc68hc908jb8_asm_btn/2.jpg" class="maxSize"><br><br>
+
+配置提昇電阻<br>
+<img src="mc68hc908jb8_asm_btn/3.jpg" class="maxSize"><br><br>
+
+main.asm
+</p>
+<pre class="brush:asm">
+    PTA  .equ 0x00
+    DDRA .equ 0x04
+    PTE  .equ 0x08
+    DDRE .equ 0x09
+    POCR .equ 0x1d
+
+    .module main
+    .optsdcc -mhc08
+
+    .area codeivt (abs)
+    .org 0xfffe
+    .dw main
+
+    .area cseg (abs, code)
+    .org 0xdc00
+main:
+    lda #0x10
+    sta POCR
+
+    lda #0x02
+    sta DDRA
+
+    lda #0x00
+    sta DDRE
+loop:
+    lda PTE
+    lsra
+    lsra
+    lsra
+    sta PTA
+    jmp loop
+</pre><br>
+
+<p>
+完成<br>
+<img src="mc68hc908jb8_asm_btn/4.jpg" class="maxSize"><br>
+<img src="mc68hc908jb8_asm_btn/5.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
