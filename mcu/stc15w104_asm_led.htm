@@ -1,0 +1,67 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - STCmicro STC15W104 - Assembly - <b>LED</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+http://plit.de/asem-51/<br>
+http://www.stcisp.com/stcisp620_off.html<br>
+https://sourceforge.net/projects/mcu8051ide/<br><br>
+
+I/O驅動方式<br>
+<img src="stc15w104_asm_led/3.jpg" class="maxSize"><br>
+P.S. I/O預設是8051雙向模式<br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .org 0h
+    jmp _start
+  
+    .org 100h
+_start:
+    setb p3.2
+    call delay_1s
+    clr p3.2
+    call delay_1s
+    jmp _start
+ 
+    ; 1t + ((1t + (4t * 250) + 4t) * 200t) + 4t = 201005t
+    ; 11.0592MHz = 0.09042us
+    ; 201005t * 0.09042us = 18175us
+delay_18ms: 
+    mov r7, #200
+d0:
+    mov r6, #250
+d1: 
+    djnz r6, d1
+    djnz r7, d0
+    ret
+
+    ; 1t + ((4t + 201005t + 4t) * 55) + 4t = 11055720t
+    ; 11055720t * 0.09042us = 999658us ~= 1s
+delay_1s: 
+    mov r5, #55
+d2: 
+    call delay_18ms
+    djnz r5, d2
+    ret
+    .end
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ mcu8051ide --compile main.s
+</pre><br>
+
+<p>
+接著透過STC-ISP燒錄即可<br>
+<img src="stc15w104_asm_led/1.jpg" class="maxSize"><br>
+<img src="stc15w104_asm_led/2.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
