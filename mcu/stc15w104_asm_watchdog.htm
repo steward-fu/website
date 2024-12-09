@@ -1,0 +1,48 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - STCmicro STC15W104 - Assembly - <b>Watchdog</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+http://plit.de/asem-51/<br>
+http://www.stcisp.com/stcisp620_off.html<br>
+https://sourceforge.net/projects/mcu8051ide/<br><br>
+
+Watchdog啟動後，如果沒有在規定的時間內清除，則MCU將會Reboot(Hardware)，因此，為了避免當機，Watchdog是一個很棒的輔助功能，司徒這次就是利用Watchdog當作LED閃爍的用途，因為STC15W104啟動後，Port 3是輸出高電位，因此，在主程式裡面設定P3.2成0(Low)後，啟動Watchdog，然後等待Watchdog觸發Reboot，藉此閃爍LED，而Watchdog的暫存器內容如下：<br>
+<img src="stc15w104_asm_watchdog/1.jpg" class="maxSize"><br><br>
+
+Prescale：WDT overflow time = (12 × Pre-scale × 32768) / SYSclk<br>
+<img src="stc15w104_asm_watchdog/2.jpg" class="maxSize"><br>
+<img src="stc15w104_asm_watchdog/3.jpg" class="maxSize"><br>
+<img src="stc15w104_asm_watchdog/4.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .org 0h
+    jmp _start
+  
+    .org 100h
+_start:
+    clr p3.2
+    mov 0c1h, #0fah
+    jmp $
+    .end
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ mcu8051ide --compile main.s
+</pre><br>
+
+<p>
+完成<br>
+<img src="stc15w104_asm_led/1.jpg" class="maxSize"><br>
+<img src="stc15w104_asm_led/2.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

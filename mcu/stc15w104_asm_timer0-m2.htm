@@ -1,0 +1,74 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - STCmicro STC15W104 - Assembly - <b>Timer0(Timer、Mode2)</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+http://plit.de/asem-51/<br>
+http://www.stcisp.com/stcisp620_off.html<br>
+https://sourceforge.net/projects/mcu8051ide/<br><br>
+
+Timer0 Mode2為自動載入的8Bit計數、計時模式，最大可以從0數到256，當數到256時，則觸發Timer0計時中斷<br>
+<img src="stc15w104_asm_timer0-m1/1.jpg" class="maxSize"><br><br>
+
+設定步驟：
+</p>
+<pre>
+1. AUXR(0x8e)的Bit7(T0x12, 1T、12T)
+2. TMOD的Timer0計時模式(CT=0, M1=1, M0=0)
+3. 設定TL0、TH0(1T, 0.09us, 11.0592MHz)
+4. 設定TR0
+5. 設定ET0、EA
+</pre><br>
+
+<p>
+main.s
+</p>
+<pre class="brush:asm">
+    led set p3.2
+
+    .org 0x00
+    jmp start
+
+    .org 0x0b
+    jmp t0_handle
+
+    .org 0x100
+start:
+    orl auxr, #80h
+    mov tmod, #02h
+    mov tl0, #0h
+    mov th0, #0h
+    clr a
+    clr led
+    clr tf0
+    setb tr0
+    setb et0
+    setb ea
+    jmp $
+
+t0_handle:
+    djnz acc, nothing
+    cpl led
+nothing:
+    reti
+    .end
+</pre>
+<p>
+P.S. 1T，(0.09us * 255 * 255) ~= 5.85ms<br><br>
+
+編譯
+</p>
+<pre>
+$ mcu8051ide --compile main.s
+</pre><br>
+
+<p>
+完成<br>
+<img src="stc15w104_asm_led/1.jpg" class="maxSize"><br>
+<img src="stc15w104_asm_led/2.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head><script type="text/javascript" src="../page_head.js"></script>
 
-<h3><a href="../mcu.htm">微處理器</a> - STCmicro STC15W104 - Assembly - <b>Clock</b></h3>
+<h3><a href="../mcu.htm">微處理器</a> - STCmicro STC15W104 - Assembly - <b>Power-Down、Idle</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
@@ -10,43 +10,40 @@ http://plit.de/asem-51/<br>
 http://www.stcisp.com/stcisp620_off.html<br>
 https://sourceforge.net/projects/mcu8051ide/<br><br>
 
-STC15W104提供除頻功能，操作相當簡單，只要設定CLK_DIV暫存器即可<br>
-<img src="stc15w104_asm_clock/1.jpg" class="maxSize"><br><br>
+STC15W104支援兩種省電模式：Power-Down(極省電, 0.1uA)和Idle(省電, 1.8mA)，只要設定PCON的PD和IDL位元即可<br>
+<img src="stc15w104_asm_power/1.jpg" class="maxSize"><br>
+<img src="stc15w104_asm_power/2.jpg" class="maxSize"><br>
+P.S. 喚醒方式可以透過Reset、External Interrupt、Watchdog，司徒目前使用INT1喚醒測試<br><br>
 
 main.s
 </p>
 <pre class="brush:asm">
-    led .equ p3.2
- 
     .org 0h
     jmp _start
+
+    .org 13h
+    reti
      
     .org 100h
 _start:
-    clr a
+    setb p3.2
+    setb ea
+    setb ex1
+    setb it1
+    orl 87h, #02h
+
 loop:
-    inc a
-    anl a, #0fh
-    mov 97h, a
-    call blink_led
+    setb p3.2
+    call delay
+    clr p3.2
+    call delay
     jmp loop
 
-blink_led:
-    mov r2, #10
-b0:
-    setb led
-    call delay
-    clr led
-    call delay
-    djnz r2, b0
-    ret
-
-delay: 
+delay:
     mov r0, #255
 d0:
     mov r1, #255
-d1: 
-    djnz r1, d1
+    djnz r1, $
     djnz r0, d0
     ret
     .end
@@ -62,7 +59,7 @@ $ mcu8051ide --compile main.s
 <p>
 完成<br>
 <img src="stc15w104_asm_led/1.jpg" class="maxSize"><br>
-<img src="stc15w104_asm_led/2.jpg" class="maxSize">
+<img src="stc15w104_asm_btn/2.jpg" class="maxSize">
 </p>
 
 <br><script type="text/javascript" src="../tail.js"></script>

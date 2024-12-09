@@ -1,0 +1,103 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - STCmicro STC15W104 - Assembly - <b>UART TX(57600bps)</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+http://plit.de/asem-51/<br>
+http://www.stcisp.com/stcisp620_off.html<br>
+https://sourceforge.net/projects/mcu8051ide/<br>
+https://www.solitontech.com/uart-protocol-validation-service/<br><br>
+
+由於STC15W104沒有UART功能，因此，司徒只好先使用I/O Toggle的方式製作UART TX，TX比較簡單，只要把時間算好，基本上沒有太大問題，唯一要注意的是，最好不要超過3%的誤差，加上STC15W104的石英震盪器是使用內部RC元件，難免會有誤差，建議不要用太快的RC頻率，目前司徒使用RC 11.0592MHz，UART Baudrate則是57600bps，格式為N,8,1，過程說明如下<br><br>
+
+UART傳輸協定<br>
+<img src="stc15w104_asm_uart_tx/1.jpg" class="maxSize"><br>
+57600bps每個bit時間為：1/57600 = 17.361us<br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    uart_tx .equ p3.1
+
+    .org 0h
+    jmp _start
+    
+    .org 100h
+_start:
+    setb uart_tx
+main:
+    mov a, #55h
+    call uart_send_byte
+    call delay_1s
+    jmp main
+ 
+    ; 57600,N,8,1
+uart_send_byte:
+    mov r6, #8
+    clr uart_tx
+    call delay_16us
+u0:
+    rrc a
+    jc u1
+    clr uart_tx
+    sjmp u2
+u1:
+    setb uart_tx
+u2:
+    call delay_16us
+    djnz r6, u0
+    setb uart_tx
+    call delay_16us
+    ret
+ 
+    ; 1t + ((1t + (4t * 250) + 4t) * 200t) + 4t = 201005t
+    ; 11.0592MHz = 0.09042us
+    ; 201005t * 0.09042us = 18175us
+delay_18ms: 
+    mov r7, #200
+d0:
+    mov r6, #250
+d1: 
+    djnz r6, d1
+    djnz r7, d0
+    ret
+  
+    ; 1t + ((4t + 201005t + 4t) * 55) + 4t = 11055720t
+    ; 11055720t * 0.09042us = 999658us ~= 1s
+delay_1s: 
+    mov r5, #55
+d2: 
+    call delay_18ms
+    djnz r5, d2
+    ret
+ 
+    ; 1t + (4t * 44) = 177t
+    ; 11.0592MHz = 0.09042us
+    ; 177t * 0.09042 = 16.00434us
+    ; uart_send_byte body ~= 1.62756us
+    ; 
+    ; 57600bps = 17.361us (16.00434+1.62756 = 17.63190us)
+delay_16us:
+    mov r5, #44
+d3:
+    djnz r5, d3
+    ret
+    .end
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ mcu8051ide --compile main.s
+</pre><br>
+
+<p>
+完成<br>
+<img src="stc15w104_asm_uart_tx/2.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

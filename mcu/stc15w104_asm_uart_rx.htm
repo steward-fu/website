@@ -1,0 +1,91 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - STCmicro STC15W104 - Assembly - <b>UART RX(57600bps)</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+http://plit.de/asem-51/<br>
+http://www.stcisp.com/stcisp620_off.html<br>
+https://sourceforge.net/projects/mcu8051ide/<br>
+https://www.solitontech.com/uart-protocol-validation-service/<br><br>
+
+由於STC15W104沒有UART功能，因此，司徒目前使用I/O方式製作UART RX功能，使用的方式為輪詢UART RX腳位，格式為：57600bps N,8,1，使用的振盪器為RC 11.0592MHz，過程說明如下<br><br>
+
+UART傳輸協定<br>
+<img src="stc15w104_asm_uart_tx/1.jpg" class="maxSize"><br>
+57600bps每個bit時間為：1/57600 = 17.361us<br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    uart_rx .equ p3.0
+    uart_tx .equ p3.1
+ 
+    .org 0h
+    jmp _start
+     
+    .org 100h
+_start:
+    setb uart_tx
+main:
+    call uart_recv_byte
+    call uart_send_byte
+    jmp main
+  
+    ; 57600,N,8,1
+    ; RC 11.0592MHz
+uart_send_byte:
+    mov r0, #8
+    clr uart_tx
+    mov r1, #44
+    djnz r1, $
+u0:
+    rrc a
+    jc u1
+    clr uart_tx
+    sjmp u2
+u1:
+    setb uart_tx
+u2:
+    mov r1, #44
+    djnz r1, $
+    djnz r0, u0
+    setb uart_tx
+    mov r1, #44
+    djnz r1, $
+    ret
+
+    ; 57600,N,8,1
+    ; RC 11.0592MHz
+uart_recv_byte:
+    clr a
+    mov r0, #8
+u3:
+    jb uart_rx, u3
+    mov r1, #72
+    djnz r1, $
+u4:
+    mov c, uart_rx
+    rrc a
+    mov r1, #44
+    djnz r1, $
+    djnz r0, u4
+    ret
+    .end
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ mcu8051ide --compile main.s
+</pre><br>
+
+<p>
+完成<br>
+<img src="stc15w104_asm_uart_rx/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
