@@ -1,0 +1,310 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - STCmicro STC15W4K56S4 - C/C++ - <b>1.54" ePaper 200x200 Black-Red</b></h3>
+<hr size="1"><br>
+<p>
+屏<br>
+<img src="stc15w4k56s4_cpp_epaper-1/1.jpg" class="maxSize"><br>
+<img src="stc15w4k56s4_cpp_epaper-1/2.jpg" class="maxSize"><br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include "stc15w4k56s4.h"
+
+#define SDA   P20
+#define SCK   P21
+#define CS    P22
+#define DC    P23
+#define RST   P24
+#define BUSY  P25
+
+const unsigned char lut_vcom0[] = {
+    0x0E, 0x14, 0x01, 0x0A, 0x06, 0x04, 0x0A, 0x0A,
+    0x0F, 0x03, 0x03, 0x0C, 0x06, 0x0A, 0x00
+};
+
+const unsigned char lut_w[] = {
+    0x0E, 0x14, 0x01, 0x0A, 0x46, 0x04, 0x8A, 0x4A,
+    0x0F, 0x83, 0x43, 0x0C, 0x86, 0x0A, 0x04
+};
+
+const unsigned char lut_b[] = {
+    0x0E, 0x14, 0x01, 0x8A, 0x06, 0x04, 0x8A, 0x4A,
+    0x0F, 0x83, 0x43, 0x0C, 0x06, 0x4A, 0x04
+};
+
+const unsigned char lut_g1[] = {
+    0x8E, 0x94, 0x01, 0x8A, 0x06, 0x04, 0x8A, 0x4A,
+    0x0F, 0x83, 0x43, 0x0C, 0x06, 0x0A, 0x04
+};
+
+const unsigned char lut_g2[] = {
+    0x8E, 0x94, 0x01, 0x8A, 0x06, 0x04, 0x8A, 0x4A,
+    0x0F, 0x83, 0x43, 0x0C, 0x06, 0x0A, 0x04
+};
+
+const unsigned char lut_vcom1[] = {
+    0x03, 0x1D, 0x01, 0x01, 0x08, 0x23, 0x37, 0x37,
+    0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+
+const unsigned char lut_red0[] = {
+    0x83, 0x5D, 0x01, 0x81, 0x48, 0x23, 0x77, 0x77,
+    0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+
+const unsigned char lut_red1[] = {
+    0x03, 0x1D, 0x01, 0x01, 0x08, 0x23, 0x37, 0x37,
+    0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+
+void delayms(unsigned int ms)
+{
+    unsigned int cnt = 0;
+
+    while (ms--) {
+        for (cnt = 0; cnt &lt; 1000; cnt++) {
+        }
+    }
+}
+
+void gpio_init(void)
+{
+    P0M0 = 0x00;
+    P0M1 = 0x00;
+    P1M0 = 0x00;
+    P1M1 = 0x00;
+    P2M0 = 0x00;
+    P2M1 = 0x00;
+    P3M0 = 0x00;
+    P3M1 = 0x00;
+    P4M0 = 0x00;
+    P4M1 = 0x00;
+
+    P0 = 0xff;
+    P1 = 0xff;
+    P2 = 0xff;
+    P3 = 0xff;
+    P4 = 0xff;
+}
+
+void spi_cmd(unsigned char cmd)
+{
+    unsigned char bit = 0;
+
+    CS = 0;
+    DC = 0;
+    for (bit = 0; bit &lt; 8; bit++) {
+        SCK = 0;
+        if ((cmd &amp; 0x80) == 0x80) {
+            SDA = 1;
+        }
+        else {
+            SDA = 0;
+        }
+        SCK = 1;
+        cmd &lt;&lt;= 1;
+    }
+    CS = 1;
+}
+
+void spi_dat(unsigned char dat)
+{
+    unsigned char bit = 0;
+
+    CS = 0;
+    DC = 1;
+    for (bit = 0; bit &lt; 8; bit++) {
+        SCK = 0;
+        if ((dat &amp; 0x80) == 0x80) {
+            SDA = 1;
+        }
+        else {
+            SDA = 0;
+        }
+        SCK = 1;
+        dat &lt;&lt;= 1;
+    }
+    CS = 1;
+}
+
+void wait_busy(void)
+{
+    do {
+        delayms(1);
+    } while(BUSY == 0);
+}
+
+void lcd_init(void)
+{
+    spi_cmd(0x01);
+    spi_dat(0x07);
+    spi_dat(0x00);
+    spi_dat(0x08);
+    spi_dat(0x00);
+    spi_cmd(0x06);
+    spi_dat(0x07);
+    spi_dat(0x07);
+    spi_dat(0x07);
+    spi_cmd(0x04);
+
+    wait_busy();
+
+    spi_cmd(0x00);
+    spi_dat(0xcf);
+    spi_cmd(0x50);
+    spi_dat(0xf0);
+    spi_cmd(0x30);
+    spi_dat(0x39);
+    spi_cmd(0x61);
+    spi_dat(0xc8);
+    spi_dat(0x00);
+    spi_dat(0xc8);
+    spi_cmd(0x82);
+    spi_dat(0x0e);
+}
+
+void lcd_clear(void)
+{
+    unsigned int x = 0;
+    unsigned int y = 0;
+
+    spi_cmd(0x10);
+    for (y = 0; y &lt; 200; y++) {
+        for (x = 0; x &lt; (200 / 8); x++) {
+            spi_dat(0xff);
+            spi_dat(0xff);
+        }
+    }
+    spi_cmd(0x13);
+    for (y = 0; y &lt; 200; y++) {
+        for (x = 0; x &lt; (200 / 8); x++) {
+            spi_dat(0xff);
+        }
+    }
+    spi_cmd(0x12);
+    wait_busy();
+}
+
+static void set_lut_bw(void)
+{
+    unsigned int x = 0;
+
+    spi_cmd(0x20);
+    for (x = 0; x &lt; 15; x++) {
+        spi_dat(lut_vcom0[x]);
+    }
+    spi_cmd(0x21);
+    for (x = 0; x &lt; 15; x++) {
+        spi_dat(lut_w[x]);
+    }
+    spi_cmd(0x22);
+    for (x = 0; x &lt; 15; x++) {
+        spi_dat(lut_b[x]);
+    }
+    spi_cmd(0x23);
+    for (x = 0; x &lt; 15; x++) {
+        spi_dat(lut_g1[x]);
+    }
+    spi_cmd(0x24);
+    for (x = 0; x &lt; 15; x++) {
+        spi_dat(lut_g2[x]);
+    }
+}
+
+void set_lut_red(void)
+{
+    unsigned int x = 0;
+
+    spi_cmd(0x25);
+    for (x = 0; x &lt; 15; x++) {
+        spi_dat(lut_vcom1[x]);
+    }
+    spi_cmd(0x26);
+    for (x = 0; x &lt; 15; x++) {
+        spi_dat(lut_red0[x]);
+    }
+    spi_cmd(0x27);
+    for (x = 0; x &lt; 15; x++) {
+        spi_dat(lut_red1[x]);
+    }
+}
+
+void main(void)
+{
+    unsigned int x = 0;
+    unsigned int y = 0;
+  
+    gpio_init();
+    AUXR |= 0x80;
+
+    RST = 0;
+    delayms(300);
+    RST = 1;
+    delayms(300);
+
+    lcd_init();
+    lcd_clear();
+    set_lut_bw();
+    set_lut_red();
+
+    spi_cmd(0x10);
+    for (y = 0; y &lt; 200; y++) {
+        for (x = 0; x &lt; (200 / 8); x++) {
+            if (y &lt; 70) {
+                spi_dat(0x00);
+                spi_dat(0x00);
+            }
+            else {
+                spi_dat(0xff);
+                spi_dat(0xff);
+            }
+        }
+    }
+    spi_cmd(0x13);
+    for (y = 0; y &lt; 200; y++) {
+        for (x = 0; x &lt; (200 / 8); x++) {
+            if ((y &gt; 70) &amp;&amp; (y &lt; 140)) {
+                spi_dat(0x00);
+            }
+            else{
+                spi_dat(0xff);
+            }
+        }
+    }
+    spi_cmd(0x12);
+    wait_busy();
+
+    while (1) {
+        P55 = 0;
+        delayms(500);
+        P55 = 1;
+        delayms(500);
+    }
+}
+</pre><br>
+
+<p>
+Makefile
+</p>
+<pre>
+all:
+	sdcc main.c
+	packihx main.ihx &gt; main.hex
+
+flash:
+	sudo stcgal -p /dev/ttyO2 -P stc15 -o clock_source=external main.hex
+
+clean:
+	rm -rf main.ihx main.lst main.mem main.rst main.lk main.map main.rel main.sym main.hex
+</pre><br>
+
+<p>
+完成<br>
+<img src="stc15w4k56s4_cpp_epaper-1/3.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

@@ -1,0 +1,280 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - STCmicro STC15W4K56S4 - C/C++ - <b>1.45" TFT 240x240 ST7789V</b></h3>
+<hr size="1"><br>
+<p>
+屏<br>
+<img src="stc15w4k56s4_cpp_st7789v/1.jpg" class="maxSize"><br>
+<img src="stc15w4k56s4_cpp_st7789v/2.jpg" class="maxSize"><br>
+</p>
+<table>
+<tr><th>腳位</th><th>說明</th></tr>
+<tr><td>1</td><td>LED K</td></tr>
+<tr><td>2</td><td>LED K</td></tr>
+<tr><td>3</td><td>GND</td></tr>
+<tr><td>4</td><td>GND</td></tr>
+<tr><td>5</td><td>FMARK</td></tr>
+<tr><td>6</td><td>SDA</td></tr>
+<tr><td>7</td><td>WR</td></tr>
+<tr><td>8</td><td>RS(SCL)</td></tr>
+<tr><td>9</td><td>CS</td></tr>
+<tr><td>10</td><td>RESET</td></tr>
+<tr><td>11</td><td>IOVCC</td></tr>
+<tr><td>12</td><td>IOVCC</td></tr>
+<tr><td>13</td><td>VCC</td></tr>
+<tr><td>14</td><td>VC</td></tr>
+<tr><td>15</td><td>GND</td></tr>
+<tr><td>16</td><td>GND</td></tr>
+<tr><td>17</td><td>NC</td></tr>
+<tr><td>18</td><td>NC</td></tr>
+<tr><td>19</td><td>NC</td></tr>
+<tr><td>20</td><td>NC</td></tr>
+<tr><td>21</td><td>NC</td></tr>
+<tr><td>22</td><td>NC</td></tr>
+<tr><td>23</td><td>LED A</td></tr>
+<tr><td>24</td><td>LED A</td></tr>
+</table><br>
+
+<p>
+跳線<br>
+<img src="stc15w4k56s4_cpp_st7789v/3.jpg" class="maxSize">
+</p>
+<table>
+<tr><th>腳位</th><th>說明</th></tr>
+<tr><td>1</td><td>IOVCC</td></tr>
+<tr><td>2</td><td>RESET</td></tr>
+<tr><td>3</td><td>CS</td></tr>
+<tr><td>4</td><td>RS(SCL)</td></tr>
+<tr><td>5</td><td>WR</td></tr>
+<tr><td>6</td><td>SDA</td></tr>
+<tr><td>7</td><td>FMARK</td></tr>
+<tr><td>8</td><td>GND</td></tr>
+<tr><td>9</td><td>LED K</td></tr>
+<tr><td>10</td><td>VCC</td></tr>
+<tr><td>11</td><td>GND</td></tr>
+<tr><td>12</td><td>LED A</td></tr>
+</table><br>
+
+<p>
+main.c
+</p>
+<pre class="brush:cpp">
+#include "stc15w4k56s4.h"
+
+#define RST   P54
+#define CS    P43
+#define SCL   P42
+#define WR    P41
+#define SDA   P40
+
+#define Command   0
+#define Parameter 1
+
+void delayms(unsigned int ms)
+{
+    unsigned int cnt = 0;
+
+    while (ms--) {
+        for (cnt = 0; cnt &lt; 1000; cnt++) {
+        }
+    }
+}
+
+void Write(unsigned char flag, unsigned char dat)
+{
+    int i = 0;
+
+    CS = 0;
+    SCL = 0;
+    SDA = flag;
+    SCL = 1;
+
+    for (i = 0; i &lt; 8; i++) {
+        SCL = 0;
+        if ((dat &amp; 0x80) == 0x80) {
+            SDA = 1;
+        }
+        else {
+            SDA = 0;
+        }
+        dat &lt;&lt;= 1;
+        SCL = 1;
+    }
+    CS = 1;
+}
+
+void reset(void)
+{
+  RST = 0;
+  delayms(100);
+  RST = 1;
+  delayms(100);
+}
+
+void init(void)
+{
+    Write(Command, 0x11);
+    delayms(120);   
+      
+    Write(Command, 0x36);
+    Write(Parameter, 0x00); 
+
+    Write(Command, 0x3a);
+    Write(Parameter, 0x05);
+
+    Write(Command, 0x2a); 
+    Write(Parameter, 0x00); 
+    Write(Parameter, 0x00); 
+    Write(Parameter, 0x00); 
+    Write(Parameter, 0xef); 
+
+    Write(Command, 0x2b); 
+    Write(Parameter, 0x00); 
+    Write(Parameter, 0x00); 
+    Write(Parameter, 0x00); 
+    Write(Parameter, 0xef);
+
+    Write(Command, 0xb2);
+    Write(Parameter, 0x0c);
+    Write(Parameter, 0x0c);
+    Write(Parameter, 0x00);
+    Write(Parameter, 0x33);
+    Write(Parameter, 0x33);
+
+    Write(Command, 0xb7);
+    Write(Parameter, 0x56);
+
+    Write(Command, 0xbb);
+    Write(Parameter, 0x1e); 
+
+    Write(Command ,0xc0); 
+    Write(Parameter, 0x2c); 
+
+    Write(Command, 0xc2); 
+    Write(Parameter, 0x01);
+
+    Write(Command, 0xc3);
+    Write(Parameter, 0x13);
+
+    Write(Command, 0xc4); 
+    Write(Parameter, 0x20);
+
+    Write(Command, 0xc6);
+    Write(Parameter, 0x0f);
+
+    Write(Command, 0xd0);
+    Write(Parameter, 0xa4);
+    Write(Parameter, 0xa1);
+
+    Write(Command, 0xe0);
+    Write(Parameter, 0xd0);
+    Write(Parameter, 0x03);
+    Write(Parameter, 0x08);
+    Write(Parameter, 0x0e);
+    Write(Parameter, 0x11);
+    Write(Parameter, 0x2b);
+    Write(Parameter, 0x3b);
+    Write(Parameter, 0x44);
+    Write(Parameter, 0x4c);
+    Write(Parameter, 0x2b);
+    Write(Parameter, 0x16);
+    Write(Parameter, 0x15);
+    Write(Parameter, 0x1e);
+    Write(Parameter, 0x21);
+
+    Write(Command, 0xe1);
+    Write(Parameter, 0xd0);
+    Write(Parameter, 0x03);
+    Write(Parameter, 0x08);
+    Write(Parameter, 0x0e);
+    Write(Parameter, 0x11);
+    Write(Parameter, 0x2b);
+    Write(Parameter, 0x3b);
+    Write(Parameter, 0x54);
+    Write(Parameter, 0x4c);
+    Write(Parameter, 0x2b);
+    Write(Parameter, 0x16);
+    Write(Parameter, 0x15);
+    Write(Parameter, 0x1e);
+    Write(Parameter, 0x21);
+
+    Write(Command, 0x51);
+    Write(Parameter, 0x20);
+
+    Write(Command, 0xe7);
+    Write(Parameter, 0x00);
+
+    Write(Command, 0x29);
+}
+
+void color(void)
+{
+    unsigned int x = 0;
+    unsigned int y = 0;
+
+    Write(Command, 0x2c); 
+    for (y = 0; y &lt; 240; y++) {
+        for (x = 0; x &lt; 240; x++) {
+            Write(Parameter, 0xf1);
+            Write(Parameter, 0x00);
+        }
+    }
+}
+
+void gpio_init(void)
+{
+    P0M0 = 0x00;
+    P0M1 = 0x00;
+    P1M0 = 0x00;
+    P1M1 = 0x00;
+    P2M0 = 0x00;
+    P2M1 = 0x00;
+    P3M0 = 0x00;
+    P3M1 = 0x00;
+    P4M0 = 0x00;
+    P4M1 = 0x00;
+    P5M0 = 0x00;
+    P5M1 = 0x00;
+}
+
+void main(void)
+{
+    gpio_init();
+    AUXR |= 0x80;
+
+    reset();
+    init();
+    color();
+
+    while (1) {
+        P55 = 0;
+        delayms(1000);
+        P55 = 1;
+        delayms(1000);
+    }
+}
+</pre><br>
+
+<p>
+Makefile
+</p>
+<pre>
+all:
+	sdcc main.c
+	packihx main.ihx &gt; main.hex
+
+flash:
+	sudo stcgal -p /dev/ttyO2 -P stc15 -o clock_source=external main.hex
+
+clean:
+	rm -rf main.ihx main.lst main.mem main.rst main.lk main.map main.rel main.sym main.hex
+</pre><br>
+
+<p>
+完成<br>
+<img src="stc15w4k56s4_cpp_st7789v/4.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
