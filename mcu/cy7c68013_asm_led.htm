@@ -1,0 +1,79 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - Cypress CY7C68013 - Assembly - <b>LED</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://www.cypress.com/file/126446/download<br><br>
+
+Output Enable<br>
+<img src="cy7c68013_asm_led/3.jpg" class="maxSize"><br><br>
+
+I/O<br>
+<img src="cy7c68013_asm_led/4.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    oeb set 0xb3
+    oed set 0xb5
+
+    .org 0h
+    jmp _start
+
+    .org 0x100
+_start:
+    mov oeb, #0x04
+    mov oed, #0x00
+loop:
+    setb p1.2
+    call delay
+    clr p1.2
+    call delay
+    jmp loop
+
+delay:
+    mov r6, #10
+d0:
+    mov r5, #255
+d1:
+    mov r4, #255
+d2:
+    djnz r4, d2
+    djnz r5, d1
+    djnz r6, d0
+    ret
+    .end
+</pre><br>
+
+<p>
+編譯、燒錄
+</p>
+<pre>
+$ mcu8051ide --compile main.s
+    Compiling file: main.s
+    Initializing pre-processor ...
+    Compiling ...
+    Creating IHEX8 ...                  -&gt; "main.hex"
+    Creating object file ...            -&gt; "main.bin"
+    Creating simulator data file ...    -&gt; "main.adf"
+    Creating code listing file ...      -&gt; "main.lst"
+    0 errors, 0 warnings
+    Compilation successful. (time: 0 sec.)
+
+$ sudo cycfx2prog prg:main.hex run
+    Using ID 04b4:8613 on 002.019.
+    Putting 8051 into reset.
+    Programming 8051 using "main.hex".
+    Putting 8051 out of reset.
+</pre><br>
+
+<p>
+完成<br>
+<img src="cy7c68013_asm_led/1.jpg" class="maxSize"><br>
+<img src="cy7c68013_asm_led/2.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
