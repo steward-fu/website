@@ -1,0 +1,73 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - TI CC2540 - Assembly - <b>LED</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://www.ti.com/lit/ug/swru191d/swru191d.pdf?ts=1610169216449&amp;ref_url=https%253A%252F%252Fwww.google.com%252F<br><br>
+
+Direction<br>
+<img src="cc2540_asm_led/3.jpg" class="maxSize"><br><br>
+
+Alternative Function<br>
+<img src="cc2540_asm_led/4.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    p0sel set 0xf3
+    p0dir set 0xfd
+  
+    .org 0h
+    jmp _start
+   
+    .org 100h
+_start:
+    mov p0dir, #0x01
+    mov p0sel, #0x00
+loop:
+    setb p0.0
+    call delay
+    clr p0.0
+    call delay
+    jmp loop
+
+delay:
+    mov r6, #50
+d0:
+    mov r5, #255
+d1:
+    mov r4, #255
+d2:
+    djnz r4, d2
+    djnz r5, d1
+    djnz r6, d0
+    ret
+    .end
+</pre><br>
+
+<p>
+編譯、燒錄
+</p>
+<pre>
+$ mcu8051ide --compile main.s
+$ sudo cc-tool -v -e -w main.hex
+    Programmer: CC Debugger
+    Target: CC2540
+    Erasing flash...
+    Completed       
+    Writing flash (34 B)...
+    Completed (0.12 s.)
+    Verifying flash...
+    Completed (0.07 s.)
+</pre><br>
+
+<p>
+完成<br>
+<img src="cc2540_asm_led/1.jpg" class="maxSize"><br>
+<img src="cc2540_asm_led/2.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
