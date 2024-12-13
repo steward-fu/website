@@ -1,0 +1,34 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../phone.htm">手機</a> - Unihertz Titan Pocket (TEE) - <b>Build Kernel 4.14.186</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/ubuntu-touch-unihertz-titan/kernel-alps-mt6771<br>
+https://stackoverflow.com/questions/8744087/how-to-recompile-just-a-single-kernel-module<br><br>
+
+由於Unihertz並沒有釋出Kernel Source，因此，司徒只使用這份程式碼，編譯出USB Serial Module(PL2303)來使用
+</p>
+<pre>
+$ sudo apt install build-essential libncurses-dev bison flex libssl-dev libelf-dev bc git gcc-aarch64-linux-gnu libfdt-dev clang
+
+$ cd
+$ wget https://github.com/steward-fu/website/releases/download/pixel-3a-xl/lineageos_linux-x86.tar.gz
+$ tar xvf lineageos_linux-x86.tar.gz
+$ export PATH=~/linux-x86/bin/:$PATH
+
+$ cd
+$ git clone --depth=1 https://github.com/ubuntu-touch-unihertz-titan/kernel-alps-mt6771
+$ cd kernel-alps-mt6771
+$ vim ./kernel/gen_kheaders.sh
+    cpio=`pwd`/tools/build/cpio
+
+$ ARCH=arm64 CC=clang CLANG_TRIPLE=aarch64-linux-gnu- CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabihf- make titanpocket_defconfig
+$ ARCH=arm64 CC=clang CLANG_TRIPLE=aarch64-linux-gnu- CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabihf- make menuconfig
+$ ARCH=arm64 CC=clang CLANG_TRIPLE=aarch64-linux-gnu- CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabihf- make modules SUBDIRS=drivers/usb/serial -j4
+$ ARCH=arm64 CC=clang CLANG_TRIPLE=aarch64-linux-gnu- CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabihf- INSTALL_MOD_PATH=out make modules_install SUBDIRS=drivers/usb/serial
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
