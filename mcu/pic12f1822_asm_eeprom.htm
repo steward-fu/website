@@ -1,0 +1,95 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - Microchip PIC12F1822 - Assembly - <b>EEPROM</b></h3>
+<hr size="1"><br>
+<p>
+暫存器<br>
+<img src="pic12f1822_asm_eeprom/1.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    list p=12f1822, r=hex
+    #include &lt;p12f1822.inc&gt;
+    __config _CONFIG1, _FOSC_INTOSC &amp; _WDTE_OFF &amp; _MCLRE_OFF
+    __config _CONFIG2, _LVP_OFF
+
+    #define LED 0x00
+ 
+    org 0x0000
+    goto start
+     
+    org 0x0100
+start:
+    banksel TRISA
+    bcf TRISA, LED
+   
+    banksel LATA
+    movlw 0xff
+    movwf LATA
+
+test_write:
+    banksel EEADRL
+    movlw 0x00
+    movwf EEADRL
+    movlw 0xaa
+    movwf EEDATL
+    call eeprom_write
+ 
+    banksel EEADRL
+    movlw 0x00
+    movwf EEADRL
+    call eeprom_read
+  
+    banksel LATA
+    xorlw 0xaa
+    btfsc STATUS, Z
+    bcf LATA, LED
+    btfss STATUS, Z
+    bsf LATA, LED
+
+idle:
+    goto idle
+
+eeprom_write:
+    banksel EECON1
+    bcf EECON1, CFGS
+    bcf EECON1, EEPGD
+    bsf EECON1, WREN
+    bcf INTCON, GIE
+    movlw 0x55
+    movwf EECON2
+    movlw 0xaa
+    movwf EECON2
+    bsf EECON1, WR
+    bsf INTCON, GIE
+    bcf EECON1, WREN
+    btfsc EECON1, WR
+    goto $-2
+    return
+
+eeprom_read:
+    banksel EECON1
+    bcf EECON1, CFGS
+    bcf EECON1, EEPGD
+    bsf EECON1, RD
+    movf EEDATL, w
+    return
+    end
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ gpasm main.s
+</pre><br>
+
+<p>
+完成<br>
+<img src="pic12f1822_asm_led/3.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

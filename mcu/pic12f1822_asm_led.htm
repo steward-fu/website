@@ -1,0 +1,72 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - Microchip PIC12F1822 - Assembly - <b>LED</b></h3>
+<hr size="1"><br>
+<p>
+TRISA(方向設定)、PORTA(I/O資料)<br>
+<img src="pic12f1822_asm_led/4.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    list p=12f1822, r=hex
+    #include &lt;p12f1822.inc&gt;
+    __config _CONFIG1, _FOSC_INTOSC &amp; _WDTE_OFF &amp; _MCLRE_OFF
+    __config _CONFIG2, _LVP_OFF
+
+    #define tmp1 0x20
+    #define tmp2 0x21
+
+    org 0x0000
+    goto start
+  
+    org 0x0100
+start:
+    banksel TRISA
+    clrf TRISA
+
+loop:
+    banksel PORTA
+    bcf PORTA, 0
+    call delay
+
+    banksel PORTA
+    bsf PORTA, 0
+    call delay
+    goto loop
+
+delay:
+    banksel tmp1
+    movlw 0x16
+    movwf tmp2
+    movlw 0xff
+    movwf tmp1
+    decfsz tmp1, f
+    goto $-1
+    decfsz tmp2, f
+    goto $-3
+    return 
+    end
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ gpasm main.s
+</pre><br>
+
+<p>
+燒錄(File =&gt; Import Hex)<br>
+型號選擇：Device Family =&gt; Midrange =&gt; 1.8V Min<br>
+<img src="pic12f1822_asm_led/1.jpg" class="maxSize"><br>
+P.S. VDD PICkit3 On記得打勾<br><br>
+
+完成<br>
+<img src="pic12f1822_asm_led/2.jpg" class="maxSize"><br>
+<img src="pic12f1822_asm_led/3.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

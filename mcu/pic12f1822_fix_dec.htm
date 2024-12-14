@@ -1,0 +1,55 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - Microchip PIC12F1822 - <b>解決Warning[202] Argument out of range. Least significant bits used問題</b></h3>
+<hr size="1"><br>
+<p>
+修改前
+</p>
+<pre>
+list p=12f1822, r=hex
+
+.org 0x00
+movlw 0xff
+</pre>
+<p>
+lst
+</p>
+<pre>
+LOC    OBJECT CODE    LINE  SOURCE TEXT
+  VALUE
+
+                      00001   list p=12f1822, r=hex
+                      00002  
+0000                  00003   org 0x0000
+Warning[202]: Argument out of range. Least significant bits used. 597 (0x255) =&gt; 85 (0x55)
+0000   3055           00004   movlw 255 
+                      00005   end 
+</pre>
+<p>
+P.S. 由於使用16進制(r=hex)，因此，255被當成0x255，導致出現警告<br><br>
+
+修改後
+</p>
+<pre>
+list p=12f1822, r=dec
+
+.org 0x00
+movlw 0xff
+</pre>
+<p>
+lst
+</p>
+<pre>
+LOC    OBJECT CODE    LINE  SOURCE TEXT
+  VALUE
+
+                      00001   list p=12f1822, r=dec
+                      00002  
+0000                  00003   org 0x0000
+0000   30FF           00004   movlw 255 
+                      00005   end 
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
