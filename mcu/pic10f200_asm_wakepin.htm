@@ -1,0 +1,48 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - Microchip PIC10F200 - Assembly - <b>Wake-up on Pin Change</b></h3>
+<hr size="1"><br>
+<p>
+GPWU用來設定是否開啟<b>Wake-up from Sleep on Pin Change</b>功能，特性跟Watchdog一樣，Wake-up後是直接Reset Device，而非繼續往下執行<br>
+<img src="pic10f200_asm_wdt/2.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    list p=10f200, r=hex
+    #include &lt;p10f200.inc&gt;
+    __config _CONFIG, _IntRC_OSC &amp; _WDTE_OFF &amp; _MCLRE_OFF
+ 
+    org 0x00
+start:
+    movlw b'00000000'
+    option
+ 
+    movlw b'00001100'
+    tris GPIO
+    bcf GPIO, 1
+ 
+    movlw 0x01
+    xorwf GPIO, f
+ 
+    sleep
+    goto $
+    end
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ gpasm main.s
+</pre><br>
+
+<p>
+完成<br>
+<img src="pic10f200_asm_btn/2.jpg" class="maxSize"><br>
+<img src="pic10f200_asm_btn/3.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
