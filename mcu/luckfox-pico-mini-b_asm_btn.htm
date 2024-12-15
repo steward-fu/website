@@ -1,0 +1,73 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - RockChip RV1103 (Luckfox Pico Mini B) - Assembly - <b>Button</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/xboot/xrock<br>
+https://github.com/trebisky/Rockchip<br>
+https://wiki.luckfox.com/luckfox-pico/luckfox-pico-quick-start/<br>
+https://github.com/steward-fu/website/releases/download/datasheet/rockchip_rv1106_rm.pdf<br><br>
+
+GPIO0位址<br>
+<img src="luckfox-pico-mini-b_asm_btn/1.jpg" class="maxSize"><br><br>
+
+Input Pull-up<br>
+<img src="luckfox-pico-mini-b_asm_btn/2.jpg" class="maxSize"><br><br>
+
+Input Data<br>
+<img src="luckfox-pico-mini-b_asm_btn/3.jpg" class="maxSize"><br><br>
+
+Direction<br>
+<img src="luckfox-pico-mini-b_asm_led/4.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .global _start
+
+    .equ GPIO0_BASE, 0xFF380000
+    .equ GPIO1_BASE, 0xFF530000
+    .equ GPIO0_IOC,  0xFF388000
+    .equ GPIO1_IOC,  0xFF538000
+    .equ PA_DAT_L,   0x00
+    .equ PA_DAT_H,   0x04
+    .equ PA_DIR_L,   0x08
+    .equ PA_DIR_H,   0x0c
+    .equ PA_INPUT,   0x30
+    .equ PA_PULL,    0x38
+    .equ PA_EXT,     0x70
+       
+    .arm
+    .text
+_start:
+    ldr r4, =GPIO0_BASE
+    ldr r5, =GPIO1_BASE
+    ldr r6, =GPIO0_IOC
+    ldr r1, =0xffff0000
+    str r1, [r4, #PA_DIR_L]
+    ldr r1, =0xffffffff
+    str r1, [r5, #PA_DIR_L]
+    ldr r1, =0xffff0000 | (1 &lt;&lt; 8)
+    str r1, [r6, #PA_PULL]
+
+    ldr r2, =0xffff0000
+0:
+    ldr r1, [r4, #PA_EXT]
+    lsr r1, r1, #2
+    eor r1, r1, #(1 &lt;&lt; 2)
+    orr r1, r1, r2
+    str r1, [r5, #PA_DAT_L]
+    b 0b
+    .end
+</pre><br>
+
+<p>
+完成<br>
+<img src="luckfox-pico-mini-b_asm_btn/4.jpg" class="maxSize"><br>
+<img src="luckfox-pico-mini-b_asm_btn/5.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

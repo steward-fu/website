@@ -1,0 +1,112 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - RockChip RV1103 (Luckfox Pico Mini B) - Assembly - <b>LED</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/xboot/xrock<br>
+https://github.com/trebisky/Rockchip<br>
+https://wiki.luckfox.com/luckfox-pico/luckfox-pico-quick-start/<br>
+https://github.com/steward-fu/website/releases/download/datasheet/rockchip_rv1106_rm.pdf<br><br>
+
+LED腳位<br>
+<img src="luckfox-pico-mini-b_asm_led/1.jpg" class="maxSize"><br><br>
+
+GPIO1位址<br>
+<img src="luckfox-pico-mini-b_asm_led/2.jpg" class="maxSize"><br><br>
+
+Data<br>
+<img src="luckfox-pico-mini-b_asm_led/3.jpg" class="maxSize"><br><br>
+
+Direction<br>
+<img src="luckfox-pico-mini-b_asm_led/4.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .global _start
+      
+    .equ GPIO1_BASE, 0xFF530000
+    .equ GPIO1_IOC,  0xFF538000
+    .equ PA_DAT_L,   0x00
+    .equ PA_DAT_H,   0x04
+    .equ PA_DIR_L,   0x08
+    .equ PA_DIR_H,   0x0c
+       
+    .arm
+    .text
+_start:
+    ldr r0, =GPIO1_BASE
+    ldr r1, =0xffffffff
+    str r1, [r0, #PA_DIR_L]
+ 
+    ldr r1, =(1 &lt;&lt; 2)
+0:
+    eor r2, r1
+    str r2, [r0, #PA_DAT_L]
+    ldr r3, =50000
+1:
+    subs r3, #1
+    bne 1b
+    b 0b
+    .end
+</pre><br>
+
+<p>
+main.ld
+</p>
+<pre>
+MEMORY {
+    RAM : ORIGIN = 0, LENGTH = 64K
+}
+
+SECTIONS {
+    .text : { *(.text*) } &gt; RAM
+    .data : { *(.data*) } &gt; RAM
+    .bss : { *(.bss*) } &gt; RAM
+}
+</pre><br>
+
+<p>
+Maekfile
+</p>
+<pre>
+all:
+	arm-linux-gnueabihf-as -mcpu=cortex-a7 -o main.o main.s
+	arm-linux-gnueabihf-ld -T main.ld -o main.elf main.o
+	arm-linux-gnueabihf-objcopy -O binary main.elf main.bin
+
+run:
+	xrock extra maskrom --rc4 off --sram main.bin
+
+clean:
+	rm -rf main.bin main.o main.elf
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ make
+    arm-linux-gnueabihf-as -mcpu=cortex-a7 -o main.o main.s
+    arm-linux-gnueabihf-ld -T main.ld -o main.elf main.o
+    arm-linux-gnueabihf-objcopy -O binary main.elf main.bin
+</pre><br>
+
+<p>
+按下白色按鍵後，插入USB到PC，接著下載到SRAM執行
+</p>
+<pre>
+$ make run
+    xrock extra maskrom --rc4 off --sram main.bin
+</pre><br>
+
+<p>
+完成<br>
+<img src="luckfox-pico-mini-b_asm_led/5.jpg" class="maxSize"><br>
+<img src="luckfox-pico-mini-b_asm_led/6.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
