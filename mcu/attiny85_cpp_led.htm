@@ -1,0 +1,63 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - Microchip ATtiny85 - C/C++ - <b>LED</b></h3>
+<hr size="1"><br>
+<p>
+LED腳位<br>
+<img src="attiny85_cpp_led/4.jpg" class="maxSize"><br><br>
+
+Register<br>
+<img src="attiny85_cpp_led/3.jpg" class="maxSize"><br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;avr/io.h&gt;
+#include &lt;util/delay.h&gt;
+ 
+int main(void)
+{
+    DDRB = 0x02;
+
+    while (1) {
+        PORTB = 0x00;
+        _delay_ms(10000);
+        PORTB = 0x02;
+        _delay_ms(10000);
+    }
+    return 0;
+}
+</pre><br>
+
+<p>
+Makefile
+</p>
+<pre>
+all:
+	avr-gcc -Wall -Os -DF_CPU=1000000 -mmcu=attiny85 -o main.o main.c
+	avr-objcopy -j .text -j .data -O ihex main.o main.hex
+ 
+flash:
+	avrdude -vv -c usbasp -p t85 -U flash:w:main.hex:i
+ 
+clean:
+	rm -rf main.o main.hex
+</pre><br>
+
+<p>
+編譯和燒錄
+</p>
+<pre>
+$ make
+$ sudo make flash
+</pre><br>
+
+<p>
+完成<br>
+<img src="attiny85_cpp_led/1.jpg" class="maxSize"><br>
+<img src="attiny85_cpp_led/2.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
