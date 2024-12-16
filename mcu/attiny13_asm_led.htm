@@ -1,0 +1,90 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - Microchip ATtiny13 - Assembly - <b>LED</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://www.microchip.com/en-us/product/attiny13#Documentation<br>
+https://nerdathome.blogspot.com/2008/04/avr-as-usage-tutorial.html<br><br>
+
+DDRB(I/O方向)、PORTB(I/O輸出)<br>
+<img src="attiny13_asm_led/3.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .equ PINB,  0x16
+    .equ DDRB,  0x17
+    .equ PORTB, 0x18
+ 
+    .org 0x0000
+    rjmp main
+ 
+    .org 0x0010
+main:
+    sbi DDRB, 1
+ 
+loop:
+    sbi PORTB, 1
+    rcall delay
+    cbi PORTB, 1
+    rcall delay
+    rjmp loop
+ 
+delay:
+    ldi r24, 0xff
+    ldi r25, 0x80
+d0:
+    sbiw r24, 1
+    brne d0
+    ret
+</pre><br>
+
+<p>
+編譯和燒錄
+</p>
+<pre>
+$ avr-as -mmcu=attiny13 -o main.o main.s
+$ avr-ld -o main.elf main.o
+$ avr-objcopy --output-target=ihex main.elf main.ihex
+$ sudo avrdude -c usbasp -p t13 -B 1024 -U flash:w:main.ihex:i
+    avrdude: set SCK frequency to 500 Hz
+    avrdude: AVR device initialized and ready to accept instructions
+
+    Reading | ################################################## | 100% 0.20s
+
+    avrdude: Device signature = 0x1e9007 (probably t13)
+    avrdude: NOTE: "flash" memory has been specified, an erase cycle will be performed
+           To disable this feature, specify the -D option.
+    avrdude: erasing chip
+    avrdude: set SCK frequency to 500 Hz
+    avrdude: reading input file "main.ihex"
+    avrdude: writing flash (38 bytes):
+
+    Writing | ################################################## | 100% 4.51s
+
+    avrdude: 38 bytes of flash written
+    avrdude: verifying flash memory against main.ihex:
+    avrdude: load data flash data from input file main.ihex:
+    avrdude: input file main.ihex contains 38 bytes
+    avrdude: reading on-chip flash data:
+
+    Reading | ################################################## | 100% 4.26s
+
+    avrdude: verifying ...
+    avrdude: 38 bytes of flash verified
+
+    avrdude: safemode: Fuses OK (E:FF, H:FF, L:6A)
+
+    avrdude done.  Thank you.
+</pre><br>
+
+<p>
+完成<br>
+<img src="attiny13_asm_led/1.jpg" class="maxSize"><br>
+<img src="attiny13_asm_led/2.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

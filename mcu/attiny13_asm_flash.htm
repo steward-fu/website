@@ -1,0 +1,90 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - Microchip ATtiny13 - Assembly - <b>Self-Programming the Flash</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://www.microchip.com/en-us/product/attiny13#Documentation<br>
+https://www.avrfreaks.net/forum/self-programming-tiny13-solved<br>
+https://nerdathome.blogspot.com/2008/04/avr-as-usage-tutorial.html<br><br>
+
+Program Flash的操作都是以Page為單位，一個Page是16 Words(32 Bytes)，Z(r32:r30)暫存器是位址，r1:r0則是Word的資料，唯一要注意的地方是，填寫的位址是0x00開始<br>
+<img src="attiny13_asm_flash/2.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .equ SPMCSR,  0x37
+  
+    .org 0x0000
+    rjmp main
+  
+    .org 0x0020
+main:
+    rcall program_flash
+  
+loop:
+    rjmp loop
+ 
+program_flash:
+    ; erase
+    ldi r30, 0x00
+    ldi r31, 0x01
+    ldi r16, 0x03
+    out SPMCSR, r16
+    spm
+
+    ; fill (0x100: 0x50, 0xa0, 0x5a, 0xa1...)
+    ldi r30, 0x00
+    ldi r31, 0x00
+    ldi r18, 0x50
+    ldi r19, 0xa0
+    ldi r17, 16
+0:
+    mov r0, r18
+    mov r1, r19
+    ldi r16, 0x01
+    out SPMCSR, r16
+    spm
+    inc r18
+    inc r19
+    inc r30
+    inc r30
+    dec r17
+    tst r17
+    brne 0b
+
+    ; write
+    ldi r30, 0x00
+    ldi r31, 0x01
+    ldi r16, 0x05
+    out SPMCSR, r16
+    spm
+    ret
+</pre><br>
+
+<p>
+編譯和燒錄
+</p>
+<pre>
+$ avr-as -mmcu=attiny13 -o main.o main.s
+$ avr-ld -o main.elf main.o
+$ avr-objcopy --output-target=ihex main.elf main.ihex
+$ sudo avrdude -c usbasp -p t13 -B 1024 -U flash:w:main.ihex:i
+</pre><br>
+
+<p>
+接著讀取Flash
+</p>
+<pre>
+$ sudo avrdude -c usbasp -p t13 -B 1024 -U flash:r:flash.bin:r
+</pre><br>
+
+<p>
+完成<br>
+<img src="attiny13_asm_flash/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

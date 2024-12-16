@@ -1,0 +1,76 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - Microchip ATtiny13 - Assembly - <b>Pin Change Interrupt</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://www.microchip.com/en-us/product/attiny13#Documentation<br>
+https://nerdathome.blogspot.com/2008/04/avr-as-usage-tutorial.html<br><br>
+
+Pin Change Interrupt Enable<br>
+<img src="attiny13_asm_pcint0/1.jpg" class="maxSize"><br><br>
+
+PCINT0<br>
+<img src="attiny13_asm_pcint0/2.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .equ PCMSK, 0x15
+    .equ PINB,  0x16
+    .equ DDRB,  0x17
+    .equ PORTB, 0x18
+    .equ GIMSK, 0x3b
+  
+    .equ BTN,   0
+    .equ LED,   1
+  
+    .org 0x0000
+    rjmp main
+    reti
+    rjmp pcint0_handler
+  
+    .org 0x0010
+main:
+    sbi DDRB, LED
+    cbi DDRB, BTN
+    sbi PORTB, LED
+    sbi PORTB, BTN
+    ldi r16, 0x20
+    out GIMSK, r16
+    ldi r16, 0x01
+    out PCMSK, r16
+    ldi r17, 0
+    sei
+  
+loop:
+    rjmp loop
+
+pcint0_handler:
+    sbrs r17, 0
+    cbi PORTB, LED
+    sbrc r17, 0
+    sbi PORTB, LED
+    eor r17, r16
+    reti
+</pre><br>
+
+<p>
+編譯和燒錄
+</p>
+<pre>
+$ avr-as -mmcu=attiny13 -o main.o main.s
+$ avr-ld -o main.elf main.o
+$ avr-objcopy --output-target=ihex main.elf main.ihex
+$ sudo avrdude -c usbasp -p t13 -B 1024 -U flash:w:main.ihex:i
+</pre><br>
+
+<p>
+完成<br>
+<img src="attiny13_asm_btn/1.jpg" class="maxSize"><br>
+<img src="attiny13_asm_btn/2.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

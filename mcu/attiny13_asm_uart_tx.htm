@@ -1,0 +1,91 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - Microchip ATtiny13 - Assembly - <b>UART TX(9600bps)</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://www.microchip.com/en-us/product/attiny13#Documentation<br>
+https://nerdathome.blogspot.com/2008/04/avr-as-usage-tutorial.html<br><br>
+
+UART傳輸協定<br>
+<img src="attiny13_asm_uart_tx/1.jpg" class="maxSize"><br>
+9600bps每個bit時間為：1/9600 = 104.167us<br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .equ PINB,    0x16
+    .equ DDRB,    0x17
+    .equ PORTB,   0x18
+    .equ UART_TX, 2
+  
+    .org 0x0000
+    rjmp main
+  
+    .org 0x0020
+main:
+    sbi DDRB, UART_TX
+    sbi PORTB, UART_TX
+    ldi r16, 0
+  
+loop:
+    inc r16
+    rcall uart_send
+    rcall delay
+    rjmp loop
+ 
+uart_send:
+    mov r18, r16
+    cbi PORTB, UART_TX
+    rcall delay_97us
+    ldi r17, 8
+0:
+    sbrs r18, 0
+    cbi PORTB, UART_TX
+    sbrc r18, 0
+    sbi PORTB, UART_TX
+    rcall delay_97us
+    lsr r18
+    dec r17
+    brne 0b
+    sbi PORTB, UART_TX
+    rcall delay_97us
+    ret
+
+    ; 1 + (1 + 2) * 37) + 4 = 116
+    ; 116 * (1 / 1200000) = 97us
+delay_97us:
+    ldi r24, 37
+0:
+    dec r24
+    brne 0b
+    ret
+
+delay:
+    ldi r24, 0xff
+    ldi r25, 0xff
+0:
+    sbiw r24, 1
+    brne 0b
+    ret
+</pre>
+<p>
+P.S. 使用出廠預設的Fuse(High=0xff, Low=0x6a)，CPU=9.6MHz, Div=8<br><br>
+
+編譯和燒錄
+</p>
+<pre>
+$ avr-as -mmcu=attiny13 -o main.o main.s
+$ avr-ld -o main.elf main.o
+$ avr-objcopy --output-target=ihex main.elf main.ihex
+$ sudo avrdude -c usbasp -p t13 -B 1024 -U flash:w:main.ihex:i
+</pre><br>
+
+<p>
+完成<br>
+<img src="attiny13_asm_uart_tx/2.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

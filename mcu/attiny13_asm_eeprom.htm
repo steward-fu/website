@@ -1,0 +1,78 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - Microchip ATtiny13 - Assembly - <b>EEPROM</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://www.microchip.com/en-us/product/attiny13#Documentation<br>
+https://nerdathome.blogspot.com/2008/04/avr-as-usage-tutorial.html<br><br>
+
+在寫入EEPROM之前EEMPE必須先設定，接著才能開始寫入數據<br>
+<img src="attiny13_asm_eeprom/2.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .equ EEARL, 0x1e
+    .equ EEDR,  0x1d
+    .equ EECR,  0x1c
+
+    .org 0x0000
+    rjmp main
+   
+    .org 0x0020
+main:
+    ldi r16, 0x55
+    ldi r17, 0x00
+    rcall eeprom_write
+  
+    ldi r16, 0xaa
+    ldi r17, 0x01
+    rcall eeprom_write
+
+loop:
+    rjmp loop
+
+eeprom_write:
+    sbic EECR, 1
+    rjmp eeprom_write
+    out EEARL, r17
+    out EEDR, r16
+    sbi EECR, 2
+    sbi EECR, 1
+    ret
+
+eeprom_read:
+    sbic EECR, 1
+    rjmp eeprom_read
+    out EEARL, r17
+    sbi EECR, 0
+    in r16, EEDR
+    ret 
+</pre><br>
+
+<p>
+編譯和燒錄
+</p>
+<pre>
+$ avr-as -mmcu=attiny13 -o main.o main.s
+$ avr-ld -o main.elf main.o
+$ avr-objcopy --output-target=ihex main.elf main.ihex
+$ sudo avrdude -c usbasp -p t13 -B 1024 -U flash:w:main.ihex:i
+</pre><br>
+
+<p>
+接著讀取Flash
+</p>
+<pre>
+$ sudo avrdude -c usbasp -p t13 -B 1024 -U eeprom:r:eeprom.bin:r
+</pre><br>
+
+<p>
+完成<br>
+<img src="attiny13_asm_eeprom/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
