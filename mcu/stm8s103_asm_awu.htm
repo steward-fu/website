@@ -1,0 +1,55 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - STMicroelectronics STM8S103 - Assembly - <b>Auto-wakeup(AWU)</b></h3>
+<hr size="1"><br>
+<p>
+暫存器<br>
+<img src="stm8s103_asm_awu/1.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .equ PB_ODR,  0x5005
+    .equ PB_IDR,  0x5006
+    .equ PB_DDR,  0x5007
+    .equ PB_CR1,  0x5008
+    .equ PB_CR2,  0x5009
+    .equ AWU_CSR, 0x50f0
+    .equ AWU_APR, 0x50f1
+    .equ AWU_TBR, 0x50f2
+
+    .area data
+    .area sseg
+    .area home
+    int main
+    int 0
+    int 0
+    int awu_handler
+
+    .area cseg
+main:
+    mov PB_DDR, #0x20
+    mov PB_CR1, #0x20 
+    bset PB_ODR, #5
+    mov AWU_APR, #0x3e
+    mov AWU_TBR, #0x0d
+    mov AWU_CSR, #0x10
+    halt
+loop:
+    jp loop
+
+awu_handler:
+    mov AWU_CSR, #0
+    bres PB_ODR, #5
+    iret
+</pre><br>
+
+<p>
+完成<br>
+<img src="stm8s103_asm_led/1.jpg" class="maxSize"><br>
+<img src="stm8s103_asm_led/2.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

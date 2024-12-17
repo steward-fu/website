@@ -1,0 +1,53 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - STMicroelectronics STM8S103 - Assembly - <b>UART</b></h3>
+<hr size="1"><br>
+<p>
+暫存器<br>
+<img src="stm8s103_asm_uart/1.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .equ PD_ODR,     0x500f
+    .equ PD_IDR,     0x5010
+    .equ PD_DDR,     0x5011
+    .equ PD_CR1,     0x5012
+    .equ PD_CR2,     0x5013
+    .equ UART1_DR,   0x5231
+    .equ UART1_BRR1, 0x5232
+    .equ UART1_BRR2, 0x5233
+    .equ UART1_CR2,  0x5235
+
+    .area data
+    .area sseg
+    .area home
+    int main
+
+    .area cseg
+main:
+    mov PD_DDR, #0x20
+    mov PD_CR1, #0x20
+    mov PD_CR2, #0x20
+
+    ; 9600bps
+    mov UART1_BRR2, #0x00
+    mov UART1_BRR1, #0x0d
+    mov UART1_CR2, #0x08
+loop:
+    mov UART1_DR, #0x55
+    ldw x, #50000
+d0:
+    decw x
+    jrne d0
+    jp loop
+</pre><br>
+
+<p>
+完成<br>
+<img src="stm8s103_asm_uart/2.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

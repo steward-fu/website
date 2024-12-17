@@ -1,0 +1,55 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - STMicroelectronics STM8S103 - Assembly - <b>Window watchdog(WWDG)</b></h3>
+<hr size="1"><br>
+<p>
+暫存器<br>
+<img src="stm8s103_asm_wwdg/1.jpg" class="maxSize"><br><br>
+
+Reset觸發：<br>
+1. WWDG_CR &lt;= 0x3f<br>
+2. 更新區間不在WWDG_WR ~ WWDG_CR<br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .equ PB_ODR,  0x5005
+    .equ PB_IDR,  0x5006
+    .equ PB_DDR,  0x5007
+    .equ PB_CR1,  0x5008
+    .equ PB_CR2,  0x5009
+    .equ WWDG_CR, 0x50d1
+    .equ WWDG_WR, 0x50d2
+     
+    .area data
+    .area sseg
+    .area home
+    int main
+
+    .area cseg
+main:
+    mov PB_DDR, #0x20
+    mov PB_CR1, #0x20
+
+    mov WWDG_CR, #0xff
+    mov WWDG_WR, #0x7f
+loop:
+    ld a, PB_ODR
+    xor a, #0x20
+    ld PB_ODR, a
+    ldw x, #5000 
+d0:
+    decw x
+    tnzw x
+    jrne d0
+    jp loop
+</pre><br>
+
+<p>
+觀察LED的變化<br>
+<img src="stm8s103_asm_led/2.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

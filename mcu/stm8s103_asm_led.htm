@@ -1,0 +1,66 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - STMicroelectronics STM8S103 - Assembly - <b>LED</b></h3>
+<hr size="1"><br>
+<p>
+表格<br>
+<img src="stm8s103_asm_led/3.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .equ PB_ODR, 0x5005
+    .equ PB_IDR, 0x5006
+    .equ PB_DDR, 0x5007
+    .equ PB_CR1, 0x5008
+    .equ PB_CR2, 0x5009
+
+    .area data
+    .area sseg
+    .area home
+    int main
+
+    .area cseg
+main:
+    mov PB_DDR, #0x20
+    mov PB_CR1, #0x20
+
+loop:
+    ld a, PB_ODR
+    xor a, #0x20
+    ld PB_ODR, a
+    ldw x, #30000 
+d0:
+    decw x
+    jrne d0
+    jp loop
+</pre><br>
+
+<p>
+編譯、燒錄
+</p>
+<pre>
+$ sdasstm8 -o main.s
+$ sdldstm8 -ni -b home=0x8000 -b cseg=0x8080 -b data=0x0001 -b sseg=0xffff main.rel
+$ sudo stm8flash -c stlinkv2 -p stm8s103f3 -u
+    Determine OPT area
+    Due to its file extension (or lack thereof), "Workaround" is considered as RAW BINARY format!
+    Unlocked device. Option bytes reset to default state.
+    Bytes written: 11
+
+$ sudo stm8flash -c stlinkv2 -p stm8s103f3 -s flash -w main.ihx
+    Determine FLASH area
+    Due to its file extension (or lack thereof), "main.ihx" is considered as INTEL HEX format!
+    154 bytes at 0x8000... OK
+    Bytes written: 154
+</pre><br>
+
+<p>
+完成<br>
+<img src="stm8s103_asm_led/1.jpg" class="maxSize"><br>
+<img src="stm8s103_asm_led/2.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

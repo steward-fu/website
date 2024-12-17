@@ -1,0 +1,64 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - STMicroelectronics STM8S103 - Assembly - <b>Independent watchdog(IWDG)</b></h3>
+<hr size="1"><br>
+<p>
+暫存器<br>
+<img src="stm8s103_asm_iwdg/1.jpg" class="maxSize"><br><br>
+
+Prescaler<br>
+<img src="stm8s103_asm_iwdg/2.jpg" class="maxSize"><br><br>
+
+步驟：<br>
+1. IWDG_KR(0xcc) &gt; Enable<br>
+2. IWDG_KR(0x55) &gt; Unlock IWDG_PR and IWDG_RLR<br>
+3. IWDG_KR(0xaa) &gt; Reload IWDG_PR and IWDG_RLR<br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .equ PB_ODR,   0x5005
+    .equ PB_IDR,   0x5006
+    .equ PB_DDR,   0x5007
+    .equ PB_CR1,   0x5008
+    .equ PB_CR2,   0x5009
+    .equ IWDG_KR,  0x50e0
+    .equ IWDG_PR,  0x50e1
+    .equ IWDG_RLR, 0x50e2
+     
+    .area data
+    .area sseg
+    .area home
+    int main
+
+    .area cseg
+main:
+    mov PB_DDR, #0x20
+    mov PB_CR1, #0x20
+
+    mov IWDG_KR, #0xcc 
+    mov IWDG_KR, #0x55 
+    mov IWDG_RLR, #0xff
+    mov IWDG_PR, #0x06
+    mov IWDG_KR, #0xaa 
+
+loop:
+    ld a, PB_ODR
+    xor a, #0x20
+    ld PB_ODR, a
+    ldw x, #5000 
+d0:
+    decw x
+    tnzw x
+    jrne d0
+    jp loop
+</pre><br>
+
+<p>
+觀察LED的變化，即可發現每秒會有一次閃動變化<br>
+<img src="stm8s103_asm_led/2.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
