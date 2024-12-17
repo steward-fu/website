@@ -1,0 +1,25 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - STMicroelectronics STM8S001 - <b>解決stm8flash ... Tries exceeded問題</b></h3>
+<hr size="1"><br>
+<p>
+Workaround(一次unlock後，執行兩次flash即可燒錄成功)，如果是unlock都失敗，那此顆IC無用武之地
+</p>
+<pre>
+all:
+    sdasstm8 -o main.s
+    sdldstm8 -ni -b home=0x8000 -b cseg=0x8080 -b data=0x0001 -b sseg=0xffff main.rel
+
+unlock:
+    sudo stm8flash -c stlinkv2 -p stm8s001j3 -u
+
+flash:
+    sudo stm8flash -c stlinkv2 -p stm8s001j3 -w main.ihx
+
+clean:
+    rm -rf main.rel main.ihx
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
