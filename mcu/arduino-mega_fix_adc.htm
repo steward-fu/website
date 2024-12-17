@@ -1,0 +1,37 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - Microchip ATmega2560 (Arduino Mega) - <b>如何提高analogRead()讀取速率</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+http://www.gammon.com.au/forum/?id=12779<br>
+https://www.arduino.cn/thread-12569-1-1.html<br><br>
+
+</p>
+<pre class="brush:cpp">
+unsigned short buf[16] = { 0 };
+int cc = 0;
+int adc[16] = { A0, A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12, A13, A14, A15 };
+
+void setup() {
+    Serial.begin(460800);
+    ADCSRA |= (1 &lt;&lt; ADPS2);
+    ADCSRA &amp;= ~(1 &lt;&lt; ADPS1);
+    ADCSRA &amp;= ~(1 &lt;&lt; ADPS0);
+    Serial.flush();
+}
+
+void loop() {
+    for (cc = 0; cc &lt; 16; cc++) {
+        buf[cc] = analogRead(adc[cc]);
+    }
+    Serial.write((unsigned char*)buf, 16);
+}
+</pre>
+<p>
+P.S. 預設Sample Rate最高只有9600Hz，ADC Prescaler改為16後，Sample Rate可以達到76.8KHz
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
