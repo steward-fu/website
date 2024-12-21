@@ -1,0 +1,70 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - Samsung S3C44B0X - Assembly - <b>Phase Locked Loop(PLL)</b></h3>
+<hr size="1"><br>
+<p>
+PLL Block<br>
+<img src="s3c44b0x_asm_pll/1.jpg" class="maxSize"><br><br>
+
+暫存器<br>
+<img src="s3c44b0x_asm_pll/2.jpg" class="maxSize"><br><br>
+
+PLL頻率
+</p>
+<pre>
+Fin = 8MHz
+m = MDIV + 8 = 190 + 8 = 198
+p = PFIV + 2 = 8 + 2 = 10
+s = sDIV = 0
+
+Fpllo = (8MHz * 198) / 10 = 158.4MHz
+</pre><br>
+
+<p>
+main.s
+</p>
+<pre class="brush:asm">
+    .equiv PCONG,  0x1d20040
+    .equiv PDATG,  0x1d20044
+    .equiv PLLCON, 0x1d80000
+ 
+    .text
+    .global _start
+_start:    b reset
+_undef:    b .
+_swi:      b .
+_pabort:   b .
+_dabort:   b .
+_reserved: b .
+_irq:      b .
+_fiq:      b .
+ 
+reset:
+    ldr r0, =PLLCON
+    ldr r1, =(190 &lt;&lt; 12) | (8 &lt;&lt; 4)
+    str r1, [r0]
+
+    ldr r0, =PCONG
+    ldr r1, =(1 &lt;&lt; 10)
+    str r1, [r0]
+ 
+    ldr r0, =PDATG
+0:
+    eor r1, #(1 &lt;&lt; 5)
+    str r1, [r0]
+    ldr r2, =50000
+1:
+    subs r2, #1
+    bne 1b
+    b 0b
+    .end
+</pre><br>
+<p>
+完成<br>
+<img src="s3c44b0x_asm_led/14.jpg" class="maxSize"><br>
+<img src="s3c44b0x_asm_led/15.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
