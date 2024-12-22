@@ -1,0 +1,74 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - Raspberry Pi RP2040 (Pico) - C/C++ - <b>LED</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://www.digikey.com/en/maker/projects/raspberry-pi-pico-and-rp2040-cc-part-1-blink-and-vs-code/7102fb8bca95452e9df6150f39ae8422<br><br>
+
+LED腳位<br>
+<img src="rp2040-pico_asm_led/1.jpg" class="maxSize"><br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include "pico/stdlib.h"
+
+#define LED 25
+
+void main(void)
+{
+    gpio_init(LED);
+    gpio_set_dir(LED, GPIO_OUT);
+
+    while (1) {
+        gpio_put(LED, true);
+        sleep_ms(1000);
+        gpio_put(LED, false);
+        sleep_ms(1000);
+    }
+}
+</pre><br>
+
+<p>
+CMakeLists.txt
+</p>
+<pre>
+cmake_minimum_required(VERSION 3.12)
+include($ENV{PICO_SDK_PATH}/external/pico_sdk_import.cmake)
+project(blink C CXX ASM)
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
+pico_sdk_init()
+add_executable(${PROJECT_NAME} 
+    main.c
+)
+
+pico_add_extra_outputs(${PROJECT_NAME})
+target_link_libraries(${PROJECT_NAME} 
+    pico_stdlib
+)
+
+pico_enable_stdio_usb(${PROJECT_NAME} 1)
+pico_enable_stdio_uart(${PROJECT_NAME} 0)
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ export PICO_SDK_PATH=/opt/pico-sdk
+$ cmake .
+$ make
+</pre><br>
+
+<p>
+按住BOOTSEL後，連接USB到電腦，然後把blink.uf2複製到RP2隨身碟即可完成燒錄<br>
+<img src="rp2040-pico_cpp_led/1.jpg" class="maxSize"><br>
+<img src="rp2040-pico_cpp_led/2.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

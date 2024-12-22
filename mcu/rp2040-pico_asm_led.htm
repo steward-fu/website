@@ -1,0 +1,110 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - Raspberry Pi RP2040 (Pico) - Assembly - <b>LED</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://www.digikey.com/en/maker/projects/raspberry-pi-pico-and-rp2040-cc-part-1-blink-and-vs-code/7102fb8bca95452e9df6150f39ae8422<br><br>
+
+LED腳位<br>
+<img src="rp2040-pico_asm_led/1.jpg" class="maxSize"><br><br>
+
+IO_BANK0<br>
+<img src="rp2040-pico_asm_led/2.jpg" class="maxSize"><br><br>
+
+GPIO25_CTRL<br>
+<img src="rp2040-pico_asm_led/3.jpg" class="maxSize"><br><br>
+
+SIO_BASE<br>
+<img src="rp2040-pico_asm_led/4.jpg" class="maxSize"><br><br>
+
+GPIO_OE、GPIO_OUT_XOR<br>
+<img src="rp2040-pico_asm_led/5.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .equiv IO_BANK0_BASE,   0x40014000
+    .equiv ATOMIC_BASE,     0x4000f000
+    .equiv SIO_BASE,        0xd0000000
+    .equiv GPIO25_CTRL,     0xcc
+    .equiv SIO,             5
+    .equiv GPIO_OE,         0x20
+    .equiv GPIO_OUT_XOR,    0x1c
+    .equiv IO_BANK0,        32
+
+    .thumb
+    .global _start
+_start:
+    ldr r0, =ATOMIC_BASE
+	ldr r1, =IO_BANK0
+	str r1, [r0]
+
+    ldr r0, =IO_BANK0_BASE + GPIO25_CTRL
+    ldr r1, =SIO
+    str r1, [r0]
+
+    ldr r0, =SIO_BASE
+    ldr r1, =(1 &lt;&lt; 25)
+    str r1, [r0, #GPIO_OE]
+
+0:
+    str r1, [r0, #GPIO_OUT_XOR]
+    ldr r2, =100000
+1:
+    sub r2, r2, #1
+    cmp r2, #0
+    bne 1b
+    b 0b
+    .end
+</pre><br>
+
+<p>
+main.ls
+</p>
+<pre>
+MEMORY {
+    RAM : ORIGIN = 0x20040000, LENGTH = 32K
+}
+
+SECTIONS {
+    text : {
+        *(.text)
+    } &gt; RAM
+}
+</pre><br>
+
+<p>
+Makefile
+</p>
+<pre>
+all:
+	arm-none-eabi-as -mcpu=cortex-m0plus main.s -o main.o
+	arm-none-eabi-ld -nostdlib --entry 0x20040001 -T main.ld main.o -o main.elf
+	arm-none-eabi-objcopy -O binary main.elf main.bin
+	/opt/picotool/build/picotool uf2 convert main.elf main.uf2
+
+clean: 
+	rm -f *.bin *.o *.elf *.list *.uf2
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ make
+    arm-none-eabi-as -mcpu=cortex-m0plus main.s -o main.o
+    arm-none-eabi-ld -nostdlib --entry 0x20040001 -T main.ld main.o -o main.elf
+    arm-none-eabi-objcopy -O binary main.elf main.bin
+    /opt/picotool/build/picotool uf2 convert main.elf main.uf2
+</pre><br>
+
+<p>
+按住BOOTSEL按鈕後，插入到PC，接著將main.uf2拖進隨身碟即可<br>
+<img src="rp2040-pico_cpp_led/1.jpg" class="maxSize"><br>
+<img src="rp2040-pico_cpp_led/2.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
