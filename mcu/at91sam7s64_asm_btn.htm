@@ -1,0 +1,87 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - Microchip AT91SAM7S64 - Assembly - <b>Button</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/dwelch67/sam7s_samples<br>
+https://ww1.microchip.com/downloads/en/DeviceDoc/6175s.pdf<br>
+https://ww1.microchip.com/downloads/en/DeviceDoc/doc6175.pdf<br><br>
+
+Enable<br>
+<img src="at91sam7s64_asm_led/3.jpg" class="maxSize"><br><br>
+
+Output<br>
+<img src="at91sam7s64_asm_led/4.jpg" class="maxSize"><br><br>
+
+Output High<br>
+<img src="at91sam7s64_asm_led/5.jpg" class="maxSize"><br><br>
+
+Output Low<br>
+<img src="at91sam7s64_asm_led/6.jpg" class="maxSize"><br><br>
+
+Input<br>
+<img src="at91sam7s64_asm_btn/3.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .equ PMC_PCER, 0xfffffc10
+    .equ PIO_PER,  0xfffff400
+    .equ PIO_OER,  0xfffff410
+    .equ PIO_SODR, 0xfffff430
+    .equ PIO_CODR, 0xfffff434
+    .equ PIO_PDSR, 0xfffff43c
+ 
+    .text
+    .align 2
+    .global _start
+_start:    b reset
+_undef:    b .
+_swi:      b .
+_pabort:   b .
+_dabort:   b .
+_reserved: b .
+_irq:      b .
+_fiq:      b .
+
+reset:
+    ldr r0, =PMC_PCER
+    ldr r1, =4
+    str r1, [r0]
+
+    ldr r0, =PIO_PER
+    ldr r1, =0x40000
+    str r1, [r0]
+
+    ldr r0, =PIO_OER
+    ldr r1, =0x40000
+    str r1, [r0]
+ 
+loop:
+    ldr r0, =PIO_PDSR
+    ldr r1, [r0]
+    and r1, #0x20000
+    cmp r1, #0
+    beq 1f
+    ldr r0, =PIO_SODR
+    ldr r1, =0x40000
+    str r1, [r0]
+    b loop
+1:
+    ldr r0, =PIO_CODR
+    ldr r1, =0x40000
+    str r1, [r0]
+    b loop
+    .end
+</pre><br>
+
+<p>
+完成<br>
+<img src="at91sam7s64_asm_btn/1.jpg" class="maxSize"><br>
+<img src="at91sam7s64_asm_btn/2.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
