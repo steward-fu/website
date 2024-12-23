@@ -1,0 +1,73 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - Nuvoton NUC977 - <b>解決unknown type name sha1_context問題</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/u-boot/u-boot/commit/2b9912e6a7df7b1f60beb7942bd0e6fa5f9d0167<br><br>
+
+問題如下：
+</p>
+<pre>
+$ gcc -g -Wall -Wstrict-prototypes -O2 -fomit-frame-pointer -idirafter uboot/include -idirafter uboot/include2 -idirafter uboot/include -I uboot/lib/libfdt -I uboot/tools -DCONFIG_SYS_TEXT_BASE=0xE00000 -DUSE_HOSTCC -D__KERNEL_STRICT_NAMES -pedantic -c -o sha1.o uboot/lib/sha1.c
+    uboot/lib/sha1.c:64:19: error: unknown type name ‘sha1_context’
+       64 | void sha1_starts (sha1_context * ctx)
+          |                   ^~~~~~~~~~~~
+    uboot/lib/sha1.c:76:26: error: unknown type name ‘sha1_context’
+       76 | static void sha1_process(sha1_context *ctx, const unsigned char data[64])
+          |                          ^~~~~~~~~~~~
+    uboot/lib/sha1.c:233:18: error: unknown type name ‘sha1_context’
+      233 | void sha1_update(sha1_context *ctx, const unsigned char *input,
+          |                  ^~~~~~~~~~~~
+    uboot/lib/sha1.c:280:19: error: unknown type name ‘sha1_context’
+      280 | void sha1_finish (sha1_context * ctx, unsigned char output[20])
+          |                   ^~~~~~~~~~~~
+    uboot/lib/sha1.c: In function ‘sha1_csum’:
+    uboot/lib/sha1.c:312:9: error: unknown type name ‘sha1_context’
+      312 |         sha1_context ctx;
+          |         ^~~~~~~~~~~~
+    uboot/lib/sha1.c:314:9: warning: implicit declaration of function ‘sha1_starts’ [-Wimplicit-function-declaration]
+      314 |         sha1_starts (&amp;ctx);
+          |         ^~~~~~~~~~~
+    uboot/lib/sha1.c:315:9: warning: implicit declaration of function ‘sha1_update’; did you mean ‘SHA1Update’? [-Wimplicit-function-declaration]
+      315 |         sha1_update (&amp;ctx, input, ilen);
+          |         ^~~~~~~~~~~
+          |         SHA1Update
+    uboot/lib/sha1.c:316:9: warning: implicit declaration of function ‘sha1_finish’ [-Wimplicit-function-declaration]
+      316 |         sha1_finish (&amp;ctx, output);
+          |         ^~~~~~~~~~~
+    uboot/lib/sha1.c: In function ‘sha1_csum_wd’:
+    uboot/lib/sha1.c:326:9: error: unknown type name ‘sha1_context’
+      326 |         sha1_context ctx;
+          |         ^~~~~~~~~~~~
+    uboot/lib/sha1.c: In function ‘sha1_hmac’:
+    uboot/lib/sha1.c:360:9: error: unknown type name ‘sha1_context’
+      360 |         sha1_context ctx;
+          |         ^~~~~~~~~~~~
+    uboot/lib/sha1.c:389:34: error: ‘sha1_context’ undeclared (first use in this function)
+      389 |         memset (&amp;ctx, 0, sizeof (sha1_context));
+          |                                  ^~~~~~~~~~~~
+    uboot/lib/sha1.c:389:34: note: each undeclared identifier is reported only once for each function it appears in
+    uboot/lib/sha1.c: At top level:
+    uboot/lib/sha1.c:392:19: warning: ‘_sha1_src’ defined but not used [-Wunused-const-variable=]
+      392 | static const char _sha1_src[] = "_sha1_src";
+          |                   ^~~~~~~~~
+    uboot/lib/sha1.c:270:28: warning: ‘sha1_padding’ defined but not used [-Wunused-const-variable=]
+      270 | static const unsigned char sha1_padding[64] = {
+          |                            ^~~~~~~~~~~~
+    make[1]: *** [Makefile:263: sha1.o] Error 1
+    make[1]: Leaving directory 'uboot/tools'
+    make: *** [Makefile:588: tools] Error 2
+</pre><br>
+
+<p>
+解法如下：
+</p>
+<pre>
+$ vim lib/sha1.c
+    39 #include "../include/sha1.h"
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

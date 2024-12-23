@@ -1,0 +1,79 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - Nuvoton NUC977 - Assembly - <b>UART0</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/OpenNuvoton/NUC970_NonOS_BSP<br><br>
+
+GPIO Alternative Function<br>
+<img src="nuc977_asm_uart/2.jpg" class="maxSize"><br>
+<img src="nuc977_asm_uart/3.jpg" class="maxSize"><br><br>
+
+UART0 TX Buffer<br>
+<img src="nuc977_asm_uart/4.jpg" class="maxSize"><br><br>
+
+n,8,1<br>
+<img src="nuc977_asm_uart/5.jpg" class="maxSize"><br><br>
+
+115200bps<br>
+<img src="nuc977_asm_uart/6.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .equ CLK_PCLKEN0,  (0xb0000200 + 0x18)
+    .equ SYS_GPE_MFPL, (0xb0000000 + 0x90)
+    .equ UA0_THR,      (0xb8000000 + 0x00)
+    .equ UA0_LCR,      (0xb8000000 + 0x0c)
+    .equ UA0_BAUD,     (0xb8000000 + 0x24)
+
+    .text
+    .align 2
+    .global _start
+_start:    b reset
+_undef:    b .
+_swi:      b .
+_pabort:   b .
+_dabort:   b .
+_reserved: b .
+_irq:      b .
+_fiq:      b .
+ 
+reset:
+    ldr r0, =CLK_PCLKEN0
+    ldr r1, [r0]
+    orr r1, #(1 &lt;&lt; 16)
+    str r1, [r0]
+
+    ldr r0, =SYS_GPE_MFPL
+    ldr r1, [r0]
+    and r1, #0xfffffff0
+    orr r1, #0x00000009
+    str r1, [r0]
+
+    /* 115200bps */
+    ldr r0, =UA0_BAUD
+    ldr r1, =0x30000066
+    str r1, [r0]
+ 
+loop:
+    ldr r0, =UA0_THR
+    ldr r1, =0x55
+    str r1, [r0]
+    ldr r4, =1000000
+1:
+    subs r4, r4, #1
+    bne 1b
+    b loop
+    .end
+</pre><br>
+
+<p>
+完成<br>
+<img src="nuc977_asm_uart/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

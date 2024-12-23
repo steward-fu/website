@@ -1,0 +1,78 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - Nuvoton NUC977 - Assembly - <b>Button</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/OpenNuvoton/NUC970_NonOS_BSP<br><br>
+
+Pull-Up Enable<br>
+<img src="nuc977_asm_btn/3.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .equ GPIOD_DIR,     (0xb8003000 + 0xc0)
+    .equ GPIOD_DATAOUT, (0xb8003000 + 0xc4)
+    .equ GPIOB_DIR,     (0xb8003000 + 0x40)
+    .equ GPIOB_DATAIN,  (0xb8003000 + 0x48)
+    .equ GPIOB_PUEN,    (0xb8003000 + 0x60)
+    .equ CLK_PCLKEN0,   (0xb0000200 + 0x18)
+
+    .text
+    .align 2
+    .global _start
+_start:    b reset
+_undef:    b .
+_swi:      b .
+_pabort:   b .
+_dabort:   b .
+_reserved: b .
+_irq:      b .
+_fiq:      b .
+
+reset:
+    ldr r0, =CLK_PCLKEN0
+    ldr r1, [r0]
+    orr r1, #(1 &lt;&lt; 3)
+    str r1, [r0]
+
+    ldr r0, =GPIOB_DIR
+    ldr r1, =~(1 &lt;&lt; 3)
+    str r1, [r0]
+  
+    ldr r0, =GPIOB_PUEN
+    ldr r1, =(1 &lt;&lt; 3)
+    str r1, [r0]
+  
+    ldr r0, =GPIOD_DIR
+    ldr r1, =(1 &lt;&lt; 6)
+    str r1, [r0]
+loop:
+    ldr r0, =GPIOB_DATAIN
+    ldr r0, [r0]
+    and r0, #(1 &lt;&lt; 3)
+    cmp r0, #(1 &lt;&lt; 3)
+    bne 1f
+0:
+    ldr r0, =GPIOD_DATAOUT
+    ldr r1, =(1 &lt;&lt; 6)
+    str r1, [r0]
+    b loop
+1:
+    ldr r0, =GPIOD_DATAOUT
+    ldr r1, =~(1 &lt;&lt; 6)
+    str r1, [r0]
+    b loop
+    .end
+</pre><br>
+
+<p>
+完成<br>
+<img src="nuc977_asm_btn/1.jpg" class="maxSize"><br>
+<img src="nuc977_asm_btn/2.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
