@@ -1,0 +1,40 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../system.htm">系統</a> - K3s - <b>如何取得Pod的Local File Path</b></h3>
+<hr size="1">
+<pre>
+$ sudo kubectl get pod
+    NAME                                READY   STATUS    RESTARTS   AGE
+    nginx-deployment-7dbfbc79cf-zsc7n   1/1     Running   0          5m56s
+
+$ sudo kubectl describe pod nginx-deployment-7dbfbc79cf-zsc7n
+    Name:             nginx-deployment-7dbfbc79cf-zsc7n
+    Namespace:        default
+    Priority:         0
+    Service Account:  default
+    Node:             debian/192.168.1.116
+    Start Time:       Wed, 25 Dec 2024 21:05:33 +0800
+    Labels:           app=nginx
+                      pod-template-hash=7dbfbc79cf
+    Annotations:      <none>
+    Status:           Running
+    IP:               10.42.0.9
+    IPs:
+      IP:           10.42.0.9
+    Controlled By:  ReplicaSet/nginx-deployment-7dbfbc79cf
+    Containers:
+      nginx:
+        Container ID:   containerd://c621219bbe55d0e38cc16ebe704e09bc04b467bd1248e351c15b5af66fc56a42
+
+$ sudo find /run/ -name c621219bbe55d0e38cc16ebe704e09bc04b467bd1248e351c15b5af66fc56a42
+    /run/k3s/containerd/io.containerd.grpc.v1.cri/containers/c621219bbe55d0e38cc16ebe704e09bc04b467bd1248e351c15b5af66fc56a42
+    /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/c621219bbe55d0e38cc16ebe704e09bc04b467bd1248e351c15b5af66fc56a42
+    /run/containerd/runc/k8s.io/c621219bbe55d0e38cc16ebe704e09bc04b467bd1248e351c15b5af66fc56a42
+
+$ sudo ls /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/c621219bbe55d0e38cc16ebe704e09bc04b467bd1248e351c15b5af66fc56a42/rootfs
+    bin  boot  dev	etc  home  lib	lib64  media  mnt  opt	proc  root  run  sbin  srv  sys  tmp  usr  var
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
