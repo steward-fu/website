@@ -2,12 +2,11 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head><script type="text/javascript" src="../page_head.js"></script>
 
-<h3><a href="../phone.htm">手機</a> - Unihertz Titan Pocket (TEE) - <b>Build Kernel 4.14.186</b></h3>
+<h3><a href="../phone.htm">手機</a> - Unihertz Titan (TEE-EMMC) - <b>Build Kernel 4.14.141</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
-https://github.com/ubuntu-touch-unihertz-titan/kernel-alps-mt6771<br>
-https://stackoverflow.com/questions/8744087/how-to-recompile-just-a-single-kernel-module<br><br>
+https://github.com/rumplestilzken/android_kernel_unihertz_titan<br><br>
 
 司徒只使用這份程式碼，編譯出USB Serial Module(PL2303)來使用
 </p>
@@ -15,20 +14,10 @@ https://stackoverflow.com/questions/8744087/how-to-recompile-just-a-single-kerne
 $ sudo apt install build-essential libncurses-dev bison flex libssl-dev libelf-dev bc git gcc-aarch64-linux-gnu libfdt-dev clang
 
 $ cd
-$ wget https://github.com/steward-fu/website/releases/download/pixel-3a-xl/lineageos_linux-x86.tar.gz
-$ tar xvf lineageos_linux-x86.tar.gz
-$ export PATH=~/linux-x86/bin/:$PATH
-
-$ cd
-$ git clone --depth=1 https://github.com/ubuntu-touch-unihertz-titan/kernel-alps-mt6771
-$ cd kernel-alps-mt6771
-$ vim ./kernel/gen_kheaders.sh
-    cpio=`pwd`/tools/build/cpio
-
-$ vim Makefile
-    KBUILD_CFLAGS := -w -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
-
-$ ARCH=arm64 CC=clang CLANG_TRIPLE=aarch64-linux-gnu- CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabihf- make titanpocket_defconfig
+$ git clone https://github.com/rumplestilzken/android_kernel_unihertz_titan --depth=1
+$ cd android_kernel_unihertz_titan
+$ wget https://github.com/steward-fu/website/releases/download/titan/kernel_config-4.14.141
+$ cp kernel_config-4.14.141 .config
 $ ARCH=arm64 CC=clang CLANG_TRIPLE=aarch64-linux-gnu- CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabihf- make menuconfig
 $ ARCH=arm64 CC=clang CLANG_TRIPLE=aarch64-linux-gnu- CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabihf- make modules SUBDIRS=drivers/usb/serial -j4
 $ ARCH=arm64 CC=clang CLANG_TRIPLE=aarch64-linux-gnu- CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabihf- INSTALL_MOD_PATH=out make modules_install SUBDIRS=drivers/usb/serial
