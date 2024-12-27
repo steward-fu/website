@@ -1,0 +1,45 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../phone.htm">手機</a> - Unihertz Titan (TEE-EMMC) - <b>解決/proc/kallsyms都是0的問題</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://askubuntu.com/questions/307221/how-to-get-the-address-with-proc-kallsyms<br><br>
+
+問題如下：
+</p>
+<pre>
+    # cat /proc/kallsyms | head
+    0000000000000000 T do_undefinstr
+    0000000000000000 T _stext
+    0000000000000000 T __exception_text_start
+    0000000000000000 T do_sysinstr
+    0000000000000000 T do_mem_abort
+    0000000000000000 T do_el0_irq_bp_hardening
+    0000000000000000 T do_el0_ia_bp_hardening
+    0000000000000000 T do_sp_pc_abort
+    0000000000000000 T do_debug_exception
+    0000000000000000 t gic_handle_irq
+</pre><br>
+
+<p>
+解法如下：
+</p>
+<pre>
+# echo 0  &gt; /proc/sys/kernel/kptr_restrict
+# cat /proc/kallsyms | head
+    ffffff8008081000 T do_undefinstr
+    ffffff8008081000 T _stext
+    ffffff8008081000 T __exception_text_start
+    ffffff8008081480 T do_sysinstr
+    ffffff8008081510 T do_mem_abort
+    ffffff80080815d8 T do_el0_irq_bp_hardening
+    ffffff8008081610 T do_el0_ia_bp_hardening
+    ffffff8008081730 T do_sp_pc_abort
+    ffffff800808187c T do_debug_exception
+    ffffff80080819b4 t gic_handle_irq
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
