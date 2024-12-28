@@ -1,0 +1,69 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - Nuvoton NUC972 - Assembly - <b>Windowed Watchdog Timer(WWDT)</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/OpenNuvoton/NUC970_NonOS_BSP<br><br>
+
+WWDTEN、PSCSEL<br>
+<img src="nuc977_asm_wwdt/1.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .equ GPIOB_DIR,     (0xb8003000 + 0x40)
+    .equ GPIOB_DATAOUT, (0xb8003000 + 0x44)
+    .equ CLK_PCLKEN0,   (0xb0000200 + 0x18)
+    .equ WWDT_RLDCNT,   (0xb8001900 + 0x00)
+    .equ WWDT_CTL,      (0xb8001900 + 0x04)
+    .equ WWDT_STATUS,   (0xb8001900 + 0x08)
+
+    .text
+    .align 2
+    .global _start
+_start:    b reset
+_undef:    b .
+_swi:      b .
+_pabort:   b .
+_dabort:   b .
+_reserved: b .
+_irq:      b .
+_fiq:      b .
+  
+reset:
+    ldr r0, =CLK_PCLKEN0
+    ldr r1, [r0]
+    orr r1, #((1 &lt;&lt; 3) | (1 &lt;&lt; 1))
+    str r1, [r0]
+    
+    ldr r0, =GPIOB_DIR
+    ldr r1, =(1 &lt;&lt; 0)
+    str r1, [r0]
+     
+    ldr r0, =GPIOB_DATAOUT
+    ldr r1, =~(1 &lt;&lt; 0)
+    str r1, [r0]
+ 
+    ldr r4, =1000000
+1:
+    nop
+    subs r4, r4, #1
+    bne 1b
+ 
+    ldr r0, =WWDT_CTL
+    ldr r1, =0xf01
+    str r1, [r0]
+    b .
+    .end
+</pre><br>
+
+<p>
+若沒有在限定的Window期間Reset Watchdog，則觸發系統Reset，SDRAM資料消失，LED熄滅<br>
+<img src="nuc972_asm_led/2.jpg" class="maxSize"><br>
+<img src="nuc972_asm_led/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
