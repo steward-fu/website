@@ -1,0 +1,91 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - STMicroelectronics STM32F103 - Assembly - <b>Button</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://sourceforge.net/projects/stm32flash/files/<br><br>
+
+RCC_APB2ENR暫存器，需要開啟GPIO-B、GPIO-C的Clock<br>
+<img src="stm32f103_asm_led/1.jpg" class="maxSize"><br><br>
+
+LED位置是PC13，設定成Output 50MHz，按鍵則是PB10，設定成Pull-Up<br>
+<img src="stm32f103_asm_led/2.jpg" class="maxSize"><br><br>
+
+輸出資料<br>
+<img src="stm32f103_asm_led/3.jpg" class="maxSize"><br><br>
+
+輸入資料<br>
+<img src="stm32f103_asm_btn/1.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .thumb
+    .cpu cortex-m3
+    .syntax unified
+
+    .equ GPIOB_CRL,   0x40010c00
+    .equ GPIOB_CRH,   0x40010c04
+    .equ GPIOB_IDR,   0x40010c08
+    .equ GPIOB_ODR,   0x40010c0c
+    .equ GPIOB_BSRR,  0x40010c10
+    .equ GPIOB_BRR,   0x40010c14
+    .equ GPIOB_LCKR,  0x40010c18
+    .equ GPIOC_CRL,   0x40011000
+    .equ GPIOC_CRH,   0x40011004
+    .equ GPIOC_IDR,   0x40011008
+    .equ GPIOC_ODR,   0x4001100c
+    .equ GPIOC_BSRR,  0x40011010
+    .equ GPIOC_BRR,   0x40011014
+    .equ GPIOC_LCKR,  0x40011018
+    .equ RCC_APB2ENR, 0x40021018
+
+    .equ STACKINIT,   0x20005000
+
+    .global _start
+    .section .text
+    .org 0x0
+    .word STACKINIT
+    .word _start
+
+    .org 0x100
+    .align 2
+    .thumb_func
+_start:
+    ldr r0, =0x00000018
+    ldr r1, =RCC_APB2ENR
+    str r0, [r1]
+
+    ldr r0, =GPIOB_CRH
+    ldr r1, =(2 &lt;&lt; 10)
+    str r1, [r0]
+
+    ldr r0, =GPIOB_ODR
+    ldr r1, =(1 &lt;&lt; 10)
+    str r1, [r0]
+
+    ldr r0, =GPIOC_CRH
+    ldr r1, =(3 &lt;&lt; 20)
+    str r1, [r0]
+
+loop:
+    ldr r0, =GPIOB_IDR
+    ldr r1, [r0]
+    and r1, 0x400
+    lsl r1, 3
+    ldr r0, =GPIOC_ODR
+    str r1, [r0]
+    b loop
+    .end
+</pre><br>
+
+<p>
+完成<br>
+<img src="stm32f103_asm_btn/2.jpg" class="maxSize"><br>
+<img src="stm32f103_asm_btn/3.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
