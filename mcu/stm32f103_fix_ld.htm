@@ -1,0 +1,55 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - STMicroelectronics STM32F103 - <b>解決Cannot insert breakpoint 1. Cannot access memory at address問題</b></h3>
+<hr size="1"><br>
+<p>
+修改前
+</p>
+<pre>
+SECTIONS {
+    . = 0x0;
+    .text : {
+        *(.text)
+    }
+
+    .data : {
+        *(.data)
+        *(.rom)
+    }
+    . = 0x20000000;
+    .ram : { *(.ram) }
+
+    .bss : {
+        *(.bss)
+        *(.ram)
+    }
+}
+</pre><br>
+
+<p>
+修改後
+</p>
+<pre>
+MEMORY {
+    RAM (xrw) : ORIGIN = 0x20000000, LENGTH = 20K
+    FLASH (rx) : ORIGIN = 0x8000000, LENGTH = 128K
+}
+
+SECTIONS {
+    .text : {
+        *(.text)
+    } &gt; FLASH
+  
+    .bss : {
+        *(.bss)
+    } &gt; RAM
+
+    .data : {
+        *(.data)
+    } &gt; RAM
+}
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

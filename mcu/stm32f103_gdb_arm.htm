@@ -1,0 +1,31 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - STMicroelectronics STM32F103 - <b>如何在Debian x64上Debug STM32</b></h3>
+<hr size="1"><br>
+<p>
+openocd
+</p>
+<pre>
+$ sudo apt-get update
+$ sudo apt-get install gdb-arm-none-eabi
+$ sudo openocd -f /usr/local/share/openocd/scripts/interface/stlink-v2.cfg -f /usr/local/share/openocd/scripts/target/stm32f1x.cfg -c "program main.bin halt 0x8000000"
+</pre><br>
+
+<p>
+使用arm版本gdb，而非x64/x86版本的gdb
+</p>
+<pre>
+$ arm-none-eabi-gdb main.elf
+
+(gdb) target remote localhost:3333
+    Remote debugging using localhost:3333
+    0x00000100 in _start ()
+
+(gdb) monitor reset init
+    target halted due to debug-request, current mode: Thread 
+    xPSR: 0x01000000 pc: 0x08000104 msp: 0x20005000
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
