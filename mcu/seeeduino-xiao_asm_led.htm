@@ -1,0 +1,152 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - Microchip ATSAMD21G18 (Seeed Studio XIAO SAMD21) - Assembly - <b>LED</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/dwelch67/atsamd_samples<br>
+https://cdn.sparkfun.com/datasheets/Dev/Arduino/Boards/Atmel-42181-SAM-D21_Datasheet.pdf<br><br>
+
+LED腳位(PA-17)<br>
+<img src="seeeduino-xiao_asm_led/3.jpg" class="maxSize"><br><br>
+
+暫存器<br>
+<img src="seeeduino-xiao_asm_led/1.jpg" class="maxSize"><br><br>
+
+配置方式<br>
+<img src="seeeduino-xiao_asm_led/2.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .cpu cortex-m0
+    .thumb
+
+    .equiv PORT_BASE, 0x41004400
+    .equiv PORT_A,    0x00
+    .equiv PORT_DIR,  0x00
+    .equiv PORT_OUT,  0x10
+
+    .thumb_func
+    .global _start
+_start:
+    .word 0x20001000
+    .word reset
+    .word hang
+    .word hang
+    .word hang
+    .word hang
+    .word hang
+    .word hang
+    .word hang
+    .word hang
+    .word hang
+    .word hang
+    .word hang
+    .word hang
+    .word hang
+    .word hang
+ 
+    .thumb_func
+reset:
+    ldr r0, =PORT_BASE
+    ldr r1, =(1 &lt;&lt; 17)
+    str r1, [r0, #(PORT_A + PORT_DIR)]
+
+    ldr r2, =(1 &lt;&lt; 17)
+0:
+    eor r1, r2
+    str r1, [r0, #(PORT_A + PORT_OUT)]
+    ldr r3, =100000
+1:
+    sub r3, #1
+    cmp r3, #0
+    bne 1b
+    b 0b
+ 
+    .thumb_func
+hang:
+    b .
+    .end
+</pre><br>
+
+<p>
+main.ld
+</p>
+<pre>
+MEMORY {
+    RAM : ORIGIN = 0x00000000, LENGTH = 0x1000
+}
+
+SECTIONS {
+    .text : { *(.text*) } &gt; RAM
+    .rodata : { *(.rodata*) } &gt; RAM
+    .bss : { *(.bss*) } &gt; RAM
+}
+</pre><br>
+
+<p>
+Makefile
+</p>
+<pre>
+all:
+	arm-none-eabi-as -mcpu=cortex-m0 -o main.o main.s
+	arm-none-eabi-ld -T main.ld -o main.elf main.o
+	arm-none-eabi-objcopy -O binary main.elf main.bin
+
+clean:
+	rm -rf main.bin main.o main.elf
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ make
+    arm-none-eabi-as -mcpu=cortex-m0 -o main.o main.s
+    arm-none-eabi-ld -T main.ld -o main.elf main.o
+    arm-none-eabi-objcopy -O binary main.elf main.bin
+</pre><br>
+
+<p>
+開發板連接SWD後，開啟J-Flash<br>
+<img src="seeeduino-xiao_asm_led/4.jpg" class="maxSize"><br><br>
+
+選擇<b>ATSAMD21G18</b><br>
+<img src="seeeduino-xiao_asm_led/5.jpg" class="maxSize"><br><br>
+
+SWD 4000khz<br>
+<img src="seeeduino-xiao_asm_led/6.jpg" class="maxSize"><br><br>
+
+Connect<br>
+<img src="seeeduino-xiao_asm_led/7.jpg" class="maxSize"><br><br>
+
+連線成功<br>
+<img src="seeeduino-xiao_asm_led/8.jpg" class="maxSize"><br><br>
+
+<b>Ctrl+O</b>載入main.bin，起始位址0x00<br>
+<img src="seeeduino-xiao_asm_led/9.jpg" class="maxSize"><br><br>
+
+載入main.bin後<br>
+<img src="seeeduino-xiao_asm_led/10.jpg" class="maxSize"><br><br>
+
+燒錄<br>
+<img src="seeeduino-xiao_asm_led/11.jpg" class="maxSize"><br><br>
+
+燒錄完成<br>
+<img src="seeeduino-xiao_asm_led/12.jpg" class="maxSize"><br><br>
+
+執行<br>
+<img src="seeeduino-xiao_asm_led/13.jpg" class="maxSize"><br><br>
+
+執行狀態<br>
+<img src="seeeduino-xiao_asm_led/14.jpg" class="maxSize"><br><br>
+
+完成<br>
+<img src="seeeduino-xiao_asm_led/15.jpg" class="maxSize"><br>
+<img src="seeeduino-xiao_asm_led/16.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
