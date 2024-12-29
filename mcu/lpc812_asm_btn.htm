@@ -1,0 +1,89 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - NXP Semiconductors LPC812 - Assembly - <b>Button</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/BakaOsaka/LPC810-ASM<br>
+https://studio.segger.com/packages/LPC800/CMSIS/Documents/UM10601.pdf<br><br>
+
+Register<br>
+<img src="lpc812_asm_led/3.jpg" class="maxSize"><br><br>
+
+main.S
+</p>
+<pre class="brush:asm">
+    .cpu cortex-m0
+    .thumb
+
+    .equ GPIO_DIR0, 0xa0002000
+    .equ GPIO_PIN0, 0xa0002100
+    .equ GPIO_SET0, 0xa0002200
+    .equ GPIO_CLR0, 0xa0002280
+
+    .equ BIT1,  1
+    .equ BIT7,  7
+    .equ BIT16, 16
+    .equ BIT17, 17
+
+    .thumb_func
+    .global _start
+_start:
+    .word 0x10000400 @ stacktop
+    .word reset @ reset
+    .word hang @ nmi
+    .word hang @ hardfault
+    .word hang @ reserved
+    .word hang @ reserved
+    .word hang @ reserved
+    .word hang @ reserved
+    .word hang @ reserved
+    .word hang @ reserved
+    .word hang @ reserved
+    .word hang @ svcall
+    .word hang @ reserved
+    .word hang @ reserved
+    .word hang @ pendsv
+    .word hang @ systick
+
+    .thumb_func
+reset:
+    ldr r1, =((1 &lt;&lt; BIT7) | (1 &lt;&lt; BIT16) | (1 &lt;&lt; BIT17))
+    ldr r0, =GPIO_DIR0
+    str r1, [r0]
+    ldr r0, =GPIO_SET0
+    str r1, [r0]
+
+loop:
+    ldr r0, =GPIO_PIN0
+    ldr r0, [r0]
+    ldr r1, =(1 &lt;&lt; BIT1)
+    and r0, r1
+    cmp r0, #0
+    beq 1f
+
+    ldr r0, =GPIO_SET0
+    ldr r1, =(1 &lt;&lt; BIT7)
+    str r1, [r0]
+    b loop
+
+1:
+    ldr r0, =GPIO_CLR0
+    ldr r1, =(1 &lt;&lt; BIT7)
+    str r1, [r0]
+    b loop
+
+hang:
+    b .
+    .end
+</pre><br>
+
+<p>
+完成<br>
+<img src="lpc812_asm_btn/1.jpg" class="maxSize"><br>
+<img src="lpc812_asm_btn/2.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
