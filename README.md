@@ -91,6 +91,7 @@ All of files or resources used on my website can be found from the following lin
 [![](img/photos/pb.jpg)](https://github.com/steward-fu/website/releases/tag/pocketbeagle)
 [![](img/photos/lichee-nano.jpg)](https://github.com/steward-fu/website/releases/tag/lichee-nano)
 [![](img/photos/tiny200.jpg)](https://github.com/steward-fu/website/releases/tag/tiny200)
+[![](img/photos/pi-0.jpg)](https://github.com/steward-fu/website/releases/tag/pi-zero)
 [![](img/photos/newton.jpg)](https://github.com/steward-fu/website/releases/tag/newton)
 [![](img/photos/nuc977.jpg)](https://github.com/steward-fu/website/releases/tag/nuc977)
 [![](img/photos/nuc972.jpg)](https://github.com/steward-fu/website/releases/tag/nuc972)
