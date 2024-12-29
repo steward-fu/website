@@ -1,0 +1,90 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - Broadcom BCM2835 (Raspberry Pi Zero) - Assembly - <b>Button</b></h3>
+<hr size="1"><br>
+<p>
+參考資料：<br>
+https://elinux.org/RPi_Software#ARM<br>
+https://github.com/dwelch67/raspberrypi<br>
+https://github.com/raspberrypi/firmware<br>
+https://www.raspberrypi.org/app/uploads/2012/02/BCM2835-ARM-Peripherals.pdf<br><br>
+
+按鍵連接到GPIO-19<br>
+<img src="pi-zero_asm_btn/1.jpg" class="maxSize"><br><br>
+
+暫存器<br>
+<img src="pi-zero_asm_btn/2.jpg" class="maxSize"><br><br>
+
+Alternate Function<br>
+<img src="pi-zero_asm_btn/5.jpg" class="maxSize"><br><br>
+
+GPIO SET<br>
+<img src="pi-zero_asm_btn/6.jpg" class="maxSize"><br><br>
+
+GPIO CLR<br>
+<img src="pi-zero_asm_led/7.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .global _start
+
+    .equiv GPFSEL0,   0x20200000
+    .equiv GPFSEL1,   0x20200004
+    .equiv GPSET0,    0x2020001c
+    .equiv GPCLR0,    0x20200028
+    .equiv GPLEV0,    0x20200034
+    .equiv GPPUD,     0x20200094
+    .equiv GPPUDCLK0, 0x20200098
+
+    .arm
+    .text
+_start:
+    b reset
+    b .
+    b .
+    b .
+    b .
+    b .
+    b .
+    b .
+            
+reset:
+    ldr r0, =GPFSEL0
+    ldr r1, =(1 &lt;&lt; 15)
+    str r1, [r0]
+ 
+    ldr r0, =GPFSEL1
+    ldr r1, =0x00000000
+    str r1, [r0]
+ 
+    ldr r0, =GPPUD
+    ldr r1, =0x02
+    str r1, [r0]
+ 
+    ldr r0, =GPPUDCLK0
+    ldr r1, =(1 &lt;&lt; 19)
+    str r1, [r0]
+ 
+0:
+    ldr r0, =GPLEV0
+    ldr r1, [r0]
+    and r1, #(1 &lt;&lt; 19)
+    cmp r1, #0
+    ldrne r0, =GPCLR0
+    ldreq r0, =GPSET0
+    ldr r1, =(1 &lt;&lt; 5)
+    str r1, [r0]
+    b 0b
+    .end
+</pre><br>
+
+<p>
+完成<br>
+<img src="pi-zero_asm_btn/3.jpg" class="maxSize"><br>
+<img src="pi-zero_asm_btn/4.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
