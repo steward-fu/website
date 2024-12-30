@@ -1,0 +1,148 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - NXP MK20DX256 (Teensy 3.2) - Assembly - <b>LED</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://www.nxp.com/docs/en/data-sheet/K20P64M72SF1.pdf<br>
+https://www.nxp.com/docs/en/reference-manual/K20P64M72SF1RM.pdf<br>
+https://forum.pjrc.com/threads/25762-Turn-the-LED-on-with-assembler-code-(-Teensy-3-1-)?p=47739&amp;viewfull=1#post47739<br><br>
+
+LED連接到PTC-5<br>
+<img src="teensy-3.2_asm_led/1.jpg" class="maxSize"><br><br>
+
+Disable Watchdog<br>
+<img src="teensy-3.2_asm_led/2.jpg" class="maxSize"><br><br>
+
+Port Clock<br>
+<img src="teensy-3.2_asm_led/3.jpg" class="maxSize"><br><br>
+
+Enable Port<br>
+<img src="teensy-3.2_asm_led/4.jpg" class="maxSize"><br><br>
+
+Port Direction<br>
+<img src="teensy-3.2_asm_led/5.jpg" class="maxSize"><br><br>
+
+Port Output<br>
+<img src="teensy-3.2_asm_led/6.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .equiv GPIOC_BASE,   0x400ff080
+    .equiv GPIO_PDDR,    0x14
+    .equiv GPIO_PDOR,    0x00
+
+    .equiv SIM_BASE,     0x40047000
+    .equiv SIM_SCGC5,    0x1038
+
+    .equiv WDOG_BASE,    0x40052000
+    .equiv WDOG_STCTRLH, 0x00
+    .equiv WDOG_UNLOCK,  0x0e
+
+    .equiv PORTC_BASE,   0x4004b000
+    .equiv PORTC_PCR5,   0x14
+
+    .thumb
+    .cpu cortex-m4
+    .syntax unified
+
+    .global _start
+
+    .text
+    .org 0x0000
+_start:
+    .word 0x20008000
+    .word reset
+ 
+    .org 0x0100
+    .thumb_func
+reset:
+    ldr r0, =WDOG_BASE
+    ldr r1, =0xc520
+    strh r1, [r0, #WDOG_UNLOCK]
+    ldr r1, =0xd928
+    strh r1, [r0, #WDOG_UNLOCK]
+    ldr r1, =0x0000
+    strh r1, [r0, #WDOG_STCTRLH]
+
+    ldr r0, =SIM_BASE + SIM_SCGC5
+    ldr r1, =(1 &lt;&lt; 11)
+    str r1, [r0]
+
+    ldr r0, =PORTC_BASE
+    ldr r1, =(1 &lt;&lt; 8)
+    str r1, [r0, #PORTC_PCR5]
+
+    ldr r0, =GPIOC_BASE
+    ldr r1, =(1 &lt;&lt; 5)
+    str r1, [r0, #GPIO_PDDR]
+
+0:
+    eor r1, #(1 &lt;&lt; 5)
+    str r1, [r0, #GPIO_PDOR]
+    ldr r2, =1000000
+1:
+    subs r2, #1
+    bne 1b
+    b 0b
+    .end
+</pre><br>
+
+<p>
+main.ld
+</p>
+<pre>
+MEMORY {
+    FLASH (rx) : ORIGIN = 0x00000000, LENGTH = 512K
+    SRAM (W!RX) : ORIGIN = 0x20000000, LENGTH = 64K
+}
+
+SECTIONS {
+    .text   : { *(.text*) } &gt; FLASH
+    .rodata : { *(.rodata*) } &gt; FLASH
+    .bss    : { *(.bss*) } &gt; FLASH
+}
+</pre><br>
+
+<p>
+Makefile
+</p>
+<pre>
+all:
+	arm-none-eabi-as -mcpu=cortex-m4 main.s -o main.o
+	arm-none-eabi-ld -T main.ld -o main.elf main.o
+	arm-none-eabi-objcopy -O ihex main.elf main.hex 
+
+flash:
+	sudo teensy_loader_cli --mcu=mk20dx256 -w main.hex
+
+clean:
+	rm -rf main.o main.elf main.hex
+</pre><br>
+
+<p>
+編譯、燒錄<br>
+1. 連接開發板至PC<br>
+2. 按一下燒錄按鍵<br>
+3. 執行如下命令
+</p>
+<pre>
+$ make
+    arm-none-eabi-as -mcpu=cortex-m4 main.s -o main.o
+    arm-none-eabi-ld -T main.ld -o main.elf main.o
+    arm-none-eabi-objcopy -O ihex main.elf main.hex
+
+$ make flash
+    sudo teensy_loader_cli --mcu=mk20dx256 -w main.hex
+</pre><br>
+
+<p>
+完成<br>
+<img src="teensy-3.2_asm_led/7.jpg" class="maxSize"><br>
+<img src="teensy-3.2_asm_led/8.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
