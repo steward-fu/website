@@ -1,0 +1,145 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - NXP RT1062 (Teensy 4.0) - Assembly - <b>Button</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/blazer82/baremetal-blinky.teensy<br>
+https://community.nxp.com/pwmxy87654/attachments/pwmxy87654/imxrt/1417/2/MCUX%20Flashloader%20Reference%20Manual.pdf<br><br>
+
+按鍵連接到B1_09<br>
+<img src="teensy-4.0_asm_btn/1.jpg" class="maxSize"><br><br>
+
+GPIO Select<br>
+<img src="teensy-4.0_asm_btn/2.jpg" class="maxSize"><br><br>
+
+GPIO Direction<br>
+<img src="teensy-4.0_asm_led/2.jpg" class="maxSize"><br><br>
+
+GPIO Input/Output<br>
+<img src="teensy-4.0_asm_led/3.jpg" class="maxSize"><br><br>
+
+GPIO Pull-up<br>
+<img src="teensy-4.0_asm_btn/3.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .equiv IOMUXC_SW_PAD_CTL_PAD_GPIO_BASE, 0x401f8000
+    .equiv SW_PAD_CTL_PAD_GPIO_AD_B1_09,    0x310
+
+    .equiv IOMUXC_GPR_BASE,  0x400ac000
+    .equiv GPR_GPR26,        0x68
+    .equiv GPR_GPR27,        0x6c
+
+    .equiv IMXRT_GPIO6_BASE, 0x42000000
+    .equiv IMXRT_GPIO7_BASE, 0x42004000
+    .equiv GPIO_DR,          0x00
+    .equiv GPIO_GDIR,        0x04
+
+    .thumb
+    .cpu cortex-m7
+    .syntax unified
+
+    .global _start
+
+    .text
+_flashconfig:
+    .word 0x42464346
+    .word 0x56010000
+    .word 0
+    .word 0x20101
+    .word 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    .word 0x30401
+    .word 0, 0
+    .word 0x200000
+    .word 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    .word 0xa1804eb
+    .word 0x26043206
+    .word 0, 0
+    .word 0x24040405
+    .word 0, 0, 0, 0, 0, 0, 0
+    .word 0x406
+    .word 0, 0, 0, 0, 0, 0, 0
+    .word 0x8180420
+    .word 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    .word 0x81804d8
+    .word 0, 0, 0
+    .word 0x8180402
+    .word 0x2004
+    .word 0, 0, 0, 0, 0, 0
+    .word 0x460
+    .word 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    .word 0x100
+    .word 0x1000
+    .word 1
+    .word 0
+    .word 0x10000
+    .word 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+
+    .org 0x1000
+    .text
+_ivt:
+    .word 0x402000d1
+    .word _start
+    .word 0
+    .word 0
+    .word _bootdata
+    .word _ivt
+    .word 0
+    .word 0
+
+    .text
+_bootdata:
+    .word 0x60000000
+    .word flashimagelen
+    .word 0
+
+    .text
+_start:
+    .word 0x20010000
+    .word reset
+
+    .section .text
+    .thumb_func
+reset:
+    ldr r0, =IOMUXC_GPR_BASE
+    ldr r1, =0xffffffff
+    str r1, [r0, #GPR_GPR26]
+    str r1, [r0, #GPR_GPR27]
+
+    ldr r0, =IOMUXC_SW_PAD_CTL_PAD_GPIO_BASE
+    ldr r1, [r0, #SW_PAD_CTL_PAD_GPIO_AD_B1_09]
+    orr r1, #(1 &lt;&lt; 14) | (1 &lt;&lt; 13)
+    str r1, [r0, #SW_PAD_CTL_PAD_GPIO_AD_B1_09]
+
+    ldr r0, =IMXRT_GPIO6_BASE
+    ldr r1, [r0, #GPIO_GDIR]
+    bic r1, #(1 &lt;&lt; 25)
+    str r1, [r0, #GPIO_GDIR]
+
+    ldr r0, =IMXRT_GPIO7_BASE
+    ldr r1, [r0, #GPIO_GDIR]
+    orr r1, #(1 &lt;&lt; 3)
+    str r1, [r0, #GPIO_GDIR]
+
+0:
+    ldr r0, =IMXRT_GPIO6_BASE
+    ldr r1, [r0, #GPIO_DR]
+    lsr r1, #22
+    eor r1, #0xff
+    ldr r0, =IMXRT_GPIO7_BASE
+    str r1, [r0, #GPIO_DR]
+    b 0b
+    .end
+</pre><br>
+
+<p>
+完成<br>
+<img src="teensy-4.0_asm_btn/4.jpg" class="maxSize"><br>
+<img src="teensy-4.0_asm_btn/5.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
