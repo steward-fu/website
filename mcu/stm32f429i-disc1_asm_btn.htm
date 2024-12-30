@@ -1,0 +1,90 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - STMicroelectronics STM32F429 (STM32F429I-DISC1) - Assembly - <b>Button</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://www.st.com/resource/en/datasheet/dm00071990.pdf<br>
+https://www.st.com/resource/en/user_manual/dm00093903-discovery-kit-with-stm32f429zi-mcu-stmicroelectronics.pdf<br>
+https://www.st.com/resource/en/reference_manual/dm00031020-stm32f405-415-stm32f407-417-stm32f427-437-and-stm32f429-439-advanced-arm-based-32-bit-mcus-stmicroelectronics.pdf<br><br>
+
+Button測試使用B1 USER(PA-0)<br>
+<img src="stm32f429i-disc1_asm_btn/1.jpg" class="maxSize"><br><br>
+
+GPIO-A Clock<br>
+<img src="stm32f429i-disc1_asm_led/2.jpg" class="maxSize"><br><br>
+
+Mode<br>
+<img src="stm32f429i-disc1_asm_led/3.jpg" class="maxSize"><br><br>
+
+Pull-up<br>
+<img src="stm32f429i-disc1_asm_btn/2.jpg" class="maxSize"><br><br>
+
+Input<br>
+<img src="stm32f429i-disc1_asm_btn/3.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .equiv PORTA_BASE,  0x40020000
+    .equiv PORTG_BASE,  0x40021800
+    .equiv GPIO_MODER,  0x0000
+    .equiv GPIO_PUPDR,  0x000c
+    .equiv GPIO_IDR,    0x0010
+    .equiv GPIO_ODR,    0x0014
+
+    .equiv RCC_BASE,    0x40023800 
+    .equiv RCC_AHB1ENR, 0x0030
+
+    .thumb
+    .cpu cortex-m4
+    .syntax unified
+
+    .global _start
+
+    .text
+    .org 0x0000
+_start:
+    .word 0x20008000
+    .word reset
+ 
+    .org 0x0100
+    .thumb_func
+reset:
+    ldr r0, =RCC_BASE
+    ldr r1, [r0, #RCC_AHB1ENR]
+    orr r1, #(1 &lt;&lt; 6) | (1 &lt;&lt; 0)
+    str r1, [r0, #RCC_AHB1ENR]
+ 
+    ldr r0, =PORTG_BASE
+    ldr r1, =(1 &lt;&lt; 26)
+    str r1, [r0, #GPIO_MODER]
+ 
+    ldr r0, =PORTA_BASE
+    ldr r1, [r0, #GPIO_MODER]
+    bic r1, #3
+    str r1, [r0, #GPIO_MODER]
+    ldr r1, [r0, #GPIO_PUPDR]
+    bic r1, #3
+    orr r1, #2
+    str r1, [r0, #GPIO_PUPDR]
+ 
+0:
+    ldr r0, =PORTA_BASE
+    ldr r1, [r0, #GPIO_IDR]
+    lsl r1, #13
+    ldr r0, =PORTG_BASE
+    str r1, [r0, #GPIO_ODR]
+    b 0b
+    .end
+</pre><br>
+
+<p>
+完成<br>
+<img src="stm32f429i-disc1_asm_btn/4.jpg" class="maxSize"><br>
+<img src="stm32f429i-disc1_asm_btn/5.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
