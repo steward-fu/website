@@ -1,75 +1,32 @@
-﻿<!--
- ____________________________________________________________
-|                                                            |
-|    DESIGN + Pat Heard { http://fullahead.org }             |
-|      DATE + 2006.09.12                                     |
-| COPYRIGHT + Free use if this notice is kept in place.      |
-|____________________________________________________________|
-
--->
-
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
-    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
-<head>
-  <title>司徒的教學網站</title>
-  <meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />
-  <meta name="author" content="fullahead.org" />
-  <meta name="keywords" content="XHTML, CSS, template, FullAhead" />
-  <meta name="description" content="A valid, XHTML 1.0 template" />
-  <meta name="robots" content="index, follow, noarchive" />
-  <meta name="googlebot" content="noarchive" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0"/>
+<head><script type="text/javascript" src="../page_head.js"></script>
 
-  <link rel="shortcut icon" href="../../website.ico">
-  <link rel="stylesheet" type="text/css" href="../../styles/shCore.css" />
-  <link rel="stylesheet" type="text/css" href="../../styles/shThemeDefault.css" />
-  <link rel="stylesheet" type="text/css" href="../../css/html.css" media="screen, projection, tv " />
-  <link rel="stylesheet" type="text/css" href="../../css/layout.css" media="screen, projection, tv" />
-  <link rel="stylesheet" type="text/css" href="../../css/print.css" media="print" />
-  
-  <script type="text/javascript" src="../../scripts/shCore.js"></script>
-  <script type="text/javascript" src="../../scripts/shBrushCpp.js"></script>
-
-  <!-- Conditional comment to apply opacity fix for IE #content background.
-       Invalid CSS, but can be removed without harming design -->
-  <!--[if gt IE 5]>
-  <link rel="stylesheet" type="text/css" href="css/ie.css" media="screen, projection, tv " />
-  <![endif]-->
-</head>
-
-<body>
-<script type="text/javascript">SyntaxHighlighter.all();</script>
-<div id="wrapper">
-<div id="content">
-<script type="text/javascript" src="../../header.js"></script>
-<div id="page">
-<h3>(ARM Cortex-A7) T113-S3 (MangoPi MQ-R)</h3>
-<p><b>分析XBoot GT911無法觸發中斷的原因</b></p>
-<hr size="1">
+<h3><a href="../mcu.htm">微處理器</a> - Allwinner T113-S3 (MangoPi MQ-R) - <b>分析XBoot GT911無法觸發中斷的原因</b></h3>
+<hr size="1"><br>
 <p>
 參考資料：<br>
-1. <a href="https://github.com/xboot/xboot">xboot<a><br>
-2. <a href="https://dl.linux-sunxi.org/touchscreen/GT911%20Datasheet.pdf">GT911</a><br>
-3. <a href="https://debugdump.com/topic/3633/mq-t113%E4%BD%BF%E7%94%A8xboot%E9%A9%B1%E5%8A%A8gt911%E6%97%B6%E4%B8%AD%E6%96%AD%E6%97%A0%E6%B3%95%E4%BD%BF%E7%94%A8/6">debugdump</a><br><br>
+https://github.com/xboot/xboot<br>
+https://dl.linux-sunxi.org/touchscreen/GT911%20Datasheet.pdf<br>
+https://debugdump.com/topic/3633/mq-t113%E4%BD%BF%E7%94%A8xboot%E9%A9%B1%E5%8A%A8gt911%E6%97%B6%E4%B8%AD%E6%96%AD%E6%97%A0%E6%B3%95%E4%BD%BF%E7%94%A8/6<br><br>
 
 T113-S3開發板<br>
-<img src="pcb/1.jpg" class="maxSize"><br><br>
+<img src="mangopi-mq-r_pcb/1.jpg" class="maxSize"><br><br>
 
 司徒手上並沒有GT911觸控板，因此，司徒使用Arduino Micro模擬GT911訊號<br>
-<img src="xboot_int/1.jpg" class="maxSize"><br><br>
+<img src="mangopi-mq-r_xboot_int/1.jpg" class="maxSize"><br><br>
 
 Arduino腳位：<br>
-<img src="../atmega32u4/pinout/1.jpg" class="maxSize"><br><br>
+<img src="arduino-micro_pin/1.jpg" class="maxSize"><br><br>
 
 T113-S3腳位：<br>
-<img src="pin/1.jpg" class="maxSize"><br><br>
+<img src="mangopi-mq-r_pin/1.jpg" class="maxSize"><br><br>
 
 司徒將GT911 I2C訊號接到T113-S3 I2C-2，GT911的中斷則是接到T113-S3 PB6(手動觸發)<br>
-<img src="xboot_int/2.jpg" class="maxSize"><br><br>
+<img src="mangopi-mq-r_xboot_int/2.jpg" class="maxSize"><br><br>
 
 杜邦線連接<br>
-<img src="xboot_int/3.jpg" class="maxSize"><br><br>
+<img src="mangopi-mq-r_xboot_int/3.jpg" class="maxSize"><br><br>
 
 Arduino模擬GT911程式
 </p>
@@ -77,71 +34,73 @@ Arduino模擬GT911程式
 #include &lt;Wire.h&gt;
 
 unsigned short rx = 0;
+
 void receiveEvent(int howMany) {
-  if(howMany == 2){
-    rx = Wire.read();
-    rx&lt;&lt;= 8;
-    rx|= Wire.read();
-  }
-  else{
-    while (Wire.available()) {
-      Wire.read();
+    if (howMany == 2) {
+        rx = Wire.read();
+        rx &lt;&lt;= 8;
+        rx |= Wire.read();
     }
-  }
-  Serial.print("howMany:");
-  Serial.print(howMany);
-  Serial.print("\n");
-  Serial.print("0x");
-  Serial.print(rx, HEX);
-  Serial.print("\n");
+    else {
+        while (Wire.available()) {
+            Wire.read();
+        }
+    }
+    Serial.print("howMany:");
+    Serial.print(howMany);
+    Serial.print("\n");
+    Serial.print("0x");
+    Serial.print(rx, HEX);
+    Serial.print("\n");
 }
 
 unsigned short x = 0;
 unsigned short y = 0;
+
 void requestEvent() {
-  switch(rx){
-  case 0x8047:
-    Wire.write(byte(0x01));
-    break;
-  case 0x8140:
-    Wire.write('A');
-    Wire.write('B');
-    Wire.write('C');
-    Wire.write('D');
-    break;
-  case 0x8144:
-    Wire.write(byte(0x12));
-    Wire.write(byte(0x34));
-    break;
-  case 0x814e:
-    Wire.write(byte(0x80 | 1));
-    break;
-  case 0x814f:
-    Wire.write(byte(0x01));
-    Wire.write(byte(x));
-    Wire.write(byte(x &gt;&gt; 8));
-    Wire.write(byte(y));
-    Wire.write(byte(y &gt;&gt; 8));
-    Wire.write(byte(0x00));
-    Wire.write(byte(0x00));
-    Wire.write(byte(0x00));
-    x+= 1;
-    y+= 1;
-    break;
-  }
-  rx = 0;
+    switch (rx) {
+    case 0x8047:
+        Wire.write(byte(0x01));
+        break;
+    case 0x8140:
+        Wire.write('A');
+        Wire.write('B');
+        Wire.write('C');
+        Wire.write('D');
+        break;
+    case 0x8144:
+        Wire.write(byte(0x12));
+        Wire.write(byte(0x34));
+        break;
+    case 0x814e:
+        Wire.write(byte(0x80 | 1));
+        break;
+    case 0x814f:
+        Wire.write(byte(0x01));
+        Wire.write(byte(x));
+        Wire.write(byte(x &gt;&gt; 8));
+        Wire.write(byte(y));
+        Wire.write(byte(y &gt;&gt; 8));
+        Wire.write(byte(0x00));
+        Wire.write(byte(0x00));
+        Wire.write(byte(0x00));
+        x += 1;
+        y += 1;
+        break;
+    }
+    rx = 0;
 }
 
 void setup() {
-  Wire.begin(20);
-  Wire.onReceive(receiveEvent);
-  Wire.onRequest(requestEvent);
-  Serial.begin(115200);
+    Wire.begin(20);
+    Wire.onReceive(receiveEvent);
+    Wire.onRequest(requestEvent);
+    Serial.begin(115200);
 
 }
 
 void loop() {
-  delay(100);
+    delay(100);
 }
 </pre><br>
 
@@ -285,7 +244,7 @@ PB6=GPIO38、GPIOCFG=14、IRQ=262，這個IRQ應該是抓錯了？
 [    0.266982]ts_gt911_probe, gpio:38, gpiocfg:14, irqnum:262
 </pre>
 <p>
-<img src="xboot_int/4.jpg" class="maxSize"><br><br>
+<img src="mangopi-mq-r_xboot_int/4.jpg" class="maxSize"><br><br>
 
 src/arch/arm32/mach-t113s3/romdisk/boot/mangopi.json
 </p>
@@ -354,7 +313,7 @@ src/arch/arm32/mach-t113s3/driver/irq-t113-gpio.c
 </pre>
 <p>
 PB6是位於<b>0x02000230</b><br>
-<img src="xboot_int/5.jpg" class="maxSize"><br><br>
+<img src="mangopi-mq-r_xboot_int/5.jpg" class="maxSize"><br><br>
 
 Workaround (src/driver/interrupt/interrupt.c)
 </p>
@@ -413,14 +372,6 @@ xboot: /#
 [    9.054572]gt911_interrupt++
 [    9.060405]gt911_interrupt, count:1, x:2, y:2
 [    9.066782]gt911_interrupt--
-</pre><br>
+</pre>
 
-<p>
-<br><a href="../../mcu.htm">返回上一頁</a>
-</p>
-
-</div>
-</div>
-</div>
-</body>
-</html>
+<br><script type="text/javascript" src="../tail.js"></script>

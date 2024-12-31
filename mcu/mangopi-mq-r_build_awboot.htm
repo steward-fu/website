@@ -1,0 +1,49 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - Allwinner T113-S3 (MangoPi MQ-R) - <b>Build AWBoot</b></h3>
+<hr size="1"><br>
+<p>
+參考資料：<br>
+https://github.com/szemzoa/awboot<br>
+https://whycan.com/t_9231.html<br>
+https://bbs.aw-ol.com/topic/2338/mangopi-dual-t113-%E4%B8%BB%E7%BA%BF%E5%86%85%E6%A0%B8%E7%BC%96%E8%AF%91%E8%AE%B0%E5%BD%95<br><br>
+
+</p>
+<pre>
+$ cd
+$ git clone https://github.com/szemzoa/awboot
+$ cd awboot
+$ vim board.c
+        sunxi_usart_t usart_dbg = { 
+        .base    = 0x02500000,
+        .id      = 0,
+        .gpio_tx = {GPIO_PIN(PORTE, 2), GPIO_PERIPH_MUX6},
+        .gpio_rx = {GPIO_PIN(PORTE, 3), GPIO_PERIPH_MUX6},
+    };
+
+$ make
+$ xfel write 0x30000 awboot-fel.bin &amp;&amp; xfel exec 0x30000
+</pre>
+<p>
+P.S. 預設使用UART5作為除錯界面，司徒焊接成UART0，故作如上修改<br><br>
+
+Baudrate 115200bps
+</p>
+<pre>
+[I] AWBoot starting
+[D] DRAM size: 128M
+[D] DRAM simple test OK.
+[D] CPU freq: 1200 MHz
+[I] SMHC: sdhci0 controller initialized
+[W] SMHC: timeout
+[D] SMHC: SD detect failed
+[W] SMHC: timeout
+[D] SMHC: MMC detect failed
+[W] SMHC: init failed, trying SPI
+[D] SPI: init...
+[D] SPI: set spi clock=100MHz, mclk=200MHz
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
