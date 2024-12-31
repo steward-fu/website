@@ -1,0 +1,59 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - Kendryte K210 (Sipeed Maix Bit) - C/C++ - <b>LED</b></h3>
+<hr size="1"><br>
+<p>
+首先查看板上LED的電路圖位置<br>
+<img src="maix-bit_cpp_led/1.jpg" class="maxSize"><br>
+<img src="maix-bit_cpp_led/2.jpg" class="maxSize"><br><br>
+
+在<b>kendryte-standalone-sdk-0.5.6/src/</b>下，產生一個led資料夾並且撰寫一個main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;unistd.h&gt;
+#include "fpioa.h"
+#include "gpio.h"
+
+int main(void)
+{
+    fpioa_set_function(12, FUNC_GPIO1);
+    fpioa_set_function(13, FUNC_GPIO2);
+    fpioa_set_function(14, FUNC_GPIO3);
+
+    gpio_init();
+    gpio_set_drive_mode(1, GPIO_DM_OUTPUT); // GPIO1
+    gpio_set_drive_mode(2, GPIO_DM_OUTPUT); // GPIO2
+    gpio_set_drive_mode(3, GPIO_DM_OUTPUT); // GPIO3
+
+    gpio_pin_value_t value = GPIO_PV_HIGH;
+    gpio_set_pin(1, value); // GPIO1
+    gpio_set_pin(2, value); // GPIO2
+    gpio_set_pin(3, value); // GPIO3
+
+    while (1) {
+        sleep(1);
+        gpio_set_pin(1, value = !value); // GPIO1
+    }
+    return 0;
+}
+</pre>
+<p>
+由於GPIO可以Remap，因此，司徒把RGB分別Remap到GPIO1~GPIO3腳位<br><br>
+
+編譯程式
+</p>
+<pre>
+$ cmake .. -DPROJ=led -DTOOLCHAIN=/opt/k210/bin &amp;&amp; make
+</pre>
+<p>
+接著使用GDB除錯或者使用kflash燒錄<br><br>
+
+完成<br>
+<img src="maix-bit_cpp_led/3.jpg" class="maxSize"><br>
+<img src="maix-bit_cpp_led/4.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
