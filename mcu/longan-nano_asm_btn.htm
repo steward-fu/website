@@ -1,0 +1,72 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - GigaDevice GD32VF103 (Sipeed Longan Nano) - Assembly - <b>Button</b></h3>
+<hr size="1"><br>
+<p>
+PBEN<br>
+<img src="longan-nano_asm_led/2.jpg" class="maxSize"><br><br>
+
+PORT<br>
+<img src="longan-nano_asm_led/3.jpg" class="maxSize"><br>
+<img src="longan-nano_asm_led/4.jpg" class="maxSize"><br><br>
+
+Input<br>
+<img src="longan-nano_asm_btn/1.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .global _start
+
+    .equiv RCU_BASE,   0x40021000
+    .equiv RCU_CFG0,   0x04
+    .equiv RCU_APB2EN, 0x18
+    .equiv GPIOB_BASE, 0x40010c00
+    .equiv GPIOC_BASE, 0x40011000
+    .equiv GPIO_CTL0,  0x00
+    .equiv GPIO_CTL1,  0x04
+    .equiv GPIO_ISTAT, 0x08
+    .equiv GPIO_OCTL,  0x0c
+
+    .text
+    .org 0x0000
+_vector:
+    j _start
+
+    .org 0x0200
+_start:
+    li t0, 0x18
+    li a0, RCU_BASE
+    sw t0, RCU_APB2EN(a0)
+
+    li t0, 0x300000
+    li a0, GPIOC_BASE
+    sw t0, GPIO_CTL1(a0)
+
+    li t0, 0x80
+    li a0, GPIOB_BASE
+    sw t0, GPIO_CTL1(a0)
+
+    li t0, 0x200
+    sw t0, GPIO_OCTL(a0)
+
+    li a0, GPIOB_BASE
+    li a1, GPIOC_BASE
+0:
+    lw t0, GPIO_ISTAT(a0)
+    sll t0, t0, 4
+    sw t0, GPIO_OCTL(a1)
+    j 0b
+    .end
+</pre>
+<p>
+P.S. LED_R(PC13)、BTN(PB9)<br><br>
+
+完成<br>
+<img src="longan-nano_asm_btn/2.jpg" class="maxSize"><br>
+<img src="longan-nano_asm_btn/3.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

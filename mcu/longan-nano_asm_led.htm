@@ -1,0 +1,117 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - GigaDevice GD32VF103 (Sipeed Longan Nano) - Assembly - <b>LED</b></h3>
+<hr size="1"><br>
+<p>
+LED_R腳位(PC13)<br>
+<img src="longan-nano_asm_led/1.jpg" class="maxSize"><br><br>
+
+PCEN<br>
+<img src="longan-nano_asm_led/2.jpg" class="maxSize"><br><br>
+
+PORT C<br>
+<img src="longan-nano_asm_led/3.jpg" class="maxSize"><br>
+<img src="longan-nano_asm_led/4.jpg" class="maxSize"><br><br>
+
+Output<br>
+<img src="longan-nano_asm_led/5.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .global _start
+
+    .equiv RCU_BASE,   0x40021000
+    .equiv RCU_CFG0,   0x04
+    .equiv RCU_APB2EN, 0x18
+    .equiv GPIOC_BASE, 0x40011000
+    .equiv GPIO_CTL0,  0x00
+    .equiv GPIO_CTL1,  0x04
+    .equiv GPIO_OCTL,  0x0c
+
+    .text
+    .org 0x0000
+_vector:
+    j _start
+
+    .org 0x0200
+_start:
+    li t0, 0x10
+    li a0, RCU_BASE
+    sw t0, RCU_APB2EN(a0)
+
+    li t0, 0x300000
+    li a0, GPIOC_BASE
+    sw t0, GPIO_CTL1(a0)
+
+    li t1, 0x2000
+    li t2, 0x0000
+    li a0, GPIOC_BASE
+0:
+    xor t2, t2, t1
+    sw t2, GPIO_OCTL(a0)
+
+    lui t0, 100
+1:
+    nop
+    addi t0, t0, -1
+    bgtz t0, 1b
+    j 0b
+    .end
+</pre><br>
+
+<p>
+main.ld
+</p>
+<pre>
+MEMORY {
+    FLASH : ORIGIN = 0x08000000, LENGTH = 0x20000
+}
+
+SECTIONS {
+    .text : { *(.text*) } &gt; FLASH
+    .rodata : { *(.rodata*) } &gt; FLASH
+    .bss : { *(.bss*) } &gt; FLASH
+}
+</pre><br>
+
+<p>
+Makefile
+</p>
+<pre>
+all:
+	riscv-nuclei-elf-as -o main.o main.s
+	riscv-nuclei-elf-ld -T main.ld -o main.elf main.o
+	riscv-nuclei-elf-objcopy -O binary main.elf main.bin
+
+clean:
+	rm -rf main.bin main.o main.elf
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ make
+    riscv-nuclei-elf-as -o main.o main.s
+    riscv-nuclei-elf-ld -T main.ld -o main.elf main.o
+    riscv-nuclei-elf-objcopy -O binary main.elf main.bin
+</pre><br>
+
+<p>
+燒錄<br>
+1. 按住BOOT0<br>
+2. 連接USB到PC<br>
+<img src="longan-nano_asm_led/6.jpg" class="maxSize"><br>
+3. 載入main.bin<br>
+4. 按下OK燒錄<br>
+<img src="longan-nano_asm_led/7.jpg" class="maxSize"><br><br>
+
+按下RESET按鍵<br>
+<img src="longan-nano_asm_led/8.jpg" class="maxSize"><br>
+<img src="longan-nano_asm_led/9.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
