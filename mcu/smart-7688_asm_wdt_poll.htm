@@ -1,0 +1,95 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - MediaTek MT7688 (LinkIt Smart 7688) - Assembly - <b>Watchdog(Polling)</b></h3>
+<hr size="1"><br>
+<p>
+Watchdog可以用來Reset System或者當作Timer使用，如果要當Timer使用，WDT2SYSRST_EN要設定成0<br>
+<img src="smart-7688-duo_asm_wdt_poll/1.jpg" class="maxSize"><br><br>
+
+PERI_CLK_SEL用來設定需要使用的Clock Source<br>
+<img src="smart-7688-duo_asm_t0_poll/1.jpg" class="maxSize"><br>
+<img src="smart-7688-duo_asm_t0_poll/2.jpg" class="maxSize"><br>
+P.S. 如果要使用Timer，<b>BBPPLL必須要Enable</b><br><br>
+
+WDTINT用來判斷Watchdog是否已經發生中斷<br>
+<img src="smart-7688-duo_asm_t0_poll/3.jpg" class="maxSize"><br><br>
+
+WDTPRES用來設定預除數值，WDTEN用來啟動Watchdog下數功能，WDTAL用來設定是否自動從WDTLMT_REG載入數值<br>
+<img src="smart-7688-duo_asm_wdt_poll/2.jpg" class="maxSize"><br><br>
+
+自動載入的數值<br>
+<img src="smart-7688-duo_asm_wdt_poll/3.jpg" class="maxSize"><br><br>
+
+Watchdog下數數值設定<br>
+<img src="smart-7688-duo_asm_wdt_poll/4.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .extern _start
+    .set noreorder
+ 
+    .equiv RSTSTAT,     0xb0000038
+    .equiv CLKCFG0,     0xb000002c
+    .equiv TGLB_REG,    0xb0000100
+    .equiv WDTCTL_REG,  0xb0000120
+    .equiv WDTLMT_REG,  0xb0000124
+    .equiv GPIO_CTRL_1, 0xb0000604
+    .equiv GPIO_DATA_1, 0xb0000624
+    .equiv LED,         (44 - 32)
+ 
+    .text
+_start:
+    b reset
+   
+    .org 0x400
+reset:
+    li $8, GPIO_CTRL_1
+    li $9, (1 &lt;&lt; LED)
+    sw $9, 0($8)
+ 
+    li $8, CLKCFG0
+    lw $9, 0($8)
+    or $9, (1 &lt;&lt; 4) | (1 &lt;&lt; 3) | (1 &lt;&lt; 2)
+    sw $9, 0($8)
+    
+    li $8, RSTSTAT
+    li $9, 0
+    sw $9, 0($8)
+
+    li $8, WDTLMT_REG
+    li $9, 1000
+    sw $9, 0($8)
+ 
+    li $8, WDTCTL_REG
+    li $9, (1000 &lt;&lt; 16) | (1 &lt;&lt; 7) | (1 &lt;&lt; 4)
+    sw $9, 0($8)
+loop:
+    li $8, TGLB_REG
+    lw $9, 0($8)
+    and $9, 2
+    beqz $9, loop
+    nop
+ 
+    li $8, GPIO_DATA_1
+    xor $10, (1 &lt;&lt; LED)
+    sw $10, 0($8)
+   
+    li $8, TGLB_REG
+    li $9, 2
+    sw $9, 0($8)
+ 
+    b loop
+    nop
+</pre>
+<p>
+P.S. WDTPRES = 1000，代表每筆下數的時間為1ms，WDTLMT_REG = 1000，代表每秒產生一次中斷，需要注意的是，不管Watchdog使用XTAL或者BBPPLL當作Clock Source，BBPPLL都必須要Enable<br><br>
+
+完成<br>
+<img src="smart-7688_asm_led/5.jpg" class="maxSize"><br>
+<img src="smart-7688_asm_led/6.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

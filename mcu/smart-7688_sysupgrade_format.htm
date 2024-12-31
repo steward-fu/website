@@ -1,0 +1,20 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - MediaTek MT7688 (LinkIt Smart 7688) - <b>如何產生LinkIt7688-squashfs-sysupgrade.bin</b></h3>
+<hr size="1"><br>
+<pre>
+$ mv vmlinux vmlinux_orig
+$ mipsel-openwrt-linux-uclibc-objcopy -O binary -R .reginfo -R .notes -R .note -R .comment -R .mdebug -R .note.gnu.build-id -S vmlinux_orig vmlinux
+$ mipsel-openwrt-linux-uclibc-objcopy -R .reginfo -R .notes -R .note -R .comment -R .mdebug -R .note.gnu.build-id -S vmlinux_orig vmlinux.elf
+$ dtc -O dtb -o LINKIT7688.dtb dts/LINKIT7688.dts
+$ patch-dtb vmlinux LINKIT7688.dtb
+$ lzma e vmlinux -lc1 -lp2 -pb2 vmlinux.bin.lzma
+$ mkimage -A mips -O linux -T kernel -C lzma -a 0x80000000 -e 0x80000000 -n "MIPS OpenWrt Linux-3.18.44" -d vmlinux.bin.lzma uImage.lzma
+$ cp uImage.lzma uImage.bin
+$ cat uImage.bin 3.18.44_root.squashfs &gt; lks7688.img
+$ padjffs2 lks7688.img 4 8 16 64 128 256
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

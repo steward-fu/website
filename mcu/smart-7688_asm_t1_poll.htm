@@ -1,0 +1,87 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - MediaTek MT7688 (LinkIt Smart 7688) - Assembly - <b>Timer1(Polling)</b></h3>
+<hr size="1"><br>
+<p>
+PERI_CLK_SEL用來設定需要使用的Clock Source<br>
+<img src="smart-7688-duo_asm_t0_poll/1.jpg" class="maxSize"><br>
+<img src="smart-7688-duo_asm_t0_poll/2.jpg" class="maxSize"><br>
+P.S. 如果要使用Timer，<b>BBPPLL必須要Enable</b><br><br>
+
+T1INT用來判斷Timer1是否已經發生中斷<br>
+<img src="smart-7688-duo_asm_t0_poll/3.jpg" class="maxSize"><br><br>
+
+T1PRES用來設定預除數值，T1EN用來啟動Timer1下數功能，T1AL用來設定是否自動從T1LMT_REG載入數值<br>
+<img src="smart-7688-duo_asm_t1_poll/1.jpg" class="maxSize"><br><br>
+
+自動載入的數值<br>
+<img src="smart-7688-duo_asm_t1_poll/2.jpg" class="maxSize"><br><br>
+
+Timer1下數數值設定<br>
+<img src="smart-7688-duo_asm_t1_poll/3.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .extern _start
+    .set noreorder
+ 
+    .equiv CLKCFG0,     0xb000002c
+    .equiv TGLB_REG,    0xb0000100
+    .equiv T1CTL_REG,   0xb0000130
+    .equiv T1LMT_REG,   0xb0000134
+    .equiv GPIO_CTRL_1, 0xb0000604
+    .equiv GPIO_DATA_1, 0xb0000624
+    .equiv LED,         (44 - 32)
+
+    .text
+_start:
+    b reset
+  
+    .org 0x400
+reset:
+    li $8, GPIO_CTRL_1
+    li $9, (1 &lt;&lt; LED)
+    sw $9, 0($8)
+
+    li $8, CLKCFG0
+    lw $9, 0($8)
+    or $9, (1 &lt;&lt; 4) | (1 &lt;&lt; 3) | (1 &lt;&lt; 2)
+    sw $9, 0($8)
+    
+    li $8, T1LMT_REG
+    li $9, 1000
+    sw $9, 0($8)
+
+    li $8, T1CTL_REG
+    li $9, (1000 &lt;&lt; 16) | (1 &lt;&lt; 7) | (1 &lt;&lt; 4)
+    sw $9, 0($8)
+loop:
+    li $8, TGLB_REG
+    lw $9, 0($8)
+    and $9, 4
+    beqz $9, loop
+    nop
+
+    li $8, GPIO_DATA_1
+    xor $10, (1 &lt;&lt; LED)
+    sw $10, 0($8)
+  
+    li $8, TGLB_REG
+    li $9, 4
+    sw $9, 0($8)
+
+    b loop
+    nop
+</pre>
+<p>
+P.S. T1PRES = 1000，代表每筆下數的時間為1ms，T1LMT_REG = 1000，代表每秒產生一次中斷，需要注意的是，不管Timer1使用XTAL或者BBPPLL當作Clock Source，BBPPLL都必須要Enable<br><br>
+
+完成<br>
+<img src="smart-7688_asm_led/5.jpg" class="maxSize"><br>
+<img src="smart-7688_asm_led/6.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

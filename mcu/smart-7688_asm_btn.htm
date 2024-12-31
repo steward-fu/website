@@ -1,0 +1,66 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - MediaTek MT7688 (LinkIt Smart 7688) - Assembly - <b>Button</b></h3>
+<hr size="1"><br>
+<p>
+WIFI RESET按鍵是連接到WDT_RST_N<br>
+<img src="smart-7688_asm_btn/1.jpg" class="maxSize"><br><br>
+
+WDT_RST_N腳位是GPIO-38<br>
+<img src="smart-7688-duo_asm_btn/2.jpg" class="maxSize"><br><br>
+
+WDT_MODE可以設定WDT_RST_N腳位模式<br>
+<img src="smart-7688-duo_asm_btn/3.jpg" class="maxSize"><br>
+<img src="smart-7688-duo_asm_btn/4.jpg" class="maxSize"><br><br>
+
+GPIO方向設定<br>
+<img src="smart-7688-duo_asm_led/5.jpg" class="maxSize"><br><br>
+
+GPIO資料<br>
+<img src="smart-7688-duo_asm_led/6.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .extern _start
+    .set noreorder
+
+    .equiv GPIO1_MODE,  0xb0000060
+    .equiv GPIO_CTRL_1, 0xb0000604
+    .equiv GPIO_DATA_1, 0xb0000624
+    .equiv WDT_MODE,    14
+    .equiv LED,         (44 - 32)
+
+    .text
+_start:
+    b reset
+
+    .org 0x400
+reset:
+    li $8, GPIO1_MODE
+    lw $9, 0($8)
+    or $9, (1 &lt;&lt; WDT_MODE)
+    sw $9, 0($8)
+
+    li $8, GPIO_CTRL_1
+    li $9, (1 &lt;&lt; LED)
+    sw $9, 0($8)
+    
+loop:
+    li $8, GPIO_DATA_1
+    lw $9, 0($8)
+    sll $9, 6
+    sw $9, 0($8)
+    b loop
+    nop
+</pre><br>
+
+<p>
+完成<br>
+<img src="smart-7688_asm_btn/2.jpg" class="maxSize"><br>
+<img src="smart-7688_asm_btn/3.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
