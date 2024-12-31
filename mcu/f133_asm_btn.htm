@@ -1,0 +1,82 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - Allwinner F133-A (MangoPi MQ-R) - Assembly - <b>Button</b></h3>
+<hr size="1"><br>
+<p>
+FEL按鍵是連接到SPI0_MOSI<br>
+<img src="f133_asm_btn/6.jpg" class="maxSize"><br>
+<img src="f133_asm_btn/1.jpg" class="maxSize"><br><br>
+
+SPI0_MOSI是PC4<br>
+<img src="f133_asm_btn/2.jpg" class="maxSize"><br><br>
+
+GPIO位址<br>
+<img src="f133_asm_led/3.jpg" class="maxSize"><br><br>
+
+PC_CFG0<br>
+<img src="f133_asm_btn/3.jpg" class="maxSize"><br><br>
+
+PD_DAT<br>
+<img src="f133_asm_btn/4.jpg" class="maxSize"><br><br>
+
+PC_PULL0<br>
+<img src="f133_asm_btn/5.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .global _start
+ 
+    .equ GPIO_BASE, 0x02000000
+    .equ PD_CFG2,   0x0098
+    .equ PD_DAT,    0x00a0
+    .equ PC_CFG0,   0x0060
+    .equ PC_DAT,    0x0070
+    .equ PC_PULL0,  0x0084
+  
+    .text
+    .long 0x0a00006f
+    .byte 'e','G','O','N','.','B','T','0'
+    .long 0x5F0A6C39
+    .long 0x8000
+    .long 0, 0
+    .long 0, 0, 0, 0, 0, 0, 0, 0
+    .long 0, 0, 0, 0, 0, 0, 0, 0
+
+    .org 0x00a0
+_vector:
+    j _start
+  
+    .org 0x0100
+_start:
+    li t0, 0x00000000
+    li a0, GPIO_BASE + PC_CFG0
+    sw t0, 0(a0)
+
+    li t0, 0x55555555
+    li a0, GPIO_BASE + PC_PULL0
+    sw t0, 0(a0)
+
+    li t0, (1 &lt;&lt; 24)
+    li a0, GPIO_BASE + PD_CFG2
+    sw t0, 0(a0)
+
+    li a0, GPIO_BASE + PC_DAT
+    li a1, GPIO_BASE + PD_DAT
+0:
+    lw t0, 0(a0)
+    sll t0, t0, 18
+    sw t0, 0(a1)
+    j 0b
+    .end
+</pre><br>
+
+<p>
+完成<br>
+<img src="f133_asm_led/6.jpg" class="maxSize"><br>
+<img src="f133_asm_btn/7.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

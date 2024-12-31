@@ -1,0 +1,47 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - Allwinner F133-A (MangoPi MQ-R) - <b>gen_checksum.py</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/Ouyancheng/FlatHeadBro<br><br>
+
+gen_checksum.py
+</p>
+<pre>
+import struct
+import os 
+
+blocksize       = 0x4000
+stamp           = 0x5f0a6C39
+checksum_offset = 0x0c
+length_offset   = 0x10
+def pad_to_roundup(data: bytearray, boundary):
+    excess = len(data) % boundary
+    if excess:
+        data += b'\0' * (boundary - excess)
+
+def main():
+    # little endian + unsigned int 
+    uint32iter = struct.Struct('&lt;I')
+    input_img = open(os.sys.argv[1], 'rb')
+    rawbytes = bytearray(input_img.read())
+    pad_to_roundup(rawbytes, blocksize)
+    uint32iter.pack_into(rawbytes, checksum_offset, stamp)
+    uint32iter.pack_into(rawbytes, length_offset, len(rawbytes))
+    checksum = 0
+    for uint32 in uint32iter.iter_unpack(rawbytes):
+        checksum += uint32[0]
+    uint32iter.pack_into(rawbytes, checksum_offset, checksum % (2**32))
+    output_img = open(os.sys.argv[2], 'wb')
+    output_img.write(rawbytes)
+    output_img.close()
+    input_img.close()
+
+if __name__ == '__main__':
+    main()
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
