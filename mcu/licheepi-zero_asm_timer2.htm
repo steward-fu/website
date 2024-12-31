@@ -1,0 +1,95 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - Allwinner V3S (Lichee Pi Zero) - Assembly - <b>Timer2</b></h3>
+<hr size="1"><br>
+<p>
+方塊圖<br>
+<img src="licheepi-zero_asm_timer0/1.jpg" class="maxSize"><br><br>
+
+Registers<br>
+<img src="licheepi-zero_asm_timer0/2.jpg" class="maxSize"><br><br>
+
+IRQ Status<br>
+<img src="licheepi-zero_asm_timer0/3.jpg" class="maxSize"><br><br>
+
+Timer2 Ctrl<br>
+<img src="licheepi-zero_asm_timer2/1.jpg" class="maxSize"><br><br>
+
+Timer2 Value<br>
+<img src="licheepi-zero_asm_timer2/2.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .global _start
+      
+    .equ GPIO_BASE,  0x01c20800
+    .equ TIMER_BASE, 0x01c20c00
+  
+    .equ PG,                  (0x24 * 6)
+    .equ TMR_IRQ_STA_REG,     0x04
+    .equ TMR2_CTRL_REG,       0x30
+    .equ TMR2_INTV_VALUE_REG, 0x34
+    .equ TMR2_CUR_VALUE_REG,  0x38
+    .equ CFG0,                0x00
+    .equ DATA,                0x10
+  
+    .arm
+    .text
+_start:
+    .long 0xea000016
+    .byte 'e', 'G', 'O', 'N', '.', 'B', 'T', '0'
+    .long 0, __spl_size
+    .byte 'S', 'P', 'L', 2
+    .long 0, 0
+    .long 0, 0, 0, 0, 0, 0, 0, 0
+    .long 0, 0, 0, 0, 0, 0, 0, 0
+            
+_vector:
+    b reset
+    b .
+    b .
+    b .
+    b .
+    b .
+    b .
+    b .
+            
+reset:
+    ldr r0, =GPIO_BASE
+    ldr r1, =1
+    str r1, [r0, #(PG + CFG0)]
+      
+    ldr r1, =1
+    str r1, [r0, #(PG + DATA)]
+  
+    ldr r2, =TIMER_BASE
+    ldr r3, =187500
+    str r3, [r2, #TMR2_INTV_VALUE_REG]
+    str r3, [r2, #TMR2_CUR_VALUE_REG]
+  
+    ldr r3, =(7 &lt;&lt; 4) | (1 &lt;&lt; 2) | (1 &lt;&lt; 1) | (1 &lt;&lt; 0)
+    str r3, [r2, #TMR2_CTRL_REG]
+  
+    ldr r4, =(1 &lt;&lt; 0)
+0:
+    ldr r3, [r2, #TMR_IRQ_STA_REG]
+    tst r3, #(1 &lt;&lt; 2)
+    beq 0b
+    str r3, [r2, #TMR_IRQ_STA_REG]
+      
+    eor r1, r4
+    str r1, [r0, #(PG + DATA)]
+    b 0b
+    .end
+</pre><br>
+
+<p>
+完成<br>
+<img src="licheepi-zero_asm_led/5.jpg" class="maxSize"><br>
+<img src="licheepi-zero_asm_led/6.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
