@@ -1,0 +1,141 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - MediaTek MT7688 (LinkIt Smart 7688 Duo) - Assembly - <b>CPU Clock</b></h3>
+<hr size="1"><br>
+<p>
+MT7688支援25MHz、40MHz兩種XTAL<br>
+<img src="smart-7688-duo_asm_clk/1.jpg" class="maxSize"><br><br>
+
+目前MT7688 Duo板子使用40MHz<br>
+<img src="smart-7688-duo_asm_clk/2.jpg" class="maxSize"><br><br>
+
+CPU設定表格如下：
+</p>
+<table>
+<tr><th>CPU最高頻率</th><th>XTAL</th><th>Register設定</th></tr>
+<tr><td>580MHz</td><td>40MHz</td><td>
+    XTAL_FREQ_SEL = 1<br>
+    DIS_BBP_SLEEP = 0<br>
+    EN_BBP_CLK = 0<br>
+    CPU_FRM_BBP = 0<br>
+    CPU_FRM_XTAL = 0</td></tr>
+<tr><td>575MHz</td><td>25MHz</td><td>
+    XTAL_FREQ_SEL = 0<br>
+    DIS_BBP_SLEEP = 0<br>
+    EN_BBP_CLK = 0<br>
+    CPU_FRM_BBP = 0<br>
+    CPU_FRM_XTAL = 0</td></tr>
+<tr><td>480MHz</td><td>40MHz</td><td>
+    XTAL_FREQ_SEL = 1<br>
+    DIS_BBP_SLEEP = 1<br>
+    EN_BBP_CLK = 1<br>
+    CPU_FRM_BBP = 1<br>
+    CPU_FRM_XTAL = 0</td></tr>
+<tr><td>480MHz</td><td>25MHz</td><td>
+    XTAL_FREQ_SEL = 0<br>
+    DIS_BBP_SLEEP = 1<br>
+    EN_BBP_CLK = 1<br>
+    CPU_FRM_BBP = 1<br>
+    CPU_FRM_XTAL = 0</td></tr>
+<tr><td>40MHz</td><td>40MHz</td><td>
+    XTAL_FREQ_SEL = 1<br>
+    DIS_BBP_SLEEP = 0<br>
+    EN_BBP_CLK = 0<br>
+    CPU_FRM_BBP = 0<br>
+    CPU_FRM_XTAL = 1</td></tr>
+<tr><td>25MHz</td><td>25MHz</td><td>
+    XTAL_FREQ_SEL = 0<br>
+    DIS_BBP_SLEEP = 0<br>
+    EN_BBP_CLK = 0<br>
+    CPU_FRM_BBP = 0<br>
+    CPU_FRM_XTAL = 1</td></tr>
+</table><br>
+<p>
+XTAL_FREQ_SEL設定外接的晶振頻率<br>
+<img src="smart-7688-duo_asm_clk/3.jpg" class="maxSize"><br><br>
+
+CPU_FRM_XTAL、CPU_FRM_BBP設定CPU頻率來源<br>
+<img src="smart-7688-duo_asm_clk/4.jpg" class="maxSize"><br>
+<img src="smart-7688-duo_asm_clk/5.jpg" class="maxSize"><br><br>
+
+CPU_FDIV、CPU_FFRAC用來設定除頻係數<br>
+<img src="smart-7688-duo_asm_clk/6.jpg" class="maxSize"><br><br>
+
+公式如下：
+</p>
+<pre>
+CPU frequency = PLL_FREQ * (CPU_FFRAC / CPU_FDIV)
+</pre><br>
+<p>
+範例：<br>
+XTAL_FREQ_SEL = 1<br>
+DIS_BBP_SLEEP = 0<br>
+EN_BBP_CLK = 0<br>
+CPU_FRM_BBP = 0<br>
+CPU_FRM_XTAL = 0<br>
+PLL_FREQ = 580MHz<br>
+CPU_FFRAC = 1<br>
+CPU_FDIV = 10<br>
+CPU頻率 = 580MHz * (1 / 10) = 58MHz<br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .extern _start
+    .set noreorder
+
+    .equiv SYSCFG0,     0xb0000010
+    .equiv DYN_CFG0,    0xb0000440
+    .equiv GPIO_CTRL_1, 0xb0000604
+    .equiv GPIO_DATA_1, 0xb0000624
+    .equiv LED,         (44 - 32)
+
+    .text
+_start:
+    b reset
+ 
+    .org 0x400
+reset:
+    mfc0 $10, $16
+    and $10, 0xfffffff8
+    ori $10, 0x00000003
+    mtc0 $10, $16
+
+    li $8, SYSCFG0
+    lw $9, 0($8)
+    or $9, (1 &lt;&lt; 6)
+    sw $9, 0($8)
+
+    li $8, DYN_CFG0
+    li $9, 0x00030101
+    sw $9, 0($8)
+
+    li $8, GPIO_CTRL_1
+    li $9, (1 &lt;&lt; LED)
+    sw $9, 0($8)
+loop:
+    li $8, GPIO_DATA_1
+    xori $9, $10, (1 &lt;&lt; LED)
+    move $10, $9
+    sw $9, 0($8)
+
+    li $8, 500000
+0:
+    addi $8, $8, -1
+    bnez $8, 0b
+    nop
+
+    b loop
+    nop
+</pre>
+<p>
+P.S. CPU頻率 = 580MHz * (1 / 1) = 580MHz，目前不知為何MT7688需要開啟CP0 KSeg0的Cacheable，才可以讓CPU速度上來，這部份是參考U-Boot程式碼<br><br>
+
+完成<br>
+<img src="smart-7688-duo_asm_led/18.jpg" class="maxSize"><br>
+<img src="smart-7688-duo_asm_led/19.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

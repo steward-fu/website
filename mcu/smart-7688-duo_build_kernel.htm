@@ -1,0 +1,45 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - MediaTek MT7688 (LinkIt Smart 7688 Duo) - <b>Build Kernel 5.4.83</b></h3>
+<hr size="1"><br>
+<pre>
+$ cd
+$ wget https://github.com/steward-fu/website/releases/download/mt7688-duo/toolchain.tar.gz
+$ tar xvf toolchain.tar.gz
+$ sudo mv mt7688 /opt/
+$ export ARCH=mips
+$ export CROSS_COMPILE=mipsel-linux-
+$ export PATH=utils:/opt/mt7688/bin:$PATH
+
+$ wget https://github.com/steward-fu/website/releases/download/mt7688-duo/kernel.tar.gz
+$ tar xvf kernel.tar.gz
+$ cd kernel
+$ make mt7688_defconfig
+$ make clean
+$ make all -j4
+
+$ mipsel-linux-objcopy -O binary -R .reginfo -R .notes -R .note -R .comment -R .mdebug -R .note.gnu.build-id -S vmlinux vmlinux.new
+$ mipsel-linux-cpp -nostdinc -x assembler-with-cpp -Iarch/mips/boot/dts -Iarch/mips/boot/dts/include -Iinclude -undef -D__DTS__ dts/mt7628an_mediatek_linkit-smart-7688.dts -o mt7688.tmp
+$ ./scripts/dtc/dtc -O dtb -idts mt7688.tmp -o mt7688.dtb
+$ cp vmlinux.new kernel.bin
+$ cat mt7688.dtb &gt;&gt; kernel.bin
+$ ./utils/lzma e kernel.bin -lc1 -lp2 -pb2 kernel.bin.new
+$ mkimage -A mips -O linux -T kernel -C lzma -a 0x80000000 -e 0x80000000 -n 'MIPS OpenWrt Linux-5.4.83' -d kernel.bin.new kernel.bin.lzma
+$ cp kernel.bin.lzma lks7688.img
+$ cat utils/rootfs.squashfs &gt;&gt; lks7688.img
+$ ./utils/padjffs2 lks7688.img 4 8 16 64 128 256
+$ rm -rf vmlinux.new mt7688.tmp mt7688.dtb kernel.bin*
+</pre><br>
+
+<p>
+燒錄(使用USB供電)：<br>
+1. 格式化USBDisk成FAT32<br>
+2. 複製lks7688.img到USBDisk<br>
+3. 插入USBDisk到MT7688 USB host port<br>
+4. 按住WiFi按鈕<br>
+5. 5秒後鬆開WiFi按鈕(第一次WiFi LED滅時)
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
