@@ -1,0 +1,82 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - Bouffalo Lab BL808 (Sipeed M1s Dock) - Assembly - <b>Button</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/bouffalolab/bl808_linux<br>
+https://wiki.sipeed.com/hardware/en/maix/m1s/m1s_dock.html<br><br>
+
+Button是連接到IO22<br>
+<img src="m1s-dock_asm_btn/1.jpg" class="maxSize"><br><br>
+
+每個GPIO都支援多種功能切換<br>
+<img src="m1s-dock_asm_led/3.jpg" class="maxSize"><br><br>
+
+gpio_cfg22<br>
+<img src="m1s-dock_asm_btn/2.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .global _start
+
+    .equiv gpio_cfg8,  0x200008e4
+    .equiv gpio_cfg22, 0x2000091c
+ 
+    .text
+    .org 0x0000
+_vector:
+    j _start
+ 
+    .org 0x0200
+_start:
+    fence
+    fence.i
+    icache.iall
+    csrr a5, mhcr
+    ori a5, a5, 1
+    csrw mhcr, a5
+
+    fence
+    fence.i
+    fence
+    fence.i
+    dcache.iall
+    csrr a5, mhcr
+    lui a4, 1
+    addi a4, a4, 62
+    or a5, a5, a4
+    csrw mhcr, a5
+    fence
+    fence.i
+
+    li t0, (1 &lt;&lt; 6) | (11 &lt;&lt; 8) | (1 &lt;&lt; 24)
+    li a0, gpio_cfg8
+    sw t0, 0(a0)
+    
+    li t0, (1 &lt;&lt; 0) | (1 &lt;&lt; 4) | (11 &lt;&lt; 8)
+    li a1, gpio_cfg22
+    sw t0, 0(a1)
+
+    li t2, (1 &lt;&lt; 24)
+0:
+    lw t1, 0(a1)
+    srl t1, t1, 4
+    and t1, t1, t2
+    li t0, (1 &lt;&lt; 6) | (11 &lt;&lt; 8)
+    or t0, t0, t1
+    sw t0, 0(a0)
+    j 0b
+    .end
+</pre><br>
+
+<p>
+完成<br>
+<img src="m1s-dock_asm_btn/3.jpg" class="maxSize"><br>
+<img src="m1s-dock_asm_btn/4.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
