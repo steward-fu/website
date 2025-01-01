@@ -18,9 +18,19 @@ main.proto
 syntax = "proto3";
 
 message Test {
-    string name = 1;
-    int32 value = 2;
+    string s1 = 1;
+    int32  v1 = 2;
+    string s2 = 3;
+    int32  v2 = 4;
 }
+</pre><br>
+
+<p>
+main.options
+</p>
+<pre>
+Test.s1 max_size:255
+Test.s2 max_size:255
 </pre><br>
 
 <p>
@@ -28,53 +38,33 @@ main.c
 </p>
 <pre class="brush:cpp">
 #include &lt;stdio.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;fcntl.h&gt;
 #include &lt;pb_encode.h&gt;
 #include &lt;pb_decode.h&gt;
-
+ 
 #include "main.pb.h"
-
-bool write_pb(pb_ostream_t *stream, const pb_field_t *field, void * const *arg)
-{
-    char *str = *arg;
-
-    pb_encode_tag_for_field(stream, field);
-    return pb_encode_string(stream, (uint8_t *)str, strlen(str));
-}
-
-bool read_pb(pb_istream_t *stream, const pb_field_t *field, void **arg)
-{
-    int i = 0;
-    char* tmp = *arg;
-    uint64_t value = 0;
-
-    while (stream-&gt;bytes_left) {
-        pb_decode_varint(stream, &amp;value);
-        *(tmp + i) = value;
-        i+= 1;
-    }
-    return true;
-}
-
+ 
 int main(int argc, char **argv)
 {
-    char tmp[128] = {0};
-    char buffer[128] = {0};
-    
-    Test t1 = Test_init_zero;
-    pb_ostream_t s1 = pb_ostream_from_buffer(buffer, sizeof(buffer));
-    t1.name.funcs.encode = write_pb;
-    t1.name.arg = "t1";
-    t1.value = 100;
-    pb_encode(&amp;s1, Test_fields, &amp;t1);
+    char buf[255] = {0};
+     
+    Test org = Test_init_zero;
+    pb_ostream_t ostream = pb_ostream_from_buffer(buf, sizeof(buf));
+    strcpy(org.s1, "1");
+    org.v1 = 100;
+    strcpy(org.s2, "2");
+    org.v2 = 200;
+    pb_encode(&amp;ostream, Test_fields, &amp;org);
 
-    Test t2 = Test_init_zero;
-    t2.name.arg = &amp;tmp;
-    t2.name.funcs.decode = read_pb;
-    pb_istream_t stream = pb_istream_from_buffer(buffer, s1.bytes_written);
-    pb_decode(&amp;stream, Test_fields, &amp;t2);
-
-    printf("t2.name %s\n", tmp);
-    printf("t2.value %d\n", t2.value);
+    Test out = Test_init_zero;
+    pb_istream_t istream = pb_istream_from_buffer(buf, sizeof(buf));
+    pb_decode(&amp;istream, Test_fields, &amp;out);
+ 
+    printf("s1 %s\n", out.s1);
+    printf("v1 %d\n", out.v1);
+    printf("s2 %s\n", out.s2);
+    printf("v2 %d\n", out.v2);
     return 0;
 }
 </pre><br>
@@ -86,8 +76,10 @@ int main(int argc, char **argv)
 $ protoc --nanopb_out=. main.proto
 $ gcc main.c -o test main.pb.c -I. -lprotobuf-nanopb
 $ ./test
-    t2.name t1
-    t2.value 100
+    s1 1
+    v1 100
+    s2 2
+    v2 200
 </pre>
 
 <br><script type="text/javascript" src="../tail.js"></script>
