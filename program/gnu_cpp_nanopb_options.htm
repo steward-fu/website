@@ -15,13 +15,17 @@ https://stackoverflow.com/questions/62707863/how-to-encode-messages-with-map-usi
 main.proto
 </p>
 <pre class="brush:cpp">
-syntax = "proto3";
+syntax = "proto2";
 
-message Test {
-    string s1 = 1;
-    int32  v1 = 2;
-    string s2 = 3;
-    int32  v2 = 4;
+message test {
+    required string v1 = 1;
+    required int32  v2 = 2;
+
+    required _opt opt  = 3;
+    message _opt {
+        required string v1 = 1;
+        required int32  v2 = 2;
+    }
 }
 </pre><br>
 
@@ -29,8 +33,8 @@ message Test {
 main.options
 </p>
 <pre>
-Test.s1 max_size:255
-Test.s2 max_size:255
+test.v1      max_size:255
+test._opt.v1 max_size:255
 </pre><br>
 
 <p>
@@ -38,8 +42,6 @@ main.c
 </p>
 <pre class="brush:cpp">
 #include &lt;stdio.h&gt;
-#include &lt;unistd.h&gt;
-#include &lt;fcntl.h&gt;
 #include &lt;pb_encode.h&gt;
 #include &lt;pb_decode.h&gt;
  
@@ -49,22 +51,22 @@ int main(int argc, char **argv)
 {
     char buf[255] = {0};
      
-    Test org = Test_init_zero;
-    pb_ostream_t ostream = pb_ostream_from_buffer(buf, sizeof(buf));
-    strcpy(org.s1, "1");
-    org.v1 = 100;
-    strcpy(org.s2, "2");
-    org.v2 = 200;
-    pb_encode(&amp;ostream, Test_fields, &amp;org);
-
-    Test out = Test_init_zero;
-    pb_istream_t istream = pb_istream_from_buffer(buf, sizeof(buf));
-    pb_decode(&amp;istream, Test_fields, &amp;out);
+    test org = test_init_zero;
+    strcpy(org.v1, "t1");
+    org.v2 = 100;
+    strcpy(org.opt.v1, "t2");
+    org.opt.v2 = 200;
+    pb_ostream_t os1 = pb_ostream_from_buffer(buf, sizeof(buf));
+    pb_encode(&amp;os1, test_fields, &amp;org);
  
-    printf("s1 %s\n", out.s1);
-    printf("v1 %d\n", out.v1);
-    printf("s2 %s\n", out.s2);
-    printf("v2 %d\n", out.v2);
+    test out = test_init_zero;
+    pb_istream_t is2 = pb_istream_from_buffer(buf, os1.bytes_written);
+    pb_decode(&amp;is2, test_fields, &amp;out);
+ 
+    printf("v1: %s\n", out.v1);
+    printf("v2: %d\n", out.v2);
+    printf("opt.v1: %s\n", out.v1);
+    printf("opt.v2: %d\n", out.opt.v2);
     return 0;
 }
 </pre><br>
@@ -73,13 +75,36 @@ int main(int argc, char **argv)
 編譯、執行
 </p>
 <pre>
-$ protoc --nanopb_out=. main.proto
+$ protoc --nanopb_out=-v:. main.proto
+    Reading options from ./main.options
+    Options for main.proto:
+    Options for test:
+    Options for test.v1: max_size: 255
+
+    Options for test.v2:
+    Options for test.opt:
+    Options for test._opt:
+    Options for test._opt.v1: max_size: 255
+
+    Options for test._opt.v2:
+    Reading options from ./main.options
+    Options for main.proto:
+    Options for test:
+    Options for test.v1: max_size: 255
+
+    Options for test.v2:
+    Options for test.opt:
+    Options for test._opt:
+    Options for test._opt.v1: max_size: 255
+
+    Options for test._opt.v2:
+
 $ gcc main.c -o test main.pb.c -I. -lprotobuf-nanopb
 $ ./test
-    s1 1
-    v1 100
-    s2 2
-    v2 200
+    v1: t1
+    v2: 100
+    opt.v1: t1
+    opt.v2: 200
 </pre>
 
 <br><script type="text/javascript" src="../tail.js"></script>
