@@ -15,11 +15,17 @@ https://stackoverflow.com/questions/62707863/how-to-encode-messages-with-map-usi
 main.proto
 </p>
 <pre class="brush:cpp">
-syntax = "proto3";
+syntax = "proto2";
 
-message Test {
-    string name = 1;
-    int32 value = 2;
+message test {
+    required string v1 = 1;
+    required int32  v2 = 2;
+
+    required _opt opt  = 3;
+    message _opt {
+        required string v1 = 1;
+        required int32  v2 = 2;
+    }
 }
 </pre><br>
 
@@ -35,46 +41,55 @@ main.c
 
 bool write_pb(pb_ostream_t *stream, const pb_field_t *field, void * const *arg)
 {
-    char *str = *arg;
+    char *src = *arg;
 
     pb_encode_tag_for_field(stream, field);
-    return pb_encode_string(stream, (uint8_t *)str, strlen(str));
+    pb_encode_string(stream, (uint8_t *)src, strlen(src));
+    return true;
 }
 
 bool read_pb(pb_istream_t *stream, const pb_field_t *field, void **arg)
 {
     int i = 0;
-    char* tmp = *arg;
+    char *dst = *arg;
     uint64_t value = 0;
 
     while (stream-&gt;bytes_left) {
         pb_decode_varint(stream, &amp;value);
-        *(tmp + i) = value;
-        i+= 1;
+        *(dst + i) = value;
+        i += 1;
     }
     return true;
 }
 
 int main(int argc, char **argv)
 {
-    char tmp[128] = {0};
-    char buffer[128] = {0};
-    
-    Test t1 = Test_init_zero;
-    pb_ostream_t s1 = pb_ostream_from_buffer(buffer, sizeof(buffer));
-    t1.name.funcs.encode = write_pb;
-    t1.name.arg = "t1";
-    t1.value = 100;
-    pb_encode(&amp;s1, Test_fields, &amp;t1);
+    char s1[255] = {0};
+    char s2[255] = {0};
+    char buf[255] = {0};
 
-    Test t2 = Test_init_zero;
-    t2.name.arg = &amp;tmp;
-    t2.name.funcs.decode = read_pb;
-    pb_istream_t stream = pb_istream_from_buffer(buffer, s1.bytes_written);
-    pb_decode(&amp;stream, Test_fields, &amp;t2);
+    test org = test_init_zero;
+    org.v1.arg = "t1";
+    org.v1.funcs.encode = write_pb;
+    org.v2 = 100;
+    org.opt.v1.arg = "t2";
+    org.opt.v1.funcs.encode = write_pb;
+    org.opt.v2 = 200;
+    pb_ostream_t os1 = pb_ostream_from_buffer(buf, sizeof(buf));
+    pb_encode(&amp;os1, test_fields, &amp;org);
 
-    printf("t2.name %s\n", tmp);
-    printf("t2.value %d\n", t2.value);
+    test out = test_init_zero;
+    out.v1.arg = &amp;s1;
+    out.v1.funcs.decode = read_pb;
+    out.opt.v1.arg = &amp;s2;
+    out.opt.v1.funcs.decode = read_pb;
+    pb_istream_t is2 = pb_istream_from_buffer(buf, os1.bytes_written);
+    pb_decode(&amp;is2, test_fields, &amp;out);
+
+    printf("v1: %s\n", s1);
+    printf("v2: %d\n", out.v2);
+    printf("opt.v1: %s\n", s2);
+    printf("opt.v2: %d\n", out.opt.v2);
     return 0;
 }
 </pre><br>
@@ -83,11 +98,32 @@ int main(int argc, char **argv)
 編譯、執行
 </p>
 <pre>
-$ protoc --nanopb_out=. main.proto
+$ protoc --nanopb_out=-v:. main.proto
+    Options file not found: main.options
+    Options for main.proto:
+    Options for test:
+    Options for test.v1:
+    Options for test.v2:
+    Options for test.opt:
+    Options for test._opt:
+    Options for test._opt.v1:
+    Options for test._opt.v2:
+    Options file not found: main.options
+    Options for main.proto:
+    Options for test:
+    Options for test.v1:
+    Options for test.v2:
+    Options for test.opt:
+    Options for test._opt:
+    Options for test._opt.v1:
+    Options for test._opt.v2:
+
 $ gcc main.c -o test main.pb.c -I. -lprotobuf-nanopb
 $ ./test
-    t2.name t1
-    t2.value 100
+    v1: t1
+    v2: 100
+    opt.v1: t2
+    opt.v2: 200
 </pre>
 
 <br><script type="text/javascript" src="../tail.js"></script>
