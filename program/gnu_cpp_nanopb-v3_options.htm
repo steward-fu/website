@@ -1,0 +1,112 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - GNU - C/C++ - <b>NanoPB Proto3(Options)</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://www.jianshu.com/p/cad578f48e0a<br>
+https://github.com/nanopb/nanopb/tree/master<br>
+https://github.com/afiskon/cpp-protobuf-example/tree/master<br>
+https://stackoverflow.com/questions/47704968/protoc-command-not-found-linux<br>
+https://stackoverflow.com/questions/62707863/how-to-encode-messages-with-map-using-google-protobuf-in-javascript-protocol<br><br>
+
+main.proto
+</p>
+<pre class="brush:cpp">
+syntax = "proto3";
+ 
+message test {
+    string v1 = 1;
+    int32  v2 = 2;
+ 
+    _opt opt  = 3;
+    message _opt {
+        string v1 = 1;
+        int32  v2 = 2;
+    }
+}
+</pre><br>
+
+<p>
+main.options
+</p>
+<pre>
+test.v1      max_size:255
+test._opt.v1 max_size:255
+</pre><br>
+
+<p>
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;pb_encode.h&gt;
+#include &lt;pb_decode.h&gt;
+  
+#include "main.pb.h"
+  
+int main(int argc, char **argv)
+{
+    char buf[255] = {0};
+      
+    test org = test_init_zero;
+    strcpy(org.v1, "t1");
+    org.v2 = 100;
+    org.has_opt = true;
+    strcpy(org.opt.v1, "t2");
+    org.opt.v2 = 200;
+    pb_ostream_t os1 = pb_ostream_from_buffer(buf, sizeof(buf));
+    pb_encode(&amp;os1, test_fields, &amp;org);
+  
+    test out = test_init_zero;
+    pb_istream_t is2 = pb_istream_from_buffer(buf, os1.bytes_written);
+    pb_decode(&amp;is2, test_fields, &amp;out);
+  
+    printf("v1: %s\n", out.v1);
+    printf("v2: %d\n", out.v2);
+    printf("opt.v1: %s\n", out.opt.v1);
+    printf("opt.v2: %d\n", out.opt.v2);
+    return 0;
+}
+</pre>
+<p>
+P.S. 由於Proto3預設使用Optional，因此，在做pb_encode()時，記得設定對應的Field成True，如上面例子的org.has_opt<br><br>
+
+編譯、執行
+</p>
+<pre>
+$ protoc --nanopb_out=-v:. main.proto
+    Reading options from ./main.options
+    Options for main.proto: proto3: true
+    Options for test: proto3: true
+    Options for test.v1: max_size: 255
+    proto3: true
+    Options for test.v2: proto3: true
+    Options for test.opt: proto3: true
+    Options for test._opt: proto3: true
+    Options for test._opt.v1: max_size: 255
+    proto3: true
+    Options for test._opt.v2: proto3: true
+    Reading options from ./main.options
+    Options for main.proto: proto3: true
+    Options for test: proto3: true
+    Options for test.v1: max_size: 255
+    proto3: true
+    Options for test.v2: proto3: true
+    Options for test.opt: proto3: true
+    Options for test._opt: proto3: true
+    Options for test._opt.v1: max_size: 255
+    proto3: true
+    Options for test._opt.v2: proto3: true
+
+$ gcc main.c -o test main.pb.c -I. -lprotobuf-nanopb
+$ ./test
+    v1: t1
+    v2: 100
+    opt.v1: t2
+    opt.v2: 200
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

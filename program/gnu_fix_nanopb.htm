@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head><script type="text/javascript" src="../page_head.js"></script>
 
-<h3><a href="../program.htm">程式語言</a> - GNU - C/C++ - <b>NanoPB(callback)</b></h3>
+<h3><a href="../program.htm">程式語言</a> - GNU - C/C++ - <b>為何NanoPB Nest Message無法讀取到資料</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
@@ -15,16 +15,13 @@ https://stackoverflow.com/questions/62707863/how-to-encode-messages-with-map-usi
 main.proto
 </p>
 <pre class="brush:cpp">
-syntax = "proto2";
-
+syntax = "proto3";
+  
 message test {
-    required string v1 = 1;
-    required int32  v2 = 2;
+    _opt opt  = 1;
 
-    required _opt opt  = 3;
     message _opt {
-        required string v1 = 1;
-        required int32  v2 = 2;
+        string v1 = 1;
     }
 }
 </pre><br>
@@ -33,7 +30,6 @@ message test {
 main.options
 </p>
 <pre>
-test.v1      max_size:255
 test._opt.v1 max_size:255
 </pre><br>
 
@@ -44,67 +40,76 @@ main.c
 #include &lt;stdio.h&gt;
 #include &lt;pb_encode.h&gt;
 #include &lt;pb_decode.h&gt;
- 
+   
 #include "main.pb.h"
- 
+   
 int main(int argc, char **argv)
 {
     char buf[255] = {0};
-     
+       
     test org = test_init_zero;
-    strcpy(org.v1, "t1");
-    org.v2 = 100;
-    strcpy(org.opt.v1, "t2");
-    org.opt.v2 = 200;
+    strcpy(org.opt.v1, "t1");
     pb_ostream_t os1 = pb_ostream_from_buffer(buf, sizeof(buf));
     pb_encode(&amp;os1, test_fields, &amp;org);
- 
+   
     test out = test_init_zero;
     pb_istream_t is2 = pb_istream_from_buffer(buf, os1.bytes_written);
     pb_decode(&amp;is2, test_fields, &amp;out);
- 
-    printf("v1: %s\n", out.v1);
-    printf("v2: %d\n", out.v2);
-    printf("opt.v1: %s\n", out.v1);
-    printf("opt.v2: %d\n", out.opt.v2);
+   
+    printf("opt.v1: %s\n", out.opt.v1);
     return 0;
 }
 </pre><br>
-
 <p>
 編譯、執行
 </p>
 <pre>
 $ protoc --nanopb_out=-v:. main.proto
-    Reading options from ./main.options
-    Options for main.proto:
-    Options for test:
-    Options for test.v1: max_size: 255
-
-    Options for test.v2:
-    Options for test.opt:
-    Options for test._opt:
-    Options for test._opt.v1: max_size: 255
-
-    Options for test._opt.v2:
-    Reading options from ./main.options
-    Options for main.proto:
-    Options for test:
-    Options for test.v1: max_size: 255
-
-    Options for test.v2:
-    Options for test.opt:
-    Options for test._opt:
-    Options for test._opt.v1: max_size: 255
-
-    Options for test._opt.v2:
-
 $ gcc main.c -o test main.pb.c -I. -lprotobuf-nanopb
 $ ./test
-    v1: t1
-    v2: 100
-    opt.v1: t1
-    opt.v2: 200
+    opt.v1:
 </pre>
+<p>
+out.opt.v1的結果並非預期是"t1"字串，原因在於Proto3預設都是使用Optional而非Required，因此，在做pb_encode()時，必須設定Field成True，如下修改後的程式<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;pb_encode.h&gt;
+#include &lt;pb_decode.h&gt;
+   
+#include "main.pb.h"
+   
+int main(int argc, char **argv)
+{
+    char buf[255] = {0};
+       
+    test org = test_init_zero;
+    org.has_opt = true;
+    strcpy(org.opt.v1, "t1");
+    pb_ostream_t os1 = pb_ostream_from_buffer(buf, sizeof(buf));
+    pb_encode(&amp;os1, test_fields, &amp;org);
+   
+    test out = test_init_zero;
+    pb_istream_t is2 = pb_istream_from_buffer(buf, os1.bytes_written);
+    pb_decode(&amp;is2, test_fields, &amp;out);
+   
+    printf("opt.v1: %s\n", out.opt.v1);
+    return 0;
+}
+</pre><br>
+
+<p>
+測試
+</p>
+<pre>
+$ gcc main.c -o test main.pb.c -I. -lprotobuf-nanopb
+$ ./test 
+    opt.v1: t1
+</pre>
+<p>
+P.S. 感謝同事YUYU的協助，幫助司徒找到這個問題
+</p>
 
 <br><script type="text/javascript" src="../tail.js"></script>
