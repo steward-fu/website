@@ -1,0 +1,68 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - Lattice iCE40LP iCE40LP1K (iCESugar-nano) - Verilog - <b>LED</b></h3>
+<hr size="1"><br>
+<p>
+LED腳位<br>
+<img src="icesugar-nano_verilog_led/1.jpg" class="maxSize"><br><br>
+
+main.v
+</p>
+<pre class="brush:verilog">
+module main (
+    input btn,
+    output reg led
+);
+  
+initial begin
+    led = 0;
+end
+    
+always @(posedge btn) begin
+    led &lt;= ~led;
+end
+   
+endmodule
+</pre><br>
+
+<p>
+main.pcf
+</p>
+<pre>
+set_io led B6
+set_io clk D1
+</pre><br>
+
+<p>
+Makefile
+</p>
+<pre>
+all:
+	yosys -p "synth_ice40 -json main.json -blif main.blif" main.v
+	nextpnr-ice40 --lp1k --package cm36 --json main.json --pcf main.pcf --asc main.asc --freq 48
+	icepack main.asc main.bin
+
+run:
+	icesprog -w  main.bin
+
+clean:
+	rm -rf main.blif main.asc main.bin main.json
+</pre><br>
+
+<p>
+編譯、燒錄
+</p>
+<pre>
+$ make
+$ make run
+</pre><br>
+
+<p>
+完成<br>
+<img src="icesugar-nano_verilog_led/2.jpg" class="maxSize"><br>
+<img src="icesugar-nano_verilog_led/3.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
