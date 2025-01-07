@@ -12,16 +12,20 @@ main.v
 </p>
 <pre class="brush:verilog">
 module main (
-    input btn,
+    input clk,
     output reg led
 );
+   
+reg [23:0] clk_cnt;
+   
+always @(posedge clk) begin
+    if (clk_cnt == 24'd10000000)
+        clk_cnt &lt;= 24'd0;
+    else
+        clk_cnt &lt;= clk_cnt + 1;
   
-initial begin
-    led = 0;
-end
-    
-always @(posedge btn) begin
-    led &lt;= ~led;
+    if (clk_cnt == 24'd10000000)
+        led &lt;= ~led;
 end
    
 endmodule
