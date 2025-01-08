@@ -1,0 +1,33 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - Altera 10M02SCM (小脚丫STEP-MAX10) - <b>解決JTAG init failed with: Unknown device with IDCODE問題</b></h3>
+<hr size="1"><br>
+<p>
+問題如下：
+</p>
+<pre>
+$ openFPGALoader -c usb-blaster main.svf
+    JTAG init failed with: Unknown device with IDCODE: 0x00000101 (manufacturer: 0x080 (), part: 0x00 vers: 0x0
+</pre><br>
+
+<p>
+解法如下：
+</p>
+<pre>
+diff --git a/src/part.hpp b/src/part.hpp
+index d8cd368..511422f 100644
+--- a/src/part.hpp
++++ b/src/part.hpp
+@@ -208,6 +208,7 @@ static std::map &lt;uint32_t, fpga_model&gt; fpga_list = {
+        {0x031050dd, {"altera", "MAX 10", "10M50DAF484",       10}},
+        {0x0318d0dd, {"altera", "MAX 10", "10M40SCE144C8G",    10}},
+        {0x031830dd, {"altera", "MAX 10", "10M16SAU169C8G",    10}},
++       {0x031810dd, {"altera", "MAX 10", "10M02SCM153C8G",    10}},
+ 
+        /* Altera Cyclone 10 */
+        {0x020f30dd, {"altera", "cyclone 10 LP", "10CL025", 10}},
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
