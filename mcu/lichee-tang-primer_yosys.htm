@@ -1,0 +1,80 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - Anlogic EG4S20BG256 (Lichee Tang Primer) - <b>如何透過Yosys、TD編譯程式</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://git.uni-paderborn.de/circa/yosys/-/tree/master/examples/anlogic?ref_type=heads<br><br>
+
+main.v
+</p>
+<pre class="brush:verilog">
+module main(clk, led);
+     
+input clk;
+output reg led;
+reg [25:0] clk_cnt;
+  
+initial begin
+    led = 0;
+    clk_cnt = 0;
+end
+   
+always @(posedge clk) begin
+    clk_cnt = clk_cnt + 1;
+    if (clk_cnt &gt; 24000000) begin
+        clk_cnt = 0;
+        led = ~led;
+    end
+end
+endmodule
+</pre><br>
+
+<p>
+main.adc
+</p>
+<pre>
+set_pin_assignment { clk } { location = k14; }
+set_pin_assignment { led } { location = r3;  }
+</pre><br>
+
+<p>
+main.ys
+</p>
+<pre>
+read_verilog main.v
+synth_anlogic -top main
+write_verilog full.v
+</pre><br>
+
+<p>
+build.tcl
+</p>
+<pre>
+import_device eagle_s20.db -package BG256
+read_verilog full.v -top main
+read_adc main.adc
+optimize_rtl
+map_macro
+map
+pack
+place
+route
+report_area -io_info -file main_phy.area
+bitgen -bit main.bit -version 0X0000 -svf main.svf -svf_comment_on -g ucode:00000000000000000000000000000000
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ yosys main.ys
+$ /opt/td/bin/td build.tcl
+</pre>
+<p>
+P.S. 需要依賴Anlogic TD
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
