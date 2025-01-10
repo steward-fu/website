@@ -1,0 +1,97 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - Altera 10M02SCM (STEP-MAX10 V1) - <b>如何使用Quartus Prime Command Line編譯專案</b></h3>
+<hr size="1"><br>
+<p>
+main.qpf
+</p>
+<pre>
+QUARTUS_VERSION = "23.1"
+PROJECT_REVISION = "main"
+</pre><br>
+
+<p>
+main.qsf
+</p>
+<pre>
+set_global_assignment -name FAMILY "MAX 10"
+set_global_assignment -name DEVICE 10M02SCM153C8G
+set_global_assignment -name TOP_LEVEL_ENTITY main
+set_global_assignment -name ORIGINAL_QUARTUS_VERSION 23.1STD.1
+set_global_assignment -name PROJECT_CREATION_TIME_DATE "14:11:17  JANUARY 10, 2025"
+set_global_assignment -name LAST_QUARTUS_VERSION "23.1std.1 Lite Edition"
+set_global_assignment -name VHDL_FILE main.vhd
+set_global_assignment -name PROJECT_OUTPUT_DIRECTORY output_files
+set_global_assignment -name MIN_CORE_JUNCTION_TEMP 0
+set_global_assignment -name MAX_CORE_JUNCTION_TEMP 85
+set_global_assignment -name DEVICE_FILTER_PACKAGE MBGA
+set_global_assignment -name DEVICE_FILTER_PIN_COUNT 153
+set_global_assignment -name ERROR_CHECK_FREQUENCY_DIVISOR 256
+set_global_assignment -name EDA_SIMULATION_TOOL "Questa Intel FPGA (Verilog)"
+set_global_assignment -name EDA_TIME_SCALE "1 ps" -section_id eda_simulation
+set_global_assignment -name EDA_OUTPUT_DATA_FORMAT "VERILOG HDL" -section_id eda_simulation
+set_global_assignment -name EDA_GENERATE_FUNCTIONAL_NETLIST OFF -section_id eda_board_design_timing
+set_global_assignment -name EDA_GENERATE_FUNCTIONAL_NETLIST OFF -section_id eda_board_design_symbol
+set_global_assignment -name EDA_GENERATE_FUNCTIONAL_NETLIST OFF -section_id eda_board_design_signal_integrity
+set_global_assignment -name EDA_GENERATE_FUNCTIONAL_NETLIST OFF -section_id eda_board_design_boundary_scan
+set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
+set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
+set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
+set_location_assignment PIN_J5 -to clk
+set_location_assignment PIN_N15 -to led[0]
+set_location_assignment PIN_N14 -to led[1]
+set_location_assignment PIN_M14 -to led[2]
+set_location_assignment PIN_M12 -to led[3]
+set_location_assignment PIN_L15 -to led[4]
+set_location_assignment PIN_K12 -to led[5]
+set_location_assignment PIN_L11 -to led[6]
+set_location_assignment PIN_K11 -to led[7]
+set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
+</pre><br>
+
+<p>
+main.vhd
+</p>
+<pre>
+library ieee;
+use ieee.std_logic_1164.all;
+    
+entity main is
+    port(
+        clk : in std_logic;
+        led : out std_logic_vector(0 to 7) := "11111111"
+    );
+end main;
+    
+architecture logic of main is
+    signal val: std_logic_vector(0 to 7) := "11111111";
+    signal clk_cnt : integer := 0;
+    
+begin
+    process(clk) is
+    begin
+        if (clk'event and clk = '1') then
+            clk_cnt &lt;= clk_cnt + 1;
+  
+            if (clk_cnt = 12000000) then
+                clk_cnt &lt;= 0;
+                led &lt;= val;
+                val &lt;= not val;
+            end if;
+        end if;
+    end process;
+end logic;
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ ~/intelFPGA_lite/23.1std/quartus/bin/quartus_map -c main main
+$ ~/intelFPGA_lite/23.1std/quartus/bin/quartus_fit -c main main
+$ ~/intelFPGA_lite/23.1std/quartus/bin/quartus_asm -c main main
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
