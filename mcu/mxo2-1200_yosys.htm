@@ -1,0 +1,57 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - Lattice LCMXO2-1200HC-4SG32C - <b>如何透過Yosys、nextpnr-machxo2編譯程式</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/AndresNavarro82/vt52-fpga-ax2<br>
+https://github.com/danderson/ulxs/blob/main/lpf.md<br>
+https://yosyshq.readthedocs.io/projects/yosys/en/latest/cmd/synth_lattice.html<br><br>
+
+main.v
+</p>
+<pre class="brush:verilog">
+module main (
+    input clk,
+    output reg led
+);
+   
+reg [23:0] clk_cnt;
+   
+always @(posedge clk) begin
+    if (clk_cnt == 24'd10000000)
+        clk_cnt &lt;= 24'd0;
+    else
+        clk_cnt &lt;= clk_cnt + 1;
+  
+    if (clk_cnt == 24'd10000000)
+        led &lt;= ~led;
+end
+   
+endmodule
+</pre><br>
+
+<p>
+main.lpf
+</p>
+<pre>
+LOCATE COMP "led" SITE "27";
+LOCATE COMP "clk" SITE "28";
+</pre><br>
+
+<p>
+Makefile
+</p>
+<pre>
+all:
+	yosys -p "synth_lattice -family xo2 -json main.json" main.v
+	nextpnr-machxo2 --device LCMXO2-1200HC-4SG32C --lpf main.lpf --json main.json --textcfg main.txt
+	ecppack --compress main.txt main.bit
+
+clean:
+	rm -rf main.txt main.bit main.json
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
