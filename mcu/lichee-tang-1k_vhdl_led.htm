@@ -2,34 +2,44 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head><script type="text/javascript" src="../page_head.js"></script>
 
-<h3><a href="../mcu.htm">微處理器</a> - Gowin GW1NZ-LV1QN48C6/I5 (Lichee Tang 1K) - Verilog - <b>LED</b></h3>
+<h3><a href="../mcu.htm">微處理器</a> - Gowin GW1NZ-LV1QN48C6/I5 (Lichee Tang 1K) - VHDL - <b>LED</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
 https://github.com/sifferman/tangnano_example<br>
 https://github.com/racerxdl/tangnano-yosys-hello<br><br>
 
-main.v
+main.vhd
 </p>
-<pre class="brush:verilog">
-module main (
-    input clk,
-    output reg led
-);
+<pre class="brush:pascal">
+library ieee;
+use ieee.std_logic_1164.all;
+    
+entity main is
+    port(
+        clk : in std_logic;
+        led : out std_logic
+    );
+end main;
+    
+architecture logic of main is
+    signal val: std_logic := '0';
+    signal clk_cnt : integer := 0;
+    
+begin
+    process(clk) is
+    begin
+        if (clk'event and clk = '1') then
+            clk_cnt &lt;= clk_cnt + 1;
   
-reg [23:0] clk_cnt;
-  
-always @(posedge clk) begin
-    if (clk_cnt == 24'd10000000)
-        clk_cnt &lt;= 24'd0;
-    else
-        clk_cnt &lt;= clk_cnt + 1;
- 
-    if (clk_cnt == 24'd10000000)
-        led &lt;= ~led;
-end
-  
-endmodule
+            if (clk_cnt = 12000000) then
+                clk_cnt &lt;= 0;
+                led &lt;= val;
+                val &lt;= not val;
+            end if;
+        end if;
+    end process;
+end logic;
 </pre><br>
 
 <p>
@@ -45,7 +55,7 @@ Makefile
 </p>
 <pre>
 all:
-	yosys -p "synth_gowin -json main.json -top main" main.v
+	yosys -m ghdl -p "ghdl main.vhd -e main; synth_gowin -json main.json -top main"
 	nextpnr-gowin --json main.json --write main.pack --device GW1NZ-LV1QN48C6/I5 --cst main.cst
 	gowin_pack -d GW1NZ-1 -o main.fs main.pack
 
