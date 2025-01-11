@@ -1,0 +1,102 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - Lattice LCMXO2-4000HC-4MG132C (STEP-MXO2 V2) - Lattice Diamond - VHDL - <b>LED</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://www.stepfpga.com/doc/step-mxo2%E5%85%A5%E9%97%A8%E6%95%99%E7%A8%8B<br><br>
+
+main.vhd
+</p>
+<pre class="brush:pascal">
+library ieee;
+use ieee.std_logic_1164.all;
+  
+entity main is
+    port(
+        clk : in std_logic;
+        led : out std_logic_vector(0 to 7) := "11111111"
+    );
+end main;
+  
+architecture logic of main is
+    signal val: std_logic_vector(0 to 7) := "11111111";
+    signal clk_cnt : integer := 0;
+  
+begin
+    process(clk) is
+    begin
+        if (clk'event and clk = '1') then
+            clk_cnt &lt;= clk_cnt + 1;
+
+            if (clk_cnt = 12000000) then
+                clk_cnt &lt;= 0;
+                led &lt;= val;
+                val &lt;= not val;
+            end if;
+        end if;
+    end process;
+end logic;
+</pre><br>
+
+<p>
+New =&gt; Project<br>
+<img src="step-mxo2_ide_vhdl_led/1.jpg" class="maxSize"><br><br>
+
+Name<br>
+<img src="step-mxo2_ide_vhdl_led/2.jpg" class="maxSize"><br><br>
+
+加入main.vhd<br>
+<img src="step-mxo2_ide_vhdl_led/3.jpg" class="maxSize"><br><br>
+
+選擇型號<br>
+<img src="step-mxo2_ide_vhdl_led/4.jpg" class="maxSize"><br><br>
+
+Lattice LSE<br>
+<img src="step-mxo2_ide_vhdl_led/5.jpg" class="maxSize"><br><br>
+
+用滑鼠Double Click箭頭部份<br>
+<img src="step-mxo2_ide_vhdl_led/6.jpg" class="maxSize"><br><br>
+
+完成合成<br>
+<img src="step-mxo2_ide_vhdl_led/7.jpg" class="maxSize"><br><br>
+
+Tools =&gt; Spreadsheet View<br>
+<img src="step-mxo2_ide_vhdl_led/8.jpg" class="maxSize"><br><br>
+
+編輯腳位<br>
+<img src="step-mxo2_ide_vhdl_led/9.jpg" class="maxSize"><br><br>
+
+用滑鼠Double Click其餘部份，讓全部變成綠色狀態<br>
+<img src="step-mxo2_ide_vhdl_led/10.jpg" class="maxSize"><br><br>
+
+燒錄
+</p>
+<pre>
+$ openFPGALoader -m -d /dev/ttyUSB0 main_impl1.jed 
+    empty
+    write to ram
+    No cable or board specified: using direct ft2232 interface
+    Can't read iSerialNumber field from FTDI: considered as empty string
+    Jtag frequency : requested 6.00MHz   -&gt; real 6.00MHz  
+    Open file DONE
+    Parse file DONE
+    Enable configuration: DONE
+    SRAM erase: DONE
+    Enable configuration: DONE
+    Flash erase: DONE
+    Writing data: [==================================================] 100.00%
+    Done
+    Write program Done: DONE
+    Disable configuration: DONE
+</pre><br>
+
+<p>
+完成<br>
+<img src="step-mxo2_ide_vhdl_led/11.jpg" class="maxSize"><br>
+<img src="step-mxo2_ide_vhdl_led/12.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
