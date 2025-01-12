@@ -1,0 +1,77 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - Gowin GW2AR-LV18QN88C8/I7 (Lichee Tang Nano 20K) - Verilog - <b>LED</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/YosysHQ/apicula/tree/master/examples<br>
+https://github.com/YosysHQ/apicula/wiki/Nextpnr%E2%80%90Himbaechel-Gowin<br><br>
+
+main.v
+</p>
+<pre class="brush:verilog">
+module main (
+    input clk,
+    output reg led
+);
+  
+reg [23:0] clk_cnt;
+  
+always @(posedge clk) begin
+    if (clk_cnt == 24'd10000000)
+        clk_cnt &lt;= 24'd0;
+    else
+        clk_cnt &lt;= clk_cnt + 1;
+ 
+    if (clk_cnt == 24'd10000000)
+        led &lt;= ~led;
+end
+  
+endmodule
+</pre><br>
+
+<p>
+main.cst
+</p>
+<pre>
+IO_LOC "led" 15;
+IO_LOC "clk" 4;
+</pre><br>
+
+<p>
+Makefile
+</p>
+<pre>
+all:
+	yosys -p "synth_gowin -json main.json -top main" main.v
+	nextpnr-himbaechel --json main.json --write main.pack --device GW2AR-LV18QN88C8/I7 --vopt family=GW2A-18C --vopt cst=main.cst
+	gowin_pack -d GW2AR-LV18QN88C8/I7 -o main.fs main.pack
+
+ram:
+	openFPGALoader -m -b tangnano20k main.fs
+
+flash:
+	openFPGALoader -f -b tangnano20k main.fs
+
+clean:
+	rm -f *.json *.fs *.pack
+</pre><br>
+
+<p>
+編譯、下載
+</p>
+<pre>
+$ make
+$ make ram
+</pre><br>
+
+<p>
+完成<br>
+<img src="lichee-tang-nano-20k_verilog_led/1.jpg" class="maxSize"><br>
+<img src="lichee-tang-nano-20k_verilog_led/2.jpg" class="maxSize">
+</p>
+
+
+<br><script type="text/javascript" src="../tail.js"></script>
