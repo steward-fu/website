@@ -18,7 +18,7 @@
 typeof(require) != 'undefined' ? SyntaxHighlighter = require('shCore').SyntaxHighlighter : null;
 
 function Brush() {
-var my_constant = 'posedge LOCATION negedge';
+var my_constant = 'posedge LOCATION negedge uart_bus baud baud_rx bps_para uart_rx uart_tx baud_tx';
 var my_keyword = 'module begin end if assign endmodule or else';
 var my_type = 'reg input output wire parameter';
 var my_function = 'main always initial set_pin_assignment';

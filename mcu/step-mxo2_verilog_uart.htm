@@ -1,0 +1,258 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - Lattice LCMXO2-4000HC-4MG132C (STEP-MXO2 V2) - Verilog - <b>UART</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://ftdichip.com/wp-content/uploads/2024/09/DS_FT232H.pdf<br>
+https://wiki.stepfpga.com/uart%E4%B8%B2%E5%8F%A3%E6%A8%A1%E5%9D%97<br><br>
+
+JTAG腳位<br>
+<img src="step-mxo2_verilog_uart/1.jpg" class="maxSize"><br><br>
+
+FT232HQ腳位<br>
+<img src="step-mxo2_verilog_uart/2.jpg" class="maxSize"><br><br>
+
+JTAG腳位需要改成GPIO模式，這樣才可以透過FT232HQ傳輸，不過nextpnr-machxo2目前尚未支援JTAG_PORT設定，因此，需要先透過Lattice Diamond編譯修改JTAG腳位在燒錄到板子<br>
+<img src="step-mxo2_verilog_uart/3.jpg" class="maxSize"><br><br>
+
+下載Bit Stream時，需要先將JTAGENB接到High(JTAG腳位模式)，下載後，再將JTAGENB接到Low(GPIO模式)，這樣可以就可以透過FT232HQ傳輸資料<br>
+<img src="step-mxo2_verilog_uart/4.jpg" class="maxSize"><br><br>
+
+main.v
+</p>
+<pre class="brush:verilog">
+module uart_bus #
+(
+    parameter bps_para = 1250
+)
+(
+    input clk_in,
+    input rst_in,
+    input rs232_rx,
+    output rs232_tx
+);        
+ 
+wire bps_en_rx;
+wire bps_clk_rx;
+wire [7:0] rx_data;
+ 
+baud #
+(
+    .bps_para (bps_para)
+)
+baud_rx
+(    
+    .clk_in (clk_in),
+    .rst_in (rst_in),
+    .bps_en (bps_en_rx),
+    .bps_clk (bps_clk_rx)
+);
+ 
+uart_rx uart_rx_uut
+(
+    .clk_in (clk_in),
+    .rst_in (rst_in),
+    .bps_en (bps_en_rx),
+    .bps_clk (bps_clk_rx),
+    .rs232_rx (rs232_rx),
+    .rx_data (rx_data)
+);
+ 
+wire bps_en_tx;
+wire bps_clk_tx;
+ 
+baud #
+(
+    .bps_para (bps_para)
+)
+baud_tx
+(
+    .clk_in (clk_in),
+    .rst_in (rst_in),
+    .bps_en (bps_en_tx),
+    .bps_clk (bps_clk_tx)
+);
+ 
+uart_tx uart_tx_uut
+(
+    .clk_in (clk_in),
+    .rst_in (rst_in),
+    .bps_en (bps_en_tx),
+    .bps_clk (bps_clk_tx),
+    .rx_bps_en (bps_en_rx),
+    .tx_data (rx_data),
+    .rs232_tx (rs232_tx)
+);
+ 
+endmodule
+
+module baud #
+(
+    parameter bps_para = 1250
+)
+(
+    input clk_in,
+    input rst_in,
+    input bps_en,
+    output reg bps_clk
+);    
+ 
+reg [12:0] cnt;
+
+always @ (posedge clk_in or negedge rst_in)
+begin
+    if (!rst_in) 
+        cnt &lt;= 1'b0;
+    else if ((cnt &gt;= (bps_para - 1)) || (!bps_en))
+        cnt &lt;= 1'b0;
+    else 
+        cnt &lt;= cnt + 1'b1;
+end
+ 
+always @ (posedge clk_in or negedge rst_in)
+begin
+    if (!rst_in) 
+        bps_clk &lt;= 1'b0;
+    else if (cnt == (bps_para &gt;&gt; 1))
+        bps_clk &lt;= 1'b1;    
+    else 
+        bps_clk &lt;= 1'b0;
+end
+endmodule
+
+module uart_rx
+(
+    input clk_in,
+    input rst_in,
+    output reg bps_en,
+    input bps_clk,
+    input rs232_rx,
+    output reg [7:0] rx_data
+);    
+ 
+reg rs232_rx0;
+reg rs232_rx1;
+reg rs232_rx2;    
+
+always @ (posedge clk_in or negedge rst_in)
+begin
+    if (!rst_in) begin
+        rs232_rx0 &lt;= 1'b0;
+        rs232_rx1 &lt;= 1'b0;
+        rs232_rx2 &lt;= 1'b0;
+    end else begin
+        rs232_rx0 &lt;= rs232_rx;
+        rs232_rx1 &lt;= rs232_rx0;
+        rs232_rx2 &lt;= rs232_rx1;
+    end
+end
+ 
+wire neg_rs232_rx = rs232_rx2 &amp; rs232_rx1 &amp; (~rs232_rx0) &amp; (~rs232_rx);    
+ 
+reg [3:0] num;            
+
+always @ (posedge clk_in or negedge rst_in)
+begin
+    if (!rst_in)
+        bps_en &lt;= 1'b0;
+    else if (neg_rs232_rx &amp;&amp; (!bps_en))
+        bps_en &lt;= 1'b1;        
+    else if (num == 4'd9)
+        bps_en &lt;= 1'b0;            
+end
+
+reg [7:0] rx_data_r;
+
+always @ (posedge clk_in or negedge rst_in)
+begin
+    if (!rst_in) begin
+        num &lt;= 4'd0;
+        rx_data &lt;= 8'd0;
+        rx_data_r &lt;= 8'd0;
+    end else if (bps_en) begin
+        if (bps_clk) begin
+            num &lt;= (num + 1'b1);
+            if (num &lt;= 4'd8)
+                rx_data_r[num-1] &lt;= rs232_rx;
+        end else if (num == 4'd9) begin
+            num &lt;= 4'd0;            
+            rx_data &lt;= rx_data_r;    
+        end
+    end
+end
+endmodule
+
+module uart_tx
+(
+    input clk_in,
+    input rst_in,
+    output reg bps_en,
+    input bps_clk,
+    input rx_bps_en,
+    input [7:0] tx_data,
+    output reg rs232_tx
+);
+
+reg rx_bps_en_r;
+
+always @ (posedge clk_in or negedge rst_in)
+begin
+    if (!rst_in)
+        rx_bps_en_r &lt;= 1'b0;
+    else
+        rx_bps_en_r &lt;= rx_bps_en;
+end
+
+wire neg_rx_bps_en = rx_bps_en_r &amp; (~rx_bps_en);
+
+reg [3:0] num;
+reg [9:0] tx_data_r;    
+
+always @ (posedge clk_in or negedge rst_in)
+begin
+    if (!rst_in) begin
+        bps_en &lt;= 1'b0;
+        tx_data_r &lt;= 8'd0;
+    end else if (neg_rx_bps_en) begin    
+        bps_en &lt;= 1'b1;
+        tx_data_r &lt;= {1'b1, tx_data, 1'b0};    
+    end else if (num == 4'd10) begin    
+        bps_en &lt;= 1'b0;
+    end
+end
+
+always @ (posedge clk_in or negedge rst_in)
+begin
+    if (!rst_in) begin
+        num &lt;= 1'b0;
+        rs232_tx &lt;= 1'b1;
+    end else if (bps_en) begin
+        if (bps_clk) begin
+            num &lt;= num + 1'b1;
+            rs232_tx &lt;= tx_data_r[num];
+        end else if (num &gt;= 4'd10)
+            num &lt;= 4'd0;
+    end
+end
+endmodule
+</pre><br>
+
+<p>
+main.lpf
+</p>
+<pre>
+LOCATE COMP "clk_in" SITE "C1";
+LOCATE COMP "rst_in" SITE "L14";
+LOCATE COMP "rs232_tx" SITE "B4";
+LOCATE COMP "rs232_rx" SITE "B6";
+</pre><br>
+
+<p>
+連接USB就可以做UART Loopback測試<br>
+<img src="step-mxo2_verilog_uart/5.jpg" class="maxSize"><br><br>
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
