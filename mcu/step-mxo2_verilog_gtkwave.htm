@@ -1,0 +1,77 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - Lattice LCMXO2-4000HC-4MG132CC (STEP-MXO2 V2) - <b>如何使用iverilog、vvp、gtkwave</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://www.chipverify.com/verilog/verilog-4-bit-counter<br><br>
+
+main.v
+</p>
+<pre class="brush:verilog">
+module main (
+    input clk,
+    output reg led
+);
+
+integer cnt = 0;
+
+always @(posedge clk) begin
+    if (cnt == 0) begin
+        led &lt;= 0;
+    end if (cnt == 3) begin
+        cnt = 0;
+        led &lt;= !led;
+    end else
+        cnt = cnt + 1;
+
+    $monitor("%t | clk = %d | cnt = %d | led = %d", $time, clk, cnt, led);
+end
+endmodule
+
+module test();
+
+reg clk;
+wire led;
+
+main ut(.clk(clk), .led(led));
+
+always #1 clk = ~clk;
+
+initial begin
+    $dumpfile("main.vcd");
+    $dumpvars(0, test);
+
+    clk &lt;= 0;
+    #10 $finish;
+end
+endmodule
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ iverilog main.v -o main
+$ vvp main
+     1 | clk = 1 | cnt =           1 | led = 0
+     2 | clk = 0 | cnt =           1 | led = 0
+     3 | clk = 1 | cnt =           2 | led = 0
+     4 | clk = 0 | cnt =           2 | led = 0
+     5 | clk = 1 | cnt =           3 | led = 0
+     6 | clk = 0 | cnt =           3 | led = 0
+     7 | clk = 1 | cnt =           0 | led = 1
+     8 | clk = 0 | cnt =           0 | led = 1
+     9 | clk = 1 | cnt =           1 | led = 0
+    10 | clk = 0 | cnt =           1 | led = 0
+
+$ gtkwave main.vcd
+</pre>
+<p>
+<img src="step-mxo2_verilog_gtkwave/1.jpg" class="maxSize"><br>
+P.S. 如果訊號沒有明確初始化，則會顯示X(紅色線條)
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
