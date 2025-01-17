@@ -24,25 +24,21 @@ JTAG腳位需要改成GPIO模式，這樣才可以透過FT232HQ傳輸，不過ne
 main.v
 </p>
 <pre class="brush:verilog">
-module uart_bus #
-(
-    parameter bps_para = 1250
-)
+module uart_bus
+#( parameter bps_para = 1250 )
 (
     input clk_in,
     input rst_in,
     input rs232_rx,
     output rs232_tx
 );        
- 
+  
 wire bps_en_rx;
 wire bps_clk_rx;
 wire [7:0] rx_data;
- 
-baud #
-(
-    .bps_para (bps_para)
-)
+  
+baud
+#( .bps_para (bps_para) )
 baud_rx
 (    
     .clk_in (clk_in),
@@ -50,7 +46,7 @@ baud_rx
     .bps_en (bps_en_rx),
     .bps_clk (bps_clk_rx)
 );
- 
+  
 uart_rx uart_rx_uut
 (
     .clk_in (clk_in),
@@ -60,14 +56,12 @@ uart_rx uart_rx_uut
     .rs232_rx (rs232_rx),
     .rx_data (rx_data)
 );
- 
+  
 wire bps_en_tx;
 wire bps_clk_tx;
- 
-baud #
-(
-    .bps_para (bps_para)
-)
+  
+baud
+#( .bps_para (bps_para))
 baud_tx
 (
     .clk_in (clk_in),
@@ -75,7 +69,7 @@ baud_tx
     .bps_en (bps_en_tx),
     .bps_clk (bps_clk_tx)
 );
- 
+  
 uart_tx uart_tx_uut
 (
     .clk_in (clk_in),
@@ -86,43 +80,41 @@ uart_tx uart_tx_uut
     .tx_data (rx_data),
     .rs232_tx (rs232_tx)
 );
- 
+  
 endmodule
-
-module baud #
-(
-    parameter bps_para = 1250
-)
+ 
+module baud
+#( parameter bps_para = 1250 )
 (
     input clk_in,
     input rst_in,
     input bps_en,
     output reg bps_clk
 );    
- 
+  
 reg [12:0] cnt;
-
+ 
 always @ (posedge clk_in or negedge rst_in)
 begin
     if (!rst_in) 
         cnt &lt;= 1'b0;
     else if ((cnt &gt;= (bps_para - 1)) || (!bps_en))
         cnt &lt;= 1'b0;
-    else 
+    else
         cnt &lt;= cnt + 1'b1;
 end
- 
+  
 always @ (posedge clk_in or negedge rst_in)
 begin
     if (!rst_in) 
         bps_clk &lt;= 1'b0;
     else if (cnt == (bps_para &gt;&gt; 1))
         bps_clk &lt;= 1'b1;    
-    else 
+    else
         bps_clk &lt;= 1'b0;
 end
 endmodule
-
+ 
 module uart_rx
 (
     input clk_in,
@@ -132,11 +124,11 @@ module uart_rx
     input rs232_rx,
     output reg [7:0] rx_data
 );    
- 
+  
 reg rs232_rx0;
 reg rs232_rx1;
 reg rs232_rx2;    
-
+ 
 always @ (posedge clk_in or negedge rst_in)
 begin
     if (!rst_in) begin
@@ -149,11 +141,11 @@ begin
         rs232_rx2 &lt;= rs232_rx1;
     end
 end
- 
+  
 wire neg_rs232_rx = rs232_rx2 &amp; rs232_rx1 &amp; (~rs232_rx0) &amp; (~rs232_rx);    
- 
+  
 reg [3:0] num;            
-
+ 
 always @ (posedge clk_in or negedge rst_in)
 begin
     if (!rst_in)
@@ -163,9 +155,9 @@ begin
     else if (num == 4'd9)
         bps_en &lt;= 1'b0;            
 end
-
+ 
 reg [7:0] rx_data_r;
-
+ 
 always @ (posedge clk_in or negedge rst_in)
 begin
     if (!rst_in) begin
@@ -184,7 +176,7 @@ begin
     end
 end
 endmodule
-
+ 
 module uart_tx
 (
     input clk_in,
@@ -195,9 +187,9 @@ module uart_tx
     input [7:0] tx_data,
     output reg rs232_tx
 );
-
+ 
 reg rx_bps_en_r;
-
+ 
 always @ (posedge clk_in or negedge rst_in)
 begin
     if (!rst_in)
@@ -205,25 +197,25 @@ begin
     else
         rx_bps_en_r &lt;= rx_bps_en;
 end
-
+ 
 wire neg_rx_bps_en = rx_bps_en_r &amp; (~rx_bps_en);
-
+ 
 reg [3:0] num;
 reg [9:0] tx_data_r;    
-
+ 
 always @ (posedge clk_in or negedge rst_in)
 begin
     if (!rst_in) begin
         bps_en &lt;= 1'b0;
         tx_data_r &lt;= 8'd0;
-    end else if (neg_rx_bps_en) begin    
+    end else if (neg_rx_bps_en) begin   
         bps_en &lt;= 1'b1;
         tx_data_r &lt;= {1'b1, tx_data, 1'b0};    
-    end else if (num == 4'd10) begin    
+    end else if (num == 4'd10) begin   
         bps_en &lt;= 1'b0;
     end
 end
-
+ 
 always @ (posedge clk_in or negedge rst_in)
 begin
     if (!rst_in) begin
