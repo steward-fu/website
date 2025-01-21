@@ -16,41 +16,41 @@ main.asm
 .386p
 .model flat, stdcall
 option casemap:none
-    
+     
 include c:\masm32\include\w2k\ntstatus.inc
 include c:\masm32\include\w2k\ntddk.inc
 include c:\masm32\include\w2k\ntoskrnl.inc
 include c:\masm32\include\w2k\ntddkbd.inc
 include c:\masm32\include\wxp\wdm.inc
 include c:\masm32\Macros\Strings.mac
-
+ 
 includelib c:\masm32\lib\wxp\i386\ntoskrnl.lib
-     
+      
 public DriverEntry
-    
+     
 MyDeviceExtension struct
-    pNextDev PDEVICE_OBJECT ?
     szBuffer byte 255 dup(?)
+    pNextDev PDEVICE_OBJECT ?
 MyDeviceExtension ends
- 
-IOCTL_GET   equ CTL_CODE(FILE_DEVICE_UNKNOWN, 800h, METHOD_NEITHER, FILE_ANY_ACCESS)
-IOCTL_SET   equ CTL_CODE(FILE_DEVICE_UNKNOWN, 801h, METHOD_NEITHER, FILE_ANY_ACCESS)
-    
+  
+IOCTL_GET equ CTL_CODE(FILE_DEVICE_UNKNOWN, 800h, METHOD_NEITHER, FILE_ANY_ACCESS)
+IOCTL_SET equ CTL_CODE(FILE_DEVICE_UNKNOWN, 801h, METHOD_NEITHER, FILE_ANY_ACCESS)
+     
 .const
-MSG_GET     byte "IOCTL_GET",0
-MSG_SET     byte "IOCTL_SET",0
- 
+MSG_GET byte "IOCTL_GET",0
+MSG_SET byte "IOCTL_SET",0
+  
 .code
 IrpOpenClose proc pMyDevice : PDEVICE_OBJECT, pIrp : PIRP
     IoGetCurrentIrpStackLocation pIrp
     movzx eax, (IO_STACK_LOCATION ptr [eax]).MajorFunction
-
+ 
     .if eax == IRP_MJ_CREATE
         invoke DbgPrint, $CTA0("IRP_MJ_CREATE")
     .elseif eax == IRP_MJ_CLOSE
         invoke DbgPrint, $CTA0("IRP_MJ_CLOSE")
     .endif
- 
+  
     mov eax, pIrp
     and (_IRP ptr [eax]).IoStatus.Information, 0
     mov (_IRP ptr [eax]).IoStatus.Status, STATUS_SUCCESS
@@ -58,64 +58,58 @@ IrpOpenClose proc pMyDevice : PDEVICE_OBJECT, pIrp : PIRP
     mov eax, STATUS_SUCCESS
     ret
 IrpOpenClose endp
- 
-IrpIOCTL proc pMyDevice : PDEVICE_OBJECT, pIrp : PIRP
-    local pBuf : DWORD
-    local dwLen : DWORD
-    local pDevExt : ptr
- 
-    and dwLen, 0
+  
+IrpIOCTL proc uses esi edi pMyDevice : PDEVICE_OBJECT, pIrp : PIRP
+    local len : DWORD
+  
+    and len, 0
     mov eax, pMyDevice
-    push (DEVICE_OBJECT ptr [eax]).DeviceExtension
-    pop pDevExt
- 
+    mov eax, (DEVICE_OBJECT ptr [eax]).DeviceExtension
+    lea edi, (MyDeviceExtension ptr [eax]).szBuffer
+
     IoGetCurrentIrpStackLocation pIrp
     mov eax, (IO_STACK_LOCATION ptr [eax]).Parameters.DeviceIoControl.IoControlCode
     .if eax == IOCTL_GET
         invoke DbgPrint, offset MSG_GET
-    
+     
         mov eax, pIrp
         push (_IRP ptr [eax]).UserBuffer
-        pop pBuf
-    
-        mov eax, pDevExt
-        invoke strcpy, pBuf, addr (MyDeviceExtension ptr [eax]).szBuffer
-         
-        mov eax, pDevExt
-        invoke strlen, addr (MyDeviceExtension ptr [eax]).szBuffer
-        mov dwLen, eax
+        pop esi
+     
+        invoke strcpy, esi, edi
+        invoke strlen, edi
+        mov len, eax
     .elseif eax == IOCTL_SET
         invoke DbgPrint, offset MSG_SET
         IoGetCurrentIrpStackLocation pIrp
         push (IO_STACK_LOCATION ptr [eax]).Parameters.DeviceIoControl.InputBufferLength 
-        pop dwLen
- 
+        pop len
+  
         IoGetCurrentIrpStackLocation pIrp
         push (IO_STACK_LOCATION ptr [eax]).Parameters.DeviceIoControl.Type3InputBuffer
-        pop pBuf
-    
-        mov eax, pDevExt
-        invoke memcpy, addr (MyDeviceExtension ptr [eax]).szBuffer, pBuf, dwLen
-        invoke DbgPrint, $CTA0("Buffer: %s, Length: %d"), pBuf, dwLen
+        pop esi
+     
+        invoke memcpy, edi, esi, len
+        invoke DbgPrint, $CTA0("Buffer: %s, Length: %d"), edi, len
     .endif
- 
+  
     mov eax, pIrp
     mov (_IRP ptr [eax]).IoStatus.Status, STATUS_SUCCESS
-    push dwLen
-    pop (_IRP ptr [eax]).IoStatus.Information 
+    push len
+    pop (_IRP ptr [eax]).IoStatus.Information
     fastcall IofCompleteRequest, pIrp, IO_NO_INCREMENT
     mov eax, STATUS_SUCCESS
     ret
 IrpIOCTL endp
- 
+  
 IrpPnp proc pMyDevice : PDEVICE_OBJECT, pIrp : PIRP
     local pDevExt : ptr
     local szSymName : UNICODE_STRING
- 
+  
     mov eax, pMyDevice
     push (DEVICE_OBJECT ptr [eax]).DeviceExtension
     pop pDevExt
-        
+         
     IoGetCurrentIrpStackLocation pIrp
     movzx eax, (IO_STACK_LOCATION ptr [eax]).MinorFunction
     .if eax == IRP_MN_START_DEVICE
@@ -126,7 +120,7 @@ IrpPnp proc pMyDevice : PDEVICE_OBJECT, pIrp : PIRP
         invoke IoDeleteSymbolicLink, addr szSymName         
         mov eax, pIrp
         mov (_IRP ptr [eax]).IoStatus.Status, STATUS_SUCCESS
- 
+  
         mov eax, pDevExt
         invoke IoDetachDevice, (MyDeviceExtension ptr [eax]).pNextDev
         invoke IoDeleteDevice, pMyDevice
@@ -134,17 +128,17 @@ IrpPnp proc pMyDevice : PDEVICE_OBJECT, pIrp : PIRP
         ret
     .endif
     IoSkipCurrentIrpStackLocation pIrp
- 
+  
     mov eax, pDevExt
     invoke IoCallDriver, (MyDeviceExtension ptr [eax]).pNextDev, pIrp
     ret
 IrpPnp endp
- 
+  
 AddDevice proc pMyDriver : PDRIVER_OBJECT, pPhyDevice : PDEVICE_OBJECT
     local pMyDevice : PDEVICE_OBJECT
     local szDevName : UNICODE_STRING
     local szSymName : UNICODE_STRING
- 
+  
     invoke RtlInitUnicodeString, addr szDevName, $CTW0("\\Device\\MyDriver")
     invoke RtlInitUnicodeString, addr szSymName, $CTW0("\\DosDevices\\MyDriver")
     invoke IoCreateDevice, pMyDriver, sizeof MyDeviceExtension, addr szDevName, FILE_DEVICE_UNKNOWN, 0, FALSE, addr pMyDevice
@@ -155,7 +149,7 @@ AddDevice proc pMyDriver : PDRIVER_OBJECT, pPhyDevice : PDEVICE_OBJECT
             mov eax, pMyDevice
             mov eax, (DEVICE_OBJECT ptr [eax]).DeviceExtension
             pop (MyDeviceExtension ptr [eax]).pNextDev
- 
+  
             mov eax, pMyDevice
             or (DEVICE_OBJECT ptr [eax]).Flags, DO_BUFFERED_IO
             and (DEVICE_OBJECT ptr [eax]).Flags, not DO_DEVICE_INITIALIZING
@@ -164,11 +158,11 @@ AddDevice proc pMyDriver : PDRIVER_OBJECT, pPhyDevice : PDEVICE_OBJECT
     .endif
     ret
 AddDevice endp
- 
+  
 Unload proc pMyDriver : PDRIVER_OBJECT
     ret
 Unload endp
- 
+  
 DriverEntry proc pMyDriver : PDRIVER_OBJECT, pMyRegistry : PUNICODE_STRING
     mov eax, pMyDriver
     mov (DRIVER_OBJECT ptr [eax]).MajorFunction[IRP_MJ_PNP            * (sizeof PVOID)], offset IrpPnp
