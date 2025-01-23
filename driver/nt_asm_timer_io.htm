@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head><script type="text/javascript" src="../page_head.js"></script>
 
-<h3><a href="../driver.htm">驅動程式</a> - Windows Driver Model (WDM) - 使用範例 - Assembly (MASM32) - <b>Use I/O Timer</b></h3>
+<h3><a href="../driver.htm">驅動程式</a> - Windows NT Driver (Legacy) - 使用範例 - Assembly (MASM32) - <b>Use I/O Timer</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
@@ -37,7 +37,7 @@ includelib c:\masm32\lib\wxp\i386\ntoskrnl.lib
 public DriverEntry
  
 MyDeviceExtension struct
-    dwTimerCnt DWORD ?
+    cnt DWORD ?             
     pNextDev PDEVICE_OBJECT ?
 MyDeviceExtension ends
  
@@ -45,15 +45,15 @@ IOCTL_START equ CTL_CODE(FILE_DEVICE_UNKNOWN, 800h, METHOD_BUFFERED, FILE_ANY_AC
 IOCTL_STOP  equ CTL_CODE(FILE_DEVICE_UNKNOWN, 801h, METHOD_BUFFERED, FILE_ANY_ACCESS)
  
 .const
-MSG_START   byte "IOCTL_START",0
-MSG_STOP    byte "IOCTL_STOP",0
+MSG_START byte "IOCTL_START",0
+MSG_STOP  byte "IOCTL_STOP",0
  
 .code
-OnTimer proc pMyDevice : PDEVICE_OBJECT, pContext : PVOID
+OnTimer proc uses esi pMyDevice : PDEVICE_OBJECT, pContext : PVOID
     mov eax, pMyDevice
-    mov eax, (DEVICE_OBJECT ptr [eax]).DeviceExtension
-    inc (MyDeviceExtension ptr[eax]).dwTimerCnt
-    invoke DbgPrint, $CTA0("IoTimer: %d\n"), (MyDeviceExtension ptr[eax]).dwTimerCnt
+    mov esi, (DEVICE_OBJECT ptr [eax]).DeviceExtension
+    inc (MyDeviceExtension ptr [esi]).cnt
+    invoke DbgPrint, $CTA0("IoTimer: %d\n"), (MyDeviceExtension ptr [esi]).cnt
     ret
 OnTimer endp
  
@@ -75,22 +75,19 @@ IrpOpenClose proc pMyDevice : PDEVICE_OBJECT, pIrp : PIRP
     ret
 IrpOpenClose endp
  
-IrpIOCTL proc pMyDevice : PDEVICE_OBJECT, pIrp : PIRP
-    local pBuf : DWORD
-    local pDevExt : ptr
+IrpIOCTL proc uses esi pMyDevice : PDEVICE_OBJECT, pIrp : PIRP
     local hThread : DWORD
     local pThread : PVOID
  
     mov eax, pMyDevice
-    push (DEVICE_OBJECT ptr [eax]).DeviceExtension
-    pop pDevExt
+    mov esi, (DEVICE_OBJECT ptr [eax]).DeviceExtension
  
     IoGetCurrentIrpStackLocation pIrp
     mov eax, (IO_STACK_LOCATION ptr [eax]).Parameters.DeviceIoControl.IoControlCode
     .if eax == IOCTL_START
         invoke DbgPrint, offset MSG_START
-        mov eax, pDevExt
-        mov (MyDeviceExtension ptr[eax]).dwTimerCnt, 0
+
+        mov (MyDeviceExtension ptr [esi]).cnt, 0
         invoke IoStartTimer, pMyDevice
     .elseif eax == IOCTL_STOP
         invoke DbgPrint, offset MSG_STOP
@@ -99,89 +96,49 @@ IrpIOCTL proc pMyDevice : PDEVICE_OBJECT, pIrp : PIRP
  
     mov eax, pIrp
     mov (_IRP ptr [eax]).IoStatus.Status, STATUS_SUCCESS
-    and (_IRP ptr [eax]).IoStatus.Information,0 
+    and (_IRP ptr [eax]).IoStatus.Information, 0
     fastcall IofCompleteRequest, pIrp, IO_NO_INCREMENT
     mov eax, STATUS_SUCCESS
     ret
 IrpIOCTL endp
  
-IrpPnp proc pMyDevice : PDEVICE_OBJECT, pIrp : PIRP
-    local pDevExt : ptr
+Unload proc pMyDriver : PDRIVER_OBJECT
     local szSymName : UNICODE_STRING
- 
-    mov eax, pMyDevice
-    push (DEVICE_OBJECT ptr [eax]).DeviceExtension
-    pop pDevExt
-        
-    IoGetCurrentIrpStackLocation pIrp
-    movzx eax, (IO_STACK_LOCATION ptr [eax]).MinorFunction
-    .if eax == IRP_MN_START_DEVICE
-        mov eax, pIrp
-        mov (_IRP ptr [eax]).IoStatus.Status, STATUS_SUCCESS
-    .elseif eax == IRP_MN_REMOVE_DEVICE
-        invoke RtlInitUnicodeString, addr szSymName, $CTW0("\\DosDevices\\MyDriver")
-        invoke IoDeleteSymbolicLink, addr szSymName         
-        mov eax, pIrp
-        mov (_IRP ptr [eax]).IoStatus.Status, STATUS_SUCCESS
- 
-        mov eax, pDevExt
-        invoke IoDetachDevice, (MyDeviceExtension ptr [eax]).pNextDev
-        invoke IoDeleteDevice, pMyDevice
-        fastcall IofCompleteRequest, pIrp, IO_NO_INCREMENT
-        ret
-    .endif
-    IoSkipCurrentIrpStackLocation pIrp
- 
-    mov eax, pDevExt
-    invoke IoCallDriver, (MyDeviceExtension ptr [eax]).pNextDev, pIrp
+
+    invoke RtlInitUnicodeString, addr szSymName, $CTW0("\\DosDevices\\MyDriver")
+    invoke IoDeleteSymbolicLink, addr szSymName
+                         
+    mov eax, pMyDriver
+    invoke IoDeleteDevice, (DRIVER_OBJECT ptr [eax]).DeviceObject
     ret
-IrpPnp endp
- 
-AddDevice proc pMyDriver : PDRIVER_OBJECT, pPhyDevice : PDEVICE_OBJECT
+Unload endp
+            
+DriverEntry proc pMyDriver : PDRIVER_OBJECT, pMyRegistry : PUNICODE_STRING
     local pMyDevice : PDEVICE_OBJECT
     local szDevName : UNICODE_STRING
     local szSymName : UNICODE_STRING
- 
-    invoke RtlInitUnicodeString, addr szDevName, $CTW0("\\Device\\MyDriver")
-    invoke RtlInitUnicodeString, addr szSymName, $CTW0("\\DosDevices\\MyDriver")
-    invoke IoCreateDevice, pMyDriver, sizeof MyDeviceExtension, addr szDevName, FILE_DEVICE_UNKNOWN, 0, FALSE, addr pMyDevice
-    .if eax == STATUS_SUCCESS
-        invoke IoAttachDeviceToDeviceStack, pMyDevice, pPhyDevice
-        .if eax != NULL
-            push eax
-            mov eax, pMyDevice
-            mov eax, (DEVICE_OBJECT ptr [eax]).DeviceExtension
-            pop (MyDeviceExtension ptr [eax]).pNextDev
- 
-            mov eax, pMyDevice
-            or (DEVICE_OBJECT ptr [eax]).Flags, DO_BUFFERED_IO
-            and (DEVICE_OBJECT ptr [eax]).Flags, not DO_DEVICE_INITIALIZING
-            mov eax, STATUS_SUCCESS
-             
-            invoke IoInitializeTimer, pMyDevice, offset OnTimer, NULL
-            invoke IoCreateSymbolicLink, addr szSymName, addr szDevName
-        .endif
-    .endif
-    ret
-AddDevice endp
- 
-Unload proc pMyDriver : PDRIVER_OBJECT
-    ret
-Unload endp
- 
-DriverEntry proc pMyDriver : PDRIVER_OBJECT, pMyRegistry : PUNICODE_STRING
+                
     mov eax, pMyDriver
-    mov (DRIVER_OBJECT ptr [eax]).MajorFunction[IRP_MJ_PNP            * (sizeof PVOID)], offset IrpPnp
-    mov (DRIVER_OBJECT ptr [eax]).MajorFunction[IRP_MJ_CREATE         * (sizeof PVOID)], offset IrpOpenClose
-    mov (DRIVER_OBJECT ptr [eax]).MajorFunction[IRP_MJ_CLOSE          * (sizeof PVOID)], offset IrpOpenClose
+    mov (DRIVER_OBJECT ptr [eax]).MajorFunction[IRP_MJ_CREATE * (sizeof PVOID)], offset IrpOpenClose
+    mov (DRIVER_OBJECT ptr [eax]).MajorFunction[IRP_MJ_CLOSE * (sizeof PVOID)], offset IrpOpenClose
     mov (DRIVER_OBJECT ptr [eax]).MajorFunction[IRP_MJ_DEVICE_CONTROL * (sizeof PVOID)], offset IrpIOCTL
     mov (DRIVER_OBJECT ptr [eax]).DriverUnload, offset Unload
-    mov eax, (DRIVER_OBJECT ptr [eax]).DriverExtension
-    mov (DRIVER_EXTENSION ptr [eax]).AddDevice, AddDevice
-    mov eax, STATUS_SUCCESS
+                
+    invoke RtlInitUnicodeString, addr szDevName, $CTW0("\\Device\\MyDriver")
+    invoke RtlInitUnicodeString, addr szSymName, $CTW0("\\DosDevices\\MyDriver")
+
+    invoke IoCreateDevice, pMyDriver, sizeof MyDeviceExtension, addr szDevName, FILE_DEVICE_UNKNOWN, 0, FALSE, addr pMyDevice
+    .if eax == STATUS_SUCCESS
+        mov eax, pMyDevice
+        or (DEVICE_OBJECT ptr [eax]).Flags, DO_BUFFERED_IO
+        and (DEVICE_OBJECT ptr [eax]).Flags, not DO_DEVICE_INITIALIZING
+        invoke IoInitializeTimer, pMyDevice, offset OnTimer, NULL
+        invoke IoCreateSymbolicLink, addr szSymName, addr szDevName
+    .endif
     ret
 DriverEntry endp
-end
+end DriverEntry
+.end
 </pre><br>
 
 <p>
@@ -207,14 +164,17 @@ includelib c:\masm32\lib\kernel32.lib
     
 IOCTL_START equ CTL_CODE(FILE_DEVICE_UNKNOWN, 800h, METHOD_BUFFERED, FILE_ANY_ACCESS)
 IOCTL_STOP  equ CTL_CODE(FILE_DEVICE_UNKNOWN, 801h, METHOD_BUFFERED, FILE_ANY_ACCESS)
-
+    
+.const
+DEV_NAME db "\\.\MyDriver",0
+    
 .data?
 hFile dd ?
 dwRet dd ?
     
 .code
 start:
-    invoke CreateFile, $CTA0("\\\\.\\MyDriver"), GENERIC_READ or GENERIC_WRITE, FILE_SHARE_READ, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0
+    invoke CreateFile, offset DEV_NAME, GENERIC_READ or GENERIC_WRITE, FILE_SHARE_READ, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0
     mov hFile, eax
         
     invoke DeviceIoControl, hFile, IOCTL_START, NULL, 0, NULL, 0, offset dwRet, NULL
@@ -224,7 +184,6 @@ start:
     invoke CloseHandle, hFile
     invoke ExitProcess, 0
 end start
-end
 </pre><br>
 
 <p>
