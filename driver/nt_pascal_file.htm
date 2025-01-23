@@ -88,17 +88,14 @@ begin
     RtlInitUnicodeString(@szSymName, SYM_NAME);
     Result := IoCreateDevice(pMyDriver, 0, @suDevName, FILE_DEVICE_UNKNOWN, 0, FALSE, pMyDevice);
  
-    if NT_SUCCESS(Result) then
-    begin
-        pMyDriver^.MajorFunction[IRP_MJ_CREATE] := @IrpOpen;
-        pMyDriver^.MajorFunction[IRP_MJ_READ]   := @IrpRead;
-        pMyDriver^.MajorFunction[IRP_MJ_WRITE]  := @IrpWrite;
-        pMyDriver^.MajorFunction[IRP_MJ_CLOSE]  := @IrpClose;
-        pMyDriver^.DriverUnload := @Unload;
-        pMyDevice^.Flags := pMyDevice^.Flags or DO_BUFFERED_IO;
-        pMyDevice^.Flags := pMyDevice^.Flags and not DO_DEVICE_INITIALIZING;
-        Result := IoCreateSymbolicLink(@szSymName, @suDevName);
-    end;
+    pMyDriver^.MajorFunction[IRP_MJ_CREATE] := @IrpOpen;
+    pMyDriver^.MajorFunction[IRP_MJ_READ]   := @IrpRead;
+    pMyDriver^.MajorFunction[IRP_MJ_WRITE]  := @IrpWrite;
+    pMyDriver^.MajorFunction[IRP_MJ_CLOSE]  := @IrpClose;
+    pMyDriver^.DriverUnload := @Unload;
+    pMyDevice^.Flags := pMyDevice^.Flags or DO_BUFFERED_IO;
+    pMyDevice^.Flags := pMyDevice^.Flags and not DO_DEVICE_INITIALIZING;
+    Result := IoCreateSymbolicLink(@szSymName, @suDevName);
 end;
 end.
 </pre><br>

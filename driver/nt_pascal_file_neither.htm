@@ -1,8 +1,8 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head><script type="text/javascript" src="../page_head.js"></script>
 
-<h3><a href="../driver.htm">驅動程式</a> - Windows NT Driver (Legacy) - 使用範例 - Pascal - Handle File IRP - <b>Choose DO_BUFFERED_IO</b></h3>
+<h3><a href="../driver.htm">驅動程式</a> - Windows NT Driver (Legacy) - 使用範例 - Pascal - Handle File IRP - <b>Choose DO_NEITHER_IO</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
@@ -19,7 +19,7 @@ unit main;
 interface
 uses
     DDDK;
- 
+         
 const
     DEV_NAME = '\Device\MyDriver';
     SYM_NAME = '\DosDevices\MyDriver';
@@ -34,7 +34,6 @@ function IrpOpen(pMyDevice : PDeviceObject; pIrp : PIrp) : NTSTATUS; stdcall;
 begin
     DbgPrint('IRP_MJ_CREATE', []);
 
-    memset(@szBuf[0], char(0), 255);
     Result := STATUS_SUCCESS;
     pIrp^.IoStatus.Information := 0;
     pIrp^.IoStatus.Status := Result;
@@ -49,7 +48,7 @@ begin
     DbgPrint('IRP_MJ_READ', []);
      
     len := strlen(@szBuf[0]);
-    memcpy(pIrp^.AssociatedIrp.SystemBuffer, @szBuf[0], len);
+    memcpy(pIrp^.UserBuffer, @szBuf[0], len);
     Result := STATUS_SUCCESS;
     pIrp^.IoStatus.Information := len;
     pIrp^.IoStatus.Status := Result;
@@ -60,15 +59,14 @@ function IrpWrite(pMyDevice : PDeviceObject; pIrp : PIrp) : NTSTATUS; stdcall;
 var
     len : ULONG;
     psk : PIoStackLocation;
-     
+ 
 begin
     DbgPrint('IRP_MJ_WRITE', []);
-     
+ 
     psk := IoGetCurrentIrpStackLocation(pIrp);
     len := psk.Parameters.Write.Length;
-    memcpy(@szBuf[0], pIrp^.AssociatedIrp.SystemBuffer, len);
-    DbgPrint('Buffer: %s, Length: %d', [szBuf, len]);
-
+    memcpy(@szBuf[0], pIrp^.UserBuffer, len);
+    DbgPrint('Address: 0x%x, Length: %d', [pIrp^.UserBuffer, len]);
     Result := STATUS_SUCCESS;
     pIrp^.IoStatus.Information := len;
     pIrp^.IoStatus.Status := Result;
@@ -97,23 +95,22 @@ end;
  
 function _DriverEntry(pMyDriver : PDriverObject; pMyRegistry : PUnicodeString) : NTSTATUS; stdcall;
 var
-    suDevName : TUnicodeString;
+    szDevName : TUnicodeString;
     szSymName : TUnicodeString;
     pMyDevice : PDeviceObject;
      
 begin
-    RtlInitUnicodeString(@suDevName, DEV_NAME);
+    RtlInitUnicodeString(@szDevName, DEV_NAME);
     RtlInitUnicodeString(@szSymName, SYM_NAME);
-    Result := IoCreateDevice(pMyDriver, 0, @suDevName, FILE_DEVICE_UNKNOWN, 0, FALSE, pMyDevice);
+    Result := IoCreateDevice(pMyDriver, 0, @szDevName, FILE_DEVICE_UNKNOWN, 0, FALSE, pMyDevice);
  
     pMyDriver^.MajorFunction[IRP_MJ_CREATE] := @IrpOpen;
     pMyDriver^.MajorFunction[IRP_MJ_READ]   := @IrpRead;
     pMyDriver^.MajorFunction[IRP_MJ_WRITE]  := @IrpWrite;
     pMyDriver^.MajorFunction[IRP_MJ_CLOSE]  := @IrpClose;
     pMyDriver^.DriverUnload := @Unload;
-    pMyDevice^.Flags := pMyDevice^.Flags or DO_BUFFERED_IO;
     pMyDevice^.Flags := pMyDevice^.Flags and not DO_DEVICE_INITIALIZING;
-    Result := IoCreateSymbolicLink(@szSymName, @suDevName);
+    Result := IoCreateSymbolicLink(@szSymName, @szDevName);
 end;
 end.
 </pre><br>
@@ -121,7 +118,7 @@ end.
 <p>
 完成<br>
 <img src="wdm_asm_file_buffer/1.jpg" class="maxSize"><br>
-<img src="wdm_asm_file_buffer/2.jpg" class="maxSize">
+<img src="wdm_asm_file_neither/1.jpg" class="maxSize">
 </p>
 
 <br><script type="text/javascript" src="../tail.js"></script>
