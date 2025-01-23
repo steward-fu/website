@@ -1,0 +1,108 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../driver.htm">驅動程式</a> - Windows NT Driver (Legacy) - 使用範例 - Pascal - <b>Hello, world!</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://wasm.in/<br>
+http://four-f.narod.ru/<br>
+https://github.com/steward-fu/ddk<br>
+http://www.delphibasics.info/home/delphibasicsprojects/delphidriverdevelopmentkit<br><br>
+
+main.pas
+</p>
+<pre class="brush:pas">
+unit main;
+ 
+interface
+uses
+    DDDK;
+
+function _DriverEntry(pMyDriver : PDriverObject; pMyRegistry : PUnicodeString) : NTSTATUS; stdcall;
+ 
+implementation
+procedure DriverUnload(pMyDriver : PDriverObject); stdcall;
+begin
+end;
+ 
+function _DriverEntry(pMyDriver : PDriverObject; pMyRegistry : PUnicodeString) : NTSTATUS; stdcall;
+begin
+    DbgPrint('Hello, world!', []);
+    pMyDriver^.DriverUnload := @DriverUnload;
+    Result := STATUS_SUCCESS;
+end;
+end.
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+del /s /q main.sys
+c:\dddk\bin\dcc32.exe -Uc:\dddk\inc -B -CG -JP -$A-,C-,D-,G-,H-,I-,L-,P-,V-,W+,Y- main.pas
+c:\dddk\bin\omf2d.exe main.obj
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEZwClose=_ZwClose@4 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEDbgPrint=_DbgPrint 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEExFreePool=_ExFreePool@4 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEKeSetTimer=_KeSetTimer@16 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEIoStopTimer=_IoStopTimer@4 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEIoStartTimer=_IoStartTimer@4 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEKeSetTimerEx=_KeSetTimerEx@20 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEProbeForRead=_ProbeForRead@12 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEKeCancelTimer=_KeCancelTimer@4 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEIoStartPacket=_IoStartPacket@16 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEZwOpenProcess=_ZwOpenProcess@16 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEIoDeleteDevice=_IoDeleteDevice@4 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEExAllocatePool=_ExAllocatePool@8 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEKeReleaseMutex=_KeReleaseMutex@8 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEIoCreateDevice=_IoCreateDevice@28 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEKeInitializeDpc=_KeInitializeDpc@12 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEIoStartNextPacket=_IoStartNextPacket@8 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEIoCompleteRequest=_IoCompleteRequest@8 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEKeInitializeMutex=_KeInitializeMutex@8 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEKeInitializeTimer=_KeInitializeTimer@4 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEIoInitializeTimer=_IoInitializeTimer@12 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEObDereferenceObject=_ObDereferenceObject@4 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEIoGetCurrentProcess=_IoGetCurrentProcess@0 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEInterlockedExchange=@InterlockedExchange@8 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEIoCreateSymbolicLink=_IoCreateSymbolicLink@8 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEIoDeleteSymbolicLink=_IoDeleteSymbolicLink@4 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CERtlInitUnicodeString=_RtlInitUnicodeString@8 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEPsCreateSystemThread=_PsCreateSystemThread@28 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEKeWaitForSingleObject=_KeWaitForSingleObject@20 2&gt;nul 
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEExAllocatePoolWithTag=_ExAllocatePoolWithTag@12 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEKeDelayExecutionThread=_KeDelayExecutionThread@12 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEKeServiceDescriptorTable=_KeServiceDescriptorTable 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEExAllocatePoolWithQuota=_ExAllocatePoolWithQuota@8 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEPsTerminateSystemThread=_PsTerminateSystemThread@4 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEObReferenceObjectByHandle=_ObReferenceObjectByHandle@24 2&gt;nul
+c:\dddk\bin\omf2d.exe c:\dddk\inc\dddk.obj /U- /CEMmMapLockedPagesSpecifyCache=_MmMapLockedPagesSpecifyCache@24 2&gt;nul
+c:\dddk\bin\link.exe /NOLOGO /ALIGN:32 /BASE:0x10000 /SUBSYSTEM:NATIVE /DRIVER /FORCE:UNRESOLVED /FORCE:MULTIPLE /ENTRY:DriverEntry c:\dddk\inc\DDDK.obj c:\dddk\lib\ntoskrnl.lib main.obj /out:main.sys
+del /s /q main.dcu
+del /s /q main.obj
+</pre><br>
+
+<p>
+在開始安裝驅動程式之前，我們需要先下載除錯工具，讓驅動程式的Debug訊息可以顯示在除錯工具上面，目前在Kernel Mode以及User Mode上，最佳的Debug輸出訊息工具是DbgView，該公司目前已經被Microsoft併購，所以可以從Microsoft網站下載，下載完後執行DbgView並將<b>Capture =&gt; Capture Kernel</b>選項打勾，接著<b>重啟</b>DbgView<br>
+<img src="wdm_asm_hello/1.jpg" class="maxSize"><br><br>
+
+Legacy(NT-Style)驅動程式的安裝很方便，它是使用Service的方式安裝，因此，複製main.sys到<b>c:\windows\system32\drivers</b>資料夾下並輸入如下命令進行安裝
+</p>
+<pre>
+c:\&gt; sc create MyDriver binPath= "c:\windows\system32\drivers\main.sys" type= "kernel" start= "demand" error= "normal" Displayname= "MyDriver"
+c:\&gt; sc start MyDriver
+</pre>
+<p>
+P.S. 要記得在"="前面都需要一個空格<br><br>
+
+輸入完上列指令後，就可以看到輸出的<b>Hello, world!</b>字串<br>
+<img src="wdm_asm_hello/3.jpg" class="maxSize"><br><br>
+
+如果要更方便測試，建議使用Four-F撰寫的KmdManager<br>
+<img src="nt_asm_hello/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

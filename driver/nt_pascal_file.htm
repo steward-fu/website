@@ -1,0 +1,151 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../driver.htm">驅動程式</a> - Windows NT Driver (Legacy) - 使用範例 - Pascal - <b>Handle File IRP</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://wasm.in/<br>
+http://four-f.narod.ru/<br>
+https://github.com/steward-fu/ddk<br>
+http://www.delphibasics.info/home/delphibasicsprojects/delphidriverdevelopmentkit<br><br>
+
+main.pas
+</p>
+<pre class="brush:pas">
+unit main;
+ 
+interface
+uses
+    DDDK;
+ 
+const
+    DEV_NAME = '\Device\MyDriver';
+    SYM_NAME = '\DosDevices\MyDriver';
+         
+function _DriverEntry(pMyDriver : PDriverObject; pMyRegistry : PUnicodeString) : NTSTATUS; stdcall;
+ 
+implementation
+function IrpOpen(pMyDevice : PDeviceObject; pIrp : PIrp) : NTSTATUS; stdcall;
+begin
+    DbgPrint('IRP_MJ_CREATE', []);
+
+    Result := STATUS_SUCCESS;
+    pIrp^.IoStatus.Information := 0;
+    pIrp^.IoStatus.Status := Result;
+    IoCompleteRequest(pIrp, IO_NO_INCREMENT);
+end;
+ 
+function IrpRead(pMyDevice : PDeviceObject; pIrp : PIrp) : NTSTATUS; stdcall;
+begin
+    DbgPrint('IRP_MJ_READ', []);
+
+    Result := STATUS_SUCCESS;
+    pIrp^.IoStatus.Information := 0;
+    pIrp^.IoStatus.Status := Result;
+    IoCompleteRequest(pIrp, IO_NO_INCREMENT);
+end;
+ 
+function IrpWrite(pMyDevice : PDeviceObject; pIrp : PIrp) : NTSTATUS; stdcall;
+begin
+    DbgPrint('IRP_MJ_WRITE', []);
+
+    Result := STATUS_SUCCESS;
+    pIrp^.IoStatus.Information := 0;
+    pIrp^.IoStatus.Status := Result;
+    IoCompleteRequest(pIrp, IO_NO_INCREMENT);
+end;
+ 
+function IrpClose(pMyDevice : PDeviceObject; pIrp : PIrp) : NTSTATUS; stdcall;
+begin
+    DbgPrint('IRP_MJ_CLOSE', []);
+
+    Result := STATUS_SUCCESS;
+    pIrp^.IoStatus.Information := 0;
+    pIrp^.IoStatus.Status := Result;
+    IoCompleteRequest(pIrp, IO_NO_INCREMENT);
+end;
+ 
+procedure Unload(pMyDriver : PDriverObject); stdcall;
+var
+    szSymName : TUnicodeString;
+ 
+begin
+    RtlInitUnicodeString(@szSymName, SYM_NAME);
+    IoDeleteSymbolicLink(@szSymName);
+    IoDeleteDevice(pMyDriver^.DeviceObject);
+end;
+ 
+function _DriverEntry(pMyDriver : PDriverObject; pMyRegistry : PUnicodeString) : NTSTATUS; stdcall;
+var
+    suDevName : TUnicodeString;
+    szSymName : TUnicodeString;
+    pMyDevice : PDeviceObject;
+     
+begin
+    RtlInitUnicodeString(@suDevName, DEV_NAME);
+    RtlInitUnicodeString(@szSymName, SYM_NAME);
+    Result := IoCreateDevice(pMyDriver, 0, @suDevName, FILE_DEVICE_UNKNOWN, 0, FALSE, pMyDevice);
+ 
+    if NT_SUCCESS(Result) then
+    begin
+        pMyDriver^.MajorFunction[IRP_MJ_CREATE] := @IrpOpen;
+        pMyDriver^.MajorFunction[IRP_MJ_READ]   := @IrpRead;
+        pMyDriver^.MajorFunction[IRP_MJ_WRITE]  := @IrpWrite;
+        pMyDriver^.MajorFunction[IRP_MJ_CLOSE]  := @IrpClose;
+        pMyDriver^.DriverUnload := @Unload;
+        pMyDevice^.Flags := pMyDevice^.Flags or DO_BUFFERED_IO;
+        pMyDevice^.Flags := pMyDevice^.Flags and not DO_DEVICE_INITIALIZING;
+        Result := IoCreateSymbolicLink(@szSymName, @suDevName);
+    end;
+end;
+end.
+</pre><br>
+
+<p>
+app.pas
+</p>
+<pre class="brush:pas">
+program main;
+ 
+{$APPTYPE CONSOLE}
+ 
+uses
+    forms,
+    classes,
+    windows,
+    dialogs,
+    messages,
+    sysutils,
+    variants,
+    graphics,
+    controls;
+ 
+var
+    fd: DWORD;
+    ret: DWORD;
+    len: DWORD;
+    szBuf: array[0..255] of char;
+ 
+begin
+    fd := CreateFile('\\.\MyDriver', GENERIC_READ or GENERIC_WRITE, FILE_SHARE_READ, Nil, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
+    StrCopy(szBuf, 'I am error');
+    len := strlen(szBuf);
+    WriteFile(fd, szBuf, len, ret, Nil);
+    WriteLn(Output, Format('WR: %s, %d', [szBuf, len]));
+ 
+    FillChar(szBuf, 255, 0);
+    ReadFile(fd, szBuf, len, ret, Nil);
+    WriteLn(Output, Format('RD: %s, %d', [szBuf, ret]));
+    CloseHandle(fd);
+end.
+</pre><br>
+
+<p>
+完成<br>
+<img src="wdm_asm_file/1.jpg" class="maxSize"><br>
+<img src="wdm_asm_file/2.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
