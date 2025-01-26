@@ -1,0 +1,60 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../driver.htm">驅動程式</a> - Windows NT Driver (Legacy) - 使用範例 - C/C++ - <b>Hello, world!</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://wasm.in/<br>
+http://four-f.narod.ru/<br>
+https://github.com/steward-fu/ddk<br>
+http://www.delphibasics.info/home/delphibasicsprojects/delphidriverdevelopmentkit<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;ntddk.h&gt;
+ 
+void Unload(PDRIVER_OBJECT pMyDriver)
+{
+}
+ 
+NTSTATUS DriverEntry(PDRIVER_OBJECT pMyDriver, PUNICODE_STRING pMyRegistry)
+{
+    DbgPrint("Hello, world!");
+    pMyDriver-&gt;DriverUnload = Unload;
+    return STATUS_SUCCESS;
+}
+</pre><br>
+
+<p>
+編譯：
+</p>
+<pre>
+C:\> del main.sys
+C:\> c:\winddk\bin\x86\cl.exe -nologo -I"c:\winddk\inc\wxp" -I"c:\winddk\inc\ddk\wxp" -I"c:\winddk\inc\ddk\wdm\wxp" -I"c:\winddk\inc\crt" -D_X86_ /c /Zel /Gz main.c
+C:\> c:\winddk\bin\x86\link.exe -INCREMENTAL:NO -debug:FULL -debugtype:cv -driver -base:0x10000 -entry:DriverEntry -subsystem:native "c:\winddk\lib\wxp\i386\ntoskrnl.lib" "c:\winddk\lib\wxp\i386\csq.lib" -out:main.sys main.obj
+</pre><br>
+
+<p>
+在開始安裝驅動程式之前，我們需要先下載除錯工具，讓驅動程式的Debug訊息可以顯示在除錯工具上面，目前在Kernel Mode以及User Mode上，最佳的Debug輸出訊息工具是DbgView，該公司目前已經被Microsoft併購，所以可以從Microsoft網站下載，下載完後執行DbgView並將<b>Capture =&gt; Capture Kernel</b>選項打勾，接著<b>重啟</b>DbgView<br>
+<img src="wdm_asm_hello/1.jpg" class="maxSize"><br><br>
+
+Legacy(NT-Style)驅動程式的安裝很方便，它是使用Service的方式安裝，因此，複製main.sys到<b>c:\windows\system32\drivers</b>資料夾下並輸入如下命令進行安裝
+</p>
+<pre>
+c:\&gt; sc create MyDriver binPath= "c:\windows\system32\drivers\main.sys" type= "kernel" start= "demand" error= "normal" Displayname= "MyDriver"
+c:\&gt; sc start MyDriver
+</pre>
+<p>
+P.S. 要記得在"="前面都需要一個空格<br><br>
+
+輸入完上列指令後，就可以看到輸出的<b>Hello, world!</b>字串<br>
+<img src="wdm_asm_hello/3.jpg" class="maxSize"><br><br>
+
+如果要更方便測試，建議使用Four-F撰寫的KmdManager<br>
+<img src="nt_asm_hello/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
