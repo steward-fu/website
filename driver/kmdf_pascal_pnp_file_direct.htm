@@ -1,0 +1,115 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../driver.htm">驅動程式</a> - Kernel Mode Driver Framework (KMDF) - 使用範例 - Pascal - PNP - <b>Choose WdfDeviceIoDirect</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://wasm.in/<br>
+http://four-f.narod.ru/<br>
+https://github.com/steward-fu/ddk<br><br>
+
+main.pas
+</p>
+<pre class="brush:pas">
+unit main;
+ 
+interface
+uses
+    DDDK;
+     
+const
+    DEV_NAME = '\Device\MyDriver';
+    SYM_NAME = '\DosDevices\MyDriver';
+
+function __DriverEntry(pMyDriver : PDRIVER_OBJECT; pMyRegistry : PUNICODE_STRING) : NTSTATUS; stdcall;
+ 
+implementation
+var
+    szBuffer : array[0..255] of char;
+     
+procedure IrpFileCreate(myDevice : WDFDEVICE; myRequest : WDFREQUEST; myFileObject : WDFFILEOBJECT); stdcall;
+begin
+    DbgPrint('IRP_MJ_CREATE', []);
+    WdfRequestComplete(myRequest, STATUS_SUCCESS);
+end;
+ 
+procedure IrpFileClose(myFileObject : WDFFILEOBJECT); stdcall;
+begin
+    DbgPrint('IRP_MJ_CLOSE', []);
+end;
+ 
+procedure IrpRead(myQueue : WDFQUEUE; myRequest : WDFREQUEST; myLen : ULONG); stdcall;
+var
+    mdl : PMDL;
+    len : ULONG;
+    dst : Pointer;
+ 
+begin
+    DbgPrint('IRP_MJ_READ', []);
+    len := strlen(@szBuffer);
+    WdfRequestRetrieveOutputWdmMdl(myRequest, @mdl);
+    dst := MmGetSystemAddressForMdlSafe(mdl, LowPagePriority);
+    memcpy(dst, @szBuffer, len);
+    WdfRequestCompleteWithInformation(myRequest, STATUS_SUCCESS, len);
+end;
+ 
+procedure IrpWrite(myQueue : WDFQUEUE; myRequest : WDFREQUEST; myLen : ULONG); stdcall;
+var
+    mdl : PMDL;
+    src : Pointer;
+ 
+begin
+    DbgPrint('IRP_MJ_WRITE', []);
+    WdfRequestRetrieveInputWdmMdl(myRequest, @mdl);
+    src := MmGetSystemAddressForMdlSafe(mdl, LowPagePriority);
+    memcpy(@szBuffer, src, myLen);
+    DbgPrint('Buffer: %s, Length:%d', [szBuffer, myLen]);
+    WdfRequestCompleteWithInformation(myRequest, STATUS_SUCCESS, myLen);
+end;
+ 
+function AddDevice(pMyDriver : WDFDRIVER; pMyDeviceInit : PWDFDEVICE_INIT) : NTSTATUS; stdcall;
+var
+    device : WDFDEVICE;
+    io_cfg : WDF_IO_QUEUE_CONFIG;
+    file_cfg : WDF_FILEOBJECT_CONFIG;
+    szDevName : UNICODE_STRING;
+    szSymName : UNICODE_STRING;
+ 
+begin
+    WdfDeviceInitSetIoType(pMyDeviceInit, WdfDeviceIoDirect);
+    WDF_FILEOBJECT_CONFIG_INIT(@file_cfg, @IrpFileCreate, @IrpFileClose, Nil);
+    WdfDeviceInitSetFileObjectConfig(pMyDeviceInit, @file_cfg, WDF_NO_OBJECT_ATTRIBUTES);
+     
+    RtlInitUnicodeString(@szDevName, DEV_NAME);
+    RtlInitUnicodeString(@szSymName, SYM_NAME);
+    WdfDeviceInitAssignName(pMyDeviceInit, @szDevName);
+    WdfDeviceCreate(@pMyDeviceInit, WDF_NO_OBJECT_ATTRIBUTES, @device);
+    WdfDeviceCreateSymbolicLink(device, @szSymName);
+     
+    WDF_IO_QUEUE_CONFIG_INIT_DEFAULT_QUEUE(@io_cfg, WdfIoQueueDispatchSequential);
+    io_cfg.EvtIoRead := @IrpRead;
+    io_cfg.EvtIoWrite := @IrpWrite;
+    Result := WdfIoQueueCreate(device, @io_cfg, WDF_NO_OBJECT_ATTRIBUTES, WDF_NO_HANDLE);
+end;
+ 
+function __DriverEntry(pMyDriver : PDRIVER_OBJECT; pMyRegistry : PUNICODE_STRING) : NTSTATUS; stdcall;
+var
+    config : WDF_DRIVER_CONFIG;
+     
+begin
+    WDF_DRIVER_CONFIG_INIT(@config, AddDevice);
+    WdfDriverCreate(pMyDriver, pMyRegistry, WDF_NO_OBJECT_ATTRIBUTES, @config, WDF_NO_HANDLE);
+    Result := STATUS_SUCCESS;
+end;
+end.
+</pre><br>
+
+<p>
+完成<br>
+<img src="wdm_asm_file_buffer/1.jpg" class="maxSize"><br>
+<img src="wdm_asm_file_buffer/2.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

@@ -1,0 +1,76 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../driver.htm">驅動程式</a> - Kernel Mode Driver Framework (KMDF) - 教學說明 - <b>2. 系統透過呼叫AddDevice()來新增裝置</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://wasm.in/<br>
+http://four-f.narod.ru/<br>
+https://github.com/steward-fu/ddk<br><br>
+
+當系統找到對應的裝置(透過INF檔案安裝)且驅動程式被系統載入後，AddDevice()就會被系統呼叫，而AddDevice()是在DriverEntry()裡面註冊的，所以系統才會知道AddDevice()位於何處，名稱不一定要用AddDevice，但是參數跟回傳值必須遵照Microsoft的定義，否則會有問題<br><br>
+
+AddDevice()定義如下</p>
+<pre class="brush:cpp">
+NTSTATUS AddDevice(WDFDRIVER, PWDFDEVICE_INIT);
+</pre><br>
+
+<p>
+相較於WDM驅動程式，KMDF驅動程式傳入的參數已經改成WDF專用的Object，<b>WDFDRIVER</b>是在DriverEntry()時產生的Object，而<b>PWDFDEVICE_INIT</b>則是一個由WDF配置以及初始化的Object，相關初始化的設定都依賴這個Object做設定，雖然Microsoft官方並沒有對此Object做說明，不過司徒翻了一下定義，發現只有一個PVOID定義<br><br>
+
+那在AddDevice()需要做什麼事情呢？
+</p>
+<pre>
+1. 初始化File相關旗標以及Callback，如：FileOpen、FileClose
+2. 產生新的Device Object
+3. 建造一條Symbolic Link
+4. 初始化其餘Callback，如：FileRead、FileWrite、IOCTL
+</pre>
+
+<p>
+該Symbolic Link就是提供給User Application開啟(僅能使用CreateFile() API開啟)，還記得呼叫CreateFile()時會提供一個名字嗎？若記得的話，此名字就是驅動程式的Symbolic Link名稱，那問題又來了，有沒有可能其它驅動程式也使用同一個Symbolic Link名字呢？答案是，肯定會發生的，所以Microsoft建議大家使用GUID的方式註冊，使用者可以使用工具產生新的GUID名稱，並使用該GUID註冊裝置，避免名稱衝突，如果是使用GUID方式註冊，那User Application該如何開啟該驅動程式呢？這時候就必須使用Setup API做GUID列舉並取得Symbolic Link名稱，哪一種方式比較好呢？如果是使用Symbolic Link註冊名稱，User Application比較好寫，因為名稱已經知道了，反之，使用GUID註冊的話，User Application需要列舉判斷後才能開啟，所以會比較不好寫，但是優點則是名稱不會衝突<br><br>
+
+範例：
+</p>
+
+<pre class="brush:cpp">
+#define DEV_NAME L"\\Device\\MyDriver"
+#define SYM_NAME L"\\DosDevices\\MyDriver"
+
+NTSTATUS AddDevice(WDFDRIVER Driver, PWDFDEVICE_INIT pDeviceInit)
+{
+    WDFDEVICE device;
+    UNICODE_STRING suDevName;
+    UNICODE_STRING szSymName;
+    WDF_FILEOBJECT_CONFIG file_cfg;
+    WDF_IO_QUEUE_CONFIG ioqueue_cfg;
+
+    // Step 1
+    WdfDeviceInitSetIoType(pDeviceInit, WdfDeviceIoBuffered);
+    WDF_FILEOBJECT_CONFIG_INIT(&amp;file_cfg, IrpFileCreate, IrpFileClose, NULL);
+    WdfDeviceInitSetFileObjectConfig(pDeviceInit, &amp;file_cfg, WDF_NO_OBJECT_ATTRIBUTES);
+
+    // Step 2
+    RtlInitUnicodeString(&amp;suDevName, DEV_NAME);
+    RtlInitUnicodeString(&amp;szSymName, SYM_NAME);
+    WdfDeviceInitAssignName(pDeviceInit, &suDevName);
+    WdfDeviceCreate(&amp;pDeviceInit, WDF_NO_OBJECT_ATTRIBUTES, &device);
+    WdfDeviceCreateSymbolicLink(device, &szSymName);
+
+    // Step 3 
+    WDF_IO_QUEUE_CONFIG_INIT_DEFAULT_QUEUE(&amp;ioqueue_cfg, WdfIoQueueDispatchSequential);
+    ioqueue_cfg.EvtIoRead = IrpRead;
+    ioqueue_cfg.EvtIoWrite = IrpWrite;
+    return WdfIoQueueCreate(device, &amp;ioqueue_cfg, WDF_NO_OBJECT_ATTRIBUTES, WDF_NO_HANDLE);
+}
+</pre>
+
+<p>
+<b>Step 1：</b>初始化File Callback以及相關旗標，比較需要注意的是WdfDeviceIoBuffered旗標，因為在做裝置讀寫時，User Application跟驅動程式是否共用同一塊Buffer是取決於該旗標，如果使用者設定成WdfDeviceIoBuffered，則代表驅動程式有自己獨立一塊Buffer，驅動程式讀取完硬體資料後，會複製到它自己的Buffer，然後再複製到User Application的Buffer，所以速度會比較慢一些，如果要共用同一塊Buffer的話，則把旗標設定成WdfDeviceIoDirect即可<br>
+<b>Step 2：</b>產生一個Device Object(可自己決定名稱)，然後建立一條Symbolic Link(可自己決定名稱)，Device Object名稱一般是放在Windows特殊資料夾中的Device資料夾，使用者可以使用WinObj程式去查看有哪些Device Object，而Symbolic Link的名稱則是放在DosDevices資料夾(GLOBAL??)，那User Application該如何把完整路徑名稱給CreateFile()呢？答案是加上<b>\.\\</b>關鍵字，有印象開啟COM Port時，需要使用這樣<b>CreateFile("\\.\\\\COM1", ...);</b>的方式嗎？這就是代表完整路徑的意思，在寫COM Port程式時，不一定說是要大於COM9才能加<b>\.\\</b>路徑，其實從COM1就可以開始使用，因為那是Global的名稱表示方式<br>
+<b>Step 3：</b>初始化其餘Callback
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

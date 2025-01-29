@@ -1,0 +1,165 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../driver.htm">驅動程式</a> - Kernel Mode Driver Framework (KMDF) - 使用範例 - Assembly (MASM32) - PNP - <b>Handle File IRP</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://wasm.in/<br>
+http://four-f.narod.ru/<br>
+https://github.com/steward-fu/ddk<br><br>
+
+main.asm
+</p>
+<pre class="brush:asm">
+.386p
+.model flat, stdcall
+option casemap : none
+ 
+include c:\masm32\Macros\Strings.mac
+include c:\masm32\include\w2k\ntdef.inc
+include c:\masm32\include\w2k\ntstatus.inc
+include c:\masm32\include\w2k\ntddk.inc
+include c:\masm32\include\w2k\ntoskrnl.inc
+include c:\masm32\include\w2k\ntddkbd.inc
+include c:\masm32\include\wdf\umdf\1.9\wudfddi_types.inc
+include c:\masm32\include\wdf\kmdf\1.9\wdf.inc
+include c:\masm32\include\wdf\kmdf\1.9\wdftypes.inc
+include c:\masm32\include\wdf\kmdf\1.9\wdfglobals.inc
+include c:\masm32\include\wdf\kmdf\1.9\wdffuncenum.inc
+include c:\masm32\include\wdf\kmdf\1.9\wdfobject.inc
+include c:\masm32\include\wdf\kmdf\1.9\wdfdevice.inc
+include c:\masm32\include\wdf\kmdf\1.9\wdfdriver.inc
+include c:\masm32\include\wdf\kmdf\1.9\wdfrequest.inc
+include c:\masm32\include\wdf\kmdf\1.9\wdfio.inc
+include c:\masm32\include\wdf\kmdf\1.9\wdfmemory.inc
+ 
+includelib c:\masm32\lib\wxp\i386\BufferOverflowK.lib 
+includelib c:\masm32\lib\wxp\i386\ntoskrnl.lib 
+includelib c:\masm32\lib\wxp\i386\hal.lib 
+includelib c:\masm32\lib\wxp\i386\wmilib.lib 
+includelib c:\masm32\lib\wxp\i386\sehupd.lib 
+includelib c:\masm32\lib\wdf\kmdf\i386\1.9\wdfldr.lib
+includelib c:\masm32\lib\wdf\kmdf\i386\1.9\wdfdriverentry.lib
+ 
+public DriverEntry
+ 
+.code
+IrpFileCreate proc myDevice : WDFDEVICE, myRequest : WDFREQUEST, myFileObject : WDFFILEOBJECT
+    invoke DbgPrint, $CTA0("IRP_MJ_CREATE")
+    invoke WdfRequestComplete, myRequest, STATUS_SUCCESS
+    ret
+IrpFileCreate endp
+ 
+IrpFileClose proc myFileObject : WDFFILEOBJECT
+    invoke DbgPrint, $CTA0("IRP_MJ_CLOSE")
+    ret
+IrpFileClose endp
+ 
+IrpRead proc myQueue : WDFQUEUE, myRequest : WDFREQUEST, myLen : DWORD
+    invoke DbgPrint, $CTA0("IRP_MJ_READ")
+    invoke WdfRequestCompleteWithInformation, myRequest, STATUS_SUCCESS, 0
+    ret
+IrpRead endp
+ 
+IrpWrite proc myQueue : WDFQUEUE, myRequest : WDFREQUEST, myLen : DWORD
+    invoke DbgPrint, $CTA0("IRP_MJ_WRITE")
+    invoke WdfRequestCompleteWithInformation, myRequest, STATUS_SUCCESS, myLen
+    ret
+IrpWrite endp
+ 
+AddDevice proc myDriver : WDFDRIVER, pMyDeviceInit : PWDFDEVICE_INIT
+    local device : WDFDEVICE
+    local io_cfg : WDF_IO_QUEUE_CONFIG
+    local file_cfg : WDF_FILEOBJECT_CONFIG
+    local suDevName : UNICODE_STRING
+    local szSymName : UNICODE_STRING
+ 
+    invoke RtlInitUnicodeString, addr suDevName, $CTW0("\\Device\\MyDriver")
+    invoke RtlInitUnicodeString, addr szSymName, $CTW0("\\DosDevices\\MyDriver")
+    invoke WdfDeviceInitAssignName, pMyDeviceInit, addr suDevName
+     
+    invoke WdfDeviceInitSetIoType, pMyDeviceInit, WdfDeviceIoBuffered
+    invoke WDF_FILEOBJECT_CONFIG_INIT, addr file_cfg, offset IrpFileCreate, offset IrpFileClose, NULL
+    invoke WdfDeviceInitSetFileObjectConfig, pMyDeviceInit, addr file_cfg, WDF_NO_OBJECT_ATTRIBUTES
+    invoke WdfDeviceCreate, addr pMyDeviceInit, WDF_NO_OBJECT_ATTRIBUTES, addr device
+    invoke WdfDeviceCreateSymbolicLink, device, addr szSymName
+     
+    invoke WDF_IO_QUEUE_CONFIG_INIT_DEFAULT_QUEUE, addr io_cfg, WdfIoQueueDispatchSequential
+    lea eax, io_cfg
+    mov (WDF_IO_QUEUE_CONFIG ptr [eax]).EvtIoRead, offset IrpRead
+    mov (WDF_IO_QUEUE_CONFIG ptr [eax]).EvtIoWrite, offset IrpWrite
+    invoke WdfIoQueueCreate, device, addr io_cfg, WDF_NO_OBJECT_ATTRIBUTES, WDF_NO_HANDLE
+    ret
+AddDevice endp
+ 
+DriverEntry proc pMyDriver : PDRIVER_OBJECT, pMyRegistry : PUNICODE_STRING
+    local config : WDF_DRIVER_CONFIG
+     
+    invoke WDF_DRIVER_CONFIG_INIT, addr config, AddDevice
+    invoke WdfDriverCreate, pMyDriver, pMyRegistry, WDF_NO_OBJECT_ATTRIBUTES, addr config, WDF_NO_HANDLE
+    ret
+DriverEntry endp
+end DriverEntry
+.end
+</pre><br>
+
+<p>
+app.asm
+</p>
+<pre class="brush:asm">
+.386p
+.model flat, stdcall
+option casemap : none
+    
+include c:\masm32\include\windows.inc
+include c:\masm32\include\masm32.inc
+include c:\masm32\include\user32.inc
+include c:\masm32\include\msvcrt.inc
+include c:\masm32\include\kernel32.inc
+    
+includelib c:\masm32\lib\user32.lib
+includelib c:\masm32\lib\masm32.lib
+includelib c:\masm32\lib\msvcrt.lib
+includelib c:\masm32\lib\kernel32.lib
+    
+.const
+DEV_NAME    db "\\.\MyDriver",0
+MSG_INFO    db "I am error",0
+MSG_WR      db "WR: %s, %d",10,13,0
+MSG_RD      db "RD: %s, %d",10,13,0
+    
+.data?
+hFile       dd ?
+dwRet       dd ?
+szBuffer    db 255 dup(?)
+    
+.code
+start:
+    invoke CreateFile, offset DEV_NAME, GENERIC_READ or GENERIC_WRITE, FILE_SHARE_READ, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0
+    mov hFile, eax
+    
+    invoke StrLen, offset MSG_INFO
+    mov dwRet, eax
+   
+    invoke crt_printf, offset MSG_WR, offset MSG_INFO, dwRet
+    invoke WriteFile, hFile, offset MSG_INFO, dwRet, offset dwRet, 0
+   
+    invoke crt_memset, offset szBuffer, 0, 255
+    invoke ReadFile, hFile, offset szBuffer, 255, offset dwRet, 0
+    invoke crt_printf, offset MSG_RD, offset szBuffer, dwRet
+   
+    invoke CloseHandle, hFile
+    invoke ExitProcess, 0
+end start
+.end
+</pre><br>
+
+<p>
+完成<br>
+<img src="wdm_asm_file/1.jpg" class="maxSize"><br>
+<img src="wdm_asm_file/2.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
