@@ -1,0 +1,72 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../driver.htm">驅動程式</a> - Linux Device Driver (LDD) - 使用範例 - C/C++ (Debian) - <b>Netfilter Hooking</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/jdaeman/example/blob/master/netfilter.c<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;linux/module.h&gt;
+#include &lt;linux/kernel.h&gt;
+#include &lt;linux/sched.h&gt;
+#include &lt;linux/netfilter.h&gt;
+#include &lt;linux/netfilter_arp.h&gt;
+#include &lt;linux/skbuff.h&gt; 
+#include &lt;linux/ip.h&gt;
+#include &lt;linux/if_ether.h&gt;
+
+struct nf_hook_ops hook;
+
+unsigned int hook_func(void *priv, struct sk_buff *skb, const struct nf_hook_state *state)
+{
+	struct iphdr *ip = ip_hdr(skb);
+	struct ethhdr *eth = eth_hdr(skb);
+
+	printk("caller: %s\n", current-&gt;comm);
+	printk("mac: %pM\n", eth-&gt;h_source);
+	printk("ip protocol: %d\n", ip-&gt;protocol);
+	printk("%pI4 -&gt; %pI4\n", &amp;ip-&gt;saddr, &amp;ip-&gt;daddr);
+
+	return NF_ACCEPT;
+}
+
+int ldd_init(void)
+{
+	hook.hook = hook_func;
+	hook.hooknum = NF_INET_POST_ROUTING;
+	hook.pf = NFPROTO_INET;
+
+	nf_register_net_hook(&amp;init_net, &amp;hook);
+	return 0;
+}
+
+void ldd_exit(void)
+{
+	nf_unregister_net_hook(&amp;init_net, &amp;hook);
+}
+
+module_init(ldd_init);
+module_exit(ldd_exit);
+
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("Steward Fu");
+MODULE_DESCRIPTION("Linux Driver");
+</pre><br>
+
+<p>
+完成
+</p>
+<pre>
+$ sudo dmesg
+    [ 5010.031240] caller: k3s-server
+    [ 5010.031242] mac: ff:ff:ff:a8:82:82
+    [ 5010.031244] ip protocol: 6
+    [ 5010.031245] 127.0.0.1 -&gt; 127.0.0.1
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

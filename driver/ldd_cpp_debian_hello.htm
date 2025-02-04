@@ -1,0 +1,67 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../driver.htm">驅動程式</a> - Linux Device Driver (LDD) - 使用範例 - C/C++ (Debian) - <b>Hello, world!</b></h3>
+<hr size="1"><br>
+<p>
+<b>Hello, world!</b>是一個相當經典的入門教學範例，從這個範例的框架，使用者可以一探Linux Kernel的精簡之美，當然，它主要表達的目的，更多是對於操作環境的熟悉<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;linux/module.h&gt;
+#include &lt;linux/kernel.h&gt;
+
+int ldd_init(void)
+{
+    printk("Hello, world!\n");
+    return 0;
+}
+ 
+void ldd_exit(void)
+{
+}
+ 
+module_init(ldd_init);
+module_exit(ldd_exit);
+ 
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("Steward Fu");
+MODULE_DESCRIPTION("Linux Driver");
+</pre>
+<p>
+<b>ldd_init</b>: 載入驅動程式時，系統會呼叫使用<br>
+<b>ldd_exit</b>: 卸載驅動程式時，系統會呼叫使用<br><br>
+
+Makefile
+</p>
+<pre>
+KERNEL=/usr/src/linux-headers-`uname -r`
+
+obj-m += main.o
+
+all:
+	make -C $(KERNEL) M=$(PWD) modules
+
+clean:
+	make -C $(KERNEL) M=$(PWD) clean
+</pre><br>
+
+<p>
+編譯、測試
+</p>
+<pre>
+$ make
+$ sudo insmod main.ko
+    Hello, world!
+</pre><br>
+
+<p>
+卸載驅動程式
+</p>
+<pre>
+$ sudo rmmod main
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
