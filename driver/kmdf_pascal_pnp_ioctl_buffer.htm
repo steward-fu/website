@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head><script type="text/javascript" src="../page_head.js"></script>
 
-<h3><a href="../driver.htm">驅動程式</a> - Kernel Mode Driver Framework (KMDF) - 使用範例 - Pascal - PNP - Handle File IRP - <b>Choose WdfDeviceIoBuffered</b></h3>
+<h3><a href="../driver.htm">驅動程式</a> - Kernel Mode Driver Framework (KMDF) - 使用範例 - Pascal - PNP - Handle IOCTL IRP - <b>Choose METHOD_BUFFERED</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
@@ -23,6 +23,16 @@ const
     DEV_NAME = '\Device\MyDriver';
     SYM_NAME = '\DosDevices\MyDriver';
 
+    METHOD_BUFFERED = 0;
+    METHOD_IN_DIRECT = 1;
+    METHOD_OUT_DIRECT = 2;
+    METHOD_NEITHER = 3;
+    FILE_ANY_ACCESS = 0;
+    FILE_DEVICE_UNKNOWN = $22;
+
+    IOCTL_GET = (FILE_DEVICE_UNKNOWN shl 16) or (FILE_ANY_ACCESS shl 14) or ($800 shl 2) or (METHOD_BUFFERED);
+    IOCTL_SET = (FILE_DEVICE_UNKNOWN shl 16) or (FILE_ANY_ACCESS shl 14) or ($801 shl 2) or (METHOD_BUFFERED);
+
 function __DriverEntry(pMyDriver : PDRIVER_OBJECT; pMyRegistry : PUNICODE_STRING) : NTSTATUS; stdcall;
  
 implementation
@@ -40,29 +50,26 @@ begin
     DbgPrint('IRP_MJ_CLOSE', []);
 end;
  
-procedure IrpRead(myQueue : WDFQUEUE; myRequest : WDFREQUEST; myLen : ULONG); stdcall;
+procedure IrpIOCTL(myQueue : WDFQUEUE; myRequest : WDFREQUEST; myOutLen : ULONG; myInLen : ULONG; myCode : ULONG); stdcall;
 var
     len : ULONG;
     mem : WDFMEMORY;
-     
-begin
-    DbgPrint('IRP_MJ_READ', []);
-    len := strlen(@szBuffer);
-    WdfRequestRetrieveOutputMemory(myRequest, @mem);
-    WdfMemoryCopyFromBuffer(mem, 0, @szBuffer, len);
-    WdfRequestCompleteWithInformation(myRequest, STATUS_SUCCESS, len);
-end;
  
-procedure IrpWrite(myQueue : WDFQUEUE; myRequest : WDFREQUEST; myLen : ULONG); stdcall;
-var
-    mem : WDFMEMORY;
-
 begin
-    DbgPrint('IRP_MJ_WRITE', []);
-    WdfRequestRetrieveInputMemory(myRequest, @mem);
-    WdfMemoryCopyToBuffer(mem, 0, @szBuffer, myLen);
-    DbgPrint('Buffer: %s, Length:%d', [szBuffer, myLen]);
-    WdfRequestCompleteWithInformation(myRequest, STATUS_SUCCESS, myLen);
+    if myCode = IOCTL_SET then begin
+        DbgPrint('IOCTL_SET', []);
+        WdfRequestRetrieveInputMemory(myRequest, @mem);
+        WdfMemoryCopyToBuffer(mem, 0, @szBuffer, myInLen);
+        DbgPrint('Buffer: %s, Length:%d', [@szBuffer, myInLen]);
+        WdfRequestSetInformation(myRequest, myInLen);
+    end else if myCode = IOCTL_GET then begin
+        DbgPrint('IOCTL_GET', []);
+        WdfRequestRetrieveOutputMemory(myRequest, @mem);
+        WdfMemoryCopyFromBuffer(mem, 0, @szBuffer, myOutLen);
+        len := strlen(@szBuffer);
+        WdfRequestSetInformation(myRequest, len);
+    end;
+    WdfRequestComplete(myRequest, STATUS_SUCCESS);
 end;
  
 function AddDevice(pMyDriver : WDFDRIVER; pMyDeviceInit : PWDFDEVICE_INIT) : NTSTATUS; stdcall;
@@ -85,8 +92,7 @@ begin
     WdfDeviceCreateSymbolicLink(device, @szSymName);
      
     WDF_IO_QUEUE_CONFIG_INIT_DEFAULT_QUEUE(@io_cfg, WdfIoQueueDispatchSequential);
-    io_cfg.EvtIoRead := @IrpRead;
-    io_cfg.EvtIoWrite := @IrpWrite;
+    io_cfg.EvtIoDeviceControl := @IrpIOCTL;
     Result := WdfIoQueueCreate(device, @io_cfg, WDF_NO_OBJECT_ATTRIBUTES, WDF_NO_HANDLE);
 end;
  
@@ -104,8 +110,8 @@ end.
 
 <p>
 完成<br>
-<img src="wdm_asm_file_buffer/1.jpg" class="maxSize"><br>
-<img src="wdm_asm_file_buffer/2.jpg" class="maxSize">
+<img src="wdm_asm_ioctl_buffer/1.jpg" class="maxSize"><br>
+<img src="wdm_asm_ioctl_buffer/2.jpg" class="maxSize">
 </p>
 
 <br><script type="text/javascript" src="../tail.js"></script>

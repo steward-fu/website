@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head><script type="text/javascript" src="../page_head.js"></script>
 
-<h3><a href="../driver.htm">驅動程式</a> - Kernel Mode Driver Framework (KMDF) - 使用範例 - Pascal - PNP - Handle File IRP - <b>Choose WdfDeviceIoBuffered</b></h3>
+<h3><a href="../driver.htm">驅動程式</a> - Kernel Mode Driver Framework (KMDF) - 使用範例 - Pascal - PNP - Handle File IRP - <b>Choose WdfDeviceIoNeither</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
@@ -43,25 +43,32 @@ end;
 procedure IrpRead(myQueue : WDFQUEUE; myRequest : WDFREQUEST; myLen : ULONG); stdcall;
 var
     len : ULONG;
+    buf : Pointer;
     mem : WDFMEMORY;
-     
+        
 begin
     DbgPrint('IRP_MJ_READ', []);
+    WdfRequestRetrieveUnsafeUserOutputBuffer(myRequest, myLen, @buf, @len);
+    WdfRequestProbeAndLockUserBufferForWrite(myRequest, buf, len, @mem);
+    buf := WdfMemoryGetBuffer(mem, Nil);
     len := strlen(@szBuffer);
-    WdfRequestRetrieveOutputMemory(myRequest, @mem);
-    WdfMemoryCopyFromBuffer(mem, 0, @szBuffer, len);
+    memcpy(buf, @szBuffer, len);
     WdfRequestCompleteWithInformation(myRequest, STATUS_SUCCESS, len);
 end;
  
 procedure IrpWrite(myQueue : WDFQUEUE; myRequest : WDFREQUEST; myLen : ULONG); stdcall;
 var
+    len : ULONG;
+    buf : Pointer;
     mem : WDFMEMORY;
-
+ 
 begin
     DbgPrint('IRP_MJ_WRITE', []);
-    WdfRequestRetrieveInputMemory(myRequest, @mem);
-    WdfMemoryCopyToBuffer(mem, 0, @szBuffer, myLen);
-    DbgPrint('Buffer: %s, Length:%d', [szBuffer, myLen]);
+    WdfRequestRetrieveUnsafeUserInputBuffer(myRequest, myLen, @buf, @len);
+    WdfRequestProbeAndLockUserBufferForRead(myRequest, buf, len, @mem);
+    buf:= WdfMemoryGetBuffer(mem, Nil);
+    memcpy(@szBuffer, buf, myLen);
+    DbgPrint('Buffer: %s, Length:%d', [@szBuffer, myLen]);
     WdfRequestCompleteWithInformation(myRequest, STATUS_SUCCESS, myLen);
 end;
  
@@ -74,7 +81,7 @@ var
     szSymName : UNICODE_STRING;
  
 begin
-    WdfDeviceInitSetIoType(pMyDeviceInit, WdfDeviceIoBuffered);
+    WdfDeviceInitSetIoType(pMyDeviceInit, WdfDeviceIoNeither);
     WDF_FILEOBJECT_CONFIG_INIT(@file_cfg, @IrpFileCreate, @IrpFileClose, Nil);
     WdfDeviceInitSetFileObjectConfig(pMyDeviceInit, @file_cfg, WDF_NO_OBJECT_ATTRIBUTES);
      
@@ -93,7 +100,7 @@ end;
 function __DriverEntry(pMyDriver : PDRIVER_OBJECT; pMyRegistry : PUNICODE_STRING) : NTSTATUS; stdcall;
 var
     config : WDF_DRIVER_CONFIG;
-     
+
 begin
     WDF_DRIVER_CONFIG_INIT(@config, AddDevice);
     WdfDriverCreate(pMyDriver, pMyRegistry, WDF_NO_OBJECT_ATTRIBUTES, @config, WDF_NO_HANDLE);
