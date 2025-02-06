@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head><script type="text/javascript" src="../page_head.js"></script>
 
-<h3><a href="../driver.htm">驅動程式</a> - Kernel Mode Driver Framework (KMDF) - 使用範例 - C/C++ (PNP) - <b>Hello, world!</b></h3>
+<h3><a href="../driver.htm">驅動程式</a> - Kernel Mode Driver Framework (KMDF) - 使用範例 - C/C++ (WDF) - PNP - <b>Hello, world!</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
@@ -16,23 +16,23 @@ main.c
 #include &lt;ntddk.h&gt;
 #include &lt;wdf.h&gt;
  
-NTSTATUS AddDevice(WDFDRIVER pOurWDF, PWDFDEVICE_INIT pDeviceInit)
+NTSTATUS AddDevice(WDFDRIVER myDriver, PWDFDEVICE_INIT pMyDeviceInit)
 {
     WDFDEVICE device = { 0 };
-    UNICODE_STRING usDeviceName = { 0 };
+    UNICODE_STRING szDeviceName = { 0 };
     
     DbgPrint("Hello, world!");
-    RtlInitUnicodeString(&amp;usDeviceName, L"\\Device\\MyDriver");
-    WdfDeviceInitAssignName(pDeviceInit, &amp;usDeviceName);
-    return WdfDeviceCreate(&amp;pDeviceInit, WDF_NO_OBJECT_ATTRIBUTES, &amp;device);
+    RtlInitUnicodeString(&amp;szDeviceName, L"\\Device\\MyDriver");
+    WdfDeviceInitAssignName(pMyDeviceInit, &amp;szDeviceName);
+    return WdfDeviceCreate(&amp;pMyDeviceInit, WDF_NO_OBJECT_ATTRIBUTES, &amp;device);
 }
  
-NTSTATUS DriverEntry(PDRIVER_OBJECT pOurDriver, PUNICODE_STRING pRegistry)
+NTSTATUS DriverEntry(PDRIVER_OBJECT pMyDriver, PUNICODE_STRING pMyRegistry)
 {
     WDF_DRIVER_CONFIG config = { 0 };
  
     WDF_DRIVER_CONFIG_INIT(&amp;config, AddDevice);
-    return WdfDriverCreate(pOurDriver, pRegistry, WDF_NO_OBJECT_ATTRIBUTES, &amp;config, WDF_NO_HANDLE);
+    return WdfDriverCreate(pMyDriver, pMyRegistry, WDF_NO_OBJECT_ATTRIBUTES, &amp;config, WDF_NO_HANDLE);
 }
 </pre><br>
 
