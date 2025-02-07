@@ -93,6 +93,7 @@ All of files or resources used on my website can be found from the following lin
 [![](img/photos/icesugar-nano.jpg)](https://github.com/steward-fu/website/releases/tag/icesugar-nano)
 [![](img/photos/tiny200.jpg)](https://github.com/steward-fu/website/releases/tag/tiny200)
 [![](img/photos/pi-0.jpg)](https://github.com/steward-fu/website/releases/tag/pi-zero)
+[![](img/photos/xc2c64a.jpg)](https://github.com/steward-fu/website/releases/tag/xc2c64a)
 [![](img/photos/newton.jpg)](https://github.com/steward-fu/website/releases/tag/newton)
 [![](img/photos/nuc977.jpg)](https://github.com/steward-fu/website/releases/tag/nuc977)
 [![](img/photos/nuc972.jpg)](https://github.com/steward-fu/website/releases/tag/nuc972)
