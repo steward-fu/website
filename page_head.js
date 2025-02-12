@@ -54,6 +54,7 @@ document.write('<script type="text/javascript" src="../scripts/shBrushVerilog.js
 document.write('<script type="text/javascript" src="../scripts/shBrushScala.js"></script>');
 document.write('<script type="text/javascript" src="../scripts/shBrushSql.js"></script>');
 document.write('<script type="text/javascript" src="../scripts/shBrushXml.js"></script>');
+document.write('<script type="text/javascript" src="../scripts/shBrushFortran.js"></script>');
 document.write('<script type="text/javascript">SyntaxHighlighter.all();</script>');
 document.write('</head>');
 
