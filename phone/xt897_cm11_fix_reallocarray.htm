@@ -1,0 +1,44 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../phone.htm">手機</a> - Motorola XT897 - CM 11 - Debian - <b>解決Yosys error: ::reallocarray has not been declared問題</b></h3>
+<hr size="1"><br>
+<p>
+問題如下：
+</p>
+<pre>
+In file included from libs/ezsat/../minisat/Solver.h:24,
+                 from libs/ezsat/ezminisat.cc:40:
+libs/ezsat/../minisat/Vec.h: In member function ‘void Minisat::vec&lt;T, _Size&gt;::capacity(Size)’:
+libs/ezsat/../minisat/Vec.h:105:28: error: ‘::reallocarray’ has not been declared
+  105 |             ((data = (T*)::reallocarray(data, (cap += add), sizeof(T))) == NULL)
+      |                            ^~~~~~~~~~~~
+Makefile:728: recipe for target 'libs/ezsat/ezminisat.o' failed
+make: *** [libs/ezsat/ezminisat.o] Error 1
+make: *** Waiting for unfinished jobs....
+</pre><br>
+
+<p>
+解法如下：
+</p>
+<pre>
+$ vim libs/ezsat/../minisat/Vec.h
+     98 template&lt;class T, class _Size&gt;
+     99 void vec&lt;T,_Size&gt;::capacity(Size min_cap) {
+    100     if (cap &gt;= min_cap) return;
+    101     Size add = max((min_cap - cap + 1) &amp; ~1, ((cap &gt;&gt; 1) + 2) &amp; ~1);   // NOTE: grow by approximately 3/2
+    102     const Size size_max = std::numeric_limits&lt;Size&gt;::max();
+    103     if ( ((size_max &lt;= std::numeric_limits&lt;int&gt;::max()) &amp;&amp; (add &gt; size_max - cap))
+    104     ||   (
+    105 //#ifdef _DEFAULT_SOURCE
+    106 //            ((data = (T*)::reallocarray(data, (cap += add), sizeof(T))) == NULL)
+    107 //#else
+    108             ((data = (T*)::realloc(data, (cap += add) * sizeof(T))) == NULL)
+    109 //#endif
+    110     &amp;&amp; errno == ENOMEM) )
+    111         throw OutOfMemoryException();
+    112  }
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
