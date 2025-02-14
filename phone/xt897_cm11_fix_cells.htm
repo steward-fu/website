@@ -1,0 +1,73 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../phone.htm">手機</a> - Motorola XT897 - CM 11 - Debian - <b>解決No such file or directory: MachXO2/timing/speed_1/cells.json問題</b></h3>
+<hr size="1"><br>
+<p>
+問題如下：
+</p>
+<pre>
+Traceback (most recent call last):
+  File "/home/steward/Downloads/nextpnr/machxo2/facade_import.py", line 695, in <module>
+    main()
+  File "/home/steward/Downloads/nextpnr/machxo2/facade_import.py", line 687, in main
+    process_timing_data(dev_family[args.device])
+  File "/home/steward/Downloads/nextpnr/machxo2/facade_import.py", line 297, in process_timing_data
+    with open(timing_dbs.cells_db_path(family, grade)) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/usr/local/share/trellis/database/MachXO2/timing/speed_1/cells.json'
+machxo2/CMakeFiles/nextpnr-machxo2-chipdb.dir/build.make:88: recipe for target 'machxo2/chipdb-1200.bba' failed
+make[2]: *** [machxo2/chipdb-1200.bba] Error 1
+make[2]: *** Waiting for unfinished jobs....
+Traceback (most recent call last):
+  File "/home/steward/Downloads/nextpnr/machxo2/facade_import.py", line 695, in <module>
+    main()
+  File "/home/steward/Downloads/nextpnr/machxo2/facade_import.py", line 687, in main
+    process_timing_data(dev_family[args.device])
+  File "/home/steward/Downloads/nextpnr/machxo2/facade_import.py", line 297, in process_timing_data
+    with open(timing_dbs.cells_db_path(family, grade)) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/usr/local/share/trellis/database/MachXO2/timing/speed_1/cells.json'
+machxo2/CMakeFiles/nextpnr-machxo2-chipdb.dir/build.make:96: recipe for target 'machxo2/chipdb-4000.bba' failed
+make[2]: *** [machxo2/chipdb-4000.bba] Error 1
+Traceback (most recent call last):
+  File "/home/steward/Downloads/nextpnr/machxo2/facade_import.py", line 695, in <module>
+    main()
+  File "/home/steward/Downloads/nextpnr/machxo2/facade_import.py", line 687, in main
+    process_timing_data(dev_family[args.device])
+  File "/home/steward/Downloads/nextpnr/machxo2/facade_import.py", line 297, in process_timing_data
+    with open(timing_dbs.cells_db_path(family, grade)) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/usr/local/share/trellis/database/MachXO3/timing/speed_5/cells.json'
+machxo2/CMakeFiles/nextpnr-machxo2-chipdb.dir/build.make:104: recipe for target 'machxo2/chipdb-6900.bba' failed
+make[2]: *** [machxo2/chipdb-6900.bba] Error 1
+CMakeFiles/Makefile2:577: recipe for target 'machxo2/CMakeFiles/nextpnr-machxo2-chipdb.dir/all' failed
+make[1]: *** [machxo2/CMakeFiles/nextpnr-machxo2-chipdb.dir/all] Error 2
+Makefile:135: recipe for target 'all' failed
+make: *** [all] Error 2
+</pre><br>
+
+<p>
+解法如下：
+</p>
+<pre>
+$ cd
+$ git clone https://github.com/YosysHQ/nextpnr nextpnr_master
+$ cd nextpnr_master
+$ git submodule update --init --recursive
+$ vim machxo2/CMakeLists.txt
+    set(MACHXO2_DEVICES 1200 4000 6900 CACHE STRING
+        "Include support for these MachXO2/XO3 devices (available: ${ALL_MACHXO2_DEVICES})")
+    message(STATUS "Enabled MachXO2/XO3 devices: ${MACHXO2_DEVICES}")
+
+$ mkdir build
+$ cd build
+$ cmake -DARCH=machxo2 -DTRELLIS_INSTALL_PREFIX=/usr/local ..
+    - Enabled MachXO2/XO3 devices: 1200;4000;6900
+
+$ make -j4
+$ sudo make install
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
