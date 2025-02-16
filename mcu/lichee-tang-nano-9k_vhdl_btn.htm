@@ -1,0 +1,68 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - Gowin GW1NR-LV9QN88PC6/I5 (Lichee Tang Nano 9K) - VHDL - <b>LED</b></h3>
+<hr size="1"><br>
+<p>
+main.vhd
+</p>
+<pre class="brush:pascal">
+library ieee;
+use ieee.std_logic_1164.all;
+      
+entity main is
+    port(
+        btn : in bit;
+        led : out bit
+    );
+end main;
+      
+architecture logic of main is
+begin
+    led &lt;= btn;
+end logic;
+</pre><br>
+
+<p>
+main.cst
+</p>
+<pre>
+IO_LOC "led" 10;
+IO_LOC "btn" 4;
+</pre><br>
+
+<p>
+Makefile
+</p>
+<pre>
+all:
+	yosys -m ghdl -p "ghdl main.vhd -e main; synth_gowin -json main.json -top main"
+	nextpnr-himbaechel --json main.json --write main.pack --device GW1NR-LV9QN88PC6/I5 --vopt family=GW1N-9C --vopt cst=main.cst
+	gowin_pack -d GW1N-9C -o main.fs main.pack
+
+ram:
+	openFPGALoader -m -b tangnano9k main.fs
+
+flash:
+	openFPGALoader -f -b tangnano9k main.fs
+
+clean:
+	rm -f *.json *.fs *.pack
+</pre><br>
+
+<p>
+編譯、下載
+</p>
+<pre>
+$ make
+$ make ram
+</pre><br>
+
+<p>
+完成<br>
+<img src="lichee-tang-nano-9k_vhdl_btn/1.jpg" class="maxSize"><br>
+<img src="lichee-tang-nano-9k_vhdl_btn/2.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
