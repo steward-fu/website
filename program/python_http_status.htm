@@ -1,0 +1,70 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - Python - v3.x - <b>HTTP Status Code</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://en.wikipedia.org/wiki/List_of_HTTP_status_codes<br>
+https://stackoverflow.com/questions/37445901/how-to-return-http-303-from-python<br><br>
+
+server.py
+</p>
+<pre class="brush:python">
+from http.server import HTTPServer, BaseHTTPRequestHandler
+
+class WebServerHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        r = self.path.split('/')
+        self.send_response(int(r[-1]))
+        self.send_header('Content-type', 'text/html')
+        self.send_header('Location', 'http://www.example.com')
+        self.end_headers()
+
+    def do_POST(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'text/html')
+        self.send_header('Location', '/')
+        self.end_headers()
+
+def main():
+    try:
+        port = 8080
+        server = HTTPServer(('', port), WebServerHandler)
+        print("Web server is running on port {}".format(port))
+        server.serve_forever()
+
+    except KeyboardInterrupt:
+        print("^C entered, stopping web server...")
+        server.socket.close()
+
+if __name__ == '__main__':
+    main()
+</pre><br>
+
+<p>
+client.py
+</p>
+<pre class="brush:python">
+import sys
+import requests
+
+response = requests.get('http://127.0.0.1:8080/{}'.format(sys.argv[1]))
+print(f'status code: {response.status_code}')
+</pre><br>
+
+<p>
+測試
+</p>
+<pre>
+$ sudo python3 ./server.py&amp;
+
+$ sudo python3 ./client.py 300
+    status code: 300
+
+$ sudo python3 ./client.py 400
+    status code: 400
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
