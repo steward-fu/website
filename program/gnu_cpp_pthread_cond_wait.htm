@@ -1,0 +1,43 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - GNU - C/C++ - <b>PThread Wait On Condition</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://pubs.opengroup.org/onlinepubs/9699919799/functions/pthread_cond_timedwait.html<br>
+https://stackoverflow.com/questions/16522858/understanding-of-pthread-cond-wait-and-pthread-cond-signal<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt; 
+#include &lt;unistd.h&gt; 
+#include &lt;pthread.h&gt; 
+
+pthread_cond_t cond = PTHREAD_COND_INITIALIZER; 
+pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER; 
+
+void* thread_handler(void *arg) 
+{
+    pthread_mutex_lock(&amp;lock); 
+    pthread_cond_wait(&amp;cond, &amp;lock); 
+    pthread_mutex_unlock(&amp;lock); 
+    return NULL; 
+}    
+
+int main(int argc, char *argv[]) 
+{ 
+    pthread_t tid = { 0 };
+
+    pthread_create(&amp;tid, NULL, thread_handler, NULL);
+
+    sleep(1); 
+    pthread_cond_signal(&amp;cond); 
+    pthread_join(tid, NULL); 
+    return 0; 
+}
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
