@@ -1,0 +1,59 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - GNU - <b>Makefile Template (*.c:*.bin)</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://stackoverflow.com/questions/26133377/understanding-makefile-with-c-o-and<br><br>
+
+每個*.c各自編譯成Binary
+</p>
+<pre>
+CROSS   = arm-linux-gnueabihf-
+CFLAGS  = -Wall
+LDFLAGS = -lm
+SRCS    = $(wildcard *.c)
+OBJS    = $(SRCS:c=o)
+BINS    = $(SRCS:.c=)
+
+export PATH=/opt/XXX/bin:$(shell echo $$PATH)
+
+.PHONY: all
+all: $(BINS)
+
+$(BINS): % : %.c
+	$(CROSS)gcc $(CFLAGS) $(LDFLAGS) $&lt; -o $@
+
+.PHONY: clean
+clean:
+	rm -rf $(BINS) $(OBJS)
+</pre>
+
+<p>
+</p>
+所有*.c編譯成一個Binary
+<pre>
+CROSS   = arm-linux-gnueabihf-
+CFLAGS  = -Wall
+LDFLAGS = -lm
+TARGET  = test
+SRCS    = $(wildcard *.c)
+OBJS    = $(SRCS:c=o)
+
+export PATH=/opt/XXX/bin:$(shell echo $$PATH)
+
+.PHONY: all
+all: $(OBJS)
+	$(CROSS)gcc $(CFLAGS) $(LDFLAGS) $&lt; -o $(TARGET)
+
+%.o: %.c
+	$(CROSS)gcc $(CFLAGS) $(LDFLAGS) $&lt; -c $@
+
+.PHONY: clean
+clean:
+	rm -rf $(BINS) $(OBJS)
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
