@@ -2,13 +2,14 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head><script type="text/javascript" src="../page_head.js"></script>
 
-<h3><a href="../index.htm">掌機</a> - Miyoo Flip - C/C++ - DRM/KMS - <b>Double Framebuffer</b></h3>
+<h3><a href="../index.htm">掌機</a> - Miyoo Flip - C/C++ - DRM/KMS - <b>Handle Flip</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
 https://gist.github.com/dvdhrm/5083553<br>
 https://www.kernel.org/doc/html/v4.15/gpu/drm-kms.html<br>
-https://github.com/grate-driver/libdrm/blob/master/xf86drmMode.h<br><br>
+https://github.com/grate-driver/libdrm/blob/master/xf86drmMode.h<br>
+https://gist.github.com/Miouyouyou/89e9fe56a2c59bce7d4a18a858f389ef<br><br>
 
 main.c
 </p>
@@ -22,19 +23,31 @@ main.c
 #include &lt;unistd.h&gt;
 #include &lt;xf86drm.h&gt;
 #include &lt;xf86drmMode.h&gt;
+
+static int waiting_for_flip = 0;
  
+static void flip_handler(int fd, unsigned int frame, unsigned int sec, unsigned int usec, void *data)
+{
+    *((int *)data) = 0;
+}
+
+drmEventContext evctx = {
+    .version = DRM_EVENT_CONTEXT_VERSION,
+    .page_flip_handler = flip_handler,
+};
+
 int main(int argc, char *argv[])
 {
     const int w = 640;
     const int h = 480;
     const int bpp = 32;
     const int depth = 24;
-
+ 
     int i = 0;
     int j = 0;
     int r = 0;
     int fd = -1;
-    uint32_t fb[2] = { 0 };
+    uint32_t fb = 0;
     drmModeRes *res = NULL;
     drmModeCrtc *crtc = NULL;
     drmModeEncoder *enc = NULL;
@@ -42,43 +55,47 @@ int main(int argc, char *argv[])
     struct drm_mode_map_dumb mreq = { 0 };
     struct drm_mode_create_dumb creq = { 0 };
     struct drm_mode_destroy_dumb dreq = { 0 };
-
+ 
     fd = open("/dev/dri/card0", O_RDWR | O_CLOEXEC);
     res = drmModeGetResources(fd);
     conn = drmModeGetConnector(fd, res-&gt;connectors[1]);
     enc = drmModeGetEncoder(fd, res-&gt;encoders[2]);
     crtc = drmModeGetCrtc(fd, res-&gt;crtcs[1]);
-
+ 
     creq.bpp = bpp;
     creq.width = w;
     creq.height = h;
     drmIoctl(fd, DRM_IOCTL_MODE_CREATE_DUMB, &amp;creq);
-    drmModeAddFB(fd, creq.width, creq.height, depth, creq.bpp, creq.pitch, creq.handle, &amp;fb[0]);
-    drmModeAddFB(fd, creq.width, creq.height, depth, creq.bpp, creq.pitch, creq.handle, &amp;fb[1]);
+    drmModeAddFB(fd, creq.width, creq.height, depth, creq.bpp, creq.pitch, creq.handle, &amp;fb);
     mreq.handle = creq.handle;
     drmIoctl(fd, DRM_IOCTL_MODE_MAP_DUMB, &amp;mreq);
+    drmModeSetCrtc(fd, crtc-&gt;crtc_id, fb, 0, 0, (uint32_t *)conn, 1, &amp;crtc-&gt;mode);
 
     uint8_t *map = mmap(0, creq.size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, mreq.offset);
     uint32_t color[] = { 0xff0000, 0x00ff00, 0x0000ff };
     uint32_t cc = 0;
     while (1) {
         uint32_t *p = (uint32_t *)map;
-
-        drmModeSetCrtc(fd, crtc-&gt;crtc_id, fb[cc % 2], 0, 0, (uint32_t *)conn, 1, &amp;crtc-&gt;mode);
+ 
         for (i = 0; i &lt; h; i++) {
             for (j = 0; j &lt; w; j++) {
                 *p++ = color[cc % 3];
             }
         }
         cc += 1;
-    }
 
+        waiting_for_flip = 1;
+        drmModePageFlip(fd, crtc-&gt;crtc_id, fb, DRM_MODE_PAGE_FLIP_EVENT, (void *)&amp;waiting_for_flip);
+        while (waiting_for_flip) {
+            drmHandleEvent(fd, &amp;evctx);
+        }
+    }
+ 
     munmap(map, creq.size);
-    drmModeRmFB(fd, fb[0]);
-    drmModeRmFB(fd, fb[1]);
+    drmModeRmFB(fd, fb);
     dreq.handle = creq.handle;
     drmIoctl(fd, DRM_IOCTL_MODE_DESTROY_DUMB, &amp;dreq);
-
+ 
     drmModeFreeCrtc(crtc);
     drmModeFreeEncoder(enc);
     drmModeFreeConnector(conn);
