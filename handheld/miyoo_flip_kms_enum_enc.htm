@@ -2,11 +2,12 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head><script type="text/javascript" src="../page_head.js"></script>
 
-<h3><a href="../index.htm">掌機</a> - Miyoo Flip - C/C++ - DRM/KMS - <b>Enum Mode</b></h3>
+<h3><a href="../index.htm">掌機</a> - Miyoo Flip - C/C++ - DRM/KMS - <b>Enum Encoder</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
-https://www.kernel.org/doc/html/v4.15/gpu/drm-kms.html<br><br>
+https://www.kernel.org/doc/html/v4.15/gpu/drm-kms.html<br>
+https://github.com/grate-driver/libdrm/blob/master/xf86drmMode.h<br><br>
 
 main.c
 </p>
@@ -17,32 +18,45 @@ main.c
 #include &lt;unistd.h&gt;
 #include &lt;xf86drm.h&gt;
 #include &lt;xf86drmMode.h&gt;
-
+  
 int main(int argc, char *argv[])
 {
     int i = 0;
-    int j =0;
+    int j = 0;
     int fd = -1;
     drmModeRes *res = NULL;
-
+  
     fd = open("/dev/dri/card0", O_RDWR | O_CLOEXEC);
     res = drmModeGetResources(fd);
-
+  
     for (i = 0; i &lt; res-&gt;count_connectors; i++) {
         drmModeConnector *conn = drmModeGetConnector(fd, res-&gt;connectors[i]);
+
         if (conn) {
             if ((conn-&gt;connection == DRM_MODE_CONNECTED) &amp;&amp; conn-&gt;count_modes) {
-                printf("conn=%d\n", i);
-
+                printf("conn[%d].connector_id=%d\n", i, conn-&gt;connector_id);
+                printf("conn[%d].encoder_id=%d\n", i, conn-&gt;encoder_id);
+  
                 for (j = 0; j &lt; conn-&gt;count_modes; j++) {
                     drmModeModeInfo *mode = &amp;conn-&gt;modes[j];
-
-                    printf("mode=%s\n", mode-&gt;name);
+  
+                    printf("conn[%d].mode[%d]=%s (%dx%dx%d)\n", i, j, mode-&gt;name, mode-&gt;hdisplay, mode-&gt;vdisplay, mode-&gt;vrefresh);
                 }
             }
             drmModeFreeConnector(conn);
         }
     }
+
+    for (i = 0; i &lt; res-&gt;count_encoders; i++) {
+        drmModeEncoder *enc = drmModeGetEncoder(fd, res-&gt;encoders[i]);
+
+        if (enc) {
+            printf("enc[%d].encoder_id=%d\n", i, enc-&gt;encoder_id);
+            printf("enc[%d].crtc_id=%d\n", i, enc-&gt;crtc_id);
+            drmModeFreeEncoder(enc);
+        }
+    }
+
     drmModeFreeResources(res);
     close(fd);
     return 0;
@@ -55,9 +69,16 @@ int main(int argc, char *argv[])
 <pre>
 $ /opt/flip/bin/aarch64-linux-gcc main.c -o main -I/opt/flip/aarch64-flip-linux-gnu/sysroot/usr/include/libdrm -ldrm
 
-oot@rk3566-buildroot:/mnt/SDCARD# ./main 
-    conn=1
-    mode=640x480
+oot@rk3566-buildroot:/mnt/SDCARD# ./main
+    conn[1].connector_id=179
+    conn[1].encoder_id=178
+    conn[1].mode[0]=640x480 (640x480x60)
+    enc[0].encoder_id=161
+    enc[0].crtc_id=0
+    enc[1].encoder_id=163
+    enc[1].crtc_id=0
+    enc[2].encoder_id=178
+    enc[2].crtc_id=107
 </pre>
 
 <br><script type="text/javascript" src="../tail.js"></script>
