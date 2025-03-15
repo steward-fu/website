@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head><script type="text/javascript" src="../page_head.js"></script>
 
-<h3><a href="../index.htm">掌機</a> - Miyoo Mini Plus - C/C++ - SDL v2.0 - <b>Save BMP</b></h3>
+<h3><a href="../index.htm">掌機</a> - Miyoo Mini Plus - C/C++ - SDL v2.0 - OpenGL ES 2.0 - <b>Get Version</b></h3>
 <hr size="1"><br>
 <p>
 main.c
@@ -10,14 +10,25 @@ main.c
 <pre class="brush:cpp">
 #include &lt;stdio.h&gt;
 #include &lt;stdlib.h&gt;
-#include &lt;SDL.h&gt;
-  
+#include &lt;SDL2/SDL.h&gt;
+#include &lt;GLES2/gl2.h&gt;
+ 
 int main(int argc, char **argv)
 {
-    SDL_Surface *bmp = SDL_LoadBMP("main.bmp");
-    SDL_SaveBMP(bmp, "saved.bmp");
-    SDL_FreeSurface(bmp);
-    SDL_Quit();
+    SDL_Window *window = NULL;
+    SDL_GLContext context = {0};
+    const GLubyte *version = NULL;
+ 
+    SDL_Init(SDL_INIT_VIDEO);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+ 
+    window = SDL_CreateWindow("main", 0, 0, 320, 240, SDL_WINDOW_OPENGL);
+    context = SDL_GL_CreateContext(window);
+    version = glGetString(GL_VERSION);
+    printf("Version:%s\n", version);
+    SDL_GL_DeleteContext(context);
     return 0;
 }
 </pre><br>
@@ -33,6 +44,7 @@ $ /opt/mini/bin/arm-linux-gnueabihf-gcc \
 
 # kill -STOP `pidof MainUI`
 # LD_LIBRARY_PATH=.:/config/lib:/customer/lib ./main
+    Version:OpenGL ES 3.0 SwiftShader 4.1.0.7
 # kill -CONT `pidof MainUI`
 </pre>
 
