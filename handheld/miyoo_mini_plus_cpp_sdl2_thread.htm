@@ -1,0 +1,54 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - Miyoo Mini Plus - C/C++ - SDL v2.0 - <b>Thread</b></h3>
+<hr size="1"><br>
+<p>
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include "SDL.h"
+ 
+static int mythread(void *args)
+{
+    printf("%s++\n", __func__);
+    SDL_Delay(1000);
+    printf("%s--\n", __func__);
+    return 0;
+}
+ 
+int main(int argc, char **argv)
+{
+    int ret = 0;
+ 
+    printf("%s++\n", __func__);
+    SDL_Thread *thread = SDL_CreateThread(mythread, "mythread", NULL);
+    SDL_WaitThread(thread, &amp;ret);
+    printf("%s--\n", __func__);
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ bin2header main.wav hex_music &gt; hex_music.h
+$ bin2header effect.wav hex_effect &gt; hex_effect.h
+$ /opt/mini/bin/arm-linux-gnueabihf-gcc \
+    -I/opt/mini/arm-buildroot-linux-gnueabihf/sysroot/usr/include/SDL2 \
+    -lSDL2 -lSDL2_gfx -lSDL2_image -lSDL2_ttf -lSDL2_mixer -lGLESv2 \
+    hello.c -o hello
+
+# kill -STOP `pidof MainUI`
+# LD_LIBRARY_PATH=.:/config/lib:/customer/lib ./main
+    main++
+    mythread++
+    mythread--
+    main--
+# kill -CONT `pidof MainUI`
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
