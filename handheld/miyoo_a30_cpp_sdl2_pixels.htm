@@ -1,0 +1,71 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - Miyoo A30 - C/C++ - SDL v2.0 - <b>Pixels Manipulation</b></h3>
+<hr size="1"><br>
+<p>
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;SDL.h&gt;
+  
+int main(int argc, char **argv)
+{
+    const int w = 320;
+    const int h = 240;
+    const int bpp = 16;
+    SDL_Window *window = NULL;
+    SDL_Surface *screen = NULL;
+    SDL_Texture *texture = NULL;
+    SDL_Renderer *renderer = NULL;
+ 
+    SDL_Init(SDL_INIT_VIDEO);
+    window = SDL_CreateWindow("main", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, w, h, SDL_WINDOW_SHOWN);
+    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+    screen = SDL_CreateRGBSurface(0, w, h, bpp, 0, 0, 0, 0);
+    texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB565, SDL_TEXTUREACCESS_STREAMING, w, h);
+ 
+    int x = 0, y = 0;
+    uint16_t *s = screen-&gt;pixels;
+    for (y = 0; y &lt; 240; y++) {
+        for (x = 0; x &lt; 320; x++) {
+            *s++ = 0x7e0;
+        }
+    }
+ 
+    SDL_UpdateTexture(texture, NULL, screen-&gt;pixels, screen-&gt;pitch);
+    SDL_RenderClear(renderer);
+    SDL_RenderCopy(renderer, texture, NULL, NULL);
+    SDL_RenderPresent(renderer);
+ 
+    SDL_Delay(30000);
+ 
+    SDL_FreeSurface(screen);
+    SDL_DestroyTexture(texture);
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(window);
+    SDL_Quit();
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ /opt/a30/bin/arm-linux-gcc \
+    -I/opt/a30/arm-a30-linux-gnueabihf/sysroot/usr/include/SDL2 \
+    -lSDL2 -lSDL2_gfx -lSDL2_image -lSDL2_ttf -lSDL2_mixer \
+    -lGLESv2 main.c -o main
+
+/mnt/SDCARD# export LD_LIBRARY_PATH=.:/config/lib:/customer/lib:/usr/miyoo/lib
+/mnt/SDCARD# ./main
+</pre>
+<p>
+<img src="miyoo_a30_cpp_sdl2_pixels/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
