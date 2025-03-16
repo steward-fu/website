@@ -1,0 +1,36 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - Simple DirectMedia Layer (SDL) - v2.0 - <b>解決Function無法Export的問題</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://gcc.gnu.org/wiki/Visibility<br><br>
+
+CheckVisibilityHidden()被用來設定<b>-fvisibility=hidden</b>，因此，需要將Makefile檔案中的<b>-fvisibility=hidden</b>改成<b>-fvisibility=default</b>
+</p>
+<pre>
+CheckVisibilityHidden()
+{
+    AC_MSG_CHECKING(for GCC -fvisibility=hidden option)
+    have_gcc_fvisibility=no
+
+    visibility_CFLAGS="-fvisibility=hidden"
+    save_CFLAGS="$CFLAGS"
+    CFLAGS="$save_CFLAGS $visibility_CFLAGS -Werror"
+    AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+    #if !defined(__GNUC__) || __GNUC__ &lt; 4
+    #error SDL only uses visibility attributes in GCC 4 or newer
+    #endif
+    ]],[])], [have_gcc_fvisibility=yes],[])
+    AC_MSG_RESULT($have_gcc_fvisibility)
+    CFLAGS="$save_CFLAGS"
+
+    if test x$have_gcc_fvisibility = xyes; then 
+        EXTRA_CFLAGS="$EXTRA_CFLAGS $visibility_CFLAGS"
+    fi
+}
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

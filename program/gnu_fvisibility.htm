@@ -1,0 +1,53 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - GNU - <b>CFLAGS -fvisibility=hidden</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://gcc.gnu.org/wiki/Visibility<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+
+void test(void);
+
+int main(int argc, char *argv[])
+{
+    test();
+    return 0;
+}
+</pre><br>
+
+<p>
+test.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+
+void test(void)
+{
+}
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ gcc test.c -fPIC -shared -o test.so -fvisibility=hidden
+$ gcc main.c test.so 
+    /usr/bin/ld: /tmp/cctmpXxQ.o: in function `main':
+    main.c:(.text+0x10): undefined reference to `test'
+    collect2: error: ld returned 1 exit status
+
+$ gcc test.c -fPIC -shared -o test.so -fvisibility=default
+$ gcc main.c test.so 
+</pre>
+<p>
+P.S. <b>-fvisibility</b>用來決定是否隱藏Shared Library的Symbol
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
