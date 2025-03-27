@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head><script type="text/javascript" src="../page_head.js"></script>
 
-<h3><a href="../program.htm">程式語言</a> - uC/GUI - <b>Create MultiPage(Tab)</b></h3>
+<h3><a href="../program.htm">程式語言</a> - uC/GUI - <b>Create Dialog(Modeless)</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
@@ -14,6 +14,13 @@ main.c
 <pre class="brush:cpp">
 #include "GUI.h"
 #include "MULTIPAGE.h"
+
+static GUI_WIDGET_CREATE_INFO info[] = {
+    { FRAMEWIN_CreateIndirect, "Dialog", 0, 10, 10, 200, 100, WM_CF_SHOW, 0},
+    { TEXT_CreateIndirect, "This is a dialog example.", 0, 10, 20, 150, 20, 0, GUI_TA_LEFT },
+    { BUTTON_CreateIndirect, "Yes", 100, 70, 50, 50, 20, BUTTON_CF_SHOW, 0 },
+    { BUTTON_CreateIndirect, "No",  101, 120, 50, 50, 20, BUTTON_CF_SHOW, 0 },
+};
 
 static void WndProc(WM_MESSAGE* pMsg)
 {
@@ -33,20 +40,13 @@ static void WndProc(WM_MESSAGE* pMsg)
 int main(int argc, char *argv[])
 {
     WM_HWIN hWin = 0;
-    MULTIPAGE_Handle hMulti = 0;
   
     GUI_Init();
     GUI_SetBkColor(GUI_GRAY);
     GUI_Clear();
- 
-    hMulti = MULTIPAGE_Create(10, 10, 200, 200, 0, 100, WM_CF_SHOW, 0);
-    hWin = WM_CreateWindow(0, 0, 200, 200, WM_CF_SHOW | WM_CF_MEMDEV, WndProc, 0);
-    MULTIPAGE_AddPage(hMulti, hWin, "Test1");
-    MULTIPAGE_AddPage(hMulti, hWin, "Test2");
-    MULTIPAGE_SetFont(hMulti, &amp;GUI_Font8x16);
-    MULTIPAGE_SetTextColor(hMulti, 0, GUI_BLUE);
-    MULTIPAGE_SelectPage(hMulti, 0);
-    GUI_Delay(3000);
+
+    hWin = GUI_CreateDialogBox(info, GUI_COUNTOF(info), WndProc, 0, 0, 0);
+    // GUI_ExecCreatedDialog(hWin);
     return 0;
 }
 </pre><br>
@@ -59,7 +59,7 @@ $ gcc main.c -o main libucgui.a -IGUI_X -IGUI/Core -IGUI/Widget -IGUI/WM -lSDL
 $ ./main
 </pre>
 <p>
-<img style="border:0px" src="ucgui_create_multipage/1.jpg" class="maxSize">
+<img style="border:0px" src="ucgui_create_dialog/1.jpg" class="maxSize">
 </p>
 
 <br><script type="text/javascript" src="../tail.js"></script>
