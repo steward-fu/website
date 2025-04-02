@@ -1,0 +1,77 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - uC/GUI - <b>Handle Touch Event</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/piyushpandey013/ucGUI<br>
+https://github.com/yongzhena/ucgui-linux<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+ 
+#include "GUI.h"
+#include "MULTIPAGE.h"
+
+#define ID_TEXT 100
+
+static GUI_WIDGET_CREATE_INFO info[] = {
+    { FRAMEWIN_CreateIndirect, "Dialog", 0, 10, 10, 200, 100, WM_CF_SHOW, 0},
+    { TEXT_CreateIndirect, "", ID_TEXT, 10, 20, 200, 20, 0, GUI_TA_LEFT },
+};
+  
+static void WndProc(WM_MESSAGE* pMsg)
+{
+    WM_HWIN hText = 0;
+    GUI_RECT rt = { 0 };
+    char buf[255] ={ 0 };
+    GUI_PID_STATE *tp = NULL;
+
+    switch (pMsg-&gt;MsgId) {
+    case WM_PAINT:
+        WM_GetInsideRect(&amp;rt);
+        GUI_SetBkColor(GUI_GREEN);
+        GUI_ClearRectEx(&amp;rt);
+        break;
+    case WM_TOUCH:
+        tp = (GUI_PID_STATE *)pMsg-&gt;Data.p;
+        if (tp) {
+            sprintf(buf, "Touch X=%d, Y=%d, Pressed=%d", tp-&gt;x, tp-&gt;y, tp-&gt;Pressed);
+
+            hText = WM_GetDialogItem(pMsg-&gt;hWin, ID_TEXT);
+            TEXT_SetText(hText, buf);
+        }
+        break;
+    default:
+        WM_DefaultProc(pMsg);
+    }
+}
+  
+int main(int argc, char *argv[])
+{
+    GUI_Init();
+    GUI_SetBkColor(GUI_GRAY);
+    GUI_Clear();
+  
+    GUI_ExecDialogBox(info, GUI_COUNTOF(info), WndProc, 0, 0, 0);
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ gcc main.c -o main libucgui.a -IGUI_X -IGUI/Core -IGUI/Widget -IGUI/WM -lSDL
+$ ./main
+</pre>
+<p>
+<img style="border:0px" src="ucgui_handle_touchevent/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
