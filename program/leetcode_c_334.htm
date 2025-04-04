@@ -1,0 +1,74 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - LeetCode - C - <b>334. Increasing Triplet Subsequence</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://www.cnblogs.com/grandyang/p/5194599.html<br><br>
+
+題目：<br>
+<img src="leetcode_c_334/1.jpg" class="maxSize"><br><br>
+
+解答1：
+</p>
+<pre class="brush:cpp">
+bool increasingTriplet(int* nums, int numsSize)
+{
+    int cc = 0;
+    int m1 = INT_MAX;
+    int m2 = INT_MAX;
+
+    for (cc = 0; cc &lt; numsSize; cc++) {
+        if (m1 &gt;= nums[cc]) {
+            m1 = nums[cc];
+        }
+        else if (m2 &gt;= nums[cc]) {
+            m2 = nums[cc];
+        }
+        else {
+            return true;
+        }
+    }
+
+    return false;
+}
+</pre><br>
+
+<p>
+解答2：
+</p>
+<pre class="brush:cpp">
+#define min(a, b) a &gt; b ? b : a
+#define max(a, b) a &gt; b ? a : b
+
+bool increasingTriplet(int* nums, int numsSize)
+{
+    int cc = 0;
+    int *r_min = malloc(sizeof(int) * numsSize);
+    int *r_max = malloc(sizeof(int) * numsSize);
+
+    r_min[0] = nums[0];
+    for (cc = 0; cc &lt; (numsSize - 1); cc++) {
+        r_min[cc + 1] = min(r_min[cc], nums[cc]);
+    }
+
+    r_max[numsSize - 1] = nums[numsSize - 1];
+    for (cc = numsSize - 1; cc &gt; 0; cc--) {
+        r_max[cc - 1] = max(r_max[cc], nums[cc]);
+    }
+
+    for (cc = 0; cc &lt; numsSize; cc++) {
+        if ((nums[cc] &gt; r_min[cc]) &amp;&amp; (nums[cc] &lt; r_max[cc])) {
+            return true;
+        }
+    }
+    free(r_min);
+    free(r_max);
+
+    return false;
+}
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
