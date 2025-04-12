@@ -1,0 +1,48 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../driver.htm">驅動程式</a> - Windows NT Driver (Legacy) - 使用範例 - Assembly (ARM64) - <b>Hello, world!</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://wasm.in/<br>
+http://four-f.narod.ru/<br>
+https://github.com/steward-fu/ddk<br><br>
+
+main.asm
+</p>
+<pre class="brush:asm">
+    export DriverEntry
+    extern DbgPrint
+
+    area .data, data, arm64
+Msg dcb "Hello, world!", 0
+
+    area .text, code, arm64, align = 3
+Unload
+    ret
+
+DriverEntry
+    stp fp, lr, [sp, #-0x20]!
+    mov fp, sp
+
+    str x0, [sp, #0x10]
+    str x1, [sp, #0x18]
+
+    adrp x0, Msg
+    bl DbgPrint
+
+    ldr x1, [sp, #0x10]
+    add x1, x1, #0x68
+    adrp x0, Unload
+    str x0, [x1]
+
+    mov x0, #0
+    ldp fp, lr, [sp], #0x20
+    ret
+    end
+</pre>
+<p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
