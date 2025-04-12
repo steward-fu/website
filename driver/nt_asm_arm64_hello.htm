@@ -42,7 +42,53 @@ DriverEntry
     ldp fp, lr, [sp], #0x20
     ret
     end
+</pre><br>
+
+<p>
+Create a new project<br>
+<img src="nt_asm_arm64_hello/1.jpg" class="maxSize"><br><br>
+
+Empty WDM Driver<br>
+<img src="nt_asm_arm64_hello/2.jpg" class="maxSize"><br><br>
+
+hello<br>
+<img src="nt_asm_arm64_hello/3.jpg" class="maxSize"><br><br>
+
+Add New Item<br>
+<img src="nt_asm_arm64_hello/4.jpg" class="maxSize"><br>
+<img src="nt_asm_arm64_hello/5.jpg" class="maxSize"><br><br>
+
+在hello.asm上按下滑鼠右鍵，選擇Properties，將檔案改成<b>Microsoft Macro Assembler</b><br>
+<img src="nt_asm_arm64_hello/6.jpg" class="maxSize"><br><br>
+
+移除hello.inf，只要留下hello.asm即可<br>
+<img src="nt_asm_arm64_hello/7.jpg" class="maxSize"><br><br>
+
+選擇ARM64<br>
+<img src="nt_asm_arm64_hello/8.jpg" class="maxSize"><br><br>
+
+Build =&gt; Rebuild Solution<br>
+<img src="nt_asm_arm64_hello/9.jpg" class="maxSize"><br><br>
+
+在開始安裝驅動程式之前，我們需要先下載除錯工具，讓驅動程式的Debug訊息可以顯示在除錯工具上面，目前在Kernel Mode以及User Mode上，最佳的Debug輸出訊息工具是DbgView，該公司目前已經被Microsoft併購，所以可以從Microsoft網站下載，下載完後執行DbgView並將<b>Capture =&gt; Capture Kernel</b>選項打勾，接著<b>重啟</b>DbgView<br>
+<img src="wdm_asm_hello/1.jpg" class="maxSize"><br><br>
+
+Legacy(NT-Style)驅動程式的安裝很方便，它是使用Service的方式安裝，因此，複製hello.sys到<b>c:\windows\system32\drivers</b>資料夾下並輸入如下命令進行安裝
+</p>
+<pre>
+c:\&gt; sc create MyDriver binpath= c:\windows\system32\drivers\hello.sys type= kernel start= demand error= normal displayname= MyDriver
+c:\&gt; sc start MyDriver
 </pre>
+<p>
+P.S. 要記得在"="前面都需要一個空格<br><br>
+
+輸入完上列指令後，就可以看到輸出的<b>Hello, world!</b>字串<br>
+<img src="wdm_asm_hello/3.jpg" class="maxSize"><br><br>
+
+如果要更方便測試，建議使用Four-F撰寫的KmdManager<br>
+<img src="nt_asm_hello/1.jpg" class="maxSize">
+</p>
+
 <p>
 
 <br><script type="text/javascript" src="../tail.js"></script>
