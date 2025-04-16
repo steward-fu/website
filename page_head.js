@@ -9,7 +9,7 @@ document.write('');
 document.write('-->');
 
 document.write('<title>司徒的教學網站</title>');
-document.write('<meta http-equiv="content-yype" content="text/html; charset=UTF-8" />');
+document.write('<meta http-equiv="content-type" content="text/html; charset=UTF-8" />');
 document.write('<meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />');
 document.write('<meta name="author" content="fullahead.org" />');
 document.write('<meta name="keywords" content="XHTML, CSS, template, FullAhead" />');
