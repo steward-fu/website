@@ -1,0 +1,77 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - LVGL - SDL v1.2 - <b>Hello, world!</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://docs.lvgl.io/master/<br>
+https://github.com/lvgl/lvgl<br>
+https://docs.lvgl.io/master/details/integration/driver/sdl.html<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;unistd.h&gt;
+
+#include &lt;lvgl.h&gt;
+#include &lt;SDL.h&gt;
+
+static lv_display_t *disp = NULL;
+static SDL_Surface *screen = NULL;
+
+static void refresh_cb(lv_timer_t *timer)
+{
+    lv_refr_now(disp);
+}
+
+static void flush_cb(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map)
+{
+    SDL_Flip(screen);
+    lv_display_flush_ready(disp);
+}
+
+int main(int argc, char *argv[])
+{
+    const int w = 320;
+    const int h = 240;
+    const int bpp = 16;
+
+    SDL_Init(SDL_INIT_VIDEO);
+    screen = SDL_SetVideoMode(w, h, bpp, SDL_HWSURFACE);
+
+    lv_init();
+
+    disp = lv_display_create(w, h);
+    lv_display_set_flush_cb(disp, flush_cb);
+    lv_display_set_buffers(disp, screen-&gt;pixels, NULL, w * h * (bpp &gt;&gt; 3), LV_DISPLAY_RENDER_MODE_FULL);
+
+    lv_timer_t * refr_timer = lv_display_get_refr_timer(disp);
+    lv_timer_set_cb(refr_timer, refresh_cb);
+
+    lv_obj_t *label = lv_label_create(lv_screen_active());
+    lv_label_set_text(label, "Hello, world!");
+
+    lv_timer_handler();
+    SDL_Delay(3000);
+
+    SDL_Quit();
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ gcc main.c -o main -I/usr/include/SDL -I/usr/local/include/lvgl/src -llvgl -lSDL
+$ ./main
+</pre>
+<p>
+<img style="border:0px" src="lvgl_sdl_hello/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
