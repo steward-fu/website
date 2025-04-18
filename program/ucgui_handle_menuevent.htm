@@ -1,0 +1,106 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - uC/GUI - <b>Handle Menu Event</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/piyushpandey013/ucGUI<br>
+https://github.com/yongzhena/ucgui-linux<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+#include "GUI.h"
+#include "MENU.h" 
+#include "MULTIPAGE.h"
+  
+static GUI_WIDGET_CREATE_INFO info[] = {
+    { FRAMEWIN_CreateIndirect, "Dialog", 0, 10, 10, 200, 100, WM_CF_SHOW, 0 },
+};
+
+static int add_menu(MENU_Handle hMenu, MENU_Handle hSubMenu, const char *pText, U16 dwID, U16 dwFlags)
+{
+    MENU_ITEM_DATA m = { 0 };
+
+    m.pText = pText;
+    m.hSubmenu = hSubMenu;
+    m.Flags = dwFlags;
+    m.Id = dwID;
+    MENU_AddItem(hMenu, &amp;m);
+
+    return 0;
+}
+
+static int create_menu(WM_HWIN hParent)
+{
+    MENU_Handle hMenu = 0;
+    MENU_Handle hMenuFile = 0;
+
+    hMenu = MENU_CreateEx(0, 0, 0, 0, WM_UNATTACHED, 0, MENU_CF_HORIZONTAL, 100);
+    hMenuFile = MENU_CreateEx(0, 0, 0, 0, WM_UNATTACHED, 0, MENU_CF_VERTICAL, 0);
+    add_menu(hMenuFile, 0, "New", 101, 0);
+    add_menu(hMenuFile, 0, "Open", 102, 0);
+    add_menu(hMenuFile, 0, 0, 0, MENU_IF_SEPARATOR);
+    add_menu(hMenuFile, 0, "Exit", 103, 0);
+
+    add_menu(hMenu, hMenuFile, "File", 0 ,0);
+    FRAMEWIN_AddMenu(hParent, hMenu);
+}
+
+static void WndProc(WM_MESSAGE* pMsg)
+{
+    char buf[255] = { 0 };
+    WM_KEY_INFO* pKeyInfo = NULL;
+    MENU_MSG_DATA *pMenuInfo = NULL;
+   
+    switch (pMsg-&gt;MsgId) {
+    case WM_INIT_DIALOG:
+        create_menu(pMsg-&gt;hWin);
+        break;
+    case WM_MENU:
+        pMenuInfo = (MENU_MSG_DATA *)pMsg-&gt;Data.p;
+        switch (pMenuInfo-&gt;MsgType) {
+        case MENU_ON_ITEMSELECT:
+            if (pMenuInfo-&gt;ItemId == 103) {
+                GUI_EndDialog(pMsg-&gt;hWin, 0);
+                break;
+            }
+            sprintf(buf, "ID %d", pMenuInfo-&gt;ItemId);
+            GUI_MessageBox(buf, "main", GUI_MB_OK);
+            break;
+        }
+        break;
+    default:
+        WM_DefaultProc(pMsg);
+    }
+}
+  
+int main(int argc, char *argv[])
+{
+    GUI_Init();
+    GUI_SetBkColor(GUI_GRAY);
+    GUI_Clear();
+  
+    GUI_ExecDialogBox(info, GUI_COUNTOF(info), WndProc, 0, 0, 0);
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ gcc main.c -o main libucgui.a -IGUI_X -IGUI/Core -IGUI/Widget -IGUI/WM -lSDL
+$ ./main
+</pre>
+<p>
+<img style="border:0px" src="ucgui_handle_menuevent/1.jpg" class="maxSize"><br>
+<img style="border:0px" src="ucgui_handle_menuevent/2.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
