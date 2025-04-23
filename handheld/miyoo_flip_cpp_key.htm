@@ -1,0 +1,64 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - Miyoo Flip - C/C++ - <b>Read Keypad</b></h3>
+<hr size="1"><br>
+<p>
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;termios.h&gt;
+#include &lt;errno.h&gt;
+#include &lt;string.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;pthread.h&gt;
+#include &lt;sys/select.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;linux/input.h&gt;
+  
+int main(int argc, char **argv)
+{
+    int i = 0;
+    int fd = -1;
+    int len = 0;
+    int buf[32] = { 0 };
+
+    fd = open("/dev/miyooio", O_RDONLY);
+
+    while (1) {
+        if (read(fd, buf, sizeof(buf))) {
+            printf("UP     %d\n", buf[4]);
+            printf("DOWN   %d\n", buf[5]);
+            printf("LEFT   %d\n", buf[6]);
+            printf("RIGHT  %d\n", buf[7]);
+            printf("A      %d\n", buf[8]);
+            printf("B      %d\n", buf[0]);
+            printf("X      %d\n", buf[9]);
+            printf("Y      %d\n", buf[1]);
+            printf("L1     %d\n", buf[10]);
+            printf("L2     %d\n", buf[12]);
+            printf("R1     %d\n", buf[11]);
+            printf("R2     %d\n", buf[13]);
+            printf("SELECT %d\n", buf[2]);
+            printf("START  %d\n", buf[3]);
+            printf("MENU   %d\n", buf[16]);
+            printf("VOL+   %d\n", buf[17]);
+            printf("VOL-   %d\n", buf[18]);
+            printf("\n");
+        }
+        usleep(500000);
+    }
+
+    close(fd);
+    return 0;
+}
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
