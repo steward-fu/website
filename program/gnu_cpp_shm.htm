@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head><script type="text/javascript" src="../page_head.js"></script>
 
-<h3><a href="../program.htm">程式語言</a> - GNU - C/C++ - <b>Share Memory</b></h3>
+<h3><a href="../program.htm">程式語言</a> - GNU - C/C++ - <b>Share Memory(shmat)</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
@@ -24,9 +24,11 @@ int main(int argc, char **argv)
     char *p = NULL;
 
     id = shmget(9999, 1024, IPC_CREAT | 0666);
+
     p = shmat(id, NULL, 0);
     strcpy(p, "ipc test\n");
     usleep(1000000);
+
     shmdt(p);
     printf("server:%d\n", shmctl(id, IPC_RMID, 0));
     return 0;
@@ -46,10 +48,12 @@ int main(int argc, char **argv)
     char *p = NULL;
 
     id = shmget(9999, 1024, IPC_CREAT | 0666);
+
     p = shmat(id, NULL, 0);
     for (; *p; p++) {
         printf("%c", *p);
     }
+
     shmdt(p);
     printf("client:%d\n", shmctl(id, IPC_RMID, 0));
     return 0;
@@ -60,8 +64,11 @@ int main(int argc, char **argv)
 編譯、執行
 </p>
 <pre>
+$ gcc client.c -o client
 $ gcc server.c -o server
-$ ./server &amp; ./client 
+
+$ ./server&amp;
+$ ./client 
     ipc test
     client:0
     server:0

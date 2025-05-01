@@ -1,0 +1,87 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - GNU - C/C++ - <b>Share Memory(mmap)</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://stackoverflow.com/questions/22721209/sharing-memory-between-processes-on-linux<br><br>
+
+server.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;string.h&gt;
+#include &lt;sys/mman.h&gt;
+
+#define SHM_NAME     "SHM"
+#define SHM_BUF_SIZE 4096
+
+int main(int argc, char *argv[])
+{
+    int fd = -1;
+    char *buf = NULL;
+
+    fd = shm_open(SHM_NAME, O_CREAT | O_RDWR, 0777);
+    ftruncate(fd, SHM_BUF_SIZE);
+    buf = mmap(NULL, SHM_BUF_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    buf[0] = 0;
+
+    usleep(3000000);
+    printf("%s\n", buf);
+
+    munmap(buf, SHM_BUF_SIZE);
+    shm_unlink(SHM_NAME);
+
+    return 0;
+}
+</pre><br>
+
+<p>
+client.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;string.h&gt;
+#include &lt;sys/mman.h&gt;
+
+#define SHM_NAME     "SHM"
+#define SHM_BUF_SIZE 4096
+
+int main(int argc, char *argv[])
+{
+    int fd = -1;
+    char *buf = NULL;
+
+    fd = shm_open(SHM_NAME, O_RDWR, 0777);
+    buf = mmap(NULL, SHM_BUF_SIZE, PROT_WRITE, MAP_SHARED, fd, 0);
+
+    strcpy(buf, "I am error !");
+
+    munmap(buf, SHM_BUF_SIZE);
+    shm_unlink(SHM_NAME);
+
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ gcc client.c -o client
+$ gcc server.c -o server
+
+$ ./server&amp;
+$ sleep 1
+$ ./client
+    I am error !
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
