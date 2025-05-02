@@ -8,6 +8,7 @@ All of files or resources used on my website can be found from the following lin
 [![](img/photos/wiz.jpg)](https://github.com/steward-fu/website/releases/tag/wiz)
 [![](img/photos/trimui.jpg)](https://github.com/steward-fu/website/releases/tag/trimui)
 [![](img/photos/trimui-smart.jpg)](https://github.com/steward-fu/website/releases/tag/trimui-smart)
+[![](img/photos/trimui-brick.jpg)](https://github.com/steward-fu/website/releases/tag/trimui-brick)
 [![](img/photos/miyoo-flip.jpg)](https://github.com/steward-fu/website/releases/tag/miyoo-flip)
 [![](img/photos/miyoo-a30.jpg)](https://github.com/steward-fu/website/releases/tag/miyoo-a30)
 [![](img/photos/miyoo-mini.jpg)](https://github.com/steward-fu/website/releases/tag/miyoo-mini)
