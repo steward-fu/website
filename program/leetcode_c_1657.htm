@@ -1,0 +1,60 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - LeetCode - C - <b>1657. Determine if Two Strings Are Close</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://www.cnblogs.com/cnoodle/p/14325580.html<br><br>
+
+題目：<br>
+<img src="leetcode_c_1657/1.jpg" class="maxSize"><br><br>
+
+解答：
+</p>
+<pre class="brush:cpp">
+int mysort(const void *a, const void *b)
+{
+    return (*(int *)a) - (*(int *)b);
+}
+
+bool closeStrings(char* word1, char* word2)
+{
+    int cc = 0;
+    int cnt[2][26] = { 0 };
+    int w1_len = strlen(word1);
+    int w2_len = strlen(word2);
+
+    for (cc = 0; cc &lt; w1_len; cc++) {
+        cnt[0][word1[cc] - 'a'] += 1;
+    }
+
+    for (cc = 0; cc &lt; w2_len; cc++) {
+        cnt[1][word2[cc] - 'a'] += 1;
+    }
+
+    for (cc = 0; cc &lt; 26; cc++) {
+        if ((cnt[0][cc] &gt; 0) &amp;&amp; (cnt[1][cc] == 0)) {
+            return false;
+        }
+        
+        if ((cnt[1][cc] &gt; 0) &amp;&amp; (cnt[0][cc] == 0)) {
+            return false;
+        }
+    }
+
+    qsort(&amp;cnt[0][0], 26, sizeof(int), mysort);
+    qsort(&amp;cnt[1][0], 26, sizeof(int), mysort);
+
+    for (cc = 0; cc &lt; 26; cc++) {
+        if (cnt[0][cc] != cnt[1][cc]) {
+            return false;
+        }
+    }
+
+    return true;
+}
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
