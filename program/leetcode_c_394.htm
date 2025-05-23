@@ -1,0 +1,74 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - LeetCode - C - <b>394. Decode String</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://www.cnblogs.com/grandyang/p/5849037.html<br><br>
+
+題目：<br>
+<img src="leetcode_c_394/1.jpg" class="maxSize"><br><br>
+
+解答：
+</p>
+<pre class="brush:cpp">
+char* decodeString(char* s)
+{
+    #define S_MAX_SIZE (300 * 30)
+
+    int v = 0;
+    int c0 = 0;
+    int c1 = 0;
+    int r_idx = 0;
+    int num_idx = 0;
+    int buf_idx = 0;
+    int num[30] = { 0 };
+    int len = strlen(s);
+    char *r = NULL;
+    char buf[30][S_MAX_SIZE] = { 0 };
+
+    r = malloc(S_MAX_SIZE);
+    memset(r, 0, S_MAX_SIZE);
+
+    for (c0 = 0; c0 &lt; len; c0++) {
+        if (isdigit(s[c0])) {
+            v = (10 * v) + (s[c0] - '0');
+            continue;
+        }
+
+        switch (s[c0]) {
+        case '[':
+            num[num_idx++] = v;
+            strcat(buf[buf_idx++], r);
+
+            v = 0;
+            r_idx = 0;
+            memset(r, 0, S_MAX_SIZE);
+            break;
+        case ']':
+            int n = num_idx - 1;
+            int b = buf_idx - 1;
+
+            for (c1 = 0; c1 &lt; num[n]; c1++) {
+                strcat(buf[b], r);
+            }
+            strcpy(r, buf[b]);
+            buf[b][0] = 0;
+
+            r_idx = strlen(r);
+            num_idx -= 1;
+            buf_idx -= 1;
+            break;
+        default:
+            r[r_idx++] = s[c0];
+            break;
+        }
+    }
+
+    return r;
+}
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
