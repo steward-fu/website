@@ -1,0 +1,26 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - Miyoo Flip - <b>如何透過overlayfs修改/usr資料夾</b></h3>
+<hr size="1"><br>
+<pre>
+# cd /mnt/SDCARD
+# mkdir -p ext4
+
+# dd if=/dev/zero of=ext4.img bs=1M count=128
+# mkfs.ext4 ext4.img
+
+# mount -o loop ext4.img ext4
+# mkdir ext4/usr
+# mkdir ext4/usr/work
+# mkdir ext4/usr/merged_usr
+# mkdir ext4/usr/upper
+
+# mount -t overlay overlay -o lowerdir=/usr,upperdir=/mnt/SDCARD/ext4/usr/upper,workdir=/mnt/SDCARD/ext4/usr/work /mnt/SDCARD/ext4/usr/merged_usr
+# mount --bind /mnt/SDCARD/ext4/usr/merged_usr /usr
+
+# touch /usr/lib32
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
