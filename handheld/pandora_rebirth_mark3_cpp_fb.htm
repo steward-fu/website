@@ -22,144 +22,81 @@ main.c
 #include &lt;linux/omapfb.h&gt;
 #include &lt;sys/time.h&gt;
 
-#define FB_MAP_SIZE (800 * 480 * 2 * 2)
-
-static int fbdev[2] = {0};
-static void* fbpixels[2] = {0};
-
-static uint32_t get_ticks(void)
-{
-    struct timeval tv = {0};
-    static struct timeval init_tv = {0};
-
-    gettimeofday(&amp;tv, 0); 
-    if (init_tv.tv_sec == 0) {
-        init_tv = tv;
-    }
-    return ((tv.tv_sec - init_tv.tv_sec) * 1000000) + tv.tv_usec - init_tv.tv_usec;
-}
-
-static void init_fb(void)
+#define W 800
+#define H 480 
+#define FB_MAP_SIZE (W * H * 4 * 2)
+ 
+static int fd = -1;
+static void *pixels = NULL;
+ 
+static int init_fb(void)
 {
     int arg = 0;
-    struct omapfb_mem_info mi = {0};
-    struct omapfb_plane_info pi = {0};
-    struct fb_var_screeninfo vinfo = {0};
-    struct fb_fix_screeninfo finfo = {0};
+    struct omapfb_mem_info mi = { 0 };
+    struct omapfb_plane_info pi = { 0 };
+    struct fb_var_screeninfo vinfo = { 0 };
+    struct fb_fix_screeninfo finfo = { 0 };
+ 
+    fd = open("/dev/fb1", O_RDWR);
 
-    fbdev[0] = open("/dev/fb0", O_RDWR);
-    fbdev[1] = open("/dev/fb1", O_RDWR);
-    ioctl(fbdev[1], OMAPFB_QUERY_PLANE, &amp;pi);
-    ioctl(fbdev[1], OMAPFB_QUERY_MEM, &amp;mi);
-
-    if (pi.enabled) {
-        pi.enabled = 0;
-        ioctl(fbdev[1], OMAPFB_SETUP_PLANE, &amp;pi);
-    }
-
+    ioctl(fd, FBIOGET_VSCREENINFO, &amp;vinfo);
+    ioctl(fd, FBIOGET_FSCREENINFO, &amp;finfo);
+    ioctl(fd, OMAPFB_QUERY_PLANE, &amp;pi);
+    ioctl(fd, OMAPFB_QUERY_MEM, &amp;mi);
+ 
+    pi.enabled = 0;
+    ioctl(fd, OMAPFB_SETUP_PLANE, &amp;pi);
+ 
     mi.size = FB_MAP_SIZE;
-    ioctl(fbdev[1], OMAPFB_SETUP_MEM, &amp;mi);
-
+    ioctl(fd, OMAPFB_SETUP_MEM, &amp;mi);
+ 
+    pi.enabled = 1;
     pi.pos_x = 0;
     pi.pos_y = 0;
-    pi.out_width = 800;
-    pi.out_height = 480;
-    pi.enabled = 1;
-    ioctl(fbdev[1], OMAPFB_SETUP_PLANE, &amp;pi);
+    pi.out_width = W;
+    pi.out_height = H;
+    ioctl(fd, OMAPFB_SETUP_PLANE, &amp;pi);
+ 
+    pixels = mmap(0, FB_MAP_SIZE, PROT_WRITE | PROT_READ, MAP_SHARED, fd, 0);
 
-    ioctl(fbdev[0], FBIOGET_VSCREENINFO, &amp;vinfo);
-    ioctl(fbdev[0], FBIOGET_FSCREENINFO, &amp;finfo);
-    fbpixels[0] = (uint16_t *)mmap(0, FB_MAP_SIZE, PROT_WRITE | PROT_READ, MAP_SHARED, fbdev[0], 0);
-    memset(fbpixels[0], 0, FB_MAP_SIZE);
-    printf("fb0: fd:0x%08lx name:\"%s\" @ 0x%08lx (mmap: 0x%08lx)\n", fbdev[0], finfo.id, finfo.smem_start, fbpixels[0]);
-
-    ioctl(fbdev[1], FBIOGET_VSCREENINFO, &amp;vinfo);
-    ioctl(fbdev[1], FBIOGET_FSCREENINFO, &amp;finfo);
-    fbpixels[1] = (uint16_t *)mmap(0, FB_MAP_SIZE, PROT_WRITE | PROT_READ, MAP_SHARED, fbdev[1], 0);
-    memset(fbpixels[1], 0, FB_MAP_SIZE);
-    printf("fb1: fd:0x%08lx name:\"%s\" @ 0x%08lx (mmap: 0x%08lx)\n", fbdev[1], finfo.id, finfo.smem_start, fbpixels[1]);
+    return 0; 
 }
-
+ 
 static void deinit_fb(void)
 {
-    struct omapfb_plane_info pi = {0};
-
-    if (fbpixels[0]) {
-        munmap(fbpixels[0], FB_MAP_SIZE);
-    }
-
-    if (fbpixels[1]) {
-        munmap(fbpixels[1], FB_MAP_SIZE);
-    }
-
-    if (fbdev[0] &gt; 0) {
-        close(fbdev[0]);
-    }
-
-    if (fbdev[1] &gt; 0) {
-        ioctl(fbdev[1], OMAPFB_QUERY_PLANE, &amp;pi);
-        pi.enabled = 0;
-        ioctl(fbdev[1], OMAPFB_SETUP_PLANE, &amp;pi);
-        close(fbdev[1]);
-    }
+    struct omapfb_plane_info pi = { 0 };
+ 
+    ioctl(fd, OMAPFB_QUERY_PLANE, &amp;pi);
+    pi.enabled = 0;
+    ioctl(fd, OMAPFB_SETUP_PLANE, &amp;pi);
+    munmap(pixels, FB_MAP_SIZE);
+    close(fd);
 }
-
+ 
 int main(int argc, char *args[])
 {
     int x = 0;
     int y = 0;
-    int arg = 0;
+    int r = 0;
     int off = 0;
     int cnt = 600;
-    int index = 0;
-    uint16_t col = 0;
-    uint16_t *p = NULL;
-    uint32_t frame = 0;
-    uint32_t speed_target = 0;
-    uint32_t speed_next = 1000000 / 60;
-    struct fb_var_screeninfo vinfo = {0};
-
+    uint32_t *p = NULL;
+    uint32_t col[] = { 0xff0000, 0xff00, 0xff };
+    struct fb_var_screeninfo vinfo = { 0 };
+ 
     init_fb();
-    ioctl(fbdev[1], FBIOGET_VSCREENINFO, &amp;vinfo);
-    speed_target = get_ticks();
-    while (cnt--) {
-        if (off == 0) {
-            p = fbpixels[1];
-        }
-        else {
-            p = (uint16_t*)fbpixels[1] + (480 * 800);
-        }
+    ioctl(fd, FBIOGET_VSCREENINFO, &amp;vinfo);
 
-        for (y = 0; y &lt; 480; y++) {
-            for (x = 0; x &lt; 800; x++) {
-                *p++ = col;
+    while (cnt--) {
+        p = (uint32_t *)pixels + (W * H * (cnt % 2)); 
+        for (y = 0; y &lt; H; y++) {
+            for (x = 0; x &lt; W; x++) {
+                *p++ = col[cnt % 3];
             }
         }
-        vinfo.yoffset = off;
-        ioctl(fbdev[1], FBIOPAN_DISPLAY, &amp;vinfo);
-        ioctl(fbdev[1], FBIO_WAITFORVSYNC, &amp;arg);
-        off = off ? 0 : 480;
-
-        switch(index) {
-        case 0:
-            index = 1;
-            col = 0xf800;
-            break;
-        case 1:
-            index = 2;
-            col = 0x7e0;
-            break;
-        default:
-            index = 0;
-            col = 0x1f;
-            break;
-        }
-
-        frame += 1;
-        speed_target += speed_next;
-        while (get_ticks() &lt; speed_target) {
-            usleep(5);
-        }
+        vinfo.yoffset = H * (cnt % 2);
+        ioctl(fd, FBIOPAN_DISPLAY, &amp;vinfo);
+        ioctl(fd, FBIO_WAITFORVSYNC, &amp;r);
     }
     deinit_fb();
     return 0;
