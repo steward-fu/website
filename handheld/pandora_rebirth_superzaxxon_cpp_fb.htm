@@ -28,15 +28,54 @@ main.c
  
 static int fd = -1;
 static void *pixels = NULL;
- 
-static int init_fb(void)
+
+static int pre_fb(void)
 {
-    int arg = 0;
     struct omapfb_mem_info mi = { 0 };
     struct omapfb_plane_info pi = { 0 };
     struct fb_var_screeninfo vinfo = { 0 };
     struct fb_fix_screeninfo finfo = { 0 };
+
+    fd = open("/dev/fb1", O_RDWR);
+
+    ioctl(fd, OMAPFB_QUERY_MEM, &amp;mi);
+    ioctl(fd, OMAPFB_QUERY_PLANE, &amp;pi);
+    ioctl(fd, FBIOGET_VSCREENINFO, &amp;vinfo);
+    ioctl(fd, FBIOGET_FSCREENINFO, &amp;finfo);
  
+    pi.enabled = 0;
+    ioctl(fd, OMAPFB_SETUP_PLANE, &amp;pi);
+ 
+    mi.size = FB_MAP_SIZE;
+    ioctl(fd, OMAPFB_SETUP_MEM, &amp;mi);
+ 
+    pi.enabled = 1;
+    pi.pos_x = 0;
+    pi.pos_y = 0;
+    pi.out_width = W;
+    pi.out_height = H;
+    ioctl(fd, OMAPFB_SETUP_PLANE, &amp;pi);
+ 
+    vinfo.xoffset = 0;
+    vinfo.yoffset = 0;  
+    vinfo.xres = W;
+    vinfo.yres = H;
+    vinfo.xres_virtual = W;
+    vinfo.yres_virtual = H * 2;
+    ioctl(fd, FBIOPUT_VSCREENINFO, &amp;vinfo);
+
+    close(fd);
+
+    return 0; 
+}
+ 
+static int init_fb(void)
+{
+    struct omapfb_mem_info mi = { 0 };
+    struct omapfb_plane_info pi = { 0 };
+    struct fb_var_screeninfo vinfo = { 0 };
+    struct fb_fix_screeninfo finfo = { 0 };
+
     fd = open("/dev/fb1", O_RDWR);
 
     ioctl(fd, OMAPFB_QUERY_MEM, &amp;mi);
@@ -99,7 +138,8 @@ int main(int argc, char *args[])
     uint32_t *p = NULL;
     uint32_t col[] = { 0xff0000, 0xff00, 0xff };
     struct fb_var_screeninfo vinfo = { 0 };
- 
+
+    pre_fb(); 
     init_fb();
     ioctl(fd, FBIOGET_VSCREENINFO, &amp;vinfo);
 
