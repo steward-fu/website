@@ -39,10 +39,10 @@ static int init_fb(void)
  
     fd = open("/dev/fb1", O_RDWR);
 
+    ioctl(fd, OMAPFB_QUERY_MEM, &amp;mi);
+    ioctl(fd, OMAPFB_QUERY_PLANE, &amp;pi);
     ioctl(fd, FBIOGET_VSCREENINFO, &amp;vinfo);
     ioctl(fd, FBIOGET_FSCREENINFO, &amp;finfo);
-    ioctl(fd, OMAPFB_QUERY_PLANE, &amp;pi);
-    ioctl(fd, OMAPFB_QUERY_MEM, &amp;mi);
  
     pi.enabled = 0;
     ioctl(fd, OMAPFB_SETUP_PLANE, &amp;pi);
@@ -72,12 +72,20 @@ static int init_fb(void)
  
 static void deinit_fb(void)
 {
+    struct omapfb_mem_info mi = { 0 };
     struct omapfb_plane_info pi = { 0 };
  
+    ioctl(fd, OMAPFB_QUERY_MEM, &amp;mi);
     ioctl(fd, OMAPFB_QUERY_PLANE, &amp;pi);
+
     pi.enabled = 0;
     ioctl(fd, OMAPFB_SETUP_PLANE, &amp;pi);
-    munmap(pixels, FB_MAP_SIZE);
+
+    munmap(pixels, mi.size);
+
+    mi.size = 0;
+    ioctl(fd, OMAPFB_SETUP_MEM, &amp;mi);
+ 
     close(fd);
 }
  
