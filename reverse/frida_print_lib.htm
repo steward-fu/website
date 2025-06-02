@@ -1,0 +1,68 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../reverse.htm">逆向工程</a> - Frida - <b>Print Library Info</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/frida/frida<br>
+https://frida.re/docs/installation/<br><br>
+
+hello.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;unistd.h&gt;
+
+int main(int argc, char *argv[])
+{
+    while (1) {
+        usleep(10000000);
+    }
+
+    return 0;
+}
+</pre><br>
+
+<p>
+hook.py
+</p>
+<pre class="brush:python">
+import frida
+
+session = frida.attach("hello")
+
+script = session.create_script("""
+    rpc.exports.enumerateModules = () =&gt; {
+      return Process.enumerateModules();
+    };
+""")
+
+script.load()
+
+for m in script.exports.enumerate_modules():
+    print(m)
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ pip install frida-tools
+
+$ gcc hello.c -o hello
+$ ./hello&amp;
+
+$ python3 ./hook.py
+    {'name': 'hello', 'base': '0x560ecf270000', 'size': 16416, 'path': '/home/steward/Downloads/hello'}
+    {'name': 'linux-vdso.so.1', 'base': '0x7fff176d0000', 'size': 3421, 'path': 'linux-vdso.so.1'}
+    {'name': 'libc.so.6', 'base': '0x7fb044a19000', 'size': 1970000, 'path': '/usr/lib/x86_64-linux-gnu/libc.so.6'}
+    {'name': 'ld-linux-x86-64.so.2', 'base': '0x7fb044c30000', 'size': 213720, 'path': '/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2'}
+    {'name': 'librt.so.1', 'base': '0x7fb044c12000', 'size': 16416, 'path': '/usr/lib/x86_64-linux-gnu/librt.so.1'}
+    {'name': 'libdl.so.2', 'base': '0x7fb044c17000', 'size': 16400, 'path': '/usr/lib/x86_64-linux-gnu/libdl.so.2'}
+    {'name': 'libm.so.6', 'base': '0x7fb03cf23000', 'size': 913680, 'path': '/usr/lib/x86_64-linux-gnu/libm.so.6'}
+    {'name': 'libpthread.so.0', 'base': '0x7fb044c0d000', 'size': 16400, 'path': '/usr/lib/x86_64-linux-gnu/libpthread.so.0'}
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
