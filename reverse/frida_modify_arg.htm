@@ -1,0 +1,80 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../reverse.htm">逆向工程</a> - Frida - <b>Modify Argument</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/frida/frida<br>
+https://frida.re/docs/installation/<br><br>
+
+hello.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;unistd.h&gt;
+
+static int print_value(int v)
+{
+    printf("%d\n", v);
+}
+
+int main(int argc, char *argv[])
+{
+    int cc = 0;
+
+    printf("print_value()=%p\n", print_value);
+    while (1) {
+        print_value(cc++);
+        usleep(1000000);
+    }
+
+    return 0;
+}
+</pre><br>
+
+<p>
+hook.py
+</p>
+<pre class="brush:python">
+import sys
+import frida
+
+session = frida.attach("hello")
+
+script = session.create_script("""
+Interceptor.attach(ptr("%s"), {
+    onEnter(args) {
+        args[0] = ptr("9999");
+    }
+});
+""" % int(sys.argv[1], 16))
+
+script.load()
+sys.stdin.read()
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ pip install frida-tools
+
+$ gcc hello.c -o hello
+$ ./hello&amp;
+    print_value()=0x555841a18149
+    0
+    1
+    2
+    3
+    4
+    5
+
+$ python3 ./hook.py 0x555841a18149
+    9999
+    9999
+    9999
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
