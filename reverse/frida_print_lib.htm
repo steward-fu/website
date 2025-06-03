@@ -10,38 +10,24 @@ https://github.com/frida/frida<br>
 https://frida.re/docs/functions/<br>
 https://frida.re/docs/installation/<br><br>
 
-hello.c
-</p>
-<pre class="brush:cpp">
-#include &lt;stdio.h&gt;
-#include &lt;unistd.h&gt;
-
-int main(int argc, char *argv[])
-{
-    while (1) {
-        usleep(10000000);
-    }
-
-    return 0;
-}
-</pre><br>
-
-<p>
 hook.py
 </p>
 <pre class="brush:python">
+import os
 import frida
 
-session = frida.attach("hello")
+os.system('sleep 3&amp;')
 
+session = frida.attach("sleep")
+ 
 script = session.create_script("""
     rpc.exports.enumerateModules = () =&gt; {
       return Process.enumerateModules();
     };
 """)
-
+ 
 script.load()
-
+ 
 for m in script.exports.enumerate_modules():
     print(m)
 </pre><br>
@@ -50,18 +36,15 @@ for m in script.exports.enumerate_modules():
 編譯、執行
 </p>
 <pre>
-$ gcc hello.c -o hello
-$ ./hello&amp;
-
 $ python3 ./hook.py
-    {'name': 'hello', 'base': '0x560ecf270000', 'size': 16416, 'path': '/home/steward/Downloads/hello'}
-    {'name': 'linux-vdso.so.1', 'base': '0x7fff176d0000', 'size': 3421, 'path': 'linux-vdso.so.1'}
-    {'name': 'libc.so.6', 'base': '0x7fb044a19000', 'size': 1970000, 'path': '/usr/lib/x86_64-linux-gnu/libc.so.6'}
-    {'name': 'ld-linux-x86-64.so.2', 'base': '0x7fb044c30000', 'size': 213720, 'path': '/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2'}
-    {'name': 'librt.so.1', 'base': '0x7fb044c12000', 'size': 16416, 'path': '/usr/lib/x86_64-linux-gnu/librt.so.1'}
-    {'name': 'libdl.so.2', 'base': '0x7fb044c17000', 'size': 16400, 'path': '/usr/lib/x86_64-linux-gnu/libdl.so.2'}
-    {'name': 'libm.so.6', 'base': '0x7fb03cf23000', 'size': 913680, 'path': '/usr/lib/x86_64-linux-gnu/libm.so.6'}
-    {'name': 'libpthread.so.0', 'base': '0x7fb044c0d000', 'size': 16400, 'path': '/usr/lib/x86_64-linux-gnu/libpthread.so.0'}
+    {'name': 'sleep', 'base': '0x555a4726a000', 'size': 41920, 'path': '/usr/bin/sleep'}
+    {'name': 'linux-vdso.so.1', 'base': '0x7ffcdefa3000', 'size': 3421, 'path': 'linux-vdso.so.1'}
+    {'name': 'libc.so.6', 'base': '0x7ff12a282000', 'size': 1970000, 'path': '/usr/lib/x86_64-linux-gnu/libc.so.6'}
+    {'name': 'ld-linux-x86-64.so.2', 'base': '0x7ff12a499000', 'size': 213720, 'path': '/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2'}
+    {'name': 'libdl.so.2', 'base': '0x7ff12a480000', 'size': 16400, 'path': '/usr/lib/x86_64-linux-gnu/libdl.so.2'}
+    {'name': 'librt.so.1', 'base': '0x7ff12a47b000', 'size': 16416, 'path': '/usr/lib/x86_64-linux-gnu/librt.so.1'}
+    {'name': 'libm.so.6', 'base': '0x7ff12a16b000', 'size': 913680, 'path': '/usr/lib/x86_64-linux-gnu/libm.so.6'}
+    {'name': 'libpthread.so.0', 'base': '0x7ff12a476000', 'size': 16400, 'path': '/usr/lib/x86_64-linux-gnu/libpthread.so.0'}
 </pre>
 
 <br><script type="text/javascript" src="../tail.js"></script>

@@ -1,0 +1,45 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../reverse.htm">逆向工程</a> - Frida - <b>Send Message</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/frida/frida<br>
+https://frida.re/docs/functions/<br>
+https://frida.re/docs/installation/<br><br>
+
+hook.py
+</p>
+<pre class="brush:python">
+import os
+import sys
+import frida
+
+def on_message(message, data):
+    print(message)
+
+os.system('sleep 3&amp;')
+
+session = frida.attach("sleep")
+script = session.create_script("send(1234);")
+script.on('message', on_message)
+script.load()
+
+sys.stdin.read()
+</pre>
+<p>
+P.S. sys.stdin.read()只是用來停留，等待Ctrl+C結束程式<br><br>
+
+編譯、執行
+</p>
+<pre>
+$ python3 ./hook.py
+    {'type': 'send', 'payload': 1234}
+</pre>
+<p>
+P.S. send()用來傳送訊息回Python程式
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
