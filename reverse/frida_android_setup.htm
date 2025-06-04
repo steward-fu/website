@@ -1,0 +1,81 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../reverse.htm">逆向工程</a> - Frida - <b>如何連接到Android裝置做測試</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/frida/frida<br>
+https://frida.re/docs/functions/<br>
+https://frida.re/docs/installation/<br>
+https://github.com/frida/frida/releases<br><br>
+
+PC
+</p>
+<pre>
+$ cd
+$ wget https://github.com/frida/frida/releases/download/17.0.7/frida-server-17.0.7-linux-arm64.xz
+$ xz -d frida-server-17.0.7-linux-arm64.xz
+$ adb push frida-server-17.0.7-linux-arm64 /tmp
+</pre><br>
+
+<p>
+Android
+</p>
+<pre>
+$ su
+# cd /tmp
+# sleep 10000&amp;
+# ./frida-server-17.0.7-linux-arm64 -l 0.0.0.0:8888
+</pre><br>
+
+<p>
+main.py
+</p>
+<pre class="brush:python">
+import os
+import sys
+import frida
+
+REMOTE_IP = "127.0.0.1"
+REMOTE_PORT = 8888
+
+def on_message(message, data):
+    print(message)
+
+device = frida.get_device_manager().add_remote_device(f"{REMOTE_IP}:{REMOTE_PORT}")
+session = device.attach('sleep')
+script = session.create_script("""
+    rpc.exports.enumerateModules = () =&gt; {
+      return Process.enumerateModules();
+    };
+""")
+
+script.on("message", on_message)
+script.load()
+
+for m in script.exports.enumerate_modules():
+    print(m)
+</pre><br>
+
+<p>
+PC上測試
+</p>
+<pre>
+$ adb devices
+    List of devices attached
+    XXXX device
+
+$ adb forward tcp:8888 tcp:8888
+$ python3 main.py 
+    {'name': 'sleep.coreutils', 'base': '0x5575d00000', 'size': 90544, 'path': '/bin/sleep.coreutils'}
+    {'name': 'linux-vdso.so.1', 'base': '0x7fb7c56000', 'size': 2312, 'path': 'linux-vdso.so.1'}
+    {'name': 'libc.so.6', 'base': '0x7fb7a50000', 'size': 1739720, 'path': '/lib/libc.so.6'}
+    {'name': 'ld-linux-aarch64.so.1', 'base': '0x7fb7c1d000', 'size': 250712, 'path': '/lib/ld-linux-aarch64.so.1'}
+    {'name': 'libdl.so.2', 'base': '0x7fb5640000', 'size': 69648, 'path': '/lib/libdl.so.2'}
+    {'name': 'libm.so.6', 'base': '0x7fb55a0000', 'size': 618520, 'path': '/lib/libm.so.6'}
+    {'name': 'libpthread.so.0', 'base': '0x7fb5580000', 'size': 69648, 'path': '/lib/libpthread.so.0'}
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
