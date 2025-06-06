@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head><script type="text/javascript" src="../page_head.js"></script>
 
-<h3><a href="../reverse.htm">逆向工程</a> - Frida - <b>Hook Process Function</b></h3>
+<h3><a href="../reverse.htm">逆向工程</a> - Frida - <b>Hook Module Function (C)</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
@@ -10,29 +10,35 @@ https://github.com/frida/frida<br>
 https://frida.re/docs/functions/<br>
 https://frida.re/docs/installation/<br><br>
 
-hello.c
+main.c
 </p>
 <pre class="brush:cpp">
 #include &lt;stdio.h&gt;
 #include &lt;unistd.h&gt;
 
-static void print_value(int v)
-{
-    printf("%d\n", v);
-}
+void test(int);
 
 int main(int argc, char *argv[])
 {
     int cc = 0;
 
-    printf("print_value()=%p\n", print_value);
-
     while (1) {
-        print_value(cc++);
-        usleep(1000000);
+        test(cc++);
+        sleep(1);
     }
-
     return 0;
+}
+</pre><br>
+
+<p>
+test.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+
+void test(int v)
+{
+    printf("%d\n", v);
 }
 </pre><br>
 
@@ -42,20 +48,36 @@ hook.py
 <pre class="brush:python">
 import sys
 import frida
-
+ 
 def on_message(message, data):
     print(message)
-
-session = frida.attach("hello")
+ 
+session = frida.attach("main")
 
 script = session.create_script("""
-    Interceptor.attach(ptr("%s"), {
-        onEnter(args) {
+    const mylib = "test.so";
+    const myfun = "test";
+
+    let pfun = 0;
+    let m = Process.enumerateModules();
+    for (let i = 0; i &lt; m.length; i++) {
+        if (m[i]["name"] == mylib) {
+            let e = m[i].enumerateExports();
+            for (let j = 0; j &lt; e.length; j++) {
+                if (e[j]["name"] == myfun) {
+                    pfun = e[j]["address"]
+                }
+            }
+        }
+    }
+
+    Interceptor.attach(ptr(pfun), {
+        onEnter: function (args) {
             send(args[0].toInt32());
         }
     });
-""" % int(sys.argv[1], 16))
-
+""")
+ 
 script.on('message', on_message)
 script.load()
 sys.stdin.read()
@@ -65,9 +87,10 @@ sys.stdin.read()
 編譯、執行
 </p>
 <pre>
-$ gcc hello.c -o hello
-$ ./hello&amp;
-    print_value()=0x555841a18149
+$ gcc test.c -o test.so -shared -fPIC
+$ gcc main.c -o main test.so
+
+$ LD_LIBRARY_PATH=. ./main&amp;
     0
     1
     2
@@ -75,7 +98,7 @@ $ ./hello&amp;
     4
     5
 
-$ python3 ./hook.py 0x555841a18149
+$ python3 ./hook.py
     {'type': 'send', 'payload': 6}
     {'type': 'send', 'payload': 7}
     {'type': 'send', 'payload': 8}
