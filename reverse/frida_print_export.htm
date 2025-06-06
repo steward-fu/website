@@ -1,0 +1,72 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../reverse.htm">逆向工程</a> - Frida - <b>Print Export Function</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/frida/frida<br>
+https://frida.re/docs/functions/<br>
+https://frida.re/docs/installation/<br><br>
+
+hook.py
+</p>
+<pre class="brush:python">
+import os
+import sys
+import frida
+
+def on_message(message, data):
+    print(message)
+
+os.system('sleep 3&amp;')
+ 
+session = frida.attach("sleep")
+ 
+script = session.create_script("""
+    main()
+
+    function main() {
+        var m = Process.enumerateModules();
+        for (var i = 0; i &lt; m.length; i++) {
+            send(m[i]);
+
+            var e = m[i].enumerateExports();
+            for (var j = 0; j &lt; e.length; j++) {
+                send(e[j]);
+            }
+        }
+    }
+
+""")
+
+script.on('message', on_message)
+script.load()
+
+sys.stdin.read() 
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ python3 ./hook.py
+    {'type': 'send', 'payload': {'name': 'sleep', 'base': '0x5587da37b000', 'size': 41920, 'path': '/usr/bin/sleep'}}
+    {'type': 'send', 'payload': {'type': 'variable', 'name': 'stdout', 'address': '0x5587da385208'}}
+    {'type': 'send', 'payload': {'type': 'variable', 'name': '__progname', 'address': '0x5587da385200'}}
+    {'type': 'send', 'payload': {'type': 'variable', 'name': 'program_invocation_name', 'address': '0x5587da385218'}}
+    {'type': 'send', 'payload': {'type': 'variable', 'name': '__progname_full', 'address': '0x5587da385218'}}
+    {'type': 'send', 'payload': {'type': 'variable', 'name': 'program_invocation_short_name', 'address': '0x5587da385200'}}
+    {'type': 'send', 'payload': {'type': 'variable', 'name': 'opterr', 'address': '0x5587da385220'}}
+    {'type': 'send', 'payload': {'type': 'variable', 'name': 'stderr', 'address': '0x5587da385240'}}
+    {'type': 'send', 'payload': {'type': 'variable', 'name': 'optind', 'address': '0x5587da385210'}}
+    {'type': 'send', 'payload': {'name': 'linux-vdso.so.1', 'base': '0x7ffc839c9000', 'size': 3421, 'path': 'linux-vdso.so.1'}}
+    {'type': 'send', 'payload': {'name': 'libc.so.6', 'base': '0x7f299c8a1000', 'size': 1970000, 'path': '/usr/lib/x86_64-linux-gnu/libc.so.6'}}
+    {'type': 'send', 'payload': {'type': 'function', 'name': 'fgetc', 'address': '0x7f299c91ece0'}}
+    {'type': 'send', 'payload': {'type': 'function', 'name': 'pthread_attr_setscope', 'address': '0x7f299c928310'}}
+    {'type': 'send', 'payload': {'type': 'function', 'name': 'pthread_attr_getstacksize', 'address': '0x7f299c9280d0'}}
+    ...
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
