@@ -1,0 +1,115 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../reverse.htm">逆向工程</a> - Frida - <b>Load Multiple Scripts</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/frida/frida<br>
+https://frida.re/docs/functions/<br>
+https://frida.re/docs/installation/<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;unistd.h&gt;
+
+void test(int);
+
+int main(int argc, char *argv[])
+{
+    int cc = 0;
+
+    while (1) {
+        test(cc++);
+        sleep(1);
+    }
+    return 0;
+}
+</pre><br>
+
+<p>
+test.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+
+void test(int v)
+{
+    printf("%d\n", v);
+}
+</pre><br>
+
+<p>
+hook.py
+</p>
+<pre class="brush:python">
+import sys
+import frida
+  
+def on_message(message, data):
+    print(message)
+  
+session = frida.attach("main")
+ 
+script = session.create_script("""
+    const mylib = "test.so";
+
+    rpc.exports.enumerateModules = () =&gt; { 
+        let m = Process.enumerateModules();
+        for (let i = 0; i &lt; m.length; i++) {
+            if (m[i]["name"] == mylib) {
+                return m[i].enumerateExports();
+            }
+        }
+        return m;
+    }; 
+""")
+  
+script.on('message', on_message)
+script.load()
+
+addr = 0;
+for m in script.exports.enumerate_modules():
+    if m['name'] == 'test':
+        addr = m['address']
+
+script = session.create_script("""
+    Interceptor.attach(ptr("%s"), {
+        onEnter(args) {
+            send(args[0].toInt32());
+        }
+    });
+""" % addr)
+ 
+script.on('message', on_message)
+script.load()
+
+sys.stdin.read()
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ gcc test.c -o test.so -shared -fPIC
+$ gcc main.c -o main test.so
+
+$ LD_LIBRARY_PATH=. ./main&amp;
+    0
+    1
+    2
+    3
+    4
+    5
+
+$ python3 ./hook.py
+    {'type': 'send', 'payload': 6}
+    {'type': 'send', 'payload': 7}
+    {'type': 'send', 'payload': 8}
+    {'type': 'send', 'payload': 9}
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
