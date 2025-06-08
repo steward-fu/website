@@ -1,0 +1,81 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../reverse.htm">逆向工程</a> - Frida - <b>Hook Module All Functions</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/frida/frida<br>
+https://frida.re/docs/functions/<br>
+https://frida.re/docs/installation/<br><br>
+
+hook.py
+</p>
+<pre class="brush:python">
+import os
+import sys
+import frida
+ 
+def on_message(message, data):
+    print(message)
+  
+os.system('sleep 3&amp;')
+  
+session = frida.attach("sleep")
+   
+script = session.create_script("""
+    var m = Process.enumerateModules();
+    for (var i = 0; i &lt; m.length; i++) {
+        if (m[i]["name"] != "libc.so.6") {
+            continue;
+        }
+
+        var e = m[i].enumerateExports();
+        for (var j = 0; j &lt; e.length; j++) {
+            if (e[j]["type"] == "function") {
+                send("hook " + m[i]["name"] + ":" + e[j]["name"] + "()");
+
+                Interceptor.attach(ptr(e[j]["address"]), {
+                    onEnter: function (args) {
+                        send(e[j]["name"] + ":onEnter()");
+                    },
+                    onLeave(retval) {
+                        send(e[j]["name"] + ":onLeave()");
+                    }
+                });
+            }
+        }
+    }
+""")
+ 
+script.on('message', on_message)  
+script.load()
+ 
+sys.stdin.read()
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ python3 ./hook.py
+    {'type': 'send', 'payload': 'hook libc.so.6:fgetc()'}
+    {'type': 'send', 'payload': 'hook libc.so.6:pthread_attr_setscope()'}
+    {'type': 'send', 'payload': 'hook libc.so.6:pthread_attr_getstacksize()'}
+    {'type': 'send', 'payload': 'hook libc.so.6:envz_strip()'}
+    {'type': 'send', 'payload': 'hook libc.so.6:pthread_attr_getstacksize()'}
+    {'type': 'send', 'payload': 'hook libc.so.6:iruserok_af()'}
+    {'type': 'send', 'payload': 'hook libc.so.6:_nss_files_getpwent_r()'}
+    {'type': 'send', 'payload': 'hook libc.so.6:pthread_setcancelstate()'}
+    {'type': 'send', 'payload': 'hook libc.so.6:cfmakeraw()'}
+    {'type': 'send', 'payload': 'hook libc.so.6:ns_name_pack()'}
+    {'type': 'send', 'payload': 'hook libc.so.6:ns_name_pack()'}
+    {'type': 'send', 'payload': 'hook libc.so.6:_IO_iter_begin()'}
+    {'type': 'send', 'payload': 'hook libc.so.6:globfree()'}
+    ...
+    {'type': 'send', 'payload': 'pthread_rwlock_destroy:onEnter()'}
+    {'type': 'send', 'payload': 'pthread_rwlock_destroy:onLeave()'}
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
