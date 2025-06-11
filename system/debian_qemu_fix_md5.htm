@@ -1,0 +1,32 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../system.htm">系統</a> - Debian - QEMU - <b>解決hash_md5_sha.c:1316:35: error: sha1_process_block64_shaNI undeclared問題</b></h3>
+<hr size="1"><br>
+<p>
+問題如下：
+</p>
+<pre>
+$ ARCH=aarch64 CROSS_COMPILE=aarch64-linux-gnu- make O=out
+      Using busybox-1.37.0 as source for busybox
+      GEN     busybox-1.37.0/out/Makefile
+      CC      libbb/hash_md5_sha.o
+    busybox-1.37.0/libbb/hash_md5_sha.c: In function ‘sha1_end’:
+    busybox-1.37.0/libbb/hash_md5_sha.c:1316:35: error: ‘sha1_process_block64_shaNI’ undeclared (first use in this function); did you mean ‘sha1_process_block64’?
+     1316 |          || ctx-&gt;process_block == sha1_process_block64_shaNI
+          |                                   ^~~~~~~~~~~~~~~~~~~~~~~~~~
+          |                                   sha1_process_block64
+    busybox-1.37.0/libbb/hash_md5_sha.c:1316:35: note: each undeclared identifier is reported only once for each function it appears in
+</pre><br>
+
+<p>
+解法如下：
+</p>
+<pre>
+$ ARCH=aarch64 CROSS_COMPILE=aarch64-linux-gnu- make O=out menuconfig
+    Settings --&gt; [ ] SHA1: Use hardware accelerated instructions if possible
+    Settings --&gt; [ ] SHA256: Use hardware accelerated instructions if possible
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
