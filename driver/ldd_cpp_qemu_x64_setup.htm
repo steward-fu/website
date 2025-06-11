@@ -1,0 +1,57 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../driver.htm">驅動程式</a> - Linux Device Driver (LDD) - 使用範例 - C/C++ (QEMU) - <b>開發環境(x86_64)</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://busybox.net/downloads<br>
+https://cdn.kernel.org/pub/linux/kernel/<br>
+https://www.kernel.org/pub/linux/kernel/v6.x/<br>
+https://www.qemu.org/docs/master/system/riscv/virt.html<br>
+https://gist.github.com/ncmiller/d61348b27cb17debd2a6c20966409e86<br>
+https://jasonblog.github.io/note/arm_emulation/compiling_linux_kernel_for_qemu_arm_emulator.html<br><br>
+
+</p>
+<pre>
+$ cd
+$ wget https://www.kernel.org/pub/linux/kernel/v6.x/linux-6.1.57.tar.gz
+$ tar xvf linux-6.1.57.tar.gz
+$ cd linux-6.1.57
+$ make x86_64_defconfig
+$ make -j4
+
+$ cd
+$ wet https://busybox.net/downloads/busybox-1.37.0.tar.bz2
+$ tar xvf busybox-1.37.0.tar.bz2
+$ cd busybox-1.37.0
+$ mkdir out
+$ make O=out defconfig
+$ make O=out menuconfig
+    Settings --&gt; [V] Build static binary (no shared libs)
+
+$ make O=out -j4
+$ make O=out install
+
+$ cd out/_install/
+$ vim init
+    #!/bin/sh
+    mount -t proc none /proc
+    mount -t sysfs none /sys
+    echo -e "\nBoot took $(cut -d' ' -f1 /proc/uptime) seconds\n"
+    exec /bin/sh
+
+$ chmod +x init
+$ mkdir -pv {bin,sbin,etc,proc,sys,usr/{bin,sbin}}
+$ find . -print0 | cpio --null -ov --format=newc | gzip -9 &gt; ../initramfs-busybox-x86.cpio.gz
+$ cd ..
+
+$ cp ~/linux-6.1.57/arch/x86_64/boot/bzImage .
+$ qemu-system-x86_64 -kernel bzImage -initrd initramfs-busybox-x86.cpio.gz -append "console=ttyS0"
+</pre>
+<p>
+<img src="ldd_cpp_qemu_x64_setup/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
