@@ -1,0 +1,64 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../system.htm">系統</a> - Debian - Performance - <b>如何使用Perf Probe</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://www.brendangregg.com/perf.html<br>
+https://bristot.me/using-perf-probe-to-measure-execution-time-of-user-space-code-on-linux/<br><br>
+
+hello.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+
+void test(void)
+{
+    printf("hello\n");
+}
+
+int main(int argc, char *argv[])
+{
+    test();
+    test();
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ gcc hello.c -o hello -ggdb
+
+$ sudo perf probe --line test -x ./hello
+    &lt;test@/home/steward/Downloads/hello.c:0&gt;
+          0  void test(void)
+             {
+          2      printf("hello\n");
+          3  }
+             
+             int main(int argc, char *argv[])
+             {
+
+$ sudo perf probe -x ./hello 'hello=test:2'
+$ sudo perf stat -e probe_hello:* ./hello
+    hello
+    hello
+
+     Performance counter stats for './hello':
+
+                     2      probe_hello:hello                                                  
+
+           0.001206085 seconds time elapsed
+
+           0.001267000 seconds user
+           0.000000000 seconds sys
+
+$ sudo perf probe --del probe_hello:*
+    Removed event: probe_hello:hello
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
