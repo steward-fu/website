@@ -1,0 +1,249 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../driver.htm">驅動程式</a> - Linux Device Driver (LDD) - 使用範例 - C/C++ (QEMU) - <b>開發環境(ARM32)</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://cdn.kernel.org/pub/linux/kernel/<br>
+https://www.cnblogs.com/polariszg/p/18615278<br>
+https://github.com/byte4RR4Y/aarch64-kernel-for-qemu<br>
+https://www.qemu.org/docs/master/system/riscv/virt.html<br>
+https://jasonblog.github.io/note/arm_emulation/compiling_linux_kernel_for_qemu_arm_emulator.html<br><br>
+
+</p>
+<pre>
+$ cd
+$ wget https://www.kernel.org/pub/linux/kernel/v6.x/linux-6.1.57.tar.gz
+$ tar xvf linux-6.1.57.tar.gz
+$ cd linux-6.1.57
+$ ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- make defconfig
+$ ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- make zImage -j4
+
+$ cd
+$ wget https://busybox.net/downloads/busybox-1.37.0.tar.bz2
+$ tar xvf busybox-1.37.0.tar.bz2
+$ cd busybox-1.37.0
+$ mkdir out
+$ ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- make O=out defconfig
+$ ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- make O=out menuconfig
+    Settings --&gt; [V] Build static binary (no shared libs)
+    Settings --&gt; [ ] SHA1: Use hardware accelerated instructions if possible
+    Settings --&gt; [ ] SHA256: Use hardware accelerated instructions if possible
+
+$ ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- make O=out -j4
+$ ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- make O=out install
+
+$ cd out/_install/
+$ vim init
+    #!/bin/sh
+    mount -t proc none /proc
+    mount -t sysfs none /sys
+    echo -e "\nBoot took $(cut -d' ' -f1 /proc/uptime) seconds\n"
+    exec /bin/sh
+
+$ chmod +x init
+$ mkdir -pv {bin,sbin,etc,proc,sys,usr/{bin,sbin}}
+$ find . -print0 | cpio --null -ov --format=newc | gzip -9 &gt; ../initramfs-busybox.cpio.gz
+$ cd ..
+
+$ cp ~/linux-6.1.57/arch/arm64/boot/Image .
+$ qemu-system-arm -M virt -cpu cortex-a7 -nographic -kernel zImage -append "console=ttyAMA0" --initrd initramfs-busybox.cpio.gz
+    [    0.000000] Booting Linux on physical CPU 0x0
+    [    0.000000] Linux version 6.1.57 (steward@debian) (arm-linux-gnueabihf-gcc (Debian 12.2.0-14) 12.2.0, GNU ld (GNU Binutils for Debian) 2.40) #1 SMP Wed Jun 11 21:00:18 CST 2025
+    [    0.000000] CPU: ARMv7 Processor [410fc075] revision 5 (ARMv7), cr=10c5387d
+    [    0.000000] CPU: div instructions available: patching division code
+    [    0.000000] CPU: PIPT / VIPT nonaliasing data cache, VIPT aliasing instruction cache
+    [    0.000000] OF: fdt: Machine model: linux,dummy-virt
+    [    0.000000] random: crng init done
+    [    0.000000] Memory policy: Data cache writealloc
+    [    0.000000] efi: UEFI not found.
+    [    0.000000] cma: Failed to reserve 64 MiB
+    [    0.000000] Zone ranges:
+    [    0.000000]   DMA      [mem 0x0000000040000000-0x0000000047ffffff]
+    [    0.000000]   Normal   empty
+    [    0.000000]   HighMem  empty
+    [    0.000000] Movable zone start for each node
+    [    0.000000] Early memory node ranges
+    [    0.000000]   node   0: [mem 0x0000000040000000-0x0000000047ffffff]
+    [    0.000000] Initmem setup node 0 [mem 0x0000000040000000-0x0000000047ffffff]
+    [    0.000000] psci: probing for conduit method from DT.
+    [    0.000000] psci: PSCIv1.1 detected in firmware.
+    [    0.000000] psci: Using standard PSCI v0.2 function IDs
+    [    0.000000] psci: Trusted OS migration not required
+    [    0.000000] psci: SMC Calling Convention v1.0
+    [    0.000000] percpu: Embedded 16 pages/cpu s34580 r8192 d22764 u65536
+    [    0.000000] Built 1 zonelists, mobility grouping on.  Total pages: 32512
+    [    0.000000] Kernel command line: console=ttyAMA0
+    [    0.000000] Dentry cache hash table entries: 16384 (order: 4, 65536 bytes, linear)
+    [    0.000000] Inode-cache hash table entries: 8192 (order: 3, 32768 bytes, linear)
+    [    0.000000] mem auto-init: stack:all(zero), heap alloc:off, heap free:off
+    [    0.000000] Memory: 100288K/131072K available (15360K kernel code, 2468K rwdata, 6256K rodata, 2048K init, 428K bss, 30784K reserved, 0K cma-reserved, 0K highmem)
+    [    0.000000] SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=1, Nodes=1
+    [    0.000000] trace event string verifier disabled
+    [    0.000000] rcu: Hierarchical RCU implementation.
+    [    0.000000] rcu: 	RCU event tracing is enabled.
+    [    0.000000] rcu: 	RCU restricting CPUs from NR_CPUS=16 to nr_cpu_ids=1.
+    [    0.000000] rcu: RCU calculated value of scheduler-enlistment delay is 10 jiffies.
+    [    0.000000] rcu: Adjusting geometry for rcu_fanout_leaf=16, nr_cpu_ids=1
+    [    0.000000] NR_IRQS: 16, nr_irqs: 16, preallocated irqs: 16
+    [    0.000000] GICv2m: range[mem 0x08020000-0x08020fff], SPI[80:143]
+    [    0.000000] rcu: srcu_init: Setting srcu_struct sizes based on contention.
+    [    0.000000] arch_timer: cp15 timer(s) running at 62.50MHz (virt).
+    [    0.000000] clocksource: arch_sys_counter: mask: 0x1ffffffffffffff max_cycles: 0x1cd42e208c, max_idle_ns: 881590405314 ns
+    [    0.000172] sched_clock: 57 bits at 63MHz, resolution 16ns, wraps every 4398046511096ns
+    [    0.000399] Switching to timer-based delay loop, resolution 16ns
+    [    0.005871] Console: colour dummy device 80x30
+    [    0.007602] Calibrating delay loop (skipped), value calculated using timer frequency.. 125.00 BogoMIPS (lpj=625000)
+    [    0.007741] CPU: Testing write buffer coherency: ok
+    [    0.013719] pid_max: default: 32768 minimum: 301
+    [    0.016382] Mount-cache hash table entries: 1024 (order: 0, 4096 bytes, linear)
+    [    0.016438] Mountpoint-cache hash table entries: 1024 (order: 0, 4096 bytes, linear)
+    [    0.040096] /cpus/cpu@0 missing clock-frequency property
+    [    0.040525] CPU0: thread -1, cpu 0, socket 0, mpidr 80000000
+    [    0.047312] Setting up static identity map for 0x40300000 - 0x403000ac
+    [    0.049352] rcu: Hierarchical SRCU implementation.
+    [    0.049398] rcu: 	Max phase no-delay instances is 1000.
+    [    0.053485] EFI services will not be available.
+    [    0.054535] smp: Bringing up secondary CPUs ...
+    [    0.054636] smp: Brought up 1 node, 1 CPU
+    [    0.054720] SMP: Total of 1 processors activated (125.00 BogoMIPS).
+    [    0.054798] CPU: All CPU(s) started in SVC mode.
+    [    0.065132] devtmpfs: initialized
+    [    0.076605] VFP support v0.3: implementor 41 architecture 2 part 30 variant 7 rev 5
+    [    0.098155] clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 19112604462750000 ns
+    [    0.099013] futex hash table entries: 256 (order: 2, 16384 bytes, linear)
+    [    0.103090] pinctrl core: initialized pinctrl subsystem
+    [    0.122923] DMI not present or invalid.
+    [    0.134042] NET: Registered PF_NETLINK/PF_ROUTE protocol family
+    [    0.138776] DMA: preallocated 256 KiB pool for atomic coherent allocations
+    [    0.146178] thermal_sys: Registered thermal governor 'step_wise'
+    [    0.157500] cpuidle: using governor menu
+    [    0.158510] No ATAGs?
+    [    0.160054] hw-breakpoint: found 5 (+1 reserved) breakpoint and 4 watchpoint registers.
+    [    0.160149] hw-breakpoint: maximum watchpoint size is 8 bytes.
+    [    0.166005] Serial: AMBA PL011 UART driver
+    [    0.212926] 9000000.pl011: ttyAMA0 at MMIO 0x9000000 (irq = 28, base_baud = 0) is a PL011 rev1
+    [    0.227980] printk: console [ttyAMA0] enabled
+    [    1.473234] iommu: Default domain type: Translated 
+    [    1.473496] iommu: DMA domain TLB invalidation policy: strict mode 
+    [    1.476904] SCSI subsystem initialized
+    [    1.479715] usbcore: registered new interface driver usbfs
+    [    1.480179] usbcore: registered new interface driver hub
+    [    1.480540] usbcore: registered new device driver usb
+    [    1.483513] pps_core: LinuxPPS API ver. 1 registered
+    [    1.483683] pps_core: Software ver. 5.3.6 - Copyright 2005-2007 Rodolfo Giometti &lt;giometti@linux.it&gt;
+    [    1.484031] PTP clock support registered
+    [    1.484743] EDAC MC: Ver: 3.0.0
+    [    1.503177] vgaarb: loaded
+    [    1.510504] clocksource: Switched to clocksource arch_sys_counter
+    [    1.614179] NET: Registered PF_INET protocol family
+    [    1.615636] IP idents hash table entries: 2048 (order: 2, 16384 bytes, linear)
+    [    1.621519] tcp_listen_portaddr_hash hash table entries: 512 (order: 0, 4096 bytes, linear)
+    [    1.621913] Table-perturb hash table entries: 65536 (order: 6, 262144 bytes, linear)
+    [    1.622240] TCP established hash table entries: 1024 (order: 0, 4096 bytes, linear)
+    [    1.622650] TCP bind hash table entries: 1024 (order: 2, 16384 bytes, linear)
+    [    1.623020] TCP: Hash tables configured (established 1024 bind 1024)
+    [    1.624851] UDP hash table entries: 256 (order: 1, 8192 bytes, linear)
+    [    1.625316] UDP-Lite hash table entries: 256 (order: 1, 8192 bytes, linear)
+    [    1.627300] NET: Registered PF_UNIX/PF_LOCAL protocol family
+    [    1.631643] RPC: Registered named UNIX socket transport module.
+    [    1.631920] RPC: Registered udp transport module.
+    [    1.632068] RPC: Registered tcp transport module.
+    [    1.632213] RPC: Registered tcp NFSv4.1 backchannel transport module.
+    [    1.632514] PCI: CLS 0 bytes, default 64
+    [    1.636420] Initialise system trusted keyrings
+    [    1.643121] Trying to unpack rootfs image as initramfs...
+    [    1.649568] workingset: timestamp_bits=30 max_order=15 bucket_order=0
+    [    1.665107] squashfs: version 4.0 (2009/01/31) Phillip Lougher
+    [    1.690737] NFS: Registering the id_resolver key type
+    [    1.691309] Key type id_resolver registered
+    [    1.691518] Key type id_legacy registered
+    [    1.692088] nfs4filelayout_init: NFSv4 File Layout Driver Registering...
+    [    1.692395] nfs4flexfilelayout_init: NFSv4 Flexfile Layout Driver Registering...
+    [    1.692999] ntfs: driver 2.1.32 [Flags: R/O].
+    [    1.694753] Key type asymmetric registered
+    [    1.694958] Asymmetric key parser 'x509' registered
+    [    1.695577] Block layer SCSI generic (bsg) driver version 0.4 loaded (major 247)
+    [    1.695926] io scheduler mq-deadline registered
+    [    1.696146] io scheduler kyber registered
+    [    1.759698] pl061_gpio 9030000.pl061: PL061 GPIO chip registered
+    [    1.767751] pci-host-generic 4010000000.pcie: host bridge /pcie@10000000 ranges:
+    [    1.769120] pci-host-generic 4010000000.pcie:       IO 0x003eff0000..0x003effffff -&gt; 0x0000000000
+    [    1.770049] pci-host-generic 4010000000.pcie:      MEM 0x0010000000..0x003efeffff -&gt; 0x0010000000
+    [    1.770362] pci-host-generic 4010000000.pcie:      MEM 0x8000000000..0xffffffffff -&gt; 0x8000000000
+    [    1.771804] pci-host-generic 4010000000.pcie: can't claim ECAM area [mem 0x10000000-0x1fffffff]: address conflict with pcie@10000000 [mem 0x10000000-0x3efeffff]
+    [    1.772571] pci-host-generic: probe of 4010000000.pcie failed with error -16
+    [    1.847688] Freeing initrd memory: 1032K
+    [    1.942552] Serial: 8250/16550 driver, 5 ports, IRQ sharing enabled
+    [    1.950322] SuperH (H)SCI(F) driver initialized
+    [    1.951965] msm_serial: driver initialized
+    [    1.952134] STMicroelectronics ASC driver initialized
+    [    1.953764] STM32 USART driver initialized
+    [    1.995280] brd: module loaded
+    [    2.013216] loop: module loaded
+    [    2.023250] physmap-flash 0.flash: physmap platform flash device: [mem 0x00000000-0x03ffffff]
+    [    2.025129] 0.flash: Found 2 x16 devices at 0x0 in 32-bit bank. Manufacturer ID 0x000000 Chip ID 0x000000
+    [    2.025898] Intel/Sharp Extended Query Table at 0x0031
+    [    2.026861] Using buffer write method
+    [    2.029146] physmap-flash 0.flash: physmap platform flash device: [mem 0x04000000-0x07ffffff]
+    [    2.029928] 0.flash: Found 2 x16 devices at 0x0 in 32-bit bank. Manufacturer ID 0x000000 Chip ID 0x000000
+    [    2.030228] Intel/Sharp Extended Query Table at 0x0031
+    [    2.030868] Using buffer write method
+    [    2.031125] Concatenating MTD devices:
+    [    2.031277] (0): "0.flash"
+    [    2.031377] (1): "0.flash"
+    [    2.031476] into device "0.flash"
+    [    2.136892] CAN device driver interface
+    [    2.138783] bgmac_bcma: Broadcom 47xx GBit MAC driver loaded
+    [    2.140479] e1000e: Intel(R) PRO/1000 Network Driver
+    [    2.140643] e1000e: Copyright(c) 1999 - 2015 Intel Corporation.
+    [    2.140972] igb: Intel(R) Gigabit Ethernet Network Driver
+    [    2.141141] igb: Copyright (c) 2007-2014 Intel Corporation.
+    [    2.147170] pegasus: Pegasus/Pegasus II USB Ethernet driver
+    [    2.147485] usbcore: registered new interface driver pegasus
+    [    2.147769] usbcore: registered new interface driver asix
+    [    2.148022] usbcore: registered new interface driver ax88179_178a
+    [    2.148273] usbcore: registered new interface driver cdc_ether
+    [    2.149299] usbcore: registered new interface driver smsc75xx
+    [    2.149645] usbcore: registered new interface driver smsc95xx
+    [    2.149922] usbcore: registered new interface driver net1080
+    [    2.150166] usbcore: registered new interface driver cdc_subset
+    [    2.150431] usbcore: registered new interface driver zaurus
+    [    2.150824] usbcore: registered new interface driver cdc_ncm
+    [    2.158459] usbcore: registered new interface driver usb-storage
+    [    2.170368] rtc-pl031 9010000.pl031: registered as rtc0
+    [    2.171508] rtc-pl031 9010000.pl031: setting system clock to 2025-06-11T13:01:18 UTC (1749646878)
+    [    2.175551] i2c_dev: i2c /dev entries driver
+    [    2.197831] sdhci: Secure Digital Host Controller Interface driver
+    [    2.198106] sdhci: Copyright(c) Pierre Ossman
+    [    2.201048] Synopsys Designware Multimedia Card Interface Driver
+    [    2.203477] sdhci-pltfm: SDHCI platform and OF driver helper
+    [    2.208102] ledtrig-cpu: registered to indicate activity on CPUs
+    [    2.211544] usbcore: registered new interface driver usbhid
+    [    2.211777] usbhid: USB HID core driver
+    [    2.222369] NET: Registered PF_INET6 protocol family
+    [    2.230804] Segment Routing with IPv6
+    [    2.231193] In-situ OAM (IOAM) with IPv6
+    [    2.231824] sit: IPv6, IPv4 and MPLS over IPv4 tunneling driver
+    [    2.235738] NET: Registered PF_PACKET protocol family
+    [    2.235983] can: controller area network core
+    [    2.236661] NET: Registered PF_CAN protocol family
+    [    2.236874] can: raw protocol
+    [    2.237155] can: broadcast manager protocol
+    [    2.237438] can: netlink gateway - max_hops=1
+    [    2.238927] Key type dns_resolver registered
+    [    2.239511] ThumbEE CPU extension supported.
+    [    2.239747] Registering SWP/SWPB emulation handler
+    [    2.242478] Loading compiled-in X.509 certificates
+    [    2.265081] input: gpio-keys as /devices/platform/gpio-keys/input/input0
+    [    2.279102] uart-pl011 9000000.pl011: no DMA platform data
+    [    2.386713] Freeing unused kernel image (initmem) memory: 2048K
+    [    2.408378] Run /init as init process
+
+    Boot took 2.49 seconds
+    ~ #
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
