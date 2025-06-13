@@ -1,0 +1,102 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - R36S - C/C++ - DRM/KMS - <b>Enum CRTC</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://www.kernel.org/doc/html/v4.15/gpu/drm-kms.html<br>
+https://github.com/grate-driver/libdrm/blob/master/xf86drmMode.h<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;xf86drm.h&gt;
+#include &lt;xf86drmMode.h&gt;
+   
+int main(int argc, char *argv[])
+{
+    int i = 0;
+    int j = 0;
+    int fd = -1;
+    drmModeRes *res = NULL;
+   
+    fd = open("/dev/dri/card0", O_RDWR | O_CLOEXEC);
+    res = drmModeGetResources(fd);
+   
+    for (i = 0; i &lt; res-&gt;count_connectors; i++) {
+        drmModeConnector *conn = drmModeGetConnector(fd, res-&gt;connectors[i]);
+ 
+        if (conn) {
+            if ((conn-&gt;connection == DRM_MODE_CONNECTED) &amp;&amp; conn-&gt;count_modes) {
+                printf("conn[%d].connector_id=%d\n", i, conn-&gt;connector_id);
+                printf("conn[%d].encoder_id=%d\n", i, conn-&gt;encoder_id);
+   
+                for (j = 0; j &lt; conn-&gt;count_modes; j++) {
+                    drmModeModeInfo *mode = &amp;conn-&gt;modes[j];
+   
+                    printf("conn[%d].mode[%d]=%s (%dx%dx%d)\n", i, j, mode-&gt;name, mode-&gt;hdisplay, mode-&gt;vdisplay, mode-&gt;vrefresh);
+                }
+            }
+            drmModeFreeConnector(conn);
+        }
+    }
+ 
+    for (i = 0; i &lt; res-&gt;count_encoders; i++) {
+        drmModeEncoder *enc = drmModeGetEncoder(fd, res-&gt;encoders[i]);
+ 
+        if (enc) {
+            printf("enc[%d].encoder_id=%d\n", i, enc-&gt;encoder_id);
+            printf("enc[%d].crtc_id=%d\n", i, enc-&gt;crtc_id);
+            drmModeFreeEncoder(enc);
+        }
+    }
+
+    for (i = 0; i &lt; res-&gt;count_crtcs; i++) {
+        drmModeCrtc *crtc = drmModeGetCrtc(fd, res-&gt;crtcs[i]);
+
+        if (crtc) {
+            printf("crtc[%d].crtc_id=%d\n", i, crtc-&gt;crtc_id);
+            printf("crtc[%d].buffer_id=%d\n", i, crtc-&gt;buffer_id);
+            printf("crtc[%d].x=%d\n", i, crtc-&gt;x);
+            printf("crtc[%d].y=%d\n", i, crtc-&gt;x);
+            printf("crtc[%d].width=%d\n", i, crtc-&gt;width);
+            printf("crtc[%d].height=%d\n", i, crtc-&gt;height);
+            printf("crtc[%d].mode.name=%s\n", i, crtc-&gt;mode.name);
+            drmModeFreeCrtc(crtc);
+        }
+    } 
+    drmModeFreeResources(res);
+    close(fd);
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ /opt/mini/bin/arm-linux-gnueabihf-gcc main.c -o main -I/opt/mini/arm-buildroot-linux-gnueabihf/sysroot/usr/include/drm -ldrm -lEGL -lGLESv2 -lgbm
+
+root@rg351mp:/# kill -STOP `pidof emulationstation`
+root@rg351mp:/# ./main
+    conn[0].connector_id=66
+    conn[0].encoder_id=0
+    conn[0].mode[0]=640x480 (640x480x107)
+    enc[0].encoder_id=65
+    enc[0].crtc_id=0
+    crtc[0].crtc_id=60
+    crtc[0].buffer_id=0
+    crtc[0].x=0
+    crtc[0].y=0
+    crtc[0].width=0
+    crtc[0].height=0
+    crtc[0].mode.name=
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

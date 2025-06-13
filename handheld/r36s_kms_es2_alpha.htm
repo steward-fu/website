@@ -1,0 +1,265 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - R36S - C/C++ - DRM/KMS - OpenGL ES 2.0 - <b>Use Global Alpha Setting(Shader)</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://gist.github.com/dvdhrm/5083553<br>
+https://www.kernel.org/doc/html/v4.15/gpu/drm-kms.html<br>
+https://github.com/grate-driver/libdrm/blob/master/xf86drmMode.h<br>
+https://gist.github.com/Miouyouyou/89e9fe56a2c59bce7d4a18a858f389ef<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;time.h&gt;
+#include &lt;sys/mman.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;gbm.h&gt;
+#include &lt;xf86drm.h&gt;
+#include &lt;xf86drmMode.h&gt;
+#include &lt;GLES2/gl2.h&gt;
+#include &lt;GLES2/gl2ext.h&gt;
+#include &lt;EGL/egl.h&gt;
+#include &lt;EGL/eglext.h&gt;
+
+static int fd = -1;
+static int fb = -1;
+static int waiting_for_flip = 0;
+
+static drmModeRes *res = NULL;
+static drmModeCrtc *crtc = NULL;
+static drmModeEncoder *enc = NULL;
+static drmModeConnector *conn = NULL;
+ 
+static void flip_handler(int fd, unsigned int frame, unsigned int sec, unsigned int usec, void *data)
+{
+    *((int *)data) = 0;
+}
+
+const char *vShaderSrc =
+    "attribute vec4 a_position;   \n"
+    "attribute vec2 a_texCoord;   \n"
+    "varying vec2 v_texCoord;     \n"
+    "void main()                  \n"
+    "{                            \n"
+    "   gl_Position = a_position; \n"
+    "   v_texCoord = a_texCoord;  \n"
+    "}                            \n";
+     
+const char *fShaderSrc =
+    "precision mediump float;                                  \n"
+    "varying vec2 v_texCoord;                                  \n"
+    "uniform float s_alpha;                                    \n"
+    "uniform sampler2D s_texture;                              \n"
+    "void main()                                               \n"
+    "{                                                         \n"
+    "    vec3 tex = texture2D(s_texture, v_texCoord).bgr;      \n"
+    "    gl_FragColor = vec4(tex, s_alpha);                    \n"
+    "}                                                         \n";
+
+drmEventContext evctx = {
+    .version = DRM_EVENT_CONTEXT_VERSION,
+    .page_flip_handler = flip_handler,
+};
+
+int main(int argc, char *argv[])
+{
+    const int w = 640;
+    const int h = 480;
+    const int bpp = 32;
+    const int depth = 24;
+ 
+    int i = 0;
+    int j = 0;
+ 
+    fd = open("/dev/dri/card0", O_RDWR | O_CLOEXEC);
+    res = drmModeGetResources(fd);
+    conn = drmModeGetConnector(fd, res-&gt;connectors[0]);
+    enc = drmModeGetEncoder(fd, res-&gt;encoders[0]);
+    crtc = drmModeGetCrtc(fd, res-&gt;crtcs[0]);
+
+    struct gbm_device *gbm = gbm_create_device(fd);
+	struct gbm_surface *gs = gbm_surface_create(gbm, crtc-&gt;mode.hdisplay, crtc-&gt;mode.vdisplay, GBM_FORMAT_XRGB8888, GBM_BO_USE_SCANOUT | GBM_BO_USE_RENDERING);
+
+    EGLint egl_major = 0;
+    EGLint egl_minor = 0;
+    EGLint num_configs = 0;
+    EGLConfig configs = {0};
+    EGLDisplay display = EGL_NO_DISPLAY;
+    EGLSurface surface = EGL_NO_SURFACE;
+    EGLContext context = EGL_NO_CONTEXT;
+    EGLint config_attribs[] = {
+        EGL_SURFACE_TYPE,    EGL_WINDOW_BIT,
+        EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+        EGL_RED_SIZE,   1,  
+        EGL_GREEN_SIZE, 1,
+        EGL_BLUE_SIZE,  1,  
+        EGL_ALPHA_SIZE, 0,
+        EGL_NONE
+    };
+    EGLint const context_attributes[] = {
+        EGL_CONTEXT_CLIENT_VERSION, 2,
+        EGL_NONE,
+    };
+    GLuint vShader = 0;
+    GLuint fShader = 0;
+    GLuint pObject = 0;
+    GLint compiled = 0;
+    int x = 0;
+    int y = 0;
+    uint32_t *p = NULL;
+    GLuint texID[2] = {0};
+    GLubyte *buf = NULL;
+   
+    GLfloat vVertices[] = {
+       -1.0f,  1.0f, 0.0f,      0.0f,  0.0f,
+       -1.0f, -1.0f, 0.0f,      0.0f,  1.0f,
+        1.0f, -1.0f, 0.0f,      1.0f,  1.0f,
+        1.0f,  1.0f, 0.0f,      1.0f,  0.0f
+    };
+    GLushort indices[] = {0, 1, 2, 0, 2, 3};
+
+    PFNEGLGETPLATFORMDISPLAYEXTPROC get_platform_display = NULL;
+    get_platform_display = (void *)eglGetProcAddress("eglGetPlatformDisplayEXT");
+    display = get_platform_display(EGL_PLATFORM_GBM_KHR, gbm, NULL);
+    eglInitialize(display, &amp;egl_major, &amp;egl_minor);
+    eglBindAPI(EGL_OPENGL_ES_API); 
+    eglChooseConfig(display, config_attribs, &amp;configs, 1, &amp;num_configs);
+    surface = eglCreateWindowSurface(display, configs, gs, NULL);
+    context = eglCreateContext(display, configs, EGL_NO_CONTEXT, context_attributes);
+    eglMakeCurrent(display, surface, surface, context);
+ 
+    vShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(vShader, 1, &amp;vShaderSrc, NULL);
+    glCompileShader(vShader);
+    glGetShaderiv(vShader, GL_COMPILE_STATUS, &amp;compiled);
+  
+    fShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(fShader, 1, &amp;fShaderSrc, NULL);
+    glCompileShader(fShader);
+    glGetShaderiv(fShader, GL_COMPILE_STATUS, &amp;compiled);
+   
+    pObject = glCreateProgram();
+    glAttachShader(pObject, vShader);
+    glAttachShader(pObject, fShader);
+    glLinkProgram(pObject);
+    glUseProgram(pObject);
+  
+    GLint posLoc = glGetAttribLocation(pObject, "a_position");
+    GLint texLoc = glGetAttribLocation(pObject, "a_texCoord");
+    GLint samLoc = glGetUniformLocation(pObject, "s_texture");
+    GLint alphaLoc = glGetUniformLocation(pObject, "s_alpha");
+   
+    glGenTextures(2, texID);
+    glViewport(0, 0, w, h);
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+   
+    uint32_t col[] = { 0xffff0000, 0xff00ff00, 0xff0000ff };
+   
+    buf = malloc(w * h * 4);
+    p = (uint32_t *)buf;
+    for (y = 0; y &lt; h; y++) {
+        for (x = 0; x &lt; w; x++) {
+            *p++ = col[y / 160];
+        }
+    }
+    glBindTexture(GL_TEXTURE_2D, texID[0]);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, buf);
+ 
+    p = (uint32_t *)buf;
+    for (y = 0; y &lt; h; y++) {
+        for (x = 0; x &lt; w; x++) {
+            *p++ = 0;
+        }
+    }
+    glBindTexture(GL_TEXTURE_2D, texID[1]);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, buf);
+ 
+    glUniform1f(alphaLoc, 1.0);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texID[0]);
+    glVertexAttribPointer(posLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), vVertices);
+    glVertexAttribPointer(texLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &amp;vVertices[3]);
+    glEnableVertexAttribArray(posLoc);
+    glEnableVertexAttribArray(texLoc);
+    glUniform1i(samLoc, 0);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, indices);
+ 
+    vVertices[0] = 0.0;
+    vVertices[1] = 0.0;
+ 
+    vVertices[5] = vVertices[0];
+    vVertices[6] = 0.5;
+ 
+    vVertices[10] = 0.5;
+    vVertices[11] = vVertices[6];
+ 
+    vVertices[15] = vVertices[10];
+    vVertices[16] = vVertices[1];
+ 
+    glUniform1f(alphaLoc, 0.5);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable(GL_BLEND);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texID[1]);
+    glVertexAttribPointer(posLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), vVertices);
+    glVertexAttribPointer(texLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &amp;vVertices[3]);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, indices);
+    glDisable(GL_BLEND);
+    eglSwapBuffers(display, surface);
+
+    struct gbm_bo *bo = gbm_surface_lock_front_buffer(gs);
+    drmModeAddFB(fd, w, h, depth, bpp, gbm_bo_get_stride(bo), gbm_bo_get_handle(bo).u32, &amp;fb);
+    drmModeSetCrtc(fd, crtc-&gt;crtc_id, fb, 0, 0, (uint32_t *)conn, 1, &amp;crtc-&gt;mode);
+
+    waiting_for_flip = 1;
+    drmModePageFlip(fd, crtc-&gt;crtc_id, fb, DRM_MODE_PAGE_FLIP_EVENT, (void *)&amp;waiting_for_flip);
+    while (waiting_for_flip) {
+        drmHandleEvent(fd, &amp;evctx);
+    }
+    gbm_surface_release_buffer(gs, bo);
+    sleep(3); 
+
+    free(buf);
+    eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+    eglDestroyContext(display, context);
+    eglDestroySurface(display, surface);
+
+    drmModeRmFB(fd, fb); 
+    drmModeFreeCrtc(crtc);
+    drmModeFreeEncoder(enc);
+    drmModeFreeConnector(conn);
+    drmModeFreeResources(res);
+    close(fd);
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ /opt/mini/bin/arm-linux-gnueabihf-gcc main.c -o main -I/opt/mini/arm-buildroot-linux-gnueabihf/sysroot/usr/include/drm -ldrm -lEGL -lGLESv2 -lgbm
+
+root@rg351mp:/# kill -STOP `pidof emulationstation`
+root@rg351mp:/# ./main
+</pre>
+<p>
+<img src="r36s_kms_es2_alpha/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

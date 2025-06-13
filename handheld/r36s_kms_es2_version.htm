@@ -1,0 +1,128 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - R36S - C/C++ - DRM/KMS - OpenGL ES 2.0 - <b>Get Version</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://gist.github.com/dvdhrm/5083553<br>
+https://www.kernel.org/doc/html/v4.15/gpu/drm-kms.html<br>
+https://github.com/grate-driver/libdrm/blob/master/xf86drmMode.h<br>
+https://gist.github.com/Miouyouyou/89e9fe56a2c59bce7d4a18a858f389ef<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;time.h&gt;
+#include &lt;sys/mman.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;gbm.h&gt;
+#include &lt;xf86drm.h&gt;
+#include &lt;xf86drmMode.h&gt;
+#include &lt;GLES2/gl2.h&gt;
+#include &lt;GLES2/gl2ext.h&gt;
+#include &lt;EGL/egl.h&gt;
+#include &lt;EGL/eglext.h&gt;
+
+static int fd = -1;
+static int fb = -1;
+static int waiting_for_flip = 0;
+
+static drmModeRes *res = NULL;
+static drmModeCrtc *crtc = NULL;
+static drmModeEncoder *enc = NULL;
+static drmModeConnector *conn = NULL;
+ 
+static void flip_handler(int fd, unsigned int frame, unsigned int sec, unsigned int usec, void *data)
+{
+    *((int *)data) = 0;
+}
+
+drmEventContext evctx = {
+    .version = DRM_EVENT_CONTEXT_VERSION,
+    .page_flip_handler = flip_handler,
+};
+
+int main(int argc, char *argv[])
+{
+    const int w = 640;
+    const int h = 480;
+    const int bpp = 32;
+    const int depth = 24;
+ 
+    int i = 0;
+    int j = 0;
+ 
+    fd = open("/dev/dri/card0", O_RDWR | O_CLOEXEC);
+    res = drmModeGetResources(fd);
+    conn = drmModeGetConnector(fd, res-&gt;connectors[0]);
+    enc = drmModeGetEncoder(fd, res-&gt;encoders[0]);
+    crtc = drmModeGetCrtc(fd, res-&gt;crtcs[0]);
+
+    struct gbm_device *gbm = gbm_create_device(fd);
+	struct gbm_surface *gs = gbm_surface_create(gbm, crtc-&gt;mode.hdisplay, crtc-&gt;mode.vdisplay, GBM_FORMAT_XRGB8888, GBM_BO_USE_SCANOUT | GBM_BO_USE_RENDERING);
+
+    EGLint egl_major = 0;
+    EGLint egl_minor = 0;
+    EGLint num_configs = 0;
+    EGLConfig configs = {0};
+    EGLDisplay display = EGL_NO_DISPLAY;
+    EGLSurface surface = EGL_NO_SURFACE;
+    EGLContext context = EGL_NO_CONTEXT;
+    EGLint config_attribs[] = {
+        EGL_SURFACE_TYPE,    EGL_WINDOW_BIT,
+        EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+        EGL_RED_SIZE,   8,  
+        EGL_GREEN_SIZE, 8,
+        EGL_BLUE_SIZE,  8,  
+        EGL_ALPHA_SIZE, 8,
+        EGL_NONE
+    };
+    EGLint const context_attributes[] = {
+        EGL_CONTEXT_CLIENT_VERSION, 2,
+        EGL_NONE,
+    };
+
+    PFNEGLGETPLATFORMDISPLAYEXTPROC get_platform_display = NULL;
+	get_platform_display = (void *)eglGetProcAddress("eglGetPlatformDisplayEXT");
+    display = get_platform_display(EGL_PLATFORM_GBM_KHR, gbm, NULL);
+    eglInitialize(display, &amp;egl_major, &amp;egl_minor);
+    eglBindAPI(EGL_OPENGL_ES_API);
+    eglChooseConfig(display, config_attribs, &amp;configs, 1, &amp;num_configs);
+    surface = eglCreateWindowSurface(display, configs, gs, NULL);
+    context = eglCreateContext(display, configs, EGL_NO_CONTEXT, context_attributes);
+    eglMakeCurrent(display, surface, surface, context);
+
+    printf("%s\n", glGetString(GL_VERSION));  
+
+    eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+    eglDestroyContext(display, context);
+    eglDestroySurface(display, surface);
+
+    drmModeRmFB(fd, fb); 
+    drmModeFreeCrtc(crtc);
+    drmModeFreeEncoder(enc);
+    drmModeFreeConnector(conn);
+    drmModeFreeResources(res);
+    close(fd);
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ /opt/mini/bin/arm-linux-gnueabihf-gcc main.c -o main -I/opt/mini/arm-buildroot-linux-gnueabihf/sysroot/usr/include/drm -ldrm -lEGL -lGLESv2 -lgbm
+
+root@rg351mp:/# kill -STOP `pidof emulationstation`
+root@rg351mp:/# ./main
+    OpenGL ES 3.2 v1.r13p0-01rel0.8747d14aec16ec21ac2b2da252c4ec5f
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
