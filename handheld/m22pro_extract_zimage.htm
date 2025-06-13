@@ -1,0 +1,41 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - M22Pro - <b>如何Extract zImage</b></h3>
+<hr size="1"><br>
+<pre>
+$ binwalk spi.bin 
+    DECIMAL       HEXADECIMAL     DESCRIPTION
+    --------------------------------------------------------------------------------
+    23824         0x5D10          Android bootimg, kernel size: 1919249152 bytes, kernel addr: 0x5F6C656E, ramdisk size: 1919181921 bytes, ramdisk addr: 0xA78253A, product name: "load boot_image fail"
+    320452        0x4E3C4         CRC32 polynomial table, little endian
+    346626        0x54A02         Android bootimg, kernel size: 1836212480 bytes, kernel addr: 0x61003436, ramdisk size: 1711304050 bytes, ramdisk addr: 0x6563726F, product name: "vice"
+    549560        0x862B8         Flattened device tree, size: 18254 bytes, version: 17
+    808672        0xC56E0         DES SP1, little endian
+    808928        0xC57E0         DES SP2, little endian
+    815632        0xC7210         SHA256 hash constants, little endian
+    842698        0xCDBCA         Unix path: /lib/libtomcrypt/hash.c
+    843971        0xCE0C3         DES PC1 table
+    844027        0xCE0FB         DES PC2 table
+    876544        0xD6000         Flattened device tree, size: 60608 bytes, version: 17
+    1179648       0x120000        Android bootimg, kernel size: 3901168 bytes, kernel addr: 0x40008000, ramdisk size: 12 bytes, ramdisk addr: 0x41000000, product name: "h133-p2nor"
+    1181696       0x120800        Linux kernel ARM boot executable zImage (little-endian)
+    1208467       0x127093        gzip compressed data, maximum compression, from Unix, last modified: 1970-01-01 00:00:00 (null date)
+    5416448       0x52A600        PC bitmap, Windows 3.x format,, 480 x 480 x 24
+    6346752       0x60D800        Squashfs filesystem, little endian, version 4.0, compression:xz, size: 10060760 bytes, 891 inodes, blocksize: 131072 bytes, created: 2024-11-29 02:25:52
+
+$ dd if=spi.bin of=zImage bs=1 skip=1181696 count=$((5416448-1181696))
+$ file zImage 
+    zImage: Linux kernel ARM boot executable zImage (little-endian)
+
+$ dd if=zImage of=head bs=1 count=26771
+$ dd if=zImage of=body bs=1 skip=26771
+$ zcat body &gt; body_ext
+    gzip: body: decompression OK, trailing garbage ignored
+
+$ strings body_ext | grep Linux
+    Linux version 5.4.61 (root@heyongsheng-X79-Invalid-entry-length-16-Fixed-up-to-11) (arm-openwrt-linux-muslgnueabi-gcc.bin (OpenWrt/Linaro GCC 6.4-2017.11 2017-11) 6.4.1, GNU ld (GNU Binutils) 2.27) #664 SMP PREEMPT Fri Oct 25 06:03:41 UTC 2024
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
