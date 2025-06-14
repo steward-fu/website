@@ -135,5 +135,6 @@ All of files or resources used on my website can be found from the following lin
 [![](img/photos/freebasic.jpg)](https://github.com/steward-fu/website/releases/tag/freebasic)
 [![](img/photos/delphi7.jpg)](https://github.com/steward-fu/website/releases/tag/delphi7)
 [![](img/photos/neogeo.jpg)](https://github.com/steward-fu/website/releases/tag/neogeo)
+[![](img/photos/ps1.jpg)](https://github.com/steward-fu/website/releases/tag/ps1)
 [![](img/photos/docker.jpg)](https://github.com/steward-fu/website/releases/tag/docker)
 [![](img/photos/pdf.jpg)](https://github.com/steward-fu/website/releases/tag/datasheet)
