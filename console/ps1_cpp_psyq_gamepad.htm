@@ -1,0 +1,84 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../console.htm">家用機</a> - Play Station - C/C++ (PsyQ) - <b>Read GamePad</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://psx.arthus.net/starting.html<br>
+https://github.com/ABelliqueux/nolibgs_hello_worlds#installation<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;sys/types.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;libgte.h&gt;
+#include &lt;libetc.h&gt;
+#include &lt;libgpu.h&gt;
+ 
+int main(int argc, char *argv[])
+{
+    const int w = 320;
+    const int h = 240;
+    int r = 0;
+    u_long ot = 0;
+    TILE t = { 0 };
+    DISPENV disp = { 0 };
+    DRAWENV draw = { 0 };
+ 
+    ResetGraph(0);
+ 
+    SetDefDispEnv(&amp;disp, 0, 0, w, h);
+    SetDefDrawEnv(&amp;draw, 0, 0, w, h);
+    SetDispMask(1);
+    setRGB0(&amp;draw, 0, 0, 0);
+    draw.isbg = 1;
+ 
+    PutDispEnv(&amp;disp);
+    PutDrawEnv(&amp;draw);
+ 
+    FntLoad(640, 0);
+    FntOpen(100, 100, w, h, 0, 255);
+ 
+    PadInit(0);
+    while (1) {
+        r = PadRead(0);
+        if (r) {
+            setTile(&amp;t);
+            setXY0(&amp;t, 0, 0);
+            setWH(&amp;t, w, h);
+            setRGB0(&amp;t, 0, 0, 0);
+            addPrim(&amp;ot, &amp;t);
+            DrawOTag(&amp;ot);
+        }
+
+        if (r &amp; PADLup)     FntPrint("UP");
+        if (r &amp; PADLdown)   FntPrint("DOWN");
+        if (r &amp; PADLleft)   FntPrint("LEFT");
+        if (r &amp; PADLright)  FntPrint("RIGHT");
+        if (r &amp; PADRright)  FntPrint("A");
+        if (r &amp; PADRdown)   FntPrint("B");
+        if (r &amp; PADRup)     FntPrint("X");
+        if (r &amp; PADRleft)   FntPrint("Y");
+        if (r &amp; PADL1)      FntPrint("L1");
+        if (r &amp; PADL2)      FntPrint("L2");
+        if (r &amp; PADR1)      FntPrint("R1");
+        if (r &amp; PADR2)      FntPrint("R2");
+        if (r &amp; PADstart)   FntPrint("START");
+        if (r &amp; PADselect)  FntPrint("SELECT");
+
+        FntFlush(-1);
+        DrawSync(0);
+        VSync(0);
+    }
+ 
+    return 0;
+}
+</pre>
+<p>
+<img src="ps1_cpp_psyq_gamepad/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
