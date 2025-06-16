@@ -7,9 +7,10 @@
 <p>
 參考資訊：<br>
 https://www.brendangregg.com/perf.html<br>
+https://docs.kernel.org/trace/uprobetracer.html<br>
 https://bristot.me/using-perf-probe-to-measure-execution-time-of-user-space-code-on-linux/<br><br>
 
-hello.c
+main.c
 </p>
 <pre class="brush:cpp">
 #include &lt;stdio.h&gt;
@@ -22,49 +23,83 @@ void test(void)
 int main(int argc, char *argv[])
 {
     test();
-    test();
     return 0;
 }
 </pre><br>
 
 <p>
-編譯、執行
+編譯
 </p>
 <pre>
-$ gcc hello.c -o hello -ggdb
+$ gcc main.c -o main -ggdb -O0
+</pre><br>
 
-$ sudo perf probe --line test -x ./hello
-    &lt;test@/home/steward/Downloads/hello.c:0&gt;
+<p>
+Probe方式1
+</p>
+<pre>
+$ sudo perf probe --line test -x ./main
+    &lt;test@main.c:0&gt;
           0  void test(void)
              {
           2      printf("hello\n");
           3  }
-             
-             int main(int argc, char *argv[])
-             {
+              
+$ sudo perf probe -x ./main 'myprobe=test:0'
+$ sudo perf stat -e probe_main:* ./main
+     Performance counter stats for './main':
+                     1      probe_main:myprobe                                                 
 
-$ sudo perf probe -x ./hello 'hello=test:2'
-$ sudo perf stat -e probe_hello:* ./hello
-    hello
-    hello
+$ sudo perf probe --del probe_main:*
+    Removed event: probe_main:myprobe
+</pre><br>
 
-     Performance counter stats for './hello':
-
-                     2      probe_hello:hello                                                  
-
-           0.001206085 seconds time elapsed
-
-           0.001267000 seconds user
-           0.000000000 seconds sys
-
-$ sudo perf probe --del probe_hello:*
-    Removed event: probe_hello:hello
-</pre>
 <p>
-添加Probe的方式也可以用如下固定位址方式
+Probe方式2
 </p>
 <pre>
-$ sudo perf probe -x ./hello -a fun1=0xXXX
+$ nm main | grep test
+    0000000000001139 T test
+
+$ sudo perf probe -x ./main -a myprobe=0x1139
+$ sudo perf stat -e probe_main:* ./main
+     Performance counter stats for './main':
+                     1      probe_main:myprobe                                                 
+
+$ sudo perf probe --del probe_main:*
+    Removed event: probe_main:myprobe
+</pre><br>
+
+<p>
+Probe方式3
+</p>
+<pre>
+$ nm main | grep test
+    0000000000001139 T test
+
+$ su
+# echo 'p:myprobe ./main:0x1139' &gt; /sys/kernel/tracing/uprobe_events
+# echo 1 &gt; /sys/kernel/tracing/events/uprobes/myprobe/enable
+# ./main 
+    hello
+
+# tail /sys/kernel/tracing/trace
+#
+#                                _-----=&gt; irqs-off/BH-disabled
+#                               / _----=&gt; need-resched
+#                              | / _---=&gt; hardirq/softirq
+#                              || / _--=&gt; preempt-depth
+#                              ||| / _-=&gt; migrate-disable
+#                              |||| /     delay
+#           TASK-PID     CPU#  |||||  TIMESTAMP  FUNCTION
+#              | |         |   |||||     |         |
+            main-41148   [000] DNZff 10856.113989: myprobe: (0x55fc66688139)
+
+# cat /sys/kernel/tracing/uprobe_events 
+    p:uprobes/myprobe ./main:0x0000000000001139
+
+# echo 0 &gt; /sys/kernel/tracing/events/uprobes/myprobe/enable
+# echo "" &gt; /sys/kernel/tracing/uprobe_events 
 </pre>
 
 <br><script type="text/javascript" src="../tail.js"></script>
