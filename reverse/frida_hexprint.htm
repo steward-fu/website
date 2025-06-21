@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head><script type="text/javascript" src="../page_head.js"></script>
 
-<h3><a href="../reverse.htm">逆向工程</a> - Frida - <b>Dump Hex Value</b></h3>
+<h3><a href="../reverse.htm">逆向工程</a> - Frida - <b>Print Hex Value</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
@@ -44,17 +44,23 @@ import sys
 import frida
  
 def on_message(message, data):
-    print(message['payload'])
+    print(message)
  
 session = frida.attach("main")
  
 script = session.create_script("""
     Interceptor.attach(ptr("%s"), {
         onEnter: function (args) {
-            this.saveArg = args[0]
+            this.saveArg = args[0];
         },
         onLeave: function (retval) {
-            send(hexdump(this.saveArg, {offset:0, length:4}));
+            var a = this.saveArg.readByteArray(4);
+            var b = new Uint8Array(a);
+
+            send("0x" + b[0].toString(16));
+            send("0x" + b[1].toString(16));
+            send("0x" + b[2].toString(16));
+            send("0x" + b[3].toString(16));
         }
     });
 """ % int(sys.argv[1], 16))
@@ -73,8 +79,10 @@ $ ./main&amp;
     test()=0x55cadeb1e149
 
 $ python3 ./hook.py 0x55cadeb1e149
-                   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F  0123456789ABCDEF
-    7ffdabe5d03c  00 11 22 33                                      .."3
+    {'type': 'send', 'payload': '0x0'}
+    {'type': 'send', 'payload': '0x11'}
+    {'type': 'send', 'payload': '0x22'}
+    {'type': 'send', 'payload': '0x33'}
 </pre>
 
 <br><script type="text/javascript" src="../tail.js"></script>
