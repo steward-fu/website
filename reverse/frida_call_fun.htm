@@ -10,20 +10,20 @@ https://github.com/frida/frida<br>
 https://frida.re/docs/functions/<br>
 https://frida.re/docs/installation/<br><br>
 
-hello.c
+main.c
 </p>
 <pre class="brush:cpp">
 #include &lt;stdio.h&gt;
 #include &lt;unistd.h&gt;
 
-static void print_value(int v)
+static void test(int v)
 {
     printf("%d\n", v);
 }
 
 int main(int argc, char *argv[])
 {
-    printf("print_value()=%p\n", print_value);
+    printf("test()=%p\n", test);
 
     while (1) {
         usleep(1000000);
@@ -40,7 +40,7 @@ hook.py
 import sys
 import frida
 
-session = frida.attach("hello")
+session = frida.attach("main")
 
 script = session.create_script("""
     const f = new NativeFunction(ptr("%s"), 'void', ['int']);
@@ -56,9 +56,9 @@ script.load()
 編譯、執行
 </p>
 <pre>
-$ gcc hello.c -o hello
-$ ./hello&amp;
-    print_value()=0x555841a18149
+$ gcc main.c -o main
+$ ./main&amp;
+    test()=0x555841a18149
 
 $ python3 ./hook.py 0x555841a18149
     1111
