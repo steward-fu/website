@@ -1,0 +1,64 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - Python - v3.x - <b>HTTPS Server</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://gist.github.com/ndavison/6a5d97cb8a9091cffa7a<br><br>
+
+server.py
+</p>
+<pre class="brush:python">
+import sys
+import ssl
+import http.server
+
+httpd = http.server.HTTPServer((sys.argv[1], int(sys.argv[2])), http.server.SimpleHTTPRequestHandler)
+ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+ctx.load_cert_chain(certfile='server_cert.pem', keyfile='server_key.pem')
+httpd.socket = ctx.wrap_socket(httpd.socket, server_side=True)
+httpd.serve_forever()
+</pre><br>
+
+<p>
+client.py
+</p>
+<pre class="brush:python">
+import sys
+import ssl
+import socket
+
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.connect((sys.argv[1], int(sys.argv[2])))
+
+s = ssl.wrap_socket(s, keyfile='client_key.pem', certfile='client_cert.pem', server_side=False)
+s.sendall(f"GET / HTTP/1.1\r\nHost: github.com\r\nConnection: close\r\n\r\n".encode())
+
+r = s.recv(1024)
+if r != None:
+    print(r)
+s.close()
+</pre><br>
+
+<p>
+測試
+</p>
+<pre>
+$ openssl req -x509 -nodes -days 3650 -newkey rsa:4096 -keyout ca_key.pem -out ca_cert.pem -subj "/C=US/ST=Acme State/L=Acme City/O=Acme Inc./CN=example.com"
+
+$ openssl genrsa -out server_key.pem 4096
+$ openssl req -new -key server_key.pem -out server_cert.csr -subj "/C=US/ST=Acme State/L=Acme City/O=Acme Inc./CN=server.example.com"
+$ openssl x509 -req -days 1460 -in server_cert.csr -CA ca_cert.pem -CAkey ca_key.pem -CAcreateserial -out server_cert.pem
+
+$ openssl genrsa -out client_key.pem 4096
+$ openssl req -new -key client_key.pem -out client_cert.csr -subj "/C=US/ST=Acme State/L=Acme City/O=Acme Inc./CN=client.example.com"
+$ openssl x509 -req -days 1460 -in client_cert.csr -CA ca_cert.pem -CAkey ca_key.pem -CAcreateserial -out client_cert.pem
+
+$ python3 ./server.py 127.0.0.1 9999&amp;
+$ python3 ./client.py 127.0.0.1 9999
+    b'HTTP/1.0 200 OK\r\nServer: SimpleHTTP/0.6 Python/3.11.2\r\nDate: Sat, 21 Jun 2025 08:06:46 GMT\r\nContent-type: text/html; charset=utf-8\r\nContent-Length: 872\r\n\r\n'
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
