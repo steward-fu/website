@@ -1,0 +1,113 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../reverse.htm">逆向工程</a> - Frida - <b>Print Struct Value</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/frida/frida<br>
+https://frida.re/docs/functions/<br>
+https://frida.re/docs/installation/<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;unistd.h&gt;
+
+typedef struct {
+    uint32_t v[4];
+    double d[2];
+} mydata;
+ 
+static void test(mydata *p)
+{
+    p-&gt;v[0] = 0x00;
+    p-&gt;v[1] = 0x11;
+    p-&gt;v[2] = 0x22;
+    p-&gt;v[3] = 0x33;
+    p-&gt;d[0] = 100.1234;
+    p-&gt;d[1] = 200.5678;
+}
+ 
+int main(int argc, char *argv[])
+{
+    mydata p = { 0 };
+
+    printf("test()=%p\n", test); 
+    usleep(10000000);
+    test(&amp;p);
+ 
+    return 0;
+}
+</pre><br>
+
+<p>
+hook.py
+</p>
+<pre class="brush:python">
+import sys
+import frida
+ 
+def on_message(message, data):
+    print(message)
+ 
+session = frida.attach("main")
+ 
+script = session.create_script("""
+    Interceptor.attach(ptr("%s"), {
+        onEnter: function (args) {
+            this.saveArg = args[0];
+        },
+        onLeave: function (retval) {
+            var raw = this.saveArg.readByteArray(32);
+            var u8 = new Uint8Array(raw);
+            var u32 = new Uint32Array(raw);
+
+            send("0x" + u32[0].toString(16));
+            send("0x" + u32[1].toString(16));
+            send("0x" + u32[2].toString(16));
+            send("0x" + u32[3].toString(16));
+
+            var buf = new ArrayBuffer(8);
+            var view = new DataView(buf);
+            for (var i = 0; i &lt; 8; i++) {
+                view.setUint8(i, u8[16 + (7 - i)]);
+            }
+            var num = view.getFloat64(0);
+            send(num.toString());
+
+            for (var i = 0; i &lt; 8; i++) {
+                view.setUint8(i, u8[24 + (7 - i)]);
+            }
+            var num = view.getFloat64(0);
+            send(num.toString());
+        }
+    });
+""" % int(sys.argv[1], 16))
+ 
+script.on('message', on_message)
+script.load()
+sys.stdin.read()
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ gcc main.c -o main
+$ ./main&amp;
+    test()=0x55cadeb1e149
+
+$ python3 ./hook.py 0x55cadeb1e149
+    {'type': 'send', 'payload': '0x0'}
+    {'type': 'send', 'payload': '0x11'}
+    {'type': 'send', 'payload': '0x22'}
+    {'type': 'send', 'payload': '0x33'}
+    {'type': 'send', 'payload': '100.1234'}
+    {'type': 'send', 'payload': '200.5678'}
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
