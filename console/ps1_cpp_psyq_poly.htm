@@ -1,0 +1,84 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../console.htm">家用機</a> - Play Station - C/C++ (PsyQ) - <b>Draw Polygon</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://psx.arthus.net/starting.html<br>
+https://github.com/ABelliqueux/nolibgs_hello_worlds#installation<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;sys/types.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;libgte.h&gt;
+#include &lt;libetc.h&gt;
+#include &lt;libgpu.h&gt;
+ 
+int main(int argc, char *argv[])
+{
+    const int w = 320;
+    const int h = 240;
+    u_long ot = 0;
+    DISPENV disp = { 0 };
+    DRAWENV draw = { 0 };
+
+    long flag = 0;
+    long depth = 0;
+    POLY_F4 *poly = 0;
+    char buf[32768] = { 0 };
+    MATRIX PolyMatrix = { 0 }; 
+    SVECTOR RotVector = { 0 };
+    SVECTOR VertPos[4] = {
+        { -20, -20, 1 },
+        { -20,  20, 1 },
+        {  20, -20, 1 },
+        {  20,  20, 1 }
+    };
+
+    ResetGraph(0);
+    InitGeom();
+    SetGeomOffset(w / 2, h / 2);
+ 
+    SetDefDispEnv(&amp;disp, 0, 0, w, h);
+    SetDefDrawEnv(&amp;draw, 0, 0, w, h);
+    SetDispMask(1);
+    setRGB0(&amp;draw, 0, 0, 0);
+    draw.isbg = 1;
+ 
+    PutDispEnv(&amp;disp);
+    PutDrawEnv(&amp;draw);
+ 
+    FntLoad(640, 0);
+    FntOpen(100, 100, w, h, 0, 255);
+ 
+    while (1) {
+        poly = (POLY_F4 *)buf;
+        setPolyF4(poly);
+        setRGB0(poly, 255, 0, 0);
+
+        RotMatrix(&amp;RotVector, &amp;PolyMatrix);
+        SetRotMatrix(&amp;PolyMatrix);
+        RotTransPers(&amp;VertPos[0], (long *)&amp;poly-&gt;x0, &amp;depth, &amp;flag);
+        RotTransPers(&amp;VertPos[1], (long *)&amp;poly-&gt;x1, &amp;depth, &amp;flag);
+        RotTransPers(&amp;VertPos[2], (long *)&amp;poly-&gt;x2, &amp;depth, &amp;flag);
+        RotTransPers(&amp;VertPos[3], (long *)&amp;poly-&gt;x3, &amp;depth, &amp;flag);
+        addPrim(&amp;ot, buf);
+        DrawOTag(&amp;ot);
+ 
+        FntFlush(-1);
+        DrawSync(0);
+        VSync(0);
+    }
+ 
+    return 0;
+}
+</pre>
+<p>
+<img src="ps1_cpp_psyq_poly/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
