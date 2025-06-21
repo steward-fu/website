@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head><script type="text/javascript" src="../page_head.js"></script>
 
-<h3><a href="../reverse.htm">逆向工程</a> - Frida - <b>Hook Process Function</b></h3>
+<h3><a href="../reverse.htm">逆向工程</a> - Frida - <b>Get Return Value</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
@@ -15,23 +15,18 @@ main.c
 <pre class="brush:cpp">
 #include &lt;stdio.h&gt;
 #include &lt;unistd.h&gt;
-
-static void test(int v)
+ 
+static int test(void)
 {
-    printf("%d\n", v);
+    return 1234;
 }
-
+ 
 int main(int argc, char *argv[])
 {
-    int cc = 0;
-
     printf("test()=%p\n", test);
-
-    while (1) {
-        test(cc++);
-        usleep(1000000);
-    }
-
+    usleep(10000000);
+    test();
+ 
     return 0;
 }
 </pre><br>
@@ -42,20 +37,22 @@ hook.py
 <pre class="brush:python">
 import sys
 import frida
-
+ 
 def on_message(message, data):
     print(message)
-
+ 
 session = frida.attach("main")
-
+ 
 script = session.create_script("""
     Interceptor.attach(ptr("%s"), {
-        onEnter(args) {
-            send(args[0].toInt32());
+        onEnter: function (args) {
+        },
+        onLeave: function (retval) {
+            send(retval.toInt32());
         }
     });
 """ % int(sys.argv[1], 16))
-
+ 
 script.on('message', on_message)
 script.load()
 sys.stdin.read()
@@ -67,19 +64,10 @@ sys.stdin.read()
 <pre>
 $ gcc main.c -o main
 $ ./main&amp;
-    test()=0x555841a18149
-    0
-    1
-    2
-    3
-    4
-    5
+    test()=0x555d0fb52149
 
-$ python3 ./hook.py 0x555841a18149
-    {'type': 'send', 'payload': 6}
-    {'type': 'send', 'payload': 7}
-    {'type': 'send', 'payload': 8}
-    {'type': 'send', 'payload': 9}
+$ python3 ./hook.py 0x555d0fb52149
+    {'type': 'send', 'payload': 1234}
 </pre>
 
 <br><script type="text/javascript" src="../tail.js"></script>
