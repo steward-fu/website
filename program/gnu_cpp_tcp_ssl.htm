@@ -1,0 +1,190 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - GNU - C/C++ - <b>TCP Server、Client(SSL)</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://www.geeksforgeeks.org/socket-programming-cc/<br>
+https://github.com/openssl/openssl/wiki/Simple_TLS_Server<br>
+https://github.com/zapstar/two-way-ssl-c/blob/master/certs_gen.sh<br>
+https://stackoverflow.com/questions/16255323/make-an-https-request-using-sockets-on-linux<br><br>
+
+server.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;sys/socket.h&gt;
+#include &lt;netinet/in.h&gt;
+#include &lt;arpa/inet.h&gt;
+#include &lt;openssl/ssl.h&gt;
+ 
+int main(int argc, char const* argv[])
+{
+    int opt = 1;
+    int fd = -1;
+    int client = 0;
+    ssize_t r = 0;
+    char buf[255] = { 0 };
+    struct sockaddr_in addr = { 0 };
+    const char *hello = "hello from server !";
+ 
+    if (argc != 3) {
+        printf("Usage: %s IP Port\n", argv[0]);
+        return 0;
+    }
+
+    SSL_library_init();
+    SSL_CTX *ctx = SSL_CTX_new(SSLv23_server_method());
+    SSL_CTX_use_certificate_file(ctx, "server_cert.pem", SSL_FILETYPE_PEM);
+    SSL_CTX_use_PrivateKey_file(ctx, "server_key.pem", SSL_FILETYPE_PEM);
+ 
+    fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (fd &lt; 0) {
+        printf("failed to init socket\n");
+        return -1;
+    }
+
+    if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &amp;opt, sizeof(opt)) != 0) {
+        printf("failed to set sockopt\n");
+        return -1;
+    }
+ 
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = inet_addr(argv[1]);
+    addr.sin_port = htons(atoi(argv[2])); 
+    if (bind(fd, (struct sockaddr *)&amp;addr, sizeof(addr)) != 0) {
+        printf("failed to bind address\n");
+        return -1;
+    }
+ 
+    if (listen(fd, 3) != 0) {
+        printf("failed to listen\n");
+        return -1;
+    }
+ 
+    socklen_t addrlen = sizeof(addr);
+    client = accept(fd, (struct sockaddr *)&amp;addr, &amp;addrlen);
+    if (client &lt; 0) {
+        printf("failed to accept from client\n");
+        return -1;
+    }
+
+    SSL *ssl = SSL_new(ctx);
+    SSL_set_fd(ssl, client);
+    if (SSL_accept(ssl) != 1) {
+        printf("failed to accept with ssl\n");
+        return -1;
+    }
+ 
+    r = SSL_read(ssl, buf, sizeof(buf));
+    printf("%s (r=%d)\n", buf, r);
+
+    SSL_write(ssl, hello, strlen(hello));
+    close(client);
+
+    SSL_shutdown(ssl);
+    SSL_free(ssl);
+    close(fd);
+    SSL_CTX_free(ctx);
+    return 0;
+}
+</pre><br>
+
+<p>
+client.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;sys/socket.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;arpa/inet.h&gt;
+#include &lt;openssl/ssl.h&gt;
+ 
+int main(int argc, char const* argv[])
+{
+    int r = 0;
+    int fd = -1;
+    char buf[255] = { 0 };
+    struct sockaddr_in addr = { 0 };
+    const char *hello = "hello from client !";
+ 
+    if (argc != 3) {
+        printf("Usage: %s IP Port\n", argv[0]);
+        return 0;
+    }
+
+    SSL_library_init();
+    SSL_CTX *ctx = SSL_CTX_new(SSLv23_client_method());
+    SSL_CTX_use_certificate_file(ctx, "client_cert.pem", SSL_FILETYPE_PEM);
+    SSL_CTX_use_PrivateKey_file(ctx, "client_key.pem", SSL_FILETYPE_PEM);
+ 
+    fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (fd &lt; 0) {
+        printf("failed to init socket\n");
+        return -1;
+    }
+ 
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(atoi(argv[2])); 
+    if (inet_pton(AF_INET, argv[1], &amp;addr.sin_addr) != 1) {
+        printf("failed to translate address\n");
+        return -1;
+    }
+
+    SSL *ssl = SSL_new(ctx);
+    SSL_set_fd(ssl, fd);
+ 
+    if (connect(fd, (struct sockaddr *)&amp;addr, sizeof(addr)) != 0) {
+        printf("failed to connect to server\n");
+        return -1;
+    }
+
+    if (SSL_connect(ssl) != 1) {
+        printf("failed to connect with ssl\n");
+        return -1;
+    }
+    SSL_write(ssl, hello, strlen(hello));
+    usleep(100000);
+
+    r = SSL_read(ssl, buf, sizeof(buf));
+    printf("%s (r=%d)\n", buf, r);
+
+    SSL_shutdown(ssl);
+    SSL_free(ssl);
+    close(fd);
+    SSL_CTX_free(ctx);
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ openssl req -x509 -nodes -days 3650 -newkey rsa:4096 -keyout ca_key.pem -out ca_cert.pem -subj "/C=US/ST=Acme State/L=Acme City/O=Acme Inc./CN=example.com"
+
+$ openssl genrsa -out server_key.pem 4096
+$ openssl req -new -key server_key.pem -out server_cert.csr -subj "/C=US/ST=Acme State/L=Acme City/O=Acme Inc./CN=server.example.com"
+$ openssl x509 -req -days 1460 -in server_cert.csr -CA ca_cert.pem -CAkey ca_key.pem -CAcreateserial -out server_cert.pem
+
+$ openssl genrsa -out client_key.pem 4096
+$ openssl req -new -key client_key.pem -out client_cert.csr -subj "/C=US/ST=Acme State/L=Acme City/O=Acme Inc./CN=client.example.com"
+$ openssl x509 -req -days 1460 -in client_cert.csr -CA ca_cert.pem -CAkey ca_key.pem -CAcreateserial -out client_cert.pem
+
+$ gcc server.c -o server
+$ gcc client.c -o client
+
+$ ./server 127.0.0.1 9999 &amp;
+$ ./client 127.0.0.1 9999
+    hello from client !
+    hello from server !
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
