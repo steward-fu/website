@@ -1,0 +1,114 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../console.htm">家用機</a> - Play Station - C/C++ (PsyQ) - <b>Load Font Image</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://psx.arthus.net/starting.html<br>
+https://github.com/ABelliqueux/nolibgs_hello_worlds/wiki/FONT<br>
+https://github.com/ABelliqueux/nolibgs_hello_worlds#installation<br>
+https://github.com/ABelliqueux/nolibgs_hello_worlds/wiki/(Archived)--Embedding-binary-data-in-your-psx-executable<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;sys/types.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;libgte.h&gt;
+#include &lt;libetc.h&gt;
+#include &lt;libgpu.h&gt;
+
+#define FONTX 960
+#define FONTY 0
+
+extern unsigned long _binary_font_tim_start[];
+extern unsigned long _binary_font_tim_end[];
+extern unsigned long _binary_font_tim_length;
+ 
+int main(int argc, char *argv[])
+{
+    const int w = 320;
+    const int h = 240;
+    DISPENV disp = { 0 };
+    DRAWENV draw = { 0 };
+
+    u_long ot = 0;
+    TIM_IMAGE tim = { 0 };
+    char buf[32768] = { 0 };
+
+    CVECTOR fntColor = { 255, 0, 0 };
+    CVECTOR fntColorBG = { 255, 255, 255 };
+    RECT bg = { FONTX, FONTY + 128, 1, 1 };
+    RECT fg = { FONTX + 1, FONTY + 128, 1, 1 };
+ 
+    ResetGraph(0);
+ 
+    SetDefDispEnv(&amp;disp, 0, 0, w, h);
+    SetDefDrawEnv(&amp;draw, 0, 0, w, h);
+    SetDispMask(1);
+    setRGB0(&amp;draw, 0, 0, 0);
+    draw.isbg = 1;
+ 
+    PutDispEnv(&amp;disp);
+    PutDrawEnv(&amp;draw);
+
+    FntLoad(FONTX, FONTY);
+    FntOpen(32, 32, w, h, 0, 128);
+ 
+    OpenTIM(_binary_font_tim_start);
+    ReadTIM(&amp;tim);
+    LoadImage(tim.prect, tim.paddr);
+    DrawSync(0);
+    if (tim.mode &amp; 8){
+        LoadImage(tim.crect, tim.caddr);
+        DrawSync(0);
+    }
+
+    while (1) {
+        ClearImage(&amp;fg, fntColor.r, fntColor.g, fntColor.b);
+        ClearImage(&amp;bg, fntColorBG.r, fntColorBG.g, fntColorBG.b);
+
+        FntPrint("!\"#$%%&amp;'()*+,-./\n");
+        FntPrint("0123456789:;&lt;=^?\n");
+        FntPrint("@ABCDEFGHIJKLMNO\n");
+        FntPrint("PQRSTUVWXYZ[\\]&gt;\n");
+
+        FntFlush(-1);
+
+        DrawSync(0);
+        VSync(0);
+        PutDispEnv(&amp;disp);
+        PutDrawEnv(&amp;draw);
+    }
+ 
+    return 0;
+}
+</pre>
+<p>
+P.S. img2tim會將PNG路徑轉成變數名稱：<b>_binary</b> + 路徑 + 檔名 + <b>_start</b>，路徑如果包含<b>/</b>、<b>.</b>，則會被轉成<b>_</b><br><br>
+
+font.png<br>
+<img src="ps1_cpp_psyq_font/1.png" class="maxSize"><br><br>
+
+編譯、執行
+</p>
+<pre>
+$ img2tim -b -usealpha -org 960 0 -plt 960 128 -bpp 4 -o font.tim font.png
+$ mipsel-linux-gnu-objcopy -I binary -O elf32-tradlittlemips -B mips font.tim font.o
+$ strings font.o | grep _binary
+    _binary_font_tim_start
+    _binary_font_tim_end
+    _binary_font_tim_size
+
+$ mipsel-linux-gnu-gcc -I/opt/nugget/psyq/include -I/opt/psyq/include -march=mips1 -mabi=32 -EL -fno-builtin -fno-pic -mno-shared -mno-abicalls -mfp32 -nostdlib main.c -c -o main.o
+$ mipsel-linux-gnu-gcc -I/opt/nugget/psyq/include -I/opt/psyq/include -march=mips1 -mabi=32 -EL -fno-builtin -fno-pic -mno-shared -mno-abicalls -mfp32 -nostdlib main.o font.o -o main.elf /opt/nugget/common/crt0/crt0.o /opt/nugget/common/syscalls/printf.o -static -L/opt/psyq/lib -Wl,--start-group -lapi -lc -lc2 -lcard -lcomb -lds -letc -lgpu -lgs -lgte -lgun -lhmd -lmath -lmcrd -lmcx -lpad -lpress -lsio -lsnd -lspu -ltap -lcd -Wl,--end-group -Wl,--oformat=elf32-tradlittlemips -Tpsexe.ld
+
+$ /opt/ps1/pcsx main.exe
+</pre>
+<p>
+<img src="ps1_cpp_psyq_font/2.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
