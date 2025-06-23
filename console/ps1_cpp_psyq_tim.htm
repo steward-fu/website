@@ -1,0 +1,106 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../console.htm">家用機</a> - Play Station - C/C++ (PsyQ) - <b>Texture Image(TIM)</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://psx.arthus.net/starting.html<br>
+https://github.com/ABelliqueux/nolibgs_hello_worlds#installation<br>
+https://github.com/ABelliqueux/nolibgs_hello_worlds/wiki/(Archived)--Embedding-binary-data-in-your-psx-executable<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;sys/types.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;libgte.h&gt;
+#include &lt;libetc.h&gt;
+#include &lt;libgpu.h&gt;
+
+extern unsigned long _binary_ps1_tim_start[];
+extern unsigned long _binary_ps1_tim_end[];
+extern unsigned long _binary_ps1_tim_length;
+ 
+int main(int argc, char *argv[])
+{
+    const int w = 320;
+    const int h = 240;
+    DISPENV disp = { 0 };
+    DRAWENV draw = { 0 };
+
+    u_long ot = 0;
+    SPRT *sprt = 0;
+    DR_TPAGE *tpage = 0;
+    TIM_IMAGE tim = { 0 };
+    char buf[32768] = { 0 };
+ 
+    ResetGraph(0);
+ 
+    SetDefDispEnv(&amp;disp, 0, 0, w, h);
+    SetDefDrawEnv(&amp;draw, 0, 0, w, h);
+    SetDispMask(1);
+    setRGB0(&amp;draw, 0, 0, 0);
+    draw.isbg = 1;
+ 
+    PutDispEnv(&amp;disp);
+    PutDrawEnv(&amp;draw);
+ 
+    OpenTIM(_binary_ps1_tim_start);
+    ReadTIM(&amp;tim);
+    LoadImage(tim.prect, tim.paddr);
+    DrawSync(0);
+    if (tim.mode &amp; 8){
+        LoadImage(tim.crect, tim.caddr);
+        DrawSync(0);
+    }
+
+    while (1) {
+        sprt = (SPRT *)buf;
+        setSprt(sprt);
+        setRGB0(sprt, 128, 128, 128);
+        setXY0(sprt, 0, 0);
+        setWH(sprt, 200, 200);
+        addPrim(&amp;ot, sprt);
+
+        tpage = (DR_TPAGE *)(buf + sizeof(SPRT));
+        setDrawTPage(tpage, 0, 1, getTPage(tim.mode &amp; 3, 0, tim.prect-&gt;x, tim.prect-&gt;y));
+        addPrim(&amp;ot, tpage);
+
+        DrawSync(0);
+        VSync(0);
+        PutDispEnv(&amp;disp);
+        PutDrawEnv(&amp;draw);
+        DrawOTag(&amp;ot);
+    }
+ 
+    return 0;
+}
+</pre>
+<p>
+P.S. img2tim會將PNG路徑轉成變數名稱：<b>_binary</b> + 路徑 + 檔名 + <b>_start</b>，路徑如果包含<b>/</b>、<b>.</b>，則會被轉成<b>_</b><br><br>
+
+ps1.png<br>
+<img src="ps1_cpp_psyq_tim/1.png" class="maxSize"><br><br>
+
+編譯、執行
+</p>
+<pre>
+$ img2tim ps1.png -o ps1.tim
+$ mipsel-linux-gnu-objcopy -I binary -O elf32-tradlittlemips -B mips ps1.tim ps1.o
+$ strings ps1.o | tail | grep _binary
+    _binary_ps1_tim_start
+    _binary_ps1_tim_end
+    _binary_ps1_tim_size
+
+$ mipsel-linux-gnu-gcc -I/opt/nugget/psyq/include -I/opt/psyq/include -march=mips1 -mabi=32 -EL -fno-builtin -fno-pic -mno-shared -mno-abicalls -mfp32 -nostdlib main.c -c -o main.o
+$ mipsel-linux-gnu-gcc -I/opt/nugget/psyq/include -I/opt/psyq/include -march=mips1 -mabi=32 -EL -fno-builtin -fno-pic -mno-shared -mno-abicalls -mfp32 -nostdlib main.o ps1.o -o main.elf /opt/nugget/common/crt0/crt0.o /opt/nugget/common/syscalls/printf.o -static -L/opt/psyq/lib -Wl,--start-group -lapi -lc -lc2 -lcard -lcomb -lds -letc -lgpu -lgs -lgte -lgun -lhmd -lmath -lmcrd -lmcx -lpad -lpress -lsio -lsnd -lspu -ltap -lcd -Wl,--end-group -Wl,--oformat=elf32-tradlittlemips -Tpsexe.ld
+
+$ /opt/ps1/pcsx main.exe
+</pre>
+<p>
+<img src="ps1_cpp_psyq_tim/2.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
