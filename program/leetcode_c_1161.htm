@@ -1,0 +1,72 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - LeetCode - C - <b>1161. Maximum Level Sum of a Binary Tree</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://www.cnblogs.com/grandyang/p/15022629.html<br><br>
+
+題目：<br>
+<img src="leetcode_c_1161/1.jpg" class="maxSize"><br><br>
+
+解答：
+</p>
+<pre class="brush:cpp">
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     struct TreeNode *left;
+ *     struct TreeNode *right;
+ * };
+ */
+int maxLevelSum(struct TreeNode *root)
+{
+    int r = 0;
+    int st = 0;
+    int ep = 0;
+    int max = 0;
+    int level = 0;
+    struct TreeNode *buf[10000] = { 0 };
+
+    if (!root) {
+        return 0;
+    }
+
+    r = 1;
+    buf[ep++] = root;
+    max = root-&gt;val;
+
+    while ((ep - st) &gt; 0) {
+        int cnt = 0;
+        int cc = 0;
+        int s0 = st;
+        int s1 = ep;
+
+        for (cc = s0; cc &lt; s1; cc++) {
+            st += 1;
+            cnt += buf[cc]-&gt;val;
+
+            if (buf[cc]-&gt;left) {
+                buf[ep++] = buf[cc]-&gt;left;
+            }
+
+            if (buf[cc]-&gt;right) {
+                buf[ep++] = buf[cc]-&gt;right;
+            }
+        }
+
+        level += 1;
+        if (cnt &gt; max) {
+            max = cnt;
+            r = level;
+        }
+    }
+
+    return r;
+}
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
