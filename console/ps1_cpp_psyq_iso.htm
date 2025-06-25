@@ -1,0 +1,101 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../console.htm">家用機</a> - Play Station - C/C++ (PsyQ) - <b>Make CD-ROM ISO</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://psx.arthus.net/starting.html<br>
+https://github.com/ABelliqueux/nolibgs_hello_worlds#installation<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;sys/types.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;libgte.h&gt;
+#include &lt;libetc.h&gt;
+#include &lt;libgpu.h&gt;
+ 
+int main(int argc, char *argv[])
+{
+    const int w = 320;
+    const int h = 240;
+    DISPENV disp = { 0 };
+    DRAWENV draw = { 0 };
+ 
+    ResetGraph(0);
+ 
+    SetDefDispEnv(&amp;disp, 0, 0, w, h);
+    SetDefDrawEnv(&amp;draw, 0, 0, w, h);
+    SetDispMask(1);
+    setRGB0(&amp;draw, 0, 0, 0);
+    draw.isbg = 1;
+ 
+    PutDispEnv(&amp;disp);
+    PutDrawEnv(&amp;draw);
+ 
+    FntLoad(640, 0);
+    FntOpen(100, 100, w, h, 0, 255);
+ 
+    while (1) {
+        FntPrint("Hello, world!");
+ 
+        FntFlush(-1);
+        DrawSync(0);
+        VSync(0);
+        PutDispEnv(&amp;disp);
+        PutDrawEnv(&amp;draw);
+    }
+ 
+    return 0;
+}
+</pre><br>
+
+<p>
+system.cnf
+</p>
+<pre>
+BOOT=cdrom:\main.exe;1
+TCB=4
+EVENT=10
+STACK=801FFFF0
+</pre><br>
+
+<p>
+cdrom.xml
+</p>
+<pre class="brush:xml">
+&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;iso_project image_name="cdrom.bin" cue_sheet="cdrom.cue"&gt;
+    &lt;track type="data"&gt;
+        &lt;identifiers
+            system="playstation"
+            application="playstation"
+            volume="main"
+            volume_set="main"
+            publisher="main"
+            data_preparer="mkpsxiso"
+        /&gt;
+        &lt;directory_tree&gt;
+            &lt;file name="system.cnf" type="data" source="system.cnf"/&gt;
+            &lt;file name="main.exe" type="data" source="main.exe"/&gt;
+        &lt;/directory_tree&gt;
+    &lt;/track&gt;
+&lt;/iso_project&gt;
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ make
+$ mkpsxiso -y cdrom.xml
+$ /opt/ps1/pcsx -cdfile cdrom.bin
+</pre>
+<p>
+<img src="ps1_cpp_psyq_iso/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
