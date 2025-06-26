@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head><script type="text/javascript" src="../page_head.js"></script>
 
-<h3><a href="../console.htm">家用機</a> - Play Station - C/C++ (PsyQ) - <b>Draw Texture Image(TIM)</b></h3>
+<h3><a href="../console.htm">家用機</a> - Play Station - C/C++ (PsyQ) - <b>Rotate Texture</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
@@ -18,35 +18,51 @@ main.c
 #include &lt;libgte.h&gt;
 #include &lt;libetc.h&gt;
 #include &lt;libgpu.h&gt;
-
+ 
 extern unsigned long _binary_ps1_tim_start[];
 extern unsigned long _binary_ps1_tim_end[];
 extern unsigned long _binary_ps1_tim_length;
- 
+  
 int main(int argc, char *argv[])
 {
     const int w = 320;
     const int h = 240;
     DISPENV disp = { 0 };
     DRAWENV draw = { 0 };
-
+ 
     u_long ot = 0;
     SPRT *sprt = 0;
     DR_TPAGE *tpage = 0;
     TIM_IMAGE tim = { 0 };
+
+    long flag = 0;
+    long depth = 0;
+    POLY_FT4 *poly = 0;
     char buf[32768] = { 0 };
- 
+    MATRIX PolyMatrix = { 0 };
+    VECTOR MovVector = { 0 };
+    VECTOR ScaleVector = { 0 };
+    SVECTOR RotVector = { 0 };
+    SVECTOR VertPos[4] = {
+        { -32, -32, 1 },
+        { -32,  32, 1 },
+        {  32, -32, 1 },
+        {  32,  32, 1 }
+    };
+  
     ResetGraph(0);
- 
+    InitGeom();
+    SetGeomOffset(w / 2, h / 2);
+  
     SetDefDispEnv(&amp;disp, 0, 0, w, h);
     SetDefDrawEnv(&amp;draw, 0, 0, w, h);
     SetDispMask(1);
     setRGB0(&amp;draw, 0, 0, 0);
     draw.isbg = 1;
- 
+  
     PutDispEnv(&amp;disp);
     PutDrawEnv(&amp;draw);
- 
+  
     OpenTIM(_binary_ps1_tim_start);
     ReadTIM(&amp;tim);
     LoadImage(tim.prect, tim.paddr);
@@ -55,18 +71,39 @@ int main(int argc, char *argv[])
         LoadImage(tim.crect, tim.caddr);
         DrawSync(0);
     }
-
+ 
     while (1) {
-        sprt = (SPRT *)buf;
-        setSprt(sprt);
-        setRGB0(sprt, 128, 128, 128);
-        setXY0(sprt, 0, 0);
-        setWH(sprt, 200, 200);
-        addPrim(&amp;ot, sprt);
+        poly = (POLY_FT4 *)buf;
 
-        tpage = (DR_TPAGE *)(buf + sizeof(SPRT));
-        setDrawTPage(tpage, 0, 1, getTPage(tim.mode &amp; 3, 0, tim.prect-&gt;x, tim.prect-&gt;y));
-        addPrim(&amp;ot, tpage);
+        ScaleVector.vx = ONE;
+        ScaleVector.vy = ONE;
+        ScaleVector.vz = ONE;
+
+        RotVector.vx = 0;
+        RotVector.vy = 0;
+        RotVector.vz = 180;
+
+        MovVector.vx = 50;
+        MovVector.vy = 0;
+        MovVector.vz = 0;
+
+        RotMatrix(&amp;RotVector, &amp;PolyMatrix);
+        TransMatrix(&amp;PolyMatrix, &amp;MovVector);
+        ScaleMatrix(&amp;PolyMatrix, &amp;ScaleVector);
+        SetRotMatrix(&amp;PolyMatrix);
+        SetTransMatrix(&amp;PolyMatrix);
+
+        setPolyFT4(poly);
+        poly-&gt;tpage = getTPage(tim.mode &amp; 3, 0, tim.prect-&gt;x, tim.prect-&gt;y);
+        setRGB0(poly, 128, 128, 128);
+
+        RotTransPers(&amp;VertPos[0], (long *)&amp;poly-&gt;x0, &amp;depth, &amp;flag);
+        RotTransPers(&amp;VertPos[1], (long *)&amp;poly-&gt;x1, &amp;depth, &amp;flag);
+        RotTransPers(&amp;VertPos[2], (long *)&amp;poly-&gt;x2, &amp;depth, &amp;flag);
+        RotTransPers(&amp;VertPos[3], (long *)&amp;poly-&gt;x3, &amp;depth, &amp;flag);
+
+        setUV4(poly, 0, 0, 0, 200, 200, 0, 200, 200);
+        addPrim(&amp;ot, buf);
 
         DrawSync(0);
         VSync(0);
@@ -74,7 +111,7 @@ int main(int argc, char *argv[])
         PutDrawEnv(&amp;draw);
         DrawOTag(&amp;ot);
     }
- 
+  
     return 0;
 }
 </pre>
@@ -100,7 +137,7 @@ $ mipsel-linux-gnu-gcc -I/opt/nugget/psyq/include -I/opt/psyq/include -march=mip
 $ /opt/ps1/pcsx main.exe
 </pre>
 <p>
-<img src="ps1_cpp_psyq_tim/2.jpg" class="maxSize">
+<img src="ps1_cpp_psyq_rotate_texture/1.jpg" class="maxSize">
 </p>
 
 <br><script type="text/javascript" src="../tail.js"></script>
