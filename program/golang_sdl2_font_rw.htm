@@ -1,0 +1,70 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - Golang - SDL 2.0 - <b>Open Font from Memory</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/veandco/go-sdl2<br>
+https://github.com/veandco/go-sdl2-examples<br>
+https://pkg.go.dev/github.com/veandco/go-sdl2#section-readme<br><br>
+
+初始化
+</p>
+
+<pre>
+$ go version
+    go version go1.24.4 linux/amd64
+
+$ go mod init main
+</pre><br>
+
+<p>
+main.go
+</p>
+<pre class="brush:go">
+package main
+   
+import (
+    "io/ioutil"
+    "github.com/veandco/go-sdl2/sdl"
+    "github.com/veandco/go-sdl2/ttf"
+)
+ 
+func main() {
+    sdl.Init(sdl.INIT_EVERYTHING);
+    defer sdl.Quit()
+   
+    window, _ := sdl.CreateWindow("main", 0, 0, 320, 240, sdl.WINDOW_SHOWN);
+    defer window.Destroy()
+ 
+    screen, _ := window.GetSurface()
+ 
+    ttf.Init()
+
+    data, _ := ioutil.ReadFile("main.ttf")
+    rwops, _ := sdl.RWFromMem(data)
+    font, _ := ttf.OpenFontRW(rwops, 1, 30)
+    text, _ := font.RenderUTF8Blended("司徒的教學網站", sdl.Color{R: 0, G: 255, B: 0, A: 255})
+    text.Blit(nil, screen, nil)
+    window.UpdateSurface()
+    defer font.Close()
+    defer text.Free()
+   
+    sdl.Delay(3000)
+} 
+</pre><br>
+
+<p>
+執行
+</p>
+<pre>
+$ go mod tidy
+$ go run -v main.go
+</pre>
+<p>
+<img src="golang_sdl2_font_rw/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
