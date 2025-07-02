@@ -1,0 +1,37 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../reverse.htm">逆向工程</a> - Frida - <b>解決frida.ProcessNotFoundError: process not found問題</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/frida/frida/issues/80<br><br>
+
+問題如下：
+</p>
+<pre>
+Traceback (most recent call last):
+  File "/home/user/Downloads/./hook.py", line 8, in <module>
+    session = frida.attach(int(sys.argv[1]))
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/user/.kepler/kntools/sdk/0.19.6/.pyenv/versions/3.12.6/lib/python3.12/site-packages/frida/__init__.py", line 96, in attach
+    return get_local_device().attach(target, realm=realm, persist_timeout=persist_timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/user/.kepler/kntools/sdk/0.19.6/.pyenv/versions/3.12.6/lib/python3.12/site-packages/frida/core.py", line 86, in wrapper
+    return f(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^
+  File "/home/user/.kepler/kntools/sdk/0.19.6/.pyenv/versions/3.12.6/lib/python3.12/site-packages/frida/core.py", line 1071, in attach
+    return Session(self._impl.attach(self._pid_of(target), **kwargs))  # type: ignore
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+frida.ProcessNotFoundError: process not found
+</pre><br>
+
+<p>
+解法如下：
+</p>
+<pre>
+$ sudo sysctl kernel.yama.ptrace_scope=0
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
