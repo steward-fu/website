@@ -28,29 +28,29 @@ main.c
 #include &lt;sys/stat.h&gt;
 #include &lt;fcntl.h&gt;
 #include &lt;unistd.h&gt;
- 
+  
 typedef struct {
     char ident[4];
     uint8_t unknown[20];
     uint8_t padding[8];
-} __attribute__((__packed__)) _app_ccdl;
- 
+} __attribute__((__packed__)) ccdl;
+  
 typedef struct {
     char ident[4];
     uint32_t unknown;
     uint32_t offset;
     uint32_t size;
     uint8_t padding[16];
-} __attribute__((__packed__)) _app_impt;
- 
+} __attribute__((__packed__)) import;
+  
 typedef struct {
     char ident[4];
     uint32_t unknown;
     uint32_t offset;
     uint32_t size;
     uint8_t padding[16];
-} __attribute__((__packed__)) _app_expt;
- 
+} __attribute__((__packed__)) export;
+  
 typedef struct {
     char ident[4];
     uint32_t unknown0;
@@ -60,66 +60,69 @@ typedef struct {
     uint32_t entry;
     uint32_t origin;
     uint32_t prog_size;
-} __attribute__((__packed__)) _app_rawd;
- 
+} __attribute__((__packed__)) raw_binary;
+  
 typedef struct {
     uint32_t str_offset;
     uint32_t unknown[2];
     uint32_t offset;
-} __attribute__((__packed__)) _app_impt_entry;
- 
+} __attribute__((__packed__)) import_entry;
+  
 typedef struct {
     uint32_t str_offset;
     uint32_t unknown[2];
     uint32_t offset;
-} __attribute__((__packed__)) _app_expt_entry;
- 
+} __attribute__((__packed__)) export_entry;
+  
 uint32_t print_table(uint8_t *src, uint32_t off, uint32_t size)
 {
     uint8_t *p = src + off;
     uint32_t str_off = off;
-    uint32_t cnt, total = size / sizeof(_app_impt_entry);
- 
+    uint32_t cnt, total = size / sizeof(import_entry);
+  
     for (cnt = 0; cnt &lt; total; cnt++) {
-        if (((_app_impt_entry *)p)-&gt;unknown[1] &gt; 0x20000) {
+        if (((import_entry *)p)-&gt;unknown[1] &gt; 0x20000) {
             printf("    string: count(0x%x) offset(0x%x)\n", cnt, str_off);
             break;
         }
-        p += sizeof(_app_impt_entry);
-        str_off += sizeof(_app_impt_entry);
+        p += sizeof(import_entry);
+        str_off += sizeof(import_entry);
     }
- 
+  
     p = src + off;
-    for (cnt = 0; cnt &lt; total; cnt++, p += sizeof(_app_impt_entry)) {
-        if (((_app_impt_entry *)p)-&gt;unknown[1] == 0x00000) {
+    for (cnt = 0; cnt &lt; total; cnt++, p += sizeof(import_entry)) {
+        if (((import_entry *)p)-&gt;unknown[1] == 0x00000) {
             continue;
         }
-        if (((_app_impt_entry *)p)-&gt;unknown[1] &gt; 0x20000) {
+        if (((import_entry *)p)-&gt;unknown[1] &gt; 0x20000) {
             break;
         }
-        printf("    0x%x(%s)\n", ((_app_impt_entry *)p)-&gt;offset, &amp;src[((_app_impt_entry *)p)-&gt;str_offset + str_off]);
+        printf("    0x%x(%s)\n", ((import_entry *)p)-&gt;offset, &amp;src[((import_entry *)p)-&gt;str_offset + str_off]);
     }
     return str_off;
 }
- 
+  
 int main(int argc, char** argv)
 {
     if (argc != 2) {
         printf("Usage:\n  app2bin xxx.app\n");
         return -1;
     }
- 
-    FILE* file = fopen(argv[1], "rb");
+
+    uintptr_t len = 0;
+    FILE *file = fopen(argv[1], "rb");
+
     if (file == NULL) {
         printf("Failed to open app: %s\n", argv[1]);
         return -1;
     }
+
     fseek(file, 0, SEEK_END);
-    uintptr_t len = ftell(file);
-    printf("App length: %d\n", len);
+    len = ftell(file);
     fseek(file, 0, SEEK_SET);
- 
-    uint8_t* body = (uint8_t *)malloc(len);
+    printf("App length: %d\n", len);
+  
+    uint8_t *body = (uint8_t *)malloc(len);
     if (body == NULL) {
         printf("Failed to allocate buffer for reading app\n");
         fclose(file);
@@ -127,67 +130,75 @@ int main(int argc, char** argv)
     }
     fread(body, 1, len, file);
     fclose(file);
- 
-    printf("Parsing App...\n");  
-    _app_ccdl ccdl;
-    _app_impt impt;
-    _app_expt expt;
-    _app_rawd rawd;
- 
+  
+    ccdl ccdl = { 0 };
+    import impt = { 0 };
+    export expt = { 0 };
+    raw_binary rawd = { 0 };
     uint8_t *ptr = body;
+
+    printf("Parsing App...\n");  
     if (memcmp(ptr, "CCDL", 4) != 0) {
         printf("Invalid App format (miss CCDL section)\n");
         goto err;
     }
-    ptr += sizeof(_app_ccdl);
- 
+    ptr += sizeof(ccdl);
+  
+    uint32_t export_size = 0;
+    uint32_t import_size = 0;
     uint32_t cnt = 0, total = 0;
-    uint32_t off = ((_app_impt *)ptr)-&gt;offset;
-    uint32_t size = ((_app_impt *)ptr)-&gt;size;
+    uint32_t off = ((import *)ptr)-&gt;offset;
+    uint32_t size = ((import *)ptr)-&gt;size;
+
     if (memcmp(ptr, "IMPT", 4) != 0) {
         printf("Invalid App format (miss IMPT section)\n");
         goto err;
     }
+
+    import_size = size;
     printf("Import offset: 0x%x\n", off);
     printf("Import size: 0x%x\n", size);
     print_table(body, off, size);
-    ptr += sizeof(_app_impt);
- 
+    ptr += sizeof(import);
+  
     if (memcmp(ptr, "EXPT", 4) != 0) {
         printf("Invalid App format (miss EXPT section)\n");
         goto err;
     }
-    off = ((_app_rawd *)ptr)-&gt;offset;
-    size = ((_app_rawd *)ptr)-&gt;size;
+
+    off = ((raw_binary *)ptr)-&gt;offset;
+    export_size = size = ((raw_binary *)ptr)-&gt;size;
     printf("Export offset: %d\n", off);
     printf("Export size: %d\n", size);
     print_table(body, off, size);
-    ptr += sizeof(_app_expt);
-   
+    ptr += sizeof(export);
+    
     if (memcmp(ptr, "RAWD", 4) != 0) {
         printf("Invalid App file format (miss RAWD section)\n");
         goto err;
     }
- 
-    off = ((_app_rawd *)ptr)-&gt;offset;
-    size = ((_app_rawd *)ptr)-&gt;size;
+  
+    off = ((raw_binary *)ptr)-&gt;offset;
+    size = ((raw_binary *)ptr)-&gt;size;
     printf("Raw offset: %d\n", off);
     printf("Raw size: %d\n", size);
-    printf("Raw entry: 0x%x\n", ((_app_rawd *)ptr)-&gt;entry);
-    printf("Raw origin: 0x%x\n", ((_app_rawd *)ptr)-&gt;origin);
-    printf("Raw prog_size: %d\n", ((_app_rawd *)ptr)-&gt;prog_size);
-    ptr += sizeof(_app_rawd);
-
+    printf("Raw entry: 0x%x\n", ((raw_binary *)ptr)-&gt;entry);
+    printf("Raw origin: 0x%x\n", ((raw_binary *)ptr)-&gt;origin);
+    printf("Raw prog_size: %d\n", ((raw_binary *)ptr)-&gt;prog_size);
+    ptr += sizeof(raw_binary);
+ 
     unlink("raw.bin"); 
-    int fd = open("raw.bin", O_CREAT | O_WRONLY, S_IRUSR);
+    int fd = open("raw.bin", O_CREAT | O_WRONLY, 0644);
     if (fd &lt; 0) {
         printf("Failed to create raw.bin file\n");
         goto err;
     }
-    write(fd, body + off, size);
+    write(fd, body + off, len - import_size - export_size);
     close(fd);
+
 err:
     free(body);
+
     return 0;
 }
 </pre><br>
