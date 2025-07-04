@@ -1,0 +1,84 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - TI DM3730 (BeagleBoard-XM) - Assembly - <b>Button</b></h3>
+<hr size="1"><br>
+<p>
+USR按鍵是連接到GPIO-4<br>
+<img src="beagleboard-xm_asm_btn/1.jpg" class="maxSize"><br><br>
+
+GPIO-4是屬於GPIO1<br>
+<img src="beagleboard-xm_asm_btn/2.jpg" class="maxSize"><br><br>
+
+GPIO1 Clock<br>
+<img src="beagleboard-xm_asm_btn/3.jpg" class="maxSize"><br><br>
+
+Input<br>
+<img src="beagleboard-xm_asm_led/4.jpg" class="maxSize"><br><br>
+
+Data<br>
+<img src="beagleboard-xm_asm_btn/4.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .global _start
+
+    .equ CM_ICLKEN_WKUP, 0x48004c10
+    .equ CM_ICLKEN_PER,  0x48005010
+    .equ GPIO5_OE,       0x49056034
+    .equ GPIO5_DATAOUT,  0x4905603c
+    .equ GPIO1_OE,       0x48310034
+    .equ GPIO1_DATAIN,   0x48310038
+    .equ GPIO1_DATAOUT,  0x4831003c
+   
+    .arm
+    .text
+_start:
+    b reset
+    b .
+    b .
+    b .
+    b .
+    b .
+    b .
+    b .
+       
+reset:
+    ldr r0, =CM_ICLKEN_WKUP
+    ldr r1, =(1 &lt;&lt; 3)
+    str r1, [r0]
+  
+    ldr r0, =CM_ICLKEN_PER
+    ldr r1, =(1 &lt;&lt; 16)
+    str r1, [r0]
+  
+    ldr r0, =GPIO1_OE
+    ldr r1, =(1 &lt;&lt; 4)
+    str r1, [r0]
+  
+    ldr r0, =GPIO5_OE
+    ldr r1, =0
+    str r1, [r0]
+  
+    ldr r0, =GPIO5_DATAOUT
+    ldr r1, =(1 &lt;&lt; 21)
+    str r1, [r0]
+
+    ldr r4, =GPIO1_DATAIN
+0:
+    ldr r2, [r4]
+    lsl r2, #17
+    str r2, [r0]
+    b 0b
+    .end
+</pre><br>
+
+<p>
+完成<br>
+<img src="beagleboard-xm_asm_btn/5.jpg" class="maxSize"><br>
+<img src="beagleboard-xm_asm_btn/6.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
