@@ -1,0 +1,86 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - WCH CH32V003 (nanoCH32V003) - Assembly - <b>Button</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/ch32-rs/wlink<br>
+file:///home/steward/Downloads/CH32V003RM.PDF<br>
+https://github.com/AdiHamulic/CH32V003-Bare-Metal<br>
+https://github.com/ch32-rs/wlink/blob/main/docs/references.md<br>
+https://github.com/xpack-dev-tools/riscv-none-elf-gcc-xpack/releases/tag/v14.2.0-3<br><br>
+
+按鍵是連接到C2<br>
+<img src="nano-ch32v003_asm_btn/1.jpg" class="maxSize"><br><br>
+
+IOPDEN<br>
+<img src="nano-ch32v003_asm_led/2.jpg" class="maxSize"><br><br>
+
+暫存器位址<br>
+<img src="nano-ch32v003_asm_led/3.jpg" class="maxSize"><br><br>
+
+I/O Mode<br>
+<img src="nano-ch32v003_asm_led/4.jpg" class="maxSize"><br><br>
+
+Out<br>
+<img src="nano-ch32v003_asm_led/5.jpg" class="maxSize"><br><br>
+
+In<br>
+<img src="nano-ch32v003_asm_btn/2.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .global _start
+ 
+    .equ RCC_APB2PCENR,   0x40021018
+    .equ R32_GPIOD_CFGLR, 0x40011400
+    .equ R32_GPIOC_CFGLR, 0x40011000
+    .equ R32_GPIOD_OUTDR, 0x4001140c
+    .equ R32_GPIOC_OUTDR, 0x4001100c
+    .equ R32_GPIOC_INDR,  0x40011008
+
+    .align 2	
+    .option norvc
+    .text
+    j _start
+   
+    .org 0x0300
+_start:
+    li t0, (1 &lt;&lt; 5) | (1 &lt;&lt; 4)
+    li a0, RCC_APB2PCENR
+    sw t0, 0(a0)
+
+    li t0, (1 &lt;&lt; 11)
+    li a0, R32_GPIOC_CFGLR
+    sw t0, 0(a0)
+
+    li t0, (1 &lt;&lt; 24)
+    li a0, R32_GPIOD_CFGLR
+    sw t0, 0(a0)
+
+    li t0, (1 &lt;&lt; 2)
+    li a0, R32_GPIOC_OUTDR
+    sw t0, 0(a0)
+
+    li a0, R32_GPIOD_OUTDR
+    li a1, R32_GPIOC_INDR
+    li a2, (1 &lt;&lt; 6)
+0:
+    lw t0, 0(a1)
+    sll t0, t0, 4
+    xor t0, t0, a2
+    sw t0, 0(a0)
+    j 0b
+    .end
+</pre><br>
+
+<p>
+完成<br>
+<img src="nano-ch32v003_asm_btn/3.jpg" class="maxSize"><br>
+<img src="nano-ch32v003_asm_btn/4.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
