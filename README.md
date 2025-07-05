@@ -117,6 +117,7 @@ All of files or resources used on my website can be found from the following lin
 [![](img/photos/smart_mt7688-duo.jpg)](https://github.com/steward-fu/website/releases/tag/mt7688-duo)
 [![](img/photos/beagleboard-xm.jpg)](https://github.com/steward-fu/website/releases/tag/beagleboard-xm)
 [![](img/photos/nano-ch32v003.jpg)](https://github.com/steward-fu/website/releases/tag/nano-ch32v003)
+[![](img/photos/ch32v305.jpg)](https://github.com/steward-fu/website/releases/tag/ch32v305)
 [![](img/photos/virus.jpg)](https://github.com/steward-fu/website/releases/tag/virus)
 [![](img/photos/wdm.jpg)](https://github.com/steward-fu/website/releases/tag/wdm)
 [![](img/photos/vxd.jpg)](https://github.com/steward-fu/website/releases/tag/vxd)
