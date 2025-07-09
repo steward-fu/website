@@ -1,0 +1,60 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../console.htm">家用機</a> - Sega Genesis - C/C++ - SGDK - <b>Load Image(Tilemap)</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/Stephane-D/SGDK<br>
+https://github.com/iratahack/m68k-elf-gcc/releases<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;genesis.h&gt;
+
+#include "res.h"
+
+int main(bool hard)
+{
+    VDP_loadTileSet(myimage.tileset, TILE_USER_INDEX, DMA);
+    VDP_setTileMapEx(BG_A, myimage.tilemap, TILE_ATTR_FULL(PAL0, FALSE, FALSE, FALSE, TILE_USER_INDEX), 0, 0,  0, 0, 30, 12, CPU);
+    PAL_setColors(0, (u16 *)myimage.palette-&gt;data, 16, CPU);
+
+    while (TRUE) {
+        SYS_doVBlankProcess();
+    }
+
+    return 0;
+}
+</pre><br>
+
+<p>
+main.res
+</p>
+<pre>
+IMAGE myimage "main.png" NONE
+</pre><br>
+
+<p>
+main.png<br>
+<img src="smd_cpp_sgdk_tilemap/1.png" class="maxSize"><br><br>
+
+編譯、執行
+</p>
+<pre>
+$ java -jar /opt/sgdk/bin/rescomp.jar main.res res.s -dep res.o
+$ m68k-elf-gcc -I/opt/sgdk -I/opt/sgdk/inc -m68000 -c main.c
+$ m68k-elf-gcc -x assembler-with-cpp -c res.s -o res.o
+$ m68k-elf-gcc -m68000 -T /opt/sgdk/md.ld -nostdlib main.o res.o /opt/sgdk/out/release/sega.o /opt/sgdk/lib/libmd.a -lgcc -o rom.out
+$ m68k-elf-objcopy -O binary rom.out rom.bin
+$ java -jar /opt/sgdk/bin/sizebnd.jar rom.bin -sizealign 131072 -checksum
+$ blastem rom.bin
+</pre>
+
+<p>
+<img src="smd_cpp_sgdk_tilemap/2.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
