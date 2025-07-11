@@ -120,7 +120,7 @@ All of files or resources used on my website can be found from the following lin
 [![](img/photos/ch32v305.jpg)](https://github.com/steward-fu/website/releases/tag/ch32v305)
 [![](img/photos/tiny6410.jpg)](https://github.com/steward-fu/website/releases/tag/tiny6410)
 [![](img/photos/micro2440.jpg)](https://github.com/steward-fu/website/releases/tag/micro2440)
-[![](img/photos/n76e003.jpg)](https://github.com/steward-fu/website/releases/tag/n76e003)
+[![](img/photos/n76e003-1.jpg)](https://github.com/steward-fu/website/releases/tag/n76e003)
 [![](img/photos/virus.jpg)](https://github.com/steward-fu/website/releases/tag/virus)
 [![](img/photos/wdm.jpg)](https://github.com/steward-fu/website/releases/tag/wdm)
 [![](img/photos/vxd.jpg)](https://github.com/steward-fu/website/releases/tag/vxd)
