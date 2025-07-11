@@ -1,0 +1,70 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - TI MSP430FR5994 (MSP-EXP430FR5994) - C/C++ - <b>LED</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/dlbeer/mspdebug<br>
+https://www.ti.com/lit/ds/symlink/msp430fr5994.pdf<br>
+https://www.ti.com/tool/MSP430-GCC-OPENSOURCE#downloads<br>
+https://www.reddit.com/r/embedded/comments/rbsuf9/struggling_to_get_timestamps_on_an_msp430fr5994/<br>
+https://vivonomicon.com/2018/11/22/bare-metal-msp430-programming-working-with-new-microcontrollers/<br><br>
+
+LED是連接到P1.0<br>
+<img src="msp-exp430fr5994_cpp_led/1.jpg" class="maxSize"><br><br>
+
+P1 DIR<br>
+<img src="msp-exp430fr5994_cpp_led/2.jpg" class="maxSize"><br><br>
+
+P1 OUT<br>
+<img src="msp-exp430fr5994_cpp_led/3.jpg" class="maxSize"><br><br>
+
+Watchdog<br>
+<img src="msp-exp430fr5994_cpp_led/4.jpg" class="maxSize"><br><br>
+
+PM5<br>
+<img src="msp-exp430fr5994_cpp_led/5.jpg" class="maxSize"><br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdint.h&gt;
+#include &lt;msp430.h&gt;
+
+void delay(uint32_t cnt)
+{
+    while (cnt--) {
+        asm("nop");
+    }
+}
+
+int main(void)
+{
+    WDTCTL = WDTPW + WDTHOLD;
+    PM5CTL0 &amp;= ~LOCKLPM5;
+    P1DIR = BIT0;
+
+    while (1) {
+        P1OUT ^= BIT0;
+        delay(100000);
+    }
+}
+</pre><br>
+
+<p>
+編譯、下載
+</p>
+<pre>
+$ msp430-gcc -mmcu=msp430fr5969 main.c -o main.elf
+$ mspdebug ezfet 'erase' 'load main.elf' 'exit'
+</pre><br>
+
+<p>
+完成<br>
+<img src="msp-exp430fr5994_cpp_led/6.jpg" class="maxSize"><br>
+<img src="msp-exp430fr5994_cpp_led/7.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
