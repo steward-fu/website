@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head><script type="text/javascript" src="../page_head.js"></script>
 
-<h3><a href="../mcu.htm">微處理器</a> - TI MSP430FR5994 (MSP-EXP430FR5994) - C/C++ - <b>LED</b></h3>
+<h3><a href="../mcu.htm">微處理器</a> - TI MSP430FR5994 (MSP-EXP430FR5994) - C/C++ - <b>Button</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
@@ -12,58 +12,42 @@ https://www.ti.com/tool/MSP430-GCC-OPENSOURCE#downloads<br>
 https://www.reddit.com/r/embedded/comments/rbsuf9/struggling_to_get_timestamps_on_an_msp430fr5994/<br>
 https://vivonomicon.com/2018/11/22/bare-metal-msp430-programming-working-with-new-microcontrollers/<br><br>
 
-LED是連接到P1.0<br>
-<img src="msp-exp430fr5994_cpp_led/1.jpg" class="maxSize"><br><br>
+S2按鍵是連接到P5.5<br>
+<img src="msp-exp430fr5994_cpp_btn/1.jpg" class="maxSize"><br><br>
 
 DIR<br>
 <img src="msp-exp430fr5994_cpp_led/2.jpg" class="maxSize"><br><br>
 
-OUT<br>
+IN<br>
+<img src="msp-exp430fr5994_cpp_btn/2.jpg" class="maxSize"><br><br>
+
+Pull-up<br>
+<img src="msp-exp430fr5994_cpp_btn/3.jpg" class="maxSize"><br>
 <img src="msp-exp430fr5994_cpp_led/3.jpg" class="maxSize"><br><br>
-
-Watchdog<br>
-<img src="msp-exp430fr5994_cpp_led/4.jpg" class="maxSize"><br><br>
-
-PM5<br>
-<img src="msp-exp430fr5994_cpp_led/5.jpg" class="maxSize"><br><br>
 
 main.c
 </p>
 <pre class="brush:cpp">
 #include &lt;msp430fr5994.h&gt;
  
-void delay(unsigned long cnt)
-{
-    while (cnt--) {
-        asm("nop");
-    }
-}
- 
 int main(void)
 {
     WDTCTL = WDTPW + WDTHOLD;
     PM5CTL0 &amp;= ~LOCKLPM5;
     P1DIR = BIT0;
+    P5REN = BIT5;
+    P5OUT = BIT5;
  
     while (1) {
-        P1OUT ^= BIT0;
-        delay(100000);
+        P1OUT = ~(P5IN &gt;&gt; 5);
     }
 }
 </pre><br>
 
 <p>
-編譯、下載
-</p>
-<pre>
-$ msp430-elf-gcc -mmcu=msp430fr5994 main.c -o main.elf
-$ mspdebug ezfet 'erase' 'load main.elf' 'exit'
-</pre><br>
-
-<p>
 完成<br>
-<img src="msp-exp430fr5994_cpp_led/6.jpg" class="maxSize"><br>
-<img src="msp-exp430fr5994_cpp_led/7.jpg" class="maxSize">
+<img src="msp-exp430fr5994_cpp_btn/4.jpg" class="maxSize"><br>
+<img src="msp-exp430fr5994_cpp_btn/5.jpg" class="maxSize">
 </p>
 
 <br><script type="text/javascript" src="../tail.js"></script>
