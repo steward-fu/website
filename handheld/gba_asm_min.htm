@@ -1,0 +1,54 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - Game Boy Advance - Assembly - <b>Minimal</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://devkitpro.org/index.php<br>
+https://wii.leseratte10.de/devkitPro/<br>
+https://patater.com/gbaguy/gbaasm.htm<br>
+http://www.coranac.com/tonc/text/toc.htm<br>
+https://github.com/devkitPro/devkitarm-crtls<br>
+https://gist.github.com/JShorthouse/bfe49cdfad126e9163d9cb30fd3bf3c2<br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .global main
+   
+    .arm
+    .text
+main:
+    b main
+</pre><br>
+
+<p>
+Makefile
+</p>
+<pre>
+include $(DEVKITARM)/gba_rules
+
+all:
+	arm-none-eabi-gcc -mcpu=arm7tdmi -mtune=arm7tdmi -fomit-frame-pointer -ffast-math -mthumb -mthumb-interwork -I/opt/devkitpro/libgba/include -c main.s -o main.o
+	arm-none-eabi-gcc -mthumb -mthumb-interwork -specs=gba.specs main.o -L/opt/devkitpro/libgba/lib -lgba -o main.elf
+	arm-none-eabi-objcopy -O binary main.elf main.gba
+
+clean:
+	rm -rf main.o main.elf main.gba main.sav
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ sudo docker run --rm -it -v $(pwd):/source nds-env /bin/bash
+root@3d7d8cbf3564:/source# make &amp;&amp; exit
+$ mgba main.gba
+</pre>
+<p>
+<img src="gba_asm_min/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

@@ -1,0 +1,58 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - Game Boy Advance - C/C++ - <b>Hello, world!</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://libnds.devkitpro.org/index.html<br><br>
+
+<p>
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;gba_console.h&gt;
+#include &lt;gba_video.h&gt;
+#include &lt;gba_interrupt.h&gt;
+#include &lt;gba_systemcalls.h&gt;
+
+int main(void)
+{
+    consoleDemoInit();
+    printf("hello, world!");
+    return 0;
+}
+</pre><br>
+
+<p>
+Makefile
+</p>
+<pre>
+include $(DEVKITARM)/gba_rules
+
+all:
+	arm-none-eabi-gcc -mcpu=arm7tdmi -mtune=arm7tdmi -fomit-frame-pointer -ffast-math -mthumb -mthumb-interwork -I/opt/devkitpro/libgba/include -c main.c -o main.o
+	arm-none-eabi-gcc -mthumb -mthumb-interwork -specs=gba.specs main.o -L/opt/devkitpro/libgba/lib -lgba -o main.elf
+	arm-none-eabi-objcopy -O binary main.elf main.gba
+
+clean:
+	rm -rf main.o main.elf main.gba main.sav
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ sudo docker run --rm -it -v $(pwd):/source nds-env /bin/bash
+root@960f333001cb:/source# make &amp;&amp; exit
+$ mgba main.gba 
+</pre><br>
+
+<p>
+完成<br>
+<img src="gba_cpp_hello/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
