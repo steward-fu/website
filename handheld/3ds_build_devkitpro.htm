@@ -1,0 +1,65 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - Nintendo 3DS - <b>Build devkitpro(CROSSBUILD=aarch64-linux-gnu)</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/devkitPro<br>
+https://wiki.debian.org/MultiarchCrossToolchainBuild<br><br>
+
+Debian 10(x64)
+</p>
+<pre>
+$ sudo dpkg --add-architecture arm64
+$ sudo apt-get update
+$ sudo apt-get install libmpc-dev:arm64 libmpfr-dev:arm64 lib-gmp:arm64 zlib1g-dev:arm64 qemu qemu-user-static -y
+
+$ sudo chmod 0777 /opt
+$ cd
+$ git clone https://github.com/devkitPro/buildscripts
+$ cd buildscripts
+$ vim build-devkit.sh +29
+    CROSSBUILD=aarch64-linux-gnu
+
+$ wget https://wii.leseratte10.de/devkitPro/devkitARM/devkitarm-rules/devkitarm-rules-1.2.1.tar.gz
+$ wget https://wii.leseratte10.de/devkitPro/devkitARM/devkitarm-rules/devkitarm-crtls-1.1.1.tar.gz
+$ wget https://ftp.gnu.org/gnu/binutils/binutils-2.39.tar.xz
+$ wget https://ftp.gnu.org/gnu/gcc/gcc-12.2.0/gcc-12.2.0.tar.xz
+$ ./build-devkit.sh
+  Please select the toolchain you require
+
+  1: devkitARM (gba gp32 ds 3ds)
+  2: devkitPPC (gamecube wii wii-u)
+  3: devkitA64 (switch)
+  1
+
+  Please enter the directory where you would like 'devkitARM' to be installed:
+  for mingw/msys you must use &lt;drive&gt;:/&lt;install path&gt; or you will have include path problems
+  this is the top level directory for devkitpro, i.e. e:/devkitPro
+  /opt/devkitpro
+
+  use /usr/bin/make as make
+
+  Ready to install devkitARM in /opt/devkitARM
+
+  press return to continue
+ 
+  Would you like to delete the build folders and patched sources? [Y/n]
+
+  Removing patched sources and build directories
+
+  note: Add the following to your environment;
+
+    DEVKITPRO=/opt/devkitpro
+    DEVKITARM=/opt/devkitpro/devkitARM
+
+$ file /opt/devkitpro/devkitARM/bin/arm-none-eabi-gcc
+    /opt/devkitpro/devkitARM/bin/arm-none-eabi-gcc: ELF 64-bit LSB executable, ARM aarch64, version 1 (SYSV), dynamically linked, interpreter /lib/ld-linux-aarch64.so.1, for GNU/Linux 3.7.0, BuildID[sha1]=ed7388c909e11eb3c2fc7891199d8cb927fb6f5f, stripped
+</pre>
+<p>
+P.S. 編譯過程中，需要的Rules相關檔案，可以從https://github.com/steward-fu/website/releases/download/3ds/bin_devkitpro_elf_x64.tar.gz提取
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

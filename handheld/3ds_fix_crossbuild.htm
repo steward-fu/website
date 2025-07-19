@@ -1,0 +1,37 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - Nintendo 3DS - <b>解決gcc.cc: undefined reference to host_detect_local_cpu(int, char const**)問題</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://linaro-toolchain.linaro.narkive.com/mealwez3/cross-compilation-issue<br><br>
+
+問題如下：
+</p>
+<pre>
+$ g++ -no-pie   -g -O2   -DIN_GCC  -DCROSS_DIRECTORY_STRUCTURE   -fno-exceptions -fno-rtti -fasynchronous-unwind-tables -W -Wall -Wno-narrowing -Wwrite-strings -Wcast-qual -Wmissing-format-attribute -Woverloaded-virtual -pedantic -Wno-long-long -Wno-variadic-macros -Wno-overlength-strings   -DHAVE_CONFIG_H -static-libstdc++ -static-libgcc  -o xgcc gcc.o gcc-main.o ggc-none.o \
+    c/gccspec.o  libcommon-target.a \
+        libcommon.a ../libcpp/libcpp.a   ../libbacktrace/.libs/libbacktrace.a ../libiberty/libiberty.a ../libdecnumber/libdecnumber.a
+    /usr/bin/ld: gcc.o: in function `.LANCHOR1':
+    gcc.cc:(.rodata+0x58c): undefined reference to `host_detect_local_cpu(int, char const**)'
+    collect2: error: ld returned 1 exit status
+    make[1]: *** [Makefile:2172: xgcc] Error 1
+    make[1]: Leaving directory 'buildscripts/.devkitARM/arm-none-eabi/gcc/gcc'
+    make: *** [Makefile:4607: all-gcc] Error 2
+    Error building gcc stage1
+</pre><br>
+
+<p>
+解法如下：
+</p>
+<pre>
+$ export CROSSBUILD=arm-linux-gnueabihf
+$ ./build-devkit.sh
+</pre>
+<p>
+P.S. 如果在ARM CPU上面編譯devkitpro，需要指定CROSSBUILD
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
