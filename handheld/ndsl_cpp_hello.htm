@@ -1,0 +1,71 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - Nintendo DS Lite - C/C++ - <b>開發環境</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://libnds.devkitpro.org/index.html<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;nds.h&gt;
+#include &lt;stdio.h&gt;
+
+int main(void)
+{
+    int cc = 0;
+
+    consoleDemoInit();
+    printf("hello, world!");
+
+    for (cc = 0; cc &lt; 180; cc++) {
+        swiWaitForVBlank();
+    }
+
+    return 0;
+}
+</pre><br>
+
+<p>
+Makefile
+</p>
+<pre>
+include $(DEVKITARM)/ds_rules
+
+all:
+	arm-none-eabi-gcc -march=armv5te -mtune=arm946e-s -fomit-frame-pointer -ffast-math -mthumb -mthumb-interwork -I/opt/devkitpro/libnds/include -DARM9 -c main.c -o main.o
+	arm-none-eabi-gcc  -specs=ds_arm9.specs -g -mthumb -mthumb-interwork main.o -L/opt/devkitpro/libnds/lib -lnds9 -o main.elf
+	ndstool -c main.nds -9 main.elf -b /opt/devkitpro/libnds/icon.bmp "devkitARM"
+
+clean:
+	rm -rf main.o main.elf main.nds
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ sudo docker run --rm -it -v $(pwd):/source nds-env /bin/bash
+
+root@6c3df7e9daba:/source# make
+    arm-none-eabi-gcc -march=armv5te -mtune=arm946e-s -fomit-frame-pointer -ffast-math -mthumb -mthumb-interwork -I/opt/devkitpro/libnds/include -DARM9 -c main.c -o main.o
+    arm-none-eabi-gcc  -specs=ds_arm9.specs -g -mthumb -mthumb-interwork main.o -L/opt/devkitpro/libnds/lib -lnds9 -o main.elf
+    ndstool -c main.nds -9 main.elf -b /opt/devkitpro/libnds/icon.bmp "devkitARM"
+    Nintendo DS rom tool 2.1.2 - Jun 30 2020
+    by Rafael Vuijk, Dave Murphy, Alexei Karpenko
+
+root@6c3df7e9daba:/source# exit
+    exit
+
+$ desmume main.nds
+</pre><br>
+
+<p>
+完成<br>
+<img src="ndsl_cpp_hello/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
