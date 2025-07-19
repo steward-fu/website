@@ -1,0 +1,77 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - PSP Go - C/C++ - <b>Hello, world!</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+http://psp.jim.sh/pspsdk-doc/index.html<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;pspkernel.h&gt;
+#include &lt;pspctrl.h&gt;
+#include &lt;pspdebug.h&gt;
+#include &lt;pspdisplay.h&gt;
+#include &lt;psptypes.h&gt;
+#include &lt;pspiofilemgr.h&gt;
+
+#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;sys/unistd.h&gt;
+#include &lt;sys/param.h&gt;
+
+PSP_MODULE_INFO("main", 0, 1, 1);
+
+int main(void)
+{
+    pspDebugScreenInit();
+    pspDebugScreenPrintf("hello, world!");
+    sceKernelDelayThread(3000000);
+    sceKernelExitGame();
+    return 0;
+}
+</pre><br>
+
+<p>
+Makefile
+</p>
+<pre>
+TARGET          = hello
+OBJS            = main.o
+EXTRA_TARGETS   = EBOOT.PBP
+PSP_EBOOT_TITLE = main
+PSPSDK          = $(shell psp-config --pspsdk-path)
+include $(PSPSDK)/lib/build.mak
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ export PSPDEV=/opt/pspdev
+$ export PATH=$PATH:$PSPDEV/bin
+$ make
+    psp-gcc -I. -I/opt/pspdev/psp/sdk/include  -D_PSP_FW_VERSION=150   -c -o main.o main.c
+    psp-gcc -I. -I/opt/pspdev/psp/sdk/include  -D_PSP_FW_VERSION=150  -L. -L/opt/pspdev/psp/sdk/lib   main.o  -lpspdebug -lpspdisplay -lpspge -lpspctrl -lpspsdk -lc -lpspnet -lpspnet_inet -lpspnet_apctl -lpspnet_resolver -lpsputility -lpspuser -lpspkernel -o hello.elf
+    psp-fixup-imports hello.elf
+    mksfo 'main' PARAM.SFO
+    psp-strip hello.elf -o hello_strip.elf
+    pack-pbp EBOOT.PBP PARAM.SFO NULL  \
+        NULL NULL NULL  \
+        NULL  hello_strip.elf NULL
+    Saved to EBOOT.PBP
+    rm -f hello_strip.elf
+
+$ psp --xres 480 --yres 272 ./EBOOT.PBP
+</pre><br>
+
+<p>
+完成<br>
+<img src="pspgo_cpp_hello/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
