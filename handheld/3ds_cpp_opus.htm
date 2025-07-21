@@ -1,0 +1,115 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - Nintendo 3DS - C/C++ - <b>Audio(Opus)</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://hub.docker.com/r/greatwizard/devkitarm-3ds<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;string.h&gt;
+#include &lt;3ds.h&gt;
+#include &lt;opusfile.h&gt;
+
+#define ARRAY_SIZE(x)   (sizeof(x) / sizeof((x)[0]))
+#define SAMPLE_RATE     48000
+#define SAMPLE_BUF      (SAMPLE_RATE * 120 / 1000)
+#define CHANNEL         2
+#define WAVEBUF_SIZE    (SAMPLE_BUF * CHANNEL * sizeof(int16_t))
+
+LightEvent event = { 0 };
+int16_t *audio_buffer = NULL;
+ndspWaveBuf wave_buffer[3]= { 0 };
+
+bool fillBuffer(OggOpusFile *opusFile, ndspWaveBuf *waveBuf)
+{
+    int totalSamples = 0;
+
+    while (totalSamples &lt; SAMPLE_BUF) {
+        int16_t *buffer = waveBuf-&gt;data_pcm16 + (totalSamples * CHANNEL);
+        const size_t bufferSize = (SAMPLE_BUF - totalSamples) * CHANNEL;
+        const int samples = op_read_stereo(opusFile, buffer, bufferSize);
+        if (samples &lt;= 0) {
+            break;
+        }
+        totalSamples += samples;
+    }
+
+    if (totalSamples == 0) {
+        return false;
+    }
+
+    waveBuf-&gt;nsamples = totalSamples;
+    ndspChnWaveBufAdd(0, waveBuf);
+    DSP_FlushDataCache(waveBuf-&gt;data_pcm16, totalSamples * CHANNEL * sizeof(int16_t));
+    return true;
+}
+
+void audioCallback(void *const argv)
+{
+    LightEvent_Signal(&amp;event);
+}
+
+int main(void)
+{
+    int rc = 0;
+    int i = 0;
+
+    gfxInitDefault();
+    LightEvent_Init(&amp;event, RESET_ONESHOT);
+
+    OggOpusFile *opusFile = op_open_file("sdmc:/3ds/main.opus", &amp;rc);
+    const size_t bufferSize = WAVEBUF_SIZE * ARRAY_SIZE(wave_buffer);
+    audio_buffer = (int16_t *)linearAlloc(bufferSize);
+    if (!audio_buffer) {
+        return 0;
+    }
+
+    memset(&amp;wave_buffer, 0, sizeof(wave_buffer));
+    int16_t *buffer = audio_buffer;
+    for (i = 0; i &lt; ARRAY_SIZE(wave_buffer); i++) {
+        wave_buffer[i].data_vaddr = buffer;
+        wave_buffer[i].status = NDSP_WBUF_DONE;
+        buffer += WAVEBUF_SIZE / sizeof(buffer[0]);
+    }
+
+    ndspInit();
+    ndspChnReset(0);
+    ndspSetOutputMode(NDSP_OUTPUT_STEREO);
+    ndspChnSetInterp(0, NDSP_INTERP_POLYPHASE);
+    ndspChnSetRate(0, SAMPLE_RATE);
+    ndspChnSetFormat(0, NDSP_FORMAT_STEREO_PCM16);
+    ndspSetCallback(audioCallback, NULL);
+
+    while (aptMainLoop()) {
+        for (i=0; i&lt;ARRAY_SIZE(wave_buffer); i++) {
+            if (wave_buffer[i].status != NDSP_WBUF_DONE) {
+                continue;
+            }
+            
+            if (!fillBuffer(opusFile, &amp;wave_buffer[i])) {
+                break;
+            }
+        }
+        LightEvent_Wait(&amp;event);
+    }
+    LightEvent_Signal(&amp;event);
+
+    ndspChnReset(0);
+    linearFree(audio_buffer);
+    ndspExit();
+    op_free(opusFile);
+    gfxExit();
+
+    return 0;
+}
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

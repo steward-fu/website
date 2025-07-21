@@ -1,0 +1,53 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - Nintendo 3DS - C/C++ - <b>Screen Tearing Test</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://hub.docker.com/r/greatwizard/devkitarm-3ds<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;3ds.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+ 
+int main(void)
+{
+    u16 *fb = NULL;
+    int x = 0;
+    int y = 0;
+    int z = 0;
+    u16 col[] = { 0xf800, 0x7e0, 0x1f };
+ 
+    gfxInitDefault();
+    gfxSetDoubleBuffering(GFX_TOP, true);
+    gfxSetScreenFormat(GFX_TOP, GSP_RGB565_OES);
+ 
+    while (z &lt; 600) {
+        fb = (u16 *)gfxGetFramebuffer(GFX_TOP, GFX_LEFT, NULL, NULL);
+        for (y = 0; y &lt; 240; y++) {
+            for (x = 0; x &lt; 400; x++) {
+                *fb++ = col[z % 3];
+            }
+        }
+        z += 1;
+ 
+        gfxFlushBuffers();
+        gfxSwapBuffers();
+        gspWaitForVBlank();
+    }
+    gfxExit();
+    return 0;
+}
+</pre><br>
+
+<p>
+完成<br>
+<img src="3ds_cpp_tear/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

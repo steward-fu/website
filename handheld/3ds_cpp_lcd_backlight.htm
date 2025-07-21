@@ -1,0 +1,56 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - Nintendo 3DS - C/C++ - <b>LCD Backlight</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://hub.docker.com/r/greatwizard/devkitarm-3ds<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;3ds.h&gt;
+ 
+#ifndef REG_LCDBACKLIGHTMAIN
+    #define REG_LCDBACKLIGHTMAIN (u32)(0x1ED02240 - 0x1EB00000)
+#endif
+
+#ifndef REG_LCDBACKLIGHTSUB
+    #define REG_LCDBACKLIGHTSUB (u32)(0x1ED02A40 - 0x1EB00000)
+#endif
+
+int main(void)
+{
+    u32 off = 0;
+    u32 brightnessSub = 0;
+    u32 brightnessMain = 0;
+
+    gfxInitDefault();
+    consoleInit(GFX_TOP, NULL);
+
+    GSPGPU_ReadHWRegs(REG_LCDBACKLIGHTMAIN, &amp;brightnessMain, 4);
+    GSPGPU_ReadHWRegs(REG_LCDBACKLIGHTSUB, &amp;brightnessSub, 4);
+    printf("backlight main=%d, sub=%d\n", brightnessMain, brightnessSub);
+    svcSleepThread(3000000000LL);
+    
+    GSPGPU_WriteHWRegs(REG_LCDBACKLIGHTMAIN, &amp;off, 4);
+    GSPGPU_WriteHWRegs(REG_LCDBACKLIGHTSUB, &amp;off, 4);
+    svcSleepThread(3000000000LL);
+
+    GSPGPU_WriteHWRegs(REG_LCDBACKLIGHTMAIN, &amp;brightnessMain, 4);
+    GSPGPU_WriteHWRegs(REG_LCDBACKLIGHTSUB, &amp;brightnessSub, 4);
+         
+    gspWaitForVBlank();
+    gfxSwapBuffers();
+    svcSleepThread(3000000000LL);
+    gfxExit();
+    return 0;
+}
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

@@ -1,0 +1,57 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - Nintendo 3DS - C/C++ - <b>Linear Memory</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://hub.docker.com/r/greatwizard/devkitarm-3ds<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;3ds.h&gt;
+ 
+int main(void)
+{
+    gfxInitDefault();
+    consoleInit(GFX_TOP, NULL);
+
+    uint32_t fsize = linearSpaceFree();
+    printf("linear free size: %d\n", fsize);
+
+    if (fsize &gt; 128) {
+        int c = 0;
+        u16 *p = linearAlloc(128);
+
+        printf("linear ptr: %p (size: %d)\n", p, linearGetSize(p));
+
+        for (c = 0; c &lt; 128; c++) {
+            p[c] = c;
+        }
+        for (c = 0; c &lt; 128; c++) {
+            if (p[c] != c) {
+                printf("mismatch at 0x%x\n", c);
+            }
+        }
+        linearFree(p);
+    }
+ 
+    gspWaitForVBlank();
+    gfxSwapBuffers();
+    svcSleepThread(3000000000LL);
+    gfxExit();
+    return 0;
+}
+</pre><br>
+
+<p>
+完成<br>
+<img src="3ds_cpp_linear/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

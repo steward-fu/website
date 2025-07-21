@@ -1,0 +1,81 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - Nintendo 3DS - C/C++ - <b>Audio(Streaming)</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://hub.docker.com/r/greatwizard/devkitarm-3ds<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;math.h&gt;
+#include &lt;3ds.h&gt;
+
+#define SAMPLERATE      22050
+#define SAMPLESPERBUF   (SAMPLERATE / 30)
+#define BYTESPERSAMPLE  4
+
+void fill_buffer(void *audioBuffer, size_t offset, size_t size, int frequency)
+{
+    u32 *dest = (u32 *)audioBuffer;
+
+    for (int i=0; i&lt;size; i++) {
+        s16 sample = INT16_MAX * sin(frequency * (2 * M_PI) * (offset + i) / SAMPLERATE);
+        dest[i] = (sample &lt;&lt; 16) | (sample &amp; 0xffff);
+    }
+    DSP_FlushDataCache(audioBuffer, size);
+}
+
+int main(void)
+{
+    int note = 4;
+    bool fillBlock = false;
+    u32 *audioBuffer = NULL;
+    size_t stream_offset = 0;
+    float vol[12] = { 1.0, 1.0 };
+    ndspWaveBuf waveBuf[2] = { 0 };
+
+    gfxInitDefault();
+    audioBuffer = (u32 *)linearAlloc(SAMPLESPERBUF * BYTESPERSAMPLE * 2);
+
+    ndspInit();
+    ndspSetOutputMode(NDSP_OUTPUT_STEREO);
+    ndspChnSetInterp(0, NDSP_INTERP_LINEAR);
+    ndspChnSetRate(0, SAMPLERATE);
+    ndspChnSetFormat(0, NDSP_FORMAT_STEREO_PCM16);
+    ndspChnSetMix(0, vol);
+
+    waveBuf[0].data_vaddr = &amp;audioBuffer[0];
+    waveBuf[0].nsamples = SAMPLESPERBUF;
+    waveBuf[1].data_vaddr = &amp;audioBuffer[SAMPLESPERBUF];
+    waveBuf[1].nsamples = SAMPLESPERBUF;
+    ndspChnWaveBufAdd(0, &amp;waveBuf[0]);
+    ndspChnWaveBufAdd(0, &amp;waveBuf[1]);
+
+    while (aptMainLoop()) {
+        gfxSwapBuffers();
+        gfxFlushBuffers();
+        gspWaitForVBlank();
+
+        if (waveBuf[fillBlock].status == NDSP_WBUF_DONE) {
+            fill_buffer(waveBuf[fillBlock].data_pcm16, stream_offset, waveBuf[fillBlock].nsamples, 440);
+            ndspChnWaveBufAdd(0, &amp;waveBuf[fillBlock]);
+            stream_offset += waveBuf[fillBlock].nsamples;
+            fillBlock = !fillBlock;
+        }
+    }
+
+    ndspExit();
+    linearFree(audioBuffer);
+    gfxExit();
+    return 0;
+}
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

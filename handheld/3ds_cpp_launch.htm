@@ -1,0 +1,80 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - Nintendo 3DS - C/C++ - <b>Launch 3dsx Application</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://hub.docker.com/r/greatwizard/devkitarm-3ds<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;3ds.h&gt;
+ 
+int main(void)
+{
+    Handle hbldrHandle = 0;
+
+    svcConnectToPort(&amp;hbldrHandle, "hb:ldr");
+
+    const char *path = "/3ds/test.3dsx";
+    u32* cmdbuf = getThreadCommandBuffer();
+    cmdbuf[0] = IPC_MakeHeader(2, 0, 2); //0x20002
+    cmdbuf[1] = IPC_Desc_StaticBuffer(strlen(path) + 1, 0);
+    cmdbuf[2] = (u32)path;
+    svcSendSyncRequest(hbldrHandle);
+
+    char arg[255] = {0};
+    arg[0] = 2;
+    arg[1] = 0;
+    arg[2] = 0;
+    arg[3] = 0;
+    sprintf(&amp;arg[4], "argv-1");
+    sprintf(&amp;arg[11], "argv-2");
+    cmdbuf = getThreadCommandBuffer();
+    cmdbuf[0] = IPC_MakeHeader(3, 0, 2); //0x30002
+    cmdbuf[1] = IPC_Desc_StaticBuffer(sizeof(arg), 1);
+    cmdbuf[2] = (u32)arg;
+    svcSendSyncRequest(hbldrHandle);
+    return 0;
+}
+</pre><br>
+
+<p>
+test.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;3ds.h&gt;
+ 
+int main(int argc, char **argv)
+{
+    gfxInitDefault();
+    consoleInit(GFX_TOP, NULL);
+ 
+    printf("argc: %d\n", argc);
+    for (int c = 0; c &lt; argc; c++) {
+        printf(" argv[%d]: %s\n", c + 1, argv[c]);
+    }
+ 
+    gspWaitForVBlank();
+    gfxSwapBuffers();
+    svcSleepThread(3000000000LL);
+    gfxExit();
+    return 0;
+}
+</pre><br>
+
+<p>
+完成<br>
+<img src="3ds_cpp_launch/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
