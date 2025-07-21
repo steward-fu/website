@@ -121,6 +121,7 @@ All of files or resources used on my website can be found from the following lin
 [![](img/photos/micro2440.jpg)](https://github.com/steward-fu/website/releases/tag/micro2440)
 [![](img/photos/n76e003-1.jpg)](https://github.com/steward-fu/website/releases/tag/n76e003)
 [![](img/photos/msp-exp430fr5994.jpg)](https://github.com/steward-fu/website/releases/tag/msp-exp430fr5994)
+[![](img/photos/c8051f300.jpg)](https://github.com/steward-fu/website/releases/tag/c8051f300)
 [![](img/photos/virus.jpg)](https://github.com/steward-fu/website/releases/tag/virus)
 [![](img/photos/wdm.jpg)](https://github.com/steward-fu/website/releases/tag/wdm)
 [![](img/photos/vxd.jpg)](https://github.com/steward-fu/website/releases/tag/vxd)
