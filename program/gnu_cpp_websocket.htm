@@ -1,0 +1,240 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - GNU - C/C++ - <b>LWS_SEND_BUFFER_PRE_PADDING + EXAMPLE_TX_BUFFER_BYTES + LWS_SEND_BUFFER_POST_PADDING</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/iamscottmoyers/simple-libwebsockets-example<br><br>
+
+server.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+#include &lt;libwebsockets.h&gt;
+
+#define EXAMPLE_RX_BUFFER_BYTES 255
+#define LEN (LWS_SEND_BUFFER_PRE_PADDING + EXAMPLE_RX_BUFFER_BYTES + LWS_SEND_BUFFER_POST_PADDING)
+
+struct payload {
+    unsigned char data[LEN];
+    size_t len;
+} received_payload;
+
+enum protocols {
+    PROTOCOL_HTTP = 0,
+    PROTOCOL_EXAMPLE,
+    PROTOCOL_COUNT
+};
+
+static int callback_http(struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len)
+{
+    switch (reason) {
+    case LWS_CALLBACK_HTTP:
+        lws_serve_http_file(wsi, "main.htm", "text/html", NULL, 0);
+        break;
+    }
+
+    return 0;
+}
+
+static int callback_example( struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len )
+{
+    switch (reason) {
+    case LWS_CALLBACK_RECEIVE:
+        memcpy(&amp;received_payload.data[LWS_SEND_BUFFER_PRE_PADDING], in, len);
+        received_payload.len = len;
+        lws_callback_on_writable_all_protocol(lws_get_context(wsi), lws_get_protocol(wsi));
+        break;
+    case LWS_CALLBACK_SERVER_WRITEABLE:
+        lws_write(wsi, &amp;received_payload.data[LWS_SEND_BUFFER_PRE_PADDING], received_payload.len, LWS_WRITE_TEXT);
+        break;
+    }
+
+    return 0;
+}
+
+static struct lws_protocols protocols[] =
+{
+    {
+        "http-only",
+        callback_http,
+        0,
+        0,
+    },
+    {
+        "example-protocol",
+        callback_example,
+        0,
+        EXAMPLE_RX_BUFFER_BYTES,
+    },
+    {
+        NULL,
+        NULL,
+        0,
+        0
+    }
+};
+
+int main(int argc, char *argv[])
+{
+    struct lws_context_creation_info info = { 0 };
+
+    info.port = 8000;
+    info.protocols = protocols;
+    info.gid = -1;
+    info.uid = -1;
+
+    struct lws_context *context = lws_create_context(&amp;info);
+
+    while (1) {
+        lws_service(context, 1000000);
+    }
+
+    lws_context_destroy(context);
+
+    return 0;
+}
+</pre><br>
+
+<p>
+client.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;libwebsockets.h&gt;
+
+#define EXAMPLE_TX_BUFFER_BYTES 255
+#define LEN (LWS_SEND_BUFFER_PRE_PADDING + EXAMPLE_TX_BUFFER_BYTES + LWS_SEND_BUFFER_POST_PADDING)
+
+enum protocols {
+    PROTOCOL_EXAMPLE = 0,
+    PROTOCOL_COUNT
+};
+
+static struct lws *web_socket = NULL;
+
+static int callback_example(struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len)
+{
+    size_t n = 0;
+    unsigned char buf[LEN];
+    unsigned char *p = &amp;buf[LWS_SEND_BUFFER_PRE_PADDING];
+
+    switch (reason) {
+    case LWS_CALLBACK_CLIENT_ESTABLISHED:
+        lws_callback_on_writable(wsi);
+        break;
+    case LWS_CALLBACK_CLIENT_WRITEABLE:
+        n = sprintf((char *)p, "%s", "Hello, world!");
+        lws_write(wsi, p, n, LWS_WRITE_TEXT);
+        break;
+    case LWS_CALLBACK_CLIENT_CLOSED:
+    case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
+        web_socket = NULL;
+        break;
+    }
+
+    return 0;
+}
+
+static struct lws_protocols protocols[] = {
+    {
+        .name = "example-protocol",
+        .callback = callback_example,
+        .per_session_data_size = 0,
+        .rx_buffer_size = 0,
+        .id = 0,
+        .user = NULL,
+        .tx_packet_size = 0
+    },
+    {
+        NULL,
+        NULL,
+        0,
+        0
+    }
+};
+
+int main(int argc, char *argv[])
+{
+    struct lws_context_creation_info info = { 0 };
+
+    info.port = CONTEXT_PORT_NO_LISTEN;
+    info.protocols = protocols;
+    info.gid = -1;
+    info.uid = -1;
+
+    time_t old = 0;
+    struct timeval tv;
+    struct lws_context *context = lws_create_context(&amp;info);
+
+    while( 1 ) {
+        gettimeofday(&amp;tv, NULL);
+
+        if (!web_socket &amp;&amp; tv.tv_sec != old) {
+            struct lws_client_connect_info ccinfo = { 0 };
+
+            ccinfo.context = context;
+            ccinfo.address = "localhost";
+            ccinfo.port = 8000;
+            ccinfo.path = "/";
+            ccinfo.host = lws_canonical_hostname(context);
+            ccinfo.origin = "origin";
+            ccinfo.protocol = protocols[PROTOCOL_EXAMPLE].name;
+            web_socket = lws_client_connect_via_info(&amp;ccinfo);
+        }
+
+        if (tv.tv_sec != old) {
+            lws_callback_on_writable(web_socket);
+            old = tv.tv_sec;
+        }
+
+        lws_service(context, 250);
+    }
+
+    lws_context_destroy(context);
+
+    return 0;
+}
+</pre><br>
+
+<p>
+main.htm
+</p>
+<pre class="brush:html">
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;title&gt;Websocket example&lt;/title&gt;
+&lt;script&gt;
+    var socket = new WebSocket("ws://" + document.domain + ':' + location.port, "example-protocol");
+    function update(msg) { document.getElementById("num").innerHTML = msg; }
+    socket.onopen = function() { console.log("socket open"); update("open"); }
+    socket.onclose = function() { console.log("socket close"); update("closed"); }
+    socket.onmessage = function(msg) { console.log("socket message: " + msg.data); update(msg.data); }
+&lt;/script&gt;
+&lt;body&gt;
+    &lt;p id="num"&gt;&lt;/p&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ gcc client.c -o client -lwebsockets
+$ gcc client.c -o client -lwebsockets
+$ ./server &amp;
+$ ./client &amp;
+</pre><br>
+
+<p>
+開啟網頁即可<br>
+<img src="gnu_cpp_websocket/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
