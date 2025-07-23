@@ -1,0 +1,131 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - LeetCode - C - <b>399. Evaluate Division</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://blog.csdn.net/fuxuemingzhu/article/details/82591165<br><br>
+
+題目：<br>
+<img src="leetcode_c_399/1.jpg" class="maxSize"><br><br>
+
+解答：
+</p>
+<pre class="brush:cpp">
+#define MAX_SIZE 128
+
+double dfs(int a, int b, double **q, int *visit)
+{
+    int c0 = 0;
+    double r = 0;
+
+    if (a == b) {
+        return 1.0;
+    }
+
+    visit[a] = 1;
+    for (c0 = 0; c0 &lt; MAX_SIZE; c0++) {
+        if ((q[a][c0] &gt; 0) &amp;&amp; (visit[c0] == 0)) {
+            r = dfs(c0, b, q, visit);
+            if (r &gt; 0.0) {
+                return r * q[a][c0];
+            }
+        }
+    }
+
+    return -1.0;
+}
+
+int str2idx(const char *s)
+{
+    int c0 = 0;
+    static char **q = NULL;
+
+
+    if (q == NULL) {
+        q = malloc(sizeof(char *) * MAX_SIZE);
+        memset(q, 0, sizeof(char *) * MAX_SIZE);
+    }
+
+    for (c0 = 0; c0 &lt; MAX_SIZE; c0++) {
+        if (q[c0] == NULL) {
+            break;
+        }
+        
+        if (!strcmp(q[c0], s)) {
+            return c0;
+        }
+    }
+
+    q[c0] = malloc(strlen(s) + 1);
+    strcpy(q[c0], s);
+
+    return c0;
+}
+
+/**
+ * Note: The returned array must be malloced, assume caller calls free().
+ */
+double* calcEquation(
+    char ***equations,
+    int equationsSize,
+    int *equationsColSize,
+    double *values,
+    int valuesSize,
+    char ***queries,
+    int queriesSize,
+    int *queriesColSize,
+    int *returnSize)
+{
+    int c0 = 0;
+    int c1 = 0;
+    int *exist = NULL;
+    int *visit = NULL;
+    double *r = NULL;
+    double **q = NULL;
+
+    q = malloc(sizeof(double) * MAX_SIZE);
+    for (c0 = 0; c0 &lt; MAX_SIZE; c0++) {
+        q[c0] = malloc(sizeof(double) * MAX_SIZE);
+        memset(q[c0], 0, sizeof(double) * MAX_SIZE);
+    }
+
+    exist = malloc(sizeof(int) * MAX_SIZE);
+    memset(exist, 0, sizeof(int) * MAX_SIZE);
+
+    for (c0 = 0; c0 &lt; equationsSize; c0++) {
+        int a = str2idx(equations[c0][0]);
+        int b = str2idx(equations[c0][1]);
+
+        q[a][b] = values[c0];
+        q[b][a] = 1.0 / values[c0];
+
+        exist[a] |= 1;
+        exist[b] |= 1;
+    }
+
+    r = malloc(sizeof(double) * queriesSize);
+    memset(r, 0, sizeof(double) * queriesSize);
+
+    visit = malloc(sizeof(int) * MAX_SIZE);
+    for (c0 = 0; c0 &lt; queriesSize; c0++) {
+        int a = str2idx(queries[c0][0]);
+        int b = str2idx(queries[c0][1]);
+
+        if ((exist[a] &amp;&amp; exist[b]) == 0) {
+            r[c0] = -1.0;
+            continue;
+        }
+
+        memset(visit, 0, sizeof(int) * MAX_SIZE);
+        r[c0] = dfs(a, b, q, visit);
+    }
+
+    *returnSize = queriesSize;
+    return r;
+}
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
