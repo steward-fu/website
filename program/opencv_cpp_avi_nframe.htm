@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head><script type="text/javascript" src="../page_head.js"></script>
 
-<h3><a href="../program.htm">程式語言</a> - OpenCV - Image Processing - <b>Show Image</b></h3>
+<h3><a href="../program.htm">程式語言</a> - OpenCV - C/C++ - Video Processing - <b>Show Specific Frame</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
@@ -13,22 +13,30 @@ main.cpp
 <pre class="brush:cpp">
 #include &lt;stdio.h&gt;
 #include &lt;opencv2/opencv.hpp&gt;
+#include &lt;opencv2/core/core.hpp&gt;
+#include &lt;opencv2/highgui/highgui.hpp&gt;
 
 using namespace cv;
+using std::string;
 
 int main(int argc, char **argv)
 {
-    Mat image;
+    Mat frame;
 
-    image = imread("main.png", 1);
-    if (!image.data)
-    {
-        printf("failed to load image\n");
+    VideoCapture cap("main.avi");
+    if (!cap.isOpened()) {
+        printf("failed to load avi");
         return -1;
     }
-    namedWindow("show image", WINDOW_AUTOSIZE);
-    imshow("show image", image);
-    waitKey(0);
+
+    int cnt = cap.get(CAP_PROP_FRAME_COUNT);
+    printf("total frame: %d\n", cnt);
+
+    cap.set(CV_CAP_PROP_POS_FRAMES, 100);
+    namedWindow("w", 1);
+    cap &gt;&gt; frame;
+    imshow("w", frame);
+    waitKey(3000);
     return 0;
 }
 </pre><br>
@@ -44,19 +52,5 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 add_executable(main main.cpp)
 target_link_libraries(main ${OpenCV_LIBS})
 </pre><br>
-
-<p>
-編譯並且執行
-</p>
-<pre>
-$ cmake .
-$ make
-$ ./main
-</pre><br>
-
-<p>
-完成<br>
-<img src="opencv_image/1.jpg" class="maxSize">
-</p>
 
 <br><script type="text/javascript" src="../tail.js"></script>
