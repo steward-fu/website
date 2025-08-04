@@ -38,6 +38,6 @@ this.regexList = [
 
 Brush.prototype  = new SyntaxHighlighter.Highlighter();
 Brush.aliases  = ['d'];
-SyntaxHighlighter.brushes.Cpp = Brush;
+SyntaxHighlighter.brushes.D = Brush;
 typeof(exports) != 'undefined' ? exports.Brush = Brush : null;
 })();
