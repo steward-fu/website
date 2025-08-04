@@ -29,6 +29,7 @@ document.write('<script type="text/javascript" src="../scripts/shBrushAsm.js"></
 document.write('<script type="text/javascript" src="../scripts/shBrushBash.js"></script>');
 document.write('<script type="text/javascript" src="../scripts/shBrushColdFusion.js"></script>');
 document.write('<script type="text/javascript" src="../scripts/shBrushCpp.js"></script>');
+document.write('<script type="text/javascript" src="../scripts/shBrushD.js"></script>');
 document.write('<script type="text/javascript" src="../scripts/shBrushCSharp.js"></script>');
 document.write('<script type="text/javascript" src="../scripts/shBrushCss.js"></script>');
 document.write('<script type="text/javascript" src="../scripts/shBrushDiff.js"></script>');
