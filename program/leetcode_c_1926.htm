@@ -1,0 +1,77 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - LeetCode - C - <b>1926. Nearest Exit from Entrance in Maze</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://www.cnblogs.com/cnoodle/p/16913967.html<br><br>
+
+題目：<br>
+<img src="leetcode_c_1926/1.jpg" class="maxSize"><br><br>
+
+解答：
+</p>
+<pre class="brush:cpp">
+#define MAX_SIZE 10000
+
+int nearestExit(char **maze, int mazeSize, int *mazeColSize, int *entrance, int entranceSize)
+{
+    int r = 0;
+    int cc = 0;
+    int st = 0;
+    int ep = 0;
+    int **q = NULL;
+
+    q = malloc(sizeof(int *) * MAX_SIZE);
+    for (cc = 0; cc &lt; MAX_SIZE; cc++) {
+        q[cc] = malloc(sizeof(int) * 2);
+        memset(q[cc], 0, sizeof(int) * 2);
+    }
+
+    st = 0;
+    q[ep][0] = entrance[0];
+    q[ep][1] = entrance[1];
+    maze[q[ep][0]][q[ep][1]] = '+';
+    ep += 1;
+
+    r = 0;
+    while ((ep - st) &gt; 0) {
+        int x0 = 0;
+        int y0 = 0;
+        int c1 = 0;
+        int ay[] = { -1, 1, 0, 0 };
+        int ax[] = { 0, 0, -1, 1 };
+        int len = ep;
+
+        for (cc = st; cc &lt; len; cc++) {
+            for (c1 = 0; c1 &lt; 4; c1++) {
+                y0 = q[cc][0] + ay[c1];
+                x0 = q[cc][1] + ax[c1];
+
+                if ((x0 &lt; 0) || (y0 &lt; 0) || (x0 &gt;= mazeColSize[0]) || (y0 &gt;= mazeSize)) {
+                    continue;
+                }
+                if (maze[y0][x0] == '+') {
+                    continue;
+                }
+                if ((x0 == 0) || (y0 == 0) || (x0 == (mazeColSize[0] - 1)) || (y0 == (mazeSize - 1))) {
+                    return r + 1;
+                }
+
+                q[ep][0] = y0;
+                q[ep][1] = x0;
+                maze[q[ep][0]][q[ep][1]] = '+';
+                ep += 1;
+            }
+            st += 1;
+        }
+        r += 1;
+    }
+
+    return -1;
+}
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
