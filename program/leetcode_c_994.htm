@@ -1,0 +1,86 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - LeetCode - C - <b>994. Rotting Oranges</b></h3>
+<hr size="1"><br>
+<p>
+題目：<br>
+<img src="leetcode_c_994/1.jpg" class="maxSize"><br><br>
+
+解答：
+</p>
+<pre class="brush:cpp">
+#define MAX_SIZE 10000
+
+int orangesRotting(int **grid, int gridSize, int *gridColSize)
+{
+    int r = 0;
+    int c0 = 0;
+    int c1 = 0;
+    int st = 0;
+    int ep = 0;
+    int **q = NULL;
+
+    q = malloc(sizeof(int *) * MAX_SIZE);
+    for (c0 = 0; c0 &lt; MAX_SIZE; c0++) {
+        q[c0] = malloc(sizeof(int) * 2);
+        memset(q[c0], 0, sizeof(int) * 2);
+    }
+
+    st = 0;
+    for (c0 = 0; c0 &lt; gridSize; c0++) {
+        for (c1 = 0; c1 &lt; gridColSize[c0]; c1++) {
+            if (grid[c0][c1] == 2) {
+                q[ep][0] = c0;
+                q[ep][1] = c1;
+                ep += 1;
+            }
+        }
+    }
+
+    while ((ep - st) &gt; 0) {
+        int x0 = 0;
+        int y0 = 0;
+        int c1 = 0;
+        int ay[] = { -1, 1, 0, 0 };
+        int ax[] = { 0, 0, -1, 1};
+        int len = ep;
+        int valid = 0;
+
+        for (c0 = 0; c0 &lt; len ; c0++) {
+            for (c1 = 0; c1 &lt; 4; c1++) {
+                y0 = q[c0][0] + ay[c1];
+                x0 = q[c0][1] + ax[c1];
+
+                if ((x0 &lt; 0) || (y0 &lt; 0) || (x0 &gt;= gridColSize[0]) || (y0 &gt;= gridSize)) {
+                    continue;
+                }
+
+                if (grid[y0][x0] == 1) {
+                    q[ep][0] = y0;
+                    q[ep][1] = x0;
+                    ep += 1;
+
+                    grid[y0][x0] = 2;
+                    valid = 1;
+                }
+            }
+        }
+        st += 1;
+        r += valid;
+    }
+
+    for (c0 = 0; c0 &lt; gridSize; c0++) {
+        for (c1 = 0; c1 &lt; gridColSize[c0]; c1++) {
+            if (grid[c0][c1] == 1) {
+                return -1;
+            }
+        }
+    }
+
+    return r;
+}
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
