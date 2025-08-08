@@ -1,0 +1,40 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../emu.htm">模擬器</a> - SimulIDE - <b>Build SimulIDE(ARM32)</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/eeTools/SimulIDE-dev<br>
+https://github.com/codecat/angelscript-mirror<br><br>
+</p>
+<pre>
+$ sudo apt-get install qttools5-dev-tools qtbase5-dev qtmultimedia5-dev libqt5serialport5-dev qt5-*-dev
+
+$ cd
+$ git clone https://github.com/codecat/angelscript-mirror
+$ cd angelscript-mirror
+$ git checkout 51902f8741312adca73d22d549f7d0b8ee0160b0
+
+$ cd
+$ git clone https://github.com/eeTools/SimulIDE-dev
+$ cd SimulIDE-dev
+$ git checkout b820d3ac70898b88585252c172d2312c27e1422f
+
+$ cd build_XX
+$ cp ~/angelscript-mirror/sdk/angelscript/source/as_callfunc_arm.cpp ../src/angel/src
+$ cp ~/angelscript-mirror/sdk/angelscript/source/as_callfunc_arm_gcc.S ../src/angel/src
+$ vim ../SimulIDE.pri
+     81 QMAKE_CFLAGS   += -Wa,-mimplicit-it=thumb
+    109     contains( QMAKE_HOST.arch, armv7l ) {
+
+$ vim ../src/microsim/cores/pic/picmrcore.cpp
+	:1,$s/inline\ //g
+
+$ qmake
+$ make
+$ sudo cp executables/SimulIDE_2.0.0-/simulide /usr/bin/simulide
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
