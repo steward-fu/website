@@ -1,0 +1,134 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../phone.htm">手機</a> - Motorola XT897 - Sailfish OS 4.4.0.68 - Debian 12 - <b>安裝系統</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://wiki.debian.org/EmDebian/CrossDebootstrap<br><br>
+
+PC
+</p>
+<pre>
+$ cd
+$ sudo apt-get install binfmt-support qemu qemu-user-static debootstrap
+
+$ wget https://ftp-master.debian.org/keys/release-12.asc -qO- | gpg --import --no-default-keyring --keyring ./debian-release-12.gpg
+$ sudo debootstrap --keyring=./debian-release-12.gpg --arch armhf --foreign bookworm bookworm http://ftp.debian.org/debian/
+$ sudo chroot bookworm /debootstrap/debootstrap --second-stage
+
+$ sudo mount -o bind /dev bookworm/dev
+$ sudo mount -o bind /sys bookworm/sys
+$ sudo mount -o bind /proc bookworm/proc
+
+$ sudo chroot bookworm
+# passwd
+# adduser user
+# nano /etc/apt/sources.list
+    deb http://deb.debian.org/debian bookworm main contrib non-free non-free-firmware
+    deb http://deb.debian.org/debian bookworm-updates main contrib non-free non-free-firmware
+    deb http://deb.debian.org/debian bookworm-backports main contrib non-free non-free-firmware
+    deb http://archive.debian.org/debian/ buster contrib main non-free
+
+# apt-get update
+# apt-get install task-lxde-desktop lxde-core lxde obconf openbox lxdm lxde-common tightvncserver -y
+</pre><br>
+
+<p>
+SailfishOS
+</p>
+<pre>
+$ cd
+$ git clone https://github.com/steward-fu/vncclient
+$ mkdir vncclient/build
+$ cd vncclient/build
+$ cmake ..
+$ make
+$ sudo cp examples/client/vncclient /usr/local/bin
+$ sudo chmod 0777 /usr/local/bin/vncclient
+
+$ sudo vim /usr/local/bin/debian 
+    #!/bin/bash
+    MYDIR=/sdcard/bookworm
+    ACT=$1
+
+    if [ `whoami` != "root" ]; then
+        echo "run me as root"
+        exit
+    fi
+
+    if [ "$ACT" == "mount" ]; then
+        mount --rbind /dev $MYDIR/dev
+        mount --bind /sys $MYDIR/sys
+        mount --bind /proc $MYDIR/proc
+    fi
+
+    if [ "$ACT" == "start" ]; then
+        chroot $MYDIR /bin/su - user -c '/usr/bin/vncserver -geometry 960x540 -depth 16 :1'
+    fi
+
+    if [ "$ACT" == "cli" ]; then
+        chroot $MYDIR /bin/su - user
+    fi
+
+    if [ "$ACT" == "stop" ]; then
+        chroot $MYDIR /bin/su - user -c '/usr/bin/vncserver -kill :1'
+    fi
+
+    if [ "$ACT" == "umount" ]; then
+        umount -R $MYDIR/dev
+        umount $MYDIR/sys
+        umount $MYDIR/proc
+    fi
+
+$ sudo chmod 0777 /usr/local/bin/debian 
+$ sudo debian mount
+$ sudo debian start
+$ vncclient 127.0.0.1:5901
+</pre>
+<p>
+<img src="xt897_bookworm_setup/1.jpg" class="maxSize"><br><br>
+
+按鍵說明
+</p>
+<table>
+<tr><th>按鍵</th><th>功能</th></tr>
+<tr><td>CTRL + 1</td><td>F1</td></tr>
+<tr><td>CTRL + 2</td><td>F2</td></tr>
+<tr><td>CTRL + 3</td><td>F3</td></tr>
+<tr><td>CTRL + 4</td><td>F4</td></tr>
+<tr><td>CTRL + 5</td><td>F5</td></tr>
+<tr><td>CTRL + 6</td><td>F6</td></tr>
+<tr><td>CTRL + 7</td><td>F7</td></tr>
+<tr><td>CTRL + 8</td><td>F8</td></tr>
+<tr><td>CTRL + 9</td><td>F9</td></tr>
+<tr><td>CTRL + 0</td><td>F10</td></tr>
+<tr><td>ALT + 1</td><td>|</td></tr>
+<tr><td>ALT + '</td><td>`</td></tr>
+<tr><td>ALT + 9</td><td>{</td></tr>
+<tr><td>ALT + 0</td><td>}</td></tr>
+<tr><td>ALT + O</td><td>[</td></tr>
+<tr><td>ALT + P</td><td>]</td></tr>
+<tr><td>ALT + ,</td><td>&lt;</td></tr>
+<tr><td>ALT + .</td><td>&gt;</td></tr>
+<tr><td>ALT + /</td><td>\</td></tr>
+<tr><td>ALT + -</td><td>~</td></tr>
+<tr><td>SHIFT + Up</td><td>PageUp</td></tr>
+<tr><td>SHIFT + Down</td><td>PageDown</td></tr>
+<tr><td>SHIFT + Left</td><td>Home</td></tr>
+<tr><td>SHIFT + Right</td><td>End</td></tr>
+<tr><td>SHIFT + Enter</td><td>Escape</td></tr>
+<tr><td>ALT + Enter</td><td>PrintScreen</td></tr>
+<tr><td>ALT + Up</td><td>Mouse Up</td></tr>
+<tr><td>ALT + Down</td><td>Mouse Down</td></tr>
+<tr><td>ALT + Left</td><td>Mouse Left</td></tr>
+<tr><td>ALT + Right</td><td>Mouse Right</td></tr>
+<tr><td>ALT + I</td><td>Mouse Wheel--</td></tr>
+<tr><td>ALT + M</td><td>Mouse Wheel++</td></tr>
+<tr><td>ALT + L</td><td>Mouse RightButton</td></tr>
+<tr><td>ALT + K</td><td>Mouse LeftButton</td></tr>
+<tr><td>ALT + J</td><td>Mouse LeftButton(Toggle)</td></tr>
+</table>
+
+<br><script type="text/javascript" src="../tail.js"></script>
