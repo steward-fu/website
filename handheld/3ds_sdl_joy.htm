@@ -1,0 +1,69 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - Nintendo 3DS - C/C++ - SDL v1.2 - <b>Joystick</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://libctru.devkitpro.org/index.html<br>
+https://github.com/devkitPro/3ds-examples<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;3ds.h&gt;
+#include &lt;SDL.h&gt;
+#include &lt;SDL_gfxPrimitives.h&gt;
+
+int main(void)
+{
+    char buf[255] = { 0 };
+    SDL_Event event = { 0 };
+    SDL_Joystick *joy = NULL;
+    SDL_Surface *screen = NULL;
+
+    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK);
+    screen = SDL_SetVideoMode(400, 240, 16, SDL_HWSURFACE);
+    SDL_FillRect(screen, &amp;screen-&gt;clip_rect, SDL_MapRGB(screen-&gt;format, 0x00, 0x00, 0x00));
+    SDL_Flip(screen);
+
+    int num = SDL_NumJoysticks();
+    if (num &gt; 0) {
+        joy = SDL_JoystickOpen(0);
+    }
+    while (1) {
+        if (SDL_PollEvent(&amp;event)) {
+            if (event.type == SDL_JOYAXISMOTION) {
+                SDL_FillRect(screen, &amp;screen-&gt;clip_rect, SDL_MapRGB(screen-&gt;format, 0x00, 0x00, 0x00));
+                sprintf(buf, "axis: %d, value: %d", event.jaxis.axis, event.jaxis.value);
+                stringRGBA(screen, 100, 100, buf, 0xff, 0xff, 0xff, 0xff);
+                SDL_Flip(screen);
+            }
+            if ((event.type == SDL_JOYBUTTONDOWN) || (event.type == SDL_JOYBUTTONUP)) {
+                SDL_FillRect(screen, &amp;screen-&gt;clip_rect, SDL_MapRGB(screen-&gt;format, 0x00, 0x00, 0x00));
+                sprintf(buf, "button: %d, state: %d", event.jbutton.button, event.jbutton.state);
+                stringRGBA(screen, 100, 100, buf, 0xff, 0xff, 0xff, 0xff);
+                SDL_Flip(screen);
+            }
+        }
+        SDL_Delay(100);
+    }
+
+    if (joy) {
+        SDL_JoystickClose(joy);
+    }
+    SDL_Quit();
+    return 0;
+}
+</pre>
+<p>
+P.S. 目前無法從SDL去取得DPad、Touch的輸入狀態<br><br>
+
+完成<br>
+<img src="3ds_sdl_joy/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
