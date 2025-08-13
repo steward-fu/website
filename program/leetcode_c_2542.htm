@@ -1,0 +1,112 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - LeetCode - C - <b>2542. Maximum Subsequence Score</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://www.cnblogs.com/cnoodle/p/17549555.html<br>
+https://www.geeksforgeeks.org/c/c-program-to-implement-priority-queue/<br><br>
+
+題目：<br>
+<img src="leetcode_c_2542/1.jpg" class="maxSize"><br><br>
+
+解答：
+</p>
+<pre class="brush:cpp">
+#define MAX_SIZE 100000
+
+typedef struct {
+    int size;
+    int buf[MAX_SIZE];
+} queue;
+
+void sort_left(queue *q, int index)
+{
+    int left = (index - 1) / 2;
+
+    if (index &amp;&amp; (q-&gt;buf[left] &gt; q-&gt;buf[index])) {
+        int t = q-&gt;buf[index];
+
+        q-&gt;buf[index] = q-&gt;buf[left];
+        q-&gt;buf[left] = t;
+
+        sort_left(q, left);
+    }
+}
+
+int sort_right(queue *q, int index)
+{
+    int s = index;
+    int left = (2 * index) + 1;
+    int right = (2 * index) + 2;
+
+    if ((left &lt; q-&gt;size) &amp;&amp; (q-&gt;buf[left] &lt; q-&gt;buf[s])) {
+        s = left;
+    }
+
+    if ((right &lt; q-&gt;size) &amp;&amp; (q-&gt;buf[right] &lt; q-&gt;buf[s])) {
+        s = right;
+    }
+
+    if (s != index) {
+        int t = q-&gt;buf[index];
+
+        q-&gt;buf[index] = q-&gt;buf[s];
+        q-&gt;buf[s] = t;
+
+        sort_right(q, s);
+    }
+
+    return 0;
+}
+
+int sort_2d(const void *a, const void *b)
+{
+    return ((*(int **)b)[0] - (*(int **)a)[0]);
+}
+
+long long maxScore(int *nums1, int nums1Size, int *nums2, int nums2Size, int k)
+{
+    long long t = 0;
+    long long r = INT_MIN;
+    long long sum = 0;
+
+    int cc = 0;
+    int idx = 0;
+    int **sorted = NULL;
+    queue q = { 0 };
+
+    sorted = malloc(sizeof(int *) * nums1Size);
+    for (cc = 0; cc &lt; nums1Size; cc++) {
+        sorted[cc] = malloc(sizeof(int) * 2);
+        sorted[cc][0] = nums2[cc];
+        sorted[cc][1] = nums1[cc];
+    }
+    qsort(sorted, nums1Size, sizeof(int) * 2, sort_2d);
+
+    for (cc = 0; cc &lt; nums1Size; cc++) {
+        sum += sorted[cc][1];
+        q.buf[q.size++] = sorted[cc][1];
+        sort_left(&amp;q, q.size - 1);
+
+        if (q.size &gt; k) {
+            sum -= q.buf[0];
+            q.buf[0] = q.buf[--q.size];
+            sort_right(&amp;q, 0);
+        }
+
+        if (q.size == k) {
+            t = sum * sorted[cc][0];
+            if (t &gt; r) {
+                r = t;
+            }
+        }
+    }
+
+    return r;
+}
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
