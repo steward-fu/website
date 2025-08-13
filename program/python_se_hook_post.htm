@@ -1,0 +1,93 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - Python - Selenium - <b>Hook POST Event</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://selenium-python.readthedocs.io/getting-started.html<br><br>
+
+main.py
+</p>
+<pre class="brush:python">
+from selenium import webdriver
+import time
+import json
+
+driver = webdriver.Chrome()
+driver.get("file:///tmp/main.html")
+
+driver.execute_script("""
+(function() {
+    const originalFetch = window.fetch;
+    window.fetch = function() {
+        let args = arguments;
+        
+        window._fetchLog = window._fetchLog || [];
+        window._fetchLog.push({
+            type: 'request',
+            url: args[0],
+            options: args[1] ? JSON.stringify(args[1]) : null
+        });
+        
+        let r = originalFetch.apply(this, args).then(response =&gt; {
+            response.clone().text().then(text =&gt; {
+                window._fetchLog.push({
+                    type: 'response',
+                    url: args[0],
+                    body: text
+                });
+            });
+            return response;
+        });
+
+        return arguments;
+    };
+})();
+""")
+
+time.sleep(60)
+
+logs = driver.execute_script("return window._fetchLog || []")
+print(json.dumps(logs, indent=2))
+
+driver.quit()
+</pre><br>
+
+<p>
+/tmp/main.html
+</p>
+<pre class="brush:html">
+&lt;!doctype html&gt;
+&lt;html lang="en"&gt;
+&lt;body&gt;
+    &lt;div class="wrap"&gt;
+        &lt;button id="btn" type="button"&gt;Test&lt;/button&gt;
+    &lt;/div&gt;
+
+    &lt;script&gt;
+        document.getElementById('btn').addEventListener('click', () =&gt; {
+            fetch('www.google.com');
+        });
+    &lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</pre>
+<p>
+<img src="python_se_hook_post/1.jpg" class="maxSize"><br><br>
+
+執行：
+</p>
+<pre>
+$ python3 main.py 
+    [
+      {
+        "options": null,
+        "type": "request",
+        "url": "www.google.com"
+      }
+    ]
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
