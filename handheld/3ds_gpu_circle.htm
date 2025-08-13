@@ -1,0 +1,77 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - Nintendo 3DS - C/C++ - GPU - <b>Circle</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://libctru.devkitpro.org/index.html<br>
+https://github.com/devkitPro/3ds-examples<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;citro2d.h&gt;
+#include &lt;string.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+ 
+int main(void)
+{
+    gfxInitDefault();
+    C3D_Init(C3D_DEFAULT_CMDBUF_SIZE);
+    C2D_Init(C2D_DEFAULT_MAX_OBJECTS);
+    C2D_Prepare();
+    C3D_RenderTarget *top = C2D_CreateScreenTarget(GFX_TOP, GFX_LEFT);
+ 
+    u32 bg = C2D_Color32(0x00, 0xff, 0xff, 0xff);
+    u32 c0 = C2D_Color32(0xff, 0x00, 0x00, 0xff);
+    u32 c1 = C2D_Color32(0x00, 0xff, 0x00, 0xff);
+ 
+    C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
+    C2D_TargetClear(top, bg);
+    C2D_SceneBegin(top);
+    C2D_DrawCircle(100, 100, 0, 50, c0, c1, c0, c0);
+    C3D_FrameEnd(0);
+     
+    C2D_Fini();
+    C3D_Fini();
+ 
+    svcSleepThread(3000000000LL);
+    gfxExit();
+    return 0;
+}
+</pre><br>
+
+<p>
+Makefile
+</p>
+<pre>
+include $(DEVKITARM)/3ds_rules
+
+all:
+	arm-none-eabi-gcc -mword-relocations -ffunction-sections -march=armv6k -mtune=mpcore -mfloat-abi=hard -mtp=soft -I/opt/devkitpro/libctru/include -I/opt/devkitpro/portlibs/3ds/include/ -I/opt/devkitpro/portlibs/3ds/include/opus/ -I/opt/devkitpro/portlibs/3ds/include/SDL -D__3DS__ -c main.c -o main.o 
+	arm-none-eabi-gcc -specs=3dsx.specs -march=armv6k -mtune=mpcore -mfloat-abi=hard -mtp=soft main.o -L/opt/devkitpro/portlibs/3ds/lib -lopusfile -logg -lopus -L/opt/devkitpro/libctru/lib -lSDL_image -lSDL_mixer -lSDL_ttf -lSDL_gfx -lSDL -lfreetype -lbz2 -lpng -ljpeg -lz -lcitro2d -lcitro3d -lctru -lm -lstdc++ -o main.elf
+	smdhtool --create "main" "devkitARM" "steward" /opt/devkitpro/libctru/default_icon.png main.smdh
+	3dsxtool main.elf main.3dsx --smdh=main.smdh
+
+clean:
+	rm -rf main.o main.elf main.3dsx main.smdh
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ sudo docker run --rm -it -v $(pwd):/source nds-env /bin/bash
+root@c18881035cba:/source# make &amp;&amp; exit
+$ citra main.3dsx
+</pre><br>
+
+<p>
+完成<br>
+<img src="3ds_gpu_circle/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
