@@ -1,0 +1,238 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - Q8 - Assembly - <b>LCD(GPIO)</b></h3>
+<hr size="1"><br>
+<p>
+參考資料：<br>
+http://nano.lichee.pro/<br>
+https://mangopi.org/mangopi_r<br>
+https://www.allwinnertech.com/index.php?c=product&amp;a=index&amp;pid=4<br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .global _start
+     
+    .equiv PIO_BASE,  0x01c20800 
+    .equiv PD,        (0x24 * 3)
+    .equiv PE,        (0x24 * 4)
+    .equiv PIO_CFG0,  0x00
+    .equiv PIO_CFG1,  0x04
+    .equiv PIO_CFG2,  0x08
+    .equiv PIO_DATA,  0x10
+ 
+    .equiv LCD_CS,    (1 &lt;&lt; 21)
+    .equiv LCD_RD,    (1 &lt;&lt; 20)
+    .equiv LCD_RS,    (1 &lt;&lt; 19)
+    .equiv LCD_WR,    (1 &lt;&lt; 18)
+    .equiv LCD_RST,   (1 &lt;&lt; 11)
+    .equiv LCD_BL,    (1 &lt;&lt; 6)
+     
+    .arm
+    .text
+_start:
+    .long 0xea000016
+    .byte 'e', 'G', 'O', 'N', '.', 'B', 'T', '0'
+    .long 0, __spl_size
+    .byte 'S', 'P', 'L', 2
+    .long 0, 0
+    .long 0, 0, 0, 0, 0, 0, 0, 0
+    .long 0, 0, 0, 0, 0, 0, 0, 0
+      
+_vector:
+    b reset
+    b .
+    b .
+    b .
+    b .
+    b .
+    b .
+    b .
+      
+reset:
+    ldr r4, =PIO_BASE + PD
+    ldr r1, =0x11111111
+    str r1, [r4, #PIO_CFG0]
+    str r1, [r4, #PIO_CFG1]
+    ldr r1, =0x00111111
+    str r1, [r4, #PIO_CFG2]
+ 
+    ldr r4, =PIO_BASE + PE
+    ldr r1, [r4, #PIO_CFG0]
+    bic r1, #0xf000000
+    orr r1, #0x1000000
+    str r1, [r4, #PIO_CFG0]
+ 
+    ldr r1, [r4, #PIO_CFG1]
+    bic r1, #0xf000
+    orr r1, #0x1000
+    str r1, [r4, #PIO_CFG1]
+ 
+    ldr r4, =PIO_BASE + PD
+    ldr r1, =0xffffffff
+    str r1, [r4, #PIO_DATA]
+ 
+    ldr r4, =PIO_BASE + PE
+    ldr r1, =0xffffffff
+    str r1, [r4, #PIO_DATA]
+ 
+    bl lcd_rst
+ 
+    ldr r0, =0xb9
+    bl lcd_cmd
+    ldr r0, =0xff
+    bl lcd_dat
+    ldr r0, =0x83
+    bl lcd_dat
+    ldr r0, =0x57
+    bl lcd_dat
+
+    ldr r0, =1000
+    bl delay
+
+    ldr r0, =0xb6
+    bl lcd_cmd
+    ldr r0, =0x2c
+    bl lcd_dat
+ 
+    ldr r0, =0x11
+    bl lcd_cmd
+
+    ldr r0, =1000
+    bl delay
+
+    ldr r0, =0x35
+    bl lcd_cmd
+ 
+    ldr r0, =0x3a
+    bl lcd_cmd
+    ldr r0, =0x05
+    bl lcd_dat
+ 
+    ldr r0, =0x36
+    bl lcd_cmd
+    ldr r0, =0x38
+    bl lcd_dat
+ 
+    ldr r0, =0xb0
+    bl lcd_cmd
+    ldr r0, =0x68
+    bl lcd_dat
+    
+    ldr r0, =0x2b
+    bl lcd_cmd
+    ldr r0, =0x00
+    bl lcd_dat
+    ldr r0, =0x00
+    bl lcd_dat
+    ldr r0, =0x01
+    bl lcd_dat
+    ldr r0, =0x3f
+    bl lcd_dat
+ 
+    ldr r0, =0x2a
+    bl lcd_cmd
+    ldr r0, =0x00
+    bl lcd_dat
+    ldr r0, =0x00
+    bl lcd_dat
+    ldr r0, =0x01
+    bl lcd_dat
+    ldr r0, =0xdf
+    bl lcd_dat
+ 
+    ldr r0, =0x29
+    bl lcd_cmd
+    ldr r0, =0x2c
+    bl lcd_cmd
+ 
+    ldr r4, =320*80
+    ldr r5, =0xf800
+0:
+    mov r0, r5
+    bl lcd_dat
+    subs r4, #1
+    bne 0b
+    
+    ldr r4, =320*80
+    ldr r5, =0x7e0
+0:
+    mov r0, r5
+    bl lcd_dat
+    subs r4, #1
+    bne 0b
+    
+    ldr r4, =320*80
+    ldr r5, =0x1f
+0:
+    mov r0, r5
+    bl lcd_dat
+    subs r4, #1
+    bne 0b
+    b .
+ 
+delay:
+    push {lr}
+0:
+    subs r0, #1
+    bne 0b
+    pop {pc}
+ 
+lcd_rst:
+    push {r4, r5, lr}
+    ldr r4, =PIO_BASE + PE
+    ldr r5, =0xffffffff
+ 
+    bic r5, #LCD_RST
+    str r5, [r4, #PIO_DATA]
+    ldr r0, =10000
+    bl delay
+ 
+    orr r5, #LCD_RST
+    str r5, [r4, #PIO_DATA]
+    ldr r0, =10000
+    bl delay
+    pop {r4, r5, pc}
+ 
+lcd_wr:
+    push {r4, r5, lr}
+    ldr r4, =PIO_BASE + PD
+ 
+    and r2, r0, #0x00ff
+    and r3, r0, #0xff00
+    lsl r2, #1
+    lsl r3, #2
+ 
+    eor r5, r5
+    orr r5, r1
+    orr r5, r2
+    orr r5, r3
+    orr r5, #LCD_RD
+    str r5, [r4, #PIO_DATA]
+ 
+    orr r5, #LCD_WR
+    str r5, [r4, #PIO_DATA]
+    pop {r4, r5, pc}
+ 
+lcd_dat:
+    push {lr}
+    mov r1, #LCD_RS
+    bl lcd_wr
+    pop {pc}
+ 
+lcd_cmd:
+    push {lr}
+    mov r1, #0
+    bl lcd_wr
+    pop {pc}
+    .end
+</pre><br>
+
+<p>
+完成<br>
+<img src="q8_asm_lcd_gpio/2.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
