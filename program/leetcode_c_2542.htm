@@ -15,54 +15,45 @@ https://www.geeksforgeeks.org/c/c-program-to-implement-priority-queue/<br><br>
 解答：
 </p>
 <pre class="brush:cpp">
-#define MAX_SIZE 100000
-
-typedef struct {
-    int size;
-    int buf[MAX_SIZE];
-} queue;
-
-void sort_left(queue *q, int index)
+void sort_node(int *buf, int index)
 {
     int left = (index - 1) / 2;
 
-    if (index &amp;&amp; (q-&gt;buf[left] &gt; q-&gt;buf[index])) {
-        int t = q-&gt;buf[index];
+    if (index &amp;&amp; (buf[left] &gt; buf[index])) {
+        int t = buf[index];
 
-        q-&gt;buf[index] = q-&gt;buf[left];
-        q-&gt;buf[left] = t;
+        buf[index] = buf[left];
+        buf[left] = t;
 
-        sort_left(q, left);
+        sort_node(buf, left);
     }
 }
 
-int sort_right(queue *q, int index)
+void sort_leaf(int *buf, int size, int index)
 {
     int s = index;
     int left = (2 * index) + 1;
     int right = (2 * index) + 2;
 
-    if ((left &lt; q-&gt;size) &amp;&amp; (q-&gt;buf[left] &lt; q-&gt;buf[s])) {
+    if ((left &lt; size) &amp;&amp; (buf[left] &lt; buf[s])) {
         s = left;
     }
 
-    if ((right &lt; q-&gt;size) &amp;&amp; (q-&gt;buf[right] &lt; q-&gt;buf[s])) {
+    if ((right &lt; size) &amp;&amp; (buf[right] &lt; buf[s])) {
         s = right;
     }
 
     if (s != index) {
-        int t = q-&gt;buf[index];
+        int t = buf[index];
 
-        q-&gt;buf[index] = q-&gt;buf[s];
-        q-&gt;buf[s] = t;
+        buf[index] = buf[s];
+        buf[s] = t;
 
-        sort_right(q, s);
+        sort_leaf(buf, size, s);
     }
-
-    return 0;
 }
 
-int sort_2d(const void *a, const void *b)
+int sort_queue(const void *a, const void *b)
 {
     return ((*(int **)b)[0] - (*(int **)a)[0]);
 }
@@ -75,8 +66,9 @@ long long maxScore(int *nums1, int nums1Size, int *nums2, int nums2Size, int k)
 
     int cc = 0;
     int idx = 0;
+    int size = 0;
     int **sorted = NULL;
-    queue q = { 0 };
+    int buf[100000] = { 0 };
 
     sorted = malloc(sizeof(int *) * nums1Size);
     for (cc = 0; cc &lt; nums1Size; cc++) {
@@ -84,20 +76,20 @@ long long maxScore(int *nums1, int nums1Size, int *nums2, int nums2Size, int k)
         sorted[cc][0] = nums2[cc];
         sorted[cc][1] = nums1[cc];
     }
-    qsort(sorted, nums1Size, sizeof(int) * 2, sort_2d);
+    qsort(sorted, nums1Size, sizeof(int) * 2, sort_queue);
 
     for (cc = 0; cc &lt; nums1Size; cc++) {
         sum += sorted[cc][1];
-        q.buf[q.size++] = sorted[cc][1];
-        sort_left(&amp;q, q.size - 1);
+        buf[size++] = sorted[cc][1];
+        sort_node(buf, size - 1);
 
-        if (q.size &gt; k) {
-            sum -= q.buf[0];
-            q.buf[0] = q.buf[--q.size];
-            sort_right(&amp;q, 0);
+        if (size &gt; k) {
+            sum -= buf[0];
+            buf[0] = buf[--size];
+            sort_leaf(buf, size, 0);
         }
 
-        if (q.size == k) {
+        if (size == k) {
             t = sum * sorted[cc][0];
             if (t &gt; r) {
                 r = t;
