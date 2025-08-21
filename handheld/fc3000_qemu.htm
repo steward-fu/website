@@ -1,0 +1,47 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - FC3000 - <b>QEMU環境</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/steward-fu/website/releases/download/fc3000/qemu_20220929.7z<br><br>
+
+司徒花了一些時間將FC3000搬到QEMU環境跑，這個QEMU環境是基於QEMU versatilepb (ARM926EJS)，屬於軟體兼容運作，因此，無法在這個環境去操作F1C100S底層的暫存器，如果是基於SDL開發的話，這是一個相當適合的開發環境，因為可以很方便的使用dbg去debug程式<br>
+<img src="fc3000_qemu/1.jpg" class="maxSize"><br><br>
+
+執行方式：
+</p>
+<pre>
+$ cd
+$ wget https://github.com/steward-fu/website/releases/download/fc3000/fc3000_qemu_20220929.7z
+$ 7za x fc3000_qemu_20220929.7z
+$ ./run.sh
+</pre>
+<p>
+<img style="border:0px" src="fc3000_qemu/2.jpg" class="maxSize"><br><br>
+
+如果要debug程式，記得在<b>/etc/main</b>前面加上sleep，然後重新打包rootfs.img<br>
+<img src="fc3000_qemu/3.jpg" class="maxSize"><br><br>
+
+使用gdb debug<br>
+<img style="border:0px" src="fc3000_qemu/4.jpg" class="maxSize"><br><br>
+
+如果把程式碼放到sd.img，可以更方便debug<br>
+<img style="border:0px" src="fc3000_qemu/5.jpg" class="maxSize"><br><br>
+
+解壓縮rootfs.img
+</p>
+<pre>
+$ zcat rootfs.img | cpio -idvm
+</pre><br>
+
+<p>
+重新打包rootfs.img
+</p>
+<pre>
+$ sudo find . | sudo cpio -o -H newc | gzip -9 &gt; ../rootfs.img
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
