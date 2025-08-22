@@ -1,0 +1,73 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - LeetCode - C - <b>17. Letter Combinations of a Phone Number</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://www.cnblogs.com/grandyang/p/4452220.html<br><br>
+
+題目：<br>
+<img src="leetcode_c_17/1.jpg" class="maxSize"><br><br>
+
+解答：
+</p>
+<pre class="brush:cpp">
+int dfs(const char *digits, int pos, int *cidx, char *cbuf, int *ridx, char **rbuf)
+{
+    int cc = 0;
+    const char *BTN[] = {
+        "abc", "def",
+        "ghi", "jkl", "mno",
+        "pqrs", "tuv", "wxyz"
+    };
+
+    if (pos &gt;= strlen(digits)) {
+        strcpy(rbuf[(*ridx)++], cbuf);
+
+        *cidx -= 1;
+        cbuf[*cidx] = 0;
+        return 0;
+    }
+
+    const char *t = BTN[digits[pos] - '2'];
+    int len = strlen(t);
+
+    for (cc = 0; cc &lt; len; cc++) {
+        cbuf[(*cidx)++] = t[cc];
+        dfs(digits, pos + 1, cidx, cbuf, ridx, rbuf);
+    }
+    *cidx -= 1;
+
+    return 0;
+}
+
+/**
+ * Note: The returned array must be malloced, assume caller calls free().
+ */
+char** letterCombinations(char *digits, int *returnSize)
+{
+    int cc = 0;
+    char **rbuf = NULL;
+    char cbuf[256] = { 0 };
+
+    rbuf = malloc(sizeof(char *) * 256);
+    for (cc = 0; cc &lt; 256; cc++) {
+        rbuf[cc] = malloc(sizeof(char) * 256);
+        memset(rbuf[cc], 0, 256);
+    }
+
+    *returnSize = 0;
+    if (strlen(digits) == 0) {
+        return rbuf;
+    }
+
+    cc = 0;
+    dfs(digits, 0, &amp;cc, cbuf, returnSize, rbuf);
+
+    return rbuf;
+}
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
