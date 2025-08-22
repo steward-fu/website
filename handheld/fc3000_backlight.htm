@@ -1,0 +1,61 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - FC3000 - <b>背光控制測試</b></h3>
+<hr size="1"><br>
+<p>
+main.s
+</p>
+<pre class="brush:asm">
+    .global _start
+    
+    .equ GPIO_BASE, 0x01c20800 
+    .equ PE_CFG0,   (GPIO_BASE + (4 * 0x24) + 0x00)
+    .equ PE_DATA,   (GPIO_BASE + (4 * 0x24) + 0x10)
+     
+    .arm
+    .text
+_start:
+    .long 0xea000016
+    .byte 'e', 'G', 'O', 'N', '.', 'B', 'T', '0'
+    .long 0, __spl_size
+    .byte 'S', 'P', 'L', 2
+    .long 0, 0
+    .long 0, 0, 0, 0, 0, 0, 0, 0
+    .long 0, 0, 0, 0, 0, 0, 0, 0
+     
+_vector:
+    b reset
+    b .
+    b .
+    b .
+    b .
+    b .
+    b .
+    b .
+     
+reset:
+    ldr r0, =PE_CFG0
+    ldr r1, =0x1000000
+    str r1, [r0]
+ 
+    ldr r0, =PE_DATA
+0:
+    ldr r2, =100000
+1:
+    subs r2, #1
+    bne 1b
+    eor r1, #(1 &lt;&lt; 6)
+    str r1, [r0]
+    b 0b
+    .end
+</pre><br>
+
+<p>
+完成<br>
+<img src="fc3000_backlight/1.jpg" class="maxSize"><br>
+<img src="fc3000_backlight/2.jpg" class="maxSize"><br><br>
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
