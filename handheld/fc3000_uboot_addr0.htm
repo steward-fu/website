@@ -1,0 +1,30 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - FC3000 - <b>解決UBoot Failed to map physical memory問題</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://whycan.com/t_6608.html#p65022"<br><br>
+
+問題如下(將SPI Flash讀取到0x00000000的位置)：
+</p>
+<pre>
+=&gt; sf read 0 0 1024
+    device 0 offset 0x0, size 0x1024
+    Failed to map physical memory
+</pre><br>
+
+<p>
+解法如下(UBoot不允許Map記憶體0x00000000，但是可以使用cp.b複製到0x00000000)：
+</p>
+<pre>
+=&gt; sf read 0x80000000 0 1024
+    device 0 offset 0x0, size 0x1024
+    SF: 4132 bytes @ 0x0 Read: OK
+
+=&gt; cp.b 0x80000000 0 1024
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

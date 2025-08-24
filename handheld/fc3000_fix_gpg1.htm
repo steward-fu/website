@@ -1,0 +1,32 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - FC3000 - <b>解決Release signed by unknown key (key id 6FB2A1C265FFB764)問題</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://serverfault.com/questions/984604/debootstrap-release-signed-by-unknown-key<br><br>
+
+問題如下：
+</p>
+<pre>
+$ sudo debootstrap --arch armel --foreign wheezy wheezy http://archive.debian.org/debian/
+    I: Retrieving InRelease
+    I: Retrieving Release
+    I: Retrieving Release.gpg
+    I: Checking Release signature
+    E: Release signed by unknown key (key id 6FB2A1C265FFB764)
+       The specified keyring /usr/share/keyrings/debian-archive-keyring.gpg may be incorrect or out of date.
+       You can find the latest Debian release key at https://ftp-master.debian.org/keys.html
+</pre><br>
+
+<p>
+解法如下：
+</p>
+<pre>
+$ wget https://ftp-master.debian.org/keys/release-7.asc -qO- | gpg --import --no-default-keyring --keyring ./debian-release-7.gpg
+$ sudo debootstrap --keyring=./debian-release-7.gpg --arch armel --foreign wheezy wheezy http://archive.debian.org/debian/
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
