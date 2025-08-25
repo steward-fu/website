@@ -53,28 +53,23 @@ def on_message(message, data):
 session = frida.attach("main")
 
 script = session.create_script("""
-    var cnt = null;
+    var q = [];
     var m = Process.enumerateModules();
-
     for (var i = 0; i &lt; m.length; i++) {
         var e = m[i].enumerateExports();
-
         for (var j = 0; j &lt; e.length; j++) {
             if ((e[j]['type'] == 'variable') &amp;&amp; (e[j]['name'] == 'cnt')) {
-                cnt = ptr(e[j]['address']);
-                break;
+                q.push(ptr(e[j]['address']));
             }
-        }
-
-        if (cnt) {
-            break;
         }
     }
 
     var remaining = 1000;
     function crackNext() {
-        if (cnt) {
-            send(cnt.readInt());
+        for (var i = 0; i &lt; q.length; i++) {
+            if (q[i]) {
+                send(q[i].readInt());
+            }
         }
         if (--remaining &gt; 0) {
             setTimeout(crackNext, 1000);
@@ -101,7 +96,9 @@ $ LD_LIBRARY_PATH=. ./main&amp;
 
 $ python3 ./hook.py
     {'type': 'send', 'payload': 2827}
+    {'type': 'send', 'payload': 0}
     {'type': 'send', 'payload': 2828}
+    {'type': 'send', 'payload': 0}
 </pre>
 
 <br><script type="text/javascript" src="../tail.js"></script>
