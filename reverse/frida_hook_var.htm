@@ -1,0 +1,104 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../reverse.htm">逆向工程</a> - Frida - <b>Hook Global Variable</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/frida/frida<br>
+https://frida.re/docs/functions/<br>
+https://frida.re/docs/installation/<br><br>
+https://github.com/frida/frida/issues/113<br>
+https://rastating.github.io/overcoming-some-gotchas-in-frida/<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;unistd.h&gt;
+
+extern int cnt;
+ 
+int main(int argc, char *argv[])
+{
+    while (1) {
+        printf("%d\n", cnt++);
+        sleep(1);
+    }
+    return 0;
+}
+</pre><br>
+
+<p>
+test.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+
+int cnt = 0; 
+</pre><br>
+
+<p>
+hook.py
+</p>
+<pre class="brush:python">
+import os
+import sys
+import frida
+ 
+def on_message(message, data):
+    print(message)
+  
+session = frida.attach("main")
+
+script = session.create_script("""
+    var q = [];
+    var m = Process.enumerateModules();
+    for (var i = 0; i &lt; m.length; i++) {
+        var e = m[i].enumerateExports();
+        for (var j = 0; j &lt; e.length; j++) {
+            if ((e[j]['type'] == 'variable') &amp;&amp; (e[j]['name'] == 'cnt')) {
+                q.push(ptr(e[j]['address']));
+            }
+        }
+    }
+
+    var remaining = 1000;
+    function crackNext() {
+        for (var i = 0; i &lt; q.length; i++) {
+            if (q[i]) {
+                send(q[i].readInt());
+            }
+        }
+        if (--remaining &gt; 0) {
+            setTimeout(crackNext, 1000);
+        }
+    }
+    setTimeout(crackNext, 0);
+""")
+ 
+script.on('message', on_message)  
+script.load()
+ 
+sys.stdin.read()
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ gcc test.c -o test.so -shared -fPIC
+$ gcc main.c -o main test.so
+$ LD_LIBRARY_PATH=. ./main&amp;
+    2827
+    2828
+
+$ python3 ./hook.py
+    {'type': 'send', 'payload': 2827}
+    {'type': 'send', 'payload': 0}
+    {'type': 'send', 'payload': 2828}
+    {'type': 'send', 'payload': 0}
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
