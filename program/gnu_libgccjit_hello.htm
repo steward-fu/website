@@ -1,0 +1,111 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - GNU - libgccjit - <b>Hello, world!</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://gcc.gnu.org/onlinedocs/jit/<br><br>
+
+main.cpp
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;libgccjit.h&gt;
+
+typedef void (*fn_type)(const char *);
+
+int main(int argc, char *argv[])
+{
+    gcc_jit_result *r = NULL;
+    gcc_jit_context *ctxt = NULL;
+
+    ctxt = gcc_jit_context_acquire();
+
+    gcc_jit_param *param_name = gcc_jit_context_new_param(
+        ctxt,
+        NULL,
+        gcc_jit_context_get_type(ctxt, GCC_JIT_TYPE_CONST_CHAR_PTR),
+        "name"
+    );
+
+    gcc_jit_function *func = gcc_jit_context_new_function(
+        ctxt,
+        NULL,
+        GCC_JIT_FUNCTION_EXPORTED,
+        gcc_jit_context_get_type(ctxt, GCC_JIT_TYPE_VOID),
+        "test",
+        1,
+        &amp;param_name,
+        0
+    );
+
+    gcc_jit_param *param_format = gcc_jit_context_new_param(
+        ctxt,
+        NULL,
+        gcc_jit_context_get_type(ctxt, GCC_JIT_TYPE_CONST_CHAR_PTR),
+        "format"
+    );
+
+    gcc_jit_function *printf_func = gcc_jit_context_new_function(
+        ctxt,
+        NULL,
+        GCC_JIT_FUNCTION_IMPORTED,
+        gcc_jit_context_get_type(ctxt, GCC_JIT_TYPE_INT),
+        "printf",
+        1,
+        &amp;param_format,
+        1
+    );
+
+    gcc_jit_rvalue *args[2] = { 0 };
+    gcc_jit_block *block = gcc_jit_function_new_block(func, NULL);
+    args[0] = gcc_jit_context_new_string_literal(ctxt, "%s\n");
+    args[1] = gcc_jit_param_as_rvalue(param_name);
+
+    gcc_jit_block_add_eval(block, NULL, gcc_jit_context_new_call(ctxt, NULL, printf_func, 2, args));
+    gcc_jit_block_end_with_void_return(block, NULL);
+
+    r = gcc_jit_context_compile(ctxt);
+    fn_type pfn = (fn_type)gcc_jit_result_get_code(r, "test");
+    pfn("Hello, world!");
+
+    gcc_jit_result_release(r);
+    gcc_jit_context_release(ctxt);
+
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ g++ main.cpp -o test -lgccjit
+$ ./test
+    Hello, world!
+
+$ gdb ./test
+(gdb) b main.cpp:60
+(gdb) r
+    Breakpoint 1, main (argc=1, argv=0x7fffffffdd58) at main.cpp:60
+    60    pfn("Hello, world!");
+(gdb) disas pfn
+    Dump of assembler code for function test:
+       0x00007ffff7f8a109 &lt;+0&gt;:   push   %rbp
+       0x00007ffff7f8a10a &lt;+1&gt;:   mov    %rsp,%rbp
+       0x00007ffff7f8a10d &lt;+4&gt;:   sub    $0x10,%rsp
+       0x00007ffff7f8a111 &lt;+8&gt;:   mov    %rdi,-0x8(%rbp)
+       0x00007ffff7f8a115 &lt;+12&gt;:  mov    -0x8(%rbp),%rax
+       0x00007ffff7f8a119 &lt;+16&gt;:  mov    %rax,%rsi
+       0x00007ffff7f8a11c &lt;+19&gt;:  lea    0xedd(%rip),%rax        # 0x7ffff7f8b000
+       0x00007ffff7f8a123 &lt;+26&gt;:  mov    %rax,%rdi
+       0x00007ffff7f8a126 &lt;+29&gt;:  mov    $0x0,%eax
+       0x00007ffff7f8a12b &lt;+34&gt;:  call   0x7ffff7f8a030 &lt;printf@plt&gt;
+       0x00007ffff7f8a130 &lt;+39&gt;:  leave
+       0x00007ffff7f8a131 &lt;+40&gt;:  ret
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
