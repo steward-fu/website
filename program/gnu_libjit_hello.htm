@@ -1,0 +1,102 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - GNU - libjit - <b>Hello, world!</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://savannah.gnu.org/git/?group=libjit<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;jit/jit.h&gt;
+
+int main(int argc, char *argv[])
+{
+    const char *msg = "Hello, world!";
+
+    jit_context_t context = jit_context_create();
+    jit_context_build_start(context);
+    jit_type_t signature = jit_type_create_signature(
+        jit_abi_cdecl,
+        jit_type_int,
+        NULL,
+        0,
+        0
+    );
+
+    jit_function_t func = jit_function_create(context, signature);
+
+    jit_type_t puts_params[1] = {
+        jit_type_create_pointer(jit_type_sys_char, 1)
+    };
+
+    jit_type_t puts_sig = jit_type_create_signature(
+        jit_abi_cdecl,
+        jit_type_int,
+        puts_params,
+        1,
+        0
+    );
+
+    jit_value_t arg = jit_value_create_nint_constant(
+        func,
+        jit_type_create_pointer(jit_type_sys_char, 1),
+        (jit_nint)msg
+    );
+    jit_value_t args[1] = { arg };
+
+    jit_insn_call_native(
+        func,
+        "puts",
+        puts,
+        puts_sig,
+        args,
+        1,
+        0
+    );
+
+    jit_value_t zero = jit_value_create_nint_constant(func, jit_type_int, 0);
+    jit_insn_return(func, zero);
+
+    jit_function_compile(func);
+    jit_context_build_end(context);
+
+    int (*compiled_func)(void) = (int (*)(void))jit_function_to_closure(func);
+    compiled_func();
+
+    jit_context_destroy(context);
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ gcc main.c -o test -ljit -ggdb
+$ ./test
+    Hello, world!
+
+$ gdb ./test
+
+(gdb) b main.c:56
+(gdb) r
+    Breakpoint 1, main (argc=1, argv=0x7fffffffdd18) at main.c:56
+    56	    compiled_func();
+(gdb) x/20i compiled_func
+    0x7ffff7f2614c:	push   %rbp
+    0x7ffff7f2614d:	mov    %rsp,%rbp
+    0x7ffff7f26150:	movabs $0x555555556004,%rdi
+    0x7ffff7f2615a:	mov    $0x8,%eax
+    0x7ffff7f2615f:	call   0x7ffff7d93980 &lt;__GI__IO_puts&gt;
+    0x7ffff7f26164:	xor    %eax,%eax
+    0x7ffff7f26166:	mov    %rbp,%rsp
+    0x7ffff7f26169:	pop    %rbp
+    0x7ffff7f2616a:	ret
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
