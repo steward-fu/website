@@ -31,8 +31,6 @@ int main(int argc, char *argv[])
     jit_prolog();
     jit_prepare();
     jit_pushargi((jit_word_t)"Hello, world!\n");
-    jit_ellipsis();
-    jit_pushargr(JIT_R1);
     jit_finishi(printf);
     jit_ret();
     jit_epilog();
@@ -41,8 +39,6 @@ int main(int argc, char *argv[])
     myFunction = jit_emit();
     myFunction((char*)jit_address(end) - (char*)jit_address(start));
     jit_clear_state();
-
-    jit_disassemble();
 
     jit_destroy_state();
     finish_jit();
@@ -61,10 +57,10 @@ $ ./test
 
 $ gdb ./test
 
-(gdb) b main.c:29
+(gdb) b main.c:27
 (gdb) r
-    Breakpoint 1, main (argc=1, argv=0x7fffffffdb48) at main.c:29
-    29	    myFunction((char*)jit_address(end) - (char*)jit_address(start));
+    Breakpoint 1, main (argc=1, argv=0x7fffffffdb48) at main.c:27
+    27	    myFunction((char*)jit_address(end) - (char*)jit_address(start));
 (gdb) b *myFunction
     Breakpoint 2 at 0x7ffff7f73000
 (gdb) c
@@ -73,13 +69,11 @@ $ gdb ./test
    0x7ffff7f73004:	mov    %rbp,(%rsp)
    0x7ffff7f73008:	mov    %rsp,%rbp
    0x7ffff7f7300b:	movabs $0x55555555600b,%rdi
-   0x7ffff7f73015:	mov    %r10,%rsi
-   0x7ffff7f73018:	xor    %rax,%rax
-   0x7ffff7f7301b:	call   0x7ffff7c606f0 &lt;__printf&gt;
-   0x7ffff7f73020:	mov    %rbp,%rsp
-   0x7ffff7f73023:	mov    (%rsp),%rbp
-   0x7ffff7f73027:	add    $0x18,%rsp
-   0x7ffff7f7302b:	ret
+   0x7ffff7f73015:	call   0x7ffff7c606f0 &lt;__printf&gt;
+   0x7ffff7f7301a:	mov    %rbp,%rsp
+   0x7ffff7f7301d:	mov    (%rsp),%rbp
+   0x7ffff7f73021:	add    $0x18,%rsp
+   0x7ffff7f73025:	ret
 </pre>
 
 <br><script type="text/javascript" src="../tail.js"></script>
