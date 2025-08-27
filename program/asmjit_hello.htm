@@ -1,0 +1,70 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - GNU - AsmJIT - <b>Hello, world!</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://asmjit.com/<br><br>
+
+main.cpp
+</p>
+<pre class="brush:cpp">
+#include &lt;asmjit/asmjit.h&gt;
+#include &lt;iostream&gt;
+#include &lt;cstdio&gt;
+
+using namespace asmjit;
+
+int main(int argc, char *argv[])
+{
+    JitRuntime rt;
+    CodeHolder code;
+    void (*pfn)(void);
+    const char msg[] = "Hello, world!\n";
+
+    code.init(rt.environment());
+    x86::Assembler a(&amp;code);
+    Label fmtStr = a.newLabel();
+
+    a.sub(x86::rsp, 8);
+    a.lea(x86::rdi, x86::ptr(fmtStr));
+    a.xor_(x86::eax, x86::eax);
+    a.mov(x86::rax, (uint64_t)printf);
+    a.call(x86::rax);
+    a.add(x86::rsp, 8);
+    a.ret();
+
+    a.bind(fmtStr);
+    a.embed(msg, sizeof(msg));
+
+    rt.add(&amp;pfn, &amp;code);
+    pfn();
+    rt.release(pfn);
+
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ g++ main.cpp -o test -lasmjit -ggdb
+$ ./test
+    Hello, world!
+
+(gdb) b main.cpp:30
+(gdb) r
+(gdb) x/10i pfn
+   0x7ffff7be0000:	sub    $0x8,%rsp
+   0x7ffff7be0004:	lea    0x13(%rip),%rdi        # 0x7ffff7be001e
+   0x7ffff7be000b:	xor    %eax,%eax
+   0x7ffff7be000d:	movabs $0x7ffff78606f0,%rax
+   0x7ffff7be0017:	call   *%rax
+   0x7ffff7be0019:	add    $0x8,%rsp
+   0x7ffff7be001d:	ret
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
