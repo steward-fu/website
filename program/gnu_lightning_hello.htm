@@ -1,0 +1,68 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - GNU - lightning - <b>Hello, world!</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://www.gnu.org/software/lightning/manual/lightning.html<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;lightning.h&gt;
+
+int main(int argc, char *argv[])
+{
+    void (*pfn)(void);
+    jit_state_t *_jit = NULL;
+
+    init_jit(argv[0]);
+    _jit = jit_new_state();
+ 
+    jit_prolog();
+    jit_prepare();
+    jit_pushargi((jit_word_t)"Hello, world!\n");
+    jit_finishi(printf);
+    jit_ret();
+    jit_epilog();
+ 
+    pfn = jit_emit();
+    pfn();
+
+    jit_clear_state(); 
+    jit_destroy_state();
+    finish_jit();
+
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ export LD_LIBRARY_PATH=/usr/local/lib
+$ gcc main.c -o test -llightning -ggdb
+$ ./test 
+    Hello, world!
+
+$ gdb ./test
+
+(gdb) b main.c:20
+(gdb) r
+(gdb) x/9i pfn
+   0x7ffff7f79000:	sub    $0x18,%rsp
+   0x7ffff7f79004:	mov    %rbp,(%rsp)
+   0x7ffff7f79008:	mov    %rsp,%rbp
+   0x7ffff7f7900b:	movabs $0x555555556004,%rdi
+   0x7ffff7f79015:	call   0x7ffff7db35b0 &lt;__printf&gt;
+   0x7ffff7f7901a:	mov    %rbp,%rsp
+   0x7ffff7f7901d:	mov    (%rsp),%rbp
+   0x7ffff7f79021:	add    $0x18,%rsp
+   0x7ffff7f79025:	ret
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

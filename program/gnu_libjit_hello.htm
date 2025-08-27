@@ -1,0 +1,69 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - GNU - libjit - <b>Hello, world!</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://savannah.gnu.org/git/?group=libjit<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;jit/jit.h&gt;
+ 
+int main(int argc, char *argv[])
+{
+    int (*pfn)(void);
+    jit_type_t puts_params[] = {
+        jit_type_create_pointer(jit_type_sys_char, 1)
+    };
+ 
+    jit_context_t ctx = jit_context_create();
+    jit_context_build_start(ctx);
+    jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, jit_type_int, NULL, 0, 0);
+    jit_function_t fun = jit_function_create(ctx, sig);
+    jit_type_t puts_sig = jit_type_create_signature(jit_abi_cdecl, jit_type_int, puts_params, 1, 0);
+    jit_value_t arg = jit_value_create_nint_constant(fun, jit_type_create_pointer(jit_type_sys_char, 1), (jit_nint)"Hello, world!");
+    jit_value_t args[] = { arg };
+    jit_insn_call_native(fun, "puts", puts, puts_sig, args, 1, 0);
+    jit_value_t zero = jit_value_create_nint_constant(fun, jit_type_int, 0);
+    jit_insn_return(fun, zero);
+    jit_function_compile(fun);
+    jit_context_build_end(ctx);
+ 
+    pfn = jit_function_to_closure(fun);
+    pfn();
+ 
+    jit_context_destroy(ctx);
+
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ export LD_LIBRARY_PATH=/usr/local/lib
+$ gcc main.c -o test -ljit -ggdb
+$ ./test
+    Hello, world!
+
+$ gdb ./test
+(gdb) b main.c:25
+(gdb) r
+(gdb) x/10i pfn
+   0x7ffff7f2614c:	push   %rbp
+   0x7ffff7f2614d:	mov    %rsp,%rbp
+   0x7ffff7f26150:	movabs $0x555555556004,%rdi
+   0x7ffff7f2615a:	mov    $0x8,%eax
+   0x7ffff7f2615f:	call   0x7ffff7d93980 &lt;__GI__IO_puts&gt;
+   0x7ffff7f26164:	xor    %eax,%eax
+   0x7ffff7f26166:	mov    %rbp,%rsp
+   0x7ffff7f26169:	pop    %rbp
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
