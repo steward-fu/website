@@ -1,0 +1,71 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - GNU - NanoJIT - <b>Hello, world!</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/dibyendumajumdar/nanojit<br><br>
+
+main.cpp
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;nanojitextra.h&gt;
+
+static void myfun(void)
+{
+    printf("Hello, world!\n");
+}
+
+int main(int argc, char *argv[])
+{
+    int (*pfn)(void);
+    NJXContextRef jit = NJX_create_context(true);
+    NJX_register_C_function(jit, "myfun", reinterpret_cast&lt;void *&gt;(myfun), NJXValueKind_V, nullptr, 0);
+    NJXFunctionBuilderRef builder = NJX_create_function_builder(jit, "test", NJXValueKind_I, nullptr, 0, true);
+    NJX_callv(builder, "myfun", NJXCallAbiKind::NJX_CALLABI_CDECL, 0, nullptr);
+    auto zero = NJX_immi(builder, 0);
+    auto ret = NJX_reti(builder, zero);
+    pfn = (int (*)(void))NJX_finalize(builder);
+    NJX_destroy_function_builder(builder);
+
+    pfn();
+
+    NJX_destroy_context(jit);
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ export LD_LIBRARY_PATH=/usr/local/lib
+$ g++ main.cpp -o test -I/usr/local/include/nanojit /usr/local/lib/libnanojitextra.so -ggdb
+$ ./test
+    Hello, world!
+
+$ gdb ./test
+
+(gdb) b main.cpp:21
+(gdb) r
+(gdb) x/20i f
+    0x7ffff7f7bfa4:	push   %rbp
+    0x7ffff7f7bfa5:	mov    %rsp,%rbp
+    0x7ffff7f7bfa8:	sub    $0x30,%rsp
+    0x7ffff7f7bfac:	mov    %rbx,-0x28(%rbp)
+    0x7ffff7f7bfb0:	mov    %r12,-0x20(%rbp)
+    0x7ffff7f7bfb4:	mov    %r13,-0x18(%rbp)
+    0x7ffff7f7bfb8:	mov    %r14,-0x10(%rbp)
+    0x7ffff7f7bfbc:	mov    %r15,-0x8(%rbp)
+    0x7ffff7f7bfc0:	movabs $0x555555555269,%rax
+    0x7ffff7f7bfca:	call   *%rax
+    0x7ffff7f7bfcc:	xor    %eax,%eax
+    0x7ffff7f7bfce:	mov    %rbp,%rsp
+    0x7ffff7f7bfd1:	pop    %rbp
+    0x7ffff7f7bfd2:	ret
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
