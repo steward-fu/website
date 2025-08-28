@@ -1,0 +1,78 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - Lua - DynASM - x64 - <b>Modify RAX</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://luajit.org/dynasm.html<br>
+https://luajit.org/download.html<br>
+https://hackmd.io/@RinHizakura/SkvY4N9cv<br>
+https://corsix.github.io/dynasm-doc/tutorial.html<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;sys/mman.h&gt;
+
+#include "dasm_proto.h"
+#include "dasm_x86.h"
+
+int main(int argc, char* argv[])
+{
+    size_t len = 0;
+    void *buf = NULL;
+    int (*pfn)(void);
+    dasm_State *d = NULL;
+
+    |.arch x64
+    |.section code
+
+    dasm_init(&amp;d, DASM_MAXSECTION);
+
+    |.globals lbl_
+
+    void *labels[lbl__MAX] = { 0 };
+    dasm_setupglobal(&amp;d, labels, lbl__MAX);
+
+    |.actionlist bf_actions
+
+    dasm_setup(&amp;d, bf_actions);
+    dasm_State **Dst = &amp;d;
+
+    |.code
+    |-&gt;test:
+    |   mov rax, 100
+    |   ret
+
+    dasm_link(&amp;d, &amp;len);
+    buf = mmap(0, len, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    dasm_encode(&amp;d, buf);
+    mprotect(buf, len, PROT_READ | PROT_EXEC);
+    dasm_free(&amp;d);
+
+    pfn = labels[lbl_test];
+    printf("r=%d\n", pfn());
+
+    munmap(buf, len);
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ luajit -v
+    LuaJIT 2.1.1753364724 -- Copyright (C) 2005-2025 Mike Pall. https://luajit.org/
+
+$ luajit /opt/luajit/dynasm/dynasm.lua -o x64.c -D X64 main.c
+$ gcc x64.c -o test -I/opt/luajit/dynasm
+$ ./test 
+    r=100
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
