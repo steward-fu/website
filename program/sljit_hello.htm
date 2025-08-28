@@ -1,0 +1,57 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - SLJIT - <b>Hello, world!</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/zherczeg/sljit<br>
+https://ftp.netbsd.org/pub/NetBSD/NetBSD-release-10/src/sys/external/bsd/sljit/dist/doc/tutorial/sljit_tutorial.html<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdint.h&gt;
+
+#include "sljitLir.h"
+
+int main(int argc, char *argv[])
+{
+    void (*pfn)(void);
+    const char *msg = "Hello, world!\n";
+    struct sljit_compiler *c = sljit_create_compiler(NULL);
+
+	sljit_compiler_verbose(c, stdout);
+    sljit_emit_enter(c, 0, SLJIT_ARGS1(W, P), 1, 1, 0);
+    sljit_emit_op1(c, SLJIT_MOV, SLJIT_R0, 0, SLJIT_IMM, (sljit_sw)msg);
+    sljit_emit_icall(c, SLJIT_CALL, SLJIT_ARGS1(W, P), SLJIT_IMM, SLJIT_FUNC_ADDR(printf));
+    sljit_emit_return(c, SLJIT_MOV, SLJIT_R0, 0);
+
+    struct sljit_code *code = sljit_generate_code(c, 0, NULL);
+    sljit_free_compiler(c);
+
+    pfn = (void (*)(void))code;
+    pfn();
+
+    sljit_free_code(code, NULL);
+
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ gcc main.c /opt/sljit/sljit_src/sljitLir.c -o test -I/opt/sljit/sljit_src -ggdb
+$ ./test 
+        enter ret[w], args[p], scratches:1, saveds:1, fscratches:0, fsaveds:0, vscratches:0, vsaveds:0, local_size:0
+        mov r0, #94492020445188
+        icall ret[w], args[p], #140593066280688
+        return r0
+    Hello, world!
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
