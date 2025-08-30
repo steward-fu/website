@@ -1,0 +1,70 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - Game &amp; Watch: The Legend of Zelda - Assembly - <b>LCD Backlight</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/ghidraninja/game-and-watch-backup<br>
+https://www.st.com/resource/en/datasheet/stm32h7b0vb.pdf<br>
+https://www.st.com/resource/en/reference_manual/dm00463927-stm32h7a37b3-and-stm32h7b0-value-line-advanced-armbased-32bit-mcus-stmicroelectronics.pdf<br><br>
+
+LCD背光電路<br>
+<img src="gw_z_asm_lcd_backlight/1.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .equiv PORTA_BASE,  0x58020000
+    .equiv GPIO_MODER,  0x0000
+    .equiv GPIO_ODR,    0x0014
+ 
+    .equiv RCC_BASE,    0x58024400
+    .equiv RCC_AHB4ENR, 0x0140
+ 
+    .thumb
+    .cpu cortex-m7
+    .syntax unified
+ 
+    .global _start
+ 
+    .text
+    .org 0x0000
+_start:
+    .word 0x20020000
+    .word reset
+ 
+    .org 0x0100
+    .thumb_func
+reset:
+    ldr r0, =RCC_BASE
+    ldr r1, [r0, #RCC_AHB4ENR]
+    orr r1, #0x1f
+    str r1, [r0, #RCC_AHB4ENR]
+ 
+    ldr r0, =PORTA_BASE
+    ldr r1, =0xa9555555
+    str r1, [r0, #GPIO_MODER]
+    ldr r1, =0x0000
+    str r1, [r0, #GPIO_ODR]
+ 
+    ldr r3, =(1 &lt;&lt; 6) | (1 &lt;&lt; 5) | (1 &lt;&lt; 4)
+0:
+    eor r1, r3
+    str r1, [r0, #GPIO_ODR]
+    ldr r2, =0x2000000
+1:
+    subs r2, #1
+    bne 1b
+    b 0b
+    .end
+</pre><br>
+
+<p>
+完成<br>
+<img src="gw_z_asm_lcd_backlight/2.jpg" class="maxSize"><br>
+<img src="gw_z_asm_lcd_backlight/3.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
