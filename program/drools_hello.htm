@@ -1,0 +1,148 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - Drools - <b>Hello, world!</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/tkobayas/kiegroup-examples<br>
+https://www.cnblogs.com/lonecloud/p/12333309.html<br>
+https://blog.kie.org/2021/11/drools-basic-examples.html<br><br>
+
+資料結構<br>
+<img src="drools_hello/1.jpg" class="maxSize"><br><br>
+
+src/main/resources/com/sample/MyRule.drl
+</p>
+<pre class="brush:java">
+package com.sample
+
+rule Hello
+    when
+        eval(true);
+    then
+        System.out.println("Hello, world!");
+end
+</pre><br>
+
+<p>
+src/main/resources/META-INF/kmodule.xml
+</p>
+<pre class="brush:xml">
+&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;kmodule xmlns="http://jboss.org/kie/6.0.0/kmodule"&gt;
+&lt;/kmodule&gt;
+</pre><br>
+
+<p>
+src/test/java/com/sample/MyTest.java
+</p>
+<pre class="brush:java">
+package com.sample;
+
+import org.junit.Test;
+import org.kie.api.KieBase;
+import org.kie.api.KieServices;
+import org.kie.api.runtime.KieContainer;
+import org.kie.api.runtime.KieSession;
+
+public class MyTest {
+    @Test
+    public void testRules() {
+        KieServices ks = KieServices.Factory.get();
+        KieContainer kcontainer = ks.getKieClasspathContainer();
+        KieBase kbase = kcontainer.getKieBase();
+        KieSession ksession = kbase.newKieSession();
+
+        ksession.fireAllRules();
+        ksession.dispose();
+    }
+}
+</pre><br>
+
+<p>
+pom.xml
+</p>
+<pre class="brush:xml">
+&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;project xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"&gt;
+
+    &lt;modelVersion&gt;4.0.0&lt;/modelVersion&gt;
+
+    &lt;groupId&gt;com.sample&lt;/groupId&gt;
+    &lt;artifactId&gt;basic-example&lt;/artifactId&gt;
+    &lt;version&gt;1.0.0-SNAPSHOT&lt;/version&gt;
+    &lt;packaging&gt;kjar&lt;/packaging&gt;
+
+    &lt;properties&gt;
+        &lt;maven.compiler.source&gt;17&lt;/maven.compiler.source&gt;
+        &lt;maven.compiler.target&gt;17&lt;/maven.compiler.target&gt;
+        &lt;drools.version&gt;10.0.0&lt;/drools.version&gt;
+    &lt;/properties&gt;
+
+    &lt;repositories&gt;
+        &lt;repository&gt;
+            &lt;id&gt;jboss-public-repository-group&lt;/id&gt;
+            &lt;name&gt;JBoss Public Repository Group&lt;/name&gt;
+            &lt;url&gt;http://repository.jboss.org/nexus/content/groups/public/&lt;/url&gt;
+            &lt;releases&gt;
+                &lt;enabled&gt;true&lt;/enabled&gt;
+                &lt;updatePolicy&gt;never&lt;/updatePolicy&gt;
+            &lt;/releases&gt;
+            &lt;snapshots&gt;
+                &lt;enabled&gt;true&lt;/enabled&gt;
+                &lt;updatePolicy&gt;daily&lt;/updatePolicy&gt;
+            &lt;/snapshots&gt;
+        &lt;/repository&gt;
+    &lt;/repositories&gt;
+
+    &lt;dependencies&gt;
+
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.drools&lt;/groupId&gt;
+            &lt;artifactId&gt;drools-engine-classic&lt;/artifactId&gt;
+            &lt;version&gt;${drools.version}&lt;/version&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;ch.qos.logback&lt;/groupId&gt;
+            &lt;artifactId&gt;logback-classic&lt;/artifactId&gt;
+            &lt;version&gt;1.2.9&lt;/version&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;junit&lt;/groupId&gt;
+            &lt;artifactId&gt;junit&lt;/artifactId&gt;
+            &lt;version&gt;4.13.1&lt;/version&gt;
+            &lt;scope&gt;test&lt;/scope&gt;
+        &lt;/dependency&gt;
+    &lt;/dependencies&gt;
+
+    &lt;build&gt;
+        &lt;plugins&gt;
+            &lt;plugin&gt;
+                &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+                &lt;artifactId&gt;maven-compiler-plugin&lt;/artifactId&gt;
+                &lt;version&gt;3.8.1&lt;/version&gt;
+            &lt;/plugin&gt;
+            &lt;plugin&gt;
+                &lt;groupId&gt;org.kie&lt;/groupId&gt;
+                &lt;artifactId&gt;kie-maven-plugin&lt;/artifactId&gt;
+                &lt;version&gt;${drools.version}&lt;/version&gt;
+                &lt;extensions&gt;true&lt;/extensions&gt;
+            &lt;/plugin&gt;
+        &lt;/plugins&gt;
+    &lt;/build&gt;
+&lt;/project&gt;
+</pre><br>
+
+<p>
+測試
+</p>
+<pre>
+$ mvn clean test
+    Hello, world!
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

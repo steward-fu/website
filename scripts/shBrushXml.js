@@ -21,38 +21,28 @@ typeof(require) != 'undefined' ? SyntaxHighlighter = require('shCore').SyntaxHig
 
 function Brush()
 {
-var my_const = 'DOCTYPE';
-var my_type = 'WebSocket document console';
-var my_keyword = 'doctype var new function html';
+var my_const = 'DOCTYPE maven-compiler-plugin kie-maven-plugin org.drools drools.version ch.qos.logback drools-engine-classic com.sample basic-example jboss-public-repository-group';
+var my_type = 'WebSocket document console org kie junit Test apache maven plugins kjar';
+var my_keyword = 'doctype var new function html true false never daily';
 var my_function = 'update addEventListener fetch getElementById onclose onopen onmessage log';
 
 function process(match, regexInfo)
 {
-    var constructor = SyntaxHighlighter.Match,
-        code = match[0],
-        tag = new XRegExp('(&lt;|<)[\\s\\/\\?]*(?<name>[:\\w-\\.]+)', 'xg').exec(code),
-        result = []
-        ;
+    var constructor = SyntaxHighlighter.Match, code = match[0], tag = new XRegExp('(&lt;|<)[\\s\\/\\?]*(?<name>[:\\w-\\.]+)', 'xg').exec(code), result = [];
+    if (match.attributes != null)  {
+        var attributes, regex = new XRegExp('(?<name> [\\w:\\-\\.]+)' +
+            '\\s*=\\s*' +
+            '(?<value> ".*?"|\'.*?\'|\\w+)',
+            'xg');
 
-    if (match.attributes != null) 
-    {
-        var attributes,
-            regex = new XRegExp('(?<name> [\\w:\\-\\.]+)' +
-                                '\\s*=\\s*' +
-                                '(?<value> ".*?"|\'.*?\'|\\w+)',
-                                'xg');
-
-        while ((attributes = regex.exec(code)) != null) 
-        {
+        while ((attributes = regex.exec(code)) != null) {
             result.push(new constructor(attributes.name, match.index + attributes.index, 'color1'));
             result.push(new constructor(attributes.value, match.index + attributes.index + attributes[0].indexOf(attributes.value), 'string'));
         }
     }
 
     if (tag != null)
-        result.push(
-            new constructor(tag.name, match.index + tag[0].indexOf(tag.name), 'keyword')
-        );
+        result.push(new constructor(tag.name, match.index + tag[0].indexOf(tag.name), 'keyword'));
 
     return result;
 }
