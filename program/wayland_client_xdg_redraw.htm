@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head><script type="text/javascript" src="../page_head.js"></script>
 
-<h3><a href="../program.htm">程式語言</a> - Wayland - Wayland Client (xdg-shell) - <b>Draw Pixel</b></h3>
+<h3><a href="../program.htm">程式語言</a> - Wayland - Wayland Client (xdg-shell) - <b>Redraw Pixel</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
@@ -32,16 +32,20 @@ main.c
 static bool configured = false;
 static bool running = true;
 
+uint16_t *addr = NULL;
 struct wl_shm *shm = NULL;
 struct wl_buffer *buf = NULL; 
 struct wl_display *dis = NULL;
 struct wl_surface *surf = NULL;
 struct wl_registry *reg = NULL;
 struct wl_shm_pool *pool = NULL;
+struct wl_callback *frame = NULL;
 struct wl_compositor *comp = NULL;
 struct xdg_surface *xdg_surf = NULL;
 struct xdg_toplevel *xdg_toplevel = NULL;
 struct xdg_wm_base *xdg_wm_base = NULL;
+
+void cb_redraw(void *dat, struct wl_callback *cb, uint32_t time);
 
 static void xdg_wm_base_handle_ping(void *data, struct xdg_wm_base *xdg_wm_base, uint32_t serial)
 {
@@ -103,7 +107,33 @@ static const struct xdg_toplevel_listener xdg_toplevel_listener = {
     .configure = noop,
     .close = xdg_toplevel_handle_close,
 };
- 
+
+const struct wl_callback_listener cb_frame = {
+    cb_redraw
+};
+
+void cb_redraw(void *dat, struct wl_callback *cb, uint32_t time)
+{
+    static int cnt = 0;
+    wl_callback_destroy(frame);
+    wl_surface_damage(surf, 0, 0, WIDTH, HEIGHT);
+  
+    int x = 0, y = 0;
+    uint16_t *p = addr;
+    uint16_t col[] = { 0xf800, 0x7e0, 0x1f };
+    for (y = 0; y &lt; HEIGHT; y++) {
+        for (x = 0; x &lt; WIDTH; x++) {
+            *p++ = col[cnt % 3];
+        }
+    }
+    cnt+= 1;
+  
+    frame = wl_surface_frame(surf);
+    wl_surface_attach(surf, buf, 0, 0);
+    wl_callback_add_listener(frame, &amp;cb_frame, NULL);
+    wl_surface_commit(surf);
+}
+
 int main(int argc, char **argv)
 {
     dis = wl_display_connect(NULL);
@@ -123,32 +153,30 @@ int main(int argc, char **argv)
     xdg_surface_add_listener(xdg_surf, &amp;xdg_surface_listener, NULL);
     xdg_toplevel_add_listener(xdg_toplevel, &amp;xdg_toplevel_listener, NULL);
 
+    wl_surface_commit(surf);
+	while (wl_display_dispatch(dis) != -1 &amp;&amp; !configured) {
+	}
+
     unlink("/tmp/shm");
     int fd = open("/tmp/shm", O_RDWR | O_EXCL | O_CREAT);
     ftruncate(fd, SIZE);
 
-    uint16_t *addr = mmap(NULL, SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    addr = mmap(NULL, SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     pool = wl_shm_create_pool(shm, fd, SIZE);
     buf = wl_shm_pool_create_buffer(pool, 0, WIDTH, HEIGHT, STRIDE, WL_SHM_FORMAT_RGB565);
     wl_shm_pool_destroy(pool);
-   
-    printf("pool = %p\n", pool);
-    printf("buf = %p\n", buf);
-    printf("mmap = %p\n", addr);
 
-    int x = 0, y = 0;
-    uint16_t *p = addr;
-    for (y = 0; y &lt; HEIGHT; y++) {
-        for (x = 0; x &lt; WIDTH; x++) {
-            *p++ = 0xf800;
-        }
-    }
+    frame = wl_surface_frame(surf);
+    wl_callback_add_listener(frame, &amp;cb_frame, NULL);
+  
     wl_surface_attach(surf, buf, 0, 0);
     wl_surface_commit(surf);
-    wl_display_dispatch(dis);
-    wl_display_roundtrip(dis);
-    usleep(30000000);
- 
+  
+    while (1) {
+        wl_display_dispatch(dis);
+    }
+
+    wl_callback_destroy(frame);
     xdg_toplevel_destroy(xdg_toplevel);
 	xdg_surface_destroy(xdg_surf);
 	wl_surface_destroy(surf);
@@ -163,7 +191,7 @@ int main(int argc, char **argv)
 </pre><br>
 
 <p>
-編譯、執行
+編譯
 </p>
 <pre>
 $ wayland-scanner private-code /usr/share/wayland-protocols/stable/xdg-shell/xdg-shell.xml xdg-shell-protocol.c
@@ -173,7 +201,7 @@ $ gcc main.c xdg-shell-protocol.c -o main -lwayland-client
 $ ./main
 </pre>
 <p>
-<img src="wayland_client_xdg_draw/1.jpg" class="maxSize">
+<img src="wayland_client_xdg_redraw/1.jpg" class="maxSize">
 </p>
 
 <br><script type="text/javascript" src="../tail.js"></script>
