@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head><script type="text/javascript" src="../page_head.js"></script>
 
-<h3><a href="../program.htm">程式語言</a> - Wayland - Client - <b>Redraw Pixel</b></h3>
+<h3><a href="../program.htm">程式語言</a> - Wayland - Wayland Client (wl_shell) - <b>Redraw Pixel</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
@@ -19,13 +19,14 @@ main.c
 #include &lt;sys/mman.h&gt;
 #include &lt;syscall.h&gt;
 #include &lt;unistd.h&gt;
+#include &lt;fcntl.h&gt;
 #include &lt;wayland-client.h&gt;
- 
+  
 #define WIDTH  640
 #define HEIGHT 480
 #define STRIDE (WIDTH * 2)
 #define SIZE   (STRIDE * HEIGHT)
-
+ 
 uint16_t *addr = NULL;
 struct wl_shm *shm = NULL;
 struct wl_buffer *buf = NULL;
@@ -37,26 +38,26 @@ struct wl_shm_pool *pool = NULL;
 struct wl_callback *frame = NULL;
 struct wl_compositor *comp = NULL;
 struct wl_shell_surface *shell_surf = NULL;
-
+ 
 void cb_remove(void *dat, struct wl_registry *reg, uint32_t id);
 void cb_redraw(void *dat, struct wl_callback *cb, uint32_t time);
 void cb_handle(void *dat, struct wl_registry *reg, uint32_t id, const char *intf, uint32_t ver);
-
+ 
 const struct wl_callback_listener cb_frame = {
     cb_redraw
 };
-
+ 
 struct wl_registry_listener cb_global = {
     .global = cb_handle,
     .global_remove = cb_remove
 };
- 
+  
 void cb_redraw(void *dat, struct wl_callback *cb, uint32_t time)
 {
     static int cnt = 0;
     wl_callback_destroy(frame);
     wl_surface_damage(surf, 0, 0, WIDTH, HEIGHT);
-
+ 
     int x = 0, y = 0;
     uint16_t *p = addr;
     uint16_t col[] = {0xf800, 0x7e0, 0x1f};
@@ -66,13 +67,13 @@ void cb_redraw(void *dat, struct wl_callback *cb, uint32_t time)
         }
     }
     cnt+= 1;
-
+ 
     frame = wl_surface_frame(surf);
     wl_surface_attach(surf, buf, 0, 0);
     wl_callback_add_listener(frame, &amp;cb_frame, NULL);
     wl_surface_commit(surf);
 }
-
+ 
 void cb_handle(void *dat, struct wl_registry *reg, uint32_t id, const char *intf, uint32_t ver)
 {
     if (strcmp(intf, "wl_compositor") == 0) {
@@ -85,18 +86,18 @@ void cb_handle(void *dat, struct wl_registry *reg, uint32_t id, const char *intf
         shell = wl_registry_bind(reg, id, &amp;wl_shell_interface, 1);
     }
 }
- 
+  
 void cb_remove(void *dat, struct wl_registry *reg, uint32_t id)
 {
 }
-
+ 
 int main(int argc, char **argv)
 {
     int fd = -1;
-
+ 
     dis = wl_display_connect(NULL);
     reg = wl_display_get_registry(dis);
-
+ 
     wl_registry_add_listener(reg, &amp;cb_global, NULL);
     wl_display_dispatch(dis);
     wl_display_roundtrip(dis);
@@ -104,25 +105,27 @@ int main(int argc, char **argv)
     shell_surf = wl_shell_get_shell_surface(shell, surf);
     wl_shell_surface_set_toplevel(shell_surf);
 
-    fd = syscall(SYS_memfd_create, "main", 0);
+    unlink("/tmp/shm");
+    fd = open("/tmp/shm", O_RDWR | O_EXCL | O_CREAT); 
+    //fd = syscall(SYS_memfd_create, "main", 0);
     ftruncate(fd, SIZE);
-
+ 
     addr = mmap(NULL, SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     pool = wl_shm_create_pool(shm, fd, SIZE);
     buf = wl_shm_pool_create_buffer(pool, 0, WIDTH, HEIGHT, STRIDE, WL_SHM_FORMAT_RGB565);
     wl_shm_pool_destroy(pool);
-
+ 
     frame = wl_surface_frame(surf);
     wl_callback_add_listener(frame, &amp;cb_frame, NULL);
-
+ 
     wl_surface_attach(surf, buf, 0, 0);
     wl_surface_commit(surf);
-
+ 
     int cnt = 30;
     while (cnt--) {
         wl_display_dispatch(dis);
     }
-
+ 
     wl_callback_destroy(frame);
     wl_shell_surface_destroy(shell_surf);
     wl_shell_destroy(shell);
@@ -142,6 +145,10 @@ int main(int argc, char **argv)
 </p>
 <pre>
 $ gcc main.c -o main -lwayland-client
+$ ./main
 </pre>
+<p>
+<img src="wayland_client_redraw/1.jpg" class="maxSize">
+</p>
 
 <br><script type="text/javascript" src="../tail.js"></script>

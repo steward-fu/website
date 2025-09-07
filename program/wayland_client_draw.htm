@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head><script type="text/javascript" src="../page_head.js"></script>
 
-<h3><a href="../program.htm">程式語言</a> - Wayland - Client - <b>Draw Pixel</b></h3>
+<h3><a href="../program.htm">程式語言</a> - Wayland - Wayland Client (wl_shell) - <b>Draw Pixel</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
@@ -16,17 +16,18 @@ main.c
 #include &lt;stdint.h&gt;
 #include &lt;stdio.h&gt;
 #include &lt;unistd.h&gt;
+#include &lt;fcntl.h&gt;
 #include &lt;string.h&gt;
 #include &lt;sys/mman.h&gt;
 #include &lt;syscall.h&gt;
 #include &lt;unistd.h&gt;
 #include &lt;wayland-client.h&gt;
-
+ 
 #define WIDTH  640
 #define HEIGHT 480
 #define STRIDE (WIDTH * 2)
 #define SIZE   (STRIDE * HEIGHT)
-
+ 
 struct wl_shm *shm = NULL;
 struct wl_buffer *buf = NULL;
 struct wl_shell *shell = NULL;
@@ -36,7 +37,7 @@ struct wl_registry *reg = NULL;
 struct wl_shm_pool *pool = NULL;
 struct wl_compositor *comp = NULL;
 struct wl_shell_surface *shell_surf = NULL;
-
+ 
 void cb_handle(void *dat, struct wl_registry *reg, uint32_t id, const char *intf, uint32_t ver)
 {
     if (strcmp(intf, "wl_compositor") == 0) {
@@ -49,37 +50,39 @@ void cb_handle(void *dat, struct wl_registry *reg, uint32_t id, const char *intf
         shell = wl_registry_bind(reg, id, &amp;wl_shell_interface, 1);
     }
 }
-
+ 
 void cb_remove(void *dat, struct wl_registry *reg, uint32_t id)
 {
 }
-
+ 
 struct wl_registry_listener cb = {
     .global = cb_handle,
     .global_remove = cb_remove
 };
-
+ 
 int main(int argc, char **argv)
 {
     dis = wl_display_connect(NULL);
     reg = wl_display_get_registry(dis);
- 
+  
     wl_registry_add_listener(reg, &amp;cb, NULL);
     wl_display_dispatch(dis);
     wl_display_roundtrip(dis);
     surf = wl_compositor_create_surface(comp);
     shell_surf = wl_shell_get_shell_surface(shell, surf);
     wl_shell_surface_set_toplevel(shell_surf);
- 
-    int fd = syscall(SYS_memfd_create, "main", 0);
+
+    unlink("/tmp/shm");
+    int fd = open("/tmp/shm", O_RDWR | O_EXCL | O_CREAT);  
+    //int fd = syscall(SYS_memfd_create, "main", 0);
     ftruncate(fd, SIZE);
- 
+  
     uint16_t *addr = mmap(NULL, SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     pool = wl_shm_create_pool(shm, fd, SIZE);
     buf = wl_shm_pool_create_buffer(pool, 0, WIDTH, HEIGHT, STRIDE, WL_SHM_FORMAT_RGB565);
     wl_shm_pool_destroy(pool);
     printf("mmap = 0x%08x\n", addr);
- 
+  
     int x = 0, y = 0;
     uint16_t *p = addr;
     for (y = 0; y &lt; HEIGHT; y++) {
@@ -92,7 +95,7 @@ int main(int argc, char **argv)
     wl_display_dispatch(dis);
     wl_display_roundtrip(dis);
     usleep(3000000);
- 
+  
     wl_shell_surface_destroy(shell_surf);
     wl_shell_destroy(shell);
     wl_surface_destroy(surf);
@@ -112,7 +115,9 @@ int main(int argc, char **argv)
 <pre>
 $ gcc main.c -o main -lwayland-client
 $ ./main
-    mmap = 0xa3d1b000
 </pre>
+<p>
+<img src="wayland_client_draw/1.jpg" class="maxSize">
+</p>
 
 <br><script type="text/javascript" src="../tail.js"></script>
