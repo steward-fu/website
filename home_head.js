@@ -1,34 +1,80 @@
-﻿document.write('<!--');
-document.write(' ____________________________________________________________ ');
-document.write('|                                                            |');
-document.write('|    DESIGN + Pat Heard { http://fullahead.org }             |');
-document.write('|      DATE + 2006.09.12                                     |');
-document.write('| COPYRIGHT + Free use if this notice is kept in place.      |');
-document.write('|____________________________________________________________|');
-document.write('');
-document.write('-->');
+﻿document.addEventListener("DOMContentLoaded", function () {
+    var copyright = document.createComment("DESIGN + Pat Heard { http://fullahead.org }, DATE + 2006.09.12, COPYRIGHT + Free use if this notice is kept in place.");
+    document.head.appendChild(copyright);
 
-document.write('<title>司徒的教學網站</title>');
-document.write('<meta http-equiv="content-type" content="text/html; charset=UTF-8" />');
-document.write('<meta http-lowast="content-type" content="application/xhtml+xml; charset=UTF-8" />');
-document.write('<meta name="author" content="fullahead.org" />');
-document.write('<meta name="keywords" content="XHTML, CSS, template, FullAhead" />');
-document.write('<meta name="description" content="A valid, XHTML 1.0 template" />');
-document.write('<meta name="robots" content="index, follow, noarchive" />');
-document.write('<meta name="googlebot" content="noarchive" />');
-document.write('<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=100.0" />');
-document.write('<link rel="shortcut icon" href="website.ico" />');
-document.write('<link rel="stylesheet" type="text/css" href="styles/shCore.css" />');
-document.write('<link rel="stylesheet" type="text/css" href="styles/shThemeDefault.css" />');
-document.write('<link rel="stylesheet" type="text/css" href="css/html.css" media="screen" />');
-document.write('<link rel="stylesheet" type="text/css" href="css/layout.css" media="screen" />');
-document.write('</head>');
+    var title = document.createElement("title");
+    title.textContent = "司徒的教學網站";
+    document.head.appendChild(title);
 
-document.write('<body>');
-document.write('<div id="wrapper">');
-document.write('<div id="content">');
+    var meta = document.createElement("meta");
+    meta.httpEquiv = "content-type";
+    meta.content = "text/html; charset=UTF-8";
+    document.head.appendChild(meta);
 
-document.write('<div id="header">');
-document.write('<a href="https://steward-fu.github.io/website/index.htm"><h1><span class="big darkBrown">S</span>teward</h1></a>');
-document.write('<h2><span class="highlight">分享是一種喜悅、更是一種幸福</span></h2>');
-document.write('</div>');
+    meta = document.createElement("meta");
+    meta.httpLowast = "content-type";
+    meta.content = "application/xhtml+xml; charset=UTF-8";
+    document.head.appendChild(meta);
+
+    meta = document.createElement("meta");
+    meta.name = "author";
+    meta.content = "fullahead.org";
+    document.head.appendChild(meta);
+
+    meta = document.createElement("meta");
+    meta.name = "keywords";
+    meta.content = "XHTML, CSS, template, FullAhead";
+    document.head.appendChild(meta);
+
+    meta = document.createElement("meta");
+    meta.name = "description";
+    meta.content = "A valid, XHTML 1.0 template";
+    document.head.appendChild(meta);
+
+    meta = document.createElement("meta");
+    meta.name = "robots";
+    meta.content = "index, follow, noarchive";
+    document.head.appendChild(meta);
+
+    meta = document.createElement("meta");
+    meta.name = "googlebot";
+    meta.content = "noarchive";
+    document.head.appendChild(meta);
+
+    meta = document.createElement("meta");
+    meta.name = "viewport";
+    meta.content = "width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=10.0";
+    document.head.appendChild(meta);
+
+    var link = document.createElement("link");
+    link.rel = "shortcut icon";
+    link.href = "website.ico";
+    document.head.appendChild(link);
+
+    link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.type = "text/css";
+    link.href = "styles/shCore.css";
+    document.head.appendChild(link);
+
+    link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.type = "text/css";
+    link.href = "styles/shThemeDefault.css";
+    document.head.appendChild(link);
+
+    link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.type = "text/css";
+    link.href = "css/html.css";
+    link.media = "screen"
+    document.head.appendChild(link);
+
+    link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.type = "text/css";
+    link.href = "css/layout.css";
+    link.media = "screen"
+    document.head.appendChild(link);
+});
+
