@@ -1,0 +1,139 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - Wayland - Wayland Client (xdg-shell) - <b>Create Surface</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/emersion/hello-wayland<br>
+https://jan.newmarch.name/Wayland/index.html<br>
+https://wayland.freedesktop.org/docs/html/apa.html<br>
+https://bugaevc.gitbooks.io/writing-wayland-clients/content/<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdbool.h&gt;
+#include &lt;string.h&gt;
+#include &lt;wayland-client.h&gt;
+#include &lt;wayland-client.h&gt;
+#include &lt;linux/input-event-codes.h&gt;
+
+#include "xdg-shell-client-protocol.h"
+
+static bool configured = false;
+static bool running = true;
+ 
+struct wl_display *dis = NULL;
+struct wl_surface *surf = NULL;
+struct wl_registry *reg = NULL;
+struct wl_compositor *comp = NULL;
+struct xdg_surface *xdg_surf = NULL;
+struct xdg_toplevel *xdg_toplevel = NULL;
+struct xdg_wm_base *xdg_wm_base = NULL;
+
+static void xdg_wm_base_handle_ping(void *data, struct xdg_wm_base *xdg_wm_base, uint32_t serial)
+{
+    xdg_wm_base_pong(xdg_wm_base, serial);
+}
+
+static const struct xdg_wm_base_listener xdg_wm_base_listener = {
+    .ping = xdg_wm_base_handle_ping,
+};
+ 
+void cb_handle(void *dat, struct wl_registry *reg, uint32_t id, const char *intf, uint32_t ver)
+{
+    if (strcmp(intf, wl_compositor_interface.name) == 0) {
+        comp = wl_registry_bind(reg, id, &amp;wl_compositor_interface, 1);
+    }
+    else if (strcmp(intf, xdg_wm_base_interface.name) == 0) {
+        xdg_wm_base = wl_registry_bind(reg, id, &amp;xdg_wm_base_interface, 1);
+        xdg_wm_base_add_listener(xdg_wm_base, &amp;xdg_wm_base_listener, NULL);
+    }
+}
+     
+void cb_remove(void *dat, struct wl_registry *reg, uint32_t id)
+{
+}
+     
+struct wl_registry_listener cb = {
+    .global = cb_handle,
+    .global_remove = cb_remove
+};
+
+static void xdg_surface_handle_configure(void *data, struct xdg_surface *xdg_surface, uint32_t serial)
+{
+    xdg_surface_ack_configure(xdg_surface, serial);
+
+    if (configured) {
+        wl_surface_commit(surf);
+    }
+
+    configured = true;
+}
+
+static const struct xdg_surface_listener xdg_surface_listener = {
+    .configure = xdg_surface_handle_configure,
+};
+
+static void xdg_toplevel_handle_close(void *data, struct xdg_toplevel *xdg_toplevel)
+{
+    running = false;
+}
+
+static void noop(void*, struct xdg_toplevel*, int32_t,  int32_t,  struct wl_array*)
+{
+}
+
+static const struct xdg_toplevel_listener xdg_toplevel_listener = {
+    .configure = noop,
+    .close = xdg_toplevel_handle_close,
+};
+ 
+int main(int argc, char **argv)
+{
+    dis = wl_display_connect(NULL);
+    reg = wl_display_get_registry(dis);
+ 
+    wl_registry_add_listener(reg, &amp;cb, NULL);
+    wl_display_roundtrip(dis);
+    printf("comp = 0x%08x\n", comp);
+
+    surf = wl_compositor_create_surface(comp);
+    printf("surf = 0x%08x\n", surf);
+
+    xdg_surf = xdg_wm_base_get_xdg_surface(xdg_wm_base, surf);
+    printf("xdg_surf = 0x%08x\n", xdg_surf);
+
+    xdg_toplevel = xdg_surface_get_toplevel(xdg_surf);
+    xdg_surface_add_listener(xdg_surf, &amp;xdg_surface_listener, NULL);
+    xdg_toplevel_add_listener(xdg_toplevel, &amp;xdg_toplevel_listener, NULL);
+
+    xdg_toplevel_destroy(xdg_toplevel);
+	xdg_surface_destroy(xdg_surf);
+	wl_surface_destroy(surf);
+    wl_compositor_destroy(comp);
+    wl_registry_destroy(reg);
+    wl_display_disconnect(dis);
+
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ wayland-scanner private-code /usr/share/wayland-protocols/stable/xdg-shell/xdg-shell.xml xdg-shell-protocol.c
+$ wayland-scanner client-header /usr/share/wayland-protocols/stable/xdg-shell/xdg-shell.xml xdg-shell-client-protocol.h
+$ mutter --nested --wayland &amp;
+$ gcc main.c -o main -lwayland-client
+$ ./main
+    comp = 0x4be64120
+    surf = 0x4be631d0
+    xdg_surf = 0x4be63230
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
