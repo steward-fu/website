@@ -1,6 +1,12 @@
 ﻿document.addEventListener("DOMContentLoaded", function () {
-    var copyright = document.createComment("DESIGN + Pat Heard { http://fullahead.org }, DATE + 2006.09.12, COPYRIGHT + Free use if this notice is kept in place.");
-    document.head.appendChild(copyright);
+    var comment =
+    " ____________________________________________________________ \n" +
+    "|                                                            |\n" +
+    "| DESIGN + Pat Heard { http://fullahead.org }                |\n" +
+    "| DATE + 2006.09.12                                          |\n" +
+    "| COPYRIGHT + Free use if this notice is kept in place.      |\n" +
+    "|____________________________________________________________|\n";
+    document.head.appendChild(document.createComment(comment));
 
     var title = document.createElement("title");
     title.textContent = "司徒的教學網站";
