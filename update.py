@@ -11,7 +11,7 @@ def patch_html(path):
 
     f = open(path, 'w', encoding='utf-8-sig')
     start_write = False
-    for c in content:
+    for c in content[:-10]:
         t = c.replace('\r', '').replace('\n', '')
         if t == '<div id="page">':
             f.write('<!--' + '\n');
@@ -99,7 +99,8 @@ def patch_html(path):
 
     if start_write == True:
         f.write('<br>' + '\n')
-        f.write('</div>' + '\n\n')
+        f.write('\n')
+        f.write('</div>' + '\n')
         f.write('</div>' + '\n')
         f.write('</div>' + '\n')
         f.write('</body>' + '\n')
