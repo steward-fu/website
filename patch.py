@@ -11,15 +11,16 @@ def patch_html(path):
     content = f.readlines()
     f.close()
 
-    '''
+    has_head = False
+    has_tail = False
+
     chk = content[0].replace('\r', '').replace('\n', '')
     if chk == MAGIC:
-        print('failure, {}'.format(path))
-        return
-    '''
+        has_head = True
 
     f = open(path, 'w', encoding='utf-8-sig')
-    f.write(MAGIC + '\n')
+    if has_head == False:
+        f.write(MAGIC + '\n')
 
     for c in content:
         t = c.replace('\r', '').replace('\n', '')
@@ -27,7 +28,7 @@ def patch_html(path):
         t = t.replace('class="maxSize">', 'class="maxSize" />')
         t = t.replace('<hr size="1">', '<hr size="1" />')
         if t == '<br /><script type="text/javascript" src="../tail.js"></script>':
-            continue
+            has_tail = True
 
         if t == '<head><script type="text/javascript" src="../page_head.js"></script>':
             t = '<head><script type="text/javascript" src="../page.js"></script></head>'
@@ -43,12 +44,13 @@ def patch_html(path):
             continue
 
         f.write(t + '\n')
-    f.write('<br />' + '\n')
-    f.write('</div>' + '\n\n')
-    f.write('</div>' + '\n')
-    f.write('</div>' + '\n')
-    f.write('</body>' + '\n')
-    f.write('</html>' + '\n')
+    if has_head == False:
+        f.write('<br />' + '\n')
+        f.write('</div>' + '\n\n')
+        f.write('</div>' + '\n')
+        f.write('</div>' + '\n')
+        f.write('</body>' + '\n')
+        f.write('</html>' + '\n')
     f.close()
     print('success, {}'.format(path))
 
