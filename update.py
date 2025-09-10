@@ -11,8 +11,12 @@ def patch_html(path):
 
     f = open(path, 'w', encoding='utf-8-sig')
     start_write = False
-    for c in content[:-10]:
-        t = c.replace('\r', '').replace('\n', '')
+
+    i = 0
+    while i < len(content[:-10]):
+        t = content[i].replace('\r', '').replace('\n', '')
+        i = i + 1
+
         if t == '<div id="page">':
             f.write('<!--' + '\n');
             f.write(' ____________________________________________________________' + '\n');
@@ -89,12 +93,18 @@ def patch_html(path):
             f.write('\n');
             f.write('<div id="page">' + '\n');
             f.write('\n');
-            f.write('<h3><a href="../index.htm">掌機</a> - Game Gear Micro - <b>簡要規格</b></h3>' + '\n');
 
             start_write = True
             continue
 
         if start_write == True:
+            # <h3>PicoSystem</h3>
+            # <p><b>拆機</b></p>
+            if t.startswith('<h3>'):
+                ntype = t.replace('<h3>', '').replace('</h3>', '')
+                ntitle = content[i].replace('<p><b>', '').replace('</b></p>', '').replace('\r', '').replace('\n', '')
+                t = '<h3><a href="../index.htm">掌機</a> - {} - <b>{}</b></h3>'.format(ntype, ntitle)
+                i = i + 1
             f.write(t + '\n')
 
     if start_write == True:
