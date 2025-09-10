@@ -98,9 +98,10 @@ def patch_html(path):
             f.write(t + '\n')
 
     if start_write == True:
-        f.write('<br>' + '\n')
         f.write('\n')
+        f.write('<br>' + '\n')
         f.write('</div>' + '\n')
+        f.write('\n')
         f.write('</div>' + '\n')
         f.write('</div>' + '\n')
         f.write('</body>' + '\n')
