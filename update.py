@@ -10,11 +10,11 @@ def patch_html(path):
     f.close()
 
     f = open(path, 'w', encoding='utf-8-sig')
-    start_write = False
 
     i = 0
+    start_write = False
     while i < len(content[:-10]):
-        t = content[i].replace('\r', '').replace('\n', '')
+        t = content[i].strip()
         i = i + 1
 
         if t == '<div id="page">':
@@ -102,7 +102,7 @@ def patch_html(path):
             # <p><b>拆機</b></p>
             if t.startswith('<h3>'):
                 ntype = t.replace('<h3>', '').replace('</h3>', '')
-                ntitle = content[i].replace('<p><b>', '').replace('</b></p>', '').replace('\r', '').replace('\n', '')
+                ntitle = content[i].replace('<p><b>', '').replace('</b></p>', '').strip()
                 t = '<h3><a href="../index.htm">掌機</a> - {} - <b>{}</b></h3>'.format(ntype, ntitle)
                 i = i + 1
             f.write(t + '\n')
