@@ -95,7 +95,7 @@ static void xdg_toplevel_handle_close(void *data, struct xdg_toplevel *xdg_tople
     running = false;
 }
 
-static void noop(void*, struct xdg_toplevel*, int32_t,  int32_t,  struct wl_array*)
+static void noop(void *arg0, struct xdg_toplevel *arg1, int32_t arg2, int32_t arg3, struct wl_array *arg4)
 {
 }
 
@@ -122,6 +122,10 @@ int main(int argc, char **argv)
     xdg_toplevel = xdg_surface_get_toplevel(xdg_surf);
     xdg_surface_add_listener(xdg_surf, &amp;xdg_surface_listener, NULL);
     xdg_toplevel_add_listener(xdg_toplevel, &amp;xdg_toplevel_listener, NULL);
+
+    wl_surface_commit(surf);
+    while (wl_display_dispatch(dis) != -1 &amp;&amp; !configured) {
+    }
 
     unlink("/tmp/shm");
     int fd = open("/tmp/shm", O_RDWR | O_EXCL | O_CREAT);

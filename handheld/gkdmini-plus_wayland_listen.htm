@@ -1,0 +1,191 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+-->
+
+<head>
+<title>司徒的教學網站</title>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+<meta http-equiv="content-type" content="application/xhtml+xml; charset=UTF-8" />
+<meta name="author" content="fullahead.org" />
+<meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+<meta name="description" content="A valid, XHTML 1.0 template" />
+<meta name="robots" content="index, follow, noarchive" />
+<meta name="googlebot" content="noarchive" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=10.0" />
+
+<link rel="shortcut icon" href="../website.ico" />
+<link rel="stylesheet" type="text/css" href="../styles/shCore.css" />
+<link rel="stylesheet" type="text/css" href="../styles/shThemeDefault.css" />
+<link rel="stylesheet" type="text/css" href="../css/html.css" media="screen" />
+<link rel="stylesheet" type="text/css" href="../css/layout.css" media="screen" />
+
+<script type="text/javascript" src="../scripts/shCore.js"></script>
+<script type="text/javascript" src="../scripts/shBrushAppleScript.js"></script>
+<script type="text/javascript" src="../scripts/shBrushAS3.js"></script>
+<script type="text/javascript" src="../scripts/shBrushAsm.js"></script>
+<script type="text/javascript" src="../scripts/shBrushBash.js"></script>
+<script type="text/javascript" src="../scripts/shBrushColdFusion.js"></script>
+<script type="text/javascript" src="../scripts/shBrushCpp.js"></script>
+<script type="text/javascript" src="../scripts/shBrushD.js"></script>
+<script type="text/javascript" src="../scripts/shBrushCSharp.js"></script>
+<script type="text/javascript" src="../scripts/shBrushCss.js"></script>
+<script type="text/javascript" src="../scripts/shBrushDiff.js"></script>
+<script type="text/javascript" src="../scripts/shBrushErlang.js"></script>
+<script type="text/javascript" src="../scripts/shBrushGolang.js"></script>
+<script type="text/javascript" src="../scripts/shBrushGroovy.js"></script>
+<script type="text/javascript" src="../scripts/shBrushInf.js"></script>
+<script type="text/javascript" src="../scripts/shBrushJavaFX.js"></script>
+<script type="text/javascript" src="../scripts/shBrushJava.js"></script>
+<script type="text/javascript" src="../scripts/shBrushJScript.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPas.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPerl.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPhp.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPlain.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPowerShell.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPython.js"></script>
+<script type="text/javascript" src="../scripts/shBrushRuby.js"></script>
+<script type="text/javascript" src="../scripts/shBrushRust.js"></script>
+<script type="text/javascript" src="../scripts/shBrushSass.js"></script>
+<script type="text/javascript" src="../scripts/shBrushScad.js"></script>
+<script type="text/javascript" src="../scripts/shBrushBasic.js"></script>
+<script type="text/javascript" src="../scripts/shBrushVerilog.js"></script>
+<script type="text/javascript" src="../scripts/shBrushScala.js"></script>
+<script type="text/javascript" src="../scripts/shBrushSql.js"></script>
+<script type="text/javascript" src="../scripts/shBrushXml.js"></script>
+<script type="text/javascript" src="../scripts/shBrushFortran.js"></script>
+
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+</head>
+
+<body>
+<div id="wrapper">
+<div id="content">
+
+<div id="header">
+<a href="https://steward-fu.github.io/website/index.htm"><h1><span class="big darkBrown">S</span>teward</h1></a>
+<h2><span class="highlight">分享是一種喜悅、更是一種幸福</span></h2>
+</div>
+
+<div id="page">
+
+<h3><a href="../index.htm">掌機</a> - GKDmini Plus - Wayland Client (xdg-shell) - <b>Add Listener</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://jan.newmarch.name/Wayland/index.html<br>
+https://wayland.freedesktop.org/docs/html/apa.html<br>
+https://bugaevc.gitbooks.io/writing-wayland-clients/content/<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;wayland-client.h&gt;
+   
+void cb_handle(void *dat, struct wl_registry *reg, uint32_t id, const char *intf, uint32_t ver)
+{
+    printf("%s, intf:%s, ver:%u, id:%u\n", __func__, intf, ver, id);
+}
+   
+void cb_remove(void *dat, struct wl_registry *reg, uint32_t id)
+{
+    printf("%s, %u\n", __func__, id);
+}
+   
+int main(int argc, char **argv)
+{
+    struct wl_display *dis = wl_display_connect(NULL);
+    struct wl_registry *reg = wl_display_get_registry(dis);
+    struct wl_registry_listener cb = {
+        .global = cb_handle,
+        .global_remove = cb_remove
+    };
+   
+    wl_registry_add_listener(reg, &amp;cb, NULL);
+    wl_display_dispatch(dis);
+    wl_display_roundtrip(dis);
+ 
+    wl_registry_destroy(reg);
+    wl_display_disconnect(dis);
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ arm-linux-gnueabihf-gcc main.c -o test -I/opt/mini/include -lwayland-client
+</pre><br>
+
+<p>
+執行
+</p>
+<pre>
+# killall gmenu2x &amp;&amp; ./test 
+    cb_handle, intf:mali_buffer_sharing, ver:5, id:1
+    cb_handle, intf:wl_shm, ver:2, id:2
+    cb_handle, intf:zwp_linux_dmabuf_v1, ver:4, id:3
+    cb_handle, intf:wl_compositor, ver:6, id:4
+    cb_handle, intf:wl_subcompositor, ver:1, id:5
+    cb_handle, intf:wl_data_device_manager, ver:3, id:6
+    cb_handle, intf:zwlr_gamma_control_manager_v1, ver:1, id:7
+    cb_handle, intf:zxdg_output_manager_v1, ver:3, id:8
+    cb_handle, intf:ext_idle_notifier_v1, ver:2, id:9
+    cb_handle, intf:zwp_idle_inhibit_manager_v1, ver:1, id:10
+    cb_handle, intf:zwlr_layer_shell_v1, ver:4, id:11
+    cb_handle, intf:xdg_wm_base, ver:5, id:12
+    cb_handle, intf:zwp_tablet_manager_v2, ver:1, id:13
+    cb_handle, intf:org_kde_kwin_server_decoration_manager, ver:1, id:14
+    cb_handle, intf:zxdg_decoration_manager_v1, ver:1, id:15
+    cb_handle, intf:zwp_relative_pointer_manager_v1, ver:1, id:16
+    cb_handle, intf:zwp_pointer_constraints_v1, ver:1, id:17
+    cb_handle, intf:wp_presentation, ver:2, id:18
+    cb_handle, intf:wp_alpha_modifier_v1, ver:1, id:19
+    cb_handle, intf:zwlr_output_manager_v1, ver:4, id:20
+    cb_handle, intf:zwlr_output_power_manager_v1, ver:1, id:21
+    cb_handle, intf:zwp_input_method_manager_v2, ver:1, id:22
+    cb_handle, intf:zwp_text_input_manager_v3, ver:1, id:23
+    cb_handle, intf:ext_foreign_toplevel_list_v1, ver:1, id:24
+    cb_handle, intf:zwlr_foreign_toplevel_manager_v1, ver:3, id:25
+    cb_handle, intf:ext_session_lock_manager_v1, ver:1, id:26
+    cb_handle, intf:zwlr_export_dmabuf_manager_v1, ver:1, id:27
+    cb_handle, intf:zwlr_screencopy_manager_v1, ver:3, id:28
+    cb_handle, intf:ext_image_copy_capture_manager_v1, ver:1, id:29
+    cb_handle, intf:ext_output_image_capture_source_manager_v1, ver:1, id:30
+    cb_handle, intf:zwlr_data_control_manager_v1, ver:2, id:31
+    cb_handle, intf:ext_data_control_manager_v1, ver:1, id:32
+    cb_handle, intf:wp_security_context_manager_v1, ver:1, id:33
+    cb_handle, intf:wp_viewporter, ver:1, id:34
+    cb_handle, intf:wp_single_pixel_buffer_manager_v1, ver:1, id:35
+    cb_handle, intf:wp_content_type_manager_v1, ver:1, id:36
+    cb_handle, intf:wp_fractional_scale_manager_v1, ver:1, id:37
+    cb_handle, intf:wp_tearing_control_manager_v1, ver:1, id:38
+    cb_handle, intf:zxdg_exporter_v1, ver:1, id:39
+    cb_handle, intf:zxdg_importer_v1, ver:1, id:40
+    cb_handle, intf:zxdg_exporter_v2, ver:1, id:41
+    cb_handle, intf:zxdg_importer_v2, ver:1, id:42
+    cb_handle, intf:xdg_activation_v1, ver:1, id:43
+    cb_handle, intf:wp_cursor_shape_manager_v1, ver:1, id:44
+    cb_handle, intf:zwp_virtual_keyboard_manager_v1, ver:1, id:45
+    cb_handle, intf:zwlr_virtual_pointer_manager_v1, ver:2, id:46
+    cb_handle, intf:zwp_keyboard_shortcuts_inhibit_manager_v1, ver:1, id:47
+    cb_handle, intf:zwp_pointer_gestures_v1, ver:3, id:48
+    cb_handle, intf:ext_transient_seat_manager_v1, ver:1, id:49
+    cb_handle, intf:wl_seat, ver:9, id:50
+    cb_handle, intf:zwp_primary_selection_device_manager_v1, ver:1, id:52
+    cb_handle, intf:wl_output, ver:4, id:53
+</pre>
+
+<br>
+</div>
+
+</div>
+</div>
+</body>
+</html>
