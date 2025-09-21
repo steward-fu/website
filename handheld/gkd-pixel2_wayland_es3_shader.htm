@@ -1,0 +1,331 @@
+﻿<!--
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+-->
+
+<head>
+<title>司徒的教學網站</title>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+<meta http-equiv="content-type" content="application/xhtml+xml; charset=UTF-8" />
+<meta name="author" content="fullahead.org" />
+<meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+<meta name="description" content="A valid, XHTML 1.0 template" />
+<meta name="robots" content="index, follow, noarchive" />
+<meta name="googlebot" content="noarchive" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=10.0" />
+
+<link rel="shortcut icon" href="../website.ico" />
+<link rel="stylesheet" type="text/css" href="../styles/shCore.css" />
+<link rel="stylesheet" type="text/css" href="../styles/shThemeDefault.css" />
+<link rel="stylesheet" type="text/css" href="../css/html.css" media="screen" />
+<link rel="stylesheet" type="text/css" href="../css/layout.css" media="screen" />
+
+<script type="text/javascript" src="../scripts/shCore.js"></script>
+<script type="text/javascript" src="../scripts/shBrushAppleScript.js"></script>
+<script type="text/javascript" src="../scripts/shBrushAS3.js"></script>
+<script type="text/javascript" src="../scripts/shBrushAsm.js"></script>
+<script type="text/javascript" src="../scripts/shBrushBash.js"></script>
+<script type="text/javascript" src="../scripts/shBrushColdFusion.js"></script>
+<script type="text/javascript" src="../scripts/shBrushCpp.js"></script>
+<script type="text/javascript" src="../scripts/shBrushD.js"></script>
+<script type="text/javascript" src="../scripts/shBrushCSharp.js"></script>
+<script type="text/javascript" src="../scripts/shBrushCss.js"></script>
+<script type="text/javascript" src="../scripts/shBrushDiff.js"></script>
+<script type="text/javascript" src="../scripts/shBrushErlang.js"></script>
+<script type="text/javascript" src="../scripts/shBrushGolang.js"></script>
+<script type="text/javascript" src="../scripts/shBrushGroovy.js"></script>
+<script type="text/javascript" src="../scripts/shBrushInf.js"></script>
+<script type="text/javascript" src="../scripts/shBrushJavaFX.js"></script>
+<script type="text/javascript" src="../scripts/shBrushJava.js"></script>
+<script type="text/javascript" src="../scripts/shBrushJScript.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPas.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPerl.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPhp.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPlain.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPowerShell.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPython.js"></script>
+<script type="text/javascript" src="../scripts/shBrushRuby.js"></script>
+<script type="text/javascript" src="../scripts/shBrushRust.js"></script>
+<script type="text/javascript" src="../scripts/shBrushSass.js"></script>
+<script type="text/javascript" src="../scripts/shBrushScad.js"></script>
+<script type="text/javascript" src="../scripts/shBrushBasic.js"></script>
+<script type="text/javascript" src="../scripts/shBrushVerilog.js"></script>
+<script type="text/javascript" src="../scripts/shBrushScala.js"></script>
+<script type="text/javascript" src="../scripts/shBrushSql.js"></script>
+<script type="text/javascript" src="../scripts/shBrushXml.js"></script>
+<script type="text/javascript" src="../scripts/shBrushFortran.js"></script>
+
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+</head>
+
+<body>
+<div id="wrapper">
+<div id="content">
+
+<div id="header">
+<a href="https://steward-fu.github.io/website/index.htm"><h1><span class="big darkBrown">S</span>teward</h1></a>
+<h2><span class="highlight">分享是一種喜悅、更是一種幸福</span></h2>
+</div>
+
+<div id="page">
+
+<h3><a href="../index.htm">掌機</a> - GKD Pixel 2 - Wayland Client (xdg-shell) - OpenGL ES 3.2 - <b>Use Shader</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://jan.newmarch.name/Wayland/index.html<br>
+https://wayland.freedesktop.org/docs/html/apa.html<br>
+https://bugaevc.gitbooks.io/writing-wayland-clients/content/<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdbool.h&gt;
+#include &lt;string.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;sys/mman.h&gt;
+#include &lt;wayland-egl.h&gt;
+#include &lt;wayland-client.h&gt;
+#include &lt;linux/input-event-codes.h&gt;
+ 
+#include &lt;EGL/egl.h&gt;
+#include &lt;GLES2/gl2.h&gt;
+  
+#include "xdg-shell-client-protocol.h"
+  
+#define LCD_W  640
+#define LCD_H  480
+#define STRIDE (LCD_W * 2)
+#define SIZE   (STRIDE * LCD_H)
+     
+static bool configured = false;
+static bool running = true;
+  
+struct wl_region *regn = NULL;
+struct wl_display *dis = NULL;
+struct wl_surface *surf = NULL;
+struct wl_registry *reg = NULL;
+struct wl_compositor *comp = NULL;
+struct wl_egl_window *egl_win = NULL;
+struct xdg_surface *xdg_surf = NULL;
+struct xdg_toplevel *xdg_toplevel = NULL;
+struct xdg_wm_base *xdg_wm_base = NULL;
+ 
+EGLConfig egl_conf = 0;
+EGLContext egl_ctx = 0;
+EGLDisplay egl_dis = 0;
+EGLSurface egl_surf = 0;
+   
+EGLint egl_attribs[] = {
+    EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
+    EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+    EGL_RED_SIZE,   8,
+    EGL_GREEN_SIZE, 8,
+    EGL_BLUE_SIZE,  8,
+    EGL_NONE
+};
+   
+EGLint ctx_attribs[] = {
+    EGL_CONTEXT_CLIENT_VERSION, 
+    2, 
+    EGL_NONE
+};
+
+const char *vShaderSrc = 
+    "attribute vec4 vPosition;    \n"
+    "void main(void)              \n"
+    "{                            \n"
+    "    gl_Position = vPosition; \n"
+    "}";
+ 
+const char *fShaderSrc =
+    "#ifdef GL_ES               \n"
+    "precision mediump float;   \n"
+    "#endif                     \n"
+    "uniform vec4 vColor;       \n"
+    "void main(void)            \n"
+    "{                          \n"
+    "    gl_FragColor = vColor; \n"
+    "}";
+ 
+void cb_redraw(void *dat, struct wl_callback *cb, uint32_t time);
+  
+static void xdg_wm_base_handle_ping(void *data, struct xdg_wm_base *xdg_wm_base, uint32_t serial)
+{
+    xdg_wm_base_pong(xdg_wm_base, serial);
+}
+  
+static const struct xdg_wm_base_listener xdg_wm_base_listener = {
+    .ping = xdg_wm_base_handle_ping,
+};
+   
+void cb_handle(void *dat, struct wl_registry *reg, uint32_t id, const char *intf, uint32_t ver)
+{
+    if (strcmp(intf, wl_compositor_interface.name) == 0) {
+        comp = wl_registry_bind(reg, id, &amp;wl_compositor_interface, 1);
+    }
+    else if (strcmp(intf, xdg_wm_base_interface.name) == 0) {
+        xdg_wm_base = wl_registry_bind(reg, id, &amp;xdg_wm_base_interface, 1);
+        xdg_wm_base_add_listener(xdg_wm_base, &amp;xdg_wm_base_listener, NULL);
+    }
+}
+       
+void cb_remove(void *dat, struct wl_registry *reg, uint32_t id)
+{
+}
+       
+struct wl_registry_listener cb = {
+    .global = cb_handle,
+    .global_remove = cb_remove
+};
+  
+static void xdg_surface_handle_configure(void *data, struct xdg_surface *xdg_surface, uint32_t serial)
+{
+    xdg_surface_ack_configure(xdg_surface, serial);
+  
+    if (configured) {
+        wl_surface_commit(surf);
+    }
+  
+    configured = true;
+}
+  
+static const struct xdg_surface_listener xdg_surface_listener = {
+    .configure = xdg_surface_handle_configure,
+};
+  
+static void xdg_toplevel_handle_close(void *data, struct xdg_toplevel *xdg_toplevel)
+{
+    running = false;
+}
+ 
+static void noop(void *arg0, struct xdg_toplevel *arg1, int32_t arg2, int32_t arg3, struct wl_array *arg4) 
+{
+}
+  
+static const struct xdg_toplevel_listener xdg_toplevel_listener = {
+    .configure = noop,
+    .close = xdg_toplevel_handle_close,
+};
+  
+int main(int argc, char **argv)
+{
+    dis = wl_display_connect(NULL);
+    reg = wl_display_get_registry(dis);
+   
+    wl_registry_add_listener(reg, &amp;cb, NULL);
+    wl_display_roundtrip(dis);
+    surf = wl_compositor_create_surface(comp);
+    xdg_surf = xdg_wm_base_get_xdg_surface(xdg_wm_base, surf);
+  
+    xdg_toplevel = xdg_surface_get_toplevel(xdg_surf);
+    xdg_surface_add_listener(xdg_surf, &amp;xdg_surface_listener, NULL);
+    xdg_toplevel_add_listener(xdg_toplevel, &amp;xdg_toplevel_listener, NULL);
+  
+    wl_surface_commit(surf);
+    while (wl_display_dispatch(dis) != -1 &amp;&amp; !configured) {
+    }
+ 
+    regn = wl_compositor_create_region(comp);
+    wl_region_add(regn, 0, 0, LCD_W, LCD_H);
+    wl_surface_set_opaque_region(surf, regn);
+    egl_win = wl_egl_window_create(surf, LCD_W, LCD_H);
+   
+    EGLConfig cfg = 0;
+    EGLint cnt = 0;
+    EGLint major = 0;
+    EGLint minor = 0;
+   
+    egl_dis = eglGetDisplay((EGLNativeDisplayType)dis);
+    eglInitialize(egl_dis, &amp;major, &amp;minor);
+    eglGetConfigs(egl_dis, NULL, 0, &amp;cnt);
+    eglChooseConfig(egl_dis, egl_attribs, &amp;cfg, 1, &amp;cnt);
+    egl_surf = eglCreateWindowSurface(egl_dis, cfg, egl_win, NULL);
+    egl_ctx = eglCreateContext(egl_dis, cfg, EGL_NO_CONTEXT, ctx_attribs);
+    eglMakeCurrent(egl_dis, egl_surf, egl_surf, egl_ctx);
+    glClearColor(0.0, 0.0, 0.0, 1.0);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    GLuint vShader = 0;
+    GLuint fShader = 0;
+    GLuint pObject = 0;
+   
+    vShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(vShader, 1, &amp;vShaderSrc, NULL);
+    glCompileShader(vShader);
+   
+    fShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(fShader, 1, &amp;fShaderSrc, NULL);
+    glCompileShader(fShader);
+   
+    pObject = glCreateProgram();
+    glAttachShader(pObject, vShader);
+    glAttachShader(pObject, fShader);
+    glLinkProgram(pObject);
+    glUseProgram(pObject);
+       
+    GLfloat v[] = {
+         0.0f,  0.5f, 0.0f,
+        -0.5f, -0.5f, 0.0f,
+         0.5f, -0.5f, 0.0f
+    };
+
+    GLuint vp = glGetAttribLocation(pObject, "vPosition");
+    glVertexAttribPointer(vp, 3, GL_FLOAT, GL_FALSE, 0, v);
+    glEnableVertexAttribArray(vp);
+ 
+    GLuint vc = glGetUniformLocation(pObject, "vColor");
+    glUniform4f(vc, 1.0f, 0.0f, 0.0f, 1.0f);
+  
+    glViewport(0, 0, LCD_W, LCD_H);
+    glClear(GL_COLOR_BUFFER_BIT);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, v);
+    glEnableVertexAttribArray(0);
+    glDrawArrays(GL_TRIANGLES, 0, 3);
+
+    eglSwapBuffers(egl_dis, egl_surf);
+    usleep(30000000); 
+   
+    xdg_toplevel_destroy(xdg_toplevel);
+    xdg_surface_destroy(xdg_surf);
+    wl_surface_destroy(surf);
+    wl_compositor_destroy(comp);
+    wl_registry_destroy(reg);
+    wl_display_disconnect(dis);
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ /opt/mini/bin/wayland-scanner private-code /opt/mini/arm-buildroot-linux-gnueabihf/sysroot/usr/share/waylandpp/protocols/xdg-shell.xml xdg-shell-protocol.c
+$ /opt/mini/bin/wayland-scanner client-header /opt/mini/arm-buildroot-linux-gnueabihf/sysroot/usr/share/waylandpp/protocols/xdg-shell.xml xdg-shell-client-protocol.h
+$ arm-linux-gnueabihf-gcc main.c xdg-shell-protocol.c -o test -I/opt/mini/include -lwayland-client -lwayland-egl -lEGL -lGLESv2
+</pre><br>
+
+<p>
+執行
+</p>
+<pre>
+# ./test 
+</pre>
+
+<p>
+<img src="gkd-pixel2_wayland_es3_shader/1.jpg" class="maxSize">
+</p>
+
+<br>
+</div>
+
+</div>
+</div>
+</body>
+</html>
