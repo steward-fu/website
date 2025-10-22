@@ -1,0 +1,70 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - LeetCode - C - <b>1268. Search Suggestions System</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://www.cnblogs.com/grandyang/p/15679711.html<br><br>
+
+題目：<br>
+<img src="leetcode_c_1268/1.jpg" class="maxSize"><br><br>
+
+解答：
+</p>
+<pre class="brush:cpp">
+int mysort(const void* a, const void* b)
+{
+    return strcmp(*(char**)a, *(char**)b);
+}
+
+/**
+ * Return an array of arrays of size *returnSize.
+ * The sizes of the arrays are returned as *returnColumnSizes array.
+ * Note: Both returned array and *columnSizes array must be malloced, assume caller calls free().
+ */
+char*** suggestedProducts(char** products, int productsSize, char* searchWord, int* returnSize, int** returnColumnSizes)
+{
+    int i = 0;
+    int j = 0;
+    int len = strlen(searchWord);
+    char ***r = NULL;
+
+    qsort(products, productsSize, sizeof(char**), mysort);
+
+    (*returnSize) = 0;
+    *returnColumnSizes = malloc(sizeof(int) * len);
+
+    r = malloc(sizeof(char**) * len);
+    for (i = 0; i &lt; len; i++) {
+        r[i] = malloc(sizeof(char*) * 3);
+        for (j = 0; j &lt; 3; j++) {
+            r[i][j] = malloc(sizeof(char) * 3000);
+            r[i][j][0] = 0;
+        }
+
+        int cnt = 0;
+        for (j = 0; j &lt; productsSize; j++) {
+            if (strlen(products[j]) &lt; (i + 1)) {
+                continue;
+            }
+
+            if (!memcmp(products[j], searchWord, i + 1)) {
+                strcpy(r[i][cnt], products[j]);
+
+                cnt += 1;
+                if (cnt &gt;= 3) {
+                    break;
+                }
+            }
+        }
+        (*returnSize) += 1;
+        (*returnColumnSizes)[i] = cnt;
+    }
+
+    return r;
+}
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
