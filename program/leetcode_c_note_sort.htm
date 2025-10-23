@@ -6,57 +6,119 @@
 <hr size="1"><br>
 <p>
 參考資訊：<br>
-https://cplusplus.com/reference/cstdlib/qsort/<br><br>
+https://cplusplus.com/reference/cstdlib/qsort/<br>
+https://stackoverflow.com/questions/17202178/c-qsort-with-dynamic-n-by-2-multi-dimensional-array<br><br>
 
 使用C語言刷題時，可以使用qsort()做排序，qsort()預設使用QuickSort演算法，時間複雜度是<b>n*log(n)</b><br><br>
 
 一維陣列用
 </p>
 <pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
 int mysort(const void *a, const void *b)
 {
     return (*(const int *)a - *(const int *)b);
 }
-
+ 
 int main(int argc, char *argv[])
 {
+    int i = 0;
+    int len = 6;
     int buf[] = { 40, 10, 100, 90, 20, 25 };
+ 
+    qsort(buf, len, sizeof(int), mysort);
 
-    qsort(buf, 6, sizeof(buf[0]), mysort);
+    for (i = 0; i &lt; len; i++) {
+        printf("%d\n", buf[i]);
+    }
+
     return 0;
 }
+</pre><br>
+<p>
+排序結果
+</p>
+<pre>
+10
+20
+25
+40
+90
+100
 </pre><br>
 
 <p>
 二維陣列用法
 </p>
 <pre class="brush:cpp">
-int mysort(const void *a, const void *b)
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+int mysort(const void *pa, const void *pb)
 {
-    return ((*(int **)a)[0] - (*(int **)b)[0]);
-}
+    const int** a = (const int**)pa;
+    const int** b = (const int**)pb;
 
-int main(int argc, char **argv)
-{
-    int cc = 0;
-    int **buf = NULL;
-
-    buf = malloc(sizeof(int *) * 3);
-
-    for (cc = 0; cc &lt; 3; cc++) {
-        buf[cc] = malloc(sizeof(int) * 2);
+    if (a[0][0] == b[0][0]) {
+        return a[0][1] - b[0][1];
     }
 
-    buf[0][0] = 5;
+    return a[0][0] - b[0][0];
+}
+ 
+int main(int argc, char *argv[])
+{
+    int i = 0;
+    int len = 6;
+    int **buf = NULL;
+ 
+    buf = malloc(sizeof(int *) * len);
+ 
+    for (i = 0; i &lt; len; i++) {
+        buf[i] = malloc(sizeof(int) * 2);
+    }
+ 
+    buf[0][0] = 1;
     buf[0][1] = 7;
     buf[1][0] = 1;
     buf[1][1] = 3;
-    buf[2][0] = 9;
+    buf[2][0] = 3;
     buf[2][1] = 10;
+    buf[3][0] = 3;
+    buf[3][1] = 100;
+    buf[4][0] = 5;
+    buf[4][1] = 200;
+    buf[5][0] = 5;
+    buf[5][1] = 10;
+ 
+    qsort(buf, len, sizeof(int *), mysort);
 
-    qsort(buf, 3, sizeof(buf[0]), mysort);
+    for (i = 0; i &lt; len; i++) {
+        printf("buf[%d][0]=%d\n", i, buf[i][0]);
+        printf("buf[%d][1]=%d\n", i, buf[i][1]);
+    }
+
     return 0;
 }
+</pre><br>
+<p>
+排序結果
+</p>
+<pre>
+buf[0][0]=1
+buf[0][1]=3
+buf[1][0]=1
+buf[1][1]=7
+buf[2][0]=3
+buf[2][1]=10
+buf[3][0]=3
+buf[3][1]=100
+buf[4][0]=5
+buf[4][1]=10
+buf[5][0]=5
+buf[5][1]=200
 </pre>
 
 <br><script type="text/javascript" src="../tail.js"></script>
