@@ -1,0 +1,34 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - Espressif ESP-32S (NodeMCU-32) - <b>解決Could not open /dev/ttyUSB0問題</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://superuser.com/questions/431843/configure-permissions-for-dev-ttyusb0<br><br>
+
+問題如下：
+</p>
+<pre>
+Serial port /dev/ttyUSB0
+
+A fatal error occurred: Could not open /dev/ttyUSB0, the port is busy or doesn't exist.
+([Errno 13] could not open port /dev/ttyUSB0: [Errno 13] Permission denied: '/dev/ttyUSB0')
+
+Hint: Try to add user into dialout or uucp group.
+
+Failed uploading: uploading error: exit status 2
+</pre><br>
+
+<p>
+解法如下：
+</p>
+<pre>
+$ sudo vim /etc/udev/rules.d/50-embedded_devices.rules
+    KERNEL=="ttyUSB[0-9]*", TAG+="udev-acl", TAG+="uaccess"
+
+$ sudo udevadm trigger
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
