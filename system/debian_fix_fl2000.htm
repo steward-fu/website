@@ -1,0 +1,97 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../system.htm">系統</a> - Debian - <b>解決error: struct mm_struct has no member named mmap_sem; did you mean mmap_base問題</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/FrescoLogic/FL2000/issues/59<br>
+https://github.com/FrescoLogic/FL2000/issues/61<br><br>
+
+問題如下：
+</p>
+<pre>
+make -C /usr/src/linux-headers-6.1.0-39-amd64/ M=/home/steward/FL2000/src modules
+make[1]: Entering directory '/usr/src/linux-headers-6.1.0-39-amd64'
+  CC [M]  /home/steward/FL2000/src/fl2000_surface.o
+/home/steward/FL2000/src/fl2000_surface.c: In function ‘fl2000_surface_pin_down’:
+/home/steward/FL2000/src/fl2000_surface.c:115:47: error: ‘struct mm_struct’ has no member named ‘mmap_sem’; did you mean ‘mmap_base’?
+  115 |                         up_read(&amp;current-&gt;mm-&gt;mmap_sem);
+      |                                               ^~~~~~~~
+      |                                               mmap_base
+/home/steward/FL2000/src/fl2000_surface.c:129:41: error: ‘struct mm_struct’ has no member named ‘mmap_sem’; did you mean ‘mmap_base’?
+  129 |                 down_read(&amp;current-&gt;mm-&gt;mmap_sem);
+      |                                         ^~~~~~~~
+      |                                         mmap_base
+/home/steward/FL2000/src/fl2000_surface.c:144:39: error: ‘struct mm_struct’ has no member named ‘mmap_sem’; did you mean ‘mmap_base’?
+  144 |                 up_read(&amp;current-&gt;mm-&gt;mmap_sem);
+      |                                       ^~~~~~~~
+      |                                       mmap_base
+/home/steward/FL2000/src/fl2000_surface.c: In function ‘fl2000_surface_map’:
+/home/steward/FL2000/src/fl2000_surface.c:228:42: error: too many arguments to function ‘vm_map_ram’
+  228 |                 surface-&gt;mapped_buffer = vm_map_ram(
+      |                                          ^~~~~~~~~~
+In file included from /home/steward/FL2000/src/fl2000_include.h:30,
+                 from /home/steward/FL2000/src/fl2000_surface.c:8:
+/usr/src/linux-headers-6.1.0-39-common/include/linux/vmalloc.h:129:14: note: declared here
+  129 | extern void *vm_map_ram(struct page **pages, unsigned int count, int node);
+      |              ^~~~~~~~~~
+make[2]: *** [/usr/src/linux-headers-6.1.0-39-common/scripts/Makefile.build:255: /home/steward/FL2000/src/fl2000_surface.o] Error 1
+make[1]: *** [/usr/src/linux-headers-6.1.0-39-common/Makefile:2050: /home/steward/FL2000/src] Error 2
+make[1]: Leaving directory '/usr/src/linux-headers-6.1.0-39-amd64'
+make: *** [Makefile:41: all] Error 2
+</pre><br>
+
+<p>
+解法如下：
+</p>
+<pre>
+@@ -106,13 +106,13 @@ int fl2000_surface_pin_down(
+        case SURFACE_TYPE_VIRTUAL_FRAGMENTED_VOLATILE:
+        case SURFACE_TYPE_VIRTUAL_FRAGMENTED_PERSISTENT:
+                while (surface-&gt;pages_pinned != nr_pages) {
+-                       down_read(&amp;current-&gt;mm-&gt;mmap_sem);
++                       down_read(&amp;current-&gt;mm-&gt;mmap_lock);
+                        pages_pinned = fl2000_get_user_pages(
+                                surface-&gt;user_buffer,
+                                nr_pages,
+                                pages,
+                                NULL);
+-                       up_read(&amp;current-&gt;mm-&gt;mmap_sem);
++                       up_read(&amp;current-&gt;mm-&gt;mmap_lock);
+                        if (pages_pinned &lt;= 0) {
+                                dbg_msg(TRACE_LEVEL_ERROR, DBG_PNP,
+                                        "get_user_pages fails with %d\n", pages_pinned);
+@@ -126,7 +126,7 @@ int fl2000_surface_pin_down(
+                break;
+ 
+        case SURFACE_TYPE_VIRTUAL_CONTIGUOUS:
+-               down_read(&amp;current-&gt;mm-&gt;mmap_sem);
++               down_read(&amp;current-&gt;mm-&gt;mmap_lock);
+                /*
+                 * work-around the user memory which is mapped from driver,
+                 * but with VM_IO, VM_PFNMAP flags. This API assumes the mmaped user addr
+@@ -141,7 +141,7 @@ int fl2000_surface_pin_down(
+                        pages,
+                        NULL);
+                vma-&gt;vm_flags = old_flags;
+-               up_read(&amp;current-&gt;mm-&gt;mmap_sem);
++               up_read(&amp;current-&gt;mm-&gt;mmap_lock);
+                if (pages_pinned &lt;= 0) {
+                        dbg_msg(TRACE_LEVEL_ERROR, DBG_PNP,
+                                "get_user_pages fails with %d\n", pages_pinned);
+@@ -228,8 +228,8 @@ int fl2000_surface_map(
+                surface-&gt;mapped_buffer = vm_map_ram(
+                        surface-&gt;pages,
+                        surface-&gt;nr_pages,
+-                       -1,
+-                       PAGE_KERNEL);
++                       -1);//,
++                       //PAGE_KERNEL);
+                if (surface-&gt;mapped_buffer == NULL) {
+                        dbg_msg(TRACE_LEVEL_ERROR, DBG_PNP, "vm_map_ram failed?");
+                        ret_val = -ENOMEM;
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
