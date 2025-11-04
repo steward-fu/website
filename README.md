@@ -20,6 +20,7 @@ All of files or resources used on my website can be found from the following lin
 [![](img/photos/m22pro.jpg)](https://github.com/steward-fu/website/releases/tag/m22pro)
 [![](img/photos/gkd-pixel2.jpg)](https://github.com/steward-fu/website/releases/tag/gkd-pixel2)
 [![](img/photos/gkd-pixel.jpg)](https://github.com/steward-fu/website/releases/tag/gkd-pixel)
+[![](img/photos/gkdmini-plus.jpg)](https://github.com/steward-fu/website/releases/tag/gkd-mini-plus)
 [![](img/photos/psv2000.jpg)](https://github.com/steward-fu/website/releases/tag/psv2000)
 [![](img/photos/pspgo.jpg)](https://github.com/steward-fu/website/releases/tag/pspgo)
 [![](img/photos/caanoo.jpg)](https://github.com/steward-fu/website/releases/tag/caanoo)
