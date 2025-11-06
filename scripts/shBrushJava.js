@@ -22,9 +22,9 @@ typeof(require) != 'undefined' ? SyntaxHighlighter = require('shCore').SyntaxHig
 function Brush()
 {
 var my_constant = 'net.rim.device.api.ui.UiApplication Hello java.awt.Graphics java.applet.Applet net.rim.device.api.ui.component net.rim.device.api.ui.container net.rim.device.api.ui';
-var my_type = 'apache maven plugins KieServices runtime KieSession MyTest KieContainer kie Factory api KieBase org junit Test com sample String Applet Graphics HelloWorld HelloWorldScreen MainScreen LabelField RichTextField System';
+var my_type = 'org slf4j Logger org slf4j LoggerFactory apache maven plugins KieServices runtime KieSession MyTest KieContainer kie Factory api KieBase org junit Test com sample String Applet Graphics HelloWorld HelloWorldScreen MainScreen LabelField RichTextField System';
 var my_keyword = 'extends rule when then end out abstract assert boolean break byte case catch char class onClose exit const continue default do double else enum extends false final finally float for goto if implements import instanceof int interface long native new null package private protected public return short static strictfp super switch synchronized this throw throws true transient try void volatile while';
-var my_function = 'paint drawString main eval println testRules get getKieClasspathContainer getKieBase newKieSession fireAllRules dispose enterEventDispatcher pushScreen setTitle add';
+var my_function = 'getLogger info paint drawString main eval println testRules get getKieClasspathContainer getKieBase newKieSession fireAllRules dispose enterEventDispatcher pushScreen setTitle add';
 
 this.regexList = [
 { regex: SyntaxHighlighter.regexLib.singleLineCComments, css: 'comments' },
