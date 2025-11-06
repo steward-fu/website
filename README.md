@@ -104,6 +104,7 @@ All of files or resources used on my website can be found from the following lin
 [![](img/photos/mxo2.jpg)](https://github.com/steward-fu/website/releases/tag/mxo2)
 [![](img/photos/lichee-tang.jpg)](https://github.com/steward-fu/website/releases/tag/lichee-tang)
 [![](img/photos/lichee-tang-nano.jpg)](https://github.com/steward-fu/website/releases/tag/lichee-tang-nano)
+[![](img/photos/lichee-tang-20k.jpg)](https://github.com/steward-fu/website/releases/tag/lichee-tang-primer-20k)
 [![](img/photos/gd32vf103.jpg)](https://github.com/steward-fu/website/releases/tag/gd32vf103)
 [![](img/photos/cm3354.jpg)](https://github.com/steward-fu/website/releases/tag/cm3354)
 [![](img/photos/cm3352x.jpg)](https://github.com/steward-fu/website/releases/tag/cm3352x)
