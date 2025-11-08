@@ -1,0 +1,58 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../phone.htm">手機</a> - Motorola XT897 - Sailfish OS 3.3.0.16 - <b>Build perf</b></h3>
+<hr size="1"><br>
+<p>
+步驟如下：
+</p>
+<pre>
+$ arm-linux-gnueabihf-gcc --version
+    arm-linux-gnueabihf-gcc (Debian 12.2.0-14) 12.2.0
+
+$ cd
+$ wget https://github.com/steward-fu/website/releases/download/xt897/gcc-4.9.tar.gz
+$ tar xvf gcc-4.9.tar.gz
+$ sudo mv gcc-4.9 /opt
+$ export PATH=/opt/gcc-4.9/bin:$PATH
+$ arm-linux-gnueabihf-gcc -v
+  gcc version 4.9.4 (Linaro GCC 4.9-2017.01)
+
+$ wget https://github.com/steward-fu/website/releases/download/xt897/sailfishos_kernel.tar.gz
+$ tar xvf sailfishos_kernel.tar.gz
+$ cd kernel
+$ vim tools/perf/Makefile +70
+    EXTRA_WARNINGS := -w -Wformat
+
+$ ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- make -C tools/perf
+    builtin-sched.c:396:23: error: storage size of ‘ru’ isn’t known
+      396 |         struct rusage ru;
+          |                       ^~
+    builtin-sched.c:400:25: error: ‘RUSAGE_SELF’ undeclared (first use in this function)
+      400 |         err = getrusage(RUSAGE_SELF, &amp;ru);
+
+$ vim tools/perf/builtin-sched.c +15
+    #include &lt;sys/resource.h&gt;
+
+$ ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- make -C tools/perf
+    arch/arm/util/dwarf-regs.o
+    arch/arm/util/dwarf-regs.c:11:10: fatal error: libio.h: No such file or directory
+       11 | #include &lt;libio.h&gt;
+
+$ vim tools/perf/arch/arm/util/dwarf-regs.c +11
+    #include &lt;stdio.h&gt;
+
+$ ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- make -C tools/perf
+    /usr/lib/gcc-cross/arm-linux-gnueabihf/12/../../../../arm-linux-gnueabihf/bin/ld: builtin-periodic.o:/home/steward/Downloads/kernel/tools/perf/builtin-periodic.c:60: multiple definition of `evsel_list'; builtin-stat.o:/home/steward/Downloads/kernel/tools/perf/builtin-stat.c:174: first defined here
+    collect2: error: ld returned 1 exit status
+
+$ vim tools/perf/builtin-periodic.c +60
+    extern struct perf_evlist *evsel_list;
+
+$ ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- make -C tools/perf
+$ file tools/perf/perf
+    tools/perf/perf: ELF 32-bit LSB pie executable, ARM, EABI5 version 1 (SYSV), dynamically linked, interpreter /lib/ld-linux-armhf.so.3
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
