@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head><script type="text/javascript" src="../page_head.js"></script>
 
-<h3><a href="../program.htm">程式語言</a> - LVGL - SDL v2.0 - <b>MessageBox</b></h3>
+<h3><a href="../program.htm">程式語言</a> - LVGL - SDL v2.0 - <b>Use Font</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
@@ -16,23 +16,31 @@ main.c
 #include &lt;stdio.h&gt;
 #include &lt;stdlib.h&gt;
 #include &lt;unistd.h&gt;
- 
-#include &lt;lvgl.h&gt;
+  
 #include &lt;SDL2/SDL.h&gt;
  
+#include &lt;lvgl.h&gt;
+ 
 static lv_display_t *disp = NULL;
-
+  
 int main(int argc, char *argv[])
 {
     lv_init();
     disp = lv_sdl_window_create(320, 240);
- 
-    lv_obj_t *msg = lv_msgbox_create(NULL);
-    lv_msgbox_add_text(msg, "Hello, world!");
-
+  
+    lv_font_t *font = lv_freetype_font_create("font.ttf", LV_FREETYPE_FONT_RENDER_MODE_BITMAP, 32, LV_FREETYPE_FONT_STYLE_BOLD); 
+  
+    lv_style_t style;
+    lv_style_init(&amp;style);
+    lv_style_set_text_font(&amp;style, font);
+   
+    lv_obj_t *label = lv_label_create(lv_screen_active());
+    lv_obj_add_style(label, &amp;style, 0);
+    lv_label_set_text(label, "中文字型測試");
+  
     lv_timer_handler();
     SDL_Delay(3000);
- 
+  
     return 0;
 }
 </pre><br>
@@ -41,11 +49,11 @@ int main(int argc, char *argv[])
 編譯、執行
 </p>
 <pre>
-$ gcc main.c -o main -I/usr/local/include/lvgl/src -llvgl -lSDL2
+$ gcc main.c -o main -I/usr/include/SDL -I/usr/local/include/lvgl/src -llvgl -lfreetype -lSDL2 -DLV_CONF_SKIP -DLV_USE_FREETYPE -DLV_USE_SDL
 $ ./main
 </pre>
 <p>
-<img style="border:0px" src="lvgl_msgbox/1.jpg" class="maxSize">
+<img style="border:0px" src="lvgl_sdl2_font/1.jpg" class="maxSize">
 </p>
 
 <br><script type="text/javascript" src="../tail.js"></script>
