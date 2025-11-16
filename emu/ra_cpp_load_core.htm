@@ -1,0 +1,185 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../emu.htm">模擬器</a> - RetroArch - <b>Load Core(Template)</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+http://emulation.gametechwiki.com/index.php/Building_RetroArch<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;dlfcn.h&gt;
+
+#include "libretro.h"
+
+typedef void (*retro_run_t)(void);
+typedef void (*retro_init_t)(void);
+typedef void (*retro_deinit_t)(void);
+typedef void (*retro_unload_game_t)(void);
+typedef bool (*retro_load_game_t)(const struct retro_game_info *);
+typedef void (*retro_set_input_poll_t)(retro_input_poll_t);
+typedef void (*retro_set_input_state_t)(retro_input_state_t);
+typedef void (*retro_set_environment_t)(retro_environment_t);
+typedef void (*retro_set_video_refresh_t)(retro_video_refresh_t);
+typedef void (*retro_set_audio_sample_batch_t)(retro_audio_sample_batch_t);
+typedef void (*retro_audio_sample_t)(int16_t, int16_t);
+typedef void (*retro_set_audio_sample_t)(retro_audio_sample_t);
+typedef size_t (*retro_audio_sample_batch_t)(const int16_t *, size_t);
+typedef unsigned (*retro_api_version_t)(void);
+
+static void video_cb(const void *data, unsigned width, unsigned height, size_t pitch)
+{
+}
+
+static size_t audio_batch_cb(const int16_t *data, size_t frames)
+{
+    return frames;
+}
+
+static void audio_sample_cb(int16_t left, int16_t right)
+{
+    int16_t frame[2] = { left, right };
+
+    audio_batch_cb(frame, 1);
+}
+
+static void input_poll_cb(void)
+{
+}
+
+static int16_t input_state_cb(unsigned port, unsigned device, unsigned index, unsigned id)
+{
+    return 0;
+}
+
+static bool env_cb(unsigned cmd, void *data)
+{
+    switch (cmd) {
+    case RETRO_ENVIRONMENT_GET_CAN_DUPE:
+        *((bool *)data) = true;
+        return true;
+    }
+    return true;
+}
+
+static bool load_rom(const char *path, void **data, size_t *size)
+{
+    FILE *fp = fopen(path, "rb");
+
+    if (!fp) {
+        printf("failed to open %s\n", path);
+        return false;
+    }
+
+    fseek(fp, 0, SEEK_END);
+    long len = ftell(fp);
+    fseek(fp, 0, SEEK_SET);
+
+    if (len &lt;= 0) {
+        fclose(fp);
+        return false;
+    }
+
+    void *buf = malloc(len);
+    if (!buf) {
+        fclose(fp);
+        return false;
+    }
+
+    fread(buf, 1, len, fp);
+    fclose(fp);
+
+    *data = buf;
+    *size = len;
+
+    return true;
+}
+
+int main(int argc, char *argv[])
+{
+    const char *rom_path = argv[2];
+    const char *core_path = argv[1];
+
+    retro_run_t retro_run;
+    retro_init_t retro_init;
+    retro_deinit_t retro_deinit;
+    retro_load_game_t retro_load_game;
+    retro_unload_game_t retro_unload_game;
+    retro_api_version_t retro_api_version;
+    retro_set_input_poll_t retro_set_input_poll;
+    retro_set_input_state_t retro_set_input_state;
+    retro_set_environment_t retro_set_environment;
+    retro_set_audio_sample_t retro_set_audio_sample;
+    retro_set_video_refresh_t retro_set_video_refresh;
+    retro_set_audio_sample_batch_t retro_set_audio_sample_batch;
+
+    if (argc != 3) {
+        printf("usage:\n  %s xxx.so xxx.rom\n", argv[0]);
+        return -1;
+    }
+
+    void *handle = dlopen(core_path, RTLD_NOW);
+    if (!handle) {
+        printf("failed to load shared library: %s\n", dlerror());
+        return -1;
+    }
+
+    retro_run = dlsym(handle, "retro_run");
+    retro_init = dlsym(handle, "retro_init");
+    retro_deinit = dlsym(handle, "retro_deinit");
+    retro_load_game = dlsym(handle, "retro_load_game");
+    retro_unload_game = dlsym(handle, "retro_unload_game");
+    retro_api_version = dlsym(handle, "retro_api_version");
+    retro_set_input_poll = dlsym(handle, "retro_set_input_poll");
+    retro_set_input_state = dlsym(handle, "retro_set_input_state");
+    retro_set_environment = dlsym(handle, "retro_set_environment");
+    retro_set_audio_sample = dlsym(handle, "retro_set_audio_sample");
+    retro_set_video_refresh = dlsym(handle, "retro_set_video_refresh");
+    retro_set_audio_sample_batch = dlsym(handle, "retro_set_audio_sample_batch");
+
+    printf("api version: %u\n", retro_api_version());
+
+    retro_set_environment(env_cb);
+    retro_set_video_refresh(video_cb);
+    retro_set_audio_sample(audio_sample_cb);
+    retro_set_audio_sample_batch(audio_batch_cb);
+    retro_set_input_poll(input_poll_cb);
+    retro_set_input_state(input_state_cb);
+    retro_init();
+
+    size_t rom_size = 0;
+    void *rom_data = NULL;
+    if (!load_rom(rom_path, &amp;rom_data, &amp;rom_size)) {
+        return -1;
+    }
+
+    struct retro_game_info info = { 0 };
+    info.path = rom_path;
+    info.data = rom_data;
+    info.size = rom_size;
+
+    if (!retro_load_game(&amp;info)) {
+        printf("failed to do retro_load_game\n");
+        return -1;
+    }
+
+    int running = 1;
+
+    while (running) {
+        retro_run();
+    }
+
+    retro_deinit();
+    dlclose(handle);
+
+    return 0;
+}
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
