@@ -14,31 +14,32 @@ https://www.cnblogs.com/grandyang/p/4650187.html<br><br>
 解答：
 </p>
 <pre class="brush:cpp">
+/**
+ * Note: The returned array must be malloced, assume caller calls free().
+ */
 int* productExceptSelf(int* nums, int numsSize, int* returnSize)
 {
-    int r = 0;
-    int cc = 0;
-    int *frd = malloc(sizeof(int) * numsSize);
-    int *bkd = malloc(sizeof(int) * numsSize);
+    int i = 0;
+    int f[100000] = { 0 };
+    int b[100000] = { 0 };
+    int *r = calloc(numsSize, sizeof(int));
 
-    frd[0] = 1;
-    for (cc = 0; cc &lt; (numsSize - 1); cc++) {
-        frd[cc + 1] = frd[cc] * nums[cc];
+    f[0] = 1;
+    for (i = 0; i &lt; (numsSize - 1); i++) {
+        f[i + 1] = f[i] * nums[i];
     }
-
-    bkd[numsSize - 1] = 1;
-    for (cc = numsSize - 1; cc &gt; 0; cc--) {
-        bkd[cc - 1] = bkd[cc] * nums[cc];
+ 
+    b[numsSize - 1] = 1;
+    for (i = numsSize - 1; i &gt; 0; i--) {
+        b[i - 1] = b[i] * nums[i];
     }
 
     *returnSize = numsSize;
-    for (cc = 0; cc &lt; numsSize; cc++) {
-        nums[cc] = frd[cc] * bkd[cc];
+    for (i = 0; i &lt; numsSize; i++) {
+        r[i] = f[i] * b[i];
     }
-    free(frd);
-    free(bkd);
 
-    return nums;
+    return r;
 }
 </pre>
 
