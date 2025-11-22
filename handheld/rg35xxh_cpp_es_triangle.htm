@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head><script type="text/javascript" src="../page_head.js"></script>
 
-<h3><a href="../index.htm">掌機</a> - Anbernic RG35XX Plus - C/C++ - OpenGL ES 2.0 - <b>Get Version</b></h3>
+<h3><a href="../index.htm">掌機</a> - Anbernic RG35XX H - C/C++ - OpenGL ES 2.0 - <b>Draw Triangle</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
@@ -19,6 +19,23 @@ main.c
 #include &lt;unistd.h&gt;
 #include &lt;EGL/egl.h&gt;
 #include &lt;GLES2/gl2.h&gt;
+
+#define LCD_W 640
+#define LCD_H 480
+
+const char *vShaderSrc =
+    "attribute vec4 vPosition;  \n"
+    "void main()                \n"
+    "{                          \n"
+    "  gl_Position = vPosition; \n"
+    "}                          \n";
+
+const char *fShaderSrc =
+    "precision mediump float;                       \n"
+    "void main()                                    \n"
+    "{                                              \n"
+    "   gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);    \n"
+    "}                                              \n"; 
 
 int main(int argc, char** argv)
 {
@@ -46,7 +63,16 @@ int main(int argc, char** argv)
         EGL_CONTEXT_CLIENT_VERSION, 2,
         EGL_NONE,
     };
- 
+    GLuint vShader = 0;
+    GLuint fShader = 0;
+    GLuint pObject = 0;
+    GLint compiled = 0;
+    GLfloat vVertices[] = {
+         0.0f,  0.5f, 0.0f,
+        -0.5f, -0.5f, 0.0f,
+         0.5f, -0.5f, 0.0f
+    };
+
     display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
     eglInitialize(display, &amp;egl_major, &amp;egl_minor);
     eglChooseConfig(display, config_attribs, &amp;configs, 1, &amp;num_configs);
@@ -54,7 +80,30 @@ int main(int argc, char** argv)
     context = eglCreateContext(display, configs, EGL_NO_CONTEXT, context_attributes);
     eglMakeCurrent(display, surface, surface, context);
 
-    printf("%s\n", glGetString(GL_VERSION));
+    vShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(vShader, 1, &amp;vShaderSrc, NULL);
+    glCompileShader(vShader);
+    glGetShaderiv(vShader, GL_COMPILE_STATUS, &amp;compiled);
+
+    fShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(fShader, 1, &amp;fShaderSrc, NULL);
+    glCompileShader(fShader);
+    glGetShaderiv(fShader, GL_COMPILE_STATUS, &amp;compiled);
+ 
+    pObject = glCreateProgram();
+    glAttachShader(pObject, vShader);
+    glAttachShader(pObject, fShader);
+    glLinkProgram(pObject);
+    glUseProgram(pObject);
+
+    glViewport(0, 0, LCD_W, LCD_H);
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, vVertices);
+    glEnableVertexAttribArray(0);
+    glDrawArrays(GL_TRIANGLES, 0, 3);
+    eglSwapBuffers(display, surface);
+    sleep(3);
 
     eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
     eglDestroyContext(display, context);
@@ -72,11 +121,8 @@ $ /opt/a30/bin/arm-linux-gcc main.c -o test -lGLESv2 -lEGL -ldl
 </pre><br>
 
 <p>
-執行
+完成<br>
+<img src="rg35xxh_cpp_es_triangle/1.jpg" class="maxSize">
 </p>
-<pre>
-# /tmp/test
-    OpenGL ES 3.2 v1.r20p0-01rel0.4a57f57d7ffe96381524b52ac66837db
-</pre>
 
 <br><script type="text/javascript" src="../tail.js"></script>
