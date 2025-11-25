@@ -16,16 +16,16 @@ https://www.cnblogs.com/grandyang/p/5194599.html<br><br>
 <pre class="brush:cpp">
 bool increasingTriplet(int* nums, int numsSize)
 {
-    int cc = 0;
+    int i = 0;
     int m1 = INT_MAX;
     int m2 = INT_MAX;
 
-    for (cc = 0; cc &lt; numsSize; cc++) {
-        if (m1 &gt;= nums[cc]) {
-            m1 = nums[cc];
+    for (i = 0; i &lt; numsSize; i++) {
+        if (m1 &gt;= nums[i]) {
+            m1 = nums[i];
         }
-        else if (m2 &gt;= nums[cc]) {
-            m2 = nums[cc];
+        else if (m2 &gt;= nums[i]) {
+            m2 = nums[i];
         }
         else {
             return true;
@@ -40,32 +40,37 @@ bool increasingTriplet(int* nums, int numsSize)
 解答2：
 </p>
 <pre class="brush:cpp">
-#define min(a, b) a &gt; b ? b : a
-#define max(a, b) a &gt; b ? a : b
+int max(int a, int b)
+{
+    return a &gt; b ? a : b;
+}
+
+int min(int a, int b)
+{
+    return a &lt; b ? a : b;
+}
 
 bool increasingTriplet(int* nums, int numsSize)
 {
-    int cc = 0;
-    int *r_min = malloc(sizeof(int) * numsSize);
-    int *r_max = malloc(sizeof(int) * numsSize);
+    int i = 0;
+    int vmax[500000] = { 0 };
+    int vmin[500000] = { 0 };
 
-    r_min[0] = nums[0];
-    for (cc = 0; cc &lt; (numsSize - 1); cc++) {
-        r_min[cc + 1] = min(r_min[cc], nums[cc]);
+    vmin[0] = nums[0];
+    for (i = 0; i &lt; numsSize - 1; i++) {
+        vmin[i + 1] = min(nums[i], vmin[i]);
     }
 
-    r_max[numsSize - 1] = nums[numsSize - 1];
-    for (cc = numsSize - 1; cc &gt; 0; cc--) {
-        r_max[cc - 1] = max(r_max[cc], nums[cc]);
+    vmax[numsSize - 1] = nums[numsSize - 1];
+    for (i = numsSize - 1; i &gt; 0; i--) {
+        vmax[i - 1] = max(nums[i], vmax[i]);
     }
 
-    for (cc = 0; cc &lt; numsSize; cc++) {
-        if ((nums[cc] &gt; r_min[cc]) &amp;&amp; (nums[cc] &lt; r_max[cc])) {
+    for (i = 0; i &lt; numsSize; i++) {
+        if ((nums[i] &gt; vmin[i]) &amp;&amp; (nums[i] &lt; vmax[i])) {
             return true;
         }
     }
-    free(r_min);
-    free(r_max);
 
     return false;
 }
