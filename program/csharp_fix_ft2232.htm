@@ -1,0 +1,58 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - C# - <b>解決FT2232 Init_libMPSSE Hang問題</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://ftdichip.com/drivers/d2xx-drivers/<br>
+https://ftdichip.com/software-examples/mpsse-projects/libmpsse-spi-examples/<br><br>
+
+程式碼
+</p>
+<pre class="brush:csharp">
+private void Main_Form_Load(object sender, EventArgs e)
+{
+    myFTDI.Init_libMPSSE();
+}
+</pre><br>
+
+<p>
+問題如下：
+</p>
+<pre>
+進入Init_libMPSSE()後，程式無法往下繼續執行
+</pre><br>
+
+<p>
+解法如下：<br>
+1. 下載LibMPSSE Source V0.6(libMPSSE_Source.zip)<br>
+2. 開啟libMPSSE__0-6_Source\LibMPSSE\Build\Windows\VisualStudio\libMPSSE.sln<br>
+3. 將libMPSSE_DynamicLibrary設定成啟動專案<br>
+<img src="csharp_fix_ft2232/1.jpg" class="maxSize"><br><br>
+
+4. 由於原始的專案是使用x86平台編譯，因此，將libMPSSE_DynamicLibrary設定成一樣的平台，方便除錯<br>
+<img src="csharp_fix_ft2232/2.jpg" class="maxSize"><br><br>
+
+5. 設定輸出路徑為Debug<br>
+<img src="csharp_fix_ft2232/3.jpg" class="maxSize"><br><br>
+
+6. 複製測試執行檔案到libMPSSE__0-6_Source\LibMPSSE\Build\Windows\VisualStudio\libMPSSE_DynamicLibrary\Debug下<br>
+<img src="csharp_fix_ft2232/4.jpg" class="maxSize"><br><br>
+
+7. 設定啟動程式<br>
+<img src="csharp_fix_ft2232/5.jpg" class="maxSize"><br><br>
+
+8. 設定斷點並且按下F5執行，就可以發現問題出在ftd2xx.dll<br>
+<img src="csharp_fix_ft2232/6.jpg" class="maxSize"><br>
+<img src="csharp_fix_ft2232/7.jpg" class="maxSize"><br><br>
+
+9. 回到原本專案查看，才發現沒有加入ftd2xx.dll<br>
+<img src="csharp_fix_ft2232/8.jpg" class="maxSize"><br><br>
+
+10. 只要將ftd2xx.dll加入專案並且設成一律複製即可解決卡住問題<br>
+<img src="csharp_fix_ft2232/9.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
