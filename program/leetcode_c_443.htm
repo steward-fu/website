@@ -13,47 +13,32 @@
 <pre class="brush:cpp">
 int compress(char* chars, int charsSize)
 {
-    int cc = 0;
-    int len = 0;
-    char ch = 0;
-    char *r = NULL;
-    char buf[32] = { 0 };
+    int i = 0;
+    int cnt = 1;
+    char ch = chars[0];
+    char tmp[32] = { 0 };
+    char *buf = calloc(2000, 1);
 
-    if (charsSize == 1) {
-        return 1;
-    }
-
-    r = malloc(2000 * 2);
-    r[0] = 0;
-
-    len = 1;
-    ch = chars[0];
-    for (cc = 1; cc &lt; charsSize; cc++) {
-        if (ch == (char)chars[cc]) {
-            len += 1;
+    for (i = 1; i &lt; charsSize; i++) {
+        if (ch == (char)chars[i]) {
+            cnt += 1;
+            continue;
         }
-        else {
-            sprintf(buf, (len == 1) ? "%c" : "%c%d", ch, len);
-            strcat(r, buf);
 
-            len = 1;
-            ch = chars[cc];
-        }
+        sprintf(tmp, cnt &gt; 1 ? "%c%d" : "%c", ch, cnt, ch);
+        strcat(buf, tmp);
+
+        cnt = 1;
+        ch = chars[i];
     }
 
-    sprintf(buf, (len == 1) ? "%c" : "%c%d", ch, len);
-    strcat(r, buf);
+    sprintf(tmp, cnt &gt; 1 ? "%c%d" : "%c", ch, cnt, ch);
+    strcat(buf, tmp);
 
-#if 1
-    len = strlen(r);
-    for (cc = 0; cc &lt; len; cc++) {
-        chars[cc] = r[cc];
-    }
-    return len;
-#else
-    strcpy(chars, r);
-    return strlen(chars);
-#endif
+    cnt = strlen(buf);
+    memmove(chars, buf, cnt);
+
+    return cnt;
 }
 </pre>
 
