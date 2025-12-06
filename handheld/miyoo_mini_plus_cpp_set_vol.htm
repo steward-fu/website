@@ -24,41 +24,41 @@ main.c
 #include &lt;sys/time.h&gt;
 #include &lt;syslog.h&gt;
 #include &lt;linux/input.h&gt;
-
+ 
 #include "mi_ao.h"
 #include "mi_sys.h"
 #include "mi_common_datatype.h"
-
+ 
 #define SND_DEV             "/dev/mi_ao"
 #define MIN_RAW_VALUE       -60
 #define MAX_RAW_VALUE       30
 #define MI_AO_SETVOLUME     0x4008690b
 #define MI_AO_GETVOLUME     0xc008690c
 #define MI_AO_SETMUTE       0x4008690d
-
+ 
 static int set_vol(int vol)
 {
     int fd = -1;
     int pre_val = 0;
     int val[2] = { 0 };
     uint64_t buf[] = { sizeof(val), (uintptr_t)val };
-
+ 
     fd = open(SND_DEV, O_RDWR);
     if (fd &lt; 0) {
         printf("failed to open \"%s\"\n", SND_DEV);
         return 0;
     }
-
+ 
     if (vol &gt; MAX_RAW_VALUE) {
         vol = MAX_RAW_VALUE;
     }
     else if (vol &lt; MIN_RAW_VALUE) {
         vol = MIN_RAW_VALUE;
     }
-
+ 
     ioctl(fd, MI_AO_GETVOLUME, buf);
     pre_val = val[1];
-
+ 
     val[1] = vol;
     ioctl(fd, MI_AO_SETVOLUME, buf);
     if ((pre_val &lt;= MIN_RAW_VALUE) &amp;&amp; (vol &gt; MIN_RAW_VALUE)) {
@@ -70,23 +70,32 @@ static int set_vol(int vol)
         ioctl(fd, MI_AO_SETMUTE, buf);
     }
     close(fd);
-
+ 
     return vol;
 }
-
+ 
 int main(int argc, char *argv[])
 {
     int fd = -1;
-    int vol = -10;
+    int fvol = -1;
+    int vol = -20;
     struct input_event ev = {0};
-  
+    const char *VOL_CFG = "vol.cfg";
+   
     fd = open("/dev/input/event0", O_RDONLY | O_NONBLOCK | O_CLOEXEC);
     if (fd &lt; 0) {
         printf("failed to open event0\n");
         return -1;
     }
 
+    fvol = open(VOL_CFG, O_RDONLY); 
+    if (fvol &gt; 0) {
+        read(fvol, &amp;vol, sizeof(int));
+        close(fvol);
+    }
+ 
     set_vol(vol);
+
     while (read(fd, &amp;ev, sizeof(struct input_event))) {
         if (ev.type == EV_KEY) {
             if ((ev.code == 115) &amp;&amp; (ev.value == 1)) {
@@ -101,6 +110,12 @@ int main(int argc, char *argv[])
     }
     close(fd);
 
+    fvol = open(VOL_CFG, O_CREAT | O_WRONLY, 0644); 
+    if (fvol &gt; 0) {
+        write(fvol, &amp;vol, sizeof(int));
+        close(fvol);
+    }
+ 
     return 0;
 }
 </pre>
