@@ -14,24 +14,41 @@
 class Solution {
 public:
     vector&lt;vector&lt;int&gt;&gt; findDifference(vector&lt;int&gt;&amp; nums1, vector&lt;int&gt;&amp; nums2) {
-        std::set&lt;int&gt; n1;
-        std::set&lt;int&gt; n2;
-        std::vector&lt;std::vector&lt;int&gt;&gt; r;
+        #define OFFSET   1000
+        #define MAX_SIZE 2001
 
-        for (std::vector&lt;int&gt;::iterator it=nums1.begin(); it != nums1.end(); it++) {
-            if (std::find(nums2.begin(), nums2.end(), *it) == nums2.end()) {
-                n1.insert(*it);
-            }
+        int i = 0;
+        vector&lt;int&gt; s1(MAX_SIZE, 0);
+        vector&lt;int&gt; s2(MAX_SIZE, 0);
+
+        for (i = 0; i &lt; nums1.size(); i++) {
+            s1[nums1[i] + OFFSET] += 1;
         }
 
-        for (std::vector&lt;int&gt;::iterator it=nums2.begin(); it != nums2.end(); it++) {
-            if (std::find(nums1.begin(), nums1.end(), *it) == nums1.end()) {
-                n2.insert(*it);
-            }
+        for (i = 0; i &lt; nums2.size(); i++) {
+            s2[nums2[i] + OFFSET] += 1;
         }
 
-        r.push_back(std::vector&lt;int&gt;(n1.begin(), n1.end()));
-        r.push_back(std::vector&lt;int&gt;(n2.begin(), n2.end()));
+        vector&lt;int&gt; t;
+        vector&lt;vector&lt;int&gt;&gt; r;
+
+        for (i = 0; i &lt; nums1.size(); i++) {
+            if (s2[nums1[i] + OFFSET] == 0) {
+                s2[nums1[i] + OFFSET] += 1;
+                t.push_back(nums1[i]);
+            }
+        }
+        r.push_back(t);
+
+        t.clear();
+        for (i = 0; i &lt; nums2.size(); i++) {
+            if (s1[nums2[i] + OFFSET] == 0) {
+                s1[nums2[i] + OFFSET] += 1;
+                t.push_back(nums2[i]);
+            }
+        }
+        r.push_back(t);
+
         return r;
     }
 };
