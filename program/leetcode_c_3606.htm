@@ -1,0 +1,109 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - LeetCode - C - <b>3606. Coupon Code Validator</b></h3>
+<hr size="1"><br>
+<p>
+題目：<br>
+<img src="leetcode_c_3606/1.jpg" class="maxSize"><br><br>
+
+解答：
+</p>
+<pre class="brush:cpp">
+bool is_valid_code(const char *p)
+{
+    int i = 0;
+    int len = strlen(p);
+
+    for (i = 0; i &lt; len; i++) {
+        if ((p[i] &gt;= 'a' &amp;&amp; p[i] &lt;= 'z') ||
+            (p[i] &gt;= 'A' &amp;&amp; p[i] &lt;= 'Z') ||
+            (p[i] &gt;= '0' &amp;&amp; p[i] &lt;= '9') ||
+            (p[i] == '_'))
+        {
+            continue;
+        }
+
+        return false;
+    }
+
+    return true;
+}
+
+int business_index(const char *p)
+{
+    int i = 0;
+    const char *cat[] = { "electronics", "grocery", "pharmacy", "restaurant", NULL };
+
+    for (i = 0; cat[i]; i++) {
+        if (!strcmp(p, cat[i])) {
+            return i;
+        }
+    }
+
+    return -1;
+}
+
+int mysort(const void *a, const void *b)
+{
+    return strcmp(*(const char **)a, *(const char **)b);
+}
+
+/**
+ * Note: The returned array must be malloced, assume caller calls free().
+ */
+char** validateCoupons(char** code, int codeSize, char** businessLine, int businessLineSize, bool* isActive, int isActiveSize, int* returnSize)
+{
+    int i = 0;
+    int j = 0;
+    int cnt[4] = { 0 };
+    char **t[4] = { 0 };
+    char **r = calloc(codeSize, sizeof(char *));
+
+    for (i = 0; i &lt; 4; i++) {
+        t[i] = calloc(codeSize + 1, sizeof(char *));
+    }
+
+    for (i = 0; i &lt; codeSize; i++) {
+        int idx = 0;
+
+        if (code[i][0] == 0) {
+            continue;
+        }
+
+        if (isActive[i] == false) {
+            continue;
+        }
+
+        if (is_valid_code(code[i]) == false) {
+            continue;
+        }
+
+        idx = business_index(businessLine[i]);
+        if (idx &lt; 0) {
+            continue;
+        }
+
+        t[idx][cnt[idx]] = calloc(sizeof(char), strlen(code[i]) + 1);
+        strcpy(t[idx][cnt[idx]], code[i]);
+        cnt[idx] += 1;
+    }
+
+    *returnSize = 0;
+    for (i = 0; i &lt; 4; i++) {
+        if (cnt[i] == 0) {
+            continue;
+        }
+
+        qsort(t[i], cnt[i], sizeof(char *), mysort);
+        for (j = 0; t[i][j]; j++) {
+            r[(*returnSize)++] = t[i][j];
+        }
+    }
+
+    return r;
+}
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
