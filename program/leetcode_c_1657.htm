@@ -21,34 +21,35 @@ int mysort(const void *a, const void *b)
 
 bool closeStrings(char* word1, char* word2)
 {
-    int cc = 0;
-    int cnt[2][26] = { 0 };
-    int w1_len = strlen(word1);
-    int w2_len = strlen(word2);
+    int i = 0;
+    int w1len = strlen(word1);
+    int w2len = strlen(word2);
+    int w1cnt[26] = { 0 };
+    int w2cnt[26] = { 0 };
 
-    for (cc = 0; cc &lt; w1_len; cc++) {
-        cnt[0][word1[cc] - 'a'] += 1;
+    for (i = 0; i &lt; w1len; i++) {
+        w1cnt[word1[i] -'a'] += 1;
     }
 
-    for (cc = 0; cc &lt; w2_len; cc++) {
-        cnt[1][word2[cc] - 'a'] += 1;
+    for (i = 0; i &lt; w2len; i++) {
+        w2cnt[word2[i] - 'a'] += 1;
     }
 
-    for (cc = 0; cc &lt; 26; cc++) {
-        if ((cnt[0][cc] &gt; 0) &amp;&amp; (cnt[1][cc] == 0)) {
+    for (i = 0; i &lt; 26; i++) {
+        if ((w1cnt[i] &gt; 0) &amp;&amp; (w2cnt[i] == 0)) {
             return false;
         }
-        
-        if ((cnt[1][cc] &gt; 0) &amp;&amp; (cnt[0][cc] == 0)) {
+
+        if ((w2cnt[i] &gt; 0) &amp;&amp; (w1cnt[i] == 0)) {
             return false;
         }
     }
 
-    qsort(&amp;cnt[0][0], 26, sizeof(int), mysort);
-    qsort(&amp;cnt[1][0], 26, sizeof(int), mysort);
+    qsort(w1cnt, 26, sizeof(int), mysort);
+    qsort(w2cnt, 26, sizeof(int), mysort);
 
-    for (cc = 0; cc &lt; 26; cc++) {
-        if (cnt[0][cc] != cnt[1][cc]) {
+    for (i = 0; i &lt; 26; i++) {
+        if (w1cnt[i] != w2cnt[i]) {
             return false;
         }
     }

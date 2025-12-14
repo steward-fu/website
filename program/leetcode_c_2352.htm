@@ -16,47 +16,30 @@ https://www.cnblogs.com/cnoodle/p/17459451.html<br><br>
 <pre class="brush:cpp">
 int equalPairs(int** grid, int gridSize, int* gridColSize)
 {
+    int i = 0;
+    int j = 0;
     int r = 0;
-    int c0 = 0;
-    int c1 = 0;
-    char **row = NULL;
-    char **col = NULL;
-    char buf[8] = { 0 };
+    char col[200][100000] = { 0 };
+    char row[200][100000] = { 0 };
+    char buf[32] = { 0 };
 
-    row = malloc(sizeof(char *) * gridSize);
-    col = malloc(sizeof(char *) * gridSize);
-    for (c0 = 0; c0 &lt; gridSize; c0++) {
-        row[c0] = malloc(sizeof(char) * gridSize * 8);
-        col[c0] = malloc(sizeof(char) * gridSize * 8);
+    for (i = 0; i &lt; gridSize; i++) {
+        for (j = 0; j &lt; gridSize; j++) {
+            sprintf(buf, "%d,", grid[i][j]);
+            strcat(col[i], buf);
 
-        row[c0][0] = 0;
-        col[c0][0] = 0;
-    }
-
-    for (c0 = 0; c0 &lt; gridSize; c0++) {
-        for (c1 = 0; c1 &lt; gridSize; c1++) {
-            sprintf(buf, "%x", grid[c0][c1]);
-            strcat(row[c0], buf);
-
-            sprintf(buf, "%x", grid[c1][c0]);
-            strcat(col[c0], buf);
+            sprintf(buf, "%d,", grid[j][i]);
+            strcat(row[i], buf);
         }
     }
 
-    for (c0 = 0; c0 &lt; gridSize; c0++) {
-        for (c1 = 0; c1 &lt; gridSize; c1++) {
-            if (!strcmp(col[c0], row[c1])) {
+    for (i = 0; i &lt; gridSize; i++) {
+        for (j = 0; j &lt; gridSize; j++) {
+            if (!strcmp(col[i], row[j])) {
                 r += 1;
             }
         }
     }
-
-    for (c0 = 0; c0 &lt; gridSize; c0++) {
-        free(row[c0]);
-        free(col[c0]);
-    }
-    free(row);
-    free(col);
 
     return r;
 }
