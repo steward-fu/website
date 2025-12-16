@@ -14,26 +14,29 @@ https://www.cnblogs.com/grandyang/p/8035551.html<br><br>
 解答：
 </p>
 <pre class="brush:cpp">
+/**
+ * Note: The returned array must be malloced, assume caller calls free().
+ */
 int* asteroidCollision(int* asteroids, int asteroidsSize, int* returnSize)
 {
-    int cc = 0;
+    int i = 0;
     int idx = 0;
-    int *r = malloc(sizeof(int) * asteroidsSize);
+    int *r = calloc(10000, sizeof(int));
 
-    for (cc = 0; cc &lt; asteroidsSize; cc++) {
-        if (asteroids[cc] &gt; 0) {
-            r[idx++] = asteroids[cc];
+    for (i = 0; i &lt; asteroidsSize; i++) {
+        if (asteroids[i] &gt; 0) {
+            r[idx++] = asteroids[i];
             continue;
         }
 
         if ((idx == 0) || (r[idx - 1] &lt; 0)) {
-            r[idx++] = asteroids[cc];
+            r[idx++] = asteroids[i];
             continue;
         }
 
-        if (r[idx - 1] &lt;= abs(asteroids[cc])) {
-            if (r[idx - 1] &lt; abs(asteroids[cc])) {
-                cc -= 1;
+        if (abs(asteroids[i]) &gt;= r[idx - 1]) {
+            if (abs(asteroids[i]) &gt; r[idx - 1]) {
+                i -= 1;
             }
             idx -= 1;
         }
