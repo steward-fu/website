@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head><script type="text/javascript" src="../page_head.js"></script>
 
-<h3><a href="../program.htm">程式語言</a> - X Window (X11) - C/C++ - <b>Hello, world!</b></h3>
+<h3><a href="../program.htm">程式語言</a> - X Window (X11) - C/C++ - <b>Draw Line</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
@@ -15,11 +15,15 @@ main.c
 #include &lt;unistd.h&gt;
 #include &lt;stdlib.h&gt;
 #include &lt;X11/Xlib.h&gt;
-
+ 
 int main(int argc, char *argv[])
 {
+    GC gc = 0;
     Window win = 0;
+    XColor xcolour = { 0 };
     Display *display = NULL;
+    XPoint pt[3] = { {50, 50}, {10, 70}, {90, 90} };
+    XSegment sg[1] = { { 10, 200, 300, 200} };
 
     display = XOpenDisplay(NULL);
     win = XCreateSimpleWindow(
@@ -32,17 +36,24 @@ int main(int argc, char *argv[])
         0,
         0,
         0);
-
-    XStoreName(display, win, "Hello, world!");
+ 
+    XStoreName(display, win, "main");
+    gc = XCreateGC(display, win, 0, NULL);
     XMapWindow(display, win);
-
+    XFlush(display);
+    usleep(20000);
+ 
+    XSetForeground(display, gc, 0xff0000);
+    XDrawLine(display, win, gc, 10, 10, 100, 10);
+    XDrawLines(display, win, gc, pt, 3, CoordModeOrigin);
+    XDrawSegments(display, win, gc, sg, 1);
     XFlush(display);
     usleep(3000000);
-
+ 
     XUnmapWindow(display, win);
     XDestroyWindow(display, win);
     XCloseDisplay(display);
-
+ 
     return 0;
 }
 </pre><br>
@@ -55,7 +66,7 @@ $ gcc main.c -o main -lX11
 $ ./main
 </pre>
 <p>
-<img src="x11_cpp_hello/1.jpg" class="maxSize">
+<img src="x11_cpp_draw_line/1.jpg" class="maxSize">
 </p>
 
 <br><script type="text/javascript" src="../tail.js"></script>
