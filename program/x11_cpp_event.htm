@@ -1,0 +1,86 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - X Window (X11) - C/C++ - <b>Handle Event</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/QMonkey/Xlib-demo<br>
+https://people.scs.carleton.ca/~claurend/Courses/COMP2401/Notes/COMP2401_Ch8_Graphics.pdf<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;X11/Xlib.h&gt;
+  
+int main(int argc, char *argv[])
+{
+    GC gc = 0;
+    Window win = 0;
+    XColor xcolour = { 0 };
+    Display *display = NULL;
+    XPoint pt[3] = { {10, 10}, {110, 110}, {210, 10} };
+ 
+    display = XOpenDisplay(NULL);
+    win = XCreateSimpleWindow(
+        display,
+        RootWindow(display, 0),
+        0,
+        0,
+        320,
+        240,
+        0,
+        0,
+        0xffffff);
+  
+    XStoreName(display, win, "main");
+    XSelectInput(display, win, ExposureMask | KeyPressMask | KeyReleaseMask);
+    gc = XCreateGC(display, win, 0, NULL);
+    XMapWindow(display, win);
+    XFlush(display);
+    usleep(100000);
+
+    int key = 0;
+    XEvent event = { 0 }; 
+    while(1) {
+        XNextEvent(display, &amp;event);
+
+        switch(event.type) {
+        case Expose:
+            printf("window exposed\n");
+            break;
+        case KeyPress:
+            key = event.xkey.keycode;
+            printf("key pressed: %d\n", key);
+            break;
+        case KeyRelease:
+            key = event.xkey.keycode;
+            printf("key released: %d\n", key);
+        break;
+        }
+    }
+ 
+    XUnmapWindow(display, win);
+    XDestroyWindow(display, win);
+    XCloseDisplay(display);
+  
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯、測試
+</p>
+<pre>
+$ gcc main.c -o main -lX11
+$ ./main
+    window exposed
+    key pressed: 38
+    key released: 38
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
