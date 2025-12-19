@@ -1,0 +1,54 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../system.htm">系統</a> - Debian - QEMU - <b>如何在Windows 95透過FTP與QEMU傳輸檔案</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://wiki.qemu.org/Documentation/GuestOperatingSystems/Windows95<br>
+https://alberand.com/host-only-networking-set-up-for-qemu-hypervisor.html<br><br>
+
+設定HOST網卡
+</p>
+<pre>
+$ sudo ip link add br0 type bridge
+$ sudo ip addr flush dev br0
+$ sudo ip addr add 192.168.100.50/24 brd 192.168.100.255 dev br0
+$ sudo ip tuntap add mode tap user $(whoami)
+$ ip tuntap show
+
+$ sudo ip link set tap0 master br0
+$ sudo ip link set dev br0 up
+$ sudo ip link set dev tap0 up
+$ sudo dnsmasq --interface=br0 --bind-interfaces --dhcp-range=192.168.100.50,192.168.100.254
+</pre><br>
+
+<p>
+QEMU
+</p>
+<pre>
+$ qemu-system-i386 -m 128 win95.qcow2 -fdb floppy.img -vga cirrus -device ne2k_isa,netdev=win95net0 -netdev tap,id=win95net0,ifname=tap0,script=no,downscript=no -cdrom cdrom.iso
+</pre><br>
+
+<p>
+workgroup<br>
+<img src="debian_qemu_win95_ftp/1.jpg" class="maxSize"><br><br>
+
+新增TCP/IP<br>
+<img src="debian_qemu_win95_ftp/2.jpg" class="maxSize"><br><br>
+
+手動設定IP<br>
+<img src="debian_qemu_win95_ftp/3.jpg" class="maxSize"><br><br>
+
+IRQ改成9<br>
+<img src="debian_qemu_win95_ftp/4.jpg" class="maxSize"><br><br>
+
+ping<br>
+<img src="debian_qemu_win95_ftp/5.jpg" class="maxSize"><br><br>
+
+完成<br>
+<img src="debian_qemu_win95_ftp/6.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
