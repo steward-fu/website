@@ -1,0 +1,84 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../system.htm">系統</a> - Debian - QEMU - <b>如何在Windows 95透過SAMBA與QEMU傳輸檔案</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://bbs.archlinux.org/viewtopic.php?id=227970<br>
+https://gist.github.com/tinue/9d9ce9c09e9e771169b27f6d0e859c4e<br>
+https://wiki.qemu.org/Documentation/GuestOperatingSystems/Windows95<br>
+https://alberand.com/host-only-networking-set-up-for-qemu-hypervisor.html<br><br>
+
+設定網路
+</p>
+<pre>
+$ sudo vim /etc/samba/smb.conf
+    [global]
+       workgroup = WORKGROUP
+       netbios name = Linux
+       log file = /var/log/samba/log.%m
+       max log size = 1000
+       logging = file
+       server string = File server for debian clients
+       security = user
+       ntlm auth = ntlmv1-permitted
+       server min protocol = LANMAN1
+       lanman auth = Yes
+       client lanman auth = Yes
+       client plaintext auth = Yes
+       map to guest = Bad User
+       guest account = nobody
+
+    [debian]
+       comment = Shared data for guests
+       path = /tmp
+       writable = yes
+       printable = no
+       force user = steward
+       create mask = 0644
+       directory mask = 0755
+       public = yes
+       guest ok = yes
+
+$ sudo ip link add name br0 type bridge
+$ sudo ip addr add 192.168.20.1/24 dev br0
+$ sudo ip link set br0 up
+
+$ sudo chmod u+s /usr/lib/qemu/qemu-bridge-helper
+$ sudo vim /etc/qemu/bridge.conf
+    allow br0
+
+$ sudo service nmbd restart
+$ sudo service nmbd status
+</pre><br>
+
+<p>
+QEMU
+</p>
+<pre>
+$ qemu-system-i386 -m 64 win95.qcow2 -vga cirrus -cdrom win95_osr2.iso -device ne2k_isa,netdev=net0 -netdev bridge,id=net0,br=br0 -net user,smb=/tmp
+</pre><br>
+
+<p>
+user登入<br>
+<img src="debian_qemu_win95_samba/1.jpg" class="maxSize"><br><br>
+
+NE2000 Compatible、TCP/IP、File and printer sharing for Microsoft Networks<br>
+<img src="debian_qemu_win95_samba/2.jpg" class="maxSize"><br><br>
+
+IP<br>
+<img src="debian_qemu_win95_samba/3.jpg" class="maxSize"><br><br>
+
+Sharing Settings<br>
+<img src="debian_qemu_win95_samba/4.jpg" class="maxSize"><br><br>
+
+IRQ 9<br>
+<img src="debian_qemu_win95_samba/5.jpg" class="maxSize"><br><br>
+
+桌面 =&gt; Network =&gt; Linux =&gt; debian<br>
+<img src="debian_qemu_win95_samba/6.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
