@@ -1,0 +1,33 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../system.htm">系統</a> - Debian - QEMU - <b>安裝Windows CE 7.0</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/Milek7/wince-qemu<br>
+https://archive.org/download/windows-ce-disk-images/<br>
+https://www.reddit.com/r/wceload/comments/uxnul7/windows_ce_images_vhds/<br><br>
+
+步驟如下：
+</p>
+<pre>
+$ cd
+$ wget https://github.com/steward-fu/website/releases/download/wdm/NK.bin.load-0x800010c0.raw
+$ wget https://github.com/steward-fu/website/releases/download/wdm/wince7.vhd
+$ qemu-system-arm \
+    -global virtio-mmio.force-legacy=false \
+    -machine type=vexpress-a15 \
+    -m 256 \
+    -device loader,addr=0x80000000,file=NK.bin.load-0x800010c0.raw \
+    -device loader,addr=0x800010c0,cpu-num=0 \
+    -device virtio-tablet-device \
+    -blockdev driver=file,filename=wince7.vhd,node-name=d0 \
+    -device virtio-blk-device,drive=d0
+</pre>
+<p>
+<img src="debian_qemu_wince7/1.jpg" class="maxSize"><br><br>
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
