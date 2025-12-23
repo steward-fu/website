@@ -5,7 +5,7 @@
 <h3><a href="../program.htm">程式語言</a> - Wine - Assembly (ARM 32) - <b>head.inc</b></h3>
 <hr size="1"><br>
 <pre class="brush:asm">
-global WinMain
+.global WinMain
 
 .extern CreateWindowExA
 .extern MessageBoxA
@@ -16,6 +16,7 @@ global WinMain
 .extern SetWindowLongA
 .extern DefWindowProcA
 .extern RegisterClassA
+.extern SetWindowTextA
 
 .equiv GWL_WNDPROC, -4
 .equiv WC_DIALOG, 0x8002
@@ -38,7 +39,6 @@ global WinMain
 .equiv WS_EX_LEFT, 0x00000000
 .equiv WS_OVERLAPPEDWINDOW, (WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX)
 
-WNDCLASS_SIZE: .word wndClass_end - wndClass
 .equiv WNDCLASS.style, 0
 .equiv WNDCLASS.lpfnWndProc, 4
 .equiv WNDCLASS.cbClsExtra, 8
@@ -49,6 +49,27 @@ WNDCLASS_SIZE: .word wndClass_end - wndClass
 .equiv WNDCLASS.hbrBackground, 28
 .equiv WNDCLASS.lpszMenuName, 32
 .equiv WNDCLASS.lpszClassName, 36
+
+    .data
+hWin: .skip 4
+szMsg: .skip 28
+szAppName: .asciz "main"
+pDefWndProc: .skip 4
+pBuf: .space 128
+FMT_KBD: .asciz "Key: %d"
+wndClass:
+    .space 4   @ style
+    .space 4   @ lpfnWndProc
+    .space 4   @ cbClsExtra
+    .space 4   @ cbWndExtra
+    .space 4   @ hInstance
+    .space 4   @ hIcon
+    .space 4   @ hCursor
+    .space 4   @ hbrBackground
+    .space 4   @ lpszMenuName
+    .space 4   @ lpszClassName
+wndClass_end:
+WNDCLASS_SIZE: .word wndClass_end - wndClass
 </pre>
 
 <br><script type="text/javascript" src="../tail.js"></script>

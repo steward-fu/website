@@ -2,16 +2,19 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head><script type="text/javascript" src="../page_head.js"></script>
 
-<h3><a href="../program.htm">程式語言</a> - Wine - Assembly (ARM 32) - Dialog - <b>Handle Event</b></h3>
+<h3><a href="../program.htm">程式語言</a> - Wine - Assembly (ARM 32) - Single Document Interface (SDI) - <b>Handle Event</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
-http://www.winprog.org/tutorial/start.html<br>
-https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-messagebox<br><br>
+http://www.winprog.org/tutorial/<br>
+http://winapi.freetechsecrets.com/win32/<br>
+https://github.com/gammasoft71/Examples_Win32<br>
+http://masm32.com/board/index.php?topic=3584.0<br>
+https://learn.microsoft.com/en-us/windows/win32/winmsg/window-styles<br><br>
 
-一般在建立Windows視窗時，會註冊自定義的Class並且設定事件處理的副程式(callback)，不過，目前範例使用的Class是系統預設的WC_DIALOG，因此，可以透過SetWindowLong()設定callback，這種替換callback的行為就稱為Subclass，意指為原本Class的Subclass，所以Subclass後，需要將原先callback的位址(SetWindowLong()的回傳值)保存下來，然後透過呼叫CallWindowProc()(傳入原先callback的位址)，用來將處理控制權移交回原先視窗元件，所以當有多層Subclass的情形發生時，每次在處理事件時，記得判斷對應的Handle，如：在處理關閉事件時(WM_CLOSE)，會先判斷目前的hWnd是否為當前的視窗hWnd，如果是當前視窗hWnd，才進行關閉的動作，避免關閉到其它視窗元件<br><br>
+當視窗有事件需要被處理時，系統會透過呼叫註冊的Callback副程式來處理，而這個Callback副程式就是在註冊Class時，設定給lpfnWndProc的事件處理副程式，因此，當這個事件處理副程式被呼叫時，可以處理自己感興趣的事件，而其餘事件則交給系統處理(透過呼叫DefWindowProc())，需要注意的是，例如：WM_CLOSE，就必須由該視窗自己處理，因為系統無法知道還有哪些額外的資源需要被釋放掉<br><br>
 
-main.s
+main.c
 </p>
 <pre class="brush:asm">
     .include "head.inc"
@@ -24,34 +27,34 @@ WndProc:
     cmp r1, #WM_DESTROY
     beq handle_destroy
     b handle_default
-
+ 
 handle_close:
     bl DestroyWindow
     eor r0, r0
     b finish
-
+ 
 handle_destroy:
     ldr r0, =0
     bl PostQuitMessage
     eor r0, r0
     b finish
-
+ 
 handle_default:
-    push { r3 }
-    mov r3, r2
-    mov r2, r1
-    mov r1, r0
-    ldr r0, =pDefWndProc
-    ldr r0, [r0]
-    bl CallWindowProcA
-    add sp, sp, #4
+    bl DefWindowProcA
     b finish
-
+ 
 finish:
     pop { pc }
 
 WinMain:
     push { lr }
+
+    ldr r0, =wndClass
+    ldr r1, =WndProc
+    str r1, [r0, #WNDCLASS.lpfnWndProc]
+    ldr r1, =szAppName
+    str r1, [r0, #WNDCLASS.lpszClassName]
+    bl RegisterClassA
 
     ldr r3, =0
     ldr r2, =0
@@ -65,17 +68,11 @@ WinMain:
     push { r0, r1, r2, r3 }
     ldr r3, =WS_OVERLAPPEDWINDOW | WS_VISIBLE
     ldr r2, =szAppName
-    ldr r1, =WC_DIALOG
+    ldr r1, =szAppName
     ldr r0, =WS_EX_LEFT
     bl CreateWindowExA
     add sp, sp, #32
     ldr r1, =hWin
-    str r0, [r1]
-
-    ldr r2, =WndProc
-    ldr r1, =GWL_WNDPROC
-    bl SetWindowLongA
-    ldr r1, =pDefWndProc
     str r0, [r1]
 
 loop:
@@ -100,16 +97,16 @@ exit:
 </pre>
 <p>
 <b>Line 12~21</b>：關閉視窗的順序為：主視窗收到WM_CLOSE事件時，呼叫DestroyWindow()，DestroyWindow()會自動將子視窗的相關資源也一併釋放掉(包含Resource描述的資源)，系統接著會發送WM_DESTROY事件給主視窗，待主視窗收到WM_DESTROY事件時，呼叫PostQuitMessage()結束視窗，值得注意的地方是，SendMessage()是屬於Block方式呼叫(必須等待動作執行完畢才返回)，而PostQuitMessage()則是Non-block方式呼叫<br>
-<b>Line 23~30</b>：將處理控制權移交給下一個視窗元件</br><br>
+<b>Line 23~24</b>：其餘事件由系統代為處理</br><br>
 
 編譯、執行
 </p>
 <pre>
-$ winegcc main.s -o main
+$ winegcc main.c -o main
 $ wine ./main.exe
 </pre>
 <p>
-<img style="border:0px" src="nasm_win32_dlg_window/1.jpg" class="maxSize">
+<img style="border:0px" src="nasm_win32_sdi_window/1.jpg" class="maxSize">
 </p>
 
 <br><script type="text/javascript" src="../tail.js"></script>
