@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head><script type="text/javascript" src="../page_head.js"></script>
 
-<h3><a href="../program.htm">程式語言</a> - Wine - Assembly (ARM 32) - Single Document Interface (SDI) - <b>Handle Event</b></h3>
+<h3><a href="../program.htm">程式語言</a> - Wine - Assembly (ARM 32) - <b>Set Timer</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
@@ -12,50 +12,72 @@ https://github.com/gammasoft71/Examples_Win32<br>
 http://masm32.com/board/index.php?topic=3584.0<br>
 https://learn.microsoft.com/en-us/windows/win32/winmsg/window-styles<br><br>
 
-當視窗有事件需要被處理時，系統會透過呼叫註冊的Callback副程式來處理，而這個Callback副程式就是在註冊Class時，設定給lpfnWndProc的事件處理副程式，因此，當這個事件處理副程式被呼叫時，可以處理自己感興趣的事件，而其餘事件則交給系統處理(透過呼叫DefWindowProc())，需要注意的是，例如：WM_CLOSE，就必須由該視窗自己處理，因為系統無法知道還有哪些額外的資源需要被釋放掉<br><br>
+Windows的Timer中斷週期是基於早期系統架構，因此，最短的Timer時間間隔為15ms，因此，即使Timer設定為1ms，觸發時間依舊為15ms<br><br>
 
 main.s
 </p>
 <pre class="brush:asm">
     .include "head.inc"
-
+ 
     .text
 WndProc:
-    push { lr }
+    push { r4, lr }
+    ldr r4, =WM_TIMER
+    cmp r1, r4
+    beq handle_timer
     cmp r1, #WM_CLOSE
     beq handle_close
     cmp r1, #WM_DESTROY
     beq handle_destroy
     b handle_default
+
+handle_timer:
+    push { r0 }
+    ldr r0, =dwCnt
+    ldr r2, [r0]
+    add r2, #1
+    str r2, [r0]
+    ldr r1, =FMT_TIMER
+    ldr r0, =pBuf
+    bl sprintf
  
+    ldr r1, =pBuf
+    pop { r0 }
+    bl SetWindowTextA
+    eor r0, r0
+    b finish
+
 handle_close:
     bl DestroyWindow
     eor r0, r0
     b finish
  
 handle_destroy:
+    mov r1, #1
+    bl KillTimer
+
     ldr r0, =0
     bl PostQuitMessage
     eor r0, r0
     b finish
  
 handle_default:
-    bl DefWindowProcA
+    push { r3 }
+    mov r3, r2
+    mov r2, r1
+    mov r1, r0
+    ldr r0, =pDefWndProc
+    ldr r0, [r0]
+    bl CallWindowProcA
+    add sp, sp, #4
     b finish
  
 finish:
-    pop { pc }
-
+    pop { r4, pc }
+ 
 WinMain:
     push { lr }
-
-    ldr r0, =wndClass
-    ldr r1, =WndProc
-    str r1, [r0, #WNDCLASS.lpfnWndProc]
-    ldr r1, =szAppName
-    str r1, [r0, #WNDCLASS.lpszClassName]
-    bl RegisterClassA
-
+ 
     ldr r3, =0
     ldr r2, =0
     ldr r1, =0
@@ -68,36 +90,49 @@ WinMain:
     push { r0, r1, r2, r3 }
     ldr r3, =WS_OVERLAPPEDWINDOW | WS_VISIBLE
     ldr r2, =szAppName
-    ldr r1, =szAppName
+    ldr r1, =WC_DIALOG
     ldr r0, =WS_EX_LEFT
     bl CreateWindowExA
     add sp, sp, #32
     ldr r1, =hWin
     str r0, [r1]
+ 
+    ldr r2, =WndProc
+    ldr r1, =GWL_WNDPROC
+    bl SetWindowLongA
+    ldr r1, =pDefWndProc
+    str r0, [r1]
 
+    mov r3, #0
+    mov r2, #1000
+    mov r1, #1
+    ldr r0, =hWin
+    ldr r0, [r0]
+    bl SetTimer 
 loop:
     ldr r3, =0
     ldr r2, =0
     ldr r1, =0
     ldr r0, =szMsg
     bl GetMessageA
-
+ 
     cmp r0, #0
     beq exit
-  
+   
     ldr r0, =szMsg
     bl DispatchMessageA
     b loop
-
+ 
 exit:
     mov r0, #0
     bl ExitProcess
- 
+  
     pop { pc }
 </pre>
 <p>
-<b>Line 12~21</b>：關閉視窗的順序為：主視窗收到WM_CLOSE事件時，呼叫DestroyWindow()，DestroyWindow()會自動將子視窗的相關資源也一併釋放掉(包含Resource描述的資源)，系統接著會發送WM_DESTROY事件給主視窗，待主視窗收到WM_DESTROY事件時，呼叫PostQuitMessage()結束視窗，值得注意的地方是，SendMessage()是屬於Block方式呼叫(必須等待動作執行完畢才返回)，而PostQuitMessage()則是Non-block方式呼叫<br>
-<b>Line 23~24</b>：其餘事件由系統代為處理</br><br>
+<b>Line 15~27</b>：累加數值並且顯示在視窗標題<br>
+<b>Line 37~38</b>：不使用Timer，記得關閉Timer<br>
+<b>Line 87~92</b>：設定Timer為每秒(1000ms)觸發一次，ID=1<br><br>
 
 編譯、執行
 </p>
@@ -106,7 +141,7 @@ $ winegcc main.s -o main
 $ wine ./main.exe
 </pre>
 <p>
-<img style="border:0px" src="nasm_win32_sdi_window/1.jpg" class="maxSize">
+<img style="border:0px" src="nasm_win32_timer/1.jpg" class="maxSize">
 </p>
 
 <br><script type="text/javascript" src="../tail.js"></script>
