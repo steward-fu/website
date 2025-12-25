@@ -5,20 +5,26 @@
 <h3><a href="../program.htm">程式語言</a> - ObjAsm - <b>Makefile</b></h3>
 <hr size="1"><br>
 <pre>
-TARGET=main
-MYWINE=WINEPREFIX=~/.wine_x86 box86 wine
-OBJASM=/home/user/.wine_x86/drive_c/ObjAsm
-MASM32=/home/user/.wine_x86/drive_c/masm32
+export OBJASM_PATH=/opt/wadk/objasm_linux
+
+TARGET   = main
+MYWINE   = WINEPREFIX=~/.wine_x86 box86 wine
+CFLAGS   = -coff
+LDFLAGS  = -lgdi32
+LDFLAGS += -luser32
+LDFLAGS += -ladvapi32
+LDFLAGS += -lkernel32
+LDFLAGS += -e _start@0
 
 all:
-	${MYWINE} ${OBJASM}/Build/Tools/Assembler/uasm32.exe @c:/ObjAsm/Build/Options/OPT_ASM_RLS_32.txt ${TARGET}.asm
-	${MYWINE} ${MASM32}/bin/link.exe @c:/ObjAsm/Build/Options/OPT_LNK_RLS_32.txt ${TARGET}.obj
+	uasm ${CFLAGS} ${TARGET}.s
+	i686-w64-mingw32-ld ${TARGET}.o -o ${TARGET}.exe ${LDFLAGS}
 
 run:
 	${MYWINE} ${TARGET}.exe
 
 clean:
-	rm -rf ${TARGET}.exe ${TARGET}.obj
+	rm -rf ${TARGET}.exe ${TARGET}.o
 </pre>
 
 <br><script type="text/javascript" src="../tail.js"></script>
