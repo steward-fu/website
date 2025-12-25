@@ -13,21 +13,21 @@ https://www.masm32.com/<br><br>
 main.s
 </p>
 <pre class="brush:asm">
-    .386
+   .386
     .model flat,stdcall
     option casemap:none
- 
+  
 include /opt/wadk/masm32/include/windows.inc
 include /opt/wadk/masm32/include/kernel32.inc
 include /opt/wadk/masm32/include/user32.inc
- 
+  
     .data
-caption db "main",0
-content db "Hello, world!",0
- 
+szCaption db "main",0
+szContent db "Hello, world!",0
+  
     .code
 start:
-    invoke MessageBox, NULL, offset content, offset caption, MB_OK
+    invoke MessageBox, NULL, offset szContent, offset szCaption, MB_OK
     invoke ExitProcess, 0
 end start
 </pre>
@@ -47,20 +47,26 @@ end start
 Makefile
 </p>
 <pre>
-TARGET = main
-MYWINE = WINEPREFIX=~/.wine_x86 box86 wine
-LIBS   = lib /opt/wadk/masm32/lib/user32.lib
-LIBS  += lib /opt/wadk/masm32/lib/kernel32.lib
+export OBJASM_PATH=/opt/wadk/objasm_linux
+
+TARGET   = main
+MYWINE   = WINEPREFIX=~/.wine_x86 box86 wine
+CFLAGS   = -coff
+LDFLAGS  = -lgdi32
+LDFLAGS += -luser32
+LDFLAGS += -ladvapi32
+LDFLAGS += -lkernel32
+LDFLAGS += -e _start@0
 
 all:
-    jwasm -coff ${TARGET}.s
-    jwlink format windows pe file ${TARGET}.o name ${TARGET}.exe $(LIBS)
+	uasm ${CFLAGS} ${TARGET}.s
+	i686-w64-mingw32-ld ${TARGET}.o -o ${TARGET}.exe ${LDFLAGS}
 
 run:
-    ${MYWINE} ${TARGET}.exe
+	${MYWINE} ${TARGET}.exe
 
 clean:
-    rm -rf ${TARGET}.exe ${TARGET}.o
+	rm -rf ${TARGET}.exe ${TARGET}.o
 </pre><br>
 
 <p>
