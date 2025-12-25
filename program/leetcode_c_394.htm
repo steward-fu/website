@@ -16,53 +16,47 @@ https://www.cnblogs.com/grandyang/p/5849037.html<br><br>
 <pre class="brush:cpp">
 char* decodeString(char* s)
 {
-    #define S_MAX_SIZE (300 * 30)
+    #define MAX_SIZE (30 * 300)
 
-    int v = 0;
-    int c0 = 0;
-    int c1 = 0;
+    int i = 0;
+    int val = 0;
     int r_idx = 0;
     int num_idx = 0;
     int buf_idx = 0;
+    int size = strlen(s);
     int num[30] = { 0 };
-    int len = strlen(s);
-    char *r = NULL;
-    char buf[30][S_MAX_SIZE] = { 0 };
+    char buf[30][300] = { 0 };
+    char *r = calloc(MAX_SIZE, 1);
 
-    r = malloc(S_MAX_SIZE);
-    memset(r, 0, S_MAX_SIZE);
-
-    for (c0 = 0; c0 &lt; len; c0++) {
-        if (isdigit(s[c0])) {
-            v = (10 * v) + (s[c0] - '0');
+    for (i = 0; i &lt; size; i++) {
+        if (isdigit(s[i])) {
+            val = (val * 10) + (s[i] - '0');
             continue;
         }
 
-        switch (s[c0]) {
+        switch (s[i]) {
         case '[':
-            num[num_idx++] = v;
+            num[num_idx++] = val;
             strcat(buf[buf_idx++], r);
 
-            v = 0;
+            val = 0;
             r_idx = 0;
-            memset(r, 0, S_MAX_SIZE);
+            memset(r, 0, MAX_SIZE);
             break;
         case ']':
-            int n = num_idx - 1;
-            int b = buf_idx - 1;
-
-            for (c1 = 0; c1 &lt; num[n]; c1++) {
-                strcat(buf[b], r);
-            }
-            strcpy(r, buf[b]);
-            buf[b][0] = 0;
-
-            r_idx = strlen(r);
             num_idx -= 1;
             buf_idx -= 1;
+
+            for (; num[num_idx] &gt; 0; num[num_idx]--) {
+                strcat(buf[buf_idx], r);
+            }
+            strcpy(r, buf[buf_idx]);
+            buf[buf_idx][0] = 0;
+
+            r_idx = strlen(r);
             break;
         default:
-            r[r_idx++] = s[c0];
+            r[r_idx++] = s[i];
             break;
         }
     }

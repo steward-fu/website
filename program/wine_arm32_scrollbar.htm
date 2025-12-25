@@ -1,0 +1,173 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - Wine - Assembly (ARM 32) - <b>Set Scrollbar</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+http://www.winprog.org/tutorial/<br>
+http://winapi.freetechsecrets.com/win32/<br>
+https://github.com/gammasoft71/Examples_Win32<br>
+http://masm32.com/board/index.php?topic=3584.0<br>
+https://learn.microsoft.com/en-us/windows/win32/winmsg/window-styles<br><br>
+
+當視窗的可視區域(如：300x300像素)小於顯示圖片大小(如：640x480像素)時，這時可以使用Windows視窗元件Scrollbar，用來做顯示位置調整的動作，Scrollbar元件有垂直和水平兩種方向並且提供視窗事件回報機制(WM_VSCROLL、WM_HSCROLL)，因此，這裡的Scrollbar元件並不能夠自動幫忙做顯示位置調整的動作，取而代之的是，在收到WM_VSCROLL、WM_HSCROLL事件時，使用者必須自己決定哪些東西要顯示在視窗的可視區域上<br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .include "head.inc"
+  
+    .text
+WndProc:
+    push { r4, lr }
+    mov r4, #WM_VSCROLL
+    cmp r1, r4
+    beq handle_vscroll
+    cmp r1, #WM_CLOSE
+    beq handle_close
+    cmp r1, #WM_DESTROY
+    beq handle_destroy
+    b handle_default
+ 
+handle_vscroll:
+    mov r4, #0xffff
+    and r2, r2, r4
+    cmp r2, #SB_LINEUP
+    beq handle_sb_line_up
+    cmp r2, #SB_LINEDOWN
+    beq handle_sb_line_down
+    cmp r2, #SB_PAGEUP
+    beq handle_sb_page_up
+    cmp r2, #SB_PAGEDOWN
+    beq handle_sb_page_down
+    b finish
+
+handle_sb_line_up:
+    ldr r1, =SLUP
+    bl SetWindowTextA
+    b finish
+ 
+handle_sb_line_down:
+    ldr r1, =SLDN
+    bl SetWindowTextA
+    b finish
+ 
+handle_sb_page_up:
+    ldr r1, =SPUP
+    bl SetWindowTextA
+    b finish
+ 
+handle_sb_page_down:
+    ldr r1, =SPDN
+    bl SetWindowTextA
+    b finish
+
+handle_close:
+    bl DestroyWindow
+    eor r0, r0
+    b finish
+  
+handle_destroy:
+    ldr r0, =0
+    bl PostQuitMessage
+    eor r0, r0
+    b finish
+  
+handle_default:
+    push { r3 }
+    mov r3, r2
+    mov r2, r1
+    mov r1, r0
+    ldr r0, =pDefWndProc
+    ldr r0, [r0]
+    bl CallWindowProcA
+    add sp, sp, #4
+    b finish
+  
+finish:
+    pop { r4, pc }
+  
+WinMain:
+    push { lr }
+  
+    ldr r3, =0
+    ldr r2, =0
+    ldr r1, =0
+    ldr r0, =0
+    push { r0, r1, r2, r3 }
+    ldr r3, =300
+    ldr r2, =300
+    ldr r1, =0
+    ldr r0, =0
+    push { r0, r1, r2, r3 }
+    ldr r3, =WS_OVERLAPPEDWINDOW | WS_VISIBLE | WS_VSCROLL
+    ldr r2, =szAppName
+    ldr r1, =WC_DIALOG
+    ldr r0, =WS_EX_LEFT
+    bl CreateWindowExA
+    add sp, sp, #32
+    ldr r1, =hWin
+    str r0, [r1]
+  
+    ldr r2, =WndProc
+    ldr r1, =GWL_WNDPROC
+    bl SetWindowLongA
+    ldr r1, =pDefWndProc
+    str r0, [r1]
+
+    mov r0, #0
+    push { r0 }
+    mov r3, #100
+    mov r2, #0
+    mov r1, #SB_VERT
+    ldr r0, =hWin
+    ldr r0, [r0]
+    bl SetScrollRange
+    add sp, sp, #4
+
+    mov r3, #1
+    mov r2, #50
+    mov r1, #SB_VERT
+    ldr r0, =hWin
+    ldr r0, [r0]
+    bl SetScrollPos
+
+loop:
+    ldr r3, =0
+    ldr r2, =0
+    ldr r1, =0
+    ldr r0, =szMsg
+    bl GetMessageA
+  
+    cmp r0, #0
+    beq exit
+    
+    ldr r0, =szMsg
+    bl DispatchMessageA
+    b loop
+  
+exit:
+    mov r0, #0
+    bl ExitProcess
+   
+    pop { pc }
+</pre>
+<p>
+<b>Line 15~46</b>：處理Scrollbar訊息並且顯示在視窗標題<br>
+<b>Line 86</b>：WS_VSCROLL是垂直的Scrollbar，WS_HSCROLL則是水平的Scrollbar<br>
+<b>Line 101~108</b>：設定Scrollbar最大的範圍<br>
+<b>Line 111~116</b>：設定Scrollbar目前的位置<br><br>
+
+編譯、執行
+</p>
+<pre>
+$ winegcc main.s -o main
+$ wine ./main.exe
+</pre>
+<p>
+<img style="border:0px" src="nasm_win32_scrollbar/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
