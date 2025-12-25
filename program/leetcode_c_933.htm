@@ -13,46 +13,46 @@
 </p>
 <pre class="brush:cpp">
 typedef struct {
-    int *ping;
+    int *q;
     int cnt;
 } RecentCounter;
 
-
-RecentCounter* recentCounterCreate()
+RecentCounter* recentCounterCreate(void)
 {
-    #define MAX_PING_SIZE 10000
+    RecentCounter *r = calloc(1, sizeof(RecentCounter));
 
-    RecentCounter *r = malloc(sizeof(RecentCounter));
-    r-&gt;ping = malloc(sizeof(int) * MAX_PING_SIZE);
-    r-&gt;cnt = 0;
-
+    r-&gt;q = calloc(1000000000, sizeof(int));
     return r;
 }
 
 int recentCounterPing(RecentCounter* obj, int t)
 {
-    #define PING_TIME 3000
+    int i = 0;
+    int r = 0;
 
-    int cc = 0;
-    int cnt = 0;
-    int min = t - PING_TIME;
-
-    for (cc = 0; cc &lt; obj-&gt;cnt; cc++) {
-        if (obj-&gt;ping[cc] &gt;= min) {
-            cnt += 1;
+    obj-&gt;q[obj-&gt;cnt++] = t;
+    for (i = 0; i &lt; obj-&gt;cnt; i++) {
+        if ((obj-&gt;q[i] &gt;= (t - 3000)) &amp;&amp; (obj-&gt;q[i] &lt;= t)) {
+            r += 1;
         }
     }
-    cnt += 1;
-    obj-&gt;ping[obj-&gt;cnt++] = t;
 
-    return cnt;
+    return r;
 }
 
 void recentCounterFree(RecentCounter* obj)
 {
-    free(obj-&gt;ping);
-    obj-&gt;ping = NULL;
+    free(obj-&gt;q);
+    free(obj);
 }
+
+/**
+ * Your RecentCounter struct will be instantiated and called as such:
+ * RecentCounter* obj = recentCounterCreate();
+ * int param_1 = recentCounterPing(obj, t);
+ 
+ * recentCounterFree(obj);
+*/
 </pre>
 
 <br><script type="text/javascript" src="../tail.js"></script>
