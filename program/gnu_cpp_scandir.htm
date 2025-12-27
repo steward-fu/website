@@ -19,18 +19,24 @@ main.c
 #include &lt;stdlib.h&gt;
 #include &lt;string.h&gt;
 
+int skip_dot(const struct dirent *entry)
+{
+    return strcmp(entry-&gt;d_name, ".") != 0;
+}
+
 int main(int argc, char **argv)
 {
     int c = 0;
     int n = 0;
     struct dirent **namelist = NULL;
 
-    n = scandir("/tmp", &amp;namelist, NULL, alphasort);
+    n = scandir("/tmp", &amp;namelist, skip_dot, alphasort);
     if (n == -1) {
         return -1;
     }
 
     for (c = 0; c &lt; n; c++) {
+        // namelist[c]-&gt;d_type:  DT_DIR,  DT_REG,  DT_LNK
         printf("%s\n", namelist[c]-&gt;d_name);
         free(namelist[c]);
     }
