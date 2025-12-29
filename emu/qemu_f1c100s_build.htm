@@ -1,0 +1,55 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../emu.htm">模擬器</a> - QEMU - Allwinner F1C100S - <b>Build QEMU</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/newluhux/qemu-f1c100s<br><br>
+</p>
+<pre>
+$ cd
+$ git clone https://github.com/newluhux/qemu-f1c100s
+$ cd qemu-f1c100s
+$ git clone https://gitlab.com/qemu-project/qemu qemu -b v8.0.0 --depth=1
+$ cd qemu
+$ git am ../*.patch
+    Applying: hw/ssi/allwinner-sun6i-spi: allwinner sun6i spi support
+    .git/rebase-apply/patch:126: trailing whitespace.
+        /* 
+    warning: 1 line adds whitespace errors.
+    Applying: hw/misc/allwinner-f1c100s-ccu: add allwinner f1c100s clock control support
+    Applying: hw/intc/allwinner-f1c100s-intc: add allwinner f1c100s interrupt control support
+    Applying: hw/arm/allwinner-f1c100s: add allwinner f1c100s soc support
+    Applying: hw/intc/allwinner-f1c100s-intc: fix interrupt controller not working on FreeRTOS
+    Applying: hw/ssi/allwinner-sun6i-spi: fix compile failed.
+    Applying: hw/arm/allwinner-f1c100s: add awuart unimp memory region.
+
+$ vim hw/arm/allwinner-f1c100s.c
+    316     /* Only allow arm926 for this board */
+    317     if (strcmp(machine-&gt;cpu_type, ARM_CPU_TYPE_NAME("arm926")) != 0) {
+    318         //error_report("This board can only be used with arm926 CPU");
+    319         exit(1);
+    320     }
+    321 
+    322     if (machine-&gt;ram_size &gt; 64 * MiB) {
+    323         //error_report("this soc only support ram size &lt; 64 MiB");
+    324         exit(1);
+    325     }
+
+$ ./configure \
+    --cc=gcc \
+    --cxx=g++ \
+    --target-list=arm-softmmu \
+    --enable-debug \
+    --enable-debug-tcg \
+    --enable-debug-info
+
+$ make -j4
+$ ./build/qemu-system-arm -machine help
+    Supported machines are:
+    allwinner-f1c100s    allwinner f1c100s (arm926)
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
