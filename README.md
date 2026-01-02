@@ -15,6 +15,7 @@ All of files or resources used on my website can be found from the following lin
 [![](img/photos/miyoo-mini-plus.jpg)](https://github.com/steward-fu/website/releases/tag/miyoo-mini-plus)
 [![](img/photos/miyoo.jpg)](https://github.com/steward-fu/website/releases/tag/miyoo)
 [![](img/photos/magicx.jpg)](https://github.com/steward-fu/website/releases/tag/magicx)
+[![](img/photos/fpgbc.jpg)](https://github.com/steward-fu/website/releases/tag/fpgbc)
 [![](img/photos/gb.jpg)](https://github.com/steward-fu/website/releases/tag/gb)
 [![](img/photos/gba.jpg)](https://github.com/steward-fu/website/releases/tag/gba)
 [![](img/photos/m22pro.jpg)](https://github.com/steward-fu/website/releases/tag/m22pro)
