@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head><script type="text/javascript" src="../page_head.js"></script>
 
-<h3><a href="../emu.htm">模擬器</a> - QEMU - Allwinner F1C100S - 移植教學 - <b>添加BootROM</b></h3>
+<h3><a href="../emu.htm">模擬器</a> - QEMU - Allwinner F1C100S - 移植教學 - <b>添加GPIO</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
@@ -28,11 +28,13 @@ hw/arm/f1c100s.c
 #include "sysemu/sysemu.h"
 #include "sysemu/runstate.h"
 #include "target/arm/cpu.h"
+#include "hw/gpio/f1c100s.h"
 
 #define TYPE_AW_F1C100S "f1c100s"
 OBJECT_DECLARE_SIMPLE_TYPE(AwF1c100sState, AW_F1C100S)
 
 enum {
+    AW_F1C100S_DEV_GPIO,
     AW_F1C100S_DEV_BOOTROM
 };
 
@@ -41,9 +43,12 @@ struct AwF1c100sState {
     ARMCPU cpu;
     const hwaddr *memmap;
     MemoryRegion bootrom;
+
+    AwF1c100sGpioState gpio;
 };
 
 static const hwaddr f1c100s_memmap[] = {
+    [AW_F1C100S_DEV_GPIO]    = 0x01C20800,
     [AW_F1C100S_DEV_BOOTROM] = 0xFFFF0000
 };
 
@@ -56,6 +61,9 @@ static void f1c100s_realize(DeviceState *dev, Error **errp)
     printf("call %s()\n", __func__);
 
     qdev_realize(DEVICE(&amp;s-&gt;cpu), NULL, errp);
+
+    sysbus_realize(SYS_BUS_DEVICE(&amp;s-&gt;gpio), &amp;error_fatal);
+    sysbus_mmio_map(SYS_BUS_DEVICE(&amp;s-&gt;gpio), 0, s-&gt;memmap[AW_F1C100S_DEV_GPIO]);
 }
 
 static void f1c100s_init(Object *obj)
@@ -66,6 +74,7 @@ static void f1c100s_init(Object *obj)
 
     s-&gt;memmap = f1c100s_memmap;
     object_initialize_child(obj, "cpu", &amp;s-&gt;cpu, ARM_CPU_TYPE_NAME("arm926"));
+    object_initialize_child(obj, "gpio", &amp;s-&gt;gpio, TYPE_AW_F1C100S_GPIO);
 }
 
 static void f1c100s_class_init(ObjectClass *oc, void *data)
@@ -139,20 +148,171 @@ DEFINE_MACHINE("f1c100s", f1c100s_machine_init)
 </pre><br>
 
 <p>
-編譯、測試
+hw/gpio/f1c100s.c
+</p>
+<pre class="brush:cpp">
+#include "qemu/osdep.h"
+#include "qemu/units.h"
+#include "qemu/log.h"
+#include "qemu/module.h"
+#include "migration/vmstate.h"
+#include "hw/sysbus.h"
+#include "hw/gpio/f1c100s.h"
+
+static uint64_t f1c100s_read(void *opaque, hwaddr offset, unsigned size)
+{
+    printf("call %s(offset=0x%lx, size=%d)\n", __func__, offset, size);
+
+    return 0;
+}
+
+static void f1c100s_write(void *opaque, hwaddr offset, uint64_t val, unsigned size)
+{
+    printf("call %s(offset=0x%lx, val=0x%lx, size=%d)\n", __func__, offset, val, size);
+}
+
+static const MemoryRegionOps f1c100s_ops = {
+    .read = f1c100s_read,
+    .write = f1c100s_write,
+    .endianness = DEVICE_NATIVE_ENDIAN,
+};
+
+static void f1c100s_gpio_realize(DeviceState *dev, Error **errp)
+{
+    SysBusDevice *sbd = SYS_BUS_DEVICE(dev);
+    AwF1c100sGpioState *s = AW_F1C100S_GPIO(dev);
+
+    printf("call %s()\n", __func__);
+
+    memory_region_init_io(&amp;s-&gt;iomem, OBJECT(s), &amp;f1c100s_ops, s, TYPE_AW_F1C100S_GPIO, 0x400);
+    sysbus_init_mmio(sbd, &amp;s-&gt;iomem);
+}
+
+static void f1c100s_init(Object *obj)
+{
+    printf("call %s()\n", __func__);
+}
+
+static void f1c100s_class_init(ObjectClass *klass, void *data)
+{
+    DeviceClass *dc = DEVICE_CLASS(klass);
+
+    printf("call %s()\n", __func__);
+    dc-&gt;realize = f1c100s_gpio_realize;
+}
+
+static const TypeInfo f1c100s_info = {
+    .name = TYPE_AW_F1C100S_GPIO,
+    .parent = TYPE_SYS_BUS_DEVICE,
+    .instance_init = f1c100s_init,
+    .instance_size = sizeof(AwF1c100sGpioState),
+    .class_init = f1c100s_class_init,
+};
+
+static void f1c100s_register(void)
+{
+    printf("call %s()\n", __func__);
+
+    type_register_static(&amp;f1c100s_info);
+}
+
+type_init(f1c100s_register)
+</pre><br>
+
+<p>
+include/hw/gpio/f1c100s.h
+</p>
+<pre class="brush:cpp">
+#ifndef __GPIO_F1C100S_H__
+#define __GPIO_F1C100S_H__
+
+#include "qom/object.h"
+#include "hw/sysbus.h"
+
+#define TYPE_AW_F1C100S_GPIO "f1c100s-gpio"
+OBJECT_DECLARE_SIMPLE_TYPE(AwF1c100sGpioState, AW_F1C100S_GPIO)
+
+struct AwF1c100sGpioState {
+    SysBusDevice parent_obj;
+    MemoryRegion iomem;
+};
+
+#endif
+</pre><br>
+
+<p>
+hw/gpio/meson.build
+</p>
+<pre>
+softmmu_ss.add(when: 'CONFIG_F1C100S', if_true: files('f1c100s.c'))
+</pre><br>
+
+<p>
+編譯
 </p>
 <pre>
 $ ./configure --target-list=arm-softmmu
 $ make -j4
 $ sudo make install
-$ ./build/qemu-system-arm -M f1c100s -bios /tmp/flash.bin
+</pre><br>
+
+<p>
+測試程式(main.s)
+</p>
+<pre class="brush:asm">
+.global _start
+  
+    .equ GPIO_BASE, 0x01c20800 
+    .equ PE_CFG0,   (GPIO_BASE + (4 * 0x24) + 0x00)
+    .equ PE_DATA,   (GPIO_BASE + (4 * 0x24) + 0x10)
+   
+    .arm
+    .text
+_start:
+    b reset
+    b .
+    b .
+    b .
+    b .
+    b .
+    b .
+    b .
+     
+reset:
+    ldr r0, =PE_CFG0
+    ldr r1, =0x11223344
+    str r1, [r0]
+ 
+    ldr r0, =PE_DATA
+    ldr r1, =0x55667788
+    str r1, [r0]
+0:
+    b 0b
+    .end
+</pre><br>
+
+<p>
+測試
+</p>
+<pre>
+$ arm-none-eabi-as -mcpu=arm9 -o main.o main.s
+$ arm-none-eabi-ld -T main.ld -o main.elf main.o
+$ arm-none-eabi-objcopy -O binary main.elf main.bin
+
+$ ./build/qemu-system-arm -M f1c100s -bios main.bin
+    call f1c100s_register()
     call f1c100s_register_types()
     call f1c100s_machine_init()
     call f1c100s_class_init()
+    call f1c100s_class_init()
     call f1c100s_board_init()
     call f1c100s_init()
+    call f1c100s_init()
     call f1c100s_realize()
-    loading... "/tmp/flash.bin"
+    call f1c100s_gpio_realize()
+    loading... "main.bin"
+    call f1c100s_write(offset=0x90, val=0x11223344, size=4)
+    call f1c100s_write(offset=0xa0, val=0x55667788, size=4)
 </pre>
 
 <br><script type="text/javascript" src="../tail.js"></script>
