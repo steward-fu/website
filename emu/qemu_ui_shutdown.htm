@@ -1,0 +1,32 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../emu.htm">模擬器</a> - QEMU - <b>如何從UI發送GUEST OS的Shutdown Notification</b></h3>
+<hr size="1"><br>
+<p>
+UI
+</p>
+<pre class="brush:cpp">
+qemu_system_shutdown_request(SHUTDOWN_CAUSE_GUEST_SHUTDOWN);
+</pre><br>
+
+<p>
+GUEST
+</p>
+<pre class="brush:cpp">
+static void aw_shutdown_cb(Notifier *n, void *opaque)
+{
+    printf("aw_f1c100s shutdown callback\n");
+}
+
+static void aw_f1c100s_realize(DeviceState *dev, Error **errp)
+{
+    AwF1c100sState *s = AW_F1C100S(dev);
+
+    s-&gt;shutdown_notifier.notify = aw_shutdown_cb;
+    qemu_register_shutdown_notifier(&amp;s-&gt;shutdown_notifier);
+}
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
