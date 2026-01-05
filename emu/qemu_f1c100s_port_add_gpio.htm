@@ -16,6 +16,7 @@ hw/arm/f1c100s.c
 #include "qemu/module.h"
 #include "qemu/datadir.h"
 #include "qemu/units.h"
+#include "qemu/f1c100s_log.h"
 #include "hw/sysbus.h"
 #include "hw/arm/boot.h"
 #include "hw/ssi/ssi.h"
@@ -30,121 +31,119 @@ hw/arm/f1c100s.c
 #include "target/arm/cpu.h"
 #include "hw/gpio/f1c100s.h"
 
-#define TYPE_AW_F1C100S "f1c100s"
-OBJECT_DECLARE_SIMPLE_TYPE(AwF1c100sState, AW_F1C100S)
+#define TYPE_F1C100S "f1c100s"
+OBJECT_DECLARE_SIMPLE_TYPE(f1c100s_soc_state, F1C100S)
+
+int f1c100s_debug_level = TRACE_LEVEL;
 
 enum {
-    AW_F1C100S_DEV_GPIO,
-    AW_F1C100S_DEV_BOOTROM
+    GPIO_BASE,
+    BOOTROM_BASE
 };
 
-struct AwF1c100sState {
+struct f1c100s_soc_state {
     DeviceState parent_obj;
     ARMCPU cpu;
     const hwaddr *memmap;
     MemoryRegion bootrom;
 
-    AwF1c100sGpioState gpio;
+    f1c100s_gpio_state gpio;
 };
 
 static const hwaddr f1c100s_memmap[] = {
-    [AW_F1C100S_DEV_GPIO]    = 0x01C20800,
-    [AW_F1C100S_DEV_BOOTROM] = 0xFFFF0000
+    [GPIO_BASE]    = 0x01c20800,
+    [BOOTROM_BASE] = 0xffff0000
 };
-
+ 
 static struct arm_boot_info f1c100s_binfo = { 0 };
-
-static void f1c100s_realize(DeviceState *dev, Error **errp)
+ 
+static void f1c100s_soc_realize(DeviceState *dev, Error **errp)
 {
-    AwF1c100sState *s = AW_F1C100S(dev);
+    f1c100s_soc_state *s = F1C100S(dev);
 
-    printf("call %s()\n", __func__);
-
+    trace("call %s()\n", __func__);
     qdev_realize(DEVICE(&amp;s-&gt;cpu), NULL, errp);
-
     sysbus_realize(SYS_BUS_DEVICE(&amp;s-&gt;gpio), &amp;error_fatal);
-    sysbus_mmio_map(SYS_BUS_DEVICE(&amp;s-&gt;gpio), 0, s-&gt;memmap[AW_F1C100S_DEV_GPIO]);
+    sysbus_mmio_map(SYS_BUS_DEVICE(&amp;s-&gt;gpio), 0, s-&gt;memmap[GPIO_BASE]);
 }
-
-static void f1c100s_init(Object *obj)
+ 
+static void f1c100s_soc_instance_init(Object *obj)
 {
-    AwF1c100sState *s = AW_F1C100S(obj);
+    f1c100s_soc_state *s = F1C100S(obj);
 
-    printf("call %s()\n", __func__);
-
+    trace("call %s()\n", __func__);
     s-&gt;memmap = f1c100s_memmap;
-    object_initialize_child(obj, "cpu", &amp;s-&gt;cpu, ARM_CPU_TYPE_NAME("arm926"));
-    object_initialize_child(obj, "gpio", &amp;s-&gt;gpio, TYPE_AW_F1C100S_GPIO);
+    object_initialize_child(obj, "cpu", &amp;s-&gt;cpu, ARM_CPU_TYPE_NAME("f1c100s"));
+    object_initialize_child(obj, "gpio", &amp;s-&gt;gpio, TYPE_F1C100S_GPIO);
 }
-
-static void f1c100s_class_init(ObjectClass *oc, void *data)
+ 
+static void f1c100s_soc_class_init(ObjectClass *oc, void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(oc);
-
-    printf("call %s()\n", __func__);
-    dc-&gt;realize = f1c100s_realize;
+ 
+    trace("call %s()\n", __func__);
+    dc-&gt;realize = f1c100s_soc_realize;
 }
-
-static const TypeInfo f1c100s_type_info = {
+ 
+static const TypeInfo f1c100s_soc_type_info = {
     .name = "f1c100s",
     .parent = TYPE_DEVICE,
-    .instance_size = sizeof(AwF1c100sState),
-    .instance_init = f1c100s_init,
-    .class_init = f1c100s_class_init,
+    .instance_size = sizeof(f1c100s_soc_state),
+    .instance_init = f1c100s_soc_instance_init,
+    .class_init = f1c100s_soc_class_init,
 };
-
-static void f1c100s_register_types(void)
+ 
+static void f1c100s_soc_register_types(void)
 {
-    printf("call %s()\n", __func__);
-    type_register_static(&amp;f1c100s_type_info);
+    trace("call %s()\n", __func__);
+    type_register_static(&amp;f1c100s_soc_type_info);
 }
-
-type_init(f1c100s_register_types)
-
-static void f1c100s_board_init(MachineState *machine)
+ 
+type_init(f1c100s_soc_register_types)
+ 
+static void f1c100s_soc_board_init(MachineState *machine)
 {
-    AwF1c100sState *f1c100s = NULL;
+    f1c100s_soc_state *s = NULL;
 
-    printf("call %s()\n", __func__);
-
-    f1c100s = AW_F1C100S(object_new(TYPE_AW_F1C100S));
-    object_property_add_child(OBJECT(machine), "soc", OBJECT(f1c100s));
-    object_unref(OBJECT(f1c100s));
-
-    qdev_realize(DEVICE(f1c100s), NULL, &amp;error_abort);
-    memory_region_init_rom(&amp;f1c100s-&gt;bootrom, NULL, "aw_f1c100s.bootrom", 64 * KiB, &amp;error_fatal);
-    memory_region_add_subregion(get_system_memory(), f1c100s-&gt;memmap[AW_F1C100S_DEV_BOOTROM], &amp;f1c100s-&gt;bootrom);
-
-    char *filename = qemu_find_file(QEMU_FILE_TYPE_BIOS, machine-&gt;firmware);
-    if (filename) {
-        printf("loading... \"%s\"\n", filename);
-        load_image_targphys(filename, f1c100s-&gt;memmap[AW_F1C100S_DEV_BOOTROM], 64 * KiB);
-        g_free(filename);
-
-        f1c100s_binfo.entry = f1c100s-&gt;memmap[AW_F1C100S_DEV_BOOTROM];
+    trace("call %s()\n", __func__);
+    s = F1C100S(object_new(TYPE_F1C100S));
+    object_property_add_child(OBJECT(machine), "soc", OBJECT(s));
+    object_unref(OBJECT(s));
+ 
+    qdev_realize(DEVICE(s), NULL, &amp;error_abort);
+    memory_region_init_rom(&amp;s-&gt;bootrom, NULL, "f1c100s.bootrom", 64 * KiB, &amp;error_fatal);
+    memory_region_add_subregion(get_system_memory(), s-&gt;memmap[BOOTROM_BASE], &amp;s-&gt;bootrom);
+ 
+    char *fname = qemu_find_file(QEMU_FILE_TYPE_BIOS, machine-&gt;firmware);
+    if (fname) {
+        trace("loading... \"%s\"\n", fname);
+        load_image_targphys(fname, s-&gt;memmap[BOOTROM_BASE], 64 * KiB);
+        g_free(fname);
+ 
+        f1c100s_binfo.entry = s-&gt;memmap[BOOTROM_BASE];
     }
-
+ 
     f1c100s_binfo.ram_size = machine-&gt;ram_size;
-    CPUARMState *env = &amp;f1c100s-&gt;cpu.env;
+    CPUARMState *env = &amp;s-&gt;cpu.env;
     env-&gt;boot_info = &amp;f1c100s_binfo;
-    arm_load_kernel(&amp;f1c100s-&gt;cpu, machine, &amp;f1c100s_binfo);
+    arm_load_kernel(&amp;s-&gt;cpu, machine, &amp;f1c100s_binfo);
 };
-
-static void f1c100s_machine_init(MachineClass *mc)
+ 
+static void f1c100s_soc_init(MachineClass *mc)
 {
-    printf("call %s()\n", __func__);
-
+    trace("call %s()\n", __func__);
+ 
     mc-&gt;desc = "Allwinner F1C100S (ARM926EJ-S)";
-    mc-&gt;init = f1c100s_board_init;
+    mc-&gt;init = f1c100s_soc_board_init;
     mc-&gt;min_cpus = 1;
     mc-&gt;max_cpus = 1;
     mc-&gt;default_cpus = 1;
-    mc-&gt;default_cpu_type = ARM_CPU_TYPE_NAME("arm926");
+    mc-&gt;default_cpu_type = ARM_CPU_TYPE_NAME("f1c100s");
     mc-&gt;default_ram_size = 32 * MiB;
-    mc-&gt;default_ram_id = "aw_f1c100s.ram";
+    mc-&gt;default_ram_id = "f1c100s.ram";
 };
-
-DEFINE_MACHINE("f1c100s", f1c100s_machine_init)
+ 
+DEFINE_MACHINE("f1c100s", f1c100s_soc_init)
 </pre><br>
 
 <p>
@@ -155,68 +154,69 @@ hw/gpio/f1c100s.c
 #include "qemu/units.h"
 #include "qemu/log.h"
 #include "qemu/module.h"
+#include "qemu/f1c100s_log.h"
 #include "migration/vmstate.h"
 #include "hw/sysbus.h"
 #include "hw/gpio/f1c100s.h"
 
-static uint64_t f1c100s_read(void *opaque, hwaddr offset, unsigned size)
+static uint64_t f1c100s_gpio_read(void *opaque, hwaddr offset, unsigned size)
 {
-    printf("call %s(offset=0x%lx, size=%d)\n", __func__, offset, size);
+    trace("call %s(offset=0x%lx, size=%d)\n", __func__, offset, size);
 
     return 0;
 }
 
-static void f1c100s_write(void *opaque, hwaddr offset, uint64_t val, unsigned size)
+static void f1c100s_gpio_write(void *opaque, hwaddr offset, uint64_t val, unsigned size)
 {
-    printf("call %s(offset=0x%lx, val=0x%lx, size=%d)\n", __func__, offset, val, size);
+    trace("call %s(offset=0x%lx, val=0x%lx, size=%d)\n", __func__, offset, val, size);
 }
 
-static const MemoryRegionOps f1c100s_ops = {
-    .read = f1c100s_read,
-    .write = f1c100s_write,
+static const MemoryRegionOps f1c100s_gpio_ops = {
+    .read = f1c100s_gpio_read,
+    .write = f1c100s_gpio_write,
     .endianness = DEVICE_NATIVE_ENDIAN,
 };
 
 static void f1c100s_gpio_realize(DeviceState *dev, Error **errp)
 {
     SysBusDevice *sbd = SYS_BUS_DEVICE(dev);
-    AwF1c100sGpioState *s = AW_F1C100S_GPIO(dev);
+    f1c100s_gpio_state *s = F1C100S_GPIO(dev);
 
-    printf("call %s()\n", __func__);
+    trace("call %s()\n", __func__);
 
-    memory_region_init_io(&amp;s-&gt;iomem, OBJECT(s), &amp;f1c100s_ops, s, TYPE_AW_F1C100S_GPIO, 0x400);
+    memory_region_init_io(&amp;s-&gt;iomem, OBJECT(s), &amp;f1c100s_gpio_ops, s, TYPE_F1C100S_GPIO, 0x400);
     sysbus_init_mmio(sbd, &amp;s-&gt;iomem);
 }
 
-static void f1c100s_init(Object *obj)
+static void f1c100s_gpio_init(Object *obj)
 {
-    printf("call %s()\n", __func__);
+    trace("call %s()\n", __func__);
 }
 
-static void f1c100s_class_init(ObjectClass *klass, void *data)
+static void f1c100s_gpio_class_init(ObjectClass *klass, void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
 
-    printf("call %s()\n", __func__);
+    trace("call %s()\n", __func__);
     dc-&gt;realize = f1c100s_gpio_realize;
 }
 
-static const TypeInfo f1c100s_info = {
-    .name = TYPE_AW_F1C100S_GPIO,
+static const TypeInfo f1c100s_gpio_info = {
+    .name = TYPE_F1C100S_GPIO,
     .parent = TYPE_SYS_BUS_DEVICE,
-    .instance_init = f1c100s_init,
-    .instance_size = sizeof(AwF1c100sGpioState),
-    .class_init = f1c100s_class_init,
+    .instance_init = f1c100s_gpio_init,
+    .instance_size = sizeof(f1c100s_gpio_state),
+    .class_init = f1c100s_gpio_class_init,
 };
 
-static void f1c100s_register(void)
+static void f1c100s_gpio_register(void)
 {
-    printf("call %s()\n", __func__);
+    trace("call %s()\n", __func__);
 
-    type_register_static(&amp;f1c100s_info);
+    type_register_static(&amp;f1c100s_gpio_info);
 }
 
-type_init(f1c100s_register)
+type_init(f1c100s_gpio_register)
 </pre><br>
 
 <p>
@@ -229,10 +229,10 @@ include/hw/gpio/f1c100s.h
 #include "qom/object.h"
 #include "hw/sysbus.h"
 
-#define TYPE_AW_F1C100S_GPIO "f1c100s-gpio"
-OBJECT_DECLARE_SIMPLE_TYPE(AwF1c100sGpioState, AW_F1C100S_GPIO)
+#define TYPE_F1C100S_GPIO "f1c100s-gpio"
+OBJECT_DECLARE_SIMPLE_TYPE(f1c100s_gpio_state, F1C100S_GPIO)
 
-struct AwF1c100sGpioState {
+struct f1c100s_gpio_state {
     SysBusDevice parent_obj;
     MemoryRegion iomem;
 };
@@ -299,20 +299,21 @@ $ arm-none-eabi-as -mcpu=arm9 -o main.o main.s
 $ arm-none-eabi-ld -T main.ld -o main.elf main.o
 $ arm-none-eabi-objcopy -O binary main.elf main.bin
 
+$ make -j4
 $ ./build/qemu-system-arm -M f1c100s -bios main.bin
-    call f1c100s_register()
-    call f1c100s_register_types()
-    call f1c100s_machine_init()
-    call f1c100s_class_init()
-    call f1c100s_class_init()
-    call f1c100s_board_init()
-    call f1c100s_init()
-    call f1c100s_init()
-    call f1c100s_realize()
-    call f1c100s_gpio_realize()
-    loading... "main.bin"
-    call f1c100s_write(offset=0x90, val=0x11223344, size=4)
-    call f1c100s_write(offset=0xa0, val=0x55667788, size=4)
+    [TRACE] call f1c100s_gpio_register()
+    [TRACE] call f1c100s_soc_register_types()
+    [TRACE] call f1c100s_soc_init()
+    [TRACE] call f1c100s_soc_class_init()
+    [TRACE] call f1c100s_gpio_class_init()
+    [TRACE] call f1c100s_soc_board_init()
+    [TRACE] call f1c100s_soc_instance_init()
+    [TRACE] call f1c100s_gpio_init()
+    [TRACE] call f1c100s_soc_realize()
+    [TRACE] call f1c100s_gpio_realize()
+    [TRACE] loading... "main.bin"
+    [TRACE] call f1c100s_gpio_write(offset=0x90, val=0x11223344, size=4)
+    [TRACE] call f1c100s_gpio_write(offset=0xa0, val=0x55667788, size=4)
 </pre>
 
 <br><script type="text/javascript" src="../tail.js"></script>

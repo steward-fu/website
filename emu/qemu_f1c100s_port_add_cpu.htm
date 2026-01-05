@@ -23,6 +23,30 @@ CONFIG_F1C100S=y
 </pre><br>
 
 <p>
+target/arm/cpu_tcg.c
+</p>
+<pre class="brush:cpp">
+static void f1c100s_initfn(Object *obj)
+{
+    ARMCPU *cpu = ARM_CPU(obj);
+
+    cpu-&gt;dtb_compatible = "arm,arm926";
+    set_feature(&amp;cpu-&gt;env, ARM_FEATURE_V5);
+    set_feature(&amp;cpu-&gt;env, ARM_FEATURE_DUMMY_C15_REGS);
+    set_feature(&amp;cpu-&gt;env, ARM_FEATURE_CACHE_TEST_CLEAN);
+    cpu-&gt;midr = 0x41069265;
+    cpu-&gt;reset_fpsid = 0x41011090;
+    cpu-&gt;ctr = 0x1dd20d2;
+    cpu-&gt;reset_sctlr = 0x00090078;
+}
+
+static const ARMCPUInfo arm_tcg_cpus[] = {
+    ...
+    { .name = "f1c100s", .initfn = f1c100s_initfn },
+};
+</pre><br>
+
+<p>
 hw/arm/f1c100s.c
 </p>
 <pre class="brush:cpp">
@@ -31,6 +55,7 @@ hw/arm/f1c100s.c
 #include "qemu/module.h"
 #include "qemu/datadir.h"
 #include "qemu/units.h"
+#include "qemu/f1c100s_log.h"
 #include "hw/sysbus.h"
 #include "hw/arm/boot.h"
 #include "hw/ssi/ssi.h"
@@ -44,66 +69,68 @@ hw/arm/f1c100s.c
 #include "sysemu/runstate.h"
 #include "target/arm/cpu.h"
 
-#define TYPE_AW_F1C100S "f1c100s"
-OBJECT_DECLARE_SIMPLE_TYPE(AwF1c100sState, AW_F1C100S)
+#define TYPE_F1C100S "f1c100s"
+OBJECT_DECLARE_SIMPLE_TYPE(f1c100s_soc_state, F1C100S)
 
-struct AwF1c100sState {
+int f1c100s_debug_level = TRACE_LEVEL;
+
+struct f1c100s_soc_state {
 };
-
-static void f1c100s_realize(DeviceState *dev, Error **errp)
+ 
+static void f1c100s_soc_realize(DeviceState *dev, Error **errp)
 {
-    printf("call %s()\n", __func__);
+    trace("call %s()\n", __func__);
 }
-
-static void f1c100s_init(Object *obj)
+ 
+static void f1c100s_soc_instance_init(Object *obj)
 {
-    printf("call %s()\n", __func__);
+    trace("call %s()\n", __func__);
 }
-
-static void f1c100s_class_init(ObjectClass *oc, void *data)
+ 
+static void f1c100s_soc_class_init(ObjectClass *oc, void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(oc);
-
-    printf("call %s()\n", __func__);
-    dc-&gt;realize = f1c100s_realize;
+ 
+    trace("call %s()\n", __func__);
+    dc-&gt;realize = f1c100s_soc_realize;
 }
-
-static const TypeInfo f1c100s_type_info = {
+ 
+static const TypeInfo f1c100s_soc_type_info = {
     .name = "f1c100s",
     .parent = TYPE_DEVICE,
-    .instance_size = sizeof(AwF1c100sState),
-    .instance_init = f1c100s_init,
-    .class_init = f1c100s_class_init,
+    .instance_size = sizeof(f1c100s_soc_state),
+    .instance_init = f1c100s_soc_instance_init,
+    .class_init = f1c100s_soc_class_init,
 };
-
-static void f1c100s_register_types(void)
+ 
+static void f1c100s_soc_register_types(void)
 {
-    printf("call %s()\n", __func__);
-    type_register_static(&amp;f1c100s_type_info);
+    trace("call %s()\n", __func__);
+    type_register_static(&amp;f1c100s_soc_type_info);
 }
-
-type_init(f1c100s_register_types)
-
-static void f1c100s_board_init(MachineState *machine)
+ 
+type_init(f1c100s_soc_register_types)
+ 
+static void f1c100s_soc_board_init(MachineState *machine)
 {
-    printf("call %s()\n", __func__);
+    trace("call %s()\n", __func__);
 };
-
-static void f1c100s_machine_init(MachineClass *mc)
+ 
+static void f1c100s_soc_init(MachineClass *mc)
 {
-    printf("call %s()\n", __func__);
-
+    trace("call %s()\n", __func__);
+ 
     mc-&gt;desc = "Allwinner F1C100S (ARM926EJ-S)";
-    mc-&gt;init = f1c100s_board_init;
+    mc-&gt;init = f1c100s_soc_board_init;
     mc-&gt;min_cpus = 1;
     mc-&gt;max_cpus = 1;
     mc-&gt;default_cpus = 1;
-    mc-&gt;default_cpu_type = ARM_CPU_TYPE_NAME("arm926");
+    mc-&gt;default_cpu_type = ARM_CPU_TYPE_NAME("f1c100s");
     mc-&gt;default_ram_size = 32 * MiB;
-    mc-&gt;default_ram_id = "aw_f1c100s.ram";
+    mc-&gt;default_ram_id = "f1c100s.ram";
 };
-
-DEFINE_MACHINE("f1c100s", f1c100s_machine_init)
+ 
+DEFINE_MACHINE("f1c100s", f1c100s_soc_init)
 </pre><br>
 
 <p>
@@ -122,22 +149,64 @@ config F1C100S
 </pre><br>
 
 <p>
+include/qemu/aw_log.h
+</p>
+<pre class="brush:cpp">
+#ifndef __AW_LOG_H__
+#define __AW_LOG_H__
+
+extern int f1c100s_debug_level;
+
+#define trace(...) do {                         \
+    if (f1c100s_debug_level &gt;= TRACE_LEVEL) {       \
+        printf("[TRACE] ");                     \
+        printf(__VA_ARGS__);                    \
+    }                                           \
+} while(0);
+
+#define debug(...) do {                         \
+    if (f1c100s_debug_level &gt;= DEBUG_LEVEL) {       \
+        printf("[DEBUG] ");                     \
+        printf(__VA_ARGS__);                    \
+    }                                           \
+} while(0);
+
+#define error(...) do {                         \
+    if (f1c100s_debug_level &gt;= ERROR_LEVEL) {       \
+        printf("[ERROR] ");                     \
+        printf(__VA_ARGS__);                    \
+    }                                           \
+} while(0);
+
+#define fatal(...) do {                         \
+    printf("[FATAL] ");                         \
+    printf(__VA_ARGS__);                        \
+    exit(-1);                                   \
+} while(0);
+
+#endif
+</pre><br>
+
+<p>
 編譯、測試
 </p>
 <pre>
 $ ./configure --target-list=arm-softmmu
 $ make -j4
 $ sudo make install
+
+$ ./build/qemu-system-arm -cpu help
+    Available CPUs:
+      f1c100s
+
 $ ./build/qemu-system-arm -M help
     f1c100s Allwinner F1C100S (ARM926EJ-S)
 
 $ ./build/qemu-system-arm -M f1c100s
-    call f1c100s_register()
-    call f1c100s_register_types()
-    call f1c100s_machine_init()
-    call f1c100s_class_init()
-    call f1c100s_class_init()
-    call f1c100s_board_init()
+    [TRACE] call f1c100s_soc_register_types()
+    [TRACE] call f1c100s_soc_init()
+    [TRACE] call f1c100s_soc_class_init()
+    [TRACE] call f1c100s_soc_board_init()
 </pre>
 <p>
 <img src="qemu_f1c100s_port_add_cpu/1.jpg" class="maxSize">
