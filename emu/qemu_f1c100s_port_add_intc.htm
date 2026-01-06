@@ -1,0 +1,465 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../emu.htm">模擬器</a> - QEMU - Allwinner F1C100S - 移植教學 - <b>添加INTC</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://gitlab.com/qemu-project/qemu<br><br>
+
+hw/arm/f1c100s.c
+</p>
+<pre class="brush:cpp">
+#include "qemu/osdep.h"
+#include "qemu/log.h"
+#include "qemu/module.h"
+#include "qemu/datadir.h"
+#include "qemu/units.h"
+#include "qemu/f1c100s_log.h"
+#include "hw/sysbus.h"
+#include "hw/arm/boot.h"
+#include "hw/ssi/ssi.h"
+#include "hw/misc/unimp.h"
+#include "hw/boards.h"
+#include "hw/usb/hcd-ohci.h"
+#include "hw/loader.h"
+#include "hw/firmware/smbios.h"
+#include "qapi/error.h"
+#include "sysemu/sysemu.h"
+#include "sysemu/runstate.h"
+#include "target/arm/cpu.h"
+#include "hw/gpio/f1c100s.h"
+#include "hw/misc/f1c100s_ccu.h"
+#include "hw/intc/f1c100s.h"
+
+#define TYPE_F1C100S "f1c100s"
+OBJECT_DECLARE_SIMPLE_TYPE(f1c100s_soc_state, F1C100S)
+
+int f1c100s_debug_level = TRACE_LEVEL;
+
+enum {
+    SRAM_BASE,
+    CCU_BASE,
+    INTC_BASE,
+    GPIO_BASE,
+    SDRAM_BASE,
+    BOOTROM_BASE
+};
+
+struct f1c100s_soc_state {
+    DeviceState parent_obj;
+    ARMCPU cpu;
+    const hwaddr *memmap;
+    MemoryRegion sram;
+    MemoryRegion bootrom;
+
+    f1c100s_ccu_state ccu;
+    f1c100s_intc_state intc;
+    f1c100s_gpio_state gpio;
+};
+
+static const hwaddr f1c100s_memmap[] = {
+    [SRAM_BASE]    = 0x00000000,
+    [CCU_BASE]     = 0x01c20000,
+    [INTC_BASE]    = 0x01c20400,
+    [GPIO_BASE]    = 0x01c20800,
+    [SDRAM_BASE]   = 0x80000000,
+    [BOOTROM_BASE] = 0xffff0000
+};
+ 
+static struct arm_boot_info f1c100s_binfo = { 0 };
+ 
+static void f1c100s_soc_realize(DeviceState *dev, Error **errp)
+{
+    f1c100s_soc_state *s = F1C100S(dev);
+
+    trace("call %s()\n", __func__);
+    qdev_realize(DEVICE(&amp;s-&gt;cpu), NULL, errp);
+
+    memory_region_init_ram(&amp;s-&gt;sram, OBJECT(dev), "sram", 40 * KiB, &amp;error_abort);
+    memory_region_add_subregion(get_system_memory(), s-&gt;memmap[SRAM_BASE], &amp;s-&gt;sram);
+
+    sysbus_realize(SYS_BUS_DEVICE(&amp;s-&gt;ccu), &amp;error_fatal);
+    sysbus_mmio_map(SYS_BUS_DEVICE(&amp;s-&gt;ccu), 0, s-&gt;memmap[CCU_BASE]);
+
+    sysbus_realize(SYS_BUS_DEVICE(&amp;s-&gt;intc), &amp;error_fatal);
+    sysbus_mmio_map(SYS_BUS_DEVICE(&amp;s-&gt;intc), 0, s-&gt;memmap[INTC_BASE]);
+    sysbus_connect_irq(SYS_BUS_DEVICE(&amp;s-&gt;intc), 0, qdev_get_gpio_in(DEVICE(&amp;s-&gt;cpu), ARM_CPU_IRQ));
+
+    sysbus_realize(SYS_BUS_DEVICE(&amp;s-&gt;gpio), &amp;error_fatal);
+    sysbus_mmio_map(SYS_BUS_DEVICE(&amp;s-&gt;gpio), 0, s-&gt;memmap[GPIO_BASE]);
+}
+ 
+static void f1c100s_soc_instance_init(Object *obj)
+{
+    f1c100s_soc_state *s = F1C100S(obj);
+
+    trace("call %s()\n", __func__);
+    s-&gt;memmap = f1c100s_memmap;
+    object_initialize_child(obj, "cpu", &amp;s-&gt;cpu, ARM_CPU_TYPE_NAME("f1c100s"));
+    object_initialize_child(obj, "ccu", &amp;s-&gt;ccu, TYPE_F1C100S_CCU);
+    object_initialize_child(obj, "intc", &amp;s-&gt;intc, TYPE_F1C100S_INTC);
+    object_initialize_child(obj, "gpio", &amp;s-&gt;gpio, TYPE_F1C100S_GPIO);
+}
+ 
+static void f1c100s_soc_class_init(ObjectClass *oc, void *data)
+{
+    DeviceClass *dc = DEVICE_CLASS(oc);
+ 
+    trace("call %s()\n", __func__);
+    dc-&gt;realize = f1c100s_soc_realize;
+}
+ 
+static const TypeInfo f1c100s_soc_type_info = {
+    .name = "f1c100s",
+    .parent = TYPE_DEVICE,
+    .instance_size = sizeof(f1c100s_soc_state),
+    .instance_init = f1c100s_soc_instance_init,
+    .class_init = f1c100s_soc_class_init,
+};
+ 
+static void f1c100s_soc_register_types(void)
+{
+    trace("call %s()\n", __func__);
+    type_register_static(&amp;f1c100s_soc_type_info);
+}
+ 
+type_init(f1c100s_soc_register_types)
+ 
+static void f1c100s_soc_board_init(MachineState *machine)
+{
+    f1c100s_soc_state *s = NULL;
+
+    trace("call %s()\n", __func__);
+    s = F1C100S(object_new(TYPE_F1C100S));
+    object_property_add_child(OBJECT(machine), "soc", OBJECT(s));
+    object_unref(OBJECT(s));
+ 
+    qdev_realize(DEVICE(s), NULL, &amp;error_abort);
+    memory_region_add_subregion(get_system_memory(), s-&gt;memmap[SDRAM_BASE], machine-&gt;ram);
+    memory_region_init_rom(&amp;s-&gt;bootrom, NULL, "f1c100s.bootrom", 64 * KiB, &amp;error_fatal);
+    memory_region_add_subregion(get_system_memory(), s-&gt;memmap[BOOTROM_BASE], &amp;s-&gt;bootrom);
+ 
+    char *fname = qemu_find_file(QEMU_FILE_TYPE_BIOS, machine-&gt;firmware);
+    if (fname) {
+        trace("loading... \"%s\"\n", fname);
+        load_image_targphys(fname, s-&gt;memmap[BOOTROM_BASE], 64 * KiB);
+        g_free(fname);
+ 
+        f1c100s_binfo.entry = s-&gt;memmap[BOOTROM_BASE];
+    }
+ 
+    f1c100s_binfo.ram_size = machine-&gt;ram_size;
+    CPUARMState *env = &amp;s-&gt;cpu.env;
+    env-&gt;boot_info = &amp;f1c100s_binfo;
+    arm_load_kernel(&amp;s-&gt;cpu, machine, &amp;f1c100s_binfo);
+};
+ 
+static void f1c100s_soc_init(MachineClass *mc)
+{
+    trace("call %s()\n", __func__);
+ 
+    mc-&gt;desc = "Allwinner F1C100S (ARM926EJ-S)";
+    mc-&gt;init = f1c100s_soc_board_init;
+    mc-&gt;min_cpus = 1;
+    mc-&gt;max_cpus = 1;
+    mc-&gt;default_cpus = 1;
+    mc-&gt;default_cpu_type = ARM_CPU_TYPE_NAME("f1c100s");
+    mc-&gt;default_ram_size = 32 * MiB;
+    mc-&gt;default_ram_id = "f1c100s.ram";
+};
+ 
+DEFINE_MACHINE("f1c100s", f1c100s_soc_init)
+</pre><br>
+
+<p>
+hw/intc/f1c100s.c
+</p>
+<pre class="brush:cpp">
+#include "qemu/osdep.h"
+#include "qemu/units.h"
+#include "qemu/log.h"
+#include "qemu/module.h"
+#include "qemu/f1c100s_log.h"
+#include "migration/vmstate.h"
+#include "hw/sysbus.h"
+#include "hw/intc/f1c100s.h"
+#include "hw/irq.h"
+
+static void f1c100s_intc_update(f1c100s_intc_state *s)
+{
+    bool active = s-&gt;enable &amp; s-&gt;pending;
+
+    trace("call %s(active=%d)\n", __func__, active);
+
+    qemu_set_irq(s-&gt;parent_irq, active);
+}
+
+static uint64_t f1c100s_intc_read(void *opaque, hwaddr offset, unsigned size)
+{
+    trace("call %s(offset=0x%lx, size=%d)\n", __func__, offset, size);
+
+    return 0;
+}
+
+static void f1c100s_intc_write(void *opaque, hwaddr offset, uint64_t val, unsigned size)
+{
+    int i = 0;
+    f1c100s_intc_state *s = opaque;
+
+    trace("call %s(offset=0x%lx, val=0x%lx, size=%d)\n", __func__, offset, val, size);
+
+    switch (offset) {
+    case INTC_FF_REG0:
+        for (i = 0; i &lt; 64; i++) {
+            if ((1ULL &lt;&lt; i) &amp; s-&gt;enable &amp; val) {
+                qemu_set_irq(qdev_get_gpio_in(DEVICE(s), i), 1);
+            }
+        }
+        break;
+    case INTC_EN_REG0:
+        s-&gt;enable = val;
+        break;
+    default:
+        return;
+    }
+
+    f1c100s_intc_update(s);
+}
+
+static const MemoryRegionOps f1c100s_intc_ops = {
+    .read = f1c100s_intc_read,
+    .write = f1c100s_intc_write,
+    .endianness = DEVICE_NATIVE_ENDIAN,
+};
+
+static void f1c100s_intc_set_irq(void *opaque, int irq, int level)
+{
+    f1c100s_intc_state *s = opaque;
+
+    trace("call %s(irq=%d, level=%d)\n", __func__, irq, level);
+    if (level) {
+        s-&gt;pending |= (1ULL &lt;&lt; irq);
+    }
+    else {
+        s-&gt;pending &amp;= ~(1ULL &lt;&lt; irq);
+    }
+
+    f1c100s_intc_update(s);
+}
+
+static void f1c100s_intc_reset(DeviceState *dev)
+{
+    f1c100s_intc_state *s = F1C100S_INTC(dev);
+
+    trace("call %s()\n", __func__);
+
+    s-&gt;pending = 0;
+    s-&gt;enable  = 0;
+    qemu_set_irq(s-&gt;parent_irq, 0);
+}
+
+static void f1c100s_intc_realize(DeviceState *dev, Error **errp)
+{
+    SysBusDevice *sbd = SYS_BUS_DEVICE(dev);
+    f1c100s_intc_state *s = F1C100S_INTC(dev);
+
+    trace("call %s()\n", __func__);
+
+    memory_region_init_io(&amp;s-&gt;iomem, OBJECT(s), &amp;f1c100s_intc_ops, s, TYPE_F1C100S_INTC, 0x400);
+    sysbus_init_mmio(sbd, &amp;s-&gt;iomem);
+    sysbus_init_irq(sbd, &amp;s-&gt;parent_irq);
+    qdev_init_gpio_in(dev, f1c100s_intc_set_irq, 41);
+}
+
+static void f1c100s_intc_init(Object *obj)
+{
+    trace("call %s()\n", __func__);
+}
+
+static void f1c100s_intc_class_init(ObjectClass *klass, void *data)
+{
+    DeviceClass *dc = DEVICE_CLASS(klass);
+
+    trace("call %s()\n", __func__);
+    dc-&gt;reset = f1c100s_intc_reset;
+    dc-&gt;realize = f1c100s_intc_realize;
+}
+
+static const TypeInfo f1c100s_intc_info = {
+    .name = TYPE_F1C100S_INTC,
+    .parent = TYPE_SYS_BUS_DEVICE,
+    .instance_init = f1c100s_intc_init,
+    .instance_size = sizeof(f1c100s_intc_state),
+    .class_init = f1c100s_intc_class_init,
+};
+
+static void f1c100s_intc_register(void)
+{
+    trace("call %s()\n", __func__);
+
+    type_register_static(&amp;f1c100s_intc_info);
+}
+
+type_init(f1c100s_intc_register)
+</pre><br>
+
+<p>
+include/hw/intc/f1c100s.h
+</p>
+<pre class="brush:cpp">
+#ifndef __INTC_F1C100S_H__
+#define __INTC_F1C100S_H__
+
+#include "qom/object.h"
+#include "hw/sysbus.h"
+
+#define TYPE_F1C100S_INTC "f1c100s-intc"
+OBJECT_DECLARE_SIMPLE_TYPE(f1c100s_intc_state, F1C100S_INTC)
+
+#define INTC_BASE_ADDR_REG  0x04
+#define INTC_PEND_REG0      0x10
+#define INTC_PEND_REG1      0x14
+#define INTC_EN_REG0        0x20
+#define INTC_EN_REG1        0x24
+#define INTC_MASK_REG0      0x30
+#define INTC_MASK_REG1      0x34
+#define INTC_RESP_REG0      0x40
+#define INTC_RESP_REG1      0x44
+#define INTC_FF_REG0        0x50
+#define INTC_FF_REG1        0x54
+
+struct f1c100s_intc_state {
+    SysBusDevice parent_obj;
+    MemoryRegion iomem;
+    qemu_irq parent_irq;
+
+    uint64_t pending;
+    uint64_t enable;
+};
+
+#endif
+</pre><br>
+
+<p>
+hw/intc/meson.build
+</p>
+<pre>
+softmmu_ss.add(when: 'CONFIG_F1C100S', if_true: files('f1c100s.c'))
+</pre><br>
+
+<p>
+測試程式(main.s)
+</p>
+<pre class="brush:asm">
+    .global _start
+ 
+    .equiv INTC_BASE,          0x01c20400
+    .equiv INTC_BASE_ADDR_REG, 0x04
+    .equiv INTC_PEND_REG0,     0x10
+    .equiv INTC_PEND_REG1,     0x14
+    .equiv INTC_EN_REG0,       0x20
+    .equiv INTC_EN_REG1,       0x24
+    .equiv INTC_MASK_REG0,     0x30
+    .equiv INTC_MASK_REG1,     0x34
+    .equiv INTC_RESP_REG0,     0x40
+    .equiv INTC_RESP_REG1,     0x44
+    .equiv INTC_FF_REG0,       0x50
+    .equiv INTC_FF_REG1,       0x54
+ 
+    .arm
+    .text
+_start:
+    b reset
+    b .
+    b .
+    b .
+    b .
+    b .
+    ldr pc, _irq
+    b .
+  
+_irq: .word irq_handler
+  
+irq_handler:
+    ldr r0, =INTC_BASE
+    ldr r1, =0x00000000
+    str r1, [r0, #INTC_FF_REG0]
+    ldr r1, =0xffffffff
+    str r1, [r0, #INTC_PEND_REG0]
+    subs pc, lr, #4
+  
+reset:
+    mrc p15, 0, r0, c1, c0, 0
+    bic r0, #(1 &lt;&lt; 13)
+    mcr p15, 0, r0, c1, c0, 0
+  
+    adr r0, _start
+    mrc p15, 0, r2, c1, c0, 0
+    ands r2, r2, #(1 &lt;&lt; 13)
+    ldreq r1, =0x00000000
+    ldrne r1, =0xffff0000
+    ldmia r0!, {r2-r8, r10}
+    stmia r1!, {r2-r8, r10}
+    ldmia r0!, {r2-r8, r10}
+    stmia r1!, {r2-r8, r10}
+  
+    mrs r0, cpsr
+    bic r0, #0x80
+    msr cpsr_c, r0
+  
+    ldr r0, =INTC_BASE
+    ldr r1, =(1 &lt;&lt; 3)
+    str r1, [r0, #INTC_EN_REG0]
+    ldr r1, =0x00000000
+    str r1, [r0, #INTC_MASK_REG0]
+  
+    ldr r0, =INTC_BASE
+    ldr r1, =(1 &lt;&lt; 3)
+    str r1, [r0, #INTC_FF_REG0]
+0: 
+    b 0b
+    .end
+</pre><br>
+
+<p>
+編譯、測試
+</p>
+<pre>
+$ arm-none-eabi-as -mcpu=arm9 -o main.o main.s
+$ arm-none-eabi-ld -T main.ld -o main.elf main.o
+$ arm-none-eabi-objcopy -O binary main.elf main.bin
+
+$ make -j4
+$ ./build/qemu-system-arm -M f1c100s -bios main.bin
+    [TRACE] call f1c100s_gpio_register()
+    [TRACE] call f1c100s_intc_register()
+    [TRACE] call f1c100s_ccu_register()
+    [TRACE] call f1c100s_soc_register_types()
+    [TRACE] call f1c100s_soc_init()
+    [TRACE] call f1c100s_ccu_class_init()
+    [TRACE] call f1c100s_soc_class_init()
+    [TRACE] call f1c100s_intc_class_init()
+    [TRACE] call f1c100s_gpio_class_init()
+    [TRACE] call f1c100s_soc_board_init()
+    [TRACE] call f1c100s_soc_instance_init()
+    [TRACE] call f1c100s_ccu_init()
+    [TRACE] call f1c100s_intc_init()
+    [TRACE] call f1c100s_gpio_init()
+    [TRACE] call f1c100s_soc_realize()
+    [TRACE] call f1c100s_ccu_realize()
+    [TRACE] call f1c100s_intc_realize()
+    [TRACE] call f1c100s_gpio_realize()
+    [TRACE] loading... "/home/user/Downloads/main.bin"
+    [TRACE] call f1c100s_intc_reset()
+    [TRACE] call f1c100s_intc_write(offset=0x20, val=0x8, size=4)
+    [TRACE] call f1c100s_intc_update(active=0)
+    [TRACE] call f1c100s_intc_write(offset=0x30, val=0x0, size=4)
+    [TRACE] call f1c100s_intc_write(offset=0x50, val=0x8, size=4)
+    [TRACE] call f1c100s_intc_set_irq(irq=3, level=1)
+    [TRACE] call f1c100s_intc_update(active=1)
+    [TRACE] call f1c100s_intc_update(active=1)
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
