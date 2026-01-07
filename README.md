@@ -149,5 +149,6 @@ All of files or resources used on my website can be found from the following lin
 [![](img/photos/snes.jpg)](https://github.com/steward-fu/website/releases/tag/snes)
 [![](img/photos/smd.jpg)](https://github.com/steward-fu/website/releases/tag/smd)
 [![](img/photos/ps1.jpg)](https://github.com/steward-fu/website/releases/tag/ps1)
+[![](img/photos/retroarch.jpg)](https://github.com/steward-fu/website/releases/tag/retroarch)
 [![](img/photos/docker.jpg)](https://github.com/steward-fu/website/releases/tag/docker)
 [![](img/photos/pdf.jpg)](https://github.com/steward-fu/website/releases/tag/datasheet)
