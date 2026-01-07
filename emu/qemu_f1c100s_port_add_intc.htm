@@ -189,7 +189,7 @@ hw/intc/f1c100s.c
 
 static void f1c100s_intc_update(f1c100s_intc_state *s)
 {
-    bool active = s-&gt;enable &amp; s-&gt;pending;
+    bool active = (s-&gt;enable &amp; s-&gt;pending) != 0;
 
     trace("call %s(active=%d)\n", __func__, active);
 
@@ -198,7 +198,16 @@ static void f1c100s_intc_update(f1c100s_intc_state *s)
 
 static uint64_t f1c100s_intc_read(void *opaque, hwaddr offset, unsigned size)
 {
+    f1c100s_intc_state *s = opaque;
+
     trace("call %s(offset=0x%lx, size=%d)\n", __func__, offset, size);
+
+    switch (offset) {
+    case INTC_EN_REG0:
+        return s-&gt;enable;
+    case INTC_PEND_REG0:
+        return s-&gt;pending;
+    }
 
     return 0;
 }
@@ -217,12 +226,14 @@ static void f1c100s_intc_write(void *opaque, hwaddr offset, uint64_t val, unsign
                 qemu_set_irq(qdev_get_gpio_in(DEVICE(s), i), 1);
             }
         }
+        s-&gt;pending |= val;
         break;
     case INTC_EN_REG0:
         s-&gt;enable = val;
         break;
-    default:
-        return;
+    case INTC_PEND_REG0:
+        s-&gt;pending &amp;= ~val;
+        break;
     }
 
     f1c100s_intc_update(s);
@@ -239,14 +250,11 @@ static void f1c100s_intc_set_irq(void *opaque, int irq, int level)
     f1c100s_intc_state *s = opaque;
 
     trace("call %s(irq=%d, level=%d)\n", __func__, irq, level);
+
     if (level) {
         s-&gt;pending |= (1ULL &lt;&lt; irq);
+        f1c100s_intc_update(s);
     }
-    else {
-        s-&gt;pending &amp;= ~(1ULL &lt;&lt; irq);
-    }
-
-    f1c100s_intc_update(s);
 }
 
 static void f1c100s_intc_reset(DeviceState *dev)
@@ -269,6 +277,7 @@ static void f1c100s_intc_realize(DeviceState *dev, Error **errp)
 
     memory_region_init_io(&amp;s-&gt;iomem, OBJECT(s), &amp;f1c100s_intc_ops, s, TYPE_F1C100S_INTC, 0x400);
     sysbus_init_mmio(sbd, &amp;s-&gt;iomem);
+
     sysbus_init_irq(sbd, &amp;s-&gt;parent_irq);
     qdev_init_gpio_in(dev, f1c100s_intc_set_irq, 41);
 }
@@ -414,13 +423,30 @@ reset:
     str r1, [r0, #INTC_EN_REG0]
     ldr r1, =0x00000000
     str r1, [r0, #INTC_MASK_REG0]
-  
-    ldr r0, =INTC_BASE
     ldr r1, =(1 &lt;&lt; 3)
     str r1, [r0, #INTC_FF_REG0]
+  
 0: 
     b 0b
     .end
+</pre><br>
+
+<p>
+main.ld
+</p>
+<pre>
+MEMORY {
+    RAM : ORIGIN = 0xffff0000, LENGTH = 32K
+}
+
+SECTIONS {
+    text : {
+        PROVIDE(__spl_start = .);
+        *(.text*)
+        PROVIDE(__spl_end = .);
+    } &gt; RAM
+    PROVIDE(__spl_size = __spl_end - __spl_start);
+}
 </pre><br>
 
 <p>
@@ -451,15 +477,20 @@ $ ./build/qemu-system-arm -M f1c100s -bios main.bin
     [TRACE] call f1c100s_ccu_realize()
     [TRACE] call f1c100s_intc_realize()
     [TRACE] call f1c100s_gpio_realize()
-    [TRACE] loading... "/home/user/Downloads/main.bin"
+    [TRACE] loading... "main.bin"
     [TRACE] call f1c100s_intc_reset()
     [TRACE] call f1c100s_intc_write(offset=0x20, val=0x8, size=4)
     [TRACE] call f1c100s_intc_update(active=0)
     [TRACE] call f1c100s_intc_write(offset=0x30, val=0x0, size=4)
+    [TRACE] call f1c100s_intc_update(active=0)
     [TRACE] call f1c100s_intc_write(offset=0x50, val=0x8, size=4)
     [TRACE] call f1c100s_intc_set_irq(irq=3, level=1)
     [TRACE] call f1c100s_intc_update(active=1)
     [TRACE] call f1c100s_intc_update(active=1)
+    [TRACE] call f1c100s_intc_write(offset=0x50, val=0x0, size=4)
+    [TRACE] call f1c100s_intc_update(active=1)
+    [TRACE] call f1c100s_intc_write(offset=0x10, val=0xffffffff, size=4)
+    [TRACE] call f1c100s_intc_update(active=0)
 </pre>
 
 <br><script type="text/javascript" src="../tail.js"></script>
