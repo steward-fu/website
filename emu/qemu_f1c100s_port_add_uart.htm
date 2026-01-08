@@ -1,0 +1,560 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../emu.htm">模擬器</a> - QEMU - Allwinner F1C100S - 移植教學 - <b>添加UART</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://gitlab.com/qemu-project/qemu<br><br>
+
+hw/arm/f1c100s.c
+</p>
+<pre class="brush:cpp">
+#include "qemu/osdep.h"
+#include "qemu/log.h"
+#include "qemu/module.h"
+#include "qemu/datadir.h"
+#include "qemu/units.h"
+#include "qemu/f1c100s_log.h"
+#include "hw/sysbus.h"
+#include "hw/arm/boot.h"
+#include "hw/ssi/ssi.h"
+#include "hw/misc/unimp.h"
+#include "hw/boards.h"
+#include "hw/usb/hcd-ohci.h"
+#include "hw/loader.h"
+#include "hw/firmware/smbios.h"
+#include "qapi/error.h"
+#include "sysemu/sysemu.h"
+#include "sysemu/runstate.h"
+#include "target/arm/cpu.h"
+#include "hw/gpio/f1c100s.h"
+#include "hw/misc/f1c100s_ccu.h"
+#include "hw/intc/f1c100s.h"
+#include "hw/char/f1c100s_uart.h"
+
+#define TYPE_F1C100S "f1c100s"
+OBJECT_DECLARE_SIMPLE_TYPE(f1c100s_soc_state, F1C100S)
+
+int f1c100s_debug_level = TRACE_LEVEL;
+
+enum {
+    SRAM_BASE,
+    CCU_BASE,
+    INTC_BASE,
+    GPIO_BASE,
+    SDRAM_BASE,
+    UART0_BASE,
+    UART1_BASE,
+    UART2_BASE,
+    BOOTROM_BASE
+};
+
+struct f1c100s_soc_state {
+    DeviceState parent_obj;
+    ARMCPU cpu;
+    const hwaddr *memmap;
+    MemoryRegion sram;
+    MemoryRegion bootrom;
+
+    f1c100s_ccu_state ccu;
+    f1c100s_intc_state intc;
+    f1c100s_gpio_state gpio;
+    f1c100s_uart_state uart[3];
+};
+
+static const hwaddr f1c100s_memmap[] = {
+    [SRAM_BASE]    = 0x00000000,
+    [CCU_BASE]     = 0x01c20000,
+    [INTC_BASE]    = 0x01c20400,
+    [GPIO_BASE]    = 0x01c20800,
+    [SDRAM_BASE]   = 0x80000000,
+    [UART0_BASE]   = 0x01c25000,
+    [UART1_BASE]   = 0x01c25400,
+    [UART2_BASE]   = 0x01c25800,
+    [BOOTROM_BASE] = 0xffff0000
+};
+
+static struct arm_boot_info f1c100s_binfo = { 0 };
+ 
+static void f1c100s_soc_realize(DeviceState *dev, Error **errp)
+{
+    int i = 0;
+    f1c100s_soc_state *s = F1C100S(dev);
+
+    trace("call %s()\n", __func__);
+    qdev_realize(DEVICE(&amp;s-&gt;cpu), NULL, errp);
+
+    memory_region_init_ram(&amp;s-&gt;sram, OBJECT(dev), "sram", 40 * KiB, &amp;error_abort);
+    memory_region_add_subregion(get_system_memory(), s-&gt;memmap[SRAM_BASE], &amp;s-&gt;sram);
+
+    sysbus_realize(SYS_BUS_DEVICE(&amp;s-&gt;ccu), &amp;error_fatal);
+    sysbus_mmio_map(SYS_BUS_DEVICE(&amp;s-&gt;ccu), 0, s-&gt;memmap[CCU_BASE]);
+
+    sysbus_realize(SYS_BUS_DEVICE(&amp;s-&gt;intc), &amp;error_fatal);
+    sysbus_mmio_map(SYS_BUS_DEVICE(&amp;s-&gt;intc), 0, s-&gt;memmap[INTC_BASE]);
+    sysbus_connect_irq(SYS_BUS_DEVICE(&amp;s-&gt;intc), 0, qdev_get_gpio_in(DEVICE(&amp;s-&gt;cpu), ARM_CPU_IRQ));
+
+    sysbus_realize(SYS_BUS_DEVICE(&amp;s-&gt;gpio), &amp;error_fatal);
+    sysbus_mmio_map(SYS_BUS_DEVICE(&amp;s-&gt;gpio), 0, s-&gt;memmap[GPIO_BASE]);
+
+    for (i = 0; i &lt; 3; i++) {
+        qdev_prop_set_chr(DEVICE(&amp;s-&gt;uart[i]), "chardev", serial_hd(i));
+        sysbus_realize(SYS_BUS_DEVICE(&amp;s-&gt;uart[i]), &amp;error_fatal);
+        sysbus_mmio_map(SYS_BUS_DEVICE(&amp;s-&gt;uart[i]), 0, s-&gt;memmap[UART0_BASE + i]);
+    }
+}
+ 
+static void f1c100s_soc_instance_init(Object *obj)
+{
+    f1c100s_soc_state *s = F1C100S(obj);
+
+    trace("call %s()\n", __func__);
+    s-&gt;memmap = f1c100s_memmap;
+    object_initialize_child(obj, "cpu", &amp;s-&gt;cpu, ARM_CPU_TYPE_NAME("f1c100s"));
+    object_initialize_child(obj, "ccu", &amp;s-&gt;ccu, TYPE_F1C100S_CCU);
+    object_initialize_child(obj, "intc", &amp;s-&gt;intc, TYPE_F1C100S_INTC);
+    object_initialize_child(obj, "gpio", &amp;s-&gt;gpio, TYPE_F1C100S_GPIO);
+    object_initialize_child(obj, "uart0", &amp;s-&gt;uart[0], TYPE_F1C100S_UART);
+    object_initialize_child(obj, "uart1", &amp;s-&gt;uart[1], TYPE_F1C100S_UART);
+    object_initialize_child(obj, "uart2", &amp;s-&gt;uart[2], TYPE_F1C100S_UART);
+}
+ 
+static void f1c100s_soc_class_init(ObjectClass *oc, void *data)
+{
+    DeviceClass *dc = DEVICE_CLASS(oc);
+ 
+    trace("call %s()\n", __func__);
+    dc-&gt;realize = f1c100s_soc_realize;
+}
+ 
+static const TypeInfo f1c100s_soc_type_info = {
+    .name = "f1c100s",
+    .parent = TYPE_DEVICE,
+    .instance_size = sizeof(f1c100s_soc_state),
+    .instance_init = f1c100s_soc_instance_init,
+    .class_init = f1c100s_soc_class_init,
+};
+ 
+static void f1c100s_soc_register_types(void)
+{
+    trace("call %s()\n", __func__);
+    type_register_static(&amp;f1c100s_soc_type_info);
+}
+ 
+type_init(f1c100s_soc_register_types)
+ 
+static void f1c100s_soc_board_init(MachineState *machine)
+{
+    f1c100s_soc_state *s = NULL;
+
+    trace("call %s()\n", __func__);
+    s = F1C100S(object_new(TYPE_F1C100S));
+    object_property_add_child(OBJECT(machine), "soc", OBJECT(s));
+    object_unref(OBJECT(s));
+ 
+    qdev_realize(DEVICE(s), NULL, &amp;error_abort);
+    memory_region_add_subregion(get_system_memory(), s-&gt;memmap[SDRAM_BASE], machine-&gt;ram);
+    memory_region_init_rom(&amp;s-&gt;bootrom, NULL, "f1c100s.bootrom", 64 * KiB, &amp;error_fatal);
+    memory_region_add_subregion(get_system_memory(), s-&gt;memmap[BOOTROM_BASE], &amp;s-&gt;bootrom);
+ 
+    char *fname = qemu_find_file(QEMU_FILE_TYPE_BIOS, machine-&gt;firmware);
+    if (fname) {
+        trace("loading... \"%s\"\n", fname);
+        load_image_targphys(fname, s-&gt;memmap[BOOTROM_BASE], 64 * KiB);
+        g_free(fname);
+ 
+        f1c100s_binfo.entry = s-&gt;memmap[BOOTROM_BASE];
+    }
+ 
+    f1c100s_binfo.ram_size = machine-&gt;ram_size;
+    CPUARMState *env = &amp;s-&gt;cpu.env;
+    env-&gt;boot_info = &amp;f1c100s_binfo;
+    arm_load_kernel(&amp;s-&gt;cpu, machine, &amp;f1c100s_binfo);
+};
+ 
+static void f1c100s_soc_init(MachineClass *mc)
+{
+    trace("call %s()\n", __func__);
+ 
+    mc-&gt;desc = "Allwinner F1C100S (ARM926EJ-S)";
+    mc-&gt;init = f1c100s_soc_board_init;
+    mc-&gt;min_cpus = 1;
+    mc-&gt;max_cpus = 1;
+    mc-&gt;default_cpus = 1;
+    mc-&gt;default_cpu_type = ARM_CPU_TYPE_NAME("f1c100s");
+    mc-&gt;default_ram_size = 32 * MiB;
+    mc-&gt;default_ram_id = "f1c100s.ram";
+};
+ 
+DEFINE_MACHINE("f1c100s", f1c100s_soc_init)
+</pre><br>
+
+<p>
+hw/char/f1c100s_uart.c
+</p>
+<pre class="brush:cpp">
+#include "qemu/osdep.h"
+#include "qemu/log.h"
+#include "qemu/module.h"
+#include "qemu/f1c100s_log.h"
+#include "migration/vmstate.h"
+#include "hw/char/f1c100s_uart.h"
+#include "hw/irq.h"
+#include "hw/qdev-properties.h"
+#include "hw/qdev-properties-system.h"
+#include "trace.h"
+
+static uint64_t f1c100s_uart_read(void *opaque, hwaddr addr, unsigned size)
+{
+    trace("call %s()\n", __func__);
+
+    switch (addr) {
+    case USR:
+        return (1ULL &lt;&lt; 1);
+    }
+    return 0;
+}
+
+static void f1c100s_uart_write(void *opaque, hwaddr addr, uint64_t val, unsigned size)
+{
+    f1c100s_uart_state *s = F1C100S_UART(opaque);
+
+    trace("call %s(addr=0x%lx, val=0x%lx, size=%d)\n", __func__, addr, val, size);
+
+    switch (addr) {
+    case LCR:
+        if ((val &amp; (1ULL &lt;&lt; 7)) == 0) {
+            s-&gt;cnt = 0;
+            memset(s-&gt;buf, 0, sizeof(s-&gt;buf));
+        }
+        break;
+    case RBR:
+        s-&gt;buf[s-&gt;cnt++] = (char)val;
+        s-&gt;cnt %= sizeof(s-&gt;buf);
+
+        if (val == 0) {
+            printf("%s\n", s-&gt;buf);
+        }
+        break;
+    }
+}
+
+static const MemoryRegionOps f1c100s_uart_ops = {
+    .read = f1c100s_uart_read,
+    .write = f1c100s_uart_write,
+    .endianness = DEVICE_NATIVE_ENDIAN,
+};
+
+static void f1c100s_uart_reset(DeviceState *dev)
+{
+    trace("call %s()\n", __func__);
+}
+
+static void f1c100s_uart_realize(DeviceState *dev, Error **errp)
+{
+    trace("call %s()\n", __func__);
+}
+
+static void f1c100s_uart_init(Object *obj)
+{
+    f1c100s_uart_state *s = F1C100S_UART(obj);
+    SysBusDevice *sbd = SYS_BUS_DEVICE(obj);
+
+    trace("call %s()\n", __func__);
+
+    memory_region_init_io(&amp;s-&gt;iomem, obj, &amp;f1c100s_uart_ops, s, TYPE_F1C100S_UART, 0x400);
+    sysbus_init_mmio(sbd, &amp;s-&gt;iomem);
+}
+
+static Property f1c100s_uart_properties[] = {
+    DEFINE_PROP_CHR("chardev", f1c100s_uart_state, chr),
+    DEFINE_PROP_END_OF_LIST()
+};
+
+static void f1c100s_uart_class_init(ObjectClass *oc, void *data)
+{
+    DeviceClass *dc = DEVICE_CLASS(oc);
+
+    trace("call %s()\n", __func__);
+
+    dc-&gt;reset = f1c100s_uart_reset;
+    dc-&gt;realize = f1c100s_uart_realize;
+    device_class_set_props(dc, f1c100s_uart_properties);
+}
+
+static const TypeInfo f1c100s_uart_info = {
+    .name = TYPE_F1C100S_UART,
+    .parent = TYPE_SYS_BUS_DEVICE,
+    .instance_size = sizeof(f1c100s_uart_state),
+    .instance_init = f1c100s_uart_init,
+    .class_init = f1c100s_uart_class_init
+};
+
+static void f1c100s_uart_register_types(void)
+{
+    trace("call %s()\n", __func__);
+
+    type_register_static(&amp;f1c100s_uart_info);
+}
+
+type_init(f1c100s_uart_register_types)
+</pre><br>
+
+<p>
+include/hw/char/f1c100s_uart.h
+</p>
+<pre class="brush:cpp">
+#ifndef __CHAR_UART_F1C100S_H__
+#define __CHAR_UART_F1C100S_H__
+
+#include "hw/sysbus.h"
+#include "chardev/char-fe.h"
+#include "qom/object.h"
+#include "qemu/fifo8.h"
+
+#define TYPE_F1C100S_UART "f1c100s-uart"
+OBJECT_DECLARE_SIMPLE_TYPE(f1c100s_uart_state, F1C100S_UART)
+
+#define RBR 0x0000
+#define DLL 0x0000
+#define DLH 0x0004
+#define IER 0x0004
+#define IIR 0x0008
+#define LCR 0x000c
+#define MCR 0x0010
+#define USR 0x007c
+
+struct f1c100s_uart_state {
+    SysBusDevice parent_obj;
+    MemoryRegion iomem;
+    CharBackend chr;
+
+    int cnt;
+    char buf[255];
+};
+
+#endif
+</pre><br>
+
+<p>
+hw/char/meson.build
+</p>
+<pre>
+softmmu_ss.add(when: 'CONFIG_F1C100S', if_true: files('f1c100s_uart.c'))
+</pre><br>
+
+<p>
+測試程式(main.s)
+</p>
+<pre class="brush:asm">
+    .global _start
+ 
+    .equ CCU_BASE,   0x01c20000
+    .equ GPIO_BASE,  0x01c20800
+    .equ UART0_BASE, 0x01c25000
+ 
+    .equ PLL_PERIPH_CTRL_REG,   0x0028
+    .equ AHB_APB_HCLKC_CFG_REG, 0x0054
+    .equ BUS_CLK_GATING_REG2,   0x0068
+    .equ BUS_SOFT_RST_REG2,     0x02d0
+ 
+    .equ PE,   (0x24 * 4) 
+    .equ CFG0, 0x00
+    .equ DATA, 0x10
+    .equ RBR,  0x0000
+    .equ DLL,  0x0000
+    .equ DLH,  0x0004
+    .equ IER,  0x0004
+    .equ IIR,  0x0008
+    .equ LCR,  0x000c
+    .equ MCR,  0x0010
+    .equ USR,  0x007c
+ 
+    .arm
+    .text
+_start:
+    .long 0xea000016
+    .byte 'e', 'G', 'O', 'N', '.', 'B', 'T', '0'
+    .long 0, __spl_size
+    .byte 'S', 'P', 'L', 2
+    .long 0, 0
+    .long 0, 0, 0, 0, 0, 0, 0, 0
+    .long 0, 0, 0, 0, 0, 0, 0, 0
+  
+_vector:
+    b reset
+    b .
+    b .
+    b .
+    b .
+    b .
+    b .
+    b .
+  
+reset:
+    ldr r0, =CCU_BASE
+    ldr r1, =0x80041800
+    str r1, [r0, #PLL_PERIPH_CTRL_REG]
+    ldr r1, =0x00003180
+    str r1, [r0, #AHB_APB_HCLKC_CFG_REG]
+ 
+    ldr r0, =GPIO_BASE
+    ldr r1, =0x55
+    str r1, [r0, #(PE + CFG0)]
+ 
+    ldr r0, =CCU_BASE
+    ldr r1, =(1 &lt;&lt; 20)
+    str r1, [r0, #BUS_CLK_GATING_REG2]
+    str r1, [r0, #BUS_SOFT_RST_REG2]
+ 
+    ldr r0, =UART0_BASE
+    ldr r1, =0x00
+    str r1, [r0, #IER]
+    ldr r1, =0xf7
+    str r1, [r0, #IIR]
+    ldr r1, =0x00
+    str r1, [r0, #MCR]
+    ldr r1, [r0, #LCR]
+    orr r1, #(1 &lt;&lt; 7)
+    str r1, [r0, #LCR]
+    ldr r1, =54
+    str r1, [r0, #DLL]
+    ldr r1, =0x00
+    str r1, [r0, #DLH]
+    ldr r1, [r0, #LCR]
+    bic r1, #(1 &lt;&lt; 7)
+    str r1, [r0, #LCR]
+    ldr r1, [r0, #LCR]
+    bic r1, #0x1f
+    orr r1, #0x03
+    str r1, [r0, #LCR]
+  
+    ldr r0, =UART0_BASE
+    ldr r2, =hello
+1:
+    ldr r1, [r0, #USR]
+    tst r1, #(1 &lt;&lt; 1)
+    beq 1b
+    ldrb r1, [r2]
+    strb r1, [r0, #RBR]
+    add r2, #1
+    cmp r1, #0
+    bne 1b
+  
+main:
+    b main
+  
+    .align
+hello: .asciz "Hello, world!"
+    .end
+</pre><br>
+
+<p>
+main.ld
+</p>
+<pre>
+MEMORY {
+    RAM : ORIGIN = 0xffff0000, LENGTH = 32K
+}
+
+SECTIONS {
+    text : {
+        PROVIDE(__spl_start = .);
+        *(.text*)
+        PROVIDE(__spl_end = .);
+    } &gt; RAM
+    PROVIDE(__spl_size = __spl_end - __spl_start);
+}
+</pre><br>
+
+<p>
+編譯、測試
+</p>
+<pre>
+$ arm-none-eabi-as -mcpu=arm9 -o main.o main.s
+$ arm-none-eabi-ld -T main.ld -o main.elf main.o
+$ arm-none-eabi-objcopy -O binary main.elf main.bin
+
+$ make -j4
+$ ./build/qemu-system-arm -M f1c100s -bios main.bin
+    [TRACE] call f1c100s_uart_register_types()
+    [TRACE] call f1c100s_gpio_register()
+    [TRACE] call f1c100s_intc_register()
+    [TRACE] call f1c100s_ccu_register()
+    [TRACE] call f1c100s_soc_register_types()
+    [TRACE] call f1c100s_soc_init()
+    [TRACE] call f1c100s_ccu_class_init()
+    [TRACE] call f1c100s_uart_class_init()
+    [TRACE] call f1c100s_soc_class_init()
+    [TRACE] call f1c100s_intc_class_init()
+    [TRACE] call f1c100s_gpio_class_init()
+    [TRACE] call f1c100s_soc_board_init()
+    [TRACE] call f1c100s_soc_instance_init()
+    [TRACE] call f1c100s_ccu_init()
+    [TRACE] call f1c100s_intc_init()
+    [TRACE] call f1c100s_gpio_init()
+    [TRACE] call f1c100s_uart_init()
+    [TRACE] call f1c100s_uart_init()
+    [TRACE] call f1c100s_uart_init()
+    [TRACE] call f1c100s_soc_realize()
+    [TRACE] call f1c100s_ccu_realize()
+    [TRACE] call f1c100s_intc_realize()
+    [TRACE] call f1c100s_gpio_realize()
+    [TRACE] call f1c100s_uart_realize()
+    [TRACE] call f1c100s_uart_realize()
+    [TRACE] call f1c100s_uart_realize()
+    [TRACE] loading... "main.bin"
+    [TRACE] call f1c100s_uart_reset()
+    [TRACE] call f1c100s_uart_reset()
+    [TRACE] call f1c100s_uart_reset()
+    [TRACE] call f1c100s_intc_reset()
+    [TRACE] call f1c100s_ccu_write(offset=0x28, val=0x80041800, size=4)
+    [TRACE] call f1c100s_ccu_write(offset=0x54, val=0x3180, size=4)
+    [TRACE] call f1c100s_gpio_write(offset=0x90, val=0x55, size=4)
+    [TRACE] call f1c100s_ccu_write(offset=0x68, val=0x100000, size=4)
+    [TRACE] call f1c100s_ccu_write(offset=0x2d0, val=0x100000, size=4)
+    [TRACE] call f1c100s_uart_write(addr=0x4, val=0x0, size=4)
+    [TRACE] call f1c100s_uart_write(addr=0x8, val=0xf7, size=4)
+    [TRACE] call f1c100s_uart_write(addr=0x10, val=0x0, size=4)
+    [TRACE] call f1c100s_uart_read()
+    [TRACE] call f1c100s_uart_write(addr=0xc, val=0x80, size=4)
+    [TRACE] call f1c100s_uart_write(addr=0x0, val=0x36, size=4)
+    [TRACE] call f1c100s_uart_write(addr=0x4, val=0x0, size=4)
+    [TRACE] call f1c100s_uart_read()
+    [TRACE] call f1c100s_uart_write(addr=0xc, val=0x0, size=4)
+    [TRACE] call f1c100s_uart_read()
+    [TRACE] call f1c100s_uart_write(addr=0xc, val=0x3, size=4)
+    [TRACE] call f1c100s_uart_read()
+    [TRACE] call f1c100s_uart_write(addr=0x0, val=0x48, size=1)
+    [TRACE] call f1c100s_uart_read()
+    [TRACE] call f1c100s_uart_write(addr=0x0, val=0x65, size=1)
+    [TRACE] call f1c100s_uart_read()
+    [TRACE] call f1c100s_uart_write(addr=0x0, val=0x6c, size=1)
+    [TRACE] call f1c100s_uart_read()
+    [TRACE] call f1c100s_uart_write(addr=0x0, val=0x6c, size=1)
+    [TRACE] call f1c100s_uart_read()
+    [TRACE] call f1c100s_uart_write(addr=0x0, val=0x6f, size=1)
+    [TRACE] call f1c100s_uart_read()
+    [TRACE] call f1c100s_uart_write(addr=0x0, val=0x2c, size=1)
+    [TRACE] call f1c100s_uart_read()
+    [TRACE] call f1c100s_uart_write(addr=0x0, val=0x20, size=1)
+    [TRACE] call f1c100s_uart_read()
+    [TRACE] call f1c100s_uart_write(addr=0x0, val=0x77, size=1)
+    [TRACE] call f1c100s_uart_read()
+    [TRACE] call f1c100s_uart_write(addr=0x0, val=0x6f, size=1)
+    [TRACE] call f1c100s_uart_read()
+    [TRACE] call f1c100s_uart_write(addr=0x0, val=0x72, size=1)
+    [TRACE] call f1c100s_uart_read()
+    [TRACE] call f1c100s_uart_write(addr=0x0, val=0x6c, size=1)
+    [TRACE] call f1c100s_uart_read()
+    [TRACE] call f1c100s_uart_write(addr=0x0, val=0x64, size=1)
+    [TRACE] call f1c100s_uart_read()
+    [TRACE] call f1c100s_uart_write(addr=0x0, val=0x21, size=1)
+    [TRACE] call f1c100s_uart_read()
+    [TRACE] call f1c100s_uart_write(addr=0x0, val=0x0, size=1)
+    Hello, world!
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

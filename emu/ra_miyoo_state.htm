@@ -1,0 +1,95 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../emu.htm">模擬器</a> - RetroArch - <b>如何讓Miyoo支援SaveState/LoadState按鍵</b></h3>
+<hr size="1"><br>
+<p>
+~/.retroarch/retroarch.cfg
+</p>
+<pre>
+input_load_state_btn = "48"
+input_save_state_btn = "49"
+</pre>
+<p>
+P.S. SDLK_0=48, SDLK_1=49<br><br>
+
+input/drivers_joypad/sdl_dingux_joypad.c
+</p>
+<pre>
+diff --git a/input/drivers_joypad/sdl_dingux_joypad.c b/input/drivers_joypad/sdl_dingux_joypad.c
+index 0492a7a..53d6ce6 100644
+--- a/input/drivers_joypad/sdl_dingux_joypad.c
++++ b/input/drivers_joypad/sdl_dingux_joypad.c
+@@ -122,6 +122,8 @@
+ #else
+ #define SDL_DINGUX_SDLK_MENU   SDLK_HOME
+ #endif
++#define SDL_DINGUX_SDLK_SAVE   SDLK_1
++#define SDL_DINGUX_SDLK_LOAD   SDLK_0
+ 
+ #if defined(HAVE_LIBSHAKE)
+ /* 5 ms period == 200 Hz
+@@ -165,6 +167,11 @@ typedef struct
+ #if defined(SDL_DINGUX_HAS_MENU_TOGGLE)
+    bool menu_toggle;
+ #endif
++
++   struct {
++      bool load;
++      bool save;
++   } state;
+ } dingux_joypad_t;
+ 
+ #if defined(SDL_DINGUX_HAS_MENU_TOGGLE)
+@@ -494,6 +501,13 @@ static int32_t sdl_dingux_joypad_button(unsigned port, uint16_t joykey)
+    if (port != 0)
+       return 0;
+ 
++   if (joykey == 48) { // SDLK_0
++       return joypad-&gt;state.load;
++   }
++   else if (joykey == 49) { // SDLK_1
++       return joypad-&gt;state.save;
++   }
++
+    return (joypad-&gt;pad_state &amp; (1 &lt;&lt; joykey));
+ }
+ 
+@@ -580,6 +594,7 @@ static int16_t sdl_dingux_joypad_state(
+    if (port_idx != 0)
+       return 0;
+ 
++
+    for (i = 0; i &lt; RARCH_FIRST_CUSTOM_BIND; i++)
+    {
+       /* Auto-binds are per joypad, not per user. */
+@@ -631,6 +646,12 @@ static void sdl_dingux_joypad_poll(void)
+ 			case SDL_KEYDOWN:
+             switch (event.key.keysym.sym)
+             {
++               case SDL_DINGUX_SDLK_LOAD:
++                  joypad-&gt;state.load = true;
++                  break;
++               case SDL_DINGUX_SDLK_SAVE:
++                  joypad-&gt;state.save = true;
++                  break;
+                case SDL_DINGUX_SDLK_X:
+                   BIT16_SET(joypad-&gt;pad_state, RETRO_DEVICE_ID_JOYPAD_X);
+                   break;
+@@ -692,6 +713,12 @@ static void sdl_dingux_joypad_poll(void)
+ 			case SDL_KEYUP:
+             switch (event.key.keysym.sym)
+             {
++               case SDL_DINGUX_SDLK_LOAD:
++                  joypad-&gt;state.load = false;
++                  break;
++               case SDL_DINGUX_SDLK_SAVE:
++                  joypad-&gt;state.save = false;
++                  break;
+                case SDL_DINGUX_SDLK_X:
+                   BIT16_CLEAR(joypad-&gt;pad_state, RETRO_DEVICE_ID_JOYPAD_X);
+                   break;
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
