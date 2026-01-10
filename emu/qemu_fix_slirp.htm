@@ -1,0 +1,34 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../emu.htm">模擬器</a> - QEMU - <b>解決error: slirp_pollfds_fill is deprecated問題</b></h3>
+<hr size="1"><br>
+<p>
+問題如下：
+</p>
+<pre>
+../net/slirp.c: In function ‘net_slirp_poll_notify’:
+../net/slirp.c:365:9: error: ‘slirp_pollfds_fill’ is deprecated [-Werror=deprecated-declarations]
+         slirp_pollfds_fill(s-&gt;slirp, &amp;poll-&gt;timeout,
+         ^~~~~~~~~~~~~~~~~~
+In file included from ../net/slirp.c:41:
+/usr/include/slirp/libslirp.h:273:6: note: declared here
+ void slirp_pollfds_fill(Slirp *slirp, uint32_t *timeout,
+      ^~~~~~~~~~~~~~~~~~
+cc1: all warnings being treated as errors
+ninja: build stopped: subcommand failed.
+</pre><br>
+
+<p>
+解法如下：
+</p>
+<pre>
+$ vim net/slirp.c +365
+    363     switch (poll-&gt;state) {
+    364     case MAIN_LOOP_POLL_FILL:
+    365         slirp_pollfds_fill_socket(s-&gt;slirp, &amp;poll-&gt;timeout,
+    366                            net_slirp_add_poll, poll-&gt;pollfds);
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
