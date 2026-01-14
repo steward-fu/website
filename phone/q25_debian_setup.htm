@@ -1,0 +1,91 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../phone.htm">手機</a> - Zinwa Q25 - Debian - <b>安裝系統(LinuxDeploy)</b></h3>
+<hr size="1"><br>
+<p>
+步驟如下：<br>
+1. 安裝Linux Deploy、XServer XSDL<br>
+2. Linux Deploy配置
+</p>
+<pre>
+Properties: linux
+BOOTSTRAP
+Distribution: Debian
+Architecture: arm64
+Distribution: oldstable
+Source Path: http://ftp.debian.org/debian
+Installation type: Partition
+Installation path: /data/block/mmcblk0p1
+SSH
+Enable: Checked
+</pre><br>
+
+<p>
+3. 安裝Busybox到/data/adb/modules/playstore/system/bin<br>
+4. 手動修復Linux Deploy的安裝問題
+</p>
+<pre>
+127|elish:/ $ su
+127|elish:/ # mkdir /data/tmp
+127|elish:/ # mount /dev/block/mmcblk0p1 /data/tmp/
+127|elish:/ # mount --bind /dev /data/tmp/dev/
+127|elish:/ # mount --bind /dev/pts /data/tmp/dev/pts
+127|elish:/ # mount --bind /sys /data/tmp/sys
+127|elish:/ # mount --bind /proc /data/tmp/proc
+127|elish:/ # chroot /data/linux
+
+# export PATH=$PATH:/bin:/usr/bin:/usr/sbin
+# bash
+
+root@localhost:/# passwd root
+root@localhost:/# apt --fix-broken install
+root@localhost:/# mkdir -p /data/local/tmp/
+root@localhost:/# vi /etc/apt/sources.list
+    deb http://ftp.debian.org/debian/ bookworm main contrib non-free
+    deb http://ftp.debian.org/debian/ bookworm-backports main contrib non-free
+    deb http://archive.debian.org/debian/ buster main contrib non-free
+    deb-src http://ftp.debian.org/debian/ bookworm main contrib non-free
+
+root@localhost:/# apt-get update
+root@localhost:/# apt-get install vim sudo openssh-server x11-xserver-utils
+root@localhost:/# vim /etc/apt/sources.list
+    deb http://deb.debian.org/debian bookworm main contrib non-free non-free-firmware
+    deb http://deb.debian.org/debian bookworm-updates main contrib non-free non-free-firmware
+    deb http://deb.debian.org/debian bookworm-backports main contrib non-free non-free-firmware
+    deb http://archive.debian.org/debian/ buster contrib main non-free
+
+root@localhost:/# apt-get update
+root@localhost:/# apt-get install xfce4 xfce4-goodies dbus-x11
+</pre><br>
+
+<p>
+5. XServer XSDL配置：720x720、DPI x1<br>
+6. Termux
+</p>
+<pre>
+$ cd
+$ vim ../usr/bin/cli
+    #!/system/bin/sh
+    if [ `whoami` != "root" ]; then
+        echo "run me as root"
+        exit
+    fi
+
+    /data/data/ru.meefik.linuxdeploy/files/bin/linuxdeploy -p linux start -m
+    ssh xxx@127.0.0.1
+    /data/data/ru.meefik.linuxdeploy/files/bin/linuxdeploy -p linux stop -u
+
+$ chmod a+x ../usr/bin/cli
+$ cli
+xxx@localhost:~$
+xxx@localhost:~$ DISPLAY=:0 startxfce4
+</pre><br>
+
+<p>
+完成<br>
+<img src="q25_debian_setup/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
