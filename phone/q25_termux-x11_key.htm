@@ -12,10 +12,41 @@ termux-x11_mod_key_commit-6d62752.diff
 </p>
 <pre>
 diff --git a/app/src/main/cpp/lorie/activity.c b/app/src/main/cpp/lorie/activity.c
-index 8a51c11..bf11282 100644
+index 8a51c11..cc28c5b 100644
 --- a/app/src/main/cpp/lorie/activity.c
 +++ b/app/src/main/cpp/lorie/activity.c
-@@ -327,10 +327,270 @@ static void requestStylusEnabled(__unused JNIEnv *env, __unused jclass clazz, jb
+@@ -22,6 +22,11 @@
+ #pragma ide diagnostic ignored "ConstantFunctionResult"
+ #define log(prio, ...) __android_log_print(ANDROID_LOG_ ## prio, "LorieNative", __VA_ARGS__)
+ 
++static struct {
++    jfloat x;
++    jfloat y;
++} mouse;
++
+ extern volatile int conn_fd; // The only variable from shared with X server code.
+ 
+ static struct {
+@@ -299,6 +304,10 @@ static void sendMouseEvent(__unused JNIEnv* env, __unused jobject cls, jfloat x,
+         if (which_button &gt; 0)
+             (*env)-&gt;CallVoidMethod(env, globalThiz, MainActivity.resetIme);
+         lorieEvent e = { .mouse = { .t = EVENT_MOUSE, .x = x, .y = y, .detail = which_button, .down = button_down, .relative = relative } };
++
++        mouse.x = x;
++        mouse.y = y;
++        log(DEBUG, "Sending mouse: %d (x:%f, y:%f, down:%d, relative:%d)", which_button, x, y, button_down, relative);
+         write(conn_fd, &amp;e, sizeof(e));
+     }
+ }
+@@ -306,6 +315,7 @@ static void sendMouseEvent(__unused JNIEnv* env, __unused jobject cls, jfloat x,
+ static void sendTouchEvent(__unused JNIEnv* env, __unused jobject cls, jint action, jint id, jint x, jint y) {
+     if (conn_fd != -1 &amp;&amp; action != -1) {
+         lorieEvent e = { .touch = { .t = EVENT_TOUCH, .type = action, .id = id, .x = x, .y = y } };
++        log(DEBUG, "Sending touch: %d (x:%d, y:%d, id:%d)", action, x, y, id);
+         write(conn_fd, &amp;e, sizeof(e));
+     }
+ }
+@@ -327,10 +337,289 @@ static void requestStylusEnabled(__unused JNIEnv *env, __unused jclass clazz, jb
      }
  }
  
@@ -52,6 +83,7 @@ index 8a51c11..bf11282 100644
 +        static int iso3_press = 0;
 +        static int ctrl_press = 0;
 +        static int shift_press = 0;
++        static int mouse_toggle = 0;
 +
          int code = (scan_code) ?: android_to_linux_keycode[key_code];
          log(DEBUG, "Sending key: %d (%d %d %d)", code + 8, scan_code, key_code, key_down);
@@ -163,15 +195,33 @@ index 8a51c11..bf11282 100644
 +            if (alt_press) {
 +                code = KEY_4;
 +            }
++            if (iso3_press) {
++                mouse_toggle = 0;
++                lorieEvent e = { .mouse = { .t = EVENT_MOUSE, .x = 0, .y = 0, .detail = 1, .down = !!key_down, .relative = 1 } };
++                write(conn_fd, &amp;e, sizeof(e));
++                return true;
++            }
 +            break;
 +        case 40: // D
 +            if (alt_press) {
 +                code = KEY_5;
 +            }
++            if (iso3_press &amp;&amp; key_down) {
++                mouse_toggle ^= 1;
++                lorieEvent e = { .mouse = { .t = EVENT_MOUSE, .x = 0, .y = 0, .detail = 1, .down = mouse_toggle, .relative = 1 } };
++                write(conn_fd, &amp;e, sizeof(e));
++                return true;
++            }
 +            break;
 +        case 41: // F
 +            if (alt_press) {
 +                code = KEY_6;
++            }
++            if (iso3_press) {
++                mouse_toggle = 0;
++                lorieEvent e = { .mouse = { .t = EVENT_MOUSE, .x = 0, .y = 0, .detail = 3, .down = !!key_down, .relative = 1 } };
++                write(conn_fd, &amp;e, sizeof(e));
++                return true;
 +            }
 +            break;
 +        case 42: // G
@@ -348,9 +398,9 @@ Termux-X11 =&gt; Keyboard =&gt; Prefer scancodes when possible =&gt; On
 <tr><td>P</td><td>p</td><td>@</td><td></td></tr>
 
 <tr><td>A</td><td>a</td><td>*</td><td>*</td></tr>
-<tr><td>S</td><td>s</td><td>4</td><td></td></tr>
-<tr><td>D</td><td>d</td><td>5</td><td></td></tr>
-<tr><td>F</td><td>f</td><td>6</td><td></td></tr>
+<tr><td>S</td><td>s</td><td>4</td><td>Mouse Left Button</td></tr>
+<tr><td>D</td><td>d</td><td>5</td><td>Mouse Left Button (Toggle)</td></tr>
+<tr><td>F</td><td>f</td><td>6</td><td>Mouse Right Button</td></tr>
 <tr><td>G</td><td>g</td><td>/</td><td>[</td></tr>
 <tr><td>H</td><td>h</td><td>:</td><td>]</td></tr>
 <tr><td>J</td><td>j</td><td>;</td><td></td></tr>
