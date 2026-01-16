@@ -1,0 +1,379 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../phone.htm">手機</a> - Zinwa Q25 - <b>如何修改Termux-X11按鍵</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/steward-fu/website/releases/tag/q25<br><br>
+
+termux-x11_mod_key_commit-6d62752.diff
+</p>
+<pre>
+diff --git a/app/src/main/cpp/lorie/activity.c b/app/src/main/cpp/lorie/activity.c
+index 8a51c11..bf11282 100644
+--- a/app/src/main/cpp/lorie/activity.c
++++ b/app/src/main/cpp/lorie/activity.c
+@@ -327,10 +327,270 @@ static void requestStylusEnabled(__unused JNIEnv *env, __unused jclass clazz, jb
+     }
+ }
+ 
++static jboolean sendMySpecialKey(jint s, jint code, jboolean key_down)
++{
++    lorieEvent t = { .key = { .t = EVENT_KEY, .key = code + 8, .state = key_down } };
++
++    if (key_down) {
++        t.key.key = s + 8;
++        t.key.state = 1;
++        t.key.t = EVENT_KEY;
++        write(conn_fd, &amp;t, sizeof(t));
++
++        t.key.key = code + 8;
++        write(conn_fd, &amp;t, sizeof(t));
++    }
++    else {
++        t.key.key = code + 8;
++        t.key.state = 0;
++        t.key.t = EVENT_KEY;
++        write(conn_fd, &amp;t, sizeof(t));
++
++        t.key.key = s + 8;
++        t.key.state = 0;
++        write(conn_fd, &amp;t, sizeof(t));
++    }
++
++    return true;
++}
++
+ static jboolean sendKeyEvent(__unused JNIEnv* env, __unused jobject cls, jint scan_code, jint key_code, jboolean key_down) {
+     if (conn_fd != -1) {
++        static int alt_press = 0;
++        static int iso3_press = 0;
++        static int ctrl_press = 0;
++        static int shift_press = 0;
++
+         int code = (scan_code) ?: android_to_linux_keycode[key_code];
+         log(DEBUG, "Sending key: %d (%d %d %d)", code + 8, scan_code, key_code, key_down);
++
++        switch (code + 8)   {
++        case 588: // APPSwitch
++            code = (alt_press || iso3_press) ? KEY_PAGEUP : KEY_UP;
++            break;
++        case 166: // Back
++            code = (alt_press || iso3_press) ? KEY_PAGEDOWN : KEY_DOWN;
++            break;
++        case 239: // Call
++            code = (alt_press || iso3_press) ? KEY_HOME : KEY_LEFT;
++            break;
++        case 180: // EndCall
++            code = (alt_press || iso3_press) ? KEY_END : KEY_RIGHT;
++            break;
++        case 64: // ALT
++            alt_press = !!key_down;
++            return true;
++        case 50: // LSHIFT
++            shift_press = !!key_down;
++            code = KEY_LEFTSHIFT;
++            break;
++        case 108: // SYM
++            ctrl_press = !!key_down;
++            code = KEY_RIGHTCTRL;
++            break;
++        case 62: // RSHIFT
++            iso3_press = !!key_down;
++            return true;
++        case 24: // Q
++            if (alt_press) {
++                return sendMySpecialKey(KEY_LEFTSHIFT, KEY_3, key_down);
++            }
++            break;
++        case 25: // W
++            if (alt_press) {
++                code = KEY_1;
++            }
++            if (iso3_press) {
++                return sendMySpecialKey(KEY_LEFTSHIFT, KEY_BACKSLASH, key_down);
++            }
++            break;
++        case 26: // E
++            if (alt_press) {
++                code = KEY_2;
++            }
++            if (iso3_press) {
++                return sendMySpecialKey(KEY_LEFTSHIFT, KEY_5, key_down);
++            }
++            break;
++        case 27: // R
++            if (alt_press) {
++                code = KEY_3;
++            }
++            if (iso3_press) {
++                code = KEY_BACKSLASH;
++            }
++            break;
++        case 28: // T
++            if (alt_press) {
++                return sendMySpecialKey(KEY_LEFTSHIFT, KEY_9, key_down);
++            }
++            if (iso3_press) {
++                return sendMySpecialKey(KEY_LEFTSHIFT, KEY_LEFTBRACE, key_down);
++            }
++            break;
++        case 29: // Y
++            if (alt_press) {
++                return sendMySpecialKey(KEY_LEFTSHIFT, KEY_0, key_down);
++            }
++            if (iso3_press) {
++                return sendMySpecialKey(KEY_LEFTSHIFT, KEY_RIGHTBRACE, key_down);
++            }
++            break;
++        case 30: // U
++            if (alt_press) {
++                return sendMySpecialKey(KEY_LEFTSHIFT, KEY_MINUS, key_down);
++            }
++            if (iso3_press) {
++                code = KEY_EQUAL;
++            }
++            break;
++        case 31: // I
++            if (alt_press) {
++                code = KEY_MINUS;
++            }
++            if (iso3_press) {
++                return sendMySpecialKey(KEY_LEFTSHIFT, KEY_GRAVE, key_down);
++            }
++            break;
++        case 32: // O
++            if (alt_press) {
++                return sendMySpecialKey(KEY_LEFTSHIFT, KEY_EQUAL, key_down);
++            }
++            break;
++        case 33: // P
++            if (alt_press) {
++                return sendMySpecialKey(KEY_LEFTSHIFT, KEY_2, key_down);
++            }
++            break;
++        case 38: // A
++            if (alt_press || iso3_press) {
++                return sendMySpecialKey(KEY_LEFTSHIFT, KEY_8, key_down);
++            }
++            break;
++        case 39: // S
++            if (alt_press) {
++                code = KEY_4;
++            }
++            break;
++        case 40: // D
++            if (alt_press) {
++                code = KEY_5;
++            }
++            break;
++        case 41: // F
++            if (alt_press) {
++                code = KEY_6;
++            }
++            break;
++        case 42: // G
++            if (alt_press) {
++                code = KEY_SLASH;
++            }
++            if (iso3_press) {
++                code = KEY_LEFTBRACE;
++            }
++            break;
++        case 43: // H
++            if (alt_press) {
++                return sendMySpecialKey(KEY_LEFTSHIFT, KEY_SEMICOLON, key_down);
++            }
++            if (iso3_press) {
++                code = KEY_RIGHTBRACE;
++            }
++            break;
++        case 44: // J
++            if (alt_press) {
++                code = KEY_SEMICOLON;
++            }
++            break;
++        case 45: // K
++            if (alt_press) {
++                code = KEY_APOSTROPHE;
++            }
++            if (iso3_press) {
++                code = KEY_GRAVE;
++            }
++            break;
++        case 46: // L
++            if (alt_press) {
++                return sendMySpecialKey(KEY_LEFTSHIFT, KEY_APOSTROPHE, key_down);
++            }
++            break;
++        case 22: // BACKSPACE
++            if (alt_press) {
++                code = KEY_TAB;
++            }
++            break;
++        case 52: // Z
++            if (alt_press || iso3_press) {
++                code = KEY_7;
++            }
++            break;
++        case 53: // X
++            if (alt_press) {
++                code = KEY_8;
++            }
++            if (iso3_press) {
++                return sendMySpecialKey(KEY_LEFTSHIFT, KEY_6, key_down);
++            }
++            break;
++        case 54: // C
++            if (alt_press) {
++                code = KEY_9;
++            }
++            if (iso3_press) {
++                code = KEY_F9;
++            }
++            break;
++        case 55: // V
++            if (alt_press) {
++                return sendMySpecialKey(KEY_LEFTSHIFT, KEY_SLASH, key_down);
++            }
++            if (iso3_press) {
++                return sendMySpecialKey(KEY_LEFTSHIFT, KEY_COMMA, key_down);
++            }
++            break;
++        case 56: // B
++            if (alt_press) {
++                return sendMySpecialKey(KEY_LEFTSHIFT, KEY_1, key_down);
++            }
++            if (iso3_press) {
++                return sendMySpecialKey(KEY_LEFTSHIFT, KEY_DOT, key_down);
++            }
++            break;
++        case 57: // N
++            if (alt_press) {
++                code = KEY_COMMA;
++            }
++            break;
++        case 58: // M
++            if (alt_press) {
++                code = KEY_DOT;
++            }
++            break;
++        case 49: // $
++            if (alt_press) {
++                return sendMySpecialKey(KEY_LEFTSHIFT, KEY_7, key_down);
++            }
++
++            return sendMySpecialKey(KEY_LEFTSHIFT, KEY_4, key_down);
++        case 36: // Enter
++            if (alt_press) {
++                code = KEY_ESC;
++            }
++            break;
++        case 19: // 0
++            code = KEY_0;
++            break;
++        case 65: // Space
++            code = KEY_SPACE;
++
++            if (iso3_press) {
++                return sendMySpecialKey(KEY_LEFTALT, KEY_SPACE, key_down);
++            }
++            break;
++        }
++
+         lorieEvent e = { .key = { .t = EVENT_KEY, .key = code + 8, .state = key_down } };
+         write(conn_fd, &amp;e, sizeof(e));
+     }
+</pre><br>
+
+<p>
+編譯步驟：
+</p>
+<pre>
+$ cd
+$ wget https://download.oracle.com/java/24/latest/jdk-24_linux-x64_bin.tar.gz
+$ tar xvf jdk-24_linux-x64_bin.tar.gz -C ~/
+$ export JAVA_HOME=~/jdk-24.0.1
+$ export CLASSPATH=.:$JAVA_HOME/lib/tools.jar:$JAVA_HOME/lib/dt.jar
+$ export PATH=$JAVA_HOME/bin:$PATH
+
+$ cd
+$ wget https://dl.google.com/dl/android/studio/ide-zips/2025.2.2.8/android-studio-2025.2.2.8-linux.tar.gz
+$ tar xvf android-studio-2025.2.2.8-linux.tar.gz
+$ cd android-studio
+$ wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+$ unzip commandlinetools-linux-11076708_latest.zip
+$ mv cmdline-tools/ latest
+$ mkdir cmdline-tools
+$ mv latest/ cmdline-tools/
+$ yes | ./cmdline-tools/latest/bin/sdkmanager --licenses
+$ export ANDROID_HOME=`pwd`/android-studio/
+
+$ cd
+$ git clone --recurse-submodules https://github.com/termux/termux-x11 
+$ cd termux-x11
+$ git checkout 6d62752
+$ wget https://github.com/steward-fu/website/releases/download/q25/termux-x11_mod_key_commit-6d62752.diff
+$ git apply termux-x11_mod_key_commit-6d62752.diff
+$ ./gradlew build
+</pre>
+<p>
+P.S. 編譯後，安裝app-arm64-v8a-debug.apk即可<br><br>
+
+安裝後，修改如下設定：
+</p>
+<pre>
+Settings =&gt; Accessibility =&gt; Termux:X11 KeyInterceptor =&gt; On
+Termux-X11 =&gt; Keyboard =&gt; Enforce char based input =&gt; On
+Termux-X11 =&gt; Keyboard =&gt; Prefer scancodes when possible =&gt; On
+</pre><br>
+
+<table>
+<tr><th>Q25按鍵</th><th>Debian按鍵</th><th>+MYALT</th><th>+MYSHIFT</th></tr>
+<tr><td>Call</td><td>LEFT</td><td>HOME</td><td>HOME</td></tr>
+<tr><td>AppSwitch</td><td>UP</td><td>PAGEUP</td><td>PAGEUP</td></tr>
+<tr><td>Back</td><td>DOWN</td><td>PAGEDOWN</td><td>PAGEDOWN</td></tr>
+<tr><td>EndCall</td><td>RIGHT</td><td>END</td><td>END</td></tr>
+<tr><td>Q</td><td>q</td><td>#</td><td></td></tr>
+<tr><td>W</td><td>w</td><td>1</td><td>|</td></tr>
+<tr><td>E</td><td>e</td><td>2</td><td>%</td></tr>
+<tr><td>R</td><td>r</td><td>3</td><td>\</td></tr>
+<tr><td>T</td><td>t</td><td>(</td><td>{</td></tr>
+<tr><td>Y</td><td>y</td><td>)</td><td>}</td></tr>
+<tr><td>U</td><td>u</td><td>_</td><td>=</td></tr>
+<tr><td>I</td><td>i</td><td>-</td><td>~</td></tr>
+<tr><td>O</td><td>o</td><td>+</td><td></td></tr>
+<tr><td>P</td><td>p</td><td>@</td><td></td></tr>
+
+<tr><td>A</td><td>a</td><td>*</td><td>*</td></tr>
+<tr><td>S</td><td>s</td><td>4</td><td></td></tr>
+<tr><td>D</td><td>d</td><td>5</td><td></td></tr>
+<tr><td>F</td><td>f</td><td>6</td><td></td></tr>
+<tr><td>G</td><td>g</td><td>/</td><td>[</td></tr>
+<tr><td>H</td><td>h</td><td>:</td><td>]</td></tr>
+<tr><td>J</td><td>j</td><td>;</td><td></td></tr>
+<tr><td>K</td><td>k</td><td>'</td><td>`</td></tr>
+<tr><td>L</td><td>l</td><td>"</td><td></td></tr>
+<tr><td>Backspace</td><td>Backspace</td><td>Tab</td><td></td></tr>
+
+<tr><td>alt</td><td>MYALT</td><td></td><td></td></tr>
+<tr><td>Z</td><td>z</td><td>7</td><td></td></tr>
+<tr><td>X</td><td>x</td><td>8</td><td></td></tr>
+<tr><td>C</td><td>c</td><td>9</td><td></td></tr>
+<tr><td>V</td><td>v</td><td>?</td><td></td></tr>
+<tr><td>B</td><td>b</td><td>!</td><td></td></tr>
+<tr><td>N</td><td>n</td><td>,</td><td></td></tr>
+<tr><td>M</td><td>m</td><td>.</td><td></td></tr>
+<tr><td>$</td><td>$</td><td>&amp;</td><td></td></tr>
+<tr><td>Enter</td><td>Enter</td><td>Escape</td><td></td></tr>
+
+<tr><td>Shift</td><td>Shift</td><td></td><td></td></tr>
+<tr><td>0</td><td>0</td><td></td><td></td></tr>
+<tr><td>Space</td><td>Space</td><td></td><td>Alt+Space</td></tr>
+<tr><td>sym</td><td>Ctrl</td><td></td><td></td></tr>
+<tr><td>Shift</td><td>MYSHIFT</td><td></td><td></td></tr>
+</table>
+
+<br><script type="text/javascript" src="../tail.js"></script>
