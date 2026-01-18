@@ -1,0 +1,33 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../mcu.htm">微處理器</a> - Lattice LCMXO2-4000HC-4MG132C (STEP-MXO2 V2) - <b>解決mcode undefined reference to __muldi3問題</b></h3>
+<hr size="1"><br>
+<p>
+問題如下：
+</p>
+<pre>
+aarch64-linux-gnu-gnatlink-12 ghdl_jit.ali -o ghdl_mcode -g -O memsegs_c.o jumps.o times.o grt-cstdio.o grt-cgnatrts.o grt-no_sundials_c.o grt-cvpi.o grt-cvhpi.o grt-cdynload.o fstapi.o lz4.o fastlz.o -ldl -lm -Wl,--version-script=/home/user/Downloads/ghdl/./src/grt/grt.ver -Wl,--export-dynamic -shared-libgcc
+/usr/bin/ld: ./ortho_code-x86-abi.o: in function `ortho_code__x86__abi__link_intrinsics':
+/home/user/Downloads/ghdl/src/ortho/mcode/ortho_code-x86-abi.adb:875: undefined reference to `__muldi3'
+/usr/bin/ld: /home/user/Downloads/ghdl/src/ortho/mcode/ortho_code-x86-abi.adb:875: undefined reference to `__muldi3'
+/usr/bin/ld: /home/user/Downloads/ghdl/src/ortho/mcode/ortho_code-x86-abi.adb:879: undefined reference to `__divdi3'
+/usr/bin/ld: /home/user/Downloads/ghdl/src/ortho/mcode/ortho_code-x86-abi.adb:879: undefined reference to `__divdi3'
+/usr/bin/ld: /home/user/Downloads/ghdl/src/ortho/mcode/ortho_code-x86-abi.adb:883: undefined reference to `__moddi3'
+/usr/bin/ld: /home/user/Downloads/ghdl/src/ortho/mcode/ortho_code-x86-abi.adb:883: undefined reference to `__moddi3'
+collect2: error: ld returned 1 exit status
+aarch64-linux-gnu-gnatlink-12: error when calling /usr/bin/aarch64-linux-gnu-gcc-12
+gnatmake: *** link failed.
+make: *** [Makefile:222: ghdl_mcode] Error 4
+</pre><br>
+
+<p>
+解法如下：
+</p>
+<pre>
+$ sudo apt install llvm llvm-dev clang
+$ ./configure --with-llvm-jit
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
