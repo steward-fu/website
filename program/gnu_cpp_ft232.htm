@@ -1,0 +1,124 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - GNU - C/C++ - <b>Virtual /dev/ttyUSB(FT232)</b></h3>
+<hr size="1"><br>
+<p>
+假如Linux系統上沒有USB Serial Kernel Module，可以透過libusb + PTY做USB Bridge轉換<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#define _GNU_SOURCE
+#include &lt;libusb-1.0/libusb.h&gt;
+#include &lt;pty.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;poll.h&gt;
+#include &lt;termios.h&gt;
+
+#define FT232_VID   0x0403
+#define FT232_PID   0x6001
+#define IFACE       0x00
+#define EP_IN       0x81
+#define EP_OUT      0x02
+#define BUF_SIZE    512
+
+static void set_raw(int fd)
+{
+    struct termios tio;
+
+    tcgetattr(fd, &amp;tio);
+    cfmakeraw(&amp;tio);
+    tcsetattr(fd, TCSANOW, &amp;tio);
+}
+
+static void ft232_init(libusb_device_handle *dev)
+{
+    uint16_t divisor = 0x001a;
+
+    if (libusb_control_transfer(dev, 0x40, 0x03, divisor, 0, NULL, 0, 1000) &lt; 0) {
+        perror("FT232 SET_BAUD");
+        exit(1);
+    }
+
+    if (libusb_control_transfer(dev, 0x40, 0x04, 8, 0, NULL, 0, 1000) &lt; 0) {
+        perror("FT232 SET_DATA");
+        exit(1);
+    }
+}
+
+int main(void)
+{
+    libusb_context *ctx = NULL;
+    libusb_device_handle *dev;
+    int pty_master;
+    int pty_slave;
+    char pty_name[64];
+    unsigned char buf[BUF_SIZE];
+
+    libusb_init(&amp;ctx);
+
+    dev = libusb_open_device_with_vid_pid(ctx, FT232_VID, FT232_PID);
+    if (!dev) {
+        fprintf(stderr, "FT232 device not found\n");
+        return 1;
+    }
+
+    libusb_detach_kernel_driver(dev, IFACE);
+    libusb_claim_interface(dev, IFACE);
+
+    ft232_init(dev);
+
+    if (openpty(&amp;pty_master, &amp;pty_slave, pty_name, NULL, NULL) &lt; 0) {
+        perror("openpty");
+        return 1;
+    }
+
+    set_raw(pty_master);
+    printf("FT232 PTY ready: %s\n", pty_name);
+
+    struct pollfd pfd = {
+        .fd = pty_master,
+        .events = POLLIN
+    };
+
+    while (1) {
+        if (poll(&amp;pfd, 1, 5) &gt; 0) {
+            int n = read(pty_master, buf, sizeof(buf));
+            if (n &gt; 0) {
+                int sent;
+                libusb_bulk_transfer(dev, EP_OUT, buf, n, &amp;sent, 0);
+            }
+        }
+
+        int received;
+        int rc = libusb_bulk_transfer(dev, EP_IN, buf, sizeof(buf), &amp;received, 10);
+        if (rc == 0 &amp;&amp; received &gt; 2) {
+            write(pty_master, buf + 2, received - 2);
+        }
+    }
+}
+</pre><br>
+
+<p>
+編譯、測試
+</p>
+<pre>
+$ gcc main.c -o usb_ft232_bridge -lusb-1.0
+$ sudo ./usb_ft232_bridge &amp;
+    FT232 PTY ready: /dev/pts/2
+
+$ lsusb -v -d 0x0403:0x6001 | egrep -e "EP|Transfer"
+        bEndpointAddress     0x81  EP 1 IN
+          Transfer Type            Bulk
+        bEndpointAddress     0x02  EP 2 OUT
+          Transfer Type            Bulk
+
+$ sudo ln -s /dev/pts/2 /dev/ttyUSB9999
+$ sudo minicom -D /dev/ttyUSB9999 -b 115200
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
