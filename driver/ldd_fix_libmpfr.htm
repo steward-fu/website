@@ -1,0 +1,37 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../driver.htm">驅動程式</a> - Linux Device Driver(LDD) - <b>解決libmpfr.so.4: cannot open shared object file問題</b></h3>
+<hr size="1"><br>
+<p>
+問題如下：
+</p>
+<pre>
+$ ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- make zImage -j4
+      CHK     include/linux/version.h
+      CHK     include/linux/utsrelease.h
+      CC      scripts/mod/empty.o
+    /opt/gcc-4.9.4_arm32/bin/../libexec/gcc/arm-linux-gnueabi/4.9.4/cc1: error while loading shared libraries: libmpfr.so.4: cannot open shared object file: No such file or directory
+    make[2]: *** [scripts/Makefile.build:230: scripts/mod/empty.o] Error 1
+    make[1]: *** [scripts/Makefile.build:365: scripts/mod] Error 2
+    make: *** [Makefile:468: scripts] Error 2
+    make: *** Waiting for unfinished jobs....
+      SYMLINK include/asm -&gt; include/asm-arm
+</pre><br>
+
+<p>
+解法如下：
+</p>
+<pre>
+$ cd
+$ wget https://www.mpfr.org/mpfr-3.1.6/mpfr-3.1.6.tar.gz
+$ tar xf mpfr-3.1.6.tar.gz
+$ cd mpfr-3.1.6
+$ ./configure --prefix=/opt/mpfr-3.1.6
+$ make -j4
+$ sudo make install
+$ export LD_LIBRARY_PATH=/opt/mpfr-3.1.6/lib:$LD_LIBRARY_PATH
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

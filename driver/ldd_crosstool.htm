@@ -1,0 +1,40 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../driver.htm">驅動程式</a> - Linux Device Driver(LDD) - <b>如何安裝Crosstool GCC-4.9.4</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://www.kernel.org/pub/tools/crosstool/files/bin/arm64/4.9.4/<br><br>
+</p>
+<pre>
+$ cd
+$ wget https://www.kernel.org/pub/tools/crosstool/files/bin/arm64/4.9.4/arm64-gcc-4.9.4-nolibc-arm-linux-gnueabi.tar.gz
+$ tar xvf arm64-gcc-4.9.4-nolibc-arm-linux-gnueabi.tar.gz
+$ sudo mv gcc-4.9.4-nolibc/arm-linux-gnueabi/ /opt/gcc-4.9.4_arm32
+$ export PATH=/opt/gcc-4.9.4_arm32/bin/:$PATH
+
+$ cd
+$ wget https://www.mpfr.org/mpfr-3.1.6/mpfr-3.1.6.tar.gz
+$ tar xf mpfr-3.1.6.tar.gz
+$ cd mpfr-3.1.6
+$ ./configure --prefix=/opt/mpfr-3.1.6
+$ make -j4
+$ sudo make install
+$ export LD_LIBRARY_PATH=/opt/mpfr-3.1.6/lib:$LD_LIBRARY_PATH
+
+$ cd
+$ wget https://www.kernel.org/pub/linux/kernel/v2.6/linux-2.6.32.tar.gz
+$ tar xvf linux-2.6.32.tar.gz
+$ ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- make versatile_defconfig
+$ ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- make zImage -j4
+$ vim kernel/timeconst.pl +373
+    if (!(@val)) {
+
+$ ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- make zImage -j4
+$ file arch/arm/boot/zImage 
+    arch/arm/boot/zImage: Linux kernel ARM boot executable zImage (little-endian)
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
