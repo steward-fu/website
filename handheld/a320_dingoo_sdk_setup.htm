@@ -5,7 +5,7 @@
 <h3><a href="../index.htm">掌機</a> - Dingoo A320 - Dingoo - Dingoo SDK - <b>開發環境(Linux)</b></h3>
 <hr size="1"><br>
 <p>
-步驟如下：
+x64
 </p>
 <pre>
 $ cd
@@ -29,6 +29,41 @@ $ file sdl_hello_world*
     sdl_hello_world.app: data
     sdl_hello_world.bin: Adobe Photoshop Color swatch, version 0, 10248 colors; 1st RGB space (0), w 0, x 0x200, y 0x2808, z 0; 2nd RGB space (0), w 0x400, x 0x2808, y 0, z 0
     sdl_hello_world.elf: ELF 32-bit LSB executable, MIPS, MIPS32 version 1 (SYSV), statically linked, not stripped
+</pre><br>
+
+<p>
+aarch64
+</p>
+<pre>
+$ sudo apt-get install gcc-mipsel*
+$ sudo apt-get install libgcc-12-dev-mips-cross
+$ sudo ln -s /usr/bin/mipsel-linux-gnu-ar /usr/bin/mipsel-linux-ar
+$ sudo ln -s /usr/bin/mipsel-linux-gnu-gcc /usr/bin/mipsel-linux-gcc
+$ sudo ln -s /usr/bin/mipsel-linux-gnu-ld /usr/bin/mipsel-linux-ld
+$ sudo ln -s /usr/bin/mipsel-linux-gnu-nm /usr/bin/mipsel-linux-nm
+$ sudo ln -s /usr/bin/mipsel-linux-gnu-objcopy /usr/bin/mipsel-linux-objcopy
+$ sudo ln -s /usr/bin/mipsel-linux-gnu-objdump /usr/bin/mipsel-linux-objdump
+
+$ cd
+$ wget https://github.com/steward-fu/website/releases/download/a320/sdk.zip
+$ unzip sdk.zip
+$ mv dingoo_sdk Dingoo
+$ cd Dingoo
+$ vim install +27
+    cp /usr/lib/gcc-cross/mipsel-linux-gnu/12/libgcc.a $DINGOO_SDK/lib
+
+$ export MIPSTOOLS=/usr/mipsel-linux-gnu
+$ export DINGOO_SDK=`pwd`
+$ chmod a+x ./install
+$ ./install
+
+$ vim Makefile
+    CC_OPTS_A = $(CC_OPTS) -D_ASSEMBLER_ --nodefaultlibs
+    LD_OPTS   = --script $(LD_SCRIPT) -L$(LIB_PATH) $(LIBS) -o $(APP_NAME).elf
+
+$ make
+$ file sdl_hello_world.app 
+    sdl_hello_world.app: data
 </pre>
 
 <br><script type="text/javascript" src="../tail.js"></script>
