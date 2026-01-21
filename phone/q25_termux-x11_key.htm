@@ -11,8 +11,21 @@ https://github.com/steward-fu/website/releases/tag/q25<br><br>
 termux-x11_mod_key_commit-6d62752.diff
 </p>
 <pre>
+diff --git a/app/build.gradle b/app/build.gradle
+index daef0bc..65c8209 100644
+--- a/app/build.gradle
++++ b/app/build.gradle
+@@ -26,7 +26,7 @@ android {
+         enable true
+         reset()
+ 
+-        include "x86", "x86_64", "armeabi-v7a", "arm64-v8a"
++        include "arm64-v8a" //"x86", "x86_64", "armeabi-v7a", "arm64-v8a"
+         universalApk true
+     }
+ 
 diff --git a/app/src/main/cpp/lorie/activity.c b/app/src/main/cpp/lorie/activity.c
-index 8a51c11..cc28c5b 100644
+index 8a51c11..f55b90d 100644
 --- a/app/src/main/cpp/lorie/activity.c
 +++ b/app/src/main/cpp/lorie/activity.c
 @@ -22,6 +22,11 @@
@@ -46,7 +59,7 @@ index 8a51c11..cc28c5b 100644
          write(conn_fd, &amp;e, sizeof(e));
      }
  }
-@@ -327,10 +337,289 @@ static void requestStylusEnabled(__unused JNIEnv *env, __unused jclass clazz, jb
+@@ -327,12 +337,414 @@ static void requestStylusEnabled(__unused JNIEnv *env, __unused jclass clazz, jb
      }
  }
  
@@ -79,30 +92,137 @@ index 8a51c11..cc28c5b 100644
 +
  static jboolean sendKeyEvent(__unused JNIEnv* env, __unused jobject cls, jint scan_code, jint key_code, jboolean key_down) {
      if (conn_fd != -1) {
++        #define MOUSE_MOV_3 3
++        #define MOUSE_MOV_5 5
 +        static int alt_press = 0;
 +        static int iso3_press = 0;
 +        static int ctrl_press = 0;
 +        static int shift_press = 0;
++        static int mouse_mode = 0;
 +        static int mouse_toggle = 0;
 +
          int code = (scan_code) ?: android_to_linux_keycode[key_code];
++        lorieEvent em = {
++            .mouse = {
++                .t = EVENT_MOUSE,
++                .x = 0,
++                .y = 0,
++                .detail = 3,
++                .down = !!key_down,
++                .relative = 1
++            }
++        };
          log(DEBUG, "Sending key: %d (%d %d %d)", code + 8, scan_code, key_code, key_down);
+-        lorieEvent e = { .key = { .t = EVENT_KEY, .key = code + 8, .state = key_down } };
+-        write(conn_fd, &amp;e, sizeof(e));
 +
 +        switch (code + 8)   {
++        case 111: // Up
++            if (mouse_mode) {
++                em.mouse.t = EVENT_MOUSE;
++                em.mouse.x = 0;
++                em.mouse.y = -MOUSE_MOV_5;
++                em.mouse.detail = 0;
++                em.mouse.down = !!key_down;
++                em.mouse.relative = 1;
++                write(conn_fd, &amp;em, sizeof(em));
++                return true;
++            }
++            break;
++        case 116: // Down
++            if (mouse_mode) {
++                em.mouse.t = EVENT_MOUSE;
++                em.mouse.x = 0;
++                em.mouse.y = MOUSE_MOV_5;
++                em.mouse.detail = 0;
++                em.mouse.down = !!key_down;
++                em.mouse.relative = 1;
++                write(conn_fd, &amp;em, sizeof(em));
++                return true;
++            }
++            break;
++        case 113: // Left
++            if (mouse_mode) {
++                em.mouse.t = EVENT_MOUSE;
++                em.mouse.x = -MOUSE_MOV_5;
++                em.mouse.y = 0;
++                em.mouse.detail = 0;
++                em.mouse.down = !!key_down;
++                em.mouse.relative = 1;
++                write(conn_fd, &amp;em, sizeof(em));
++                return true;
++            }
++            break;
++        case 114: // Right
++            if (mouse_mode) {
++                em.mouse.t = EVENT_MOUSE;
++                em.mouse.x = MOUSE_MOV_5;
++                em.mouse.y = 0;
++                em.mouse.detail = 0;
++                em.mouse.down = !!key_down;
++                em.mouse.relative = 1;
++                write(conn_fd, &amp;em, sizeof(em));
++                return true;
++            }
++            break;
 +        case 588: // APPSwitch
 +            code = (alt_press || iso3_press) ? KEY_PAGEUP : KEY_UP;
++            if (mouse_mode) {
++                em.mouse.t = EVENT_MOUSE;
++                em.mouse.x = 0;
++                em.mouse.y = -MOUSE_MOV_3;
++                em.mouse.detail = 0;
++                em.mouse.down = !!key_down;
++                em.mouse.relative = 1;
++                write(conn_fd, &amp;em, sizeof(em));
++                return true;
++            }
 +            break;
 +        case 166: // Back
 +            code = (alt_press || iso3_press) ? KEY_PAGEDOWN : KEY_DOWN;
++            if (mouse_mode) {
++                em.mouse.t = EVENT_MOUSE;
++                em.mouse.x = 0;
++                em.mouse.y = MOUSE_MOV_3;
++                em.mouse.detail = 0;
++                em.mouse.down = !!key_down;
++                em.mouse.relative = 1;
++                write(conn_fd, &amp;em, sizeof(em));
++                return true;
++            }
 +            break;
 +        case 239: // Call
 +            code = (alt_press || iso3_press) ? KEY_HOME : KEY_LEFT;
++            if (mouse_mode) {
++                em.mouse.t = EVENT_MOUSE;
++                em.mouse.x = -MOUSE_MOV_3;
++                em.mouse.y = 0;
++                em.mouse.detail = 0;
++                em.mouse.down = !!key_down;
++                em.mouse.relative = 1;
++                write(conn_fd, &amp;em, sizeof(em));
++                return true;
++            }
 +            break;
 +        case 180: // EndCall
 +            code = (alt_press || iso3_press) ? KEY_END : KEY_RIGHT;
++            if (mouse_mode) {
++                em.mouse.t = EVENT_MOUSE;
++                em.mouse.x = MOUSE_MOV_3;
++                em.mouse.y = 0;
++                em.mouse.detail = 0;
++                em.mouse.down = !!key_down;
++                em.mouse.relative = 1;
++                write(conn_fd, &amp;em, sizeof(em));
++                return true;
++            }
 +            break;
 +        case 64: // ALT
 +            alt_press = !!key_down;
++
++            if (iso3_press) {
++                return sendMySpecialKey(KEY_LEFTALT, KEY_TAB, key_down);
++            }
 +            return true;
 +        case 50: // LSHIFT
 +            shift_press = !!key_down;
@@ -197,8 +317,13 @@ index 8a51c11..cc28c5b 100644
 +            }
 +            if (iso3_press) {
 +                mouse_toggle = 0;
-+                lorieEvent e = { .mouse = { .t = EVENT_MOUSE, .x = 0, .y = 0, .detail = 1, .down = !!key_down, .relative = 1 } };
-+                write(conn_fd, &amp;e, sizeof(e));
++                em.mouse.t = EVENT_MOUSE;
++                em.mouse.x = 0;
++                em.mouse.y = 0;
++                em.mouse.detail = 1;
++                em.mouse.down = !!key_down;
++                em.mouse.relative = 1;
++                write(conn_fd, &amp;em, sizeof(em));
 +                return true;
 +            }
 +            break;
@@ -208,8 +333,13 @@ index 8a51c11..cc28c5b 100644
 +            }
 +            if (iso3_press &amp;&amp; key_down) {
 +                mouse_toggle ^= 1;
-+                lorieEvent e = { .mouse = { .t = EVENT_MOUSE, .x = 0, .y = 0, .detail = 1, .down = mouse_toggle, .relative = 1 } };
-+                write(conn_fd, &amp;e, sizeof(e));
++                em.mouse.t = EVENT_MOUSE;
++                em.mouse.x = 0;
++                em.mouse.y = 0;
++                em.mouse.detail = 1;
++                em.mouse.down = !!mouse_toggle;
++                em.mouse.relative = 1;
++                write(conn_fd, &amp;em, sizeof(em));
 +                return true;
 +            }
 +            break;
@@ -219,8 +349,13 @@ index 8a51c11..cc28c5b 100644
 +            }
 +            if (iso3_press) {
 +                mouse_toggle = 0;
-+                lorieEvent e = { .mouse = { .t = EVENT_MOUSE, .x = 0, .y = 0, .detail = 3, .down = !!key_down, .relative = 1 } };
-+                write(conn_fd, &amp;e, sizeof(e));
++                em.mouse.t = EVENT_MOUSE;
++                em.mouse.x = 0;
++                em.mouse.y = 0;
++                em.mouse.detail = 3;
++                em.mouse.down = !!key_down;
++                em.mouse.relative = 1;
++                write(conn_fd, &amp;em, sizeof(em));
 +                return true;
 +            }
 +            break;
@@ -323,6 +458,9 @@ index 8a51c11..cc28c5b 100644
 +            break;
 +        case 19: // 0
 +            code = KEY_0;
++            if (iso3_press &amp;&amp; key_down) {
++                mouse_mode ^= 1;
++            }
 +            break;
 +        case 65: // Space
 +            code = KEY_SPACE;
@@ -333,9 +471,11 @@ index 8a51c11..cc28c5b 100644
 +            break;
 +        }
 +
-         lorieEvent e = { .key = { .t = EVENT_KEY, .key = code + 8, .state = key_down } };
-         write(conn_fd, &amp;e, sizeof(e));
++        lorieEvent ek = { .key = { .t = EVENT_KEY, .key = code + 8, .state = key_down } };
++        write(conn_fd, &amp;ek, sizeof(ek));
      }
+ 
+     return true;
 </pre><br>
 
 <p>
