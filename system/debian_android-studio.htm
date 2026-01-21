@@ -1,0 +1,93 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../system.htm">系統</a> - Debian - <b>如何在aarch64平台上安裝android-studio</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/termux/termux-x11<br>
+https://dl.google.com/android/repository<br>
+https://download.oracle.com/java/24/latest<br>
+https://dl.google.com/dl/android/studio/ide-zips/2025.2.2.8<br><br>
+
+安裝步驟：
+</p>
+<pre>
+$ cd
+$ wget https://download.oracle.com/java/24/latest/jdk-24_linux-x64_bin.tar.gz
+$ tar xvf jdk-24_linux-x64_bin.tar.gz -C ~/
+$ export JAVA_HOME=~/jdk-24.0.1
+$ export CLASSPATH=.:$JAVA_HOME/lib/tools.jar:$JAVA_HOME/lib/dt.jar
+$ export PATH=$JAVA_HOME/bin:$PATH
+
+$ cd
+$ wget https://dl.google.com/dl/android/studio/ide-zips/2025.2.2.8/android-studio-2025.2.2.8-linux.tar.gz
+$ tar xvf android-studio-2025.2.2.8-linux.tar.gz
+$ cd android-studio
+$ wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+$ unzip commandlinetools-linux-11076708_latest.zip
+$ mv cmdline-tools/ latest
+$ mkdir cmdline-tools
+$ mv latest/ cmdline-tools/
+$ yes | ./cmdline-tools/latest/bin/sdkmanager --licenses
+$ export ANDROID_HOME=`pwd`/android-studio/
+
+$ cd
+$ wget https://github.com/steward-fu/website/releases/download/q25/android-ndk-r25c-aarch64-linux.tgz
+$ tar xvf android-ndk-r25c-aarch64-linux.tgz
+$ mkdir android-studio/ndk/
+$ mv 25.2.9519653 android-studio/ndk/27.0.12077973
+
+$ cd
+$ wget https://github.com/steward-fu/website/releases/download/q25/android-sdk-tools-static-aarch64.zip
+$ unzip android-sdk-tools-static-aarch64.zip
+$ mkdir -p android-studio/build-tools/35.0.0/
+$ cp -a aarch64/build-tools/* android-studio/build-tools/35.0.0/
+$ rm -rf aarch64
+
+$ cd
+$ wget https://github.com/steward-fu/website/releases/download/q25/cmake-3.22.1-linux-aarch64.tar.gz
+$ tar xvf cmake-3.22.1-linux-aarch64.tar.gz
+$ mkdir android-studio/cmake
+$ mv cmake-3.22.1-linux-aarch64 android-studio/cmake/3.22.1
+</pre><br>
+
+<p>
+編譯測試：
+</p>
+<pre>
+$ cd
+$ git clone https://github.com/termux/termux-x11 --recursive
+$ cd termux-x11
+$ vim app/build.gradle +29
+    include "arm64-v8a" //"x86", "x86_64", "armeabi-v7a", "arm64-v8a"
+
+$ ./gradlew build
+$ file ./app/build/outputs/apk/debug/app-arm64-v8a-debug.apk
+    ./app/build/outputs/apk/debug/app-arm64-v8a-debug.apk: Android package (APK), with gradle app-metadata.properties, with APK Signing Block
+</pre><br>
+
+<p>
+如果遇到如下appt2錯誤，從/home/user/android-studio/build-tools/35.0.0/aapt2覆蓋掉/home/user/.gradle/caches/9.2.1/transforms/9066bcccc0bb8fe59bf94fb1d903fecf/transformed/aapt2-8.13.1-13719691-linux/aapt2即可
+</p>
+<pre>
+&gt; Configure project :app
+WARNING: BuildType 'debug' is both debuggable and has 'isMinifyEnabled' set to true.
+All code optimizations and obfuscation are disabled for debuggable builds.
+AAPT2 aapt2-8.13.1-13719691-linux Daemon #5: Unexpected error output: /home/user/.gradle/caches/9.2.1/transforms/9066bcccc0bb8fe59bf94fb1d903fecf/transformed/aapt2-8.13.1-13719691-linux/aapt2: 1: Syntax error: word unexpected (expecting ")")9s]
+AAPT2 aapt2-8.13.1-13719691-linux Daemon #4: Unexpected error output: /home/user/.gradle/caches/9.2.1/transforms/9066bcccc0bb8fe59bf94fb1d903fecf/transformed/aapt2-8.13.1-13719691-linux/aapt2: 1: Syntax error: word unexpected (expecting ")")
+AAPT2 aapt2-8.13.1-13719691-linux Daemon #0: Unexpected error output: /home/user/.gradle/caches/9.2.1/transforms/9066bcccc0bb8fe59bf94fb1d903fecf/transformed/aapt2-8.13.1-13719691-linux/aapt2: 1: Syntax error: word unexpected (expecting ")")
+AAPT2 aapt2-8.13.1-13719691-linux Daemon #3: Unexpected error output: /home/user/.gradle/caches/9.2.1/transforms/9066bcccc0bb8fe59bf94fb1d903fecf/transformed/aapt2-8.13.1-13719691-linux/aapt2: 1: Syntax error: word unexpected (expecting ")")
+AAPT2 aapt2-8.13.1-13719691-linux Daemon #6: Unexpected error output: /home/user/.gradle/caches/9.2.1/transforms/9066bcccc0bb8fe59bf94fb1d903fecf/transformed/aapt2-8.13.1-13719691-linux/aapt2: 1: Syntax error: word unexpected (expecting ")")
+AAPT2 aapt2-8.13.1-13719691-linux Daemon #1: Unexpected error output: /home/user/.gradle/caches/9.2.1/transforms/9066bcccc0bb8fe59bf94fb1d903fecf/transformed/aapt2-8.13.1-13719691-linux/aapt2: 1: Syntax error: word unexpected (expecting ")")
+AAPT2 aapt2-8.13.1-13719691-linux Daemon #2: Unexpected error output: /home/user/.gradle/caches/9.2.1/transforms/9066bcccc0bb8fe59bf94fb1d903fecf/transformed/aapt2-8.13.1-13719691-linux/aapt2: 1: Syntax error: word unexpected (expecting ")")
+
+&gt; Task :app:mergeDebugResources FAILED
+
+[Incubating] Problems report is available at: file:///home/user/Data/termux-x11/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
