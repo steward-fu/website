@@ -1,0 +1,46 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - Anbernic RG35XX H - <b>解決Super Meat Boy沒有畫面的問題</b></h3>
+<hr size="1"><br>
+<p>
+Thanks for the information provided by Виктор<br><br>
+
+修改前
+</p>
+<pre>
+displaydata-&gt;egl_create_pixmap_ID_mapping = SDL_EGL_GetProcAddress(_this, "egl_create_pixmap_ID_mapping");
+displaydata-&gt;egl_destroy_pixmap_ID_mapping = SDL_EGL_GetProcAddress(_this, "egl_destroy_pixmap_ID_mapping");
+if (!displaydata-&gt;egl_create_pixmap_ID_mapping || !displaydata-&gt;egl_destroy_pixmap_ID_mapping) {
+    MALI_VideoQuit(_this);
+    return SDL_SetError("mali-fbdev: Can't find mali pixmap entrypoints");
+}
+</pre><br>
+
+<p>
+修改後：
+</p>
+<pre>
+/* Try eglGetProcAddress first */
+displaydata-&gt;egl_create_pixmap_ID_mapping = SDL_EGL_GetProcAddress(_this, "egl_create_pixmap_ID_mapping");
+
+/* If not found, try direct dlsym from libEGL.so */
+if (!displaydata-&gt;egl_create_pixmap_ID_mapping &amp;&amp; _this-&gt;egl_data &amp;&amp; _this-&gt;egl_data-&gt;egl_dll_handle) {
+    displaydata-&gt;egl_create_pixmap_ID_mapping = SDL_LoadFunction(_this-&gt;egl_data-&gt;egl_dll_handle, "egl_create_pixmap_ID_mapping");
+}
+
+displaydata-&gt;egl_destroy_pixmap_ID_mapping = SDL_EGL_GetProcAddress(_this, "egl_destroy_pixmap_ID_mapping");
+
+/* If not found, try direct dlsym from libEGL.so */
+if (!displaydata-&gt;egl_destroy_pixmap_ID_mapping &amp;&amp; _this-&gt;egl_data &amp;&amp; _this-&gt;egl_data-&gt;egl_dll_handle) {
+    displaydata-&gt;egl_destroy_pixmap_ID_mapping = SDL_LoadFunction(_this-&gt;egl_data-&gt;egl_dll_handle, "egl_destroy_pixmap_ID_mapping");
+}
+
+if (!displaydata-&gt;egl_create_pixmap_ID_mapping || !displaydata-&gt;egl_destroy_pixmap_ID_mapping) {
+    MALI_VideoQuit(_this);
+    return SDL_SetError("mali-fbdev: Can't find mali pixmap entrypoints");
+}
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
