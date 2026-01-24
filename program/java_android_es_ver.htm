@@ -1,0 +1,174 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - Java - Android - OpenGL ES - <b>Get Version</b></h3>
+<hr size="1"><br>
+<p>
+settings.gradle
+</p>
+<pre>
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+dependencyResolutionManagement {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+rootProject.name = "hello-android"
+include(":app")
+</pre><br>
+
+<p>
+build.gradle
+</p>
+<pre>
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath "com.android.tools.build:gradle:8.2.2"
+    }
+}
+</pre><br>
+
+<p>
+執行如下命令：
+</p>
+<pre>
+$ gradle wrapper
+$ ./gradlew
+$ mkdir -p app/src/main/java/com/example/hello
+$ mkdir -p app/src/main/res
+</pre><br>
+
+<p>
+app/build.gradle
+</p>
+<pre>
+plugins {
+    id "com.android.application"
+}
+
+android {
+    namespace "com.example.hello"
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.example.hello"
+        minSdk 21
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+    }
+}
+</pre><br>
+
+<p>
+app/src/main/AndroidManifest.xml
+</p>
+<pre>
+&lt;manifest xmlns:android="http://schemas.android.com/apk/res/android"&gt;
+    &lt;application
+        android:label="HelloApp"&gt;
+        &lt;activity
+            android:name=".MainActivity"
+            android:exported="true"&gt;
+            &lt;intent-filter&gt;
+                &lt;action android:name="android.intent.action.MAIN"/&gt;
+                &lt;category android:name="android.intent.category.LAUNCHER"/&gt;
+            &lt;/intent-filter&gt;
+        &lt;/activity&gt;
+    &lt;/application&gt;
+&lt;/manifest&gt;
+</pre><br>
+
+<p>
+app/src/main/java/com/example/hello/MainActivity.java
+</p>
+<pre class="brush:java">
+package com.example.hello;
+
+import android.app.Activity;
+import android.opengl.GLES20;
+import android.opengl.GLSurfaceView;
+import android.os.Bundle;
+import android.widget.FrameLayout;
+import android.widget.TextView;
+
+import javax.microedition.khronos.egl.EGLConfig;
+import javax.microedition.khronos.opengles.GL10;
+
+public class MainActivity extends Activity {
+
+    private TextView infoText;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        GLSurfaceView glView = new GLSurfaceView(this);
+        glView.setEGLContextClientVersion(2);
+
+        infoText = new TextView(this);
+        infoText.setTextColor(0xffffffff);
+        infoText.setTextSize(24);
+
+        FrameLayout layout = new FrameLayout(this);
+        layout.addView(glView);
+        layout.addView(infoText);
+        setContentView(layout);
+
+        glView.setRenderer(new GLSurfaceView.Renderer() {
+            @Override
+            public void onSurfaceCreated(GL10 gl, EGLConfig config) {
+                String vendor = GLES20.glGetString(GLES20.GL_VENDOR);
+                String renderer = GLES20.glGetString(GLES20.GL_RENDERER);
+                String version = GLES20.glGetString(GLES20.GL_VERSION);
+
+                String info = "VENDOR: " + vendor + "\n"
+                            + "RENDERER: " + renderer + "\n"
+                            + "VERSION: " + version;
+
+                runOnUiThread(() -&gt; infoText.setText(info));
+
+                GLES20.glClearColor(0f, 0f, 0f, 1f);
+            }
+
+            @Override
+            public void onSurfaceChanged(GL10 gl, int width, int height) {
+                GLES20.glViewport(0, 0, width, height);
+            }
+
+            @Override
+            public void onDrawFrame(GL10 gl) {
+                GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
+            }
+        });
+    }
+}
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ ./gradlew assembleDebug
+$ file app/build/outputs/apk/debug/app-debug.apk
+    app/build/outputs/apk/debug/app-debug.apk: Android package (APK), with gradle app-metadata.properties, with APK Signing Block
+</pre><br>
+
+<p>
+完成<br>
+<img src="java_android_es_ver/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
