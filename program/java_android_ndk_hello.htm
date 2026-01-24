@@ -1,0 +1,213 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - Java - Android - NDK - <b>Hello, world!</b></h3>
+<hr size="1"><br>
+<p>
+編譯環境
+</p>
+<pre>
+$ java -version
+    openjdk version "17.0.17" 2025-10-21
+
+$ sdkmanager --version
+    12.0
+
+$ gradle --version
+    Gradle 8.2
+
+$ sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+</pre><br>
+
+<p>
+settings.gradle
+</p>
+<pre>
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+dependencyResolutionManagement {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+rootProject.name = "hello-android"
+include(":app")
+</pre><br>
+
+<p>
+build.gradle
+</p>
+<pre>
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath "com.android.tools.build:gradle:8.2.2"
+    }
+}
+</pre><br>
+
+<p>
+執行如下命令：
+</p>
+<pre>
+$ gradle wrapper
+$ ./gradlew
+$ mkdir -p app/src/main/cpp
+$ mkdir -p app/src/main/java/com/example/hello
+$ mkdir -p app/src/main/res
+</pre><br>
+
+<p>
+app/build.gradle
+</p>
+<pre>
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.example.hello'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.example.hello"
+        minSdk 21
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+
+        externalNativeBuild {
+            cmake {
+                cppFlags "-std=c++17"
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path "src/main/cpp/CMakeLists.txt"
+        }
+    }
+
+    ndkVersion "27.0.12077973"
+}
+</pre><br>
+
+<p>
+app/src/main/AndroidManifest.xml
+</p>
+<pre>
+&lt;manifest xmlns:android="http://schemas.android.com/apk/res/android"&gt;
+    &lt;application
+        android:label="HelloApp"&gt;
+        &lt;activity
+            android:name=".MainActivity"
+            android:exported="true"&gt;
+            &lt;intent-filter&gt;
+                &lt;action android:name="android.intent.action.MAIN"/&gt;
+                &lt;category android:name="android.intent.category.LAUNCHER"/&gt;
+            &lt;/intent-filter&gt;
+        &lt;/activity&gt;
+    &lt;/application&gt;
+&lt;/manifest&gt;
+</pre><br>
+
+<p>
+app/src/main/java/com/example/hello/MainActivity.java
+</p>
+<pre class="brush:java">
+package com.example.hello;
+
+import android.app.Activity;
+import android.os.Bundle;
+import android.widget.TextView;
+
+public class MainActivity extends Activity {
+
+    static {
+        System.loadLibrary("native-lib");
+    }
+
+    private native String stringFromJNI();
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        TextView tv = new TextView(this);
+        tv.setText(stringFromJNI());
+        tv.setTextSize(24);
+        setContentView(tv);
+    }
+}
+</pre><br>
+
+<p>
+app/src/main/cpp/CMakeLists.txt
+</p>
+<pre>
+cmake_minimum_required(VERSION 3.22.1)
+
+project("myndkapp")
+
+add_library(
+    native-lib
+    SHARED
+    native-lib.cpp
+)
+
+find_library(
+    log-lib
+    log
+)
+
+target_link_libraries(
+    native-lib
+    ${log-lib}
+)
+</pre><br>
+
+<p>
+app/src/main/cpp/native-lib.cpp
+</p>
+<pre class="brush:cpp">
+#include &lt;jni.h&gt;
+#include &lt;string&gt;
+
+extern "C" JNIEXPORT jstring JNICALL
+Java_com_example_hello_MainActivity_stringFromJNI(JNIEnv* env, jobject _this) {
+    std::string hello = "Hello from C++";
+    return env-&gt;NewStringUTF(hello.c_str());
+}
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ ./gradlew assembleDebug
+$ file app/build/outputs/apk/debug/app-debug.apk
+    app/build/outputs/apk/debug/app-debug.apk: Android package (APK), with gradle app-metadata.properties, with APK Signing Block
+</pre><br>
+
+<p>
+完成<br>
+<img src="java_android_ndk_hello/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
