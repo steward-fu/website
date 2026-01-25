@@ -1,0 +1,135 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - Java - Android - <b>Build SDL2</b></h3>
+<hr size="1"><br>
+<p>
+參考資料：<br>
+https://github.com/libsdl-org/SDL<br><br>
+
+步驟如下：
+</p>
+<pre>
+$ cd
+$ git clone https://github.com/libsdl-org/SDL -b release-2.30.0
+$ cd SDL/android-project/app/jni
+$ git clone https://github.com/libsdl-org/SDL -b release-2.30.0
+$ cd ../../
+$ rm app/jni/Android.mk
+$ rm app/jni/Application.mk
+</pre><br>
+
+<p>
+app/build.gradle
+</p>
+<pre>
+def buildAsLibrary = project.hasProperty('BUILD_AS_LIBRARY');
+def buildAsApplication = !buildAsLibrary
+if (buildAsApplication) {
+    apply plugin: 'com.android.application'
+}
+else {
+    apply plugin: 'com.android.library'
+}
+
+android {
+    if (buildAsApplication) {
+        namespace "org.libsdl.app"
+    }
+    compileSdkVersion 34
+    defaultConfig {
+        minSdkVersion 19
+        targetSdkVersion 34
+        versionCode 1
+        versionName "1.0"
+        externalNativeBuild {
+            cmake {
+                arguments "-DANDROID_APP_PLATFORM=android-19", "-DANDROID_STL=c++_static"
+                // abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'
+                abiFilters 'arm64-v8a'
+            }
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+    applicationVariants.all { variant -&gt;
+        tasks["merge${variant.name.capitalize()}Assets"]
+            .dependsOn("externalNativeBuild${variant.name.capitalize()}")
+    }
+    if (!project.hasProperty('EXCLUDE_NATIVE_LIBS')) {
+        sourceSets.main {
+            jniLibs.srcDir 'libs'
+        }
+        externalNativeBuild {
+            cmake {
+                path 'jni/CMakeLists.txt'
+            }
+        }
+       
+    }
+    lint {
+        abortOnError false
+    }
+
+    if (buildAsLibrary) {
+        libraryVariants.all { variant -&gt;
+            variant.outputs.each { output -&gt;
+                def outputFile = output.outputFile
+                if (outputFile != null &amp;&amp; outputFile.name.endsWith(".aar")) {
+                    def fileName = "org.libsdl.app.aar";
+                    output.outputFile = new File(outputFile.parent, fileName);
+                }
+            }
+        }
+    }
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+}
+</pre><br>
+
+<p>
+app/jni/src/CMakeLists.txt
+</p>
+<pre>
+cmake_minimum_required(VERSION 3.6)
+project(MY_APP)
+find_library(SDL2 SDL2)
+add_library(main SHARED)
+target_sources(main PRIVATE main.c)
+target_link_libraries(main SDL2)
+</pre><br>
+
+<p>
+app/jni/src/main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;SDL.h&gt;
+  
+int main(int argc, char **argv)
+{
+    SDL_Init(SDL_INIT_VIDEO);
+    SDL_Quit();
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ ./gradlew clean
+$ ./gradlew build
+$ file ./app/build/intermediates/cmake/debug/obj/arm64-v8a/libSDL2.so
+    ./app/build/intermediates/cmake/debug/obj/arm64-v8a/libSDL2.so: ELF 64-bit LSB shared object, ARM aarch64, version 1 (SYSV)
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
