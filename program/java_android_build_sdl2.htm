@@ -29,8 +29,8 @@ $ sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
 <pre>
 $ cd
 $ git clone https://github.com/libsdl-org/SDL -b release-2.30.0
-$ cd SDL/android-project/app/jni
-$ git clone https://github.com/libsdl-org/SDL -b release-2.30.0
+$ cd android-project/app/jni
+$ ln -s ../../../../SDL SDL
 $ cd ../../
 $ rm app/jni/Android.mk
 $ rm app/jni/Application.mk
@@ -42,65 +42,66 @@ app/build.gradle
 <pre>
 def buildAsLibrary = project.hasProperty('BUILD_AS_LIBRARY');
 def buildAsApplication = !buildAsLibrary
+
 if (buildAsApplication) {
     apply plugin: 'com.android.application'
-}
-else {
+} else {
     apply plugin: 'com.android.library'
 }
 
 android {
-    if (buildAsApplication) {
-        namespace "org.libsdl.app"
-    }
+    namespace "org.libsdl.app"
     compileSdkVersion 34
     defaultConfig {
-        minSdkVersion 19
+        minSdkVersion 21
         targetSdkVersion 34
         versionCode 1
         versionName "1.0"
+
         externalNativeBuild {
             cmake {
-                arguments "-DANDROID_APP_PLATFORM=android-19", "-DANDROID_STL=c++_static"
-                // abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'
+                arguments "-DANDROID_APP_PLATFORM=android-21", "-DANDROID_STL=c++_static"
                 abiFilters 'arm64-v8a'
             }
         }
     }
+
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
-    applicationVariants.all { variant -&gt;
-        tasks["merge${variant.name.capitalize()}Assets"]
-            .dependsOn("externalNativeBuild${variant.name.capitalize()}")
-    }
-    if (!project.hasProperty('EXCLUDE_NATIVE_LIBS')) {
-        sourceSets.main {
-            jniLibs.srcDir 'libs'
+
+    if (buildAsApplication) {
+        applicationVariants.all { variant -&gt;
+            tasks["merge${variant.name.capitalize()}Assets"]
+                .dependsOn("externalNativeBuild${variant.name.capitalize()}")
         }
-        externalNativeBuild {
-            cmake {
-                path 'jni/CMakeLists.txt'
+    } else {
+        libraryVariants.all { variant -&gt;
+            tasks["merge${variant.name.capitalize()}Assets"]
+                .dependsOn("externalNativeBuild${variant.name.capitalize()}")
+
+            variant.outputs.all { output -&gt;
+                output.outputFileName = "org.libsdl.app.aar"
             }
         }
-       
     }
+
+    ndkVersion "27.0.12077973"
+
     lint {
         abortOnError false
     }
 
-    if (buildAsLibrary) {
-        libraryVariants.all { variant -&gt;
-            variant.outputs.each { output -&gt;
-                def outputFile = output.outputFile
-                if (outputFile != null &amp;&amp; outputFile.name.endsWith(".aar")) {
-                    def fileName = "org.libsdl.app.aar";
-                    output.outputFile = new File(outputFile.parent, fileName);
-                }
-            }
+    sourceSets.main {
+        jniLibs.srcDir 'libs'
+    }
+
+    externalNativeBuild {
+        cmake {
+            path 'jni/CMakeLists.txt'
         }
     }
 }
@@ -115,8 +116,11 @@ app/jni/src/CMakeLists.txt
 </p>
 <pre>
 cmake_minimum_required(VERSION 3.6)
+
 project(MY_APP)
+
 find_library(SDL2 SDL2)
+
 add_library(main SHARED)
 target_sources(main PRIVATE main.c)
 target_link_libraries(main SDL2)
