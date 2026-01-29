@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head><script type="text/javascript" src="../page_head.js"></script>
 
-<h3><a href="../program.htm">程式語言</a> - Java - Android - SDL v2.0 - <b>Hello, world!</b></h3>
+<h3><a href="../program.htm">程式語言</a> - Java - Android - SDL v2.0 - <b>Load BMP</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
@@ -13,8 +13,9 @@ app/jni/src/main.c
 <pre class="brush:cpp">
 #include &lt;stdio.h&gt;
 #include &lt;stdlib.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;fcntl.h&gt;
 #include &lt;SDL.h&gt;
-#include &lt;SDL2_gfxPrimitives.h&gt;
 
 int main(int argc, char **argv)
 {
@@ -22,23 +23,41 @@ int main(int argc, char **argv)
     const int h = 240;
     const int bpp = 16;
     SDL_Window *window = NULL;
+    SDL_Surface *screen = NULL;
+    SDL_Texture *texture = NULL;
     SDL_Renderer *renderer = NULL;
 
     SDL_Init(SDL_INIT_VIDEO);
     window = SDL_CreateWindow("main", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, w, h, SDL_WINDOW_SHOWN);
     renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+    screen = SDL_CreateRGBSurface(0, w, h, bpp, 0, 0, 0, 0);
+    texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB565, SDL_TEXTUREACCESS_STREAMING, w, h);
 
+    SDL_Surface *bmp = SDL_LoadBMP("/sdcard/Download/main.bmp");
+    SDL_BlitSurface(bmp, NULL, screen, NULL);
+    SDL_FreeSurface(bmp);
+
+    SDL_UpdateTexture(texture, NULL, screen-&gt;pixels, screen-&gt;pitch);
     SDL_RenderClear(renderer);
-    stringRGBA(renderer, 100, 100, "Hello, world!", 0xff, 0xff, 0xff, 0xff);
+    SDL_RenderCopy(renderer, texture, NULL, NULL);
     SDL_RenderPresent(renderer);
 
     SDL_Delay(3000);
 
+    SDL_FreeSurface(screen);
+    SDL_DestroyTexture(texture);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
     return 0;
 }
+</pre><br>
+
+<p>
+app/src/main/AndroidManifest.xml
+</p>
+<pre>
+&lt;uses-permission android:name="android.permission.READ_MEDIA_IMAGES" /&gt;
 </pre><br>
 
 <p>
@@ -80,8 +99,11 @@ $ file app/build/outputs/apk/debug/app-debug.apk
 </pre><br>
 
 <p>
+取得權限<br>
+<img src="java_android_sdl2_bmp/1.jpg" class="maxSize">
+
 完成<br>
-<img src="java_android_sdl2_hello/1.jpg" class="maxSize">
+<img src="java_android_sdl2_bmp/2.jpg" class="maxSize">
 </p>
 
 <br><script type="text/javascript" src="../tail.js"></script>
