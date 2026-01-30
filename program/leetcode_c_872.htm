@@ -14,6 +14,22 @@ https://www.cnblogs.com/grandyang/p/10771842.html<br><br>
 解答：
 </p>
 <pre class="brush:cpp">
+int dfs(struct TreeNode *n, int *r, int *p)
+{
+    if (!n) {
+        return -1;
+    }
+
+    if (!n-&gt;left &amp;&amp; !n-&gt;right) {
+        r[(*p)++] = n-&gt;val;
+        return 1;
+    }
+
+    dfs(n-&gt;left, r, p);
+    dfs(n-&gt;right, r, p);
+    return 0;
+}
+
 /**
  * Definition for a binary tree node.
  * struct TreeNode {
@@ -22,39 +38,25 @@ https://www.cnblogs.com/grandyang/p/10771842.html<br><br>
  *     struct TreeNode *right;
  * };
  */
-int travel(struct TreeNode *n, int *r_buf, int *r_cnt)
-{
-    if (!n) {
-        return 0;
-    }
+bool leafSimilar(struct TreeNode* root1, struct TreeNode* root2) {
+    int i = 0;
+    int p1 = 0;
+    int p2 = 0;
+    int r1[201] = { 0 };
+    int r2[201] = { 0 };
 
-    if (!n-&gt;left &amp;&amp; !n-&gt;right) {
-        r_buf[(*r_cnt)++] = n-&gt;val;
-        return 0;
-    }
+    dfs(root1, r1, &amp;p1);
+    dfs(root2, r2, &amp;p2);
 
-    return travel(n-&gt;left, r_buf, r_cnt) + travel(n-&gt;right, r_buf, r_cnt);
-}
-
-bool leafSimilar(struct TreeNode *root1, struct TreeNode *root2)
-{
-    int cc = 0;
-    int cnt[2] = { 0 };
-    int buf[2][201] = { 0 };
-
-    travel(root1, &amp;buf[0][0], &amp;cnt[0]);
-    travel(root2, &amp;buf[1][0], &amp;cnt[1]);
-
-    if (cnt[0] != cnt[1]) {
+    if (p1 != p2) {
         return false;
     }
 
-    for (cc = 0; cc &lt; cnt[0]; cc++) {
-        if (buf[0][cc] != buf[1][cc]) {
+    for (i = 0; i &lt; p1; i++) {
+        if (r1[i] != r2[i]) {
             return false;
         }
     }
-
     return true;
 }
 </pre>
