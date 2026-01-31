@@ -1,0 +1,73 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - Java - Android - SDL v2.0 - <b>Print Log</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/steward-fu/sdl2<br><br>
+
+app/jni/src/main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;SDL.h&gt;
+#include &lt;android/log.h&gt;
+ 
+int main(int argc, char **argv)
+{
+    __android_log_print(ANDROID_LOG_DEBUG, "SDL2App", "argc=%d", argc);
+
+    return 0;
+}
+</pre><br>
+
+<p>
+app/jni/src/CMakeLists.txt
+</p>
+<pre>
+cmake_minimum_required(VERSION 3.6)
+
+project(MY_APP)
+
+find_library(SDL2 SDL2)
+find_library(SDL2_gfx SDL2_gfx)
+
+add_library(main SHARED
+    main.c
+)
+
+target_link_libraries(main
+    SDL2
+    SDL2_gfx
+    android
+    log
+)
+
+set_target_properties(main PROPERTIES
+    C_STANDARD 99
+    C_STANDARD_REQUIRED ON
+)
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ ./gradlew assembleDebug -PBUILD_AS_LIBRARY=true
+$ ./gradlew assembleDebug -PBUILD_AS_APPLICATION=true
+$ file app/build/outputs/apk/debug/app-debug.apk
+    app/build/outputs/apk/debug/app-debug.apk: Android package (APK), with gradle app-metadata.properties, with APK Signing Block
+</pre><br>
+
+<p>
+完成
+</p>
+<pre>
+# logcat -D | grep SDL2App
+    01-30 10:59:30.166  8501  8535 D SDL2App : argc=1
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
