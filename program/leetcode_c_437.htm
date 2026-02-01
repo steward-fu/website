@@ -22,44 +22,44 @@ https://www.cnblogs.com/grandyang/p/6007336.html<br><br>
  *     struct TreeNode *right;
  * };
  */
-int travel(struct TreeNode *n, int *s_buf, int *s_idx, int *cnt, long sum, int target)
+int dfs(struct TreeNode *n, int targetSum, long curSum, int *buf, int *pos, int *r)
 {
-    long cc = 0;
+    int i = 0;
     long tmp = 0;
 
     if (!n) {
-        return 0;
+        return -1;
     }
 
-    sum += n-&gt;val;
-    if (sum == target) {
-        (*cnt) += 1;
+    curSum += n-&gt;val;
+    if (curSum == targetSum) {
+        (*r) += 1;
     }
 
-    tmp = sum;
-    s_buf[*s_idx] = n-&gt;val;
-    for (cc = 0; cc &lt; *s_idx; cc++) {
-        tmp -= s_buf[cc];
-        if (tmp == target) {
-            (*cnt) += 1;
+    tmp = curSum;
+    buf[*pos] = n-&gt;val;
+    for (i = 0; i &lt; *pos; i++) {
+        tmp -= buf[i];
+        if (tmp == targetSum) {
+            (*r) += 1;
         }
     }
 
-    (*s_idx) += 1;
-    travel(n-&gt;left, s_buf, s_idx, cnt, sum, target);
-    travel(n-&gt;right, s_buf, s_idx, cnt, sum, target);
-    (*s_idx) -= 1;
+    (*pos) += 1;
+    dfs(n-&gt;left, targetSum, curSum, buf, pos, r);
+    dfs(n-&gt;right, targetSum, curSum, buf, pos, r);
+    (*pos) -= 1;
 
     return 0;
 }
 
-int pathSum(struct TreeNode *root, int targetSum)
+int pathSum(struct TreeNode* root, int targetSum)
 {
     int r = 0;
-    int idx = 0;
+    int pos = 0;
     int buf[1001] = { 0 };
 
-    travel(root, buf, &amp;idx, &amp;r, 0, targetSum);
+    dfs(root, targetSum, 0, buf, &amp;pos, &amp;r);
     return r;
 }
 </pre>
