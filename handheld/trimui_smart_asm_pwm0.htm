@@ -1,0 +1,84 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - TRIMUI SMART - Assembly - <b>PWM0</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/steward-fu/website/releases/download/datasheet/allwinner_s3_rm.pdf<br><br>
+
+PWM0位於PB4<br>
+<img src="trimui_smart_asm_pwm0/1.jpg" class="maxSize"><br><br>
+
+PWM有兩種運作方式：<br>
+<img src="trimui_smart_asm_pwm0/2.jpg" class="maxSize"><br><br>
+
+PWM位址<br>
+<img src="trimui_smart_asm_pwm0/3.jpg" class="maxSize"><br><br>
+
+CTL<br>
+<img src="trimui_smart_asm_pwm0/4.jpg" class="maxSize"><br><br>
+
+PERIOD<br>
+<img src="trimui_smart_asm_pwm0/5.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .global _start
+   
+    .equ PWM_BASE,       0x01c21400
+    .equ GPIO_BASE,      0x01c20800
+    .equ PB_CFG0,        (GPIO_BASE + (0x24 * 1) + 0x00)
+    .equ PWM_CH_CTRL,    0x00
+    .equ PWM_CH0_PERIOD, 0x04
+          
+    .arm
+    .text
+_start:
+    .long 0xea000016
+    .byte 'e', 'G', 'O', 'N', '.', 'B', 'T', '0'
+    .long 0, __spl_size
+    .byte 'S', 'P', 'L', 2
+    .long 0, 0
+    .long 0, 0, 0, 0, 0, 0, 0, 0
+    .long 0, 0, 0, 0, 0, 0, 0, 0
+          
+_vector:
+    b reset
+    b .
+    b .
+    b .
+    b .
+    b .
+    b .
+    b .
+          
+reset:
+    ldr r0, =PB_CFG0
+    ldr r1, =0x20000
+    str r1, [r0]
+
+    ldr r0, =PWM_BASE
+    ldr r1, =(1 &lt;&lt; 4) | (12 &lt;&lt; 0)
+    str r1, [r0, #PWM_CH_CTRL]
+
+    ldr r1, =(1 &lt;&lt; 6) | (1 &lt;&lt; 4) | (12 &lt;&lt; 0)
+    str r1, [r0, #PWM_CH_CTRL]
+
+    ldr r1, =(666 &lt;&lt; 16) | (333 &lt;&lt; 0)
+    str r1, [r0, #PWM_CH0_PERIOD]
+0:  
+    nop
+    b 0b
+    .end
+</pre><br>
+
+<p>
+完成<br>
+<img src="trimui_smart_asm_pwm0/6.jpg" class="maxSize"><br>
+<img src="trimui_smart_asm_pwm0/7.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

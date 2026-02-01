@@ -1,0 +1,137 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - TRIMUI SMART - Assembly - <b>HS Timer1</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/steward-fu/website/releases/download/datasheet/allwinner_s3_rm.pdf<br><br>
+
+CCU位址<br>
+<img src="trimui_smart_asm_hstimer0/1.jpg" class="maxSize"><br><br>
+
+AHB1暫存器<br>
+<img src="trimui_smart_asm_hstimer0/2.jpg" class="maxSize"><br><br>
+
+HSTMR_GATING<br>
+<img src="trimui_smart_asm_hstimer0/3.jpg" class="maxSize"><br><br>
+
+HSTMR_RST<br>
+<img src="trimui_smart_asm_hstimer0/4.jpg" class="maxSize"><br><br>
+
+HS Timer位址<br>
+<img src="trimui_smart_asm_hstimer0/5.jpg" class="maxSize"><br><br>
+
+IRQ<br>
+<img src="trimui_smart_asm_hstimer0/6.jpg" class="maxSize"><br><br>
+
+Control<br>
+<img src="trimui_smart_asm_hstimer1/1.jpg" class="maxSize"><br><br>
+
+Interval Value、Current Value<br>
+<img src="trimui_smart_asm_hstimer1/2.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .global _start
+    
+    .equ CCU_BASE,   0x01c20000
+    .equ GPIO_BASE,  0x01c20800
+    .equ HSTMR_BASE, 0x01c60000
+   
+    .equ PG,                   (0x24 * 6)
+    .equ CFG1,                 0x04
+    .equ DATA,                 0x10
+    .equ PLL_CPU_CTRL_REG,     0x00
+    .equ CPU_AXI_CFG_REG,      0x50
+    .equ AHB1_APB1_CFG_REG,    0x54
+    .equ BUS_CLK_GATING_REG0,  0x60
+    .equ BUS_SOFT_RST_REG0,    0x2c0
+    .equ HS_TMR_IRQ_STAS_REG,  0x04
+    .equ HS_TMR1_CTRL_REG,     0x30
+    .equ HS_TMR1_INTV_LO_REG,  0x34
+    .equ HS_TMR1_INTV_HI_REG,  0x38
+    .equ HS_TMR1_CURNT_LO_REG, 0x3c
+    .equ HS_TMR1_CURNT_HI_REG, 0x40
+   
+    .arm
+    .text
+_start:
+    .long 0xea000016
+    .byte 'e', 'G', 'O', 'N', '.', 'B', 'T', '0'
+    .long 0, __spl_size
+    .byte 'S', 'P', 'L', 2
+    .long 0, 0
+    .long 0, 0, 0, 0, 0, 0, 0, 0
+    .long 0, 0, 0, 0, 0, 0, 0, 0
+             
+_vector:
+    b reset
+    b .
+    b .
+    b .
+    b .
+    b .
+    b .
+    b .
+
+reset:
+    ldr r0, =CCU_BASE
+    ldr r1, =(1 &lt;&lt; 31) | (12 &lt;&lt; 8)
+    str r1, [r0, #PLL_CPU_CTRL_REG]
+1:
+    ldr r1, [r0, #PLL_CPU_CTRL_REG]
+    tst r1, #(1 &lt;&lt; 28)
+    beq 1b
+ 
+    ldr r1, =(3 &lt;&lt; 16)
+    str r1, [r0, #CPU_AXI_CFG_REG]
+
+    ldr r1, =(2 &lt;&lt; 12)
+    str r1, [r0, #AHB1_APB1_CFG_REG]
+
+    ldr r1, =(1 &lt;&lt; 19)
+    str r1, [r0, #BUS_CLK_GATING_REG0]
+    str r1, [r0, #BUS_SOFT_RST_REG0]
+
+    ldr r0, =GPIO_BASE
+    ldr r1, =0x11111111
+    str r1, [r0, #(PG + CFG1)]
+       
+    ldr r1, =0xffff
+    str r1, [r0, #(PG + DATA)]
+  
+    ldr r2, =HSTMR_BASE
+    ldr r3, =408000000
+    str r3, [r2, #HS_TMR1_INTV_LO_REG]
+    str r3, [r2, #HS_TMR1_CURNT_LO_REG]
+
+    ldr r3, =0x00000000
+    str r3, [r2, #HS_TMR1_INTV_HI_REG]
+    str r3, [r2, #HS_TMR1_CURNT_HI_REG]
+
+    ldr r3, =(1 &lt;&lt; 1) | (1 &lt;&lt; 0)
+    str r3, [r2, #HS_TMR1_CTRL_REG]
+   
+    ldr r4, =(1 &lt;&lt; 10)
+1:
+    ldr r3, [r2, #HS_TMR_IRQ_STAS_REG]
+    tst r3, #(1 &lt;&lt; 1)
+    beq 1b
+    str r3, [r2, #HS_TMR_IRQ_STAS_REG]
+     
+    eor r1, r4
+    str r1, [r0, #(PG + DATA)]
+    b 1b
+    .end
+</pre><br>
+
+<p>
+完成<br>
+<img src="trimui_smart_asm_led/5.jpg" class="maxSize"><br>
+<img src="trimui_smart_asm_led/6.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
