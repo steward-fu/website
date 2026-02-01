@@ -1,0 +1,65 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - TRIMUI SMART - <b>如何透過MicroSD進入fel模式</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/FunKey-Project/Allwinner-V3s-BROM<br><br>
+
+BROM
+</p>
+<pre class="brush:asm">
+;; Vector table
+ffff0000:    ea000008     b    reset         ; reset
+ffff0004:    ea000006     b    unimplemented ; _undefined_instruction
+ffff0008:    ea000005     b    unimplemented ; _software_interrupt
+ffff000c:    ea000004     b    unimplemented ; _prefetch_abort
+ffff0010:    ea000003     b    unimplemented ; _data_abort
+ffff0014:    ea000002     b    unimplemented ; _not_used
+ffff0018:    ea000011     b    irq           ; _irq
+ffff001c:    ea000000     b    unimplemented ; _fiq
+ffff0020:    ea000013     b    fel_setup     ; FEL
+
+unimplemented:
+ffff0024:    eafffffe     b    unimplemented ; loop forever
+</pre>
+<p>
+P.S. fel = 0xffff0020<br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .global _start
+    
+    .arm
+    .text
+_start:
+    .long 0xea000016
+    .byte 'e', 'G', 'O', 'N', '.', 'B', 'T', '0'
+    .long 0, __spl_size
+    .byte 'S', 'P', 'L', 2
+    .long 0, 0
+    .long 0, 0, 0, 0, 0, 0, 0, 0
+    .long 0, 0, 0, 0, 0, 0, 0, 0
+     
+_vector:
+    b reset
+    b .
+    b .
+    b .
+    b .
+    b .
+    b .
+    b .
+     
+reset:
+    b 0xffff0020
+    .end
+</pre>
+<p>
+編譯並燒錄到MicroSD後，插入開機就會直接進入fel模式，這樣就可以很方便使用xfel下載到RAM執行
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
