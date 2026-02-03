@@ -1,0 +1,65 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../program.htm">程式語言</a> - LeetCode - C++ - <b>437. Path Sum III</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://www.cnblogs.com/grandyang/p/6007336.html<br><br>
+
+題目：<br>
+<img src="leetcode_c_437/1.jpg" class="maxSize"><br><br>
+
+解答：
+</p>
+<pre class="brush:cpp">
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode() : val(0), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
+ * };
+ */
+class Solution {
+public:
+    int pathSum(TreeNode* root, int targetSum) {
+        int r = 0;
+        vector&lt;int&gt; q;
+
+        dfs(root, targetSum, 0, q, r);
+        return r;
+    }
+
+    int dfs(TreeNode *n, int targetSum, long curSum, vector&lt;int&gt; &amp;q, int &amp;r) {
+        if (!n) {
+            return -1;
+        }
+
+        curSum += n-&gt;val;
+        if (curSum == targetSum) {
+            r += 1;
+        }
+
+        long tmp = curSum;
+        for (int i = 0; i &lt; q.size(); i++) {
+            tmp -= q[i];
+            if (tmp == targetSum) {
+                r += 1;
+            }
+        }
+
+        q.push_back(n-&gt;val);
+        dfs(n-&gt;left, targetSum, curSum, q, r);
+        dfs(n-&gt;right, targetSum, curSum, q, r);
+        q.pop_back();
+        return 0;
+    }
+};
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
