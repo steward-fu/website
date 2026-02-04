@@ -27,41 +27,39 @@ int max(int a, int b)
     return a &gt; b ? a : b;
 }
 
-int dfs(struct TreeNode *n, int cnt, int left, int *r)
+int dfs(struct TreeNode *n, int cnt, int left)
 {
+    int r = 0;
+
     if (!n) {
-        return -1;
+        return cnt;
     }
 
     if (left) {
         if (n-&gt;left) {
-            dfs(n-&gt;left, cnt + 1, 0, r);
+            r = max(dfs(n-&gt;left, cnt + 1, 0), r);
         }
 
         if (n-&gt;right) {
-            dfs(n-&gt;right, 1, 1, r);
+            r = max(dfs(n-&gt;right, 1, 1), r);
         }
     }
     else {
         if (n-&gt;right) {
-            dfs(n-&gt;right, cnt + 1, 1, r);
+            r = max(dfs(n-&gt;right, cnt + 1, 1), r);
         }
 
         if (n-&gt;left) {
-            dfs(n-&gt;left, 1, 0, r);
+            r = max(dfs(n-&gt;left, 1, 0), r);
         }
     }
 
-    *r = max(cnt, *r);
-    return 0;
+    return max(cnt, r);
 }
 
 int longestZigZag(struct TreeNode* root)
 {
-    int r = 0;
-
-    dfs(root, 0, 0, &amp;r);
-    return r;
+    return dfs(root, 0, 0);
 }
 </pre>
 
