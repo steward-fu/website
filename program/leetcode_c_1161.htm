@@ -22,50 +22,48 @@ https://www.cnblogs.com/grandyang/p/15022629.html<br><br>
  *     struct TreeNode *right;
  * };
  */
-int maxLevelSum(struct TreeNode *root)
+int maxLevelSum(struct TreeNode* root)
 {
     int r = 0;
     int st = 0;
-    int ep = 0;
+    int sp = 0;
     int max = 0;
     int level = 0;
-    struct TreeNode *buf[10000] = { 0 };
+    struct TreeNode *q[10000] = { 0 };
 
     if (!root) {
         return 0;
     }
 
-    r = 1;
-    buf[ep++] = root;
+    q[sp++] = root;
     max = root-&gt;val;
 
-    while ((ep - st) &gt; 0) {
-        int cnt = 0;
-        int cc = 0;
-        int s0 = st;
-        int s1 = ep;
+    while (st &lt; sp) {
+        int i = 0;
+        int len = sp;
+        int sum = 0;
 
-        for (cc = s0; cc &lt; s1; cc++) {
+        for (i = st; i &lt; len; i++) {
+            sum += q[i]-&gt;val;
+
             st += 1;
-            cnt += buf[cc]-&gt;val;
-
-            if (buf[cc]-&gt;left) {
-                buf[ep++] = buf[cc]-&gt;left;
+            if (q[i]-&gt;left) {
+                q[sp++] = q[i]-&gt;left;
             }
 
-            if (buf[cc]-&gt;right) {
-                buf[ep++] = buf[cc]-&gt;right;
+            if (q[i]-&gt;right) {
+                q[sp++] = q[i]-&gt;right;
             }
         }
 
-        level += 1;
-        if (cnt &gt; max) {
-            max = cnt;
+        if (sum &gt; max) {
             r = level;
+            max = sum;
         }
+        level += 1;
     }
 
-    return r;
+    return r + 1;
 }
 </pre>
 
