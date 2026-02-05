@@ -27,37 +27,33 @@ https://www.cnblogs.com/grandyang/p/4392254.html<br><br>
  */
 int* rightSideView(struct TreeNode* root, int* returnSize)
 {
-    int *r = NULL;
-    int q_st = 0;
-    int q_ep = 0;
-    struct TreeNode *q_buf[101] = { 0 };
-    
-    r = malloc(sizeof(int) * 101);
-    *returnSize = 0;
+    #define MAX_SIZE 101
 
+    int st = 0;
+    int sp = 0;
+    int *r = calloc(MAX_SIZE, sizeof(int));
+    struct TreeNode *q[MAX_SIZE] = { 0 };
+
+    *returnSize = 0;
     if (!root) {
         return r;
     }
 
-    q_buf[0] = root;
-    q_ep += 1;
+    q[sp++] = root;
+    while (st &lt; sp) {
+        int i = 0;
+        int len = sp;
 
-    while ((q_ep - q_st) &gt; 0) {
-        int cc = 0;
-        int s0 = q_st;
-        int s1 = q_ep;
-        
-        r[(*returnSize)++] = q_buf[s1 - 1]-&gt;val;
+        r[(*returnSize)++] = q[sp - 1]-&gt;val;
+        for (i = st; i &lt; len; i++) {
+            st += 1;
 
-        for (cc = s0; cc &lt; s1; cc++) {
-            q_st += 1;
-
-            if (q_buf[cc]-&gt;left) {
-                q_buf[q_ep++] = q_buf[cc]-&gt;left;
+            if (q[i]-&gt;left) {
+                q[sp++] = q[i]-&gt;left;
             }
 
-            if (q_buf[cc]-&gt;right) {
-                q_buf[q_ep++] = q_buf[cc]-&gt;right;
+            if (q[i]-&gt;right) {
+                q[sp++] = q[i]-&gt;right;
             }
         }
     }
