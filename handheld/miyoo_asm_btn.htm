@@ -1,0 +1,82 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - Miyoo - Assembly - <b>Button</b></h3>
+<hr size="1"><br>
+<p>
+參考資料：<br>
+http://nano.lichee.pro/<br>
+https://mangopi.org/mangopi_r<br>
+https://www.allwinnertech.com/index.php?c=product&amp;a=index&amp;pid=4<br><br>
+
+電路圖<br>
+<img src="miyoo_asm_btn/1.jpg" class="maxSize"><br><br>
+
+暫存器<br>
+<img src="../mcu/tiny200_asm_btn/1.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .global _start
+     
+    .equiv GPIO_BASE,  0x01c20800 
+     
+    .equiv PA,         (0x24 * 0)
+    .equiv PE,         (0x24 * 4)
+    .equiv PORT_CFG0,  0x00
+    .equiv PORT_CFG1,  0x04
+    .equiv PORT_DATA,  0x10
+    .equiv PORT_PUL0,  0x1c
+     
+    .arm
+    .text
+_start:
+    .long 0xea000016
+    .byte 'e', 'G', 'O', 'N', '.', 'B', 'T', '0'
+    .long 0, __spl_size
+    .byte 'S', 'P', 'L', 2
+    .long 0, 0
+    .long 0, 0, 0, 0, 0, 0, 0, 0
+    .long 0, 0, 0, 0, 0, 0, 0, 0
+        
+_vector:
+    b reset
+    b .
+    b .
+    b .
+    b .
+    b .
+    b . 
+    b .
+     
+reset:
+    ldr r0, =GPIO_BASE
+    ldr r1, =0x10
+    str r1, [r0, #(PA + PORT_CFG0)]
+    ldr r1, =0x02
+    str r1, [r0, #(PA + PORT_DATA)]
+     
+    ldr r1, =0x11000011
+    str r1, [r0, #(PE + PORT_CFG0)]
+    ldr r1, =0x01
+    str r1, [r0, #(PE + PORT_CFG1)]
+    ldr r1, =~0x380
+    str r1, [r0, #(PE + PORT_DATA)]
+ 
+0: 
+    ldr r1, [r0, #(PE + PORT_DATA)]
+    lsr r1, #1
+    str r1, [r0, #(PA + PORT_DATA)]
+    b 0b
+    .end
+</pre><br>
+
+<p>
+完成<br>
+<img src="miyoo_asm_btn/2.jpg" class="maxSize"><br>
+<img src="miyoo_asm_btn/3.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
