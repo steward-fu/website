@@ -14,36 +14,33 @@ https://www.cnblogs.com/grandyang/p/10415773.html<br><br>
 解答：
 </p>
 <pre class="brush:cpp">
-#define MAX_LEN 3000
-
-void travel(int **rooms, int *size, int cur, int *q)
+void dfs(int **rooms, int *size, int idx, int *visited)
 {
-    int c0 = 0;
+    int i = 0;
 
-    q[cur] = 1;
+    visited[idx] = 1;
 
-    for (c0 = 0; c0 &lt; size[cur]; c0++) {
-        if (q[rooms[cur][c0]] == 0) {
-            travel(rooms, size, rooms[cur][c0], q);
+    for (i = 0; i &lt; size[idx]; i++) {
+        int key = rooms[idx][i];
+
+        if (visited[key] == 0) {
+            dfs(rooms, size, key, visited);
         }
     }
 }
 
 bool canVisitAllRooms(int** rooms, int roomsSize, int* roomsColSize)
 {
-    int r = 0;
-    int c0 = 0;
-    int q[MAX_LEN] = { 0 };
+    #define MAX_SIZE 3000
 
-    travel(rooms, roomsColSize, 0, q);
+    int i = 0;
+    int visited[MAX_SIZE] = { 0 };
 
-    for (c0 = 0; c0 &lt; MAX_LEN; c0++) {
-        if (q[c0] &gt; 0) {
-            r += 1;
-        }
+    dfs(rooms, roomsColSize, 0, visited);
+    for (i = 0; i &lt; MAX_SIZE; i++) {
+        roomsSize -= visited[i];
     }
-
-    return (r == roomsSize) ? true : false;
+    return (roomsSize == 0) ? true : false;
 }
 </pre>
 
