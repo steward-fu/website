@@ -1,0 +1,138 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - Gaviar (小志掌機) - Assembly - <b>Button</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://en.wikipedia.org/wiki/Delay_slot<br>
+https://github.com/Ouyancheng/FlatHeadBro<br>
+https://datasheet.lcsc.com/lcsc/1810231210_Worldsemi-WS2812C_C114587.pdf<br><br>
+
+按鍵R連接到PE1<br>
+<img src="gaviar_asm_btn/1.jpg" class="maxSize"><br><br>
+
+GPIO位址<br>
+<img src="gaviar_asm_led/4.jpg" class="maxSize"><br><br>
+
+PE_CFG0<br>
+<img src="gaviar_asm_btn/2.jpg" class="maxSize"><br><br>
+
+PE_DAT<br>
+<img src="gaviar_asm_led/6.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .global _start
+  
+    .equ GPIO_BASE, 0x02000000
+    .equ PE_CFG0,   0x00c0
+    .equ PE_DAT,    0x00d0
+    .equ PE_PULL0,  0x00e4
+    .equ _50NS,     10
+    .equ _100NS,    20
+    .equ _200NS,    40
+    .equ _300NS,    60
+    .equ _400NS,    80
+    .equ _450NS,    90
+    .equ _800NS,    160
+    .equ _850NS,    170
+    .equ _1US,      200
+    .equ _500US,    100000
+    .equ _1S,       200000000
+   
+    .text
+    .long 0x4000006f
+    .byte 'e','G','O','N','.','B','T','0'
+    .long 0x5F0A6C39
+    .long 0x8000
+    .long 0, 0
+    .long 0, 0, 0, 0, 0, 0, 0, 0
+    .long 0, 0, 0, 0, 0, 0, 0, 0
+ 
+    .org 0x0400
+_start:
+    li t0, 0x100000
+    li a0, GPIO_BASE + PE_CFG0
+    sw t0, 0(a0)
+    
+    li t0, 0x55555555
+    li a0, GPIO_BASE + PE_PULL0
+    sw t0, 0(a0)
+
+    li a0, GPIO_BASE + PE_DAT
+0:
+    lw t0, 0(a0)
+    not t0, t0
+    and t0, t0, (1 &lt;&lt; 1)
+    sll t0, t0, 11
+    jal b24
+
+    li t0, _500US
+    jal delay
+
+    j 0b
+
+b24:
+    move t2, ra
+    move t3, t0
+    li t4, 24
+0:
+    and t0, t3, 1
+    srl t3, t3, 1
+    beqz t0, 1f
+    jal b1
+    j 2f
+1:
+    jal b0
+2:
+    addi t4, t4, -1
+    bgtz t4, 0b
+    jr t2
+
+b0:
+    move t1, ra
+    li t0, (1 &lt;&lt; 5)
+    sw t0, 0(a0)
+
+    li t0, _300NS
+    jal delay
+
+    li t0, (0 &lt;&lt; 5)
+    sw t0, 0(a0)
+
+    li t0, _850NS
+    jal delay
+    jr t1
+
+b1:
+    move t1, ra
+    li t0, (1 &lt;&lt; 5)
+    sw t0, 0(a0)
+
+    li t0, _800NS
+    jal delay
+
+    li t0, (0 &lt;&lt; 5)
+    sw t0, 0(a0)
+
+    li t0, _400NS
+    jal delay
+    jr t1
+
+delay:
+    addi t0, t0, -1
+    bgtz t0, delay
+    jr ra
+    .end
+</pre><br>
+
+<p>
+完成<br>
+<img src="gaviar_asm_btn/3.jpg" class="maxSize"><br>
+<img src="gaviar_asm_btn/4.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

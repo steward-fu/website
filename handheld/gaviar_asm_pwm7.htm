@@ -1,0 +1,104 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - Gaviar (小志掌機) - Assembly - <b>PWM7</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://en.wikipedia.org/wiki/Delay_slot<br>
+https://github.com/Ouyancheng/FlatHeadBro<br>
+https://datasheet.lcsc.com/lcsc/1810231210_Worldsemi-WS2812C_C114587.pdf<br><br>
+
+LCD背光是連接到PD22(PWM7)<br>
+<img src="gaviar_asm_pwm7/1.jpg" class="maxSize"><br><br>
+
+PWM_BGR_REG<br>
+<img src="gaviar_asm_pwm7/2.jpg" class="maxSize"><br><br>
+
+PD22 PWM7<br>
+<img src="gaviar_asm_pwm7/3.jpg" class="maxSize"><br><br>
+
+PCCR67<br>
+<img src="gaviar_asm_pwm7/4.jpg" class="maxSize"><br><br>
+
+PCGR<br>
+<img src="gaviar_asm_pwm7/5.jpg" class="maxSize"><br><br>
+
+PER<br>
+<img src="gaviar_asm_pwm7/6.jpg" class="maxSize"><br><br>
+
+PCR<br>
+<img src="gaviar_asm_pwm7/7.jpg" class="maxSize"><br><br>
+
+PPR<br>
+<img src="gaviar_asm_pwm7/8.jpg" class="maxSize"><br><br>
+
+main.s
+</p>
+<pre class="brush:asm">
+    .global _start
+
+    .equ CCU_BASE,  0x02001000
+    .equ PWM_BASE,  0x02000c00
+    .equ GPIO_BASE, 0x02000000
+
+    .equ PWM_BGR_REG, 0x07ac
+    .equ PD_CFG2,     0x0098
+    .equ PCCR67,      0x002c
+    .equ PCGR,        0x0040
+    .equ PER,         0x0080
+    .equ PCR,         (0x0100 + 0x0000 + (7 * 0x0020))
+    .equ PPR,         (0x0100 + 0x0004 + (7 * 0x0020))
+    .equ PCNTR,       (0x0100 + 0x0008 + (7 * 0x0020))
+    
+    .text
+    .long 0x4000006f
+    .byte 'e','G','O','N','.','B','T','0'
+    .long 0x5F0A6C39
+    .long 0x8000
+    .long 0, 0
+    .long 0, 0, 0, 0, 0, 0, 0, 0
+    .long 0, 0, 0, 0, 0, 0, 0, 0
+  
+    .org 0x0400
+_start:
+    li t0, (1 &lt;&lt; 16) | (1 &lt;&lt; 0)
+    li a0, CCU_BASE + PWM_BGR_REG
+    sw t0, 0(a0)
+
+    li t0, (5 &lt;&lt; 24)
+    li a0, GPIO_BASE + PD_CFG2
+    sw t0, 0(a0)
+
+    li t0, (8 &lt;&lt; 0)
+    li a0, PWM_BASE + PCCR67
+    sw t0, 0(a0)
+
+    li t0, (255 &lt;&lt; 0)
+    li a0, PWM_BASE + PCR
+    sw t0, 0(a0)
+
+    li t0, (660 &lt;&lt; 16) | (330 &lt;&lt; 0)
+    li a0, PWM_BASE + PPR
+    sw t0, 0(a0)
+
+    li t0, (1 &lt;&lt; 7)
+    li a0, PWM_BASE + PCGR
+    sw t0, 0(a0)
+
+    li t0, (1 &lt;&lt; 7)
+    li a0, PWM_BASE + PER
+    sw t0, 0(a0)
+0:
+    j 0b
+    .end
+</pre><br>
+
+<p>
+完成<br>
+<img src="gaviar_asm_pwm7/9.jpg" class="maxSize"><br>
+<img src="gaviar_asm_pwm7/10.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
