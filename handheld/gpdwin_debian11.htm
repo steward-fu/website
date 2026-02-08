@@ -1,0 +1,70 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - GPD Win - Debian 11.0 - <b>安裝系統</b></h3>
+<hr size="1"><br>
+<p>
+安裝步驟：<br>
+1. 下載Debian 11.0 ISO並且制作USB開機片<br>
+2. 接著透過USB開機(Fn + F7)並按照一般安裝步驟就可以安裝完成<br>
+3. 其它設定、安裝(先透過其它USB網卡上網安裝)
+</p>
+<pre>
+$ sudo vim /etc/X11/xorg.conf.d/20-gpudriver.conf
+    Section "Device"
+        Identifier "Intel Graphics"
+        Driver     "intel"
+        Option     "TearFree" "true"
+    EndSection
+
+$ sudo vim /etc/X11/xorg.conf.d/40-monitor.conf
+    Section "Monitor"
+         Identifier "LVDS-0"
+         Option     "Rotate" "right"
+    EndSection
+
+$ sudo apt-get update
+$ sudo apt-get install wpasupplicant network-manager-gnome firmware-brcm80211 firmware-intel-sound
+
+$ sudo nano /etc/default/grub
+    GRUB_CMDLINE_LINUX="fbcon=rotate:1"
+
+$ sudo grub-mkconfig -o /boot/grub/grub.cfg
+</pre>
+<p>
+P.S. 目前亮度無法調整，因為沒有intel_backlight可以控制<br><br>
+
+<b>Win + D</b>顯示桌面：<br>
+Application =&gt; Settings =&gt; Window Manager<br>
+<img src="gpdwin-al_debian_xfce/3.jpg" class="maxSize"><br><br>
+
+設定Touchscreen<br>
+Application =&gt; Settings =&gt; Session and Startup<br>
+<img src="gpdwin-al_debian_xfce/5.jpg" class="maxSize"><br><br>
+
+tp
+</p>
+<pre class="brush:python">
+#!/usr/bin/python
+import os
+import sys
+
+path = '/tmp/x.log'
+os.system('xinput --list &gt; ' + path)
+f = open(path)
+c = f.readlines()
+f.close()
+
+for x in c:
+    if ('Goodix Capacitive TouchScreen' in x) == False:
+        continue
+    r = x.split('id=')[1]
+    nid = (r.split('\t')[0])
+    cmd = "xinput -set-prop " + str(nid) + " 'Coordinate Transformation Matrix' 0 1 0 -1 0 1 0 0 1"
+    print cmd
+    os.system(cmd)
+    break;
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

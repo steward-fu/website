@@ -1,0 +1,70 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - GPD Win - <b>安裝Debian 8.0</b></h3>
+<hr size="1"><br>
+<p>
+安裝步驟：<br>
+1. UEFI USB Boot Disk
+</p>
+<pre>
+$ cd
+$ sudo apt-get install gdisk
+$ sudo sgdisk --zap-all /dev/sdb
+$ sudo sgdisk --new=1:0:0 --typecode=1:ef00 /dev/sdb
+$ sudo mkfs.vfat -F32 -n GRUB2EFI /dev/sdb1
+$ sudo mount -t vfat /dev/sdb1 /mnt -o uid=1000,gid=1000,umask=022
+$ unzip usb-pack_efi.zip
+$ rsync -auv usb-pack_efi/ /mnt
+$ sudo grub-install --removable --boot-directory=/mnt/boot --efi-directory=/mnt/EFI/BOOT /dev/sdb
+</pre>
+
+<p>
+2. 將Debian 8.0 ISO放到/mnt/iso/<br>
+3. 開機時，按下<b>Fn + F7</b>進入開機選單<br>
+4. Rotate Screen
+</p>
+
+<pre>
+$ sudo vim /etc/X11/xorg.conf.d/20-gpudriver.conf
+    Section "Device"
+        Identifier "gma500_gfx"
+        Driver "fbdev"
+        Option "Rotate" "CW"
+    EndSection
+
+$ sudo vim /etc/X11/xorg.conf.d/40-monitor.conf
+    Section "Monitor"
+        Identifier "LVDS-0"
+        Option "Rotate" "right"
+    EndSection
+
+$ sudo nano /etc/default/grub
+    GRUB_CMDLINE_LINUX="fbcon=rotate:1"
+
+$ sudo grub-mkconfig -o /boot/grub/grub.cfg
+</pre><br>
+
+<p>
+5. Wifi(brcmfmac4356-pcie.bin, brcmfmac4356-pcie.txt)(先透過其它USB網卡上網)
+</p>
+<pre>
+$ sudo apt-get update
+$ sudo apt-get install wpasupplicant network-manager-gnome
+$ sudo cp brcmfmac* /lib/firmware/brcm/
+</pre><br>
+
+<p>
+6. Audio
+</p>
+<pre>
+$ sudo apt-get install firmware-intel-sound
+</pre><br>
+
+<p>
+完成<br>
+<img src="gpdwin_debian8/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
