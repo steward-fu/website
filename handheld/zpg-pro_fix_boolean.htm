@@ -1,0 +1,44 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - Z-Pocket Game Pro (ZPG Pro) - <b>解決Warning: ~ on a boolean expression [-Wbool-operation]問題</b></h3>
+<hr size="1"><br>
+<p>
+問題如下：
+</p>
+<pre>
+  CC [M]  drivers/net/wireless/rtl8821cu/hal/phydm/halrf/rtl8821c/halrf_iqk_8821c.o
+drivers/net/wireless/rtl8821cu/hal/phydm/halrf/rtl8821c/halrf_iqk_8821c.c: In function '_iqk_reload_iqk_setting_8821c':
+drivers/net/wireless/rtl8821cu/hal/phydm/halrf/rtl8821c/halrf_iqk_8821c.c:579:49: warning: '~' on a boolean expression [-Wbool-operation]
+error, forbidden warning:halrf_iqk_8821c.c:579
+     odm_set_bb_reg(dm, iqk_apply[path], BIT(0), ~(iqk_info-&gt;iqk_fail_report[channel][path][idx]));
+                                                 ^
+drivers/net/wireless/rtl8821cu/hal/phydm/halrf/rtl8821c/halrf_iqk_8821c.c:579:49: note: did you mean to use logical not?
+     odm_set_bb_reg(dm, iqk_apply[path], BIT(0), ~(iqk_info-&gt;iqk_fail_report[channel][path][idx]));
+                                                 ^
+                                                 !
+drivers/net/wireless/rtl8821cu/hal/phydm/halrf/rtl8821c/halrf_iqk_8821c.c:581:50: warning: '~' on a boolean expression [-Wbool-operation]
+error, forbidden warning:halrf_iqk_8821c.c:581
+     odm_set_bb_reg(dm, iqk_apply[path], BIT(10), ~(iqk_info-&gt;iqk_fail_report[channel][path][idx]));
+                                                  ^
+drivers/net/wireless/rtl8821cu/hal/phydm/halrf/rtl8821c/halrf_iqk_8821c.c:581:50: note: did you mean to use logical not?
+     odm_set_bb_reg(dm, iqk_apply[path], BIT(10), ~(iqk_info-&gt;iqk_fail_report[channel][path][idx]));
+                                                  ^
+                                                  !
+make[4]: *** [scripts/Makefile.build:278: drivers/net/wireless/rtl8821cu/hal/phydm/halrf/rtl8821c/halrf_iqk_8821c.o] Error 1
+make[3]: *** [scripts/Makefile.build:484: drivers/net/wireless/rtl8821cu] Error 2
+make[2]: *** [scripts/Makefile.build:484: drivers/net/wireless] Error 2
+make[1]: *** [scripts/Makefile.build:484: drivers/net] Error 2
+make: *** [Makefile:1036: drivers] Error 2
+</pre><br>
+
+<p>
+解法如下：
+</p>
+<pre>
+$ vim Makefile +386
+    CFLAGS_MODULE = -Wno-bool-operation
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

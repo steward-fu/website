@@ -1,0 +1,56 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - Z-Pocket Game Pro (ZPG Pro) - <b>ConfigFS Gadget(keyboard)</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://www.raspberrypi.org/forums/viewtopic.php?t=163774<br><br>
+
+ZPG Pro
+</p>
+<pre>
+$ su
+# insmod libcomposite.ko
+# insmod usb_f_fs.ko
+# insmod usb_f_hid.ko
+
+# cd /sys/kernel/config/usb_gadget/
+# mkdir -p isticktoit
+# cd isticktoit
+# echo 0x1d6b &gt; idVendor
+# echo 0x0104 &gt; idProduct
+# echo 0x0100 &gt; bcdDevice
+# echo 0x0200 &gt; bcdUSB
+# mkdir -p strings/0x409
+# echo "fedcba9876543210" &gt; strings/0x409/serialnumber
+# echo "Tobias Girstmair" &gt; strings/0x409/manufacturer
+# echo "iSticktoit.net USB Device" &gt; strings/0x409/product
+# mkdir -p configs/c.1/strings/0x409
+# echo "Config 1: ECM network" &gt; configs/c.1/strings/0x409/configuration
+# echo 250 &gt; configs/c.1/MaxPower
+# mkdir -p functions/hid.xyz
+# echo 1 &gt; functions/hid.xyz/protocol
+# echo 1 &gt; functions/hid.xyz/subclass
+# echo 8 &gt; functions/hid.xyz/report_length
+# echo -ne \\x05\\x01\\x09\\x06\\xa1\\x01\\x05\\x07\\x19\\xe0\\x29\\xe7\\x15\\x00\\x25\\x01\\x75\\x01\\x95\\x08\\x81\\x02\\x95\\x01\\x75\\x08\\x81\\x03\\x95\\x05\\x75\\x01\\x05\\x08\\x19\\x01\\x29\\x05\\x91\\x02\\x95\\x01\\x75\\x03\\x91\\x03\\x95\\x06\\x75\\x08\\x15\\x00\\x25\\x65\\x05\\x07\\x19\\x00\\x29\\x65\\x81\\x00\\xc0 &gt; functions/hid.xyz/report_desc
+# ln -s functions/hid.xyz configs/c.1/
+# ls /sys/class/udc &gt; UDC
+</pre><br>
+
+<p>
+PC
+</p>
+<pre>
+[ 4122.455723] usb 2-2: new high-speed USB device number 17 using xhci_hcd
+[ 4122.604735] usb 2-2: New USB device found, idVendor=1d6b, idProduct=0104, bcdDevice= 1.00
+[ 4122.604738] usb 2-2: New USB device strings: Mfr=1, Product=2, SerialNumber=3
+[ 4122.604740] usb 2-2: Product: iSticktoit.net USB Device
+[ 4122.604741] usb 2-2: Manufacturer: Tobias Girstmair
+[ 4122.604743] usb 2-2: SerialNumber: fedcba9876543210
+[ 4122.606101] input: Tobias Girstmair iSticktoit.net USB Device as /devices/pci0000:00/0000:00:14.0/usb2/2-2/2-2:1.0/0003:1D6B:0104.0005/input/input19
+[ 4122.664109] hid-generic 0003:1D6B:0104.0005: input,hidraw3: USB HID v1.01 Keyboard [Tobias Girstmair iSticktoit.net USB Device] on usb-0000:00:14.0-2/input0
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

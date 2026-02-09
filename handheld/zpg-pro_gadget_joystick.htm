@@ -1,0 +1,61 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - Z-Pocket Game Pro (ZPG Pro) - <b>ConfigFS Gadget(joystick)</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/milador/RaspberryPi-Joystick<br><br>
+
+ZPG Pro
+</p>
+<pre>
+$ su
+# insmod libcomposite.ko
+# insmod usb_f_fs.ko
+# insmod usb_f_hid.ko
+
+# cd /sys/kernel/config/usb_gadget/
+# mkdir -p xac_joystick
+# cd xac_joystick
+# echo 0x1d6b &gt; idVendor
+# echo 0x0104 &gt; idProduct
+# echo 0x0100 &gt; bcdDevice
+# echo 0x0200 &gt; bcdUSB
+# echo 0xef &gt; bDeviceClass
+# echo 0x02 &gt; bDeviceSubClass
+# echo 0x01 &gt; bDeviceProtocol
+# mkdir -p strings/0x409
+# echo "0123456789" &gt; strings/0x409/serialnumber
+# echo "Raspberry Pi" &gt; strings/0x409/manufacturer
+# echo "XAC Virtual Joystick" &gt; strings/0x409/product
+# mkdir functions/hid.usb0
+# echo 0 &gt; functions/hid.usb0/protocol
+# echo 0 &gt; functions/hid.usb0/subclass
+# echo 3 &gt; functions/hid.usb0/report_length
+# echo "05010904A1011581257F0901A10009300931750895028102C005091901290815002501750195088102C0" | xxd -r -ps &gt; functions/hid.usb0/report_desc
+# mkdir configs/c.1
+# mkdir configs/c.1/strings/0x409
+# echo 0x80 &gt; configs/c.1/bmAttributes
+# echo 200 &gt; configs/c.1/MaxPower
+# echo "XAC configuration" &gt; configs/c.1/strings/0x409/configuration
+# ln -s functions/hid.usb0 configs/c.1
+# ls /sys/class/udc &gt; UDC
+</pre><br>
+
+<p>
+PC
+</p>
+<pre>
+[549501.625556] usb 1-3: new high-speed USB device number 106 using xhci_hcd
+[549501.766945] usb 1-3: New USB device found, idVendor=1d6b, idProduct=0104
+[549501.766951] usb 1-3: New USB device strings: Mfr=1, Product=2, SerialNumber=3
+[549501.766955] usb 1-3: Product: XAC Virtual Joystick
+[549501.766959] usb 1-3: Manufacturer: Raspberry Pi
+[549501.766962] usb 1-3: SerialNumber: 0123456789
+[549501.769410] input: Raspberry Pi XAC Virtual Joystick as /devices/pci0000:00/0000:00:14.0/usb1/1-3/1-3:1.0/0003:1D6B:0104.0018/input/input42
+[549501.772902] hid-generic 0003:1D6B:0104.0018: input,hidraw2: USB HID v1.01 Joystick [Raspberry Pi XAC Virtual Joystick] on usb-0000:00:14.0-3/input0
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>

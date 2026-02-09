@@ -1,0 +1,52 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - Z-Pocket Game Pro (ZPG Pro) - <b>Build smpeg v0.4.5</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://www.libsdl.org/projects/SDL_mixer/<br><br>
+
+步驟如下：
+</p>
+<pre>
+$ export TARGETMACH=arm-linux
+$ export BUILDMACH=i686-pc-linux-gnu-
+$ export CROSS=arm-linux-gnueabihf-
+$ export CC=${CROSS}gcc
+$ export LD=${CROSS}ld
+$ export AS=${CROSS}as
+$ export CXX=${CROSS}g++
+
+$ cd 
+$ wget https://sources.voidlinux.org/smpeg-0.4.5/smpeg-0.4.5.tar.gz
+$ tar xvf smpeg-0.4.5.tar.gz
+$ cd smpeg-0.4.5
+$ ./autogen.sh
+$ ./configure --prefix=/usr/arm-linux-gnueabihf --host=arm-linux --disable-gtktest --disable-opengl-player
+$ make
+    audio/hufftable.cpp:587:1: error: narrowing conversion of ‘-1’ from ‘int’ to ‘unsigned int’ [-Wnarrowing]
+        587 | };
+            | ^
+    audio/hufftable.cpp:587:1: error: narrowing conversion of ‘-1’ from ‘int’ to ‘unsigned int’ [-Wnarrowing]
+    audio/hufftable.cpp:587:1: error: narrowing conversion of ‘-1’ from ‘int’ to ‘unsigned int’ [-Wnarrowing]
+    audio/hufftable.cpp:587:1: error: narrowing conversion of ‘-1’ from ‘int’ to ‘unsigned int’ [-Wnarrowing]
+    audio/hufftable.cpp:587:1: error: narrowing conversion of ‘-1’ from ‘int’ to ‘unsigned int’ [-Wnarrowing]
+    audio/hufftable.cpp:587:1: error: narrowing conversion of ‘-1’ from ‘int’ to ‘unsigned int’ [-Wnarrowing]
+
+$ vim Makefile
+    -Wall &gt; -Wno-narrowing
+
+$ make
+    /usr/bin/ld: gtv.o: undefined reference to symbol 'XMoveWindow'
+    /usr/bin/ld: //lib/x86_64-linux-gnu/libX11.so.6: error adding symbols: DSO missing from command line
+    collect2: error: ld returned 1 exit status
+
+$ vim Makefile +359
+    LIBS = -lSDL -lm -lX11
+
+$ make
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
