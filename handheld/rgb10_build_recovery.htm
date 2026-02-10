@@ -1,0 +1,44 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - RGB10 - <b>Build Recovery</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://wiki.odroid.com/odroid_go_advance/recovery_spirom<br><br>
+
+步驟如下：
+</p>
+<pre>
+$ sudo apt-get update
+$ sudo apt-get install -y git lzop build-essential gcc bc libncurses5-dev libc6-i386 lib32stdc++6 zlib1g:i386 -y
+
+$ cd
+$ wget https://releases.linaro.org/components/toolchain/binaries/6.3-2017.05/aarch64-linux-gnu/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu.tar.xz
+$ tar xvf gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu.tar.xz
+$ sudo mv gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu /opt/rgb10
+
+$ export ARCH=arm64
+$ export CROSS_COMPILE=aarch64-linux-gnu-
+$ export PATH=/opt/rgb10/bin/:$PATH
+
+$ git clone https://github.com/hardkernel/u-boot.git -b odroidgoA-v2017.09
+$ cd u-boot
+$ make distclean
+$ ./make.sh odroidgo2-spi
+$ ./build_recovery.sh
+</pre><br>
+
+<p>
+燒錄到MicroSD
+</p>
+<pre>
+$ cd sd_fuse
+$ sudo dd if=sd_fuse/sdcard_recovery.img of=sdx conv=fsync
+</pre>
+<p>
+P.S. 接著使用這張MicroSD開機就可以刷入Recovery
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
