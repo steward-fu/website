@@ -1,0 +1,46 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - Anbernic RG280M - <b>Overclock</b></h3>
+<hr size="1"><br>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;sys/mman.h&gt;
+#include &lt;unistd.h&gt;
+
+int main(int argc, char* argv[])
+{
+    int fd;
+    uint8_t *mem;
+
+    fd = open("/dev/mem", O_RDWR);
+    if(fd &lt; 0){
+        printf("failed to open /dev/mem\n");
+        return -1;
+    }
+    mem = mmap(0, 4096, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0x10000000);
+    printf("0x%08x 0x%08x 0x%08x\n", 
+        *((uint32_t*)(mem + 0x00)), 
+        *((uint32_t*)(mem + 0x10)), 
+        *((uint32_t*)(mem + 0x30))); 
+
+    //0x52~0x6c: 0x52~0x6c*12MHz
+    *((uint32_t*)(mem + 0x10)) = 0x5300850f;
+    *((uint32_t*)(mem + 0x10)) = 0x5300851f;
+    
+    printf("0x%08x 0x%08x 0x%08x\n", 
+        *((uint32_t*)(mem + 0x00)), 
+        *((uint32_t*)(mem + 0x10)), 
+        *((uint32_t*)(mem + 0x30)));
+    munmap(mem, 4096);
+    close(fd);
+    return 0;        
+}
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
