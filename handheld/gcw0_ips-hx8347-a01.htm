@@ -1,0 +1,338 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - GCW Zero - <b>更換螢幕(3.5吋 IPS HX8347-A01 解析度320x240)</b></h3>
+<hr size="1"><br>
+<p>
+對應腳位：
+</p>
+<table>
+<tr><th>GCW0</th><th>HX8347-A01</th></tr>
+<tr><td>LED-K</td><td>LED-K(K1~K8)</td></tr>
+<tr><td>LED-A</td><td>LED-A</td></tr>
+<tr><td>RESET</td><td>NRESET</td></tr>
+<tr><td>CS</td><td>NCS</td></tr>
+<tr><td>SCK</td><td>DNC_SCL</td></tr>
+<tr><td>SDI</td><td>SDI</td></tr>
+<tr><td>B2</td><td>B0</td></tr>
+<tr><td>B3</td><td>B1</td></tr>
+<tr><td>B4</td><td>B2</td></tr>
+<tr><td>B5</td><td>B3</td></tr>
+<tr><td>B6</td><td>B4</td></tr>
+<tr><td>B7</td><td>B5</td></tr>
+<tr><td>G2</td><td>G0</td></tr>
+<tr><td>G3</td><td>G1</td></tr>
+<tr><td>G4</td><td>G2</td></tr>
+<tr><td>G5</td><td>G3</td></tr>
+<tr><td>G6</td><td>G4</td></tr>
+<tr><td>G7</td><td>G5</td></tr>
+<tr><td>R2</td><td>R0</td></tr>
+<tr><td>R3</td><td>R1</td></tr>
+<tr><td>R4</td><td>R2</td></tr>
+<tr><td>R5</td><td>R3</td></tr>
+<tr><td>R6</td><td>R4</td></tr>
+<tr><td>R7</td><td>R5</td></tr>
+<tr><td>HSYNC</td><td>HSYNC</td></tr>
+<tr><td>VSYNC</td><td>VSYNC</td></tr>
+<tr><td>DCLK</td><td>PCLK</td></tr>
+<tr><td>VDD</td><td>IOVCC, VCI, BS0. BS1, BS2, NRD, NWR</td></tr>
+<tr><td>ENB</td><td>DE</td></tr>
+<tr><td>GND</td><td>GND</td></tr>
+</table><br>
+
+<p>
+drivers/video/displays/Kconfig
+</p>
+<pre>
+config PANEL_HX8347A01
+    # TODO: Switch to tristate once the driver is a module.
+    bool "HX8347A01 based panel"
+    help
+        Select this if you are using a HX8347A01 LCD driver IC.
+</pre><br>
+
+<p>
+drivers/video/displays/Makefile
+</p>
+<pre>
+obj-$(CONFIG_PANEL_HX8347A01)    += panel-hx8347a01.o
+</pre><br>
+
+<p>
+drivers/video/displays/panel-hx8347a01.c
+</p>
+<pre class="brush:cpp">
+#include &lt;linux/delay.h&gt;
+#include &lt;linux/device.h&gt;
+#include &lt;linux/gfp.h&gt;
+#include &lt;linux/gpio.h&gt;
+
+#include &lt;video/jzpanel.h&gt;
+#include &lt;video/panel-hx8347a01.h&gt;
+
+struct hx8347a01 {
+    struct hx8347a01_platform_data *pdata;
+};
+
+static void hx8347a01_send_spi(struct hx8347a01_platform_data *pdata, u8 data)
+{
+    int bit;
+
+    for (bit = 7; bit &gt;= 0; bit--) {
+        gpio_direction_output(pdata-&gt;gpio_clock, 0);
+        gpio_direction_output(pdata-&gt;gpio_data, (data &gt;&gt; bit) &amp; 1);
+        udelay(10);
+        gpio_direction_output(pdata-&gt;gpio_clock, 1);
+        udelay(10);
+    }
+}
+
+static void hx8347a01_send_cmd(struct hx8347a01_platform_data *pdata, u8 data)
+{
+    gpio_direction_output(pdata-&gt;gpio_enable, 0);
+    hx8347a01_send_spi(pdata, 0x74);
+    hx8347a01_send_spi(pdata, data &gt;&gt; 8);
+    hx8347a01_send_spi(pdata, data);
+    gpio_direction_output(pdata-&gt;gpio_enable, 1);
+}
+
+static void hx8347a01_send_data(struct hx8347a01_platform_data *pdata, u8 data)
+{
+    gpio_direction_output(pdata-&gt;gpio_enable, 0);
+    hx8347a01_send_spi(pdata, 0x76);
+    hx8347a01_send_spi(pdata, data &gt;&gt; 8);
+    hx8347a01_send_spi(pdata, data);
+    gpio_direction_output(pdata-&gt;gpio_enable, 1);
+}
+
+static int hx8347a01_panel_init(void **out_panel, struct device *dev, void *panel_pdata)
+{
+    struct hx8347a01_platform_data *pdata = panel_pdata;
+    struct hx8347a01 *panel;
+    int ret;
+
+    printk("%s++\n", __func__);
+    panel = devm_kzalloc(dev, sizeof(*panel), GFP_KERNEL);
+    if (!panel) {
+        dev_err(dev, "Failed to alloc panel data\n");
+        return -ENOMEM;
+    }
+
+    panel-&gt;pdata = pdata;
+
+    *out_panel = panel;
+
+    /* Reserve GPIO pins. */
+
+    ret = devm_gpio_request(dev, pdata-&gt;gpio_reset, "LCD panel reset");
+    if (ret) {
+        dev_err(dev,
+            "Failed to request LCD panel reset pin: %d\n", ret);
+        return ret;
+    }
+
+    ret = devm_gpio_request(dev, pdata-&gt;gpio_clock, "LCD 3-wire clock");
+    if (ret) {
+        dev_err(dev,
+            "Failed to request LCD panel 3-wire clock pin: %d\n",
+            ret);
+        return ret;
+    }
+
+    ret = devm_gpio_request(dev, pdata-&gt;gpio_enable, "LCD 3-wire enable");
+    if (ret) {
+        dev_err(dev,
+            "Failed to request LCD panel 3-wire enable pin: %d\n",
+            ret);
+        return ret;
+    }
+
+    ret = devm_gpio_request(dev, pdata-&gt;gpio_data, "LCD 3-wire data");
+    if (ret) {
+        dev_err(dev,
+            "Failed to request LCD panel 3-wire data pin: %d\n",
+            ret);
+        return ret;
+    }
+
+    /* Set initial GPIO pin directions and value. */
+
+    gpio_direction_output(pdata-&gt;gpio_clock,    1);
+    gpio_direction_output(pdata-&gt;gpio_enable, 1);
+    gpio_direction_output(pdata-&gt;gpio_data,     0);
+
+    printk("%s--\n", __func__);
+    return 0;
+}
+
+static void hx8347a01_panel_exit(void *panel)
+{
+}
+
+static void hx8347a01_panel_enable(void *panel)
+{
+    struct hx8347a01_platform_data *pdata = ((struct hx8347a01 *)panel)-&gt;pdata;
+
+    printk("%s++\n", __func__);
+
+    // Reset LCD panel
+    gpio_direction_output(pdata-&gt;gpio_reset, 0);
+    mdelay(50);
+    gpio_direction_output(pdata-&gt;gpio_reset, 1);
+    mdelay(50);
+
+    // GAMMA SETTING
+    hx8347a01_send_cmd(pdata, 0x0046);hx8347a01_send_data(pdata, 0x0044);
+    hx8347a01_send_cmd(pdata, 0x0047);hx8347a01_send_data(pdata, 0x0044);
+    hx8347a01_send_cmd(pdata, 0x0048);hx8347a01_send_data(pdata, 0x0045);
+    hx8347a01_send_cmd(pdata, 0x0049);hx8347a01_send_data(pdata, 0x0025);
+    hx8347a01_send_cmd(pdata, 0x004A);hx8347a01_send_data(pdata, 0x0023);
+    hx8347a01_send_cmd(pdata, 0x004B);hx8347a01_send_data(pdata, 0x0045);
+    hx8347a01_send_cmd(pdata, 0x004C);hx8347a01_send_data(pdata, 0x0025);
+    hx8347a01_send_cmd(pdata, 0x004D);hx8347a01_send_data(pdata, 0x0023);
+    hx8347a01_send_cmd(pdata, 0x004E);hx8347a01_send_data(pdata, 0x0050);
+    hx8347a01_send_cmd(pdata, 0x004F);hx8347a01_send_data(pdata, 0x0000);
+    hx8347a01_send_cmd(pdata, 0x0050);hx8347a01_send_data(pdata, 0x0050);
+    hx8347a01_send_cmd(pdata, 0x0051);hx8347a01_send_data(pdata, 0x0000);
+
+    // 240x320 window setting
+    hx8347a01_send_cmd(pdata, 0x0002);hx8347a01_send_data(pdata, 0x0000); // Column address start2
+    hx8347a01_send_cmd(pdata, 0x0003);hx8347a01_send_data(pdata, 0x0000); // Column address start1
+    hx8347a01_send_cmd(pdata, 0x0004);hx8347a01_send_data(pdata, 0x0000); // Column address end2
+    hx8347a01_send_cmd(pdata, 0x0005);hx8347a01_send_data(pdata, 0x00EF); // Column address end1
+    hx8347a01_send_cmd(pdata, 0x0006);hx8347a01_send_data(pdata, 0x0000); // Row address start2
+    hx8347a01_send_cmd(pdata, 0x0007);hx8347a01_send_data(pdata, 0x0000); // Row address start1
+    hx8347a01_send_cmd(pdata, 0x0008);hx8347a01_send_data(pdata, 0x0001); // Row address end2
+    hx8347a01_send_cmd(pdata, 0x0009);hx8347a01_send_data(pdata, 0x003F); // Row address end1
+
+    // Display Setting
+    hx8347a01_send_cmd(pdata, 0x0016);hx8347a01_send_data(pdata, 0x0008);
+    hx8347a01_send_cmd(pdata, 0x0038);hx8347a01_send_data(pdata, 0x0000); // RGB_EN=0
+    hx8347a01_send_cmd(pdata, 0x0023);hx8347a01_send_data(pdata, 0x0095); // N_DC=1001 0101
+    hx8347a01_send_cmd(pdata, 0x0024);hx8347a01_send_data(pdata, 0x0095); // PI_DC=1001 0101
+    hx8347a01_send_cmd(pdata, 0x0025);hx8347a01_send_data(pdata, 0x00FF); // I_DC=1111 1111
+    hx8347a01_send_cmd(pdata, 0x0027);hx8347a01_send_data(pdata, 0x0002); // N_BP=0000 0010
+    hx8347a01_send_cmd(pdata, 0x0028);hx8347a01_send_data(pdata, 0x0002); // N_FP=0000 0010
+    hx8347a01_send_cmd(pdata, 0x0029);hx8347a01_send_data(pdata, 0x0002); // PI_BP=0000 0010
+    hx8347a01_send_cmd(pdata, 0x002A);hx8347a01_send_data(pdata, 0x0002); // PI_FP=0000 0010
+    hx8347a01_send_cmd(pdata, 0x002C);hx8347a01_send_data(pdata, 0x0002); // I_BP=0000 0010
+    hx8347a01_send_cmd(pdata, 0x002D);hx8347a01_send_data(pdata, 0x0002); // I_FP=0000 0010
+    hx8347a01_send_cmd(pdata, 0x003A);hx8347a01_send_data(pdata, 0x00A1); // N_RTN=0000, N_NW=001
+    hx8347a01_send_cmd(pdata, 0x003B);hx8347a01_send_data(pdata, 0x00A1); // PI_RTN=0000, PI_NW=000
+    hx8347a01_send_cmd(pdata, 0x003C);hx8347a01_send_data(pdata, 0x00A0); // I_RTN=1111, I_NW=000
+    hx8347a01_send_cmd(pdata, 0x003D);hx8347a01_send_data(pdata, 0x0000); // DIV=00
+    mdelay(20);
+
+    // Power Supply Setting
+    hx8347a01_send_cmd(pdata, 0x0019);hx8347a01_send_data(pdata, 0x0049); // CADJ=0100, CUADJ=100(FR:60Hz, OSD_EN=1
+    hx8347a01_send_cmd(pdata, 0x0093);hx8347a01_send_data(pdata, 0x000F); // RADJ=1111, 100%
+    mdelay(10);
+    hx8347a01_send_cmd(pdata, 0x0020);hx8347a01_send_data(pdata, 0x0010); // BT=0100
+    hx8347a01_send_cmd(pdata, 0x001D);hx8347a01_send_data(pdata, 0x0001); // VC1=111
+    hx8347a01_send_cmd(pdata, 0x001E);hx8347a01_send_data(pdata, 0x0006); // VC3=000
+    hx8347a01_send_cmd(pdata, 0x001F);hx8347a01_send_data(pdata, 0x000C); // VRH=0100
+
+    // VCOM Setting for CMO 3.2 Panel
+    hx8347a01_send_cmd(pdata, 0x0044);hx8347a01_send_data(pdata, 0x004C); // VCM=100 1101
+    hx8347a01_send_cmd(pdata, 0x0045);hx8347a01_send_data(pdata, 0x0010); // VDV=1 0001
+    hx8347a01_send_cmd(pdata, 0x001C);hx8347a01_send_data(pdata, 0x0004); // AP=100
+    mdelay(20);
+    hx8347a01_send_cmd(pdata, 0x001B);hx8347a01_send_data(pdata, 0x0008); // GASENB=0, PON=1, DK=1, XDK=0, VLCD_TRI=0, STB=0
+    mdelay(40);
+    hx8347a01_send_cmd(pdata, 0x001B);hx8347a01_send_data(pdata, 0x0014); // GASENB=0, PON=1, DK=0, XDK=0, VLCD_TRI=0, STB=0
+    mdelay(40);
+    hx8347a01_send_cmd(pdata, 0x0043);hx8347a01_send_data(pdata, 0x0080); // Set VCOMG=1
+    mdelay(100);
+
+    // Display ON Setting
+    hx8347a01_send_cmd(pdata, 0x0090);hx8347a01_send_data(pdata, 0x00F0); // SAP=0111 1111
+    hx8347a01_send_cmd(pdata, 0x0026);hx8347a01_send_data(pdata, 0x0024); // GON=0, DTE=0, D=01
+    mdelay(40);
+    hx8347a01_send_cmd(pdata, 0x0026);hx8347a01_send_data(pdata, 0x0024); // GON=1, DTE=0, D=01
+    hx8347a01_send_cmd(pdata, 0x0026);hx8347a01_send_data(pdata, 0x002C); // GON=1, DTE=0, D=11
+    mdelay(40);
+    hx8347a01_send_cmd(pdata, 0x0026);hx8347a01_send_data(pdata, 0x003C); // GON=1, DTE=1, D=11
+
+    // Cycle Control    
+    hx8347a01_send_cmd(pdata, 0x0035);hx8347a01_send_data(pdata, 0x0038); // EQS=38h
+    hx8347a01_send_cmd(pdata, 0x0036);hx8347a01_send_data(pdata, 0x0078); // EQP=78h
+    hx8347a01_send_cmd(pdata, 0x003E);hx8347a01_send_data(pdata, 0x0038); // SON=38h
+    hx8347a01_send_cmd(pdata, 0x0040);hx8347a01_send_data(pdata, 0x000F); // GDON=0Fh
+
+    // Display Control    
+    hx8347a01_send_cmd(pdata, 0x0041);hx8347a01_send_data(pdata, 0x00F0); // GDOFF
+
+    // Internal register setting
+    hx8347a01_send_cmd(pdata, 0x0095);hx8347a01_send_data(pdata, 0x0001); // Set Display clock and Pumping clock to synchronize
+
+    // RGB Interface Control,RGB    polarity(HS,VS,DE,DOTCLK)
+    hx8347a01_send_cmd(pdata, 0x0038);hx8347a01_send_data(pdata, 0x0010); // RGB Interface ON
+
+    // Internal Use 
+    hx8347a01_send_cmd(pdata, 0x0070);hx8347a01_send_data(pdata, 0x0026); // Internal Use GS SS
+    printk("%s--\n", __func__);
+}
+
+static void hx8347a01_panel_disable(void *panel)
+{
+    struct hx8347a01_platform_data *pdata = ((struct hx8347a01 *)panel)-&gt;pdata;
+
+    printk("%s++\n", __func__);
+    hx8347a01_send_cmd(pdata, 0x0026);hx8347a01_send_data(pdata, 0x0000);
+    printk("%s--\n", __func__);
+}
+
+struct panel_ops hx8347a01_panel_ops = {
+    .init    = hx8347a01_panel_init,
+    .exit    = hx8347a01_panel_exit,
+    .enable  = hx8347a01_panel_enable,
+    .disable = hx8347a01_panel_disable,
+};
+</pre><br>
+
+<p>
+menuconfig<br>
+<img src="gcw0_ips-hx8347-a01/10.jpg" class="maxSize"><br><br>
+
+接著焊接轉板<br>
+<img src="gcw0_ips-hx8347-a01/1.jpg" class="maxSize"><br><br>
+
+背面<br>
+<img src="gcw0_ips-hx8347-a01/2.jpg" class="maxSize"><br><br>
+
+接著上3D打印的外殼<br>
+<img src="gcw0_ips-hx8347-a01/3.jpg" class="maxSize"><br><br>
+
+感動的一刻<br>
+<img src="gcw0_ips-hx8347-a01/4.jpg" class="maxSize"><br><br>
+
+正面<br>
+<img src="gcw0_ips-hx8347-a01/5.jpg" class="maxSize"><br><br>
+
+下邊<br>
+<img src="gcw0_ips-hx8347-a01/6.jpg" class="maxSize"><br><br>
+
+左邊<br>
+<img src="gcw0_ips-hx8347-a01/7.jpg" class="maxSize"><br><br>
+
+上面<br>
+<img src="gcw0_ips-hx8347-a01/8.jpg" class="maxSize"><br><br>
+
+右邊<br>
+<img src="gcw0_ips-hx8347-a01/9.jpg" class="maxSize"><br><br>
+
+周哥屏對比IPS屏(感謝剃頭提供)<br>
+<img src="gcw0_ips-hx8347-a01/11.jpg" class="maxSize"><br>
+<img src="gcw0_ips-hx8347-a01/12.jpg" class="maxSize"><br>
+<img src="gcw0_ips-hx8347-a01/13.jpg" class="maxSize"><br>
+<img src="gcw0_ips-hx8347-a01/14.jpg" class="maxSize"><br>
+<img src="gcw0_ips-hx8347-a01/15.jpg" class="maxSize"><br>
+<img src="gcw0_ips-hx8347-a01/16.jpg" class="maxSize"><br>
+<img src="gcw0_ips-hx8347-a01/17.jpg" class="maxSize"><br>
+<img src="gcw0_ips-hx8347-a01/18.jpg" class="maxSize"><br>
+<img src="gcw0_ips-hx8347-a01/19.jpg" class="maxSize"><br>
+<img src="gcw0_ips-hx8347-a01/20.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
