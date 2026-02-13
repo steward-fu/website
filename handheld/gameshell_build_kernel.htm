@@ -1,0 +1,53 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - GameShell - <b>Build Kernel 4.14.2</b></h3>
+<hr size="1"><br>
+<p>
+步驟如下：
+</p>
+<pre>
+$ cd
+$ git clone https://github.com/clockworkpi/Kernel
+$ git clone https://github.com/clockworkpi/USB-Ethernet
+$ wget https://mirrors.edge.kernel.org/pub/linux/kernel/v4.x/linux-4.14.2.tar.gz
+$ tar xvf linux-4.14.2.tar.gz
+$ mv linux-4.14.2 b
+$ cp b/arch/arm/configs/clockworkpi_cpi3_defconfig b/.config
+$ cp Kernel/cpi3-linux_4_14_2.patch .
+$ cp Kernel/usb_ethernet.patch .
+$ patch -p0 &lt; cpi3-linux_4_14_2.patch
+    patching file b/arch/arm/boot/dts/Makefile
+    patching file b/arch/arm/boot/dts/sun8i-r16-clockworkpi-cpi3.dts
+    patching file b/arch/arm/configs/clockworkpi_cpi3_defconfig
+    patching file b/drivers/base/firmware_class.c
+    patching file b/drivers/input/misc/axp20x-pek.c
+    patching file b/drivers/leds/leds-gpio.c
+    patching file b/drivers/mfd/axp20x.c
+    patching file b/drivers/mfd/sun6i-prcm.c
+    patching file b/drivers/video/backlight/Kconfig
+    patching file b/drivers/video/backlight/Makefile
+    patching file b/drivers/video/backlight/kd027_lcd.c
+    patching file b/drivers/video/backlight/ocp8178_bl.c
+    patching file b/drivers/video/fbdev/core/fbcon.c
+    patching file b/drivers/video/logo/logo_linux_clut224.ppm
+    patching file b/sound/soc/sunxi/sun4i-i2s.c
+    patching file b/sound/soc/sunxi/sun8i-codec-analog.c
+    patching file b/sound/soc/sunxi/sun8i-codec.c
+
+$ patch -p0 &lt; usb_ethernet.patch
+    patching file b/arch/arm/configs/clockworkpi_cpi3_defconfig
+
+$ mv b gameshell_kernel-4.14.2
+$ cd gameshell_kernel-4.14.2
+$ make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf-
+$ mkimage -A arm -O linux -T kernel -C none -a 0x40008000 -e 0x40008000 -n "Linux kernel" -d arch/arm/boot/zImage uImage
+</pre><br>
+
+<p>
+完成<br>
+<img src="gameshell_build_kernel/1.jpg" class="maxSize">
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
