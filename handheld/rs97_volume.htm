@@ -1,0 +1,67 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - Anbernic RetroGame - <b>如何設定聲音大小</b></h3>
+<hr size="1"><br>
+<p>
+雖然RetroGame不是開源的掌機，不過為了可以讓它更趨近完美，司徒最終逆向出廠預設的模擬器，藉此得知如何控制聲音，整理後的程式如下：
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;sys/soundcard.h&gt;
+#include &lt;sys/ioctl.h&gt;
+
+#define MIXER_DEV "/dev/mixer"
+
+typedef enum {
+    AUDIO_VOLUME_SET,
+    AUDIO_VOLUME_GET,
+} audio_volume_action;
+
+int audio_volume(audio_volume_action action, long* outvol)
+{
+    int ret = 0;
+    int fd, devs;
+
+    if ((fd = open(MIXER_DEV, O_WRONLY)) &gt; 0) {
+        if (action == AUDIO_VOLUME_SET) {
+            if (*outvol &lt; 0 || *outvol &gt; 100) {
+                return -2;
+            }
+            
+            *outvol = (*outvol &lt;&lt; 8) | *outvol;
+            ioctl(fd, SOUND_MIXER_WRITE_VOLUME, outvol);
+        }
+        else if (action == AUDIO_VOLUME_GET) {
+            ioctl(fd, SOUND_MIXER_READ_VOLUME, outvol);
+            *outvol = *outvol &amp; 0xff;
+        }
+        close(fd);
+        return 0;
+    }
+    return -1;
+}
+
+int main(void)
+{
+    long ret = 0, vol = 0;
+
+    vol = -1;
+    ret = audio_volume(AUDIO_VOLUME_GET, &amp;vol);
+    printf("old volume: %d\n", vol);
+
+    vol = 100;
+    ret = audio_volume(AUDIO_VOLUME_SET, &amp;vol);
+    printf("set volume to %d\n", vol);
+    
+    vol = -1;
+    ret = audio_volume(AUDIO_VOLUME_GET, &amp;vol);
+    printf("new volume is: %d\n", vol);
+    return 0;
+}
+</pre>
+
+<br><script type="text/javascript" src="../tail.js"></script>
