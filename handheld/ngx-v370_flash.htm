@@ -1,0 +1,89 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - Neo Geo X v370 - <b>安裝原廠系統(Flash)</b></h3>
+<hr size="1"><br>
+<p>
+燒錄步驟：<br>
+1. https://drive.google.com/file/d/0BzVU0vOuWe-sQmZma1JrMVh4Qjg/edit?usp=sharing (原生系統)和https://drive.google.com/file/d/0BzVU0vOuWe-saHVNYWl2REU0ME0/edit?usp=sharing (燒錄工具程式碼)<br>
+2. https://drive.google.com/file/d/0BzVU0vOuWe-sWGdhOERMNGIyaTg/edit?usp=sharing (Patch檔案)<br>
+3. 在編譯工具程式前，需要先安裝需要的安裝包
+</p>
+<pre>
+$ sudo apt-get install libusb-dev libconfuse-dev
+</pre><br>
+<p>
+4. 解壓縮並且編譯燒錄工具程式碼
+</p>
+
+<pre>
+$ cp ingenic-boot-master.zip /tmp
+$ cp ingenic-boot-master.diff /tmp
+$ unzip ingenic-boot-master.zip
+$ patch -p0 &lt; ingenic-boot-master.diff
+$ cd ingenic-boot-master
+$ make
+</pre><br>
+
+<p>
+5. 將Neo Geo X關機<br>
+6. 按住<b>Start</b>按鈕並且透過MicroUSB連接到電腦<br>
+7. 執行如下命令(偵測CPU類型)
+</p>
+<pre>
+$ sudo ./ingenic-boot --probe
+ probe only
+ CPU data: JZ4770V1
+</pre><br>
+
+<p>
+8. 執行如下命令(燒錄檔案)
+</p>
+
+<pre>
+$ sudo ./ingenic-boot --boot org_nand.img
+    probe 1th
+    CPU data: JZ4770V1
+
+    addr set 0x80002000
+    addr=0x80002000
+
+    download fw_ddr2.bin
+    download len=6600
+
+    start1@0x80002000
+    choice=1, addr=0x80002000
+
+    probe 2th
+    CPU data: JZ4770V1
+
+    addr set 0x80002000
+    addr=0x80002000
+
+    download usb_boot.bin
+    download len=123944
+
+    flush cache
+
+    start2@0x80002000
+    choice=2, addr=0x80002000
+
+    probe 3th
+    CPU data: Boot4770
+
+    Configuring XBurst CPU succeeded.
+
+    #SD init
+
+    filename=/tmp/org_nand.img, addr=0x00000000, check=0
+    last_block_len 512
+    block_nums 3887104
+    last_download_block_num 1024
+    download_times 3796 : #########################
+</pre>
+<p>
+燒錄Flash Memory時，可能會出現一次或多次錯誤，發生這種狀況時不用擔心，只要再度執行燒錄指令即可，使用者也不用擔心會有燒壞變磚的風險，因為君正CPU有內部Bootloader程式，正常情況是燒不壞的
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>

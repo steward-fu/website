@@ -1,0 +1,82 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><script type="text/javascript" src="../page_head.js"></script>
+
+<h3><a href="../index.htm">掌機</a> - Neo Geo X v370 - <b>Build U-Boot</b></h3>
+<hr size="1"><br>
+<p>
+為了達到可以從Neo Geo X掌機的SD1開機，司徒決定開始研究北京君正釋出的U-Boot程式，在開始研究U-Boot程式前，必須先編譯一次官方U-Boot程式查看有無問題，若沒有問題再使用此份U-Boot程式做修改，這樣可以比較快速修改成司徒想要的功能<br><br>
+
+下載檔案：<br>
+1. ftp://ftp.ingenic.cn/3sw/01linux/01loader/u-boot/u-boot-1.1.6.tar.bz2 (U-Boot(v1.1.6)程式碼)<br>
+2. ftp://ftp.ingenic.cn/3sw/JZ4770/01LinuxBsp/20110729/source/u-boot-1.1.6-jz-20110719-r1728-FR1.patch.gz (JZ4770 Patch檔案)<br>
+3. ftp://ftp.ingenic.cn/3sw/01linux/00toolchain/mipseltools-gcc412-glibc261.tar.bz2 (Toolchain工具)<br>
+
+編譯步驟：
+</p>
+<pre>
+$ cp mipseltools-gcc412-glibc261.tar.bz2 /opt
+$ cp u-boot-1.1.6.tar.bz2 /tmp
+$ cp u-boot-1.1.6-jz-20110719-r1728-FR1.patch.gz /tmp
+$ cd /opt
+$ tar xjf mipseltools-gcc412-glibc261.tar.bz2
+$ export PATH=/opt/mipseltools-gcc412-glibc261/bin:$PATH
+$ cd /tmp
+$ tar xjf u-boot-1.1.6.tar.bz2
+$ cd u-boot-1.1.6
+$ gzip -cd ../u-boot-1.1.6-jz-20110719-r1728-FR1.patch.gz | patch -p1
+$ make pisces_msc_config
+$ make
+</pre><br>
+
+<p>
+若編譯成功，則在U-Boot根目錄可以找到<b>mbr-uboot-msc.bin</b>檔案，該檔案就是U-Boot的Binary檔案，使用者可以使用Windows的WinHEX或者Linux的dd指令Clone到MicroSD，並且從SD0開機測試，司徒測試後的結果如下(Baudrate 57600bps)
+</p>
+<pre>
+MMC init ok
+</pre>
+<p>
+從上面的開機訊息可以知道是從Flash Memory啟動的訊息，但是，司徒目前只能先測試SD0，因此需要更改成SD0啟動的方式，修改的地方位於<b>include/configs/pisces.h</b>檔案中的第38行，改成如下定義並且重新編譯一次即可
+</p>
+<pre>
+#ifdef CONFIG_MSC_U_BOOT
+    #define CONFIG_MSC_TYPE_SD
+#endif
+</pre><br>
+
+<p>
+再度燒錄測試的結果如下(Baudrate 57600bps)
+</p>
+<pre>
+SD card found!
+init ok
+
+U-Boot 1.1.6 (Jan 17 2013 - 22:58:30)
+Board: Ingenic Pisces (CPU Speed 1008 MHz)
+DRAM:  512 MB   Ram size &gt; EMC_LOW_SDRAM_SPACE_SIZE, set ram size = EMC_LOW_SDRAM_SPACE_SIZE: 256 MB
+Error: Unknown flash ID, force set to 'SST_ID_39SF040'
+Flash: 512 kB
+NAND:nand_get_flash_type: No NAND device found!!!
+NAND device: dev_id: 0x0000 ext_id: 0x000000 not known!
+nand_scan: No NAND device found!!!
+0 MiB
+SD init ok
+*** Warning - MMC/SD first load, using default environment
+
+In:    serial
+Out:   serial
+Err:   serial
+Net:   JZ ETHERNET
+Hit any key to stop autoboot:  0
+
+MSC readSD init ok
+3145728 bytes OK:
+## Booting image at 80600000 ...
+Bad Magic Number
+F4770 #
+</pre>
+<p>
+由上面的輸出訊息可以得知，目前的UBoot程式已經可以從SD0啟動，接著司徒就可以開始測試如何從SD1載入Kernel檔案
+</p>
+
+<br><script type="text/javascript" src="../tail.js"></script>
