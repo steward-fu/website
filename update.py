@@ -9,16 +9,20 @@ def patch_html(path):
     content = f.readlines()
     f.close()
 
+    last = -2
+    if content[0].startswith('<!--') == True:
+        last = -8
+
     f = open(path, 'w', encoding='utf-8-sig')
 
     i = 0
     start_write = False
-    while i < len(content[:-10]):
+    while i < len(content[:last]):
         t = content[i].replace('\r', '').replace('\n', '')
         i = i + 1
 
-        if t == '<div id="page">':
-            f.write('<!--' + '\n');
+        if t.startswith('<h3>') == True:
+            f.write('<!-- head' + '\n');
             f.write(' ____________________________________________________________' + '\n');
             f.write('|                                                            |' + '\n');
             f.write('|    DESIGN + Pat Heard { http://fullahead.org }             |' + '\n');
@@ -93,31 +97,26 @@ def patch_html(path):
             f.write('\n');
             f.write('<div id="page">' + '\n');
             f.write('\n');
+            f.write('<!-- body -->\n');
+            f.write(t + '\n')
 
             start_write = True
             continue
 
         if start_write == True:
-            # <h3>PicoSystem</h3>
-            # <p><b>拆機</b></p>
-            if t.startswith('<h3>'):
-                ntype = t.replace('<h3>', '').replace('</h3>', '')
-                ntitle = content[i].replace('<p><b>', '').replace('</b></p>', '').replace('\r', '').replace('\n', '')
-                t = '<h3><a href="../index.htm">掌機</a> - {} - <b>{}</b></h3>'.format(ntype, ntitle)
-                i = i + 1
             f.write(t + '\n')
 
-    if start_write == True:
-        f.write('\n')
-        f.write('<br>' + '\n')
-        f.write('</div>' + '\n')
-        f.write('\n')
-        f.write('</div>' + '\n')
-        f.write('</div>' + '\n')
-        f.write('</body>' + '\n')
-        f.write('</html>' + '\n')
-        f.close()
-        print('success, {}'.format(path))
+    f.write('\n')
+    f.write('<!-- tail -->\n')
+    f.write('<br>' + '\n')
+    f.write('</div>' + '\n')
+    f.write('\n')
+    f.write('</div>' + '\n')
+    f.write('</div>' + '\n')
+    f.write('</body>' + '\n')
+    f.write('</html>' + '\n')
+    f.close()
+    print('success, {}'.format(path))
 
 if len(sys.argv) == 2:
     patch_html(sys.argv[1])
