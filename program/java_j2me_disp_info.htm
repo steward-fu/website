@@ -74,53 +74,62 @@
 <div id="page">
 
 <!-- body -->
-<h3><a href="../program.htm">程式語言</a> - Java - J2ME - <b>Set Timer</b></h3>
+<h3><a href="../program.htm">程式語言</a> - Java - J2ME - <b>Show Display Info</b></h3>
 <hr size="1"><br>
 <p>
 main.java
 </p>
 <pre class="brush:java">
-import java.util.Timer;
-import java.util.TimerTask;
 import javax.microedition.lcdui.*;
 import javax.microedition.midlet.*;
 
-public class main extends MIDlet {
-    private Timer timer;
-    private MyTimerTask task;
+public class main extends MIDlet implements CommandListener {
+    private Display disp;
+    private Command exit;
 
-    public void startApp() {
-        task = new MyTimerTask();
-        timer = new Timer();
-        timer.schedule(task, 3000);
+    protected void startApp() {
+        disp = Display.getDisplay(this);
+        Canvas canvas = new DummyCanvas();
+        Form form = new Form("Device Info");
+        exit = new Command("Exit", Command.EXIT, 0);
+        form.addCommand(exit);
+
+        boolean isColor = disp.isColor();
+        form.append(isColor ? "Color Display" : "Gray Display ");
+        form.append("Colors = ".concat(String.valueOf(disp.numColors())));
+        form.append("Width = ".concat(String.valueOf(canvas.getWidth())));
+        form.append("Height = ".concat(String.valueOf(canvas.getHeight())));
+        form.append("Pointer = ".concat(String.valueOf(canvas.hasPointerEvents())));
+        form.append("Motion = ".concat(String.valueOf(canvas.hasPointerMotionEvents())));
+        form.append("Key Repeat = ".concat(String.valueOf(canvas.hasRepeatEvents())));
+        form.append("Double Bufferer = ".concat(String.valueOf(canvas.isDoubleBuffered())));
+        form.setCommandListener(this);
+        disp.setCurrent(form);
     }
 
-    public void pauseApp() {
+    protected void pauseApp() {
     }
 
-    public void destroyApp(boolean unconditional) {
-        if (timer != null) {
-            timer.cancel();
+    protected void destroyApp(boolean unconditional) {
+    }
+
+    public void commandAction(Command c, Displayable d) {
+        if (c == exit) {
+            notifyDestroyed( );
         }
     }
 }
 </pre><br>
 
 <p>
-MyTimerTask.java
+DummyCanvas.java
 </p>
 <pre class="brush:java">
-import java.util.Timer;
-import java.util.TimerTask;
 import javax.microedition.lcdui.*;
 import javax.microedition.midlet.*;
 
-public class MyTimerTask extends TimerTask {
-    public MyTimerTask() {
-    }
-
-    public void run() {
-        System.out.println("Timer Expired !");
+public class DummyCanvas extends Canvas {
+    protected void paint(Graphics g) {
     }
 }
 </pre><br>
@@ -141,11 +150,13 @@ MicroEdition-Configuration: CLDC-1.1
 編譯、執行
 </p>
 <pre>
-$ javac -classpath midpapi20-2.0.4.jar MyTimerTask.java main.java
-$ jar cfm main.jar manifest.mf main.class MyTimerTask.class
+$ javac -classpath midpapi20-2.0.4.jar DummyCanvas.java main.java
+$ jar cfm main.jar manifest.mf DummyCanvas.class main.class
 $ java -cp microemulator-swing-2.0.4.jar:microemulator-2.0.4.jar:midpapi20-2.0.4.jar org.microemu.app.Main main.jar
-    Timer Expired !
 </pre>
+<p>
+<img src="java_j2me_disp_info/1.jpg" class="maxSize">
+</p>
 
 <!-- tail -->
 <br>
