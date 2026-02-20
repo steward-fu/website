@@ -97,7 +97,7 @@ index daef0bc..65c8209 100644
      }
  
 diff --git a/app/src/main/cpp/lorie/activity.c b/app/src/main/cpp/lorie/activity.c
-index 8a51c11..f55b90d 100644
+index 8a51c11..7552029 100644
 --- a/app/src/main/cpp/lorie/activity.c
 +++ b/app/src/main/cpp/lorie/activity.c
 @@ -22,6 +22,11 @@
@@ -131,7 +131,7 @@ index 8a51c11..f55b90d 100644
          write(conn_fd, &amp;e, sizeof(e));
      }
  }
-@@ -327,12 +337,414 @@ static void requestStylusEnabled(__unused JNIEnv *env, __unused jclass clazz, jb
+@@ -327,12 +337,425 @@ static void requestStylusEnabled(__unused JNIEnv *env, __unused jclass clazz, jb
      }
  }
  
@@ -144,19 +144,23 @@ index 8a51c11..f55b90d 100644
 +        t.key.state = 1;
 +        t.key.t = EVENT_KEY;
 +        write(conn_fd, &amp;t, sizeof(t));
++        usleep(500);
 +
 +        t.key.key = code + 8;
 +        write(conn_fd, &amp;t, sizeof(t));
++        usleep(500);
 +    }
 +    else {
 +        t.key.key = code + 8;
 +        t.key.state = 0;
 +        t.key.t = EVENT_KEY;
 +        write(conn_fd, &amp;t, sizeof(t));
++        usleep(500);
 +
 +        t.key.key = s + 8;
 +        t.key.state = 0;
 +        write(conn_fd, &amp;t, sizeof(t));
++        usleep(500);
 +    }
 +
 +    return true;
@@ -237,6 +241,9 @@ index 8a51c11..f55b90d 100644
 +                return true;
 +            }
 +            break;
++        case 121: // MUTE
++            code = KEY_RIGHTALT;
++            break;
 +        case 588: // APPSwitch
 +            code = (alt_press || iso3_press) ? KEY_PAGEUP : KEY_UP;
 +            if (mouse_mode) {
@@ -311,6 +318,9 @@ index 8a51c11..f55b90d 100644
 +            if (alt_press) {
 +                return sendMySpecialKey(KEY_LEFTSHIFT, KEY_3, key_down);
 +            }
++            if (iso3_press) {
++                code = KEY_BACKSLASH;
++            }
 +            break;
 +        case 25: // W
 +            if (alt_press) {
@@ -333,7 +343,7 @@ index 8a51c11..f55b90d 100644
 +                code = KEY_3;
 +            }
 +            if (iso3_press) {
-+                code = KEY_BACKSLASH;
++                code = KEY_F5;
 +            }
 +            break;
 +        case 28: // T
@@ -357,7 +367,7 @@ index 8a51c11..f55b90d 100644
 +                return sendMySpecialKey(KEY_LEFTSHIFT, KEY_MINUS, key_down);
 +            }
 +            if (iso3_press) {
-+                code = KEY_EQUAL;
++                return sendMySpecialKey(KEY_LEFTSHIFT, KEY_GRAVE, key_down);
 +            }
 +            break;
 +        case 31: // I
@@ -365,7 +375,7 @@ index 8a51c11..f55b90d 100644
 +                code = KEY_MINUS;
 +            }
 +            if (iso3_press) {
-+                return sendMySpecialKey(KEY_LEFTSHIFT, KEY_GRAVE, key_down);
++                code = KEY_EQUAL;
 +            }
 +            break;
 +        case 32: // O
@@ -532,6 +542,7 @@ index 8a51c11..f55b90d 100644
 +            code = KEY_0;
 +            if (iso3_press &amp;&amp; key_down) {
 +                mouse_mode ^= 1;
++                return true;
 +            }
 +            break;
 +        case 65: // Space
@@ -599,14 +610,15 @@ Termux-X11 =&gt; Keyboard =&gt; Prefer scancodes when possible =&gt; On
 <tr><td>Back</td><td>DOWN</td><td>PAGEDOWN</td><td>PAGEDOWN/Mouse (Modes)</td></tr>
 <tr><td>EndCall</td><td>RIGHT</td><td>END</td><td>END/Mouse (Modes)</td></tr>
 <tr><td>Trackball</td><td>Keyboard</td><td></td><td>Mouse/Keyboard (Modes)</td></tr>
+<tr><td>Mute</td><td>Alt</td><td></td><td></td></tr>
 <tr><td>Q</td><td>q</td><td>#</td><td></td></tr>
 <tr><td>W</td><td>w</td><td>1</td><td>|</td></tr>
 <tr><td>E</td><td>e</td><td>2</td><td>%</td></tr>
 <tr><td>R</td><td>r</td><td>3</td><td>\</td></tr>
 <tr><td>T</td><td>t</td><td>(</td><td>{</td></tr>
 <tr><td>Y</td><td>y</td><td>)</td><td>}</td></tr>
-<tr><td>U</td><td>u</td><td>_</td><td>=</td></tr>
-<tr><td>I</td><td>i</td><td>-</td><td>~</td></tr>
+<tr><td>U</td><td>u</td><td>_</td><td>~</td></tr>
+<tr><td>I</td><td>i</td><td>-</td><td>=</td></tr>
 <tr><td>O</td><td>o</td><td>+</td><td></td></tr>
 <tr><td>P</td><td>p</td><td>@</td><td></td></tr>
 
@@ -622,9 +634,9 @@ Termux-X11 =&gt; Keyboard =&gt; Prefer scancodes when possible =&gt; On
 <tr><td>Backspace</td><td>Backspace</td><td>Tab</td><td></td></tr>
 
 <tr><td>alt</td><td>MYALT</td><td></td><td>Alt+Tab</td></tr>
-<tr><td>Z</td><td>z</td><td>7</td><td></td></tr>
-<tr><td>X</td><td>x</td><td>8</td><td></td></tr>
-<tr><td>C</td><td>c</td><td>9</td><td></td></tr>
+<tr><td>Z</td><td>z</td><td>7</td><td>7</td></tr>
+<tr><td>X</td><td>x</td><td>8</td><td>^</td></tr>
+<tr><td>C</td><td>c</td><td>9</td><td>F9</td></tr>
 <tr><td>V</td><td>v</td><td>?</td><td></td></tr>
 <tr><td>B</td><td>b</td><td>!</td><td></td></tr>
 <tr><td>N</td><td>n</td><td>,</td><td></td></tr>
