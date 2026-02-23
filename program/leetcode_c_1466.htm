@@ -91,14 +91,14 @@ https://blog.csdn.net/fuxuemingzhu/article/details/106597991<br><br>
 int travel(int **connections, int n, int *visit, int *len, int **cost, int cur)
 {
     int r = 0;
-    int c0 = 0;
+    int i = 0;
 
     visit[cur] = 1;
-    for (c0 = 0; c0 &lt; len[cur]; c0++) {
-        int dst = cost[cur][c0] &amp; ~COST;
+    for (i = 0; i &lt; len[cur]; i++) {
+        int dst = cost[cur][i] &amp; ~COST;
 
         if (visit[dst] == 0) {
-            r += !!(cost[cur][c0] &amp; COST);
+            r += !!(cost[cur][i] &amp; COST);
             r += travel(connections, n, visit, len, cost, dst);
         }
     }
@@ -107,28 +107,25 @@ int travel(int **connections, int n, int *visit, int *len, int **cost, int cur)
 
 int minReorder(int n, int **connections, int connectionsSize, int *connectionsColSize)
 {
-    int c0 = 0;
+    int i = 0;
     int **cost = NULL;
-    int *len = malloc(sizeof(int) * n);
-    int *visit = malloc(sizeof(int) * n);
+    int *len = calloc(n, sizeof(int));
+    int *visit = calloc(n, sizeof(int));
 
-    memset(len, 0, sizeof(int) * n);
-    memset(visit, 0, sizeof(int) * n);
-
-    for (c0 = 0; c0 &lt; connectionsSize; c0++) {
-        len[connections[c0][0]] += 1;
-        len[connections[c0][1]] += 1;
+    for (i = 0; i &lt; connectionsSize; i++) {
+        len[connections[i][0]] += 1;
+        len[connections[i][1]] += 1;
     }
 
-    cost = malloc(sizeof(int *) * n);
-    for (c0 = 0; c0 &lt; n; c0++) {
-        cost[c0] = malloc(sizeof(int) * len[c0]);
+    cost = calloc(n, sizeof(int *));
+    for (i = 0; i &lt; n; i++) {
+        cost[i] = calloc(len[i], sizeof(int));
     }
 
     memset(len, 0, sizeof(int) * n);
-    for (c0 = 0; c0 &lt; connectionsSize; c0++) {
-        int src = connections[c0][0];
-        int dst = connections[c0][1];
+    for (i = 0; i &lt; connectionsSize; i++) {
+        int src = connections[i][0];
+        int dst = connections[i][1];
 
         cost[src][len[src]++] = dst | COST;
         cost[dst][len[dst]++] = src;
