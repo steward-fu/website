@@ -87,56 +87,55 @@ https://blog.csdn.net/fuxuemingzhu/article/details/82591165<br><br>
 </p>
 <pre class="brush:cpp">
 #define MAX_SIZE 128
-
+ 
 double dfs(int a, int b, double **q, int *visit)
 {
-    int c0 = 0;
+    int i = 0;
     double r = 0;
-
+ 
     if (a == b) {
         return 1.0;
     }
-
+ 
     visit[a] = 1;
-    for (c0 = 0; c0 &lt; MAX_SIZE; c0++) {
-        if ((q[a][c0] &gt; 0) &amp;&amp; (visit[c0] == 0)) {
-            r = dfs(c0, b, q, visit);
+    for (i = 0; i &lt; MAX_SIZE; i++) {
+        if ((q[a][i] &gt; 0) &amp;&amp; (visit[i] == 0)) {
+            r = dfs(i, b, q, visit);
             if (r &gt; 0.0) {
-                return r * q[a][c0];
+                return r * q[a][i];
             }
         }
     }
-
+ 
     return -1.0;
 }
-
+ 
 int str2idx(const char *s)
 {
-    int c0 = 0;
+    int i = 0;
     static char **q = NULL;
-
-
+ 
+ 
     if (q == NULL) {
-        q = malloc(sizeof(char *) * MAX_SIZE);
-        memset(q, 0, sizeof(char *) * MAX_SIZE);
+        q = calloc(MAX_SIZE, sizeof(char *));
     }
-
-    for (c0 = 0; c0 &lt; MAX_SIZE; c0++) {
-        if (q[c0] == NULL) {
+ 
+    for (i = 0; i &lt; MAX_SIZE; i++) {
+        if (q[i] == NULL) {
             break;
         }
-        
-        if (!strcmp(q[c0], s)) {
-            return c0;
+         
+        if (!strcmp(q[i], s)) {
+            return i;
         }
     }
-
-    q[c0] = malloc(strlen(s) + 1);
-    strcpy(q[c0], s);
-
-    return c0;
+ 
+    q[i] = calloc(strlen(s) + 1, sizeof(char));
+    strcpy(q[i], s);
+ 
+    return i;
 }
-
+ 
 /**
  * Note: The returned array must be malloced, assume caller calls free().
  */
@@ -151,50 +150,45 @@ double* calcEquation(
     int *queriesColSize,
     int *returnSize)
 {
-    int c0 = 0;
+    int i = 0;
     int c1 = 0;
     int *exist = NULL;
     int *visit = NULL;
     double *r = NULL;
     double **q = NULL;
-
-    q = malloc(sizeof(double) * MAX_SIZE);
-    for (c0 = 0; c0 &lt; MAX_SIZE; c0++) {
-        q[c0] = malloc(sizeof(double) * MAX_SIZE);
-        memset(q[c0], 0, sizeof(double) * MAX_SIZE);
+ 
+    q = calloc(MAX_SIZE, sizeof(double));
+    for (i = 0; i &lt; MAX_SIZE; i++) {
+        q[i] = calloc(MAX_SIZE, sizeof(double));
     }
-
-    exist = malloc(sizeof(int) * MAX_SIZE);
-    memset(exist, 0, sizeof(int) * MAX_SIZE);
-
-    for (c0 = 0; c0 &lt; equationsSize; c0++) {
-        int a = str2idx(equations[c0][0]);
-        int b = str2idx(equations[c0][1]);
-
-        q[a][b] = values[c0];
-        q[b][a] = 1.0 / values[c0];
-
+ 
+    exist = calloc(MAX_SIZE, sizeof(int));
+    for (i = 0; i &lt; equationsSize; i++) {
+        int a = str2idx(equations[i][0]);
+        int b = str2idx(equations[i][1]);
+ 
+        q[a][b] = values[i];
+        q[b][a] = 1.0 / values[i];
+ 
         exist[a] |= 1;
         exist[b] |= 1;
     }
-
-    r = malloc(sizeof(double) * queriesSize);
-    memset(r, 0, sizeof(double) * queriesSize);
-
-    visit = malloc(sizeof(int) * MAX_SIZE);
-    for (c0 = 0; c0 &lt; queriesSize; c0++) {
-        int a = str2idx(queries[c0][0]);
-        int b = str2idx(queries[c0][1]);
-
+ 
+    r = calloc(queriesSize, sizeof(double));
+    visit = calloc(MAX_SIZE, sizeof(int));
+    for (i = 0; i &lt; queriesSize; i++) {
+        int a = str2idx(queries[i][0]);
+        int b = str2idx(queries[i][1]);
+ 
         if ((exist[a] &amp;&amp; exist[b]) == 0) {
-            r[c0] = -1.0;
+            r[i] = -1.0;
             continue;
         }
-
+ 
         memset(visit, 0, sizeof(int) * MAX_SIZE);
-        r[c0] = dfs(a, b, q, visit);
+        r[i] = dfs(a, b, q, visit);
     }
-
+ 
     *returnSize = queriesSize;
     return r;
 }
