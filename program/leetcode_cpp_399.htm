@@ -74,51 +74,72 @@
 <div id="page">
 
 <!-- body -->
-<h3><a href="../program.htm">程式語言</a> - LeetCode - C++ - <b>1466. Reorder Routes to Make All Paths Lead to the City Zero</b></h3>
+<h3><a href="../program.htm">程式語言</a> - LeetCode - C++ - <b>399. Evaluate Division</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
-https://algo.monster/liteproblems/1466<br>
-https://blog.csdn.net/fuxuemingzhu/article/details/106597991<br><br>
+https://blog.csdn.net/fuxuemingzhu/article/details/82591165<br>
+https://samiulmushfik.medium.com/leetcode-399-evaluate-division-6bcd7ffff05c<br><br>
 
 題目：<br>
-<img src="leetcode_c_1466/1.jpg" class="maxSize"><br><br>
+<img src="leetcode_c_399/1.jpg" class="maxSize"><br><br>
+
+方法(向量圖概念)：<br>
+<img src="leetcode_c_399/2.jpg" class="maxSize"><br><br>
 
 解答：
 </p>
 <pre class="brush:cpp">
 class Solution {
 public:
-    int dfs(int city, const unordered_map&lt;int, unordered_map&lt;int, int&gt;&gt;&amp; cost, vector&lt;int&gt;&amp; visited, int *r) {
-        visited[city] = 1;
+    vector&lt;double&gt; calcEquation(
+        vector&lt;vector&lt;string&gt;&gt;&amp; equations,
+        vector&lt;double&gt;&amp; values,
+        vector&lt;vector&lt;string&gt;&gt;&amp; queries)
+    {
+        vector&lt;double&gt; r;
+        unordered_map&lt;string, unordered_map&lt;string, double&gt;&gt; cost;
 
-        for (const auto&amp; item : cost.at(city)) {
-            int t = item.first;
-            int c = item.second;
+        for (int i = 0; i &lt; equations.size(); i++) {
+            double c = values[i];
+            string s0 = equations[i][0];
+            string s1 = equations[i][1];
 
-            if (visited[t] == 0) {
-                (*r) += c;
-                dfs(t, cost, visited, r);
-            }
+            cost[s0][s1] = c;
+            cost[s1][s0] = 1.0 / c;
         }
-        return 0;
+
+        for (auto&amp; q : queries) {
+            unordered_set&lt;string&gt; visited;
+
+            double t = dfs(q[0], q[1], cost, visited);
+            r.push_back((t &gt; 0.0) ? t : -1.0);
+        }
+
+        return r;
     }
 
-    int minReorder(int n, vector&lt;vector&lt;int&gt;&gt;&amp; connections) {
-        int r = 0;
-        vector&lt;int&gt; visited(n, 0);
-        unordered_map&lt;int, unordered_map&lt;int, int&gt;&gt; cost;
-
-        for (vector&lt;int&gt; n : connections) {
-            int s0 = n[0];
-            int s1 = n[1];
-
-            cost[s0][s1] = 1;
-            cost[s1][s0] = 0;
+    double dfs(
+        string e0,
+        string e1,
+        unordered_map&lt;string, unordered_map&lt;string, double&gt;&gt;&amp; cost,
+        unordered_set&lt;string&gt;&amp;visited)
+    {
+        if (cost[e0].count(e1)) {
+            return cost[e0][e1];
         }
 
-        dfs(0, cost, visited, &amp;r);
-        return r;
+        for (auto&amp; n : cost[e0]) {
+            if (visited.count(n.first) == 0) {
+                visited.insert(n.first);
+                double r = dfs(n.first, e1, cost, visited);
+                if (r &gt; 0.0) {
+                    return r * n.second;
+                }
+            }
+        }
+
+        return -1.0;
     }
 };
 </pre>
