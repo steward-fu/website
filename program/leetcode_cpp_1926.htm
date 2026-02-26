@@ -74,10 +74,11 @@
 <div id="page">
 
 <!-- body -->
-<h3><a href="../program.htm">程式語言</a> - LeetCode - C - <b>1926. Nearest Exit from Entrance in Maze</b></h3>
+<h3><a href="../program.htm">程式語言</a> - LeetCode - C++ - <b>1926. Nearest Exit from Entrance in Maze</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
+https://algo.monster/liteproblems/1926<br>
 https://www.cnblogs.com/cnoodle/p/16913967.html<br><br>
 
 題目：<br>
@@ -86,62 +87,56 @@ https://www.cnblogs.com/cnoodle/p/16913967.html<br><br>
 解答：
 </p>
 <pre class="brush:cpp">
-#define MAX_SIZE 10000
- 
-int nearestExit(char **maze, int mazeSize, int *mazeColSize, int *entrance, int entranceSize)
-{
-    int r = 0;
-    int i = 0;
-    int j = 0;
-    int st = 0;
-    int ep = 0;
-    int **q = NULL;
- 
-    q = calloc(MAX_SIZE, sizeof(int *));
-    for (i = 0; i &lt; MAX_SIZE; i++) {
-        q[i] = calloc(2, sizeof(int));
-    }
- 
-    st = 0;
-    q[ep][0] = entrance[0];
-    q[ep][1] = entrance[1];
-    maze[q[ep][0]][q[ep][1]] = '+';
-    ep += 1;
- 
-    r = 0;
-    while ((ep - st) &gt; 0) {
-        int row = 0;
-        int col = 0;
-        int len = ep;
-        int dir[] = { -1, 0, 1, 0, -1 };
+class Solution {
+public:
+    int nearestExit(vector&lt;vector&lt;char&gt;&gt;&amp; maze, vector&lt;int&gt;&amp; entrance) {
+        int r = 0;
+        int row = entrance[0];
+        int col = entrance[1];
+        int row_size = maze.size();
+        int col_size = maze[0].size();
+        queue&lt;pair&lt;int, int&gt;&gt; q;
+        int dir[5] = { -1, 0, 1, 0, -1 };
 
-        r += 1;
-        for (i = st; i &lt; len; i++) {
-            for (j = 0; j &lt; 4; j++) {
-                col = q[i][0] + dir[j];
-                row = q[i][1] + dir[j + 1];
- 
-                if ((row &lt; 0) || (col &lt; 0) || (row &gt;= mazeColSize[0]) || (col &gt;= mazeSize)) {
-                    continue;
+        q.emplace(row, col);
+        maze[row][col] = '+';
+
+        while (!q.empty()) {
+            int size = q.size();
+
+            r += 1;
+            for (int cnt = 0; cnt &lt; size; cnt++) {
+                auto pos = q.front();
+                q.pop();
+
+                for (int i = 0; i &lt; 4; i++) {
+                    row = pos.first + dir[i];
+                    col = pos.second + dir[i + 1];
+
+                    if ((row &gt;= 0) &amp;&amp; 
+                        (row &lt; row_size) &amp;&amp; 
+                        (col &gt;= 0) &amp;&amp; 
+                        (col &lt; col_size) &amp;&amp;
+                        (maze[row][col] == '.'))
+                    {
+                        maze[row][col] = '+';
+                        q.emplace(row, col);
+
+                        if ((row == 0) ||
+                            (row == (row_size - 1)) || 
+                            (col == 0) ||
+                            (col == (col_size - 1)))
+                        {
+                            return r;
+                        }
+                    }
                 }
-                if (maze[col][row] == '+') {
-                    continue;
-                }
-                if ((row == 0) || (col == 0) || (row == (mazeColSize[0] - 1)) || (col == (mazeSize - 1))) {
-                    return r;
-                }
- 
-                q[ep][0] = col;
-                q[ep][1] = row;
-                maze[q[ep][0]][q[ep][1]] = '+';
-                ep += 1;
             }
-            st += 1;
         }
+
+        return -1;
     }
- 
-    return -1;
-}
+};
 </pre>
 
 <!-- tail -->
