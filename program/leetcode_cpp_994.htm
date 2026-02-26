@@ -74,7 +74,7 @@
 <div id="page">
 
 <!-- body -->
-<h3><a href="../program.htm">程式語言</a> - LeetCode - C - <b>994. Rotting Oranges</b></h3>
+<h3><a href="../program.htm">程式語言</a> - LeetCode - C++ - <b>994. Rotting Oranges</b></h3>
 <hr size="1"><br>
 <p>
 題目：<br>
@@ -83,73 +83,61 @@
 解答：
 </p>
 <pre class="brush:cpp">
-#define MAX_SIZE 10000
- 
-int orangesRotting(int **grid, int gridSize, int *gridColSize)
-{
-    int r = 0;
-    int i = 0;
-    int j = 0;
-    int st = 0;
-    int ep = 0;
-    int **q = NULL;
- 
-    q = calloc(MAX_SIZE, sizeof(int *));
-    for (i = 0; i &lt; MAX_SIZE; i++) {
-        q[i] = calloc(2, sizeof(int) * 2);
-    }
- 
-    st = 0;
-    for (i = 0; i &lt; gridSize; i++) {
-        for (j = 0; j &lt; gridColSize[i]; j++) {
-            if (grid[i][j] == 2) {
-                q[ep][0] = i;
-                q[ep][1] = j;
-                ep += 1;
-            }
-        }
-    }
- 
-    while ((ep - st) &gt; 0) {
-        int row = 0;
-        int col = 0;
-        int len = ep;
-        int valid = 0;
-        int dir[] = { -1, 0, 1, 0, -1 };
- 
-        for (i = 0; i &lt; len ; i++) {
-            for (j = 0; j &lt; 4; j++) {
-                col = q[i][0] + dir[j];
-                row = q[i][1] + dir[j + 1];
- 
-                if ((row &lt; 0) || (col &lt; 0) || (row &gt;= gridColSize[0]) || (col &gt;= gridSize)) {
-                    continue;
-                }
- 
-                if (grid[col][row] == 1) {
-                    q[ep][0] = col;
-                    q[ep][1] = row;
-                    ep += 1;
- 
-                    grid[col][row] = 2;
-                    valid = 1;
+class Solution {
+public:
+    int orangesRotting(vector&lt;vector&lt;int&gt;&gt;&amp; grid) {
+        int r = 0;
+        queue&lt;pair&lt;int, int&gt;&gt; q;
+        int row_size = grid.size();
+        int col_size = grid[0].size();
+
+        for (int i = 0; i &lt; grid.size(); i++) {
+            for (int j = 0; j &lt; grid[i].size(); j++) {
+                if (grid[i][j] == 2) {
+                    q.emplace(i, j);
                 }
             }
         }
-        st += 1;
-        r += valid;
-    }
- 
-    for (i = 0; i &lt; gridSize; i++) {
-        for (j = 0; j &lt; gridColSize[i]; j++) {
-            if (grid[i][j] == 1) {
-                return -1;
+
+        while (!q.empty()) {
+            int valid = 0;
+            int size = q.size();
+            int dir[] = { -1, 0, 1, 0, -1 };
+
+            for (int i= 0; i &lt; size; i ++) {
+                auto pos = q.front();
+                q.pop();
+
+                for (int j = 0; j &lt; 4; j++) {
+                    int row = pos.first + dir[j];
+                    int col = pos.second + dir[j + 1];
+
+                    if ((row &gt;= 0) &amp;&amp;
+                        (row &lt; row_size) &amp;&amp;
+                        (col &gt;= 0) &amp;&amp;
+                        (col &lt; col_size) &amp;&amp;
+                        (grid[row][col] == 1))
+                    {
+                        valid = 1;
+                        grid[row][col] = 2;
+                        q.emplace(row, col);
+                    }
+                }
+            }
+            r += valid;
+        }
+
+        for (int i = 0; i &lt; grid.size(); i++) {
+            for (int j = 0; j &lt; grid[i].size(); j++) {
+                if (grid[i][j] == 1) {
+                    return -1;
+                }
             }
         }
+
+        return r;
     }
- 
-    return r;
-}
+};
 </pre>
 
 <!-- tail -->
