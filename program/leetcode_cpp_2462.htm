@@ -74,7 +74,7 @@
 <div id="page">
 
 <!-- body -->
-<h3><a href="../program.htm">程式語言</a> - LeetCode - C - <b>2462. Total Cost to Hire K Workers</b></h3>
+<h3><a href="../program.htm">程式語言</a> - LeetCode - C++ - <b>2462. Total Cost to Hire K Workers</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
@@ -87,82 +87,40 @@ https://www.geeksforgeeks.org/c/c-program-to-implement-priority-queue/<br><br>
 解答：
 </p>
 <pre class="brush:cpp">
-void sort_node(int *buf, int index)
-{
-    int t = 0;
-    int left = (index - 1) / 2;
- 
-    if (index &amp;&amp; buf[left] &gt; buf[index]) {
-        t = buf[left];
-        buf[left] = buf[index];
-        buf[index] = t;
- 
-        sort_node(buf, left);
-    }
-}
- 
-void sort_leaf(int *buf, int size, int index)
-{
-    int t = 0;
-    int s = index;
-    int left = (2 * index) + 1;
-    int right = (2 * index) + 2;
- 
-    if ((left &lt; size) &amp;&amp; (buf[left] &lt; buf[s])) {
-        s = left;
-    }
- 
-    if ((right &lt; size) &amp;&amp; (buf[right] &lt; buf[s])) {
-        s = right;
-    }
- 
-    if (s != index) {
-        t = buf[index];
-        buf[index] = buf[s];
-        buf[s] = t;
- 
-        sort_leaf(buf, size, s);
-    }
-}
+class Solution {
+public:
+    long long totalCost(vector&lt;int&gt;&amp; costs, int k, int candidates) {
+        long long r = 0;
+        int i = 0;
+        int j = costs.size() - 1;
+        priority_queue&lt;int, vector&lt;int&gt;, greater&lt;int&gt;&gt; left;
+        priority_queue&lt;int, vector&lt;int&gt;, greater&lt;int&gt;&gt; right;
 
-long long totalCost(int *costs, int costsSize, int k, int candidates)
-{
-    int i = 0;
-    int j = 0;
-    int size[2] = { 0 };
-    int buf[2][100000] = { 0 };
-    long long r = 0;
+        while (k-- &gt; 0) {
+            while ((left.size() &lt; candidates) &amp;&amp; (i &lt;= j)) {
+                left.push(costs[i++]);
+            }
 
-    i = 0;
-    j = costsSize - 1;
-    while (k--) {
-        while ((size[0] &lt; candidates) &amp;&amp; (i &lt;= j)) {
-            buf[0][size[0]++] = costs[i++];
-            sort_node(&amp;buf[0][0], size[0] - 1);
+            while ((right.size() &lt; candidates) &amp;&amp; (i &lt;= j)) {
+                right.push(costs[j--]);
+            }
+
+            int lv = left.size() &gt; 0 ? left.top() : INT_MAX;
+            int rv = right.size() &gt; 0 ? right.top() : INT_MAX;
+
+            if (lv &lt;= rv) {
+                r += lv;
+                left.pop();
+            }
+            else {
+                r += rv;
+                right.pop();
+            }
         }
- 
-        while ((size[1] &lt; candidates) &amp;&amp; (i &lt;= j)) {
-            buf[1][size[1]++] = costs[j--];
-            sort_node(&amp;buf[1][0], size[1] - 1);
-        }
- 
-        int left = (size[0] &gt; 0) ? buf[0][0] : INT_MAX;
-        int right = (size[1] &gt; 0) ? buf[1][0] : INT_MAX;
- 
-        if (left &lt;= right) {
-            r += buf[0][0];
-            buf[0][0] = buf[0][--size[0]];
-            sort_leaf(&amp;buf[0][0], size[0], 0);
-        }
-        else {
-            r += buf[1][0];
-            buf[1][0] = buf[1][--size[1]];
-            sort_leaf(&amp;buf[1][0], size[1], 0);
-        }
+
+        return r;
     }
- 
-    return r;
-}
+};
 </pre>
 
 <!-- tail -->
