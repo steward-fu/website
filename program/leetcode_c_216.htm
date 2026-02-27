@@ -87,36 +87,36 @@ https://www.cnblogs.com/grandyang/p/4537983.html<br><br>
 </p>
 <pre class="brush:cpp">
 #define MAX_SIZE 1000
-
+ 
 int dfs(int k, int n, int pos, int *tbuf, int tlen, int **rbuf, int *rlen)
 {
-    int cc = 0;
-
+    int i = 0;
+ 
     if (tlen == k) {
-        for (cc = 0; cc &lt; k; cc++) {
-            n -= tbuf[cc];
+        for (i = 0; i &lt; k; i++) {
+            n -= tbuf[i];
         }
-
+ 
         if (n == 0) {
             memcpy(rbuf[*rlen], tbuf, sizeof(int) * k);
             *rlen += 1;
         }
-
+ 
         tlen -= 1;
         return 0;
     }
-
-    for (cc = pos + 1; cc &lt;= 9; cc++) {
-        tbuf[tlen] = cc;
-
+ 
+    for (i = pos + 1; i &lt;= 9; i++) {
+        tbuf[tlen] = i;
+ 
         tlen += 1;
-        dfs(k, n, cc, tbuf, tlen, rbuf, rlen);
+        dfs(k, n, i, tbuf, tlen, rbuf, rlen);
         tlen -= 1;
     }
-
+ 
     return 0;
 }
-
+ 
 /**
  * Return an array of arrays of size *returnSize.
  * The sizes of the arrays are returned as *returnColumnSizes array.
@@ -124,26 +124,25 @@ int dfs(int k, int n, int pos, int *tbuf, int tlen, int **rbuf, int *rlen)
  */
 int** combinationSum3(int k, int n, int *returnSize, int **returnColumnSizes)
 {
-    int cc = 0;
+    int i = 0;
     int len = 0;
     int **rbuf = NULL;
     int tbuf[32] = { 0 };
-
-    rbuf = malloc(sizeof(int *) * MAX_SIZE);
-    for (cc = 0; cc &lt; MAX_SIZE; cc++) {
-        rbuf[cc] = malloc(sizeof(int) * k);
-        memset(rbuf[cc], 0, sizeof(int) * k);
+ 
+    rbuf = calloc(MAX_SIZE, sizeof(int *));
+    for (i = 0; i &lt; MAX_SIZE; i++) {
+        rbuf[i] = calloc(k, sizeof(int));
     }
-
+ 
     len = 0;
     dfs(k, n, 0, tbuf, 0, rbuf, &amp;len);
-
+ 
     *returnSize = len;
-    *returnColumnSizes = malloc(sizeof(int) * len);
-    for (cc = 0; cc &lt; len; cc++) {
-        (*returnColumnSizes)[cc] = k;
+    *returnColumnSizes = calloc(len, sizeof(int));
+    for (i = 0; i &lt; len; i++) {
+        (*returnColumnSizes)[i] = k;
     }
-
+ 
     return rbuf;
 }
 </pre>
