@@ -74,7 +74,7 @@
 <div id="page">
 
 <!-- body -->
-<h3><a href="../program.htm">程式語言</a> - LeetCode - C - <b>2300. Successful Pairs of Spells and Potions</b></h3>
+<h3><a href="../program.htm">程式語言</a> - LeetCode - C++ - <b>2300. Successful Pairs of Spells and Potions</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
@@ -86,44 +86,34 @@ https://www.cnblogs.com/cnoodle/p/17281951.html<br><br>
 解答：
 </p>
 <pre class="brush:cpp">
-int mysort(const void *a, const void *b)
-{
-    return (*(int *)a) - (*(int *)b);
-}
- 
-/**
- * Note: The returned array must be malloced, assume caller calls free().
- */
-int* successfulPairs(int *spells, int spellsSize, int *potions, int potionsSize, long long success, int *returnSize)
-{
-    int i = 0;
-    int *r = calloc(spellsSize, sizeof(int));
- 
-    qsort(potions, potionsSize, sizeof(int), mysort);
- 
-    for (i = 0; i &lt; spellsSize; i++) {
-        int left = 0;
-        int right = potionsSize;
- 
-        while (left &lt; right) {
-            long long t = 0;
-            int m = left + ((right - left) &gt;&gt; 1);
- 
-            t = (long long)spells[i] * potions[m];
- 
-            if (t &lt; success) {
-                left = m + 1;
+class Solution {
+public:
+    vector&lt;int&gt; successfulPairs(vector&lt;int&gt;&amp; spells, vector&lt;int&gt;&amp; potions, long long success) {
+        vector&lt;int&gt; r;
+
+        sort(potions.begin(), potions.end());
+        for (auto&amp; n : spells) {
+            int left = 0;
+            int right = potions.size();
+            int m = 0;
+
+            while (left &lt; right) {
+                m = left + ((right - left) / 2);
+
+                if ((static_cast&lt;long long&gt;(n) * potions[m]) &lt; success) {
+                    left = m + 1;
+                }
+                else {
+                    right = m;
+                }
             }
-            else {
-                right = m;
-            }
+
+            r.push_back(potions.size() - left);
         }
-        r[i] = potionsSize - left;
+
+        return r;
     }
- 
-    *returnSize = spellsSize;
-    return r;
-}
+};
 </pre>
 
 <!-- tail -->
