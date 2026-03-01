@@ -1,0 +1,209 @@
+﻿<!-- head
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+-->
+
+<head>
+<title>司徒的教學網站</title>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+<meta http-equiv="content-type" content="application/xhtml+xml; charset=UTF-8" />
+<meta name="author" content="fullahead.org" />
+<meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+<meta name="description" content="A valid, XHTML 1.0 template" />
+<meta name="robots" content="index, follow, noarchive" />
+<meta name="googlebot" content="noarchive" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=10.0" />
+
+<link rel="shortcut icon" href="../website.ico" />
+<link rel="stylesheet" type="text/css" href="../styles/shCore.css" />
+<link rel="stylesheet" type="text/css" href="../styles/shThemeDefault.css" />
+<link rel="stylesheet" type="text/css" href="../css/html.css" media="screen" />
+<link rel="stylesheet" type="text/css" href="../css/layout.css" media="screen" />
+
+<script type="text/javascript" src="../scripts/shCore.js"></script>
+<script type="text/javascript" src="../scripts/shBrushAppleScript.js"></script>
+<script type="text/javascript" src="../scripts/shBrushAS3.js"></script>
+<script type="text/javascript" src="../scripts/shBrushAsm.js"></script>
+<script type="text/javascript" src="../scripts/shBrushBash.js"></script>
+<script type="text/javascript" src="../scripts/shBrushColdFusion.js"></script>
+<script type="text/javascript" src="../scripts/shBrushCpp.js"></script>
+<script type="text/javascript" src="../scripts/shBrushD.js"></script>
+<script type="text/javascript" src="../scripts/shBrushCSharp.js"></script>
+<script type="text/javascript" src="../scripts/shBrushCss.js"></script>
+<script type="text/javascript" src="../scripts/shBrushDiff.js"></script>
+<script type="text/javascript" src="../scripts/shBrushErlang.js"></script>
+<script type="text/javascript" src="../scripts/shBrushGolang.js"></script>
+<script type="text/javascript" src="../scripts/shBrushGroovy.js"></script>
+<script type="text/javascript" src="../scripts/shBrushInf.js"></script>
+<script type="text/javascript" src="../scripts/shBrushJavaFX.js"></script>
+<script type="text/javascript" src="../scripts/shBrushJava.js"></script>
+<script type="text/javascript" src="../scripts/shBrushJScript.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPas.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPerl.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPhp.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPlain.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPowerShell.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPython.js"></script>
+<script type="text/javascript" src="../scripts/shBrushRuby.js"></script>
+<script type="text/javascript" src="../scripts/shBrushRust.js"></script>
+<script type="text/javascript" src="../scripts/shBrushSass.js"></script>
+<script type="text/javascript" src="../scripts/shBrushScad.js"></script>
+<script type="text/javascript" src="../scripts/shBrushBasic.js"></script>
+<script type="text/javascript" src="../scripts/shBrushVerilog.js"></script>
+<script type="text/javascript" src="../scripts/shBrushScala.js"></script>
+<script type="text/javascript" src="../scripts/shBrushSql.js"></script>
+<script type="text/javascript" src="../scripts/shBrushXml.js"></script>
+<script type="text/javascript" src="../scripts/shBrushFortran.js"></script>
+
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+</head>
+
+<body>
+<div id="wrapper">
+<div id="content">
+
+<div id="header">
+<a href="https://steward-fu.github.io/website/index.htm"><h1><span class="big darkBrown">S</span>teward</h1></a>
+<h2><span class="highlight">分享是一種喜悅、更是一種幸福</span></h2>
+</div>
+
+<div id="page">
+
+<!-- body -->
+<h3><a href="../program.htm">程式語言</a> - GNU - C/C++ - <b>Event</b></h3>
+<hr size="1"><br>
+<p>
+參考資料：<br>
+https://stackoverflow.com/questions/77905421/linux-how-to-wait-on-event-without-using-mutex<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;stdbool.h&gt;
+#include &lt;poll.h&gt;
+#include &lt;errno.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;pthread.h&gt;
+#include &lt;sys/eventfd.h&gt;
+
+static int create_event(bool state)
+{
+    return eventfd(state ? 1 : 0, EFD_CLOEXEC | EFD_NONBLOCK);
+}
+
+static bool reset_event(int fd)
+{
+    uint64_t dummy = 0;
+    ssize_t r = read(fd, &amp;dummy, sizeof(dummy));
+
+    if ((r &lt; 0) &amp;&amp; (errno != EAGAIN)) {
+        return false;
+    }
+
+    return true;
+}
+
+static bool set_event(int fd)
+{
+    uint64_t dummy = 1;
+    ssize_t r = write(fd, &amp;dummy, sizeof(dummy));
+
+    if (r &lt; 0) {
+        return false;
+    }
+    return true;
+}
+
+// timeout &lt; 0: infinite
+// timeout &gt; 0: timeout in ms
+// timeout = 0: just checks if event was set
+static bool wait_for_event(int fd, int timeout)
+{
+    int rc = -1;
+    errno = EINTR;
+    struct pollfd pfd = { 0 };
+
+    while ((rc &lt; 0) &amp;&amp; (errno == EINTR)) {
+        pfd.fd = fd;
+        pfd.events = POLLIN;
+        pfd.revents = 0;
+        rc = poll(&amp;pfd, 1, timeout);
+    }
+
+    if (rc &lt; 0) {
+        return false;
+    }
+
+    if ((rc == 0) || !(pfd.revents &amp; POLLIN)) {
+        errno = 0;
+        return false;
+    }
+    return true;
+}
+
+static void* mythread(void *param)
+{
+    printf("mythread++\n");
+
+    printf("wait for 1s...\n");
+    usleep(1000000);
+
+    printf("set event\n");
+    set_event((uintptr_t)param);
+
+    printf("mythread--\n");
+
+    return NULL;
+}
+
+int main(int argc, char *argv[])
+{
+    bool r = false;
+    int event = -1;
+    pthread_t thread_id = 0;
+
+    event = create_event(false);
+    pthread_create(&amp;thread_id, NULL, mythread, (void *)(uintptr_t)event);
+
+    r = wait_for_event(event, -1);
+    printf("wait for event (r=%d)\n", r);
+
+    reset_event(event);
+    r = wait_for_event(event, 0);
+    printf("query event: (r=%d)\n", r);
+
+    pthread_join(thread_id, NULL);
+
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ gcc main.c -o main
+$ ./main
+    mythread++
+    wait for 1s...
+    set event
+    mythread--
+    wait for event (r=1)
+    query event: (r=0)
+</pre>
+
+<!-- tail -->
+<br>
+</div>
+
+</div>
+</div>
+</body>
+</html>
