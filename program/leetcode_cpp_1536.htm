@@ -74,130 +74,66 @@
 <div id="page">
 
 <!-- body -->
-<h3><a href="../program.htm">程式語言</a> - GNU - C/C++ - <b>Event</b></h3>
+<h3><a href="../program.htm">程式語言</a> - LeetCode - C++ - <b>1536. Minimum Swaps to Arrange a Binary Grid</b></h3>
 <hr size="1"><br>
 <p>
-參考資料：<br>
-https://stackoverflow.com/questions/77905421/linux-how-to-wait-on-event-without-using-mutex<br><br>
+參考資訊：<br>
+https://algo.monster/liteproblems/1536<br><br>
 
-main.c
+題目：<br>
+<img src="leetcode_cpp_1536/1.jpg" class="maxSize"><br><br>
+
+方法：<br>
+1. 找出每一列最右邊的"1"<br>
+2. 第一列(紅色)的第一行可以"1"或"0"，但是第二行後面都必須是"0"<br>
+3. 第二列(綠色)的第一、二行可以"1"或"0"，但是第三行後面都必須是"0"<br>
+4. 第三列(藍色)的第一、二、三行可以"1"或"0"<br>
+5. 使用vector儲存每一列最右邊是"1"的位置<br>
+6. 依據vector從小的位置交換排序到大的位置即可<br>
+<img src="leetcode_cpp_1536/2.jpg" class="maxSize"><br><br>
+
+解答：
 </p>
 <pre class="brush:cpp">
-#include &lt;stdio.h&gt;
-#include &lt;stdlib.h&gt;
-#include &lt;stdint.h&gt;
-#include &lt;stdbool.h&gt;
-#include &lt;poll.h&gt;
-#include &lt;errno.h&gt;
-#include &lt;unistd.h&gt;
-#include &lt;pthread.h&gt;
-#include &lt;sys/eventfd.h&gt;
+class Solution {
+public:
+    int minSwaps(vector&lt;vector&lt;int&gt;&gt;&amp; grid) {
+        int size = grid.size();
+        vector&lt;int&gt; q(size, -1);
 
-static int create_event(bool state)
-{
-    return eventfd(state ? 1 : 0, EFD_CLOEXEC | EFD_NONBLOCK);
-}
+        for (int i = 0; i &lt; size; ++i) {
+            for (int j = size - 1; j &gt;= 0; --j) {
+                if (grid[i][j] == 1) {
+                    q[i] = j;
+                    break;
+                }
+            }
+        }
 
-static bool reset_event(int fd)
-{
-    uint64_t dummy = 0;
-    ssize_t r = read(fd, &amp;dummy, sizeof(dummy));
+        int r = 0;
+        for (int i = 0; i &lt; size; ++i) {
+            int found = -1;
 
-    if ((r &lt; 0) &amp;&amp; (errno != EAGAIN)) {
-        return false;
+            for (int j = i; j &lt; size; ++j) {
+                if (q[j] &lt;= i) {
+                    found = j;
+                    break;
+                }
+            }
+
+            if (found == -1) {
+                return -1;
+            }
+
+            for (int k = found; k &gt; i; --k) {
+                r += 1;
+                swap(q[k], q[k - 1]);
+            }
+        }
+
+        return r;
     }
-
-    return true;
-}
-
-static bool set_event(int fd)
-{
-    uint64_t dummy = 1;
-    ssize_t r = write(fd, &amp;dummy, sizeof(dummy));
-
-    if (r &lt; 0) {
-        return false;
-    }
-    return true;
-}
-
-// timeout &lt; 0: infinite
-// timeout &gt; 0: timeout in ms
-// timeout = 0: just checks if event was set
-static bool wait_for_event(int fd, int timeout)
-{
-    int rc = -1;
-    errno = EINTR;
-    struct pollfd pfd = { 0 };
-
-    do {
-        pfd.fd = fd;
-        pfd.events = POLLIN;
-        pfd.revents = 0;
-        rc = poll(&amp;pfd, 1, timeout);
-    } while ((rc &lt; 0) &amp;&amp; (errno == EINTR));
-
-    if (rc &lt; 0) {
-        return false;
-    }
-
-    if ((rc == 0) || !(pfd.revents &amp; POLLIN)) {
-        errno = 0;
-        return false;
-    }
-    return true;
-}
-
-static void* mythread(void *param)
-{
-    printf("mythread++\n");
-
-    printf("wait for 1s...\n");
-    usleep(1000000);
-
-    printf("set event\n");
-    set_event((uintptr_t)param);
-
-    printf("mythread--\n");
-
-    return NULL;
-}
-
-int main(int argc, char *argv[])
-{
-    bool r = false;
-    int event = -1;
-    pthread_t thread_id = 0;
-
-    event = create_event(false);
-    pthread_create(&amp;thread_id, NULL, mythread, (void *)(uintptr_t)event);
-
-    r = wait_for_event(event, -1);
-    printf("wait for event (r=%d)\n", r);
-
-    reset_event(event);
-    r = wait_for_event(event, 0);
-    printf("query event: (r=%d)\n", r);
-
-    pthread_join(thread_id, NULL);
-    close(event);
-
-    return 0;
-}
-</pre><br>
-
-<p>
-編譯、執行
-</p>
-<pre>
-$ gcc main.c -o main
-$ ./main
-    mythread++
-    wait for 1s...
-    set event
-    mythread--
-    wait for event (r=1)
-    query event: (r=0)
+};
 </pre>
 
 <!-- tail -->
