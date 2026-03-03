@@ -74,59 +74,45 @@
 <div id="page">
 
 <!-- body -->
-<h3><a href="../program.htm">程式語言</a> - LeetCode - C - <b>452. Minimum Number of Arrows to Burst Balloons</b></h3>
+<h3><a href="../program.htm">程式語言</a> - LeetCode - C++ - <b>1268. Search Suggestions System</b></h3>
 <hr size="1"><br>
 <p>
+參考資訊：<br>
+https://www.cnblogs.com/grandyang/p/15679711.html<br><br>
+
 題目：<br>
-<img src="leetcode_c_452/1.jpg" class="maxSize"><br><br>
+<img src="leetcode_c_1268/1.jpg" class="maxSize"><br><br>
 
 解答：
 </p>
 <pre class="brush:cpp">
-int mysort(const void *pa, const void *pb)
-{
-    long r = 0;
-    const int **a = pa;
-    const int **b = pb;
+class Solution {
+public:
+    vector&lt;vector&lt;string&gt;&gt; suggestedProducts(vector&lt;string&gt;&amp; products, string searchWord) {
+        vector&lt;vector&lt;string&gt;&gt; r;
+        int size = products.size();
+        int left = 0;
+        int right = size - 1;
 
-    r = (long)a[0][0] - b[0][0];
-    if (r == 0) {
-        r = (long)a[0][1] - b[0][1];
-    }
+        sort(products.begin(), products.end());
+        for (int i = 0; i &lt; searchWord.size(); ++i) {
+            while ((left &lt;= right) &amp;&amp; ((i &gt;= products[left].size()) || (products[left][i] &lt; searchWord[i]))) {
+                left += 1;
+            }
 
-    if (r &lt; 0) {
-        r = -1;
-    }
+            while ((left &lt;= right) &amp;&amp; ((i &gt;= products[right].size()) || (products[right][i] &gt; searchWord[i]))) {
+                right -= 1;
+            }
 
-    if (r &gt; 0) {
-        r = 1;
-    }
-
-    return r;
-}
-
-int findMinArrowShots(int** points, int pointsSize, int* pointsColSize)
-{
-    int r = pointsSize;
-    int i = 0;
-    int last = 0;
-
-    qsort(points, pointsSize, sizeof(int *), mysort);
-
-    for (i = 1; i &lt; pointsSize; i++) {
-        if (points[i][0] &lt;= points[last][1]) {
-            r -= 1;
-            if (points[i][1] &lt;= points[last][1]) {
-                last = i;
+            r.push_back({});
+            for (int j = left; j &lt; min(left + 3, right + 1); ++j) {
+                r.back().push_back(products[j]);
             }
         }
-        else {
-            last = i;
-        }
-    }
 
-    return r;
-}
+        return r;
+    }
+};
 </pre>
 
 <!-- tail -->
