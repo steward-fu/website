@@ -74,7 +74,7 @@
 <div id="page">
 
 <!-- body -->
-<h3><a href="../program.htm">程式語言</a> - LeetCode - C - <b>714. Best Time to Buy and Sell Stock with Transaction Fee</b></h3>
+<h3><a href="../program.htm">程式語言</a> - LeetCode - C++ - <b>714. Best Time to Buy and Sell Stock with Transaction Fee</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
@@ -86,25 +86,24 @@ https://www.cnblogs.com/grandyang/p/7776979.html<br><br>
 解答：
 </p>
 <pre class="brush:cpp">
-int max(int a, int b)
-{
-    return a &gt; b ? a : b;
-}
- 
-int maxProfit(int *prices, int pricesSize, int fee)
-{
-    int i = 0;
-    int sold[50000] = { 0 };
-    int hold[50000] = { 0 };
- 
-    hold[0] = -prices[0];
-    for (i = 1; i &lt; pricesSize; i++) {
-        sold[i] = max(sold[i - 1], hold[i - 1] + prices[i] - fee);
-        hold[i] = max(hold[i - 1], sold[i - 1] - prices[i]);
+class Solution {
+public:
+    int maxProfit(vector&lt;int&gt;&amp; prices, int fee) {
+        const int SELL = 0;
+        const int HOLD = 1;
+
+        int size = prices.size();
+        vector&lt;vector&lt;int&gt;&gt; dp(size, vector&lt;int&gt;(2, 0));
+
+        dp[0][HOLD] = -prices[0];
+        for (int i = 1; i &lt; prices.size(); ++i) {
+            dp[i][SELL] = max(dp[i - 1][SELL], dp[i - 1][HOLD] + (prices[i] - fee));
+            dp[i][HOLD] = max(dp[i - 1][HOLD], dp[i - 1][SELL] - prices[i]);
+        }
+
+        return dp[size - 1][SELL];
     }
- 
-    return sold[pricesSize - 1];
-}
+};
 </pre>
 
 <!-- tail -->
