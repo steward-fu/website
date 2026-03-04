@@ -74,66 +74,43 @@
 <div id="page">
 
 <!-- body -->
-<h3><a href="../program.htm">程式語言</a> - LeetCode - C++ - <b>1545. Find Kth Bit in Nth Binary String</b></h3>
+<h3><a href="../program.htm">程式語言</a> - LeetCode - C++ - <b>5. Longest Palindromic Substring</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
-https://algo.monster/liteproblems/1545<br>
-https://www.cnblogs.com/cnoodle/p/18486891<br><br>
+https://www.cnblogs.com/grandyang/p/4464476.html<br>
+https://neetcode.io/solutions/longest-palindromic-substring<br><br>
 
 題目：<br>
-<img src="leetcode_cpp_1545/1.jpg" class="maxSize"><br><br>
+<img src="leetcode_c_5/1.jpg" class="maxSize"><br><br>
 
-解答一：
+解答：
 </p>
 <pre class="brush:cpp">
 class Solution {
 public:
-    char findKthBit(int n, int k) {
-        string s = "0";
+    string longestPalindrome(string s) {
+        int len = 0;
+        string res = "";
 
-        for (int i = 1; i &lt;= n; ++i) {
-            string t = s;
-            string r = s;
+        for (int i = 0; i &lt; s.size(); ++i) {
+            for (int j = 0; j &lt; s.size(); ++j) {
+                int l = i;
+                int r = j;
 
-            for (int j = 0; j &lt; r.size(); ++j) {
-                r[j] = (r[j] == '0') ? '1' : '0';
+                while ((l &lt; r) &amp;&amp; (s[l] == s[r])) {
+                    l += 1;
+                    r -= 1;
+                }
+
+                if ((l &gt;= r) &amp;&amp; (len &lt; (j - i + 1))) {
+                    res = s.substr(i, j - i + 1);
+                    len = j - i + 1;
+                }
             }
-            reverse(r.begin(), r.end());
-
-            s = t + "1" + r;
         }
 
-        return s[k - 1];
-    }
-};
-</pre><br>
-
-<p>
-解法二：
-</p>
-<pre class="brush:cpp">
-class Solution {
-public:
-    char findKthBit(int n, int k) {
-        function&lt;int(int, int)&gt; dfs = [&amp;](int n, int k) {
-            if (k == 1) {
-                return 0;
-            }
-
-            if ((k &amp; (k - 1)) == 0) {
-                return 1;
-            }
-
-            int len = 1 &lt;&lt; n;
-            if ((k &lt;&lt; 1) &lt; (len - 1)) {
-                return dfs(n - 1, k);
-            }
-
-            return dfs(n - 1, len - k) ^ 1;
-        };
-
-        return '0' + dfs(n, k);
+        return res;
     }
 };
 </pre>
