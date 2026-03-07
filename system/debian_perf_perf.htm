@@ -121,13 +121,18 @@ $ gcc -o test main.c
 </p>
 <pre>
 $ ./test &amp;
-$ sudo perf record -p `pidof test`
-</pre><br>
 
+$ sudo echo 0 &gt; /proc/sys/kernel/kptr_restrict
+$ sudo echo 9999 &gt; /proc/sys/kernel/perf_event_max_sample_rate
+$ sudo perf record -p `pidof test` -F 9999 -- sleep 10
+</pre>
 <p>
-3秒後，使用(Ctrl + C)停止perf
+P.S. 9999是顆粒度，太大的值會抓到很多相同的Function，太小的值則可能會抓不到關鍵的Function<br><br>
+
+查看結果
 </p>
 <pre>
+$ sudo perf script &gt; detail
 $ sudo perf report
 </pre><br>
 
