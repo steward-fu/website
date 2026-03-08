@@ -74,49 +74,32 @@
 <div id="page">
 
 <!-- body -->
-<h3><a href="../program.htm">程式語言</a> - LeetCode - C++ - <b>1888. Minimum Number of Flips to Make the Binary String Alternating</b></h3>
+<h3><a href="../program.htm">程式語言</a> - LeetCode - C++ - <b>1980. Find Unique Binary String</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
-https://algo.monster/liteproblems/1888<br><br>
+https://algo.monster/liteproblems/1980<br><br>
 
 題目：<br>
-<img src="leetcode_cpp_1888/1.jpg" class="maxSize"><br><br>
-
-方法：<br>
-1. 算出需要翻轉的次數<br>
-2. 將s[0]移到尾端<br>
-3. 算出需要翻轉的次數(移動後)<br>
-4. 全部都移過一次後，找出最小的翻轉次數<br><br>
+<img src="leetcode_cpp_1980/1.jpg" class="maxSize"><br><br>
 
 解答：
 </p>
 <pre class="brush:cpp">
 class Solution {
 public:
-    int minFlips(string s) {
-        int r = 0;
-        int flip = 0;
-        int size = s.size();
+    string findDifferentBinaryString(vector&lt;string&gt;&amp; nums) {
+        int cnt = 0;
 
-        for (int i = 0; i &lt; size; i++) {
-            flip += (s[i] != "01"[i &amp; 1]) ? 1 : 0;
-        }
-        r = min(flip, size - flip);
-
-        for (int i = 0; i &lt; size; i++) {
-            if (s[i] != "01"[i &amp; 1]) {
-                flip -= 1;
-            }
-
-            if (s[i] != "01"[(i + size) &amp; 1]) {
-                flip += 1;
-            }
-
-            r = min(r, min(flip, size - flip));
+        for (string&amp; s : nums) {
+            cnt |= (1 &lt;&lt; count(s.begin(), s.end(), '1'));
         }
 
-        return r;
+        for (int i = 0; ; ++i) {
+            if ((cnt &amp; (1 &lt;&lt; i)) == 0) {
+                return string(i, '1') + string(nums.size() - i, '0');
+            }
+        }
     }
 };
 </pre>
