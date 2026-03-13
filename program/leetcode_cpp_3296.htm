@@ -74,96 +74,62 @@
 <div id="page">
 
 <!-- body -->
-<h3><a href="../phone.htm">手機</a> - Zinwa Q25 - Debian - <b>安裝系統(LinuxDeploy)</b></h3>
+<h3><a href="../program.htm">程式語言</a> - LeetCode - C++ - <b>3296. Minimum Number of Seconds to Make Mountain Height Zero</b></h3>
 <hr size="1"><br>
 <p>
-步驟如下：<br>
-1. 安裝Linux Deploy、Termux、Termux-X11<br>
-2. Linux Deploy配置
+參考資訊：<br>
+https://algo.monster/liteproblems/3296<br><br>
+
+題目：<br>
+<img src="leetcode_cpp_3296/1.jpg" class="maxSize"><br><br>
+
+方法：
 </p>
 <pre>
-Properties: linux
-BOOTSTRAP
-Distribution: Debian
-Architecture: arm64
-Distribution: oldstable
-Source Path: http://ftp.debian.org/debian
-Installation type: Partition
-Installation path: /data/block/mmcblk0p1
-MOUNTS="/data/data/com.termux/files/usr/tmp:/tmp"
-SSH
-Enable: Checked
-</pre><br>
-
-<p>
-3. 安裝Busybox到/data/adb/modules/playstore/system/bin<br>
-4. 手動修復安裝問題
-</p>
-<pre>
-127|elish:/ $ su
-127|elish:/ # mkdir /data/tmp
-127|elish:/ # mount /dev/block/mmcblk0p1 /data/tmp/
-127|elish:/ # mount --bind /dev /data/tmp/dev/
-127|elish:/ # mount --bind /dev/pts /data/tmp/dev/pts
-127|elish:/ # mount --bind /sys /data/tmp/sys
-127|elish:/ # mount --bind /proc /data/tmp/proc
-127|elish:/ # chroot /data/linux
-
-# export PATH=$PATH:/bin:/usr/bin:/usr/sbin
-# bash
-
-root@localhost:/# passwd root
-root@localhost:/# mkdir -p /tmp
-root@localhost:/# apt --fix-broken install
-root@localhost:/# vi /etc/apt/sources.list
-    deb http://deb.debian.org/debian bookworm main contrib non-free non-free-firmware
-    deb http://deb.debian.org/debian bookworm-updates main contrib non-free non-free-firmware
-    deb http://deb.debian.org/debian bookworm-backports main contrib non-free non-free-firmware
-    deb http://archive.debian.org/debian/ buster contrib main non-free
-
-root@localhost:/# apt-get update
-root@localhost:/# apt-get install vim sudo openssh-server x11-xserver-utils
-root@localhost:/# apt-get install xfce4 xfce4-goodies dbus-x11
-</pre><br>
-
-<p>
-5. 開啟Termux-X11<br>
-6. 開啟Termux並且執行如下命令：
-</p>
-<pre>
-$ cd
-$ vim ../usr/bin/cli
-    #!/system/bin/sh
-    if [ `whoami` != "root" ]; then
-        echo "run me as root"
-        exit
-    fi
-
-    termux-x11 :0 -ac &amp;
-    /data/data/ru.meefik.linuxdeploy/files/bin/linuxdeploy -p linux start -m
-    ssh xxx@127.0.0.1
-    /data/data/ru.meefik.linuxdeploy/files/bin/linuxdeploy -p linux stop -u
-
-$ chmod a+x ../usr/bin/cli
-
-$ su
-# chown yyy:yyy /data/data/com.termux/files/usr/tmp
-# exit
-
-$ cli
-xxx@localhost:~$
-xxx@localhost:~$ sudo chown xxx:xxx /tmp
-xxx@localhost:~$ DISPLAY=:0 startxfce4
+Step 1. workerTime * (1 + 2 + 3 + ... + n) = workerTime * n * (n + 1) / 2
+Step 2. workerTime * n * (n + 1) / 2 &lt;= timeLimit
+Step 3. n^2 + n - 2 * timeLimit / workerTime &lt;= 0
+Step 4. n = (-1 + sqrt(1 + 8 * timeLimit / workerTime)) / 2
 </pre>
 <p>
-P.S. xxx是Debian使用者，yyy是Android使用者，記得將Debian使用者的ID號碼改成跟Android ID號碼一樣，這樣才可以存取Android掛載的檔案<br><br>
+<img src="leetcode_cpp_3296/2.jpg" class="maxSize"><br><br>
 
-7. 移除/data/adb/modules/playstore/system/bin下的Busybox檔案<br>
-8. 安裝司徒修改的Termux-X11 APK (https://github.com/steward-fu/website/releases/download/q25/termux-x11_mod_key.apk)<br><br>
-
-完成<br>
-<img src="q25_debian_setup/1.jpg" class="maxSize">
+解答：
 </p>
+<pre class="brush:cpp">
+class Solution {
+public:
+    long long minNumberOfSeconds(int mountainHeight, vector&lt;int&gt;&amp; workerTimes) {
+        long l = 0;
+        long r = LONG_MAX;
+
+        auto complete = [&amp;](long t) -&gt; bool {
+            long v = 0;
+
+            for (auto&amp; w : workerTimes) {
+                v += static_cast&lt;long&gt;(sqrt(t * 2.0 / w + 0.25) - 0.5);
+            }
+
+            return v &gt;= mountainHeight;
+        };
+
+        long ret = 0;
+        while (l &lt;= r) {
+            long m = l + ((r - l) / 2);
+
+            if (complete(m)) {
+                ret = m;
+                r = m - 1;
+            }
+            else {
+                l = m + 1;
+            }
+        }
+
+        return ret;
+    }
+};
+</pre>
 
 <!-- tail -->
 <br>
