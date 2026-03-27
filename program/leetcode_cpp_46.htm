@@ -74,69 +74,47 @@
 <div id="page">
 
 <!-- body -->
-<h3><a href="../program.htm">程式語言</a> - LeetCode - C - <b>3546. Equal Sum Grid Partition I</b></h3>
+<h3><a href="../program.htm">程式語言</a> - LeetCode - C++ - <b>46. Permutations</b></h3>
 <hr size="1"><br>
 <p>
 題目：<br>
-<img src="leetcode_cpp_3546/1.jpg" class="maxSize"><br><br>
+<img src="leetcode_c_46/1.jpg" class="maxSize"><br><br>
 
-方法：
-</p>
-<pre>
-1. 加總全部數值
-2. 除以2就是要比對的數值
-3. Row方向加總並且比對
-4. Col方向加總並且比對
-</pre><br>
-
-<p>
 解答：
 </p>
 <pre class="brush:cpp">
-bool canPartitionGrid(int** grid, int gridSize, int* gridColSize)
-{
-    typedef long long ll;
+class Solution {
+public:
+    vector&lt;vector&lt;int&gt;&gt; permute(vector&lt;int&gt;&amp; nums) {
+        vector&lt;int&gt; path;
+        vector&lt;vector&lt;int&gt;&gt; r;
+        vector&lt;bool&gt; used(nums.size(), false);
 
-    ll v = 0;
-    ll sum = 0;
-    ll target = 0;
-    int i = 0;
-    int j = 0;
-    int row_size = gridSize;
-    int col_size = gridColSize[0];
-
-    for (i = 0; i &lt; row_size; i++) {
-        for (j = 0; j &lt; col_size; j++) {
-            sum += grid[i][j];
-        }
-    }
-
-    if (sum % 2) {
-        return false;
-    }
-
-    target = sum &gt;&gt; 1;
-    for (i = 0; i &lt; row_size; i++) {
-        for (j = 0; j &lt; col_size; j++) {
-            v += grid[i][j];
-            if (v == target) {
-                return true;
+        auto dfs = [&amp;](this auto&amp;&amp; dfs) -&gt; void {
+            if (path.size() == nums.size()) {
+                r.push_back(path);
+                return;
             }
-        }
-    }
 
-    v = 0;
-    for (i = 0; i &lt; col_size; i++) {
-        for (j = 0; j &lt; row_size; j++) {
-            v += grid[j][i];
-            if (v == target) {
-                return true;
+            for (int i = 0; i &lt; nums.size(); ++i) {
+                if (used[i] == true) {
+                    continue;
+                }
+
+                used[i] = true;
+                path.push_back(nums[i]);
+
+                dfs();
+                
+                path.pop_back();
+                used[i] = false;
             }
-        }
-    }
+        };
 
-    return false;
-}
+        dfs();
+        return r;
+    }
+};
 </pre>
 
 <!-- tail -->

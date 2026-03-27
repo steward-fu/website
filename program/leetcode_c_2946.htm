@@ -74,68 +74,39 @@
 <div id="page">
 
 <!-- body -->
-<h3><a href="../program.htm">程式語言</a> - LeetCode - C - <b>3546. Equal Sum Grid Partition I</b></h3>
+<h3><a href="../program.htm">程式語言</a> - LeetCode - C - <b>2946. Matrix Similarity After Cyclic Shifts</b></h3>
 <hr size="1"><br>
 <p>
 題目：<br>
-<img src="leetcode_cpp_3546/1.jpg" class="maxSize"><br><br>
+<img src="leetcode_c_2946/1.jpg" class="maxSize"><br><br>
 
-方法：
-</p>
-<pre>
-1. 加總全部數值
-2. 除以2就是要比對的數值
-3. Row方向加總並且比對
-4. Col方向加總並且比對
-</pre><br>
-
-<p>
 解答：
 </p>
 <pre class="brush:cpp">
-bool canPartitionGrid(int** grid, int gridSize, int* gridColSize)
+bool areSimilar(int** mat, int matSize, int* matColSize, int k)
 {
-    typedef long long ll;
-
-    ll v = 0;
-    ll sum = 0;
-    ll target = 0;
     int i = 0;
     int j = 0;
-    int row_size = gridSize;
-    int col_size = gridColSize[0];
+    int m = matSize;
+    int n = matColSize[0];
 
-    for (i = 0; i &lt; row_size; i++) {
-        for (j = 0; j &lt; col_size; j++) {
-            sum += grid[i][j];
-        }
-    }
+    k %= n;
 
-    if (sum % 2) {
-        return false;
-    }
+    for (i = 0; i &lt; m; i++) {
+        for (j = 0; j &lt; n; j++) {
+            int v = mat[i][(j + k) % n];
 
-    target = sum &gt;&gt; 1;
-    for (i = 0; i &lt; row_size; i++) {
-        for (j = 0; j &lt; col_size; j++) {
-            v += grid[i][j];
-            if (v == target) {
-                return true;
+            if (i % 2) {
+                v = mat[i][((j - k) + n) % n];
+            }
+
+            if (v != mat[i][j]) {
+                return false;
             }
         }
     }
 
-    v = 0;
-    for (i = 0; i &lt; col_size; i++) {
-        for (j = 0; j &lt; row_size; j++) {
-            v += grid[j][i];
-            if (v == target) {
-                return true;
-            }
-        }
-    }
-
-    return false;
+    return true;
 }
 </pre>
 
