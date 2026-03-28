@@ -74,50 +74,40 @@
 <div id="page">
 
 <!-- body -->
-<h3><a href="../program.htm">程式語言</a> - LeetCode - C++ - <b>72. Edit Distance</b></h3>
+<h3><a href="../program.htm">程式語言</a> - LeetCode - C++ - <b>57. Insert Interval</b></h3>
 <hr size="1"><br>
 <p>
-參考資訊：<br>
-https://algo.monster/liteproblems/72<br>
-https://www.youtube.com/watch?v=reICpCoC97Y<br>
-https://www.cnblogs.com/grandyang/p/4344107.html<br><br>
-
 題目：<br>
-<img src="leetcode_c_72/1.jpg" class="maxSize"><br><br>
-
-方法：<br>
-<img src="leetcode_c_72/2.jpg" class="maxSize"><br><br>
+<img src="leetcode_cpp_57/1.jpg" class="maxSize"><br><br>
 
 解答：
 </p>
 <pre class="brush:cpp">
 class Solution {
 public:
-    int minDistance(string word1, string word2) {
-        int w1_size = word1.size();
-        int w2_size = word2.size();
-        vector&lt;vector&lt;int&gt;&gt; dp(w1_size + 1, vector&lt;int&gt;(w2_size + 1, 0));
+    vector&lt;vector&lt;int&gt;&gt; insert(vector&lt;vector&lt;int&gt;&gt;&amp; intervals, vector&lt;int&gt;&amp; newInterval) {
+        vector&lt;vector&lt;int&gt;&gt; r;
+        int i = 0;
+        int n = intervals.size();
 
-        for (int i = 1; i &lt;= w1_size; ++i) {
-            dp[i][0] = i;
+        while ((i &lt; n) &amp;&amp; (intervals[i][1] &lt; newInterval[0])) {
+            r.push_back(intervals[i]);
+            i += 1;
         }
 
-        for (int j = 0; j &lt;= w2_size; ++j) {
-            dp[0][j] = j;
+        while ((i &lt; n) &amp;&amp; (intervals[i][0] &lt;= newInterval[1])) {
+            newInterval[0] = min(newInterval[0], intervals[i][0]);
+            newInterval[1] = max(newInterval[1], intervals[i][1]);
+            i += 1;
+        }
+        r.push_back(newInterval);
+
+        while (i &lt; n) {
+            r.push_back(intervals[i]);
+            i += 1;
         }
 
-        for (int i = 1; i &lt;= w1_size; ++i) {
-            for (int j = 1; j &lt;= w2_size; ++j) {
-                if (word1[i - 1] == word2[j - 1]) {
-                    dp[i][j] = dp[i - 1][j - 1];
-                } 
-                else {
-                    dp[i][j] = min({dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]}) + 1;
-                }
-            }
-        }
-
-        return dp[w1_size][w2_size];
+        return r;
     }
 };
 </pre>

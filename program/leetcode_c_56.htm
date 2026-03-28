@@ -74,52 +74,71 @@
 <div id="page">
 
 <!-- body -->
-<h3><a href="../program.htm">程式語言</a> - LeetCode - C++ - <b>72. Edit Distance</b></h3>
+<h3><a href="../program.htm">程式語言</a> - LeetCode - C - <b>56. Merge Intervals</b></h3>
 <hr size="1"><br>
 <p>
-參考資訊：<br>
-https://algo.monster/liteproblems/72<br>
-https://www.youtube.com/watch?v=reICpCoC97Y<br>
-https://www.cnblogs.com/grandyang/p/4344107.html<br><br>
-
 題目：<br>
-<img src="leetcode_c_72/1.jpg" class="maxSize"><br><br>
-
-方法：<br>
-<img src="leetcode_c_72/2.jpg" class="maxSize"><br><br>
+<img src="leetcode_c_56/1.jpg" class="maxSize"><br><br>
 
 解答：
 </p>
 <pre class="brush:cpp">
-class Solution {
-public:
-    int minDistance(string word1, string word2) {
-        int w1_size = word1.size();
-        int w2_size = word2.size();
-        vector&lt;vector&lt;int&gt;&gt; dp(w1_size + 1, vector&lt;int&gt;(w2_size + 1, 0));
-
-        for (int i = 1; i &lt;= w1_size; ++i) {
-            dp[i][0] = i;
-        }
-
-        for (int j = 0; j &lt;= w2_size; ++j) {
-            dp[0][j] = j;
-        }
-
-        for (int i = 1; i &lt;= w1_size; ++i) {
-            for (int j = 1; j &lt;= w2_size; ++j) {
-                if (word1[i - 1] == word2[j - 1]) {
-                    dp[i][j] = dp[i - 1][j - 1];
-                } 
-                else {
-                    dp[i][j] = min({dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]}) + 1;
-                }
-            }
-        }
-
-        return dp[w1_size][w2_size];
+int mysort(const void *pa, const void *pb)
+{
+    const int** a = (const int**)pa;
+    const int** b = (const int**)pb;
+ 
+    if (a[0][0] == b[0][0]) {
+        return a[0][1] - b[0][1];
     }
-};
+ 
+    return a[0][0] - b[0][0];
+}
+
+int max(int a, int b)
+{
+    return a &gt; b ? a : b;
+}
+
+/**
+ * Return an array of arrays of size *returnSize.
+ * The sizes of the arrays are returned as *returnColumnSizes array.
+ * Note: Both returned array and *columnSizes array must be malloced, assume caller calls free().
+ */
+int** merge(int** intervals, int intervalsSize, int* intervalsColSize, int* returnSize, int** returnColumnSizes)
+{
+    int i = 0;
+    int p = 0;
+    int *cur = NULL;
+    int **r = calloc(intervalsSize, sizeof(int *));
+
+    *returnSize = 0;
+    *returnColumnSizes = calloc(intervalsSize, sizeof(int));
+
+    qsort(intervals, intervalsSize, sizeof(int *), mysort);
+    cur = intervals[0];
+
+    for (i = 1; i &lt; intervalsSize; i++) {
+        if (intervals[i][0] &lt;= cur[1]) {
+            cur[1] = max(cur[1], intervals[i][1]);
+        }
+        else {
+            p = (*returnSize)++;
+            r[p] = calloc(2, sizeof(int));
+            memcpy(r[p], cur, sizeof(int) * 2);
+
+            (*returnColumnSizes)[p] = 2;
+            cur = intervals[i];
+        }
+    }
+
+    p = (*returnSize)++;
+    r[p] = calloc(2, sizeof(int));
+    memcpy(r[p], cur, sizeof(int) * 2);
+    (*returnColumnSizes)[p] = 2;
+    
+    return r;
+}
 </pre>
 
 <!-- tail -->

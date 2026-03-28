@@ -74,50 +74,52 @@
 <div id="page">
 
 <!-- body -->
-<h3><a href="../program.htm">程式語言</a> - LeetCode - C++ - <b>72. Edit Distance</b></h3>
+<h3><a href="../program.htm">程式語言</a> - LeetCode - C++ - <b>59. Spiral Matrix II</b></h3>
 <hr size="1"><br>
 <p>
-參考資訊：<br>
-https://algo.monster/liteproblems/72<br>
-https://www.youtube.com/watch?v=reICpCoC97Y<br>
-https://www.cnblogs.com/grandyang/p/4344107.html<br><br>
-
 題目：<br>
-<img src="leetcode_c_72/1.jpg" class="maxSize"><br><br>
-
-方法：<br>
-<img src="leetcode_c_72/2.jpg" class="maxSize"><br><br>
+<img src="leetcode_cpp_59/1.jpg" class="maxSize"><br><br>
 
 解答：
 </p>
 <pre class="brush:cpp">
 class Solution {
 public:
-    int minDistance(string word1, string word2) {
-        int w1_size = word1.size();
-        int w2_size = word2.size();
-        vector&lt;vector&lt;int&gt;&gt; dp(w1_size + 1, vector&lt;int&gt;(w2_size + 1, 0));
+    vector&lt;vector&lt;int&gt;&gt; generateMatrix(int n) {
+        int l = 0;
+        int r = n - 1;
+        int t = 0;
+        int b = n - 1;
+        int num = 1;
+        vector&lt;vector&lt;int&gt;&gt; ans(n, vector&lt;int&gt;(n, 0));
 
-        for (int i = 1; i &lt;= w1_size; ++i) {
-            dp[i][0] = i;
-        }
+        while ((l &lt;= r) &amp;&amp; (t &lt;= b)) {
+            for (int i = l; i &lt;= r; ++i) {
+                ans[t][i] = num++;
+            }
+            t += 1;
 
-        for (int j = 0; j &lt;= w2_size; ++j) {
-            dp[0][j] = j;
-        }
+            for (int i = t; i &lt;= b; ++i) {
+                ans[i][r] = num++;
+            }
+            r -= 1;
 
-        for (int i = 1; i &lt;= w1_size; ++i) {
-            for (int j = 1; j &lt;= w2_size; ++j) {
-                if (word1[i - 1] == word2[j - 1]) {
-                    dp[i][j] = dp[i - 1][j - 1];
-                } 
-                else {
-                    dp[i][j] = min({dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]}) + 1;
+            if (t &lt;= b) {
+                for (int i = r; i &gt;= l; --i) {
+                    ans[b][i] = num++;
                 }
+                b -= 1;
+            }
+
+            if (l &lt;= r) {
+                for (int i = b; i &gt;= t; --i) {
+                    ans[i][l] = num++;
+                }
+                l += 1;
             }
         }
 
-        return dp[w1_size][w2_size];
+        return ans;
     }
 };
 </pre>
