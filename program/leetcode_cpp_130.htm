@@ -74,53 +74,65 @@
 <div id="page">
 
 <!-- body -->
-<h3><a href="../program.htm">程式語言</a> - LeetCode - C++ - <b>136. Single Number</b></h3>
+<h3><a href="../program.htm">程式語言</a> - LeetCode - C++ - <b>130. Surrounded Regions</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
-https://algo.monster/liteproblems/136<br><br>
+https://www.cnblogs.com/grandyang/p/4555831.html<br><br>
 
 題目：<br>
-<img src="leetcode_c_136/1.jpg" class="maxSize"><br><br>
+<img src="leetcode_cpp_130/1.jpg" class="maxSize"><br><br>
 
-解答一：
+方法：
 </p>
-<pre class="brush:cpp">
-class Solution {
-public:
-    int singleNumber(vector&lt;int&gt;&amp; nums) {
-        int r = 0;
-
-        for (int n : nums) {
-            r ^= n;
-        }
-        return r;
-    }
-};
+<pre>
+跟邊邊連通的，都是要保留的，其餘轉成'X'即可
 </pre><br>
 
 <p>
-解答二：
+解答：
 </p>
 <pre class="brush:cpp">
 class Solution {
 public:
-    int singleNumber(vector&lt;int&gt;&amp; nums) {
-        int ans = 0;
+    void solve(vector&lt;vector&lt;char&gt;&gt;&amp; board) {
+        int m = board.size();
+        int n = board[0].size();
 
-        for (int i = 0; i &lt; 32; ++i) {
-            int cnt = 0;
-
-            for (int n : nums) {
-                cnt += !!(n &amp; (1 &lt;&lt; i));
+        auto dfs = [&amp;](this auto&amp;&amp; dfs, int i, int j) -&gt; void {
+            if (i &lt; 0 || i &gt;= m || j &lt; 0 || j &gt;= n) {
+                return;
+            }
+            if (board[i][j] != 'O') {
+                return;
             }
 
-            if (cnt % 2) {
-                ans |= (1 &lt;&lt; i);
+            board[i][j] = '#';
+            dfs(i + 1, j);
+            dfs(i - 1, j);
+            dfs(i, j + 1);
+            dfs(i, j - 1);
+        };
+
+        for (int i = 0; i &lt; m; ++i) {
+            for (int j = 0; j &lt; n; ++j) {
+                if ((i == 0 || i == m - 1 || j == 0 || j == n - 1) &amp;&amp; 
+                    board[i][j] == 'O')
+                {
+                    dfs(i, j);
+                }
             }
         }
-
-        return ans;
+        for (int i = 0; i &lt; m; ++i) {
+            for (int j = 0; j &lt; n; ++j) {
+                if (board[i][j] == 'O') {
+                    board[i][j] = 'X';
+                }
+                if (board[i][j] == '#') {
+                    board[i][j] = 'O';
+                }
+            }
+        }
     }
 };
 </pre>

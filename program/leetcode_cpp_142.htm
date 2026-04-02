@@ -74,53 +74,56 @@
 <div id="page">
 
 <!-- body -->
-<h3><a href="../program.htm">程式語言</a> - LeetCode - C++ - <b>136. Single Number</b></h3>
+<h3><a href="../program.htm">程式語言</a> - LeetCode - C++ - <b>142. Linked List Cycle II</b></h3>
 <hr size="1"><br>
 <p>
-參考資訊：<br>
-https://algo.monster/liteproblems/136<br><br>
-
 題目：<br>
-<img src="leetcode_c_136/1.jpg" class="maxSize"><br><br>
+<img src="leetcode_cpp_142/1.jpg" class="maxSize"><br><br>
 
-解答一：
+方法：
 </p>
-<pre class="brush:cpp">
-class Solution {
-public:
-    int singleNumber(vector&lt;int&gt;&amp; nums) {
-        int r = 0;
-
-        for (int n : nums) {
-            r ^= n;
-        }
-        return r;
-    }
-};
+<pre>
+head -&gt; (cycle start) -&gt; (meeting point)
+             |                |
+             +----------------+
 </pre><br>
 
 <p>
-解答二：
+解答：
 </p>
 <pre class="brush:cpp">
+/**
+ * Definition for singly-linked list.
+ * struct ListNode {
+ *     int val;
+ *     ListNode *next;
+ *     ListNode(int x) : val(x), next(NULL) {}
+ * };
+ */
 class Solution {
 public:
-    int singleNumber(vector&lt;int&gt;&amp; nums) {
-        int ans = 0;
+    ListNode *detectCycle(ListNode *head) {
+        ListNode* slow = head;
+        ListNode* fast = head;
 
-        for (int i = 0; i &lt; 32; ++i) {
-            int cnt = 0;
+        while (fast &amp;&amp; fast-&gt;next) {
+            slow = slow-&gt;next;
+            fast = fast-&gt;next-&gt;next;
 
-            for (int n : nums) {
-                cnt += !!(n &amp; (1 &lt;&lt; i));
-            }
+            if (slow == fast) {
+                ListNode* p1 = slow;
+                ListNode* p2 = head;
 
-            if (cnt % 2) {
-                ans |= (1 &lt;&lt; i);
+                while (p1 != p2) {
+                    p1 = p1-&gt;next;
+                    p2 = p2-&gt;next;
+                }
+
+                return p1;
             }
         }
 
-        return ans;
+        return nullptr;
     }
 };
 </pre>

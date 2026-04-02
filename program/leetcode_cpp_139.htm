@@ -74,53 +74,40 @@
 <div id="page">
 
 <!-- body -->
-<h3><a href="../program.htm">程式語言</a> - LeetCode - C++ - <b>136. Single Number</b></h3>
+<h3><a href="../program.htm">程式語言</a> - LeetCode - C++ - <b>139. Word Break</b></h3>
 <hr size="1"><br>
 <p>
-參考資訊：<br>
-https://algo.monster/liteproblems/136<br><br>
-
 題目：<br>
-<img src="leetcode_c_136/1.jpg" class="maxSize"><br><br>
+<img src="leetcode_cpp_139/1.jpg" class="maxSize"><br><br>
 
-解答一：
+方法：
 </p>
-<pre class="brush:cpp">
-class Solution {
-public:
-    int singleNumber(vector&lt;int&gt;&amp; nums) {
-        int r = 0;
-
-        for (int n : nums) {
-            r ^= n;
-        }
-        return r;
-    }
-};
+<pre>
+dp[i] = 前 i 個字元（s[0 ~ i-1]）是否可以被拆分
 </pre><br>
 
 <p>
-解答二：
+解答：
 </p>
 <pre class="brush:cpp">
 class Solution {
 public:
-    int singleNumber(vector&lt;int&gt;&amp; nums) {
-        int ans = 0;
+    bool wordBreak(string s, vector&lt;string&gt;&amp; wordDict) {
+        int n = s.size();
+        vector&lt;bool&gt; dp(n + 1, false);
+        unordered_set&lt;string&gt; q(wordDict.begin(), wordDict.end());
 
-        for (int i = 0; i &lt; 32; ++i) {
-            int cnt = 0;
-
-            for (int n : nums) {
-                cnt += !!(n &amp; (1 &lt;&lt; i));
-            }
-
-            if (cnt % 2) {
-                ans |= (1 &lt;&lt; i);
+        dp[0] = true;
+        for (int i = 1; i &lt;= n; ++i) {
+            for (int j = 0; j &lt; i; ++j) {
+                if (dp[j] &amp;&amp; q.count(s.substr(j, i - j))) {
+                    dp[i] = true;
+                    break;
+                }
             }
         }
 
-        return ans;
+         return dp[n];
     }
 };
 </pre>
