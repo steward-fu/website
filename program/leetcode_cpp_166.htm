@@ -74,23 +74,55 @@
 <div id="page">
 
 <!-- body -->
-<h3><a href="../phone.htm">手機</a> - F(x)tec Pro1 - Sailfish OS - <b>如何修改defaultuser成nemo</b></h3>
+<h3><a href="../program.htm">程式語言</a> - LeetCode - C++ - <b>166. Fraction to Recurring Decimal</b></h3>
 <hr size="1"><br>
 <p>
-參考資訊：<br>
-https://forum.sailfishos.org/t/reflashing-to-switch-from-defaultuser-to-nemo/19060/2<br><br>
+題目：<br>
+<img src="leetcode_cpp_166/1.jpg" class="maxSize"><br><br>
+
+解答：
 </p>
-<pre>
-[defaultuser@Pro1 ]$ devel-su 
-[root@Pro1 ]# useradd nemo
-[root@Pro1 ]# groupadd nemo
-[root@Pro1 ]# passwd nemo
-[root@Pro1 ]# cd /home/
-[root@Pro1 home]# mv defaultuser/ nemo
-[root@Pro1 home]# ln -s nemo defaultuser
-[root@Pro1 home]# chown nemo:nemo -R /home/nemo
-[root@Pro1 home]# grep -sIR defaultuser /etc/ | cut -d: -f1 | sort | uniq | xargs sed -i 's/defaultuser/nemo/g'
-[root@Pro1 home]# reboot
+<pre class="brush:cpp">
+class Solution {
+public:
+    string fractionToDecimal(int numerator, int denominator) {
+        if (numerator == 0) {
+            return "0";
+        }
+
+        string ans;
+
+        if (numerator &lt; 0 ^ denominator &lt; 0) {
+            ans += "-";
+        }
+
+        long n = labs(numerator);
+        long d = labs(denominator);
+        ans += to_string(n / d);
+
+        long rem = n % d;
+        if (rem == 0) {
+            return ans;
+        }
+
+        ans += ".";
+        unordered_map&lt;long, int&gt; q;
+        while (rem) {
+            if (q.count(rem)) {
+                ans.insert(q[rem], "(");
+                ans += ")";
+                break;
+            }
+
+            q[rem] = ans.size();
+            rem *= 10;
+            ans += to_string(rem / d);
+            rem %= d;
+        }
+
+        return ans;
+    }
+};
 </pre>
 
 <!-- tail -->
