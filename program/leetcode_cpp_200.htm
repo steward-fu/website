@@ -74,46 +74,44 @@
 <div id="page">
 
 <!-- body -->
-<h3><a href="../program.htm">程式語言</a> - LeetCode - C++ - <b>206. Reverse Linked List</b></h3>
+<h3><a href="../program.htm">程式語言</a> - LeetCode - C++ - <b>200. Number of Islands</b></h3>
 <hr size="1"><br>
 <p>
-參考資訊：<br>
-https://www.cnblogs.com/cnoodle/p/11670754.html<br><br>
-
 題目：<br>
-<img src="leetcode_c_206/1.jpg" class="maxSize"><br><br>
+<img src="leetcode_cpp_200/1.jpg" class="maxSize"><br><br>
 
 解答：
 </p>
 <pre class="brush:cpp">
-/**
- * Definition for singly-linked list.
- * struct ListNode {
- *     int val;
- *     ListNode *next;
- *     ListNode() : val(0), next(nullptr) {}
- *     ListNode(int x) : val(x), next(nullptr) {}
- *     ListNode(int x, ListNode *next) : val(x), next(next) {}
- * };
- */
 class Solution {
 public:
-    ListNode* reverseList(ListNode* head) {
-        if (!head || !head-&gt;next) {
-            return head;
+    int numIslands(vector&lt;vector&lt;char&gt;&gt;&amp; grid) {
+        int m = grid.size();
+        int n = grid[0].size();
+
+        auto dfs = [&amp;](this auto&amp;&amp; dfs, int i, int j) -&gt; void {
+            if (i &lt; 0 || i &gt;= m || j &lt; 0 || j &gt;= n || grid[i][j] == '0') {
+                return;
+            }
+
+            grid[i][j] = '0';
+            dfs(i + 1, j);
+            dfs(i - 1, j);
+            dfs(i, j + 1);
+            dfs(i, j - 1);
+        };
+
+        int ans = 0;
+        for (int i = 0; i &lt; m; ++i) {
+            for (int j = 0; j &lt; n; ++j) {
+                if (grid[i][j] == '1') {
+                    ans += 1;
+                    dfs(i, j);
+                }
+            }
         }
 
-        ListNode *pre = nullptr;
-        ListNode *cur = head;
-
-        while (cur) {
-            ListNode *next = cur-&gt;next;
-            cur-&gt;next = pre;
-            pre = cur;
-            cur = next;
-        }
-
-        return pre;
+        return ans;
     }
 };
 </pre>

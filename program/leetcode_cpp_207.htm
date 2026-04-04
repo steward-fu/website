@@ -74,46 +74,63 @@
 <div id="page">
 
 <!-- body -->
-<h3><a href="../program.htm">程式語言</a> - LeetCode - C++ - <b>206. Reverse Linked List</b></h3>
+<h3><a href="../program.htm">程式語言</a> - LeetCode - C++ - <b>207. Course Schedule</b></h3>
 <hr size="1"><br>
 <p>
-參考資訊：<br>
-https://www.cnblogs.com/cnoodle/p/11670754.html<br><br>
-
 題目：<br>
-<img src="leetcode_c_206/1.jpg" class="maxSize"><br><br>
+<img src="leetcode_cpp_207/1.jpg" class="maxSize"><br><br>
 
+方法：
+</p>
+<pre>
+用3種狀態：
+0 = 未訪問
+1 = 訪問中（正在 recursion stack）
+2 = 已完成
+
+如果遇到1代表有環
+</pre><br>
+
+<p>
 解答：
 </p>
 <pre class="brush:cpp">
-/**
- * Definition for singly-linked list.
- * struct ListNode {
- *     int val;
- *     ListNode *next;
- *     ListNode() : val(0), next(nullptr) {}
- *     ListNode(int x) : val(x), next(nullptr) {}
- *     ListNode(int x, ListNode *next) : val(x), next(next) {}
- * };
- */
 class Solution {
 public:
-    ListNode* reverseList(ListNode* head) {
-        if (!head || !head-&gt;next) {
-            return head;
+    bool canFinish(int numCourses, vector&lt;vector&lt;int&gt;&gt;&amp; prerequisites) {
+        vector&lt;int&gt; state(numCourses, 0);
+        vector&lt;vector&lt;int&gt;&gt; graph(numCourses);
+
+        for (auto&amp; p : prerequisites) {
+            graph[p[0]].push_back(p[1]);
         }
 
-        ListNode *pre = nullptr;
-        ListNode *cur = head;
+        auto dfs = [&amp;](this auto&amp;&amp; dfs, int n) -&gt; bool {
+            if (state[n] == 1) {
+                return false;
+            }
 
-        while (cur) {
-            ListNode *next = cur-&gt;next;
-            cur-&gt;next = pre;
-            pre = cur;
-            cur = next;
+            if (state[n] == 2) {
+                return true;
+            }
+
+            state[n] = 1;
+            for (int v : graph[n]) {
+                if (!dfs(v)) {
+                    return false;
+                }
+            }
+            state[n] = 2;
+            return true;
+        };
+
+        for (int i = 0; i &lt; numCourses; ++i) {
+            if (!dfs(i)) {
+                return false;
+            }
         }
 
-        return pre;
+        return true;
     }
 };
 </pre>
