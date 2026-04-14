@@ -74,36 +74,53 @@
 <div id="page">
 
 <!-- body -->
-<h3><a href="../program.htm">程式語言</a> - LeetCode - CPP - <b>345. Reverse Vowels of a String</b></h3>
+<h3><a href="../program.htm">程式語言</a> - LeetCode - C++ - <b>337. House Robber III</b></h3>
 <hr size="1"><br>
 <p>
 題目：<br>
-<img src="leetcode_c_345/1.jpg" class="maxSize"><br><br>
+<img src="leetcode_cpp_337/1.jpg" class="maxSize"><br><br>
 
+方法：
+</p>
+<pre>
+偷當前節點：node-&gt;val + left[0] + right[0]
+不偷當前節點：max(left) + max(right)
+</pre><br>
+
+<p>
 解答：
 </p>
 <pre class="brush:cpp">
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode() : val(0), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
+ * };
+ */
 class Solution {
 public:
-    bool is_vowel(char c) {
-        c = tolower(c);
-        return c == 'a' || c == 'e' || c == 'i' || c == 'o' || c == 'u';
-    }
+    int rob(TreeNode* root) {
+        auto dfs = [&amp;](this auto&amp; dfs, TreeNode *n) -&gt; pair&lt;int, int&gt; {
+            if (!n) {
+                return { 0, 0 };
+            }
 
-    string reverseVowels(string s) {
-        int l = 0;
-        int r = s.size() - 1;
+            auto l = dfs(n-&gt;left);
+            auto r = dfs(n-&gt;right);
 
-        while (l &lt; r) {
-            while (l &lt; r &amp;&amp; !is_vowel(s[l])) l++;
-            while (l &lt; r &amp;&amp; !is_vowel(s[r])) r--;
+            int rob = n-&gt;val + l.first + r.first;
+            int not_rob = max(l.first, l.second) + max(r.first, r.second);
 
-            swap(s[l], s[r]);
-            l++;
-            r--;
-        }
+            return { not_rob, rob };
+        };
 
-        return s;
+        auto ans = dfs(root);
+        return max(ans.first, ans.second);
     }
 };
 </pre>
