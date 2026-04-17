@@ -74,50 +74,47 @@
 <div id="page">
 
 <!-- body -->
-<h3><a href="../program.htm">程式語言</a> - LeetCode - C++ - <b>374. Guess Number Higher or Lower</b></h3>
+<h3><a href="../program.htm">程式語言</a> - LeetCode - CPP - <b>373. Find K Pairs with Smallest Sums</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
-https://algo.monster/liteproblems/374<br>
-https://www.cnblogs.com/grandyang/p/5666502.html<br><br>
+https://www.cnblogs.com/grandyang/p/5653127.html<br><br>
 
 題目：<br>
-<img src="leetcode_c_374/1.jpg" class="maxSize"><br><br>
+<img src="leetcode_cpp_373/1.jpg" class="maxSize"><br><br>
 
 解答：
 </p>
 <pre class="brush:cpp">
-/** 
- * Forward declaration of guess API.
- * @param  num   your guess
- * @return       -1 if num is higher than the picked number
- *                1 if num is lower than the picked number
- *               otherwise return 0
- * int guess(int num);
- */
- 
 class Solution {
 public:
-    int guessNumber(int n) {
-        long l = 0;
-        long r = n;
-         
-        while (l &lt; r) {
-            int v = l + ((r - l) &gt;&gt; 1);
- 
-            int t = guess(v);
-            if (t &lt; 0) { 
-                r = v;
-            }
-            else if (t &gt; 0) {
-                l = v + 1;
-            }
-            else {
-                return v;
+    vector&lt;vector&lt;int&gt;&gt; kSmallestPairs(vector&lt;int&gt;&amp; nums1, vector&lt;int&gt;&amp; nums2, int k) {
+        priority_queue&lt;pair&lt;int, vector&lt;int&gt;&gt;&gt; pq;
+
+        for (int n1 : nums1) {
+            for (int n2 : nums2) {
+                int sum = n1 + n2;
+
+                if (pq.size() &lt; k) {
+                    pq.push({sum, { n1, n2 }});
+                }
+                else if (sum &lt; pq.top().first) {
+                    pq.pop();
+                    pq.push({sum, { n1, n2 }});
+                }
+                else {
+                    break;
+                }
             }
         }
- 
-        return l;
+
+        vector&lt;vector&lt;int&gt;&gt; ans;
+        while (!pq.empty()) {
+            ans.push_back(pq.top().second);
+            pq.pop();
+        }
+
+        return ans;
     }
 };
 </pre>

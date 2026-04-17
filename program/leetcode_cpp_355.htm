@@ -74,52 +74,70 @@
 <div id="page">
 
 <!-- body -->
-<h3><a href="../program.htm">程式語言</a> - LeetCode - C++ - <b>374. Guess Number Higher or Lower</b></h3>
+<h3><a href="../program.htm">程式語言</a> - LeetCode - CPP - <b>355. Design Twitter</b></h3>
 <hr size="1"><br>
 <p>
-參考資訊：<br>
-https://algo.monster/liteproblems/374<br>
-https://www.cnblogs.com/grandyang/p/5666502.html<br><br>
-
 題目：<br>
-<img src="leetcode_c_374/1.jpg" class="maxSize"><br><br>
+<img src="leetcode_cpp_355/1.jpg" class="maxSize"><br><br>
 
 解答：
 </p>
 <pre class="brush:cpp">
-/** 
- * Forward declaration of guess API.
- * @param  num   your guess
- * @return       -1 if num is higher than the picked number
- *                1 if num is lower than the picked number
- *               otherwise return 0
- * int guess(int num);
- */
- 
-class Solution {
+class Twitter {
+private:
+    int time;
+    unordered_map&lt;int, map&lt;int, int&gt;&gt; tweets;
+    unordered_map&lt;int, unordered_set&lt;int&gt;&gt; friends; 
+
 public:
-    int guessNumber(int n) {
-        long l = 0;
-        long r = n;
-         
-        while (l &lt; r) {
-            int v = l + ((r - l) &gt;&gt; 1);
- 
-            int t = guess(v);
-            if (t &lt; 0) { 
-                r = v;
-            }
-            else if (t &gt; 0) {
-                l = v + 1;
-            }
-            else {
-                return v;
+    Twitter() {
+        time = 0;
+    }
+    
+    void postTweet(int userId, int tweetId) {
+        follow(userId, userId);
+        tweets[userId].insert({ time++, tweetId });
+    }
+    
+    vector&lt;int&gt; getNewsFeed(int userId) {
+        map&lt;int, int&gt; top10;
+
+        for (auto id : friends[userId]) {
+            for (auto a : tweets[id]) {
+                top10.insert({ a.first, a.second });
+                if (top10.size() &gt; 10) {
+                    top10.erase(top10.begin());
+                }
             }
         }
- 
-        return l;
+
+        vector&lt;int&gt; ans;
+        for (auto a : top10) {
+            ans.insert(ans.begin(), a.second);
+        }
+
+        return ans;
+    }
+    
+    void follow(int followerId, int followeeId) {
+        friends[followerId].insert(followeeId);
+    }
+    
+    void unfollow(int followerId, int followeeId) {
+        if (followerId != followeeId) {
+            friends[followerId].erase(followeeId);
+        }
     }
 };
+
+/**
+ * Your Twitter object will be instantiated and called as such:
+ * Twitter* obj = new Twitter();
+ * obj-&gt;postTweet(userId,tweetId);
+ * vector&lt;int&gt; param_2 = obj-&gt;getNewsFeed(userId);
+ * obj-&gt;follow(followerId,followeeId);
+ * obj-&gt;unfollow(followerId,followeeId);
+ */
 </pre>
 
 <!-- tail -->
