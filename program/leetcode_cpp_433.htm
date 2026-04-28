@@ -74,38 +74,58 @@
 <div id="page">
 
 <!-- body -->
-<h3><a href="../program.htm">程式語言</a> - LeetCode - C++ - <b>435. Non-overlapping Intervals</b></h3>
+<h3><a href="../program.htm">程式語言</a> - LeetCode - C++ - <b>433. Minimum Genetic Mutation</b></h3>
 <hr size="1"><br>
 <p>
-參考資訊：<br>
-https://www.cnblogs.com/grandyang/p/6017505.html<br><br>
-
 題目：<br>
-<img src="leetcode_c_435/1.jpg" class="maxSize"><br><br>
+<img src="leetcode_cpp_433/1.jpg" class="maxSize"><br><br>
 
 解答：
 </p>
 <pre class="brush:cpp">
 class Solution {
 public:
-    int eraseOverlapIntervals(vector&lt;vector&lt;int&gt;&gt;&amp; intervals) {
-        sort(intervals.begin(), intervals.end());
+    int minMutation(string startGene, string endGene, vector&lt;string&gt;&amp; bank) {
+        unordered_set&lt;string&gt; valid(bank.begin(), bank.end());
 
-        int r = 0;
-        int last = 0;
-        for (int i = 1; i &lt; intervals.size(); i++) {
-            if (intervals[i][0] &lt; intervals[last][1]) {
-                r += 1;
-                if (intervals[i][1] &lt; intervals[last][1]) {
-                    last = i;
-                }
+        if (!valid.count(endGene)) {
+            return -1;
+        }
+
+        queue&lt;pair&lt;string, int&gt;&gt; q;
+        q.push({startGene, 0});
+
+        unordered_set&lt;string&gt; visited;
+        visited.insert(startGene);
+
+        vector&lt;char&gt; gene = {'A', 'C', 'G', 'T'};
+
+        while (!q.empty()) {
+            auto [cur, step] = q.front();
+            q.pop();
+
+            if (cur == endGene) {
+                return step;
             }
-            else {
-                last = i;
+
+            for (int i = 0; i &lt; cur.size(); ++i) {
+                string next = cur;
+
+                for (char g : gene) {
+                    if (next[i] == g) {
+                        continue;
+                    }
+
+                    next[i] = g;
+                    if (valid.count(next) &amp;&amp; !visited.count(next)) {
+                        visited.insert(next);
+                        q.push({next, step + 1});
+                    }
+                }
             }
         }
 
-        return r;
+        return -1;
     }
 };
 </pre>
