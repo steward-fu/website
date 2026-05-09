@@ -74,20 +74,66 @@
 <div id="page">
 
 <!-- body -->
-<h3><a href="../phone.htm">手機</a> - Unihertz Titan 2 (None-EEA) - Debian - <b>Build QEMU 7.2.0</b></h3>
+<h3><a href="../program.htm">程式語言</a> - LeetCode - C++ - <b>473. Matchsticks to Square</b></h3>
 <hr size="1"><br>
 <p>
-參考資訊：<br>
-https://www.linuxfromscratch.org/blfs/view/11.3/postlfs/qemu.html<br><br>
+題目：<br>
+<img src="leetcode_cpp_473/1.jpg" class="maxSize"><br><br>
+
+解答：
 </p>
-<pre>
-$ cd
-$ wget https://download.qemu.org/qemu-7.2.0.tar.xz
-$ xz -d qemu-7.2.0.tar.xz
-$ tar xvf qemu-7.2.0.tar
-$ cd qemu-7.2.0
-$ ./configure --target-list=i386-softmmu,i386-linux-user --enable-virtfs --enable-gtk --enable-slirp
-$ ./build/qemu-system-i386 -display gtk xxx.qcow2
+<pre class="brush:cpp">
+class Solution {
+public:
+    bool makesquare(vector&lt;int&gt;&amp; matchsticks) {
+        int n = matchsticks.size();
+        int sum = accumulate(matchsticks.begin(), matchsticks.end(), 0);
+
+        if (sum % 4) {
+            return false;
+        }
+
+        int target = sum / 4;
+        vector&lt;int&gt; side(4, 0);
+
+        sort(matchsticks.begin(), matchsticks.end());
+
+        if (matchsticks[0] &gt; target) {
+            return false;
+        }
+
+        auto dfs = [&amp;](this auto&amp;&amp; dfs, int idx) {
+            if (idx == n) {
+                return side[0] == target &amp;&amp;
+                    side[1] == target &amp;&amp;
+                    side[2] == target &amp;&amp;
+                    side[3] == target;
+            }
+
+            int add = matchsticks[idx];
+
+            for (int i = 0; i &lt; 4; ++i) {
+                if (side[i] + add &gt; target) {
+                    continue;
+                }
+
+                side[i] += add;
+                if (dfs(idx + 1)) {
+                    return true;
+                }
+                side[i] -= add;
+
+                if (side[i] == 0) {
+                    break;
+                }
+            }
+
+            return false;
+        };
+
+        return dfs(0);
+    }
+};
 </pre>
 
 <!-- tail -->

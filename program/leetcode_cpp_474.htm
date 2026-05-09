@@ -74,20 +74,102 @@
 <div id="page">
 
 <!-- body -->
-<h3><a href="../phone.htm">手機</a> - Unihertz Titan 2 (None-EEA) - Debian - <b>Build QEMU 7.2.0</b></h3>
+<h3><a href="../program.htm">程式語言</a> - LeetCode - C++ - <b>474. Ones and Zeroes</b></h3>
 <hr size="1"><br>
 <p>
-參考資訊：<br>
-https://www.linuxfromscratch.org/blfs/view/11.3/postlfs/qemu.html<br><br>
+題目：<br>
+<img src="leetcode_cpp_474/1.jpg" class="maxSize"><br><br>
+
+方法：
 </p>
 <pre>
-$ cd
-$ wget https://download.qemu.org/qemu-7.2.0.tar.xz
-$ xz -d qemu-7.2.0.tar.xz
-$ tar xvf qemu-7.2.0.tar
-$ cd qemu-7.2.0
-$ ./configure --target-list=i386-softmmu,i386-linux-user --enable-virtfs --enable-gtk --enable-slirp
-$ ./build/qemu-system-i386 -display gtk xxx.qcow2
+處理 "10"
+      0 1 2 3
+    +---------
+0   | 0 0 0 0
+1   | 0 1 1 1
+2   | 0 1 1 1
+3   | 0 1 1 1
+4   | 0 1 1 1
+5   | 0 1 1 1
+
+
+處理 "0001"
+      0 1 2 3
+    +---------
+0   | 0 0 0 0
+1   | 0 1 1 1
+2   | 0 1 1 1
+3   | 0 1 1 1
+4   | 0 1 2 2
+5   | 0 1 2 2
+
+
+處理 "111001"
+      0 1 2 3
+    +---------
+0   | 0 0 0 0
+1   | 0 1 1 1
+2   | 0 1 1 1
+3   | 0 1 1 1
+4   | 0 1 2 2
+5   | 0 1 2 2
+
+
+處理 "1"
+      0 1 2 3
+    +---------
+0   | 0 1 1 1
+1   | 0 1 2 2
+2   | 0 1 2 2
+3   | 0 1 2 2
+4   | 0 1 2 3
+5   | 0 1 2 3
+
+
+處理 "0"
+      0 1 2 3
+    +---------
+0   | 0 1 1 1
+1   | 1 2 2 2
+2   | 1 2 3 3
+3   | 1 2 3 3
+4   | 1 2 3 3
+5   | 1 2 3 4
+</pre><br>
+
+<p>
+解答：
+</p>
+<pre class="brush:cpp">
+class Solution {
+public:
+    int findMaxForm(vector&lt;string&gt;&amp; strs, int m, int n) {
+        vector&lt;vector&lt;int&gt;&gt; dp(m + 1, vector&lt;int&gt;(n + 1, 0));
+
+        for (string s : strs) {
+            int c0 = 0;
+            int c1 = 0;
+
+            for (char c : s) {
+                if (c == '0') {
+                    c0 += 1;
+                }
+                else {
+                    c1 += 1;
+                }
+            }
+
+            for (int i = m; i &gt;= c0; --i) {
+                for (int j = n; j &gt;= c1; --j) {
+                    dp[i][j] = max(dp[i][j], dp[i - c0][j - c1] + 1);
+                }
+            }
+        }
+
+        return dp[m][n];
+    }
+};
 </pre>
 
 <!-- tail -->
