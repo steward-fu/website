@@ -74,14 +74,59 @@
 <div id="page">
 
 <!-- body -->
-<h3><a href="../index.htm">掌機</a> - Pandora(Rebirth) - SuperZaxxon - <b>解決ext4系統無法使用的問題</b></h3>
+<h3><a href="../program.htm">程式語言</a> - LeetCode - C++ - <b>508. Most Frequent Subtree Sum</b></h3>
 <hr size="1"><br>
 <p>
-SD如果是在PC上製作ext4系統時，Pandora並無法成功掛載，解法就是必須在SuperZaxxon下執行ext4格式化，如下所示：
+題目：<br>
+<img src="leetcode_cpp_508/1.jpg" class="maxSize"><br><br>
+
+解答：
 </p>
-<pre>
-$ sudo fdisk /dev/mmcblk0
-$ sudo mkfs.ext4 -m 0 -L volumename /dev/mmcblk0p1
+<pre class="brush:cpp">
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode() : val(0), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
+ * };
+ */
+class Solution {
+public:
+    vector&lt;int&gt; findFrequentTreeSum(TreeNode* root) {
+        int mx = 0;
+        unordered_map&lt;int, int&gt; mp;
+
+        auto dfs = [&amp;](this auto&amp;&amp; dfs, TreeNode *n) -&gt; int {
+            if (!n) {
+                return 0;
+            }
+
+            int l = dfs(n-&gt;left);
+            int r = dfs(n-&gt;right);
+            int v = n-&gt;val + l + r;
+
+            mp[v] += 1;
+            mx = max(mx, mp[v]);
+
+            return v;
+        };
+
+        dfs(root);
+
+        vector&lt;int&gt; ans;
+        for (auto [k, v] : mp) {
+            if (mx == v) {
+                ans.push_back(k);
+            }
+        }
+
+        return ans;
+    }
+};
 </pre>
 
 <!-- tail -->
