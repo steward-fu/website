@@ -74,68 +74,56 @@
 <div id="page">
 
 <!-- body -->
-<h3><a href="../index.htm">掌機</a> - Pandora(Rebirth) - SuperZaxxon - <b>Build GCC 8.3.0</b></h3>
+<h3><a href="../program.htm">程式語言</a> - LeetCode - C++ - <b>528. Random Pick with Weight</b></h3>
 <hr size="1"><br>
 <p>
-參考資訊：<br>
-https://gist.github.com/jeetsukumaran/5224956<br><br>
+題目：<br>
+<img src="leetcode_cpp_528/1.jpg" class="maxSize"><br><br>
+
+解答：
 </p>
-<pre>
-$ cd
-$ wget https://ftp.gnu.org/gnu/gmp/gmp-6.3.0.tar.xz
-$ tar xvf gmp-6.3.0.tar.xz
-$ cd gmp-6.3.0
-$ ./configure --prefix=/opt/gmp
-$ make
-$ sudo make install
+<pre class="brush:cpp">
+class Solution {
+private:
+    int total;
+    vector&lt;int&gt; prefix;
 
-$ cd
-$ wget https://ftp.gnu.org/gnu/mpfr/mpfr-4.2.2.tar.gz
-$ tar xvf mpfr-4.2.2.tar.gz
-$ cd mpfr-4.2.2
-$ ./configure --with-gmp=/opt/gmp --prefix=/opt/mpfr
-$ make
-$ sudo make install
+public:
+    Solution(vector&lt;int&gt;&amp; w) {
+        total = 0;
 
-$ cd
-$ wget https://ftp.gnu.org/gnu/mpc/mpc-1.4.1.tar.xz
-$ tar xvf mpc-1.4.1.tar.xz
-$ cd mpc-1.4.1
-$ ./configure --with-gmp=/opt/gmp --with-mpfr=/opt/mpfr --prefix=/opt/mpc
-$ make
-$ sudo make install
+        for (int n : w) {
+            total += n;
+            prefix.push_back(total);
+        }
+    }
+    
+    int pickIndex() {
+        int l = 0;
+        int r = prefix.size() - 1;
+        int target = rand() % total + 1;
 
-$ cd
-$ wget https://ftp.gnu.org/gnu/gcc/gcc-8.3.0/gcc-8.3.0.tar.gz
-$ tar xvf gcc-8.3.0.tar.gz
-$ mkdir gcc-build
-$ cd gcc-build
-$ ../gcc-8.3.0/configure \
-../gcc-8.3.0/configure \
-    --prefix=/opt/gcc-8.3.0 \
-    --enable-languages=c,c++ \
-    --disable-multilib \
-    --disable-bootstrap \
-    --enable-shared \
-    --enable-threads=posix \
-    --with-gmp=/opt/gmp \
-    --with-mpfr=/opt/mpfr \
-    --with-mpc=/opt/mpc \
-    --with-arch=armv7-a \
-    --with-tune=cortex-a9 \
-    --with-fpu=vfpv3-d16 \
-    --with-float=softfp
+        while (l &lt; r) {
+            int m = l + ((r - l) &gt;&gt; 1);
 
-$ make
-    init.c:(.text+0x2c): undefined reference to `__libc_csu_fini'
-    init.c:(.text+0x34): undefined reference to `__libc_csu_init'
+            if (prefix[m] &lt; target) {
+                l = m +1;
+            }
+            else {
+                r = m;
+            }
+        }
 
-$ vim libgomp/configure +2581
-    LDFLAGS='/usr/lib/libc_nonshared.a'
+        return l;
+    }
+};
 
-$ make
-$ sudo make install
-</pre><br>
+/**
+ * Your Solution object will be instantiated and called as such:
+ * Solution* obj = new Solution(w);
+ * int param_1 = obj-&gt;pickIndex();
+ */
+</pre>
 
 <!-- tail -->
 <br>
