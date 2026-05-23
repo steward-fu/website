@@ -74,45 +74,57 @@
 <div id="page">
 
 <!-- body -->
-<h3><a href="../program.htm">程式語言</a> - LeetCode - C++ - <b>547. Number of Provinces</b></h3>
+<h3><a href="../program.htm">程式語言</a> - LeetCode - C++ - <b>542. 01 Matrix</b></h3>
 <hr size="1"><br>
 <p>
-參考資訊：<br>
-https://algo.monster/liteproblems/547<br>
-https://blog.csdn.net/navicheung/article/details/135835250<br><br>
-
 題目：<br>
-<img src="leetcode_c_547/1.jpg" class="maxSize"><br><br>
+<img src="leetcode_cpp_542/1.jpg" class="maxSize"><br><br>
 
 解答：
 </p>
 <pre class="brush:cpp">
 class Solution {
 public:
-    int findCircleNum(vector&lt;vector&lt;int&gt;&gt;&amp; isConnected) {
-        int n = isConnected.size();
-        vector&lt;bool&gt; visited(n, false);
+    vector&lt;vector&lt;int&gt;&gt; updateMatrix(vector&lt;vector&lt;int&gt;&gt;&amp; mat) {
+        int m = mat.size();
+        int n = mat[0].size();
+        queue&lt;pair&lt;int, int&gt;&gt; q;
 
-        auto dfs = [&amp;](this auto&amp;&amp; dfs, int idx) -&gt; void {
-            visited[idx] = true;
-
-            for (int i = 0; i &lt; n; ++i) {
-                if (!visited[i] &amp;&amp; isConnected[idx][i]) {
-                    dfs(i);
+        for (int i = 0; i &lt; m; ++i) {
+            for (int j = 0; j &lt; n; ++j) {
+                if (mat[i][j] == 0) {
+                    q.push({ i, j });
                 }
-            }
-        };
-
-        int ans = 0;
-
-        for (int i = 0; i &lt; n; ++i) {
-            if (!visited[i]) {
-                ans += 1;
-                dfs(i);
+                else {
+                    mat[i][j] = INT_MAX;
+                }
             }
         }
 
-        return ans;
+        vector&lt;pair&lt;int, int&gt;&gt; dir = {
+            { -1, 0 }, { 0, -1 }, { 1, 0 }, { 0, 1 }
+        };
+
+        while (!q.empty()) {
+            auto [x, y] = q.front();
+
+            q.pop();
+            for (auto&amp; [dx, dy] : dir) {
+                int yy = y + dy;
+                int xx = x + dx;
+
+                if (xx &lt; 0 || xx &gt;= m || yy &lt; 0 || yy &gt;= n) {
+                    continue;
+                }
+
+                if (mat[xx][yy] &gt; mat[x][y] + 1) {
+                    mat[xx][yy] = mat[x][y] + 1;
+                    q.push({ xx, yy });
+                }
+            }
+        }
+
+        return mat;
     }
 };
 </pre>
