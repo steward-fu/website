@@ -74,40 +74,81 @@
 <div id="page">
 
 <!-- body -->
-<h3><a href="../program.htm">程式語言</a> - LeetCode - C++ - <b>3070. Count Submatrices with Top-Left Element and Sum Less Than k</b></h3>
+<h3><a href="../program.htm">程式語言</a> - LeetCode - C++ - <b>558. Logical OR of Two Binary Grids Represented as Quad-Trees</b></h3>
 <hr size="1"><br>
 <p>
-參考資訊：<br>
-https://algo.monster/liteproblems/3070<br>
-https://algorithm.lomtom.cn/leetcode/count-submatrices-with-top-left-element-and-sum-less-than-k<br><br>
-
 題目：<br>
-<img src="leetcode_cpp_3070/1.jpg" class="maxSize"><br><br>
+<img src="leetcode_cpp_558/1.jpg" class="maxSize"><br><br>
 
 解答：
 </p>
 <pre class="brush:cpp">
+/*
+// Definition for a QuadTree node.
+class Node {
+public:
+    bool val;
+    bool isLeaf;
+    Node* topLeft;
+    Node* topRight;
+    Node* bottomLeft;
+    Node* bottomRight;
+    
+    Node() {
+        val = false;
+        isLeaf = false;
+        topLeft = NULL;
+        topRight = NULL;
+        bottomLeft = NULL;
+        bottomRight = NULL;
+    }
+    
+    Node(bool _val, bool _isLeaf) {
+        val = _val;
+        isLeaf = _isLeaf;
+        topLeft = NULL;
+        topRight = NULL;
+        bottomLeft = NULL;
+        bottomRight = NULL;
+    }
+    
+    Node(bool _val, bool _isLeaf, Node* _topLeft, Node* _topRight, Node* _bottomLeft, Node* _bottomRight) {
+        val = _val;
+        isLeaf = _isLeaf;
+        topLeft = _topLeft;
+        topRight = _topRight;
+        bottomLeft = _bottomLeft;
+        bottomRight = _bottomRight;
+    }
+};
+*/
+
 class Solution {
 public:
-    int countSubmatrices(vector&lt;vector&lt;int&gt;&gt;&amp; grid, int k) {
-        int r = 0;
-        int row_size = grid.size();
-        int col_size = grid[0].size();
-        vector&lt;vector&lt;int&gt;&gt; sum(row_size + 1, vector&lt;int&gt;(col_size + 1, 0));
-
-        for (int i = 1; i &lt;= row_size; ++i) {
-            for (int j = 1; j &lt;= col_size; ++j) {
-                sum[i][j] = sum[i - 1][j] + sum[i][j - 1];
-                sum[i][j] -= sum[i - 1][j - 1];
-                sum[i][j] += grid[i - 1][j - 1];
-
-                if (sum[i][j] &lt;= k) {
-                    r += 1;
-                }
-            }
+    Node* intersect(Node* quadTree1, Node* quadTree2) {
+        if (quadTree1-&gt;isLeaf) {
+            return quadTree1-&gt;val ? quadTree1 : quadTree2;
         }
 
-        return r;
+        if (quadTree2-&gt;isLeaf) {
+            return quadTree2-&gt;val ? quadTree2 : quadTree1;
+        }
+
+        Node *tl = intersect(quadTree1-&gt;topLeft, quadTree2-&gt;topLeft);
+        Node *tr = intersect(quadTree1-&gt;topRight, quadTree2-&gt;topRight);
+        Node *bl = intersect(quadTree1-&gt;bottomLeft, quadTree2-&gt;bottomLeft);
+        Node *br = intersect(quadTree1-&gt;bottomRight, quadTree2-&gt;bottomRight);
+
+        if (tl-&gt;isLeaf &amp;&amp; tr-&gt;isLeaf &amp;&amp;
+            bl-&gt;isLeaf &amp;&amp; br-&gt;isLeaf &amp;&amp;
+            tl-&gt;val == tr-&gt;val &amp;&amp;
+            tr-&gt;val == bl-&gt;val &amp;&amp;
+            bl-&gt;val == br-&gt;val)
+        {
+            return new Node(tl-&gt;val, true, nullptr, nullptr, nullptr, nullptr);
+        }
+
+        return new Node(false, false, tl, tr, bl, br);
     }
 };
 </pre>
