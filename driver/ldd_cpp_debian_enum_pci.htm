@@ -1,0 +1,142 @@
+﻿<!-- head
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+-->
+
+<head>
+<title>司徒的教學網站</title>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+<meta http-equiv="content-type" content="application/xhtml+xml; charset=UTF-8" />
+<meta name="author" content="fullahead.org" />
+<meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+<meta name="description" content="A valid, XHTML 1.0 template" />
+<meta name="robots" content="index, follow, noarchive" />
+<meta name="googlebot" content="noarchive" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=10.0" />
+
+<link rel="shortcut icon" href="../website.ico" />
+<link rel="stylesheet" type="text/css" href="../styles/shCore.css" />
+<link rel="stylesheet" type="text/css" href="../styles/shThemeDefault.css" />
+<link rel="stylesheet" type="text/css" href="../css/html.css" media="screen" />
+<link rel="stylesheet" type="text/css" href="../css/layout.css" media="screen" />
+
+<script type="text/javascript" src="../scripts/shCore.js"></script>
+<script type="text/javascript" src="../scripts/shBrushAppleScript.js"></script>
+<script type="text/javascript" src="../scripts/shBrushAS3.js"></script>
+<script type="text/javascript" src="../scripts/shBrushAsm.js"></script>
+<script type="text/javascript" src="../scripts/shBrushBash.js"></script>
+<script type="text/javascript" src="../scripts/shBrushColdFusion.js"></script>
+<script type="text/javascript" src="../scripts/shBrushCpp.js"></script>
+<script type="text/javascript" src="../scripts/shBrushD.js"></script>
+<script type="text/javascript" src="../scripts/shBrushCSharp.js"></script>
+<script type="text/javascript" src="../scripts/shBrushCss.js"></script>
+<script type="text/javascript" src="../scripts/shBrushDiff.js"></script>
+<script type="text/javascript" src="../scripts/shBrushErlang.js"></script>
+<script type="text/javascript" src="../scripts/shBrushGolang.js"></script>
+<script type="text/javascript" src="../scripts/shBrushGroovy.js"></script>
+<script type="text/javascript" src="../scripts/shBrushInf.js"></script>
+<script type="text/javascript" src="../scripts/shBrushJavaFX.js"></script>
+<script type="text/javascript" src="../scripts/shBrushJava.js"></script>
+<script type="text/javascript" src="../scripts/shBrushJScript.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPas.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPerl.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPhp.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPlain.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPowerShell.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPython.js"></script>
+<script type="text/javascript" src="../scripts/shBrushRuby.js"></script>
+<script type="text/javascript" src="../scripts/shBrushRust.js"></script>
+<script type="text/javascript" src="../scripts/shBrushSass.js"></script>
+<script type="text/javascript" src="../scripts/shBrushScad.js"></script>
+<script type="text/javascript" src="../scripts/shBrushBasic.js"></script>
+<script type="text/javascript" src="../scripts/shBrushVerilog.js"></script>
+<script type="text/javascript" src="../scripts/shBrushScala.js"></script>
+<script type="text/javascript" src="../scripts/shBrushSql.js"></script>
+<script type="text/javascript" src="../scripts/shBrushXml.js"></script>
+<script type="text/javascript" src="../scripts/shBrushFortran.js"></script>
+
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+</head>
+
+<body>
+<div id="wrapper">
+<div id="content">
+
+<div id="header">
+<a href="https://steward-fu.github.io/website/index.htm"><h1><span class="big darkBrown">S</span>teward</h1></a>
+<h2><span class="highlight">分享是一種喜悅、更是一種幸福</span></h2>
+</div>
+
+<div id="page">
+
+<!-- body -->
+<h3><a href="../driver.htm">驅動程式</a> - Linux Device Driver (LDD) - 使用範例 - C/C++ (Debian) - <b>Enumerate PCI Device</b></h3>
+<hr size="1"><br>
+<p>
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;linux/module.h&gt;
+#include &lt;linux/kernel.h&gt;
+#include &lt;linux/pci.h&gt;
+ 
+int ldd_init(void)
+{
+    struct pci_dev *pdev = NULL;
+
+    for_each_pci_dev(pdev)
+        printk("PCI Device: %04x:%02x:%02x.%d "
+                "Vendor=%04x Device=%04x "
+                "Class=%06x\n",
+                pci_domain_nr(pdev-&gt;bus),
+                pdev-&gt;bus-&gt;number,
+                PCI_SLOT(pdev-&gt;devfn),
+                PCI_FUNC(pdev-&gt;devfn),
+                pdev-&gt;vendor,
+                pdev-&gt;device,
+                pdev-&gt;class &gt;&gt; 8
+        );
+
+    return 0;
+}
+  
+void ldd_exit(void)
+{
+}
+  
+module_init(ldd_init);
+module_exit(ldd_exit);
+  
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("Steward Fu");
+MODULE_DESCRIPTION("Linux Driver");
+</pre><br>
+
+<pre>
+$ sudo dmesg
+    [33818.475592] PCI Device: 0000:00:00.0 Vendor=8086 Device=0150 Class=000600
+    [33818.475600] PCI Device: 0000:00:02.0 Vendor=8086 Device=0152 Class=000300
+    [33818.475602] PCI Device: 0000:00:14.0 Vendor=8086 Device=1e31 Class=000c03
+    [33818.475604] PCI Device: 0000:00:16.0 Vendor=8086 Device=1e3a Class=000780
+    [33818.475605] PCI Device: 0000:00:16.3 Vendor=8086 Device=1e3d Class=000700
+    [33818.475607] PCI Device: 0000:00:19.0 Vendor=8086 Device=1502 Class=000200
+    [33818.475608] PCI Device: 0000:00:1a.0 Vendor=8086 Device=1e2d Class=000c03
+    [33818.475610] PCI Device: 0000:00:1b.0 Vendor=8086 Device=1e20 Class=000403
+    [33818.475611] PCI Device: 0000:00:1d.0 Vendor=8086 Device=1e26 Class=000c03
+    [33818.475613] PCI Device: 0000:00:1f.0 Vendor=8086 Device=1e47 Class=000601
+    [33818.475614] PCI Device: 0000:00:1f.2 Vendor=8086 Device=1e02 Class=000106
+    [33818.475616] PCI Device: 0000:00:1f.3 Vendor=8086 Device=1e22 Class=000c05
+</pre>
+
+<!-- tail -->
+<br>
+</div>
+
+</div>
+</div>
+</body>
+</html>
