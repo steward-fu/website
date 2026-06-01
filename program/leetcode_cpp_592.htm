@@ -74,89 +74,64 @@
 <div id="page">
 
 <!-- body -->
-<h3><a href="../driver.htm">驅動程式</a> - Linux Device Driver (LDD) - 使用範例 - C/C++ (Debian) - <b>Dump PCI Config</b></h3>
+<h3><a href="../program.htm">程式語言</a> - LeetCode - C++ - <b>592. Fraction Addition and Subtraction</b></h3>
 <hr size="1"><br>
 <p>
-main.c
+題目：<br>
+<img src="leetcode_cpp_592/1.jpg" class="maxSize"><br><br>
+
+公式：<br>
+<img src="leetcode_cpp_592/2.jpg" class="maxSize"><br><br>
+
+解答：
 </p>
 <pre class="brush:cpp">
-#include &lt;linux/module.h&gt;
-#include &lt;linux/kernel.h&gt;
-#include &lt;linux/pci.h&gt;
- 
-int ldd_init(void)
-{
-    int i = 0;
-    int j = 0;
-    int p = 0;
-    u32 val[8] = { 0 };
-    struct pci_dev *pdev = NULL;
+class Solution {
+public:
+    string fractionAddition(string expression) {
+        int i = 0;
+        int num = 0;
+        int den = 1;
+        int n = expression.size();
 
-    for_each_pci_dev(pdev) {
-        printk("\nPCI Device: %04x:%02x:%02x.%d "
-                "Vendor=%04x Device=%04x "
-                "Class=%06x\n",
-                pci_domain_nr(pdev-&gt;bus),
-                pdev-&gt;bus-&gt;number,
-                PCI_SLOT(pdev-&gt;devfn),
-                PCI_FUNC(pdev-&gt;devfn),
-                pdev-&gt;vendor,
-                pdev-&gt;device,
-                pdev-&gt;class &gt;&gt; 8
-        );
+        while (i &lt; n) {
+            int sign = 1;
+            char ch = expression[i];
 
-        for (i = 0; i &lt; 8; ++i) {
-            for (j = 0; j &lt; 8; ++j) {
-                pci_read_config_dword(pdev, p, &amp;val[j]);
-                p += 4;
+            if (ch == '+') {
+                i += 1;
             }
-            printk("%02x: 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x\n",
-                i * 32,
-                val[0],
-                val[1],
-                val[2],
-                val[3],
-                val[4],
-                val[5],
-                val[6],
-                val[7]
-            );
+            else if (ch == '-') {
+                sign = -1;
+                i += 1;
+            }
+
+            int a = 0;
+            while (isdigit(expression[i])) {
+                a = a * 10 + (expression[i] - '0');
+                i += 1;
+            }
+            a *= sign;
+
+            i += 1;
+
+            int b = 0;
+            while (i &lt; n &amp;&amp; isdigit(expression[i])) {
+                b = b * 10 + (expression[i] - '0');
+                i += 1;
+            }
+
+            num = num * b + den * a;
+            den = den * b;
+
+            int g = gcd(abs(num), den);
+            num /= g;
+            den /= g;
         }
+
+        return to_string(num) + "/" + to_string(den);
     }
-
-    return 0;
-}
-  
-void ldd_exit(void)
-{
-}
-  
-module_init(ldd_init);
-module_exit(ldd_exit);
-  
-MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Steward Fu");
-MODULE_DESCRIPTION("Linux Driver");
-</pre><br>
-
-<pre>
-$ sudo dmesg
-                   PCI Device: 0000:00:00.0 Vendor=8086 Device=0150 Class=000600
-    [36818.854080] 00: 0x01508086 0x30900006 0x06000009 0x00000000 0x00000000 0x00000000 0x00000000 0x00000000
-    [36818.854084] 20: 0x00000000 0x00000000 0x00000000 0x05771028 0x00000000 0x000000e0 0x00000000 0x00000000
-    [36818.854088] 40: 0xfed19001 0x00000000 0xfed10001 0x00000000 0x00000211 0x00000011 0xdf900007 0xdb000001
-    [36818.854092] 60: 0xf8000005 0x00000000 0xfed18001 0x00000000 0xfe000000 0x00000002 0xfe000c00 0x0000007f
-    [36818.854096] 80: 0x01111110 0x00110000 0x0000001a 0x00000000 0xfe000001 0x00000002 0x1e500001 0x00000003
-    [36818.854100] a0: 0x00000001 0x00000003 0x1e600001 0x00000003 0xdba00001 0xdb800001 0xdb000001 0xdfa00001
-    [36818.854104] c0: 0x00000000 0x00000000 0x00000000 0x00000000 0x00000000 0x00000000 0x00000000 0x00000000
-    [36818.854108] e0: 0x010c0009 0xe200a092 0x044000d0 0x00000000 0x00000000 0x00000000 0x00090fc8 0x00000000
-
-$ lspci -s 00:00.0 -xxx
-    00:00.0 Host bridge: Intel Corporation Xeon E3-1200 v2/3rd Gen Core processor DRAM Controller (rev 09)
-    00: 86 80 50 01 06 00 90 30 09 00 00 06 00 00 00 00
-    10: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-    20: 00 00 00 00 00 00 00 00 00 00 00 00 28 10 77 05
-    30: 00 00 00 00 e0 00 00 00 00 00 00 00 00 00 00 00
+};
 </pre>
 
 <!-- tail -->
