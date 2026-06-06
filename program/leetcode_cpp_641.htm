@@ -74,38 +74,113 @@
 <div id="page">
 
 <!-- body -->
-<h3><a href="../program.htm">程式語言</a> - LeetCode - C++ - <b>643. Maximum Average Subarray I</b></h3>
+<h3><a href="../program.htm">程式語言</a> - LeetCode - CPP - <b>641. Design Circular Deque</b></h3>
 <hr size="1"><br>
 <p>
-參考資訊：<br>
-https://www.cnblogs.com/cnoodle/p/14375730.html<br><br>
-
 題目：<br>
-<img src="leetcode_c_643/1.jpg" class="maxSize"><br><br>
+<img src="leetcode_cpp_641/1.jpg" class="maxSize"><br><br>
 
 解答：
 </p>
 <pre class="brush:cpp">
-class Solution {
+class MyCircularDeque {
+private:
+    int sz;
+    int rear;
+    int front;
+    int max_size;
+    vector&lt;int&gt; data;
+
 public:
-    double findMaxAverage(vector&lt;int&gt;&amp; nums, int k) {
-        int r = -INT_MAX;
-        int sum = 0;
-
-        for (int i = 0; i &lt; nums.size(); i++) {
-            sum += nums[i];
-
-            if (i &gt;= (k - 1)) {
-                if (sum &gt; r) {
-                    r = sum;
-                }
-                sum -= nums[i - (k - 1)];
-            }
+    MyCircularDeque(int k) {
+        sz = 0;
+        rear = 0;
+        front = 0;
+        max_size = k;
+        data.resize(k);
+    }
+    
+    bool insertFront(int value) {
+        if (isFull()) {
+            return false;
         }
 
-        return static_cast&lt;double&gt;(r) / k;
+        front = (front - 1 + max_size) % max_size;
+        data[front] = value;
+        sz += 1;
+
+        return true;
+    }
+    
+    bool insertLast(int value) {
+        if (isFull()) {
+            return false;
+        }
+
+        data[rear] = value;
+        rear = (rear + 1) % max_size;
+        sz += 1;
+
+        return true;
+    }
+    
+    bool deleteFront() {
+        if (isEmpty()) {
+            return false;
+        }
+
+        front = (front + 1) % max_size;
+        sz -= 1;
+        return true;
+    }
+    
+    bool deleteLast() {
+        if (isEmpty()) {
+            return false;
+        }
+
+        rear = (rear - 1 + max_size) % max_size;
+        sz -= 1;
+        return true;
+    }
+    
+    int getFront() {
+        if (isEmpty()) {
+            return -1;
+        }
+
+        return data[front];
+    }
+    
+    int getRear() {
+        if (isEmpty()) {
+            return -1;
+        }
+
+        return data[(rear - 1 + max_size) % max_size];
+    }
+    
+    bool isEmpty() {
+        return sz == 0;
+    }
+    
+    bool isFull() {
+        return sz == max_size;
     }
 };
+
+/**
+ * Your MyCircularDeque object will be instantiated and called as such:
+ * MyCircularDeque* obj = new MyCircularDeque(k);
+ * bool param_1 = obj-&gt;insertFront(value);
+ * bool param_2 = obj-&gt;insertLast(value);
+ * bool param_3 = obj-&gt;deleteFront();
+ * bool param_4 = obj-&gt;deleteLast();
+ * int param_5 = obj-&gt;getFront();
+ * int param_6 = obj-&gt;getRear();
+ * bool param_7 = obj-&gt;isEmpty();
+ * bool param_8 = obj-&gt;isFull();
+ */
 </pre>
 
 <!-- tail -->

@@ -74,36 +74,61 @@
 <div id="page">
 
 <!-- body -->
-<h3><a href="../program.htm">程式語言</a> - LeetCode - C++ - <b>643. Maximum Average Subarray I</b></h3>
+<h3><a href="../program.htm">程式語言</a> - LeetCode - CPP - <b>623. Add One Row to Tree</b></h3>
 <hr size="1"><br>
 <p>
-參考資訊：<br>
-https://www.cnblogs.com/cnoodle/p/14375730.html<br><br>
-
 題目：<br>
-<img src="leetcode_c_643/1.jpg" class="maxSize"><br><br>
+<img src="leetcode_cpp_623/1.jpg" class="maxSize"><br><br>
 
 解答：
 </p>
 <pre class="brush:cpp">
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode() : val(0), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
+ * };
+ */
 class Solution {
 public:
-    double findMaxAverage(vector&lt;int&gt;&amp; nums, int k) {
-        int r = -INT_MAX;
-        int sum = 0;
-
-        for (int i = 0; i &lt; nums.size(); i++) {
-            sum += nums[i];
-
-            if (i &gt;= (k - 1)) {
-                if (sum &gt; r) {
-                    r = sum;
-                }
-                sum -= nums[i - (k - 1)];
+    TreeNode* addOneRow(TreeNode* root, int val, int depth) {
+        auto dfs = [&amp;](this auto&amp;&amp; dfs, TreeNode* n, int v, int d) -&gt; void {
+            if (!n) {
+                return;
             }
+        
+            if (d - 1 == 0) {
+                TreeNode *p;
+
+                p = n-&gt;left;
+                n-&gt;left = new TreeNode(val);
+                n-&gt;left-&gt;left = p;
+
+                p = n-&gt;right;
+                n-&gt;right = new TreeNode(val);
+                n-&gt;right-&gt;right = p;
+            }
+
+            dfs(n-&gt;left, val , d - 1);
+            dfs(n-&gt;right, val , d - 1);
+        };
+
+        if (depth == 1) {
+            TreeNode *p = new TreeNode(val);
+
+            p-&gt;left = root;
+            p-&gt;right = nullptr;
+            return p;
         }
 
-        return static_cast&lt;double&gt;(r) / k;
+        dfs(root, val, depth - 1);
+
+        return root;
     }
 };
 </pre>

@@ -74,36 +74,45 @@
 <div id="page">
 
 <!-- body -->
-<h3><a href="../program.htm">程式語言</a> - LeetCode - C++ - <b>643. Maximum Average Subarray I</b></h3>
+<h3><a href="../program.htm">程式語言</a> - LeetCode - CPP - <b>636. Exclusive Time of Functions</b></h3>
 <hr size="1"><br>
 <p>
-參考資訊：<br>
-https://www.cnblogs.com/cnoodle/p/14375730.html<br><br>
-
 題目：<br>
-<img src="leetcode_c_643/1.jpg" class="maxSize"><br><br>
+<img src="leetcode_cpp_636/1.jpg" class="maxSize"><br><br>
 
 解答：
 </p>
 <pre class="brush:cpp">
 class Solution {
 public:
-    double findMaxAverage(vector&lt;int&gt;&amp; nums, int k) {
-        int r = -INT_MAX;
-        int sum = 0;
+    vector&lt;int&gt; exclusiveTime(int n, vector&lt;string&gt;&amp; logs) {
+        stack&lt;int&gt; st;
+        vector&lt;int&gt; ans(n, 0);
+        int pre_tmp = 0;
 
-        for (int i = 0; i &lt; nums.size(); i++) {
-            sum += nums[i];
+        for (string&amp; s : logs) {
+            int n0 = s.find(':');
+            int id = stoi(s.substr(0, n0));
+            int n1 = s.find(':', n0 + 1);
+            bool start = s.substr(n0 + 1, n1 - n0 - 1) == "start" ? true : false;
+            int tmp = stoi(s.substr(n1 + 1));
 
-            if (i &gt;= (k - 1)) {
-                if (sum &gt; r) {
-                    r = sum;
+            if (start) {
+                if (!st.empty()) {
+                    ans[st.top()] += tmp - pre_tmp;
                 }
-                sum -= nums[i - (k - 1)];
+
+                st.push(id);
+                pre_tmp = tmp;
+            }
+            else {
+                ans[st.top()] += tmp - pre_tmp + 1;
+                st.pop();
+                pre_tmp = tmp + 1;
             }
         }
 
-        return static_cast&lt;double&gt;(r) / k;
+        return ans;
     }
 };
 </pre>

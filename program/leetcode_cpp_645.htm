@@ -74,36 +74,40 @@
 <div id="page">
 
 <!-- body -->
-<h3><a href="../program.htm">程式語言</a> - LeetCode - C++ - <b>643. Maximum Average Subarray I</b></h3>
+<h3><a href="../program.htm">程式語言</a> - LeetCode - C++ - <b>645. Set Mismatch</b></h3>
 <hr size="1"><br>
 <p>
-參考資訊：<br>
-https://www.cnblogs.com/cnoodle/p/14375730.html<br><br>
-
 題目：<br>
-<img src="leetcode_c_643/1.jpg" class="maxSize"><br><br>
+<img src="leetcode_cpp_645/1.jpg" class="maxSize"><br><br>
 
 解答：
 </p>
 <pre class="brush:cpp">
 class Solution {
 public:
-    double findMaxAverage(vector&lt;int&gt;&amp; nums, int k) {
-        int r = -INT_MAX;
-        int sum = 0;
+    vector&lt;int&gt; findErrorNums(vector&lt;int&gt;&amp; nums) {
+        int n = nums.size();
+        int dup = 0;
+        int miss = 0;
 
-        for (int i = 0; i &lt; nums.size(); i++) {
-            sum += nums[i];
+        for (int x : nums) {
+            int idx = abs(x) - 1;
 
-            if (i &gt;= (k - 1)) {
-                if (sum &gt; r) {
-                    r = sum;
-                }
-                sum -= nums[i - (k - 1)];
+            if (nums[idx] &lt; 0) {
+                dup = abs(x);
+            }
+            else {
+                nums[idx] *= -1;
             }
         }
 
-        return static_cast&lt;double&gt;(r) / k;
+        for (int i = 0; i &lt; n; ++i) {
+            if (nums[i] &gt; 0) {
+                miss = i + 1;
+            }
+        }
+
+        return { dup, miss };
     }
 };
 </pre>
