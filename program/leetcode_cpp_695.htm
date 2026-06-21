@@ -74,40 +74,59 @@
 <div id="page">
 
 <!-- body -->
-<h3><a href="../program.htm">程式語言</a> - LeetCode - C++ - <b>2095. Delete the Middle Node of a Linked List</b></h3>
+<h3><a href="../program.htm">程式語言</a> - LeetCode - C++ - <b>695. Max Area of Island</b></h3>
 <hr size="1"><br>
 <p>
 題目：<br>
-<img src="leetcode_c_2095/1.jpg" class="maxSize"><br><br>
+<img src="leetcode_cpp_695/1.jpg" class="maxSize"><br><br>
 
 解答：
 </p>
 <pre class="brush:cpp">
-/**
- * Definition for singly-linked list.
- * struct ListNode {
- *     int val;
- *     ListNode *next;
- *     ListNode() : val(0), next(nullptr) {}
- *     ListNode(int x) : val(x), next(nullptr) {}
- *     ListNode(int x, ListNode *next) : val(x), next(next) {}
- * };
- */
 class Solution {
 public:
-    ListNode* deleteMiddle(ListNode* head) {
-        ListNode* d = new ListNode(0, head);
-        ListNode* slow = d;
-        ListNode* fast = head;
-        
-        while (fast &amp;&amp; fast-&gt;next) {
-            slow = slow-&gt;next;
-            fast = fast-&gt;next-&gt;next;
+    int maxAreaOfIsland(vector&lt;vector&lt;int&gt;&gt;&amp; grid) {
+        int m = grid.size();
+        int n = grid[0].size();
+        vector&lt;vector&lt;bool&gt;&gt; visited(m, vector&lt;bool&gt;(n, false));
+        vector&lt;pair&lt;int, int&gt;&gt; dir = {
+            { -1, 0 }, { 1, 0 }, { 0, -1 }, { 0, 1 }
+        };
+
+        auto dfs = [&amp;](this auto&amp;&amp; dfs, int x, int y) -&gt; int {
+            if (x &lt; 0 || x &gt;= m || y &lt; 0 || y &gt;= n || !grid[x][y] || visited[x][y]) {
+                return 0;
+            }
+
+            int ans = 1;
+
+            visited[x][y] = true;
+
+            for (auto [dx, dy] : dir) {
+                int nx = x + dx;
+                int ny = y + dy;
+
+                if (nx &lt; 0 || nx &gt;= m || ny &lt; 0 || ny &gt;= n || !grid[nx][ny] || visited[nx][ny]) {
+                    continue;
+                }
+
+                ans += dfs(nx, ny);
+            }
+
+            return ans;
+        };
+
+        int ans = 0;
+
+        for (int i = 0; i &lt; m; ++i) {
+            for (int j = 0; j &lt; n; ++j) {
+                if (visited[i][j] == false) {
+                    ans = max(ans, dfs(i, j));
+                }
+            }
         }
-        
-        slow-&gt;next = slow-&gt;next-&gt;next;
-        
-        return d-&gt;next;
+
+        return ans;
     }
 };
 </pre>

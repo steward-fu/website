@@ -74,40 +74,48 @@
 <div id="page">
 
 <!-- body -->
-<h3><a href="../program.htm">程式語言</a> - LeetCode - C++ - <b>2095. Delete the Middle Node of a Linked List</b></h3>
+<h3><a href="../program.htm">程式語言</a> - LeetCode - C++ - <b>115. Distinct Subsequences</b></h3>
 <hr size="1"><br>
 <p>
 題目：<br>
-<img src="leetcode_c_2095/1.jpg" class="maxSize"><br><br>
+<img src="leetcode_cpp_115/1.jpg" class="maxSize"><br><br>
 
 解答：
 </p>
 <pre class="brush:cpp">
-/**
- * Definition for singly-linked list.
- * struct ListNode {
- *     int val;
- *     ListNode *next;
- *     ListNode() : val(0), next(nullptr) {}
- *     ListNode(int x) : val(x), next(nullptr) {}
- *     ListNode(int x, ListNode *next) : val(x), next(next) {}
- * };
- */
 class Solution {
 public:
-    ListNode* deleteMiddle(ListNode* head) {
-        ListNode* d = new ListNode(0, head);
-        ListNode* slow = d;
-        ListNode* fast = head;
-        
-        while (fast &amp;&amp; fast-&gt;next) {
-            slow = slow-&gt;next;
-            fast = fast-&gt;next-&gt;next;
-        }
-        
-        slow-&gt;next = slow-&gt;next-&gt;next;
-        
-        return d-&gt;next;
+    int numDistinct(string s, string t) {
+        int n = s.size();
+        int m = t.size();
+        vector&lt;vector&lt;int&gt;&gt; memo(n + 1, vector&lt;int&gt;(m + 1, -1));
+
+        auto dfs = [&amp;](this auto&amp;&amp; dfs, int start, int pos) -&gt; int {
+            if (memo[start][pos] != -1) {
+                return memo[start][pos];
+            }
+
+            if (n - start &lt; m - pos) {
+                return 0;
+            }
+
+            if (pos &gt;= m) {
+                return 1;
+            }
+
+            int ans = 0;
+
+            for (int i = start; i &lt; n; ++i) {
+                if (t[pos] == s[i]) {
+                    ans += dfs(i + 1, pos + 1);
+                }
+            }
+
+            memo[start][pos] = ans;
+            return ans; 
+        };
+
+        return dfs(0, 0);
     }
 };
 </pre>

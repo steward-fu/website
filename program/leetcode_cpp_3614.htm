@@ -74,40 +74,69 @@
 <div id="page">
 
 <!-- body -->
-<h3><a href="../program.htm">程式語言</a> - LeetCode - C++ - <b>2095. Delete the Middle Node of a Linked List</b></h3>
+<h3><a href="../program.htm">程式語言</a> - LeetCode - C++ - <b>3614. Process String with Special Operations II</b></h3>
 <hr size="1"><br>
 <p>
 題目：<br>
-<img src="leetcode_c_2095/1.jpg" class="maxSize"><br><br>
+<img src="leetcode_cpp_3614/1.jpg" class="maxSize"><br><br>
 
 解答：
 </p>
 <pre class="brush:cpp">
-/**
- * Definition for singly-linked list.
- * struct ListNode {
- *     int val;
- *     ListNode *next;
- *     ListNode() : val(0), next(nullptr) {}
- *     ListNode(int x) : val(x), next(nullptr) {}
- *     ListNode(int x, ListNode *next) : val(x), next(next) {}
- * };
- */
 class Solution {
 public:
-    ListNode* deleteMiddle(ListNode* head) {
-        ListNode* d = new ListNode(0, head);
-        ListNode* slow = d;
-        ListNode* fast = head;
-        
-        while (fast &amp;&amp; fast-&gt;next) {
-            slow = slow-&gt;next;
-            fast = fast-&gt;next-&gt;next;
+    char processStr(string s, long long k) {
+        long long len = 0;
+
+        for (char ch : s) {
+            switch (ch) {
+            case '*':
+                len = max(0LL, len - 1);
+                break;
+            case '#':
+                len &lt;&lt;= 1;
+                break;
+            case '%':
+                break;
+            default:
+                len += 1;
+                break;
+            }
         }
-        
-        slow-&gt;next = slow-&gt;next-&gt;next;
-        
-        return d-&gt;next;
+
+        cout &lt;&lt; len &lt;&lt; endl;
+        if (k &gt;= len) {
+            return '.';
+        }
+
+        for (int i = s.size() - 1; i &gt;= 0; --i) {
+            char ch = s[i];
+
+            switch (ch) {
+            case '*':
+                len += 1;
+                break;
+            case '#':
+                len &gt;&gt;= 1;
+
+                if (k &gt;= len) {
+                    k -= len;
+                }
+                break;
+            case '%':
+                k = len - 1 - k;
+                break;
+            default:
+                len -= 1;
+
+                if (len == k) {
+                    return ch;
+                }
+                break;
+            }
+        }
+
+        return '.';
     }
 };
 </pre>
