@@ -1,0 +1,176 @@
+﻿<!-- head
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+-->
+
+<head>
+<title>司徒的教學網站</title>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+<meta http-equiv="content-type" content="application/xhtml+xml; charset=UTF-8" />
+<meta name="author" content="fullahead.org" />
+<meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+<meta name="description" content="A valid, XHTML 1.0 template" />
+<meta name="robots" content="index, follow, noarchive" />
+<meta name="googlebot" content="noarchive" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=10.0" />
+
+<link rel="shortcut icon" href="../website.ico" />
+<link rel="stylesheet" type="text/css" href="../styles/shCore.css" />
+<link rel="stylesheet" type="text/css" href="../styles/shThemeDefault.css" />
+<link rel="stylesheet" type="text/css" href="../css/html.css" media="screen" />
+<link rel="stylesheet" type="text/css" href="../css/layout.css" media="screen" />
+
+<script type="text/javascript" src="../scripts/shCore.js"></script>
+<script type="text/javascript" src="../scripts/shBrushAppleScript.js"></script>
+<script type="text/javascript" src="../scripts/shBrushAS3.js"></script>
+<script type="text/javascript" src="../scripts/shBrushAsm.js"></script>
+<script type="text/javascript" src="../scripts/shBrushBash.js"></script>
+<script type="text/javascript" src="../scripts/shBrushColdFusion.js"></script>
+<script type="text/javascript" src="../scripts/shBrushCpp.js"></script>
+<script type="text/javascript" src="../scripts/shBrushD.js"></script>
+<script type="text/javascript" src="../scripts/shBrushCSharp.js"></script>
+<script type="text/javascript" src="../scripts/shBrushCss.js"></script>
+<script type="text/javascript" src="../scripts/shBrushDiff.js"></script>
+<script type="text/javascript" src="../scripts/shBrushErlang.js"></script>
+<script type="text/javascript" src="../scripts/shBrushGolang.js"></script>
+<script type="text/javascript" src="../scripts/shBrushGroovy.js"></script>
+<script type="text/javascript" src="../scripts/shBrushInf.js"></script>
+<script type="text/javascript" src="../scripts/shBrushJavaFX.js"></script>
+<script type="text/javascript" src="../scripts/shBrushJava.js"></script>
+<script type="text/javascript" src="../scripts/shBrushJScript.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPas.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPerl.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPhp.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPlain.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPowerShell.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPython.js"></script>
+<script type="text/javascript" src="../scripts/shBrushRuby.js"></script>
+<script type="text/javascript" src="../scripts/shBrushRust.js"></script>
+<script type="text/javascript" src="../scripts/shBrushSass.js"></script>
+<script type="text/javascript" src="../scripts/shBrushScad.js"></script>
+<script type="text/javascript" src="../scripts/shBrushBasic.js"></script>
+<script type="text/javascript" src="../scripts/shBrushVerilog.js"></script>
+<script type="text/javascript" src="../scripts/shBrushScala.js"></script>
+<script type="text/javascript" src="../scripts/shBrushSql.js"></script>
+<script type="text/javascript" src="../scripts/shBrushXml.js"></script>
+<script type="text/javascript" src="../scripts/shBrushFortran.js"></script>
+
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+</head>
+
+<body>
+<div id="wrapper">
+<div id="content">
+
+<div id="header">
+<a href="https://steward-fu.github.io/website/index.htm"><h1><span class="big darkBrown">S</span>teward</h1></a>
+<h2><span class="highlight">分享是一種喜悅、更是一種幸福</span></h2>
+</div>
+
+<div id="page">
+
+<!-- body -->
+<h3><a href="../program.htm">程式語言</a> - GNU - C/C++ - <b>D-Bus(sd-bus)</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://0pointer.net/blog/the-new-sd-bus-api-of-systemd.html<br>
+https://www.freedesktop.org/software/systemd/man/latest/sd_bus_message_read.html<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;errno.h&gt;
+#include &lt;systemd/sd-bus.h&gt;
+
+static int method_test(sd_bus_message *m, void *userdata, sd_bus_error *ret_error)
+{
+    int64_t x = 0;
+    int64_t y = 0;
+
+    sd_bus_message_read(m, "xx", &amp;x, &amp;y);
+    return sd_bus_reply_method_return(m, "x", x * y);
+}
+
+static const sd_bus_vtable vtable[] = {
+    SD_BUS_VTABLE_START(0),
+    SD_BUS_METHOD("Test", "xx", "x", method_test, SD_BUS_VTABLE_UNPRIVILEGED),
+    SD_BUS_VTABLE_END
+};
+
+int main(int argc, char *argv[])
+{
+    sd_bus *bus = NULL;
+    sd_bus_slot *slot = NULL;
+
+    sd_bus_open_user(&amp;bus);
+    sd_bus_add_object_vtable(bus, &amp;slot,
+        "/fake/mytest/test",
+        "fake.mytest.test",
+        vtable,
+        NULL
+    );
+    sd_bus_request_name(bus, "fake.mytest.test.service", 0);
+
+    for (;;) {
+        sd_bus_process(bus, NULL);
+        sd_bus_wait(bus, -1);
+    }
+
+    sd_bus_slot_unref(slot);
+    sd_bus_unref(bus);
+
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ gcc main.c -o test `pkg-config --cflags --libs libsystemd`
+$ ./test
+</pre><br>
+
+<p>
+測試
+</p>
+<pre>
+$ busctl --user tree fake.mytest.test.service
+└─/fake
+  └─/fake/mytest
+    └─/fake/mytest/test
+
+$ busctl --user introspect fake.mytest.test.service /fake/mytest/test
+    NAME                                TYPE      SIGNATURE RESULT/VALUE FLAGS
+    fake.mytest.test                    interface -         -            -
+    .Test                               method    xx        x            -
+    org.freedesktop.DBus.Introspectable interface -         -            -
+    .Introspect                         method    -         s            -
+    org.freedesktop.DBus.Peer           interface -         -            -
+    .GetMachineId                       method    -         s            -
+    .Ping                               method    -         -            -
+    org.freedesktop.DBus.Properties     interface -         -            -
+    .Get                                method    ss        v            -
+    .GetAll                             method    s         a{sv}        -
+    .Set                                method    ssv       -            -
+    .PropertiesChanged                  signal    sa{sv}as  -            -
+
+$ busctl --user call fake.mytest.test.service /fake/mytest/test fake.mytest.test Test xx 3 5
+    x 15
+</pre>
+
+<!-- tail -->
+<br>
+</div>
+
+</div>
+</div>
+</body>
+</html>
