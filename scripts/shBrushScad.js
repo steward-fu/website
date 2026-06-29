@@ -22,7 +22,7 @@ function Brush() {
 var my_constant = 'true false';
 var my_keyword =  't font halign valign spacing direction language script points paths file_path size width radius diameter angle height twist slices scale fn auto convexity module center for if else';
 var my_type = 'int';
-var my_function = 'case upper lower frame earphone typec btn speaker aux back xt897_case c_gamepad_ss ndsl_ss lcd a_side b_side ndsl_four screw_rev c_gamepad_dpad c_gamepad_four ndsl_dpad screw tetris top bottom cube_round_all text polygon square circle surface import rotate_extrude linear_extrude minkowski color resize meniscus cube_round_corner echo difference translate rotate hull sphere cube cylinder union';
+var my_function = 'shell case upper lower frame earphone typec btn speaker aux back xt897_case c_gamepad_ss ndsl_ss lcd a_side b_side ndsl_four screw_rev c_gamepad_dpad c_gamepad_four ndsl_dpad screw tetris top bottom cube_round_all text polygon square circle surface import rotate_extrude linear_extrude minkowski color resize meniscus cube_round_corner echo difference translate rotate hull sphere cube cylinder union';
 
 this.regexList = [
 {regex: /^ *#.*/gm, css: 'my_preprocessor'},
