@@ -77,6 +77,9 @@
 <h3><a href="../phone.htm">手機</a> - Motorola XT897 - <b>終級改造</b></h3>
 <hr size="1"><br>
 <p>
+參考資訊：<br>
+https://dimi.tw/store/product/rode-sc6<br><br>
+
 OpenSCAD
 </p>
 <pre class="brush:scad">
@@ -147,7 +150,7 @@ module aux() {
             translate([w, y + h, 0.1]) cylinder(8.5, 3, 3);
         }
 
-        hull() {
+        translate([0, 0, -1]) hull() {
             off = 1.6;
             translate([x + off, y + off, -off]) cylinder(8.5, 3, 3);
             translate([w - off, y + off, -off]) cylinder(8.5, 3, 3);
@@ -156,35 +159,45 @@ module aux() {
         }
 
         translate([-5, 45, -1]) cube([130, 9, 10]);
-        translate([3, 49.5, -1]) cube([110, 10, 10]);
-    }
-}
+        translate([3, 50, -1]) cube([110, 10, 10]);
 
-module back() {
-    translate([118.5, 0, 0]) rotate([0, 180, 0]) difference() {
         hull() {
             c = 3;
-            h = 3;
-            off = 1.6;
+            h = 7;
+            off = 0;
 
-            translate([0 - off, 4 - off / 2, 0]) cylinder(h, c, c);
-            translate([6 - off / 2, 0 - off, 0]) cylinder(h, c, c);
-            translate([112 + off / 2, 0 - off, 0]) cylinder(h, c, c);
-            translate([118.5 + off, 4 - off / 2, 0]) cylinder(h, c, c);
-            translate([0 - off, 74.6 + off / 2, 0]) cylinder(h, c, c);
-            translate([118.5 + off, 74.6 + off / 2, 0]) cylinder(h, c, c);
-
-            translate([0 - off, 4 - off / 2, 0]) sphere(c);
-            translate([6 - off / 2, 0 - off, 0]) sphere(c);
-            translate([112 + off / 2, 0 - off, 0]) sphere(c);
-            translate([118.5 + off, 4 - off / 2, 0]) sphere(c);
-            translate([0 - off, 74.6 + off / 2, 0]) sphere(c);
-            translate([118.5 + off, 74.6 + off / 2, 0]) sphere(c);
+            translate([6.5 - off / 2, 57 + off, 0]) cylinder(h, c, c);
+            translate([0 - off, 53.5 + off / 2, 0]) cylinder(h, c, c);
+            translate([118.5 + off, 53.5 + off / 2, 0]) cylinder(h, c, c);
+            translate([112.5 + off / 2, 57 + off, 0]) cylinder(h, c, c);
         }
     }
 }
 
-module xt897_case() {
+module back(h, off, extra) {
+    c0 = 3;
+    c1 = 3;
+
+    translate([118.5, 0, 0]) rotate([0, 180, 0]) difference() {
+        hull() {
+            translate([0 - off, 4 - off / 2, 0]) cylinder(h, c0, c0);
+            translate([6 - off / 2, 0 - off, 0]) cylinder(h, c0, c0);
+            translate([112 + off / 2, 0 - off, 0]) cylinder(h, c0, c0);
+            translate([118.5 + off, 4 - off / 2, 0]) cylinder(h, c0, c0);
+            translate([0 - off, (74.4 + off / 2) + extra, 0]) cylinder(h, c0, c0);
+            translate([118.5 + off, (74.4 + off / 2) + extra, 0]) cylinder(h, c0, c0);
+
+            translate([0 - off, 4 - off / 2, 0]) sphere(c1);
+            translate([6 - off / 2, 0 - off, 0]) sphere(c1);
+            translate([112 + off / 2, 0 - off, 0]) sphere(c1);
+            translate([118.5 + off, 4 - off / 2, 0]) sphere(c1);
+            translate([0 - off, (74.4 + off / 2) + extra, 0]) sphere(c1);
+            translate([118.5 + off, (74.4 + off / 2) + extra, 0]) sphere(c1);
+        }
+    }
+}
+
+module case(ch, cw, ce) {
     difference() {
         h = 7;
 
@@ -200,9 +213,9 @@ module xt897_case() {
                     }
 
                     translate([0, 0, 11]) {
-                        back();
+                        back(ch, cw, ce);
                     }
-
+                    
                     // keyboard holder
                     translate([8, 60.8, -0.3]) hull() {
                         translate([0, 0, 0]) sphere(0.8);
@@ -245,25 +258,22 @@ module xt897_case() {
                     translate([75, 61.5, 8]) typec();
                     translate([100, 61, 8]) btn();
                     translate([112, 61, 8]) btn();
-                    translate([(127.7 - 15) / 2, 69.2, -1]) speaker();
+                    translate([127 / 2 - 2.5, 69.2, -1]) speaker();
                 }
 
                 // earphone
-                translate([35, 63.75, 0]) cube([5, 6, 6.9]);
-                translate([20, 75, -4]) cube([6, 6, 10]);
+                translate([20, 75, -5]) cube([6, 6, 10]);
 
                 // speaker
-                translate([45, 66.5, 0]) cube([10, 6, 6.9]);
+                translate([45, 66.5, -4.1]) cube([10, 6, 10]);
 
                 // typec
-                translate([85, 63.25, 0]) cube([5, 6, 6.9]);
-                translate([76.75, 75, -4]) cube([10, 6, 10]);
+                translate([76.75, 75, -5]) cube([10, 6, 10]);
             }
         }
 
         // battery
-        hb = 12;
-        translate([15, 3, 0]) cube([82, 51, hb]);
+        translate([15, 3, 0]) cube([82, 51, 12.8]);
         translate([2, 9, 0]) cube([15, 25, 10]);
 
         // screw
@@ -273,8 +283,8 @@ module xt897_case() {
         translate([3.5, 2, z0]) cylinder(h0, c0, c0);
         translate([46.5, 0.5, z0]) cylinder(h0, c0, c0);
         translate([109.5, 1, z0]) cylinder(h0, c0, c0);
-        translate([1, 37.3, z0]) cylinder(h0, c0, c0);
-        translate([115, 23, z0]) cylinder(h0, c0, c0);
+        //translate([1, 37.3, z0]) cylinder(h0, c0, c0);
+        //translate([115, 23, z0]) cylinder(h0, c0, c0);
         translate([1, 50, z0]) cylinder(h0, c0, c0);
         translate([47, 57.5, z0]) cylinder(h0, c0, c0);
         translate([109.8, 56.7, z0]) cylinder(h0, c0, c0);
@@ -282,22 +292,179 @@ module xt897_case() {
         // screw
         c1 = 1.8;
         h1 = 20;
-        z1 = 8.5;
+        z1 = 11;
         translate([3.5, 2, z1]) cylinder(h1, c1, c1);
         translate([46.5, 0.5, z1]) cylinder(h1, c1, c1);
         translate([109.5, 1, z1]) cylinder(h1, c1, c1);
-        translate([1, 37.3, z1]) cylinder(h1, c1, c1);
-        translate([115, 23, z1]) cylinder(h1, c1, c1);
+        //translate([1, 37.3, z1]) cylinder(h1, c1, c1);
+        //translate([115, 23, z1]) cylinder(h1, c1, c1);
         translate([1, 50, z1]) cylinder(h1, c1, c1);
         translate([47, 57.5, z1]) cylinder(h1, c1, c1);
         translate([109.8, 56.7, z1]) cylinder(h1, c1, c1);
     }
 }
 
-xt897_case();
+module upper() {
+    difference() {
+        case(3, 1, 0);
+        translate([-10, -10, 6.9]) cube([200, 200, 50]);
+
+        // screw
+        translate([0.5, 72, -2]) cylinder(10, 0.5, 0.5);
+        translate([45, 72, -2]) cylinder(10, 0.5, 0.5);
+        translate([118, 72, -2]) cylinder(10, 0.5, 0.5);
+    }
+}
+
+module lower() {
+    difference() {
+        case(5, 2.4, 0.6);
+        translate([0, 0, -3]) {
+            difference() {
+                translate([0, 0, 11]) {
+                    difference() {
+                        translate([0, 0, 0]) {
+                            back(10, 1.65, 0.2);
+                        }
+                        translate([-10, -10, 0]) {
+                            cube([200, 200, 10]);
+                        }
+                    }
+                }
+            }
+        }
+
+        translate([-10, -10, -12]) cube([200, 200, 16.9]);
+
+        // screw
+        translate([0.5, 72, 0]) cylinder(10, 0.5, 0.5);
+        translate([45, 72, 0]) cylinder(10, 0.5, 0.5);
+        translate([118, 72, 0]) cylinder(10, 0.5, 0.5);
+
+        // earphone
+        translate([18, 75, -3]) cube([10, 6, 10]);
+
+        // typec
+        translate([74, 75, -3]) cube([15.5, 6, 10]);
+    }
+}
+
+module shell() {
+    ch = 3;
+    cw = 1;
+    ce = 0;
+
+    difference() {
+        h = 7;
+
+        translate([-4, 50, 3]) cube([126, 27, 1]);
+
+        union() {
+            holder_z = 1;
+            holder_h = h - holder_z;
+
+            difference() {
+                union() {
+                    difference() {
+                        frame(1.6);
+                        frame(0);
+                    }
+                }
+            }
+            
+            difference() {
+                translate([0, 0, h - 0.1]) frame(1.6);
+                translate([-10, -10, h + 1.6]) cube([200, 200, 10]);
+            }
+
+            aux();
+        }
+
+        // btn
+        translate([8 - 0.5, 70, 1]) cylinder(5, 2.25, 2.25);
+        translate([8 + 89, 70, 1]) cylinder(5, 2.25, 2.25);
+        translate([8 + 101, 70, 1]) cylinder(5, 2.25, 2.25);
+
+        // speaker
+        translate([8 + 53.5, 69.5, 1]) cylinder(5, 5, 5);
+
+        // earphone
+        translate([8 + 12, 60, 2]) cube([6.5, 20, 5]);
+    }
+
+    // support
+    translate([0.5, 67, 3]) cylinder(5.8, 2, 2);
+    translate([42, 67, 3]) cylinder(5.8, 2, 2);
+    translate([72, 70, 3]) cylinder(5.8, 2, 2);
+    translate([118, 68, 3]) cylinder(5.8, 2, 2);
+
+    // speaker
+    translate([8 + 53.5, 69.5, 3]) difference() {
+        cylinder(1.5, 6, 6);
+        cylinder(1.5, 5, 5);
+    }
+}
+
+upper();
+lower();
+shell();
 </pre>
 <p>
-<img src="xt897_mod/1.jpg" class="maxSize"><br><br>
+<img src="xt897_mod/1.jpg" class="maxSize"><br>
+<img src="xt897_mod/2.jpg" class="maxSize"><br>
+<img src="xt897_mod/3.jpg" class="maxSize"><br><br>
+
+3D列印<br>
+<img src="xt897_mod/4.jpg" class="maxSize"><br>
+<img src="xt897_mod/5.jpg" class="maxSize"><br>
+<img src="xt897_mod/17.jpg" class="maxSize"><br><br>
+
+解焊<br>
+<img src="xt897_mod/8.jpg" class="maxSize"><br><br>
+
+跳線<br>
+<img src="xt897_mod/10.jpg" class="maxSize"><br><br>
+
+固定元件<br>
+<img src="xt897_mod/6.jpg" class="maxSize"><br><br>
+
+走線<br>
+<img src="xt897_mod/7.jpg" class="maxSize"><br><br>
+
+正面<br>
+<img src="xt897_mod/9.jpg" class="maxSize"><br><br>
+
+耳機座需要小改一下，用來偵測耳機插入的狀態<br>
+<img src="xt897_mod/11.jpg" class="maxSize"><br><br>
+
+耳機腳位<br>
+<img src="xt897_mod/25.jpg" class="maxSize"><br><br>
+
+XT897耳機腳位<br>
+<img src="xt897_mod/12.jpg" class="maxSize"><br><br>
+
+蓋上背蓋<br>
+<img src="xt897_mod/13.jpg" class="maxSize"><br><br>
+
+兩顆電池<br>
+<img src="xt897_mod/14.jpg" class="maxSize"><br><br>
+
+背蓋使用 M1.6x10 螺絲<br>
+<img src="xt897_mod/15.jpg" class="maxSize"><br><br>
+
+耳機座末端使用插入偵測墊片<br>
+<img src="xt897_mod/16.jpg" class="maxSize"><br><br>
+
+改上前蓋面板<br>
+<img src="xt897_mod/18.jpg" class="maxSize"><br><br>
+
+完成<br>
+<img src="xt897_mod/19.jpg" class="maxSize"><br>
+<img src="xt897_mod/20.jpg" class="maxSize"><br>
+<img src="xt897_mod/21.jpg" class="maxSize"><br>
+<img src="xt897_mod/22.jpg" class="maxSize"><br>
+<img src="xt897_mod/23.jpg" class="maxSize"><br>
+<img src="xt897_mod/24.jpg" class="maxSize">
 </p>
 
 <!-- tail -->
