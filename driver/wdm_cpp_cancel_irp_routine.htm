@@ -74,7 +74,7 @@
 <div id="page">
 
 <!-- body -->
-<h3><a href="../driver.htm">驅動程式</a> - Windows Driver Model (WDM) - 使用範例 - C/C++ (DDK) - <b>Cancel IRP(Check Cancel Bit)</b></h3>
+<h3><a href="../driver.htm">驅動程式</a> - Windows Driver Model (WDM) - 使用範例 - C/C++ (DDK) - <b>Cancel IRP(CancelRoutine)</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
@@ -85,107 +85,54 @@ https://github.com/steward-fu/ddk<br><br>
 main.c
 </p>
 <pre class="brush:cpp">
-#include &lt;wdm.h&gt;
+#include &lt;ntddk.h&gt;
  
-#define IOCTL_QUEUE     CTL_CODE(FILE_DEVICE_UNKNOWN, 0x800, METHOD_BUFFERED, FILE_ANY_ACCESS)
-#define IOCTL_PROCESS   CTL_CODE(FILE_DEVICE_UNKNOWN, 0x801, METHOD_BUFFERED, FILE_ANY_ACCESS)
+#define IOCTL_QUEUE   CTL_CODE(FILE_DEVICE_UNKNOWN, 0x800, METHOD_BUFFERED, FILE_ANY_ACCESS)
+#define IOCTL_PROCESS CTL_CODE(FILE_DEVICE_UNKNOWN, 0x801, METHOD_BUFFERED, FILE_ANY_ACCESS)
  
-#define DEV_NAME    L"\\Device\\MyDriver"
-#define SYM_NAME    L"\\DosDevices\\MyDriver"
+#define DEV_NAME L"\\Device\\MyDriver"
+#define SYM_NAME L"\\DosDevices\\MyDriver"
  
-KDPC stDPC = { 0 };
-KTIMER stTime = { 0 };
-LIST_ENTRY stQueue = { 0 };
-PDEVICE_OBJECT pNextDevice = NULL;
- 
-VOID OnTimer(struct _KDPC *Dpc, PVOID pContext, PVOID pArg1, PVOID pArg2)
-{
-    PIRP pIrp = NULL;
-    PLIST_ENTRY plist = NULL;
+LIST_ENTRY stQueue = { 0};
 
-    if (IsListEmpty(&amp;stQueue) == TRUE) {
-        KeCancelTimer(&amp;stTime);
-        DbgPrint("Finish");
-    }
-    else {
-        plist = RemoveHeadList(&amp;stQueue);
-        pIrp = CONTAINING_RECORD(plist, IRP, Tail.Overlay.ListEntry);
-        if (pIrp-&gt;Cancel != TRUE) {
-            pIrp-&gt;IoStatus.Status = STATUS_SUCCESS;
-            pIrp-&gt;IoStatus.Information = 0;
-            IoCompleteRequest(pIrp, IO_NO_INCREMENT);
-            DbgPrint("Complete Irp");
-        }
-        else {
-            pIrp-&gt;CancelRoutine = NULL;
-            pIrp-&gt;IoStatus.Status = STATUS_CANCELLED;
-            pIrp-&gt;IoStatus.Information = 0;
-            IoCompleteRequest(pIrp, IO_NO_INCREMENT);
-            DbgPrint("Cancel Irp");
-        }
-    }
-}
- 
-NTSTATUS AddDevice(PDRIVER_OBJECT pMyDriver, PDEVICE_OBJECT pPhyDevice)
+void MyCancelRoutine(PDEVICE_OBJECT DeviceObject, PIRP Irp)
 {
-    PDEVICE_OBJECT pMyDevice = NULL;
-    UNICODE_STRING usDeviceName = { 0 };
-    UNICODE_STRING usSymbolName = { 0 };
- 
-    RtlInitUnicodeString(&amp;usDeviceName, DEV_NAME);
-    IoCreateDevice(pMyDriver, 0, &amp;usDeviceName, FILE_DEVICE_UNKNOWN, 0, FALSE, &amp;pMyDevice);
-    RtlInitUnicodeString(&amp;usSymbolName, SYM_NAME);
-    IoCreateSymbolicLink(&amp;usSymbolName, &amp;usDeviceName);
-    pNextDevice = IoAttachDeviceToDeviceStack(pMyDevice, pPhyDevice);
-    pMyDevice-&gt;Flags &amp;= ~DO_DEVICE_INITIALIZING;
-    pMyDevice-&gt;Flags |= DO_BUFFERED_IO;
-     
-    InitializeListHead(&amp;stQueue);
-    KeInitializeTimer(&amp;stTime);
-    KeInitializeDpc(&amp;stDPC, OnTimer, pMyDevice);
-    return STATUS_SUCCESS;
+    DbgPrint("Cancel Irp\n");
+
+    IoReleaseCancelSpinLock(Irp-&gt;CancelIrql);
+
+    RemoveEntryList(&amp;Irp-&gt;Tail.Overlay.ListEntry);
+    Irp-&gt;IoStatus.Status = STATUS_CANCELLED;
+    Irp-&gt;IoStatus.Information = 0;
+    IoCompleteRequest(Irp, IO_NO_INCREMENT);
 }
  
 void Unload(PDRIVER_OBJECT pMyDriver)
 {
-    pMyDriver = pMyDriver;
-}
- 
-NTSTATUS IrpPnp(PDEVICE_OBJECT pMyDevice, PIRP pIrp)
-{
-    UNICODE_STRING usSymbolName = { 0 };
-    PIO_STACK_LOCATION pStack = IoGetCurrentIrpStackLocation(pIrp);
- 
-    if (pStack-&gt;MinorFunction == IRP_MN_REMOVE_DEVICE) {
-        RtlInitUnicodeString(&amp;usSymbolName, SYM_NAME);
-        IoDeleteSymbolicLink(&amp;usSymbolName);
-        IoDetachDevice(pNextDevice);
-        IoDeleteDevice(pMyDevice);
-        IoCompleteRequest(pIrp, IO_NO_INCREMENT);
-        return STATUS_SUCCESS;
-    }
-    IoSkipCurrentIrpStackLocation(pIrp);
-    return IoCallDriver(pNextDevice, pIrp);
+    UNICODE_STRING usSymboName = { 0 };
+
+    RtlInitUnicodeString(&amp;usSymboName, L"\\DosDevices\\MyDriver");
+    IoDeleteSymbolicLink(&amp;usSymboName);
+    IoDeleteDevice(pMyDriver-&gt;DeviceObject);
 }
  
 NTSTATUS IrpIOCTL(PDEVICE_OBJECT pMyDevice, PIRP pIrp)
 {
-    LARGE_INTEGER stTimePeriod = { 0 };
-    PIO_STACK_LOCATION pStack = IoGetCurrentIrpStackLocation(pIrp);
+    KIRQL Irql;
+    PIO_STACK_LOCATION psk = IoGetCurrentIrpStackLocation(pIrp);
  
-    switch (pStack-&gt;Parameters.DeviceIoControl.IoControlCode) {
-    case IOCTL_QUEUE:
+    if (psk-&gt;Parameters.DeviceIoControl.IoControlCode == IOCTL_QUEUE) {
         DbgPrint("IOCTL_QUEUE");
-        InsertHeadList(&amp;stQueue, &amp;pIrp-&gt;Tail.Overlay.ListEntry);
+
+        IoAcquireCancelSpinLock(&amp;Irql);
+        IoSetCancelRoutine(pIrp, MyCancelRoutine);
+        InsertTailList(&amp;stQueue, &amp;pIrp-&gt;Tail.Overlay.ListEntry);
+        IoReleaseCancelSpinLock(Irql);
+
         IoMarkIrpPending(pIrp);
         return STATUS_PENDING;
-    case IOCTL_PROCESS:
-        DbgPrint("IOCTL_PROCESS");
-        stTimePeriod.HighPart |= -1;
-        stTimePeriod.LowPart = -10000000;
-        KeSetTimerEx(&amp;stTime, stTimePeriod, 1000, &amp;stDPC);
-        break;
     }
+
     pIrp-&gt;IoStatus.Information = 0;
     pIrp-&gt;IoStatus.Status = STATUS_SUCCESS;
     IoCompleteRequest(pIrp, IO_NO_INCREMENT);
@@ -194,9 +141,9 @@ NTSTATUS IrpIOCTL(PDEVICE_OBJECT pMyDevice, PIRP pIrp)
  
 NTSTATUS IrpFile(PDEVICE_OBJECT pMyDevice, PIRP pIrp)
 {
-    PIO_STACK_LOCATION pStack = IoGetCurrentIrpStackLocation(pIrp);
+    PIO_STACK_LOCATION psk = IoGetCurrentIrpStackLocation(pIrp);
  
-    switch (pStack-&gt;MajorFunction) {
+    switch (psk-&gt;MajorFunction) {
     case IRP_MJ_CREATE:
         DbgPrint("IRP_MJ_CREATE");
         break;
@@ -210,12 +157,22 @@ NTSTATUS IrpFile(PDEVICE_OBJECT pMyDevice, PIRP pIrp)
  
 NTSTATUS DriverEntry(PDRIVER_OBJECT pMyDriver, PUNICODE_STRING pMyRegistry)
 {
-    pMyDriver-&gt;MajorFunction[IRP_MJ_PNP]            = IrpPnp;
-    pMyDriver-&gt;MajorFunction[IRP_MJ_CREATE]         = IrpFile;
-    pMyDriver-&gt;MajorFunction[IRP_MJ_CLOSE]          = IrpFile;
+    PDEVICE_OBJECT pMyDevice = NULL;
+    UNICODE_STRING usSymboName = { 0 };
+    UNICODE_STRING usDeviceName = { 0 };
+            
+    pMyDriver-&gt;MajorFunction[IRP_MJ_CREATE] = IrpFile;
+    pMyDriver-&gt;MajorFunction[IRP_MJ_CLOSE]  = IrpFile;
     pMyDriver-&gt;MajorFunction[IRP_MJ_DEVICE_CONTROL] = IrpIOCTL;
-    pMyDriver-&gt;DriverExtension-&gt;AddDevice = AddDevice;
     pMyDriver-&gt;DriverUnload = Unload;
+                
+    RtlInitUnicodeString(&amp;usDeviceName, L"\\Device\\MyDriver");
+    IoCreateDevice(pMyDriver, 0, &amp;usDeviceName, FILE_DEVICE_UNKNOWN, 0, FALSE, &amp;pMyDevice);
+    RtlInitUnicodeString(&amp;usSymboName, L"\\DosDevices\\MyDriver");
+    InitializeListHead(&amp;stQueue);
+    IoCreateSymbolicLink(&amp;usSymboName, &amp;usDeviceName);
+    pMyDevice-&gt;Flags &amp;= ~DO_DEVICE_INITIALIZING;
+    pMyDevice-&gt;Flags |= DO_BUFFERED_IO;
     return STATUS_SUCCESS;
 }
 </pre><br>
@@ -223,15 +180,17 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT pMyDriver, PUNICODE_STRING pMyRegistry)
 app.c</b>
 </p>
 <pre class="brush:cpp">
-#include &lt;windows.h&gt;
-#include &lt;winioctl.h&gt;
 #include &lt;stdio.h&gt;
 #include &lt;stdlib.h&gt;
+#include &lt;windows.h&gt;
+#include &lt;winioctl.h&gt;
+#include &lt;strsafe.h&gt;
+#include &lt;setupapi.h&gt;
  
-#define IOCTL_QUEUE     CTL_CODE(FILE_DEVICE_UNKNOWN, 0x800, METHOD_BUFFERED, FILE_ANY_ACCESS)
-#define IOCTL_PROCESS   CTL_CODE(FILE_DEVICE_UNKNOWN, 0x801, METHOD_BUFFERED, FILE_ANY_ACCESS)
+#define IOCTL_QUEUE   CTL_CODE(FILE_DEVICE_UNKNOWN, 0x800, METHOD_BUFFERED, FILE_ANY_ACCESS)
+#define IOCTL_PROCESS CTL_CODE(FILE_DEVICE_UNKNOWN, 0x801, METHOD_BUFFERED, FILE_ANY_ACCESS)
  
-int main(int argc, char **argv)
+int main(int argc, char* argv[])
 {
     int i = 0;
     DWORD dwRet = 0;
@@ -239,18 +198,15 @@ int main(int argc, char **argv)
     OVERLAPPED ov[3] = { 0 };
  
     hFile = CreateFile("\\\\.\\MyDriver", GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_FLAG_OVERLAPPED | FILE_ATTRIBUTE_NORMAL, NULL);
-
     for (i = 0; i &lt; 3; i++) {
         memset(&amp;ov[i], 0, sizeof(ov[i]));
         ov[i].hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
-        DeviceIoControl(hFile, IOCTL_QUEUE, NULL, 0, NULL, 0, &amp;dwRet, &amp;ov[i]);
         printf("Queued Event\n");
+        DeviceIoControl(hFile, IOCTL_QUEUE, NULL, 0, NULL, 0, &amp;dwRet, &amp;ov[i]);
     }
-
-    printf("Processing All Events\n");
-    DeviceIoControl(hFile, IOCTL_PROCESS, NULL, 0, NULL, 0, &amp;dwRet, NULL);
-    Sleep(1000);
+    printf("Cancelling...\n");
     CancelIo(hFile);
+    Sleep(1000);
 
     for (i = 0; i &lt; 3; i++) {
         WaitForSingleObject(ov[i].hEvent, INFINITE);
@@ -260,13 +216,7 @@ int main(int argc, char **argv)
     CloseHandle(hFile);
     return 0;
 }
-</pre><br>
-
-<p>
-完成<br>
-<img src="wdm_asm_cancel_irp/1.jpg" class="maxSize"><br>
-<img src="wdm_asm_cancel_irp/2.jpg" class="maxSize">
-</p>
+</pre>
 
 <!-- tail -->
 <br>
