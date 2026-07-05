@@ -464,7 +464,395 @@ XT897耳機腳位<br>
 <img src="xt897_mod/21.jpg" class="maxSize"><br>
 <img src="xt897_mod/22.jpg" class="maxSize"><br>
 <img src="xt897_mod/23.jpg" class="maxSize"><br>
-<img src="xt897_mod/24.jpg" class="maxSize">
+<img src="xt897_mod/24.jpg" class="maxSize"><br><br>
+
+最後一版OpenSCAD
+</p>
+<pre class="brush:scad">
+$fn  = 50;
+
+module frame(off) {
+    hull() {
+        c = 3;
+        h = 7;
+
+        // left-bottom
+        translate([0 - off, 4 - off / 2, 0]) cylinder(h, c, c);
+        translate([6.5 - off / 2, 0 - off, 0]) cylinder(h, c, c);
+
+        // right-bottom
+        translate([112.5 + off / 2, 0 - off, 0]) cylinder(h, c, c);
+        translate([118.5 + off, 4 - off / 2, 0]) cylinder(h, c, c);
+
+        // left-top
+        translate([6.5 - off / 2, 57 + off, 0]) cylinder(h, c, c);
+        translate([0 - off, 53.5 + off / 2, 0]) cylinder(h, c, c);
+
+        // right-top
+        translate([118.5 + off, 53.5 + off / 2, 0]) cylinder(h, c, c);
+        translate([112.5 + off / 2, 57 + off, 0]) cylinder(h, c, c);
+    }
+}
+
+module earphone() {
+    rotate([180, 0, 90]) difference() {
+        translate([0, 0, 0]) cube([16, 22, 5]);
+        translate([2.3, 2, 1]) cube([13, 18, 10]);
+    }
+}
+
+module typec() {
+    rotate([180, 0, 90]) difference() {
+        translate([0, 0, 0]) cube([16.5, 13.5, 5]);
+        translate([1.8, 1, 1]) cube([13.5, 11.5, 10]);
+    }
+}
+
+module btn() {
+    rotate([0, 180, 0]) difference() {
+        translate([0, 0, 0]) cube([6, 16.5, 5]);
+        translate([0, 6, 3.5]) cube([6, 6, 5]);
+    }
+}
+
+module speaker() {
+    difference() {
+        translate([0, 0, 4]) cylinder(5, 8.5, 8.5);
+        translate([0, 0, 3]) cylinder(5, 7.65, 7.65);
+    }
+}
+
+module aux() {
+    x = -1.6;
+    y = 53;
+    h = 21.6 + 0.8;
+    w = 120.1;
+
+    difference() {
+        hull() {
+            translate([x, y, 0.1]) cylinder(8.5, 3, 3);
+            translate([w, y, 0.1]) cylinder(8.5, 3, 3);
+            translate([x, y + h, 0.1]) cylinder(8.5, 3, 3);
+            translate([w, y + h, 0.1]) cylinder(8.5, 3, 3);
+        }
+
+        translate([0, 0, -1]) hull() {
+            off = 1.6;
+            translate([x + off, y + off, -off]) cylinder(8.5, 3, 3);
+            translate([w - off, y + off, -off]) cylinder(8.5, 3, 3);
+            translate([x + off, y + h - off, -off]) cylinder(8.5, 3, 3);
+            translate([w - off, y + h - off, -off]) cylinder(8.5, 3, 3);
+        }
+
+        translate([-5, 45, -1]) cube([130, 9, 10]);
+        translate([3, 50, -1]) cube([110, 10, 10]);
+
+        hull() {
+            c = 3;
+            h = 7;
+            off = 0;
+
+            translate([6.5 - off / 2, 57 + off, 0]) cylinder(h, c, c);
+            translate([0 - off, 53.5 + off / 2, 0]) cylinder(h, c, c);
+            translate([118.5 + off, 53.5 + off / 2, 0]) cylinder(h, c, c);
+            translate([112.5 + off / 2, 57 + off, 0]) cylinder(h, c, c);
+        }
+    }
+}
+
+module back(h, off, extra) {
+    c0 = 3;
+    c1 = 3;
+
+    translate([118.5, 0, 0]) rotate([0, 180, 0]) difference() {
+        hull() {
+            translate([0 - off, 4 - off / 2, 0]) cylinder(h, c0, c0);
+            translate([6 - off / 2, 0 - off, 0]) cylinder(h, c0, c0);
+            translate([112 + off / 2, 0 - off, 0]) cylinder(h, c0, c0);
+            translate([118.5 + off, 4 - off / 2, 0]) cylinder(h, c0, c0);
+            translate([0 - off, (74.4 + off / 2) + extra, 0]) cylinder(h, c0, c0);
+            translate([118.5 + off, (74.4 + off / 2) + extra, 0]) cylinder(h, c0, c0);
+
+            translate([0 - off, 4 - off / 2, 0]) sphere(c1);
+            translate([6 - off / 2, 0 - off, 0]) sphere(c1);
+            translate([112 + off / 2, 0 - off, 0]) sphere(c1);
+            translate([118.5 + off, 4 - off / 2, 0]) sphere(c1);
+            translate([0 - off, (74.4 + off / 2) + extra, 0]) sphere(c1);
+            translate([118.5 + off, (74.4 + off / 2) + extra, 0]) sphere(c1);
+        }
+    }
+}
+
+module case(ch, cw, ce) {
+    difference() {
+        h = 7;
+
+        union() {
+            holder_z = 1;
+            holder_h = h - holder_z;
+
+            difference() {
+                union() {
+                    difference() {
+                        frame(1.6);
+                        frame(0);
+                    }
+
+                    translate([0, 0, 11]) {
+                        back(ch, cw, ce);
+                    }
+                    
+                    // keyboard holder
+                    translate([8, 60.8, -0.3]) hull() {
+                        translate([0, 0, 0]) sphere(0.8);
+                        translate([101, 0, 0]) sphere(0.8);
+                    }
+                }
+                translate([8, 59, -0.3]) cube([4, 2, 5]);
+                translate([12, 58.5, -0.3]) cube([88, 2, 5]);
+                translate([98, 59, -0.3]) cube([5, 2, 5]);
+
+                // sdcard
+                translate([63.5, -6, 0]) cube([12, 5, 4]);
+
+                // wires
+                translate([11, 58, 5]) cube([3, 6, 2]);
+                translate([21, 58, 5]) cube([3, 6, 2]);
+                translate([31, 58, 5]) cube([3, 6, 2]);
+                translate([60, 58, 5]) cube([3, 6, 2]);
+                translate([84, 58, 5]) cube([3, 6, 2]);
+                translate([92, 58, 5]) cube([3, 6, 2]);
+            }
+            
+            // holder
+            translate([-3, 23, holder_z]) cube([2, 11, holder_h]);
+            translate([16.5, -3, holder_z]) cube([23, 1.5, holder_h]);
+            translate([89, -3, holder_z]) cube([12, 1.5, holder_h]);
+
+            difference() {
+                translate([0, 0, h - 0.1]) frame(1.6);
+                translate([-10, -10, h + 1.6]) cube([200, 200, 10]);
+
+                // wires - battery
+                translate([80, 54, -2]) cube([26, 10, 10]);
+                translate([11, 54, -2]) cube([30, 10, 10]);
+            }
+
+            difference() {
+                union() {
+                    aux();
+                    translate([11, 61, 8]) btn();
+                    translate([21, 61, 8]) btn();
+                    translate([31, 61, 8]) btn();
+                    translate([38, 61.5, 8]) earphone();                    
+                    translate([75, 69.2, -1]) speaker();
+                    translate([95, 61.5, 8]) typec();
+                }
+
+                // earphone
+                translate([50, 63.8, -4.1]) cube([10, 10, 10]);
+                translate([42, 75, -5]) cube([6, 6, 10]);
+
+                // speaker
+                translate([75, 64, -4.1]) cube([10, 6, 10]);
+
+                // typec
+                translate([90, 63.3, -4.1]) cube([10, 5, 10]);
+                translate([96.75, 75, -5]) cube([10, 6, 10]);
+            }
+        }
+
+        // battery
+        translate([15, 3, 0]) cube([82, 51, 12.8]);
+        translate([2, 9, 0]) cube([15, 25, 10]);
+
+        // screw
+        c0 = 1;
+        h0 = 50;
+        z0 = -20;
+        translate([3.5, 2, z0]) cylinder(h0, c0, c0);
+        translate([46.5, 0.5, z0]) cylinder(h0, c0, c0);
+        translate([109.5, 1, z0]) cylinder(h0, c0, c0);
+        //translate([1, 37.3, z0]) cylinder(h0, c0, c0);
+        //translate([115, 23, z0]) cylinder(h0, c0, c0);
+        //translate([1, 50, z0]) cylinder(h0, c0, c0);
+        //translate([47, 57.5, z0]) cylinder(h0, c0, c0);
+        //translate([109.8, 56.7, z0]) cylinder(h0, c0, c0);
+
+        // screw for aux
+        //translate([0.5, 64, z0]) cylinder(h0, c0, c0);
+        translate([35, 64, z0]) cylinder(h0, c0, c0);
+        //translate([63, 64, z0]) cylinder(h0, c0, c0);
+        //translate([88, 64, z0]) cylinder(h0, c0, c0);
+        //translate([118, 64, z0]) cylinder(h0, c0, c0);
+        translate([0.5, 74, z0]) cylinder(h0, c0, c0);
+        //translate([35, 74, z0]) cylinder(h0, c0, c0);
+        translate([63, 74, z0]) cylinder(h0, c0, c0);
+        translate([88, 74, z0]) cylinder(h0, c0, c0);
+        translate([118, 74, z0]) cylinder(h0, c0, c0);
+
+        // screw
+        c1 = 1.8;
+        h1 = 20;
+        z1 = 11;
+        translate([3.5, 2, z1]) cylinder(h1, c1, c1);
+        translate([46.5, 0.5, z1]) cylinder(h1, c1, c1);
+        translate([109.5, 1, z1]) cylinder(h1, c1, c1);
+        //translate([1, 37.3, z1]) cylinder(h1, c1, c1);
+        //translate([115, 23, z1]) cylinder(h1, c1, c1);
+        //translate([1, 50, z1]) cylinder(h1, c1, c1);
+        //translate([47, 57.5, z1]) cylinder(h1, c1, c1);
+        //translate([109.8, 56.7, z1]) cylinder(h1, c1, c1);
+
+        // screw for aux
+        //translate([0.5, 64, z1]) cylinder(h1, c1, c1);
+        translate([35, 64, z1]) cylinder(h1, c1, c1);
+        //translate([63, 64, z1]) cylinder(h1, c1, c1);
+        //translate([88, 64, z1]) cylinder(h1, c1, c1);
+        //translate([118, 64, z1]) cylinder(h1, c1, c1);
+        translate([0.5, 74, z1]) cylinder(h1, c1, c1);
+        //translate([35, 74, z1]) cylinder(h1, c1, c1);
+        translate([63, 74, z1]) cylinder(h1, c1, c1);
+        translate([88, 74, z1]) cylinder(h1, c1, c1);
+        translate([118, 74, z1]) cylinder(h1, c1, c1);
+    }
+}
+
+module keyboard_holder() {
+    difference() {
+        case(3, 1, 0);
+        translate([-10, -10, 6.9]) cube([200, 200, 50]);
+
+        // screw
+        translate([0.5, 64, -2]) cylinder(10, 0.5, 0.5);
+        translate([35, 64, -2]) cylinder(10, 0.5, 0.5);
+        translate([63, 64, -2]) cylinder(10, 0.5, 0.5);
+        translate([88, 64, -2]) cylinder(10, 0.5, 0.5);
+        translate([118, 64, -2]) cylinder(10, 0.5, 0.5);
+        translate([0.5, 74, -2]) cylinder(10, 0.5, 0.5);
+        translate([35, 74, -2]) cylinder(10, 0.5, 0.5);
+        translate([63, 74, -2]) cylinder(10, 0.5, 0.5);
+        translate([88, 74, -2]) cylinder(10, 0.5, 0.5);
+        translate([118, 74, -2]) cylinder(10, 0.5, 0.5);
+    }
+}
+
+module battery_cover() {
+    difference() {
+        case(5, 2.4, 0.6);
+        translate([0, 0, -3]) {
+            difference() {
+                translate([0, 0, 11]) {
+                    difference() {
+                        translate([0, 0, 0]) {
+                            back(10, 1.65, 0.2);
+                        }
+                        translate([-10, -10, 0]) {
+                            cube([200, 200, 10]);
+                        }
+                    }
+                }
+            }
+        }
+
+        translate([-10, -10, -12]) cube([200, 200, 16.9]);
+
+        // screw
+        z0 = -1;
+        translate([0.5, 64, z0]) cylinder(10, 0.5, 0.5);
+        translate([35, 64, z0]) cylinder(10, 0.5, 0.5);
+        translate([63, 64, z0]) cylinder(10, 0.5, 0.5);
+        translate([88, 64, z0]) cylinder(10, 0.5, 0.5);
+        translate([118, 64, z0]) cylinder(10, 0.5, 0.5);
+        translate([0.5, 74, z0]) cylinder(10, 0.5, 0.5);
+        translate([35, 74, z0]) cylinder(10, 0.5, 0.5);
+        translate([63, 74, z0]) cylinder(10, 0.5, 0.5);
+        translate([88, 74, z0]) cylinder(10, 0.5, 0.5);
+        translate([118, 74, z0]) cylinder(10, 0.5, 0.5);
+
+        // earphone
+        translate([40, 75, -3]) cube([10, 6, 10]);
+
+        // typec
+        translate([94, 75, -3]) cube([15.5, 6, 10]);
+    }
+}
+
+module aux_shell() {
+    ch = 3;
+    cw = 1;
+    ce = 0;
+
+    difference() {
+        h = 7;
+
+        translate([-4, 50, 3]) cube([126, 27, 1.5]);
+
+        union() {
+            holder_z = 1;
+            holder_h = h - holder_z;
+
+            difference() {
+                union() {
+                    difference() {
+                        frame(1.6);
+                        frame(0);
+                    }
+                }
+            }
+            
+            difference() {
+                translate([0, 0, h - 0.1]) frame(1.6);
+                translate([-10, -10, h + 1.6]) cube([200, 200, 10]);
+            }
+
+            aux();
+        }
+
+        // btn
+        translate([4.8, 66.85, 2]) cube([6.5, 6.5, 5]);
+        translate([4.8 + 10, 66.85, 2]) cube([6.5, 6.5, 5]);
+        translate([4.8 + 20 - 0.5, 66.85, 2]) cube([6.5, 6.5, 5]);
+
+        // earphone
+        translate([8 + 34.25, 60, 2]) cube([6.5, 20, 5]);
+
+        // speaker
+        translate([8 + 67.5, 69.5, 1]) cylinder(5, 5, 5);
+
+        // typec
+        translate([96.75, 68, 4.2]) cube([10, 10, 5]);
+    }
+
+    difference() {
+        union() {
+            z0 = 3;
+            h0 = 5.5;
+            translate([33, 64 - 1.75, z0]) cube([4, 8, h0]);
+            translate([-1.5, 68.5, z0]) cube([4, 7.5, h0]);
+            translate([61, 69, z0]) cube([4, 7.5, h0]);
+            translate([85.5, 69, z0]) cube([4, 7.5, h0]);
+            translate([116, 69, z0]) cube([4, 7.5, h0]);
+        }
+
+        // screw
+        z1 = 2;
+        translate([35, 64, z1]) cylinder(10, 0.5, 0.5);
+        translate([0.5, 74, z1]) cylinder(10, 0.5, 0.5);
+        translate([63, 74, z1]) cylinder(10, 0.5, 0.5);
+        translate([88, 74, z1]) cylinder(10, 0.5, 0.5);
+        translate([118, 74, z1]) cylinder(10, 0.5, 0.5);
+    }
+}
+
+keyboard_holder();
+battery_cover();
+aux_shell();
+</pre><br>
+
+<p>
+<img src="xt897_mod/26.jpg" class="maxSize"><br>
+<img src="xt897_mod/27.jpg" class="maxSize">
 </p>
 
 <!-- tail -->
