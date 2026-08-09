@@ -1,0 +1,247 @@
+﻿<!-- head
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+-->
+
+<head>
+<title>司徒的教學網站</title>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+<meta http-equiv="content-type" content="application/xhtml+xml; charset=UTF-8" />
+<meta name="author" content="fullahead.org" />
+<meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+<meta name="description" content="A valid, XHTML 1.0 template" />
+<meta name="robots" content="index, follow, noarchive" />
+<meta name="googlebot" content="noarchive" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=10.0" />
+
+<link rel="shortcut icon" href="../website.ico" />
+<link rel="stylesheet" type="text/css" href="../styles/shCore.css" />
+<link rel="stylesheet" type="text/css" href="../styles/shThemeDefault.css" />
+<link rel="stylesheet" type="text/css" href="../css/html.css" media="screen" />
+<link rel="stylesheet" type="text/css" href="../css/layout.css" media="screen" />
+
+<script type="text/javascript" src="../scripts/shCore.js"></script>
+<script type="text/javascript" src="../scripts/shBrushAppleScript.js"></script>
+<script type="text/javascript" src="../scripts/shBrushAS3.js"></script>
+<script type="text/javascript" src="../scripts/shBrushAsm.js"></script>
+<script type="text/javascript" src="../scripts/shBrushBash.js"></script>
+<script type="text/javascript" src="../scripts/shBrushColdFusion.js"></script>
+<script type="text/javascript" src="../scripts/shBrushCpp.js"></script>
+<script type="text/javascript" src="../scripts/shBrushD.js"></script>
+<script type="text/javascript" src="../scripts/shBrushCSharp.js"></script>
+<script type="text/javascript" src="../scripts/shBrushCss.js"></script>
+<script type="text/javascript" src="../scripts/shBrushDiff.js"></script>
+<script type="text/javascript" src="../scripts/shBrushErlang.js"></script>
+<script type="text/javascript" src="../scripts/shBrushGolang.js"></script>
+<script type="text/javascript" src="../scripts/shBrushGroovy.js"></script>
+<script type="text/javascript" src="../scripts/shBrushInf.js"></script>
+<script type="text/javascript" src="../scripts/shBrushJavaFX.js"></script>
+<script type="text/javascript" src="../scripts/shBrushJava.js"></script>
+<script type="text/javascript" src="../scripts/shBrushJScript.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPas.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPerl.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPhp.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPlain.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPowerShell.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPython.js"></script>
+<script type="text/javascript" src="../scripts/shBrushRuby.js"></script>
+<script type="text/javascript" src="../scripts/shBrushRust.js"></script>
+<script type="text/javascript" src="../scripts/shBrushSass.js"></script>
+<script type="text/javascript" src="../scripts/shBrushScad.js"></script>
+<script type="text/javascript" src="../scripts/shBrushBasic.js"></script>
+<script type="text/javascript" src="../scripts/shBrushVerilog.js"></script>
+<script type="text/javascript" src="../scripts/shBrushScala.js"></script>
+<script type="text/javascript" src="../scripts/shBrushSql.js"></script>
+<script type="text/javascript" src="../scripts/shBrushXml.js"></script>
+<script type="text/javascript" src="../scripts/shBrushFortran.js"></script>
+
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+</head>
+
+<body>
+<div id="wrapper">
+<div id="content">
+
+<div id="header">
+<a href="https://steward-fu.github.io/website/index.htm"><h1><span class="big darkBrown">S</span>teward</h1></a>
+<h2><span class="highlight">分享是一種喜悅、更是一種幸福</span></h2>
+</div>
+
+<div id="page">
+
+<!-- body -->
+<h3><a href="../system.htm">系統</a> - Debian - Kernel - <b>如何找出Kernel Append DTB</b></h3>
+<hr size="1"><br>
+<p>
+chk.py
+</p>
+<pre class="brush:python">
+import os
+import sys
+import struct
+
+filename = sys.argv[1]
+
+with open(filename, "rb") as f:
+    data = f.read()
+
+print(f"total file : {len(data):,} bytes")
+print(f"total hex  : 0x{len(data):x}")
+
+# --------------------------------------------------
+# Verify gzip header
+# --------------------------------------------------
+
+if data[:3] != b'\x1f\x8b\x08':
+    raise SystemExit("Not a gzip file")
+
+print("gzip header: OK")
+
+# --------------------------------------------------
+# gzip footer
+#
+# gzip format:
+#
+#   header
+#   deflate stream
+#   CRC32    4 bytes
+#   ISIZE    4 bytes
+#
+# ISIZE = uncompressed size modulo 2^32
+# --------------------------------------------------
+
+isize = struct.unpack("&lt;I", data[-4:])[0]
+
+print(f"gzip ISIZE : {isize:,} bytes")
+print(f"gzip ISIZE : 0x{isize:x}")
+
+# --------------------------------------------------
+# Find FDT magic
+# --------------------------------------------------
+
+magic = b'\xd0\x0d\xfe\xed'
+
+positions = []
+pos = 0
+
+while True:
+    p = data.find(magic, pos)
+
+    if p &lt; 0:
+        break
+
+    positions.append(p)
+    pos = p + 1
+
+print()
+print("FDT magic locations:")
+
+for p in positions:
+    print(f"  0x{p:x} ({p:,})")
+
+# --------------------------------------------------
+# Analyze each FDT
+# --------------------------------------------------
+
+print()
+print("FDT information:")
+
+for i, p in enumerate(positions):
+    if p + 8 &gt; len(data):
+        continue
+
+    totalsize = struct.unpack("&gt;I", data[p + 4:p + 8])[0]
+
+    print(f"  FDT #{i}")
+    print(f"    offset : 0x{p:x} ({p:,})")
+    print(f"    size   : {totalsize:,} bytes")
+    print(f"    end    : 0x{p + totalsize:x} ({p + totalsize:,})")
+
+# --------------------------------------------------
+# Find first FDT after the gzip compressed data
+#
+# We know the compressed kernel itself is before
+# the appended DTB.
+# --------------------------------------------------
+
+if positions:
+    p = positions[0]
+
+    print()
+    print("First FDT:")
+    print(f"  offset : 0x{p:x}")
+    print(f"  size   : {struct.unpack('&gt;I', data[p+4:p+8])[0]:,}")
+
+    print()
+    print("Possible gzip+DTB layout:")
+    print(f"  gzip/Image : 0x00000000 - 0x{p:x}")
+    print(f"  DTB        : 0x{p:x} - ...")
+</pre><br>
+
+<p>
+檢查Kernel Append DTB
+</p>
+<pre>
+$ python3 ./chk.py repack/kernel 
+    total file : 16,228,472 bytes
+    total hex  : 0xf7a078
+    gzip header: OK
+    gzip ISIZE : 6,776,178 bytes
+    gzip ISIZE : 0x676572
+
+    FDT magic locations:
+      0xe380d1 (14,909,649)
+      0xea9b4a (15,375,178)
+      0xf1b431 (15,840,305)
+
+    FDT information:
+      FDT #0
+        offset : 0xe380d1 (14,909,649)
+        size   : 465,529 bytes
+        end    : 0xea9b4a (15,375,178)
+      FDT #1
+        offset : 0xea9b4a (15,375,178)
+        size   : 465,127 bytes
+        end    : 0xf1b431 (15,840,305)
+      FDT #2
+        offset : 0xf1b431 (15,840,305)
+        size   : 388,167 bytes
+        end    : 0xf7a078 (16,228,472)
+
+    First FDT:
+      offset : 0xe380d1
+      size   : 465,529
+
+    Possible gzip+DTB layout:
+      gzip/Image : 0x00000000 - 0xe380d1
+      DTB        : 0xe380d1 - ...
+</pre><br>
+
+<p>
+取出DTB
+</p>
+<pre>
+$ dd if=kernel of=dtb0.bin bs=1 skip=$((0xdfe541)) count=465529 status=none
+$ dd if=kernel of=dtb1.bin bs=1 skip=$((0xe6ffba)) count=465127 status=none
+$ dd if=kernel of=dtb2.bin bs=1 skip=$((0xee18a1)) count=388167 status=none
+</pre><br>
+
+<p>
+Append DTB
+</p>
+<pre>
+$ cat Image.gz dtb0.bin dtb1.bin dtb2.bin &gt; kernel
+</pre>
+
+<!-- tail -->
+<br>
+</div>
+
+</div>
+</div>
+</body>
+</html>
