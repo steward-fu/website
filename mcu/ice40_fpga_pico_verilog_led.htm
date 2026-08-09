@@ -74,40 +74,68 @@
 <div id="page">
 
 <!-- body -->
-<h3><a href="../reverse.htm">逆向工程</a> - Ghidra - <b>Build Ghidra</b></h3>
+<h3><a href="../mcu.htm">微處理器</a> - Lattice iCE40UP5K-SG48I (ICE40_FPGA_PICO) - Verilog - <b>LED</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
-https://daniao.ws/notes/quick-tips/build-ghidra<br><br>
+https://github.com/375432636/bin2rbt<br><br>
 
-步驟如下：
+LED腳位<br>
+<img src="ice40_fpga_pico_verilog_led/1.jpg" class="maxSize"><br><br>
+
+top.v
+</p>
+<pre class="brush:verilog">
+module top (
+    input  wire clk,
+    output wire led
+);
+
+    reg [23:0] counter = 24'd0;
+
+    always @(posedge clk) begin
+        counter &lt;= counter + 1'b1;
+    end
+
+    assign led = counter[23];
+
+endmodule
+</pre><br>
+
+<p>
+top.pcf
 </p>
 <pre>
-$ cd
-$ wget https://services.gradle.org/distributions/gradle-9.7.0-bin.zip
-$ unzip gradle-9.7.0-bin.zip
-$ sudo mv gradle-9.7.0 /opt/
-$ export PATH=/opt/gradle-9.7.0/bin/:$PATH
-$ gradle --version
-    Welcome to Gradle 9.7.0!
+set_io clk 35
+set_io led 39
+</pre><br>
 
-$ wget https://download.oracle.com/java/25/latest/jdk-25_linux-aarch64_bin.tar.gz
-$ tar xvf jdk-25_linux-aarch64_bin.tar.gz
-$ sudo mv jdk-25.0.4 /lib/jvm
-$ export JAVA_HOME=/lib/jvm/jdk-25.0.4
-$ export CLASSPATH=.:$JAVA_HOME/lib/tools.jar:$JAVA_HOME/lib/dt.jar
-$ export PATH=$JAVA_HOME/bin:$PATH
-$ javac --version
-    javac 25.0.4
+<p>
+Makefile
+</p>
+<pre>
+all:
+	yosys -p "read_verilog top.v; synth_ice40 -top top -json top.json"
+	nextpnr-ice40 --up5k --package sg48 --json top.json --pcf top.pcf --asc top.asc
+	icepack top.asc top.bin
+	python3 bin2rbt.py --binfile top.bin --rbtfile top.rbt
 
-$ git clone https://github.com/NationalSecurityAgency/ghidra.git
-$ cd ghidra
-$ export GRADLE_OPTS="-Xmx4g -XX:MaxMetaspaceSize=1g"
-$ ./gradlew -I gradle/support/fetchDependencies.gradle
-$ ./gradlew buildGhidra
-$ ls build/dist/
-    ghidra_12.2_DEV_20260809.zip
-</pre>
+clean:
+	rm -f top.json top.asc top.bin top.rbt
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ make
+</pre><br>
+
+<p>
+將top.rbt複製到新增的隨身碟即可<br>
+<img src="ice40_fpga_pico_verilog_led/2.jpg" class="maxSize"><br>
+<img src="ice40_fpga_pico_verilog_led/3.jpg" class="maxSize">
+</p>
 
 <!-- tail -->
 <br>
