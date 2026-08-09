@@ -102,11 +102,14 @@ export KBUILD_BUILD_HOST=debian
 export KBUILD_BUILD_USER=steward
 
 O=out ARCH=arm64 CC=clang CLANG_TRIPLE=aarch64-linux-gnu- CROSS_COMPILE=aarch64-linux-android- CROSS_COMPILE_ARM32=arm-linux-androideabi- make pro1_defconfig
+O=out ARCH=arm64 CC=clang CLANG_TRIPLE=aarch64-linux-gnu- CROSS_COMPILE=aarch64-linux-android- CROSS_COMPILE_ARM32=arm-linux-androideabi- make menuconfig
 O=out ARCH=arm64 CC=clang CLANG_TRIPLE=aarch64-linux-gnu- CROSS_COMPILE=aarch64-linux-android- CROSS_COMPILE_ARM32=arm-linux-androideabi- make Image.gz modules dtbs -j4
 O=out INSTALL_MOD_PATH=mod ARCH=arm64 CC=clang CLANG_TRIPLE=aarch64-linux-gnu- CROSS_COMPILE=aarch64-linux-android- CROSS_COMPILE_ARM32=arm-linux-androideabi- make modules_install -j4
 </pre><br>
-
 <p>
+由於qca_cld3_wlan.ko沒有找到程式碼，因此，需要改成<b>Forced module loading</b><br>
+<img src="pro1_sfos_build_kernel/1.jpg" class="maxSize"><br><br>
+
 Debian 10(x64)
 </p>
 <pre>
@@ -122,6 +125,17 @@ $ cp out/arch/arm64/boot/Image.gz .
 $ ./run.sh
 
 $ fastboot flash boot_a boot_new.img
+</pre><br>
+
+<p>
+改成強制載入qca_cld3_wlan.ko
+</p>
+<pre>
+$ sudo mount -o remount,rw /vendor
+$ sudo vim /vendor/etc/init/hw/init.target.rc +131
+    insmod -f /vendor/lib/modules/qca_cld3_wlan.ko
+
+$ sudo mount -o remount,ro /vendor
 </pre>
 
 <!-- tail -->
