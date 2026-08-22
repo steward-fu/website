@@ -74,19 +74,24 @@
 <div id="page">
 
 <!-- body -->
-<h3><a href="../driver.htm">驅動程式</a> - Windows Driver Model (WDM) - 使用範例 - Assembly (ObjAsm) - <b>make.bat</b></h3>
+<h3><a href="../driver.htm">驅動程式</a> - Windows Driver Model (WDM) - 使用範例 - Assembly (ObjAsm) - <b>Makefile</b></h3>
 <hr size="1"><br>
 <pre>
-del main.sys
+all:
+	uasm -coff -c -q -less main.asm
+	lld-link main.o /driver /base:0x10000 /subsystem:native /entry:DriverEntry /safeseh:no "/opt/wadk/masm32/lib/wxp/i386/ntoskrnl.lib" /out:main.sys
+	python3 fix.py main.sys
 
-"c:\objasm\build\tools\assembler\uasm32.exe" /coff /c -q /less /nomlib /FwNUL /Zi /Zd main.asm
-"c:\masm32\bin\link.exe" main.obj /driver /base:0x10000 /debug /debugtype:cv /pdb:main.pdb /subsystem:native /entry:DriverEntry "c:\masm32\lib\wxp\i386\ntoskrnl.lib" /out:main.sys
+app:
+	uasm -coff -c -q -less app.asm
+	i686-w64-mingw32-ld -e _start@0 app.o -o app.exe -lkernel32
 
-if exist app.asm (
-    del app.exe
-    "c:\masm32\bin\ml.exe" /c /coff /Cp /Zi /Zd app.asm
-    "c:\masm32\bin\link.exe" /subsystem:console /debug /debugtype:cv /pdb:app.pdb /version:4.0 /incremental:no /out:app.exe app.obj
-)
+run:
+	genisoimage -f -o cdrom.iso * /opt/wadk/tools/sc.exe
+	myqemu winxp
+
+clean:
+	rm -rf main.sys main.o app.o app.exe *.err cdrom.iso
 </pre>
 
 <!-- tail -->

@@ -80,11 +80,16 @@
 參考資訊：<br>
 https://wasm.in/<br>
 http://four-f.narod.ru/<br>
-https://github.com/steward-fu/ddk<br><br>
+https://github.com/steward-fu/wadk<br><br>
 
 main.asm
 </p>
 <pre class="brush:asm">
+;;
+;; Hello, world!
+;; https://steward-fu.github.io/website/index.htm
+;;
+
 %include @Environ(OBJASM_PATH)/Code/Macros/Model.inc
 
 SysSetup OOP, WDK_WDM, ANSI_STRING
@@ -123,6 +128,7 @@ MethodEnd
 
 Method MyDriver.DriverIrpDispatch, uses esi, pMyIrp : PIRP
     SetObject esi
+
     OCall DriverObject
     mov eax, (DRIVER_OBJECT ptr [eax]).DeviceObject
     mov eax, (DEVICE_OBJECT ptr [eax]).DeviceExtension
@@ -134,10 +140,18 @@ Method MyDriver.Unload, uses esi
 MethodEnd
 
 Method MyDevice.Init, uses esi, pPhyDevice : PDEVICE_OBJECT
-    ACall Init, $OfsCStrW("\Device\MyDriver"), FILE_DEVICE_UNKNOWN, NULL, 0, DO_BUFFERED_IO
+    ACall Init, \
+        $OfsCStrW("\Device\MyDriver"), \
+        FILE_DEVICE_UNKNOWN, \
+        NULL, \
+        0, \
+        DO_BUFFERED_IO
 
     SetObject esi
-    OCall [esi].m_pMyLowerDevice::KPnpLowerDevice.Initialize, [esi].m_pMyDevice, pPhyDevice
+    OCall [esi].m_pMyLowerDevice::KPnpLowerDevice.Initialize, \
+        [esi].m_pMyDevice, \
+        pPhyDevice
+
     OCall SetLowerDevice, addr [esi].m_pMyLowerDevice
 MethodEnd
 
@@ -161,7 +175,7 @@ main.inf
 Signature=$CHICAGO$
 Class=Unknown
 Provider=%MFGNAME%
-DriverVer=11/11/2024,1.0.0.0
+DriverVer=01/01/2026,1.0.0.0
  
 [Manufacturer]
 %MFGNAME%=DeviceList
@@ -197,7 +211,7 @@ ServiceBinary=%10%\system32\drivers\main.sys
 AddReg=DriverHwAddReg
  
 [DriverHwAddReg]
-HKR,,SampleInfo,,""
+HKR,,MyDriver,,""
  
 [DriverInstall]
 AddReg=DriverAddReg
@@ -212,31 +226,65 @@ AddReg=DriverHwAddReg
  
 [Strings]
 MFGNAME="MyDriver"
-INSTDISK="MyDriver Disc"
-DESCRIPTION="MyDriver"
+INSTDISK="MyDriver Disk for Installation"
+DESCRIPTION="Windows Device Driver by Steward"
+</pre><br>
+
+<p>
+autorun.inf
+</p>
+<pre>
+[autorun]
+open=run.bat
+</pre><br>
+
+<p>
+run.bat
+</p>
+<pre>
+c:\devcon install e:\main.inf *mydriver
+c:\devcon remove e:\main.inf *mydriver
+</pre><br>
+
+<p>
+fix.py
+</p>
+<pre class="brush:python">
+import pefile
+
+pe = pefile.PE("main.sys");
+pe.OPTIONAL_HEADER.CheckSum = pe.generate_checksum();
+pe.write("main.sys");
+</pre><br>
+
+<p>
+Makefile
+</p>
+<pre>
+all:
+	uasm -coff -c -q -less main.asm
+	lld-link main.o /driver /base:0x10000 /subsystem:native /entry:DriverEntry /safeseh:no "/opt/wadk/masm32/lib/wxp/i386/ntoskrnl.lib" /out:main.sys
+	python3 fix.py
+
+run:
+	genisoimage -f -o cdrom.iso * /opt/wadk/tools/sc.exe
+	myqemu winxp
+
+clean:
+	rm -rf main.sys main.o cdrom.iso
 </pre><br>
 
 <p>
 編譯
 </p>
 <pre>
-"c:\objasm\build\tools\assembler\uasm32.exe" /coff /c -q /less /nomlib /FwNUL /Zi /Zd main.asm
-"c:\masm32\bin\link.exe" main.obj /driver /base:0x10000 /debug /debugtype:cv /pdb:main.pdb /subsystem:native /entry:DriverEntry "c:\masm32\lib\wxp\i386\ntoskrnl.lib" /out:main.sys
+$ make
+$ make run
 </pre><br>
 
 <p>
-在開始安裝驅動程式之前，需要先下載除錯工具，讓驅動程式的Debug訊息可以顯示在除錯工具上面，目前最佳的Debug輸出訊息工具是DbgView，該公司目前已經被Microsoft併購，所以可以從Microsoft網站下載，下載完後執行DbgView並將<b>Capture =&gt; Capture Kernel</b>選項打勾，接著<b>重啟</b>DbgView<br>
-<img src="wdm_asm_hello/1.jpg" class="maxSize"><br><br>
-
-對於驅動程式的安裝工具，司徒目前使用NuMega公司製作的EzDriverInstaller，將main.sys和main.inf放在同一個目錄並執行EzDriverInstaller，選擇<b>File =&gt; Open...</b>(開啟main.inf檔案)，接著按<b>Add New Device</b>就可以在DbgView上面看到輸出訊息<br>
-<img src="wdm_asm_hello/2.jpg" class="maxSize"><br>
-<img src="wdm_asm_hello/3.jpg" class="maxSize"><br><br>
-
-Device Manager<br>
-<img src="wdm_asm_hello/4.jpg" class="maxSize"><br><br>
-
-Device Object<br>
-<img src="wdm_asm_hello/5.jpg" class="maxSize">
+完成<br>
+<img src="wdm_objasm_hello/1.jpg" class="maxSize">
 </p>
 
 <!-- tail -->

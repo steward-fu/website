@@ -78,13 +78,81 @@
 <hr size="1"><br>
 <p>
 參考資訊：<br>
-https://github.com/steward-fu/ddk<br><br>
+https://github.com/steward-fu/wadk<br>
+https://github.com/steward-fu/website/releases/download/wdm<br>
+https://github.com/steward-fu/website/releases/download/xt897<br><br>
 
-將<b>masm32</b>、<b>objasm</b>資料夾複製到<b>c:\</b>根目錄下並且添加如下環境變數
+司徒目前使用Debian做為開發測試環境，Compiler使用UASM Linux版本，Linker則是使用lld-link，測試的作業系統目前使用WinXP，執行的模擬器則是QEMU(qemu-system-i386)，由於QEMU支援Snapshot功能，因此只要做好Snapshot的環境，就可以相當方便測試WDM驅動程式<br><br>
+
+UASM
 </p>
 <pre>
-PATH=c:\masm32\bin
-OBJASM_PATH=c:\objasm
+$ cd
+$ git clone https://github.com/Terraspace/UASM -b v2.57r
+$ cd UASM
+$ make -f Makefile-Linux-GCC-64.mak -j4
+</pre><br>
+
+<p>
+lld-link、wine、box86
+</p>
+<pre>
+$ sudo apt-get install gcc-arm* lld wine wine32-tools wine-development libwine fonts-wine -y
+
+$ cd
+$ git clone https://github.com/ptitSeb/box86 -b v0.2.0
+$ mkdir box86/build
+$ cd box86/build
+$ cmake ..
+$ make
+$ sudo make install
+$ box86 --version
+    Box86 v0.2.0 b2d5587e
+</pre><br>
+
+<p>
+使用司徒預先做好的WinXP、Wine環境
+</p>
+<pre>
+$ cd
+$ wget https://github.com/steward-fu/website/releases/download/wdm/winxp.gz
+$ wget https://github.com/steward-fu/website/releases/download/wdm/winxp.qcow2
+$ wget https://github.com/steward-fu/website/releases/download/wdm/myqemu
+$ wget https://github.com/steward-fu/website/releases/download/xt897/wine_x86_env.tar.gz
+$ wget https://github.com/steward-fu/website/releases/download/xt897/wine-6.2-x86.tar.xz
+
+$ tar xvf wine-6.2-x86.tar.xz
+$ mv wine-6.2-x86 ~/Wine
+$ sudo ln -s ~/Wine/bin/wine /usr/local/bin/wine
+$ sudo ln -s ~/Wine/bin/winecfg /usr/local/bin/winecfg
+$ sudo ln -s ~/Wine/bin/wineboot /usr/local/bin/wineboot
+$ sudo ln -s ~/Wine/bin/wineserver /usr/local/bin/wineserver
+
+$ sudo mkdir /opt/qemu
+$ sudo mv winxp.qcow2 winxp.gz /opt/qemu
+$ sudo mv myqemu /usr/local/bin
+$ sudo chmod a+x /usr/local/bin/myqemu
+
+$ sudo vim /usr/local/bin/myx86
+    #!/bin/bash
+    WINEPREFIX=~/.wine_x86 box wine "$@"
+
+$ sudo chmod a+x /usr/local/bin/myx86
+
+$ tar xvf wine_x86_env.tar.gz
+
+$ myx86 --version
+    Box86 v0.2.0 b2d5587e built on May  4 2026 21:14:47
+    wine-6.2
+</pre><br>
+
+<p>
+Clone wadk
+</p>
+<pre>
+$ cd
+$ git clone https://github.com/steward-fu/wadk
+$ sudo mv wadk /opt
 </pre>
 
 <!-- tail -->
