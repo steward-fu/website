@@ -38,7 +38,7 @@ this.regexList = [
 };
 
 Brush.prototype  = new SyntaxHighlighter.Highlighter();
-Brush.aliases  = ['scad'];
+Brush.aliases  = ['scad', 'openscad'];
 SyntaxHighlighter.brushes.Scad = Brush;
 typeof(exports) != 'undefined' ? exports.Brush = Brush : null;
 })();
