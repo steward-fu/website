@@ -74,40 +74,67 @@
 <div id="page">
 
 <!-- body -->
-<h3><a href="../mcu.htm">微處理器</a> - Lattice GAL22V10 - Assembly - <b>Button</b></h3>
+<h3><a href="../mcu.htm">微處理器</a> - Lattice GAL22V10 - C/C++ - <b>Timer0</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
 https://www.stcmicro.com/datasheet/STC15F204EA-cn.pdf<br>
 https://www.stcmicro.com/datasheet/STC15F2K60S2-en.pdf<br><br>
 
-Register<br>
-<img src="lh0080a_stc_led/1.jpg" class="maxSize"><br>
-<img src="lh0080a_stc_led/2.jpg" class="maxSize"><br><br>
+AUXR<br>
+<img src="gal22v10_asm_t0/1.jpg" class="maxSize"><br><br>
 
-P5.5<br>
-<img src="gal22v10_asm_btn/2.jpg" class="maxSize"><br><br>
+TMOD<br>
+<img src="gal22v10_asm_t0/2.jpg" class="maxSize"><br><br>
 
-main.s
+TCON<br>
+<img src="gal22v10_asm_t0/3.jpg" class="maxSize"><br><br>
+
+Interrupt<br>
+<img src="gal22v10_asm_t0/4.jpg" class="maxSize"><br><br>
+
+main.c
 </p>
-<pre class="brush:asm">
-    p5_5 bit 0cdh
+<pre class="brush:cpp">
+#include &lt;mcs51/8051.h&gt;
 
-    .org 0h
-    jmp start
-    
-    .org 100h
-start:
-    mov c, p5_5
-    mov p1.2, c
-    jmp start
-    .end
+__sfr __at(0x8E) AUXR;
+
+#define LED P1_2
+
+void t0_isr(void) __interrupt 1
+{
+    static int cnt = 0;
+ 
+    cnt += 1;
+    if (cnt &gt; 255) {
+        cnt = 0;
+        LED ^= 1;
+    }
+}
+  
+int main(void)
+{
+    AUXR |= 0x80;
+    TMOD = 0x00;
+    TL0 = 0x00;
+    TH0 = 0x00;
+    TR0 = 1;
+    ET0 = 1;
+    EA = 1;
+ 
+    LED = 1;
+    while (1) {
+    }
+  
+    return 0;
+}
 </pre><br>
 
 <p>
 完成<br>
 <img src="gal22v10_asm_led/1.jpg" class="maxSize"><br>
-<img src="gal22v10_asm_btn/1.jpg" class="maxSize">
+<img src="gal22v10_asm_led/2.jpg" class="maxSize">
 </p>
 
 <!-- tail -->
