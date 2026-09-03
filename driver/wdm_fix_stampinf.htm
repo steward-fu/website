@@ -1,0 +1,276 @@
+﻿<!-- head
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+-->
+
+<head>
+<title>司徒的教學網站</title>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+<meta http-equiv="content-type" content="application/xhtml+xml; charset=UTF-8" />
+<meta name="author" content="fullahead.org" />
+<meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+<meta name="description" content="A valid, XHTML 1.0 template" />
+<meta name="robots" content="index, follow, noarchive" />
+<meta name="googlebot" content="noarchive" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=10.0" />
+
+<link rel="shortcut icon" href="../website.ico" />
+<link rel="stylesheet" type="text/css" href="../styles/shCore.css" />
+<link rel="stylesheet" type="text/css" href="../styles/shThemeDefault.css" />
+<link rel="stylesheet" type="text/css" href="../css/html.css" media="screen" />
+<link rel="stylesheet" type="text/css" href="../css/layout.css" media="screen" />
+
+<script type="text/javascript" src="../scripts/shCore.js"></script>
+<script type="text/javascript" src="../scripts/shBrushAppleScript.js"></script>
+<script type="text/javascript" src="../scripts/shBrushAS3.js"></script>
+<script type="text/javascript" src="../scripts/shBrushAsm.js"></script>
+<script type="text/javascript" src="../scripts/shBrushBash.js"></script>
+<script type="text/javascript" src="../scripts/shBrushColdFusion.js"></script>
+<script type="text/javascript" src="../scripts/shBrushCpp.js"></script>
+<script type="text/javascript" src="../scripts/shBrushD.js"></script>
+<script type="text/javascript" src="../scripts/shBrushCSharp.js"></script>
+<script type="text/javascript" src="../scripts/shBrushCss.js"></script>
+<script type="text/javascript" src="../scripts/shBrushDiff.js"></script>
+<script type="text/javascript" src="../scripts/shBrushErlang.js"></script>
+<script type="text/javascript" src="../scripts/shBrushGolang.js"></script>
+<script type="text/javascript" src="../scripts/shBrushGroovy.js"></script>
+<script type="text/javascript" src="../scripts/shBrushInf.js"></script>
+<script type="text/javascript" src="../scripts/shBrushJavaFX.js"></script>
+<script type="text/javascript" src="../scripts/shBrushJava.js"></script>
+<script type="text/javascript" src="../scripts/shBrushJScript.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPas.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPerl.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPhp.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPlain.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPowerShell.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPython.js"></script>
+<script type="text/javascript" src="../scripts/shBrushRuby.js"></script>
+<script type="text/javascript" src="../scripts/shBrushRust.js"></script>
+<script type="text/javascript" src="../scripts/shBrushSass.js"></script>
+<script type="text/javascript" src="../scripts/shBrushScad.js"></script>
+<script type="text/javascript" src="../scripts/shBrushBasic.js"></script>
+<script type="text/javascript" src="../scripts/shBrushVerilog.js"></script>
+<script type="text/javascript" src="../scripts/shBrushScala.js"></script>
+<script type="text/javascript" src="../scripts/shBrushSql.js"></script>
+<script type="text/javascript" src="../scripts/shBrushXml.js"></script>
+<script type="text/javascript" src="../scripts/shBrushFortran.js"></script>
+
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+</head>
+
+<body>
+<div id="wrapper">
+<div id="content">
+
+<div id="header">
+<a href="https://steward-fu.github.io/website/index.htm"><h1><span class="big darkBrown">S</span>teward</h1></a>
+<h2><span class="highlight">分享是一種喜悅、更是一種幸福</span></h2>
+</div>
+
+<div id="page">
+
+<!-- body -->
+<h3><a href="../driver.htm">驅動程式</a> - Windows Driver Model (WDM) - <b>解決StampInf.exe無法修改"Z:\"底下的INF檔案問題</b></h3>
+<hr size="1"><br>
+<p>
+main.cpp
+</p>
+<pre class="brush:cpp">
+#include &lt;windows.h&gt;
+#include &lt;filesystem&gt;
+#include &lt;iostream&gt;
+#include &lt;string&gt;
+#include &lt;vector&gt;
+
+namespace fs = std::filesystem;
+
+static const wchar_t* TEMP_DIR = L"c:\\stampinf_temp";
+
+int wmain(int argc, wchar_t* argv[])
+{
+    if (argc &lt; 2) {
+        std::wcerr &lt;&lt; L"Usage: stampinf.exe [arguments]\n";
+        return 1;
+    }
+
+    fs::path wrapperPath = fs::absolute(argv[0]);
+    fs::path realStampinf = wrapperPath.parent_path() / L"_stampinf.exe";
+
+    if (!fs::exists(realStampinf)) {
+        std::wcerr &lt;&lt; L"ERROR: Real stampinf.exe not found:\n" &lt;&lt; L"  " &lt;&lt; realStampinf &lt;&lt; L"\n";
+        return 1;
+    }
+
+    int fIndex = -1;
+    fs::path originalFile;
+
+    for (int i = 1; i &lt; argc; ++i) {
+        if (_wcsicmp(argv[i], L"-f") == 0) {
+            if (i + 1 &gt;= argc) {
+                std::wcerr &lt;&lt; L"ERROR: -f requires a filename.\n";
+                return 1;
+            }
+
+            fIndex = i;
+            originalFile = argv[i + 1];
+            break;
+        }
+    }
+
+    if (fIndex == -1) {
+        std::wcerr &lt;&lt; L"ERROR: -f parameter not found.\n";
+        return 1;
+    }
+
+    if (!fs::exists(originalFile)) {
+        std::wcerr &lt;&lt; L"ERROR: File does not exist:\n" &lt;&lt; L"  " &lt;&lt; originalFile &lt;&lt; L"\n";
+        return 1;
+    }
+
+    fs::path tempDir = TEMP_DIR;
+    std::error_code ec;
+    fs::create_directories(tempDir, ec);
+
+    if (ec) {
+        std::wcerr &lt;&lt; L"ERROR: Cannot create temporary directory:\n" &lt;&lt; L"  " &lt;&lt; tempDir &lt;&lt; L"\n";
+        return 1;
+    }
+
+    fs::path tempFile = tempDir / originalFile.filename();
+    std::wcout &lt;&lt; L"Copying:\n" &lt;&lt; L"  " &lt;&lt; originalFile &lt;&lt; L"\n" &lt;&lt; L"to:\n" &lt;&lt; L"  " &lt;&lt; tempFile &lt;&lt; L"\n";
+    fs::copy_file(originalFile, tempFile, fs::copy_options::overwrite_existing, ec);
+
+    if (ec) {
+        std::wcerr &lt;&lt; L"ERROR: Failed to copy file: " &lt;&lt; ec.message().c_str() &lt;&lt; L"\n";
+        return 1;
+    }
+
+    std::wstring commandLine;
+
+    auto appendArg = [&amp;](const std::wstring&amp; arg)
+    {
+        if (!commandLine.empty()) {
+            commandLine += L" ";
+        }
+        commandLine += L"\"";
+
+        size_t backslashes = 0;
+
+        for (wchar_t c : arg) {
+            if (c == L'\\') {
+                ++backslashes;
+            }
+            else if (c == L'"') {
+                commandLine.append(backslashes * 2 + 1, L'\\');
+                commandLine += L'"';
+                backslashes = 0;
+            }
+            else {
+                if (backslashes) {
+                    commandLine.append(backslashes, L'\\');
+                }
+
+                backslashes = 0;
+                commandLine += c;
+            }
+        }
+
+        if (backslashes) {
+            commandLine.append(backslashes * 2, L'\\');
+        }
+
+        commandLine += L"\"";
+    };
+
+    for (int i = 1; i &lt; argc; ++i) {
+        appendArg(argv[i]);
+
+        if (i == fIndex) {
+            ++i;
+            appendArg(tempFile.wstring());
+        }
+    }
+
+    std::wcout &lt;&lt; L"\nExecuting:\n";
+    std::wcout &lt;&lt; L"\"" &lt;&lt; realStampinf &lt;&lt; L"\" " &lt;&lt; commandLine &lt;&lt; L"\n\n";
+    std::wstring fullCommand = L"\"" + std::wstring(realStampinf) + L"\" " + commandLine;
+
+    STARTUPINFOW si = {};
+    PROCESS_INFORMATION pi = {};
+
+    si.cb = sizeof(si);
+
+    std::vector&lt;wchar_t&gt; cmdBuffer(
+        fullCommand.begin(),
+        fullCommand.end()
+    );
+
+    cmdBuffer.push_back(L'\0');
+    BOOL result = CreateProcessW(
+        nullptr,
+        cmdBuffer.data(),
+        nullptr,
+        nullptr,
+        FALSE,
+        0,
+        nullptr,
+        nullptr,
+        &amp;si,
+        &amp;pi
+    );
+
+    if (!result) {
+        DWORD error = GetLastError();
+
+        std::wcerr &lt;&lt; L"ERROR: CreateProcess failed. Error = " &lt;&lt; error &lt;&lt; L"\n";
+        fs::copy_file(tempFile, originalFile, fs::copy_options::overwrite_existing, ec);
+        fs::remove(tempFile, ec);
+
+        return 1;
+    }
+
+    WaitForSingleObject(pi.hProcess, INFINITE);
+
+    DWORD exitCode = 1;
+    GetExitCodeProcess(pi.hProcess, &amp;exitCode);
+    CloseHandle(pi.hThread);
+    CloseHandle(pi.hProcess);
+    std::wcout &lt;&lt; L"\nCopying modified file back:\n" &lt;&lt; L"  " &lt;&lt; tempFile &lt;&lt; L"\n" &lt;&lt; L"to:\n" &lt;&lt; L"  " &lt;&lt; originalFile &lt;&lt; L"\n";
+    fs::copy_file(tempFile, originalFile, fs::copy_options::overwrite_existing, ec);
+
+    if (ec) {
+        std::wcerr &lt;&lt; L"ERROR: Failed to copy file back: " &lt;&lt; ec.message().c_str() &lt;&lt; L"\n";
+        fs::remove(tempFile, ec);
+
+        return 1;
+    }
+
+    fs::remove(tempFile, ec);
+    std::wcout &lt;&lt; L"\nstampinf.exe exit code: " &lt;&lt; exitCode &lt;&lt; L"\n";
+
+    return static_cast&lt;int&gt;(exitCode);
+}
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ x86_64-w64-mingw32-g++ -std=c++17 -O2 -s -municode -static -o stampinf.exe main.cpp
+</pre>
+<p>
+P.S. 將原本stampinf.exe改成_stampinf.exe後, 再把編譯後的stampinf.exe複製進去即可
+</p>
+
+<!-- tail -->
+<br>
+</div>
+
+</div>
+</div>
+</body>
+</html>
