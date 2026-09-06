@@ -130,6 +130,7 @@ All of files or resources used on my website can be found from the following lin
 [![](img/photos/msp-exp430fr5994.jpg)](https://github.com/steward-fu/website/releases/tag/msp-exp430fr5994)
 [![](img/photos/c8051f300.jpg)](https://github.com/steward-fu/website/releases/tag/c8051f300)
 [![](img/photos/jz2440.jpg)](https://github.com/steward-fu/website/releases/tag/jz2440)
+[![](img/photos/d1-h.jpg)](https://github.com/steward-fu/website/releases/tag/d1-h)
 [![](img/photos/gal22v10.jpg)](https://github.com/steward-fu/website/releases/tag/gal22v10)
 [![](img/photos/virus.jpg)](https://github.com/steward-fu/website/releases/tag/virus)
 [![](img/photos/wdm.jpg)](https://github.com/steward-fu/website/releases/tag/wdm)
