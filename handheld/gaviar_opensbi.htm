@@ -220,7 +220,10 @@ Jump to kernel (0x40008000) ...
 <img src="gaviar_opensbi/3.jpg" class="maxSize"><br><br>
 
 為何RISC-V需要有這些模式呢？可以從下圖得知，Linux/OS一般跑在S-Mode，但是當需要控制底層時，就需要切換M-Mode，這也是SBI介面的由來，當然，如果不用Linux/OS，就可以自己實做這一部份<br>
-<img src="gaviar_opensbi/4.jpg" class="maxSize">
+<img src="gaviar_opensbi/4.jpg" class="maxSize"><br><br>
+
+為了讓OpenSBI具有開機執行的能力，司徒小改了一下fw_base.S，在程式進入點_gaviar加入判斷程式，如果是從0x20000的位址執行，則執行第一次初始化的動作，包含初始化UART、DRAM、MMC等，並且加載OpenSBI、Kernel、DTB到DRAM，至於為何是判斷位址0x20000呢？這是因為F133 BROM一上電後，會先從MicroSD 8KB位址處加載32KB程式到RAM 0x20000並且執行，所以司徒在0x20000處做標記(F133_TAG)，接著等第二次執行時，這時候位址已經改成從0x41000000執行，所以就會直接跑_start的程式，因此我們需要兩份fw_jump.bin，一份是給0x20000用的(32KB)，另一份則是完整的fw_jump.bin，司徒使用CONFIG=brom make用來編譯0x20000的fw_jump.bin，詳細的執行流程如下所示：<br>
+<img src="gaviar_opensbi/5.jpg" class="maxSize">
 </p>
 
 <!-- tail -->
