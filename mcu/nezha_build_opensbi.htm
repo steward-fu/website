@@ -1,0 +1,212 @@
+﻿<!-- head
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+-->
+
+<head>
+<title>司徒的教學網站</title>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+<meta http-equiv="content-type" content="application/xhtml+xml; charset=UTF-8" />
+<meta name="author" content="fullahead.org" />
+<meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+<meta name="description" content="A valid, XHTML 1.0 template" />
+<meta name="robots" content="index, follow, noarchive" />
+<meta name="googlebot" content="noarchive" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=10.0" />
+
+<link rel="shortcut icon" href="../website.ico" />
+<link rel="stylesheet" type="text/css" href="../styles/shCore.css" />
+<link rel="stylesheet" type="text/css" href="../styles/shThemeDefault.css" />
+<link rel="stylesheet" type="text/css" href="../css/html.css" media="screen" />
+<link rel="stylesheet" type="text/css" href="../css/layout.css" media="screen" />
+
+<script type="text/javascript" src="../scripts/shCore.js"></script>
+<script type="text/javascript" src="../scripts/shBrushAppleScript.js"></script>
+<script type="text/javascript" src="../scripts/shBrushAS3.js"></script>
+<script type="text/javascript" src="../scripts/shBrushAsm.js"></script>
+<script type="text/javascript" src="../scripts/shBrushBash.js"></script>
+<script type="text/javascript" src="../scripts/shBrushColdFusion.js"></script>
+<script type="text/javascript" src="../scripts/shBrushCpp.js"></script>
+<script type="text/javascript" src="../scripts/shBrushD.js"></script>
+<script type="text/javascript" src="../scripts/shBrushCSharp.js"></script>
+<script type="text/javascript" src="../scripts/shBrushCss.js"></script>
+<script type="text/javascript" src="../scripts/shBrushDiff.js"></script>
+<script type="text/javascript" src="../scripts/shBrushErlang.js"></script>
+<script type="text/javascript" src="../scripts/shBrushGolang.js"></script>
+<script type="text/javascript" src="../scripts/shBrushGroovy.js"></script>
+<script type="text/javascript" src="../scripts/shBrushInf.js"></script>
+<script type="text/javascript" src="../scripts/shBrushJavaFX.js"></script>
+<script type="text/javascript" src="../scripts/shBrushJava.js"></script>
+<script type="text/javascript" src="../scripts/shBrushJScript.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPas.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPerl.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPhp.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPlain.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPowerShell.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPython.js"></script>
+<script type="text/javascript" src="../scripts/shBrushRuby.js"></script>
+<script type="text/javascript" src="../scripts/shBrushRust.js"></script>
+<script type="text/javascript" src="../scripts/shBrushSass.js"></script>
+<script type="text/javascript" src="../scripts/shBrushScad.js"></script>
+<script type="text/javascript" src="../scripts/shBrushBasic.js"></script>
+<script type="text/javascript" src="../scripts/shBrushVerilog.js"></script>
+<script type="text/javascript" src="../scripts/shBrushScala.js"></script>
+<script type="text/javascript" src="../scripts/shBrushSql.js"></script>
+<script type="text/javascript" src="../scripts/shBrushXml.js"></script>
+<script type="text/javascript" src="../scripts/shBrushFortran.js"></script>
+
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+</head>
+
+<body>
+<div id="wrapper">
+<div id="content">
+
+<div id="header">
+<a href="https://steward-fu.github.io/website/index.htm"><h1><span class="big darkBrown">S</span>teward</h1></a>
+<h2><span class="highlight">分享是一種喜悅、更是一種幸福</span></h2>
+</div>
+
+<div id="page">
+
+<!-- body -->
+<h3><a href="../mcu.htm">微處理器</a> - Allwinner D1-H (Sipeed Nezha) - <b>Build OpenSBI、U-Boot</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://linux-sunxi.org/Allwinner_Nezha<br><br>
+
+連接UART<br>
+<img src="nezha_build_opensbi/1.jpg" class="maxSize"><br><br>
+
+編譯步驟：
+</p>
+<pre>
+$ cd
+$ clone https://github.com/riscv-software-src/opensbi
+$ opensbi
+$ make CROSS_COMPILE=riscv64-linux-gnu- PLATFORM=generic FW_PIC=y
+
+$ cd
+$ git clone https://github.com/smaeul/u-boot -b d1-wip
+$ cd u-boot
+$ make CROSS_COMPILE=riscv64-linux-gnu- nezha_defconfig
+$ make CROSS_COMPILE=riscv64-linux-gnu- OPENSBI=../opensbi/build/platform/generic/firmware/fw_dynamic.bin
+
+$ sudo dd if=u-boot-sunxi-with-spl.bin of=/dev/sdX bs=1024 seek=8
+</pre><br>
+
+<p>
+Baudrate 115200bps
+</p>
+<pre>
+U-Boot SPL 2024.01-rc1-45338-g2e89b706f5c (Sep 06 2026 - 10:22:41 +0800)
+mxstatus=0xc0408000 mhcr=0x0000010b mcor=0x00000003 mhint=0x00004000
+Trying to boot from MMC1
+SPL size = 81920, sector = 160
+
+OpenSBI v1.9-47-g3593a5fa
+   ____                    _____ ____ _____
+  / __ \                  / ____|  _ \_   _|
+ | |  | |_ __   ___ _ __ | (___ | |_) || |
+ | |  | | '_ \ / _ \ '_ \ \___ \|  _ &lt; | |
+ | |__| | |_) |  __/ | | |____) | |_) || |_
+  \____/| .__/ \___|_| |_|_____/|____/_____|
+        | |
+        |_|
+
+Platform Name               : Allwinner D1 Nezha
+Platform Features           : medeleg
+Platform HART Count         : 1
+Platform HART Protection    : pmp
+Platform IPI Device         : ---
+Platform Timer Device       : --- @ 0Hz
+Platform Console Device     : uart8250
+Platform HSM Device         : sun20i-d1-ppu
+Platform PMU Device         : thead,c900-pmu
+Platform Reboot Device      : ---
+Platform Shutdown Device    : ---
+Platform Suspend Device     : ---
+Platform CPPC Device        : ---
+Firmware Base               : 0x40000000
+Firmware Size               : 329 KB
+Firmware RW Offset          : 0x40000
+Firmware RW Size            : 73 KB
+Firmware Heap Offset        : 0x49000
+Firmware Heap Size          : 37 KB (total), 0 KB (reserved), 15 KB (used), 20 KB (free)
+Firmware Scratch Size       : 4096 B (total), 488 B (used), 3608 B (free)
+Runtime SBI Version         : 3.0
+Standard SBI Extensions     : time,rfnc,ipi,base,hsm,pmu,dbcn,fwft,legacy,sse
+Experimental SBI Extensions : none
+
+Domain0 Name                : root
+Domain0 Boot HART           : 0
+Domain0 HARTs               : 0x0*
+Domain0 Region00            : 0x0000000040040000-0x000000004005ffff M: (F,R,W) S/U: ()
+Domain0 Region01            : 0x0000000040000000-0x000000004003ffff M: (F,R,X) S/U: ()
+Domain0 Region02            : 0x0000000002500000-0x0000000002500fff M: (I,R,W) S/U: (R,W)
+Domain0 Region03            : 0x0000000010000000-0x0000000013ffffff M: (I,R,W) S/U: (R,W)
+Domain0 Region04            : 0x0000000000000000-0xffffffffffffffff M: () S/U: (R,W,X)
+Domain0 Next Address        : 0x0000000042e00000
+Domain0 Next Arg1           : 0x0000000042e97600
+Domain0 Next Mode           : S-mode
+Domain0 SysReset            : yes
+Domain0 SysSuspend          : yes
+
+Boot HART ID                : 0
+Boot HART Domain            : root
+Boot HART Priv Version      : v1.11
+Boot HART Base ISA          : rv64imafdcvx
+Boot HART ISA Extensions    : zicntr,zihpm,f,d
+Boot HART PMP Count         : 8
+Boot HART PMP Granularity   : 11 bits
+Boot HART PMP Address Bits  : 38
+Boot HART MHPM Info         : 12 (0x0003e3f8)
+Boot HART Debug Triggers    : 0 triggers
+Boot HART MIDELEG           : 0x0000000000020222
+Boot HART MEDELEG           : 0x000000000000b109
+
+
+U-Boot 2024.01-rc1-45338-g2e89b706f5c (Sep 06 2026 - 10:22:41 +0800) Allwinner Technology
+
+DRAM:  2 GiB
+Core:  53 devices, 21 uclasses, devicetree: separate
+WDT:   Started watchdog@6011000 with servicing every 1000ms (16s timeout)
+MMC:   mmc@4020000: 0, mmc@4021000: 1
+Loading Environment from FAT... Unable to use mmc 0:1...
+In:    serial,usbkbd
+Out:   serial,vidconsole
+Err:   serial,vidconsole
+Net:   
+Warning: ethernet@4500000 (eth0) using random MAC address - fa:37:76:c3:47:72
+eth0: ethernet@4500000
+starting USB...
+Bus usb@4101000: USB EHCI 1.00
+Bus usb@4101400: USB OHCI 1.0
+Bus usb@4200000: USB EHCI 1.00
+Bus usb@4200400: USB OHCI 1.0
+scanning bus usb@4101000 for devices... 1 USB Device(s) found
+scanning bus usb@4101400 for devices... 1 USB Device(s) found
+scanning bus usb@4200000 for devices... 1 USB Device(s) found
+scanning bus usb@4200400 for devices... 1 USB Device(s) found
+       scanning usb for storage devices... 0 Storage Device(s) found
+Hit any key to stop autoboot:  0 
+switch to partitions #0, OK
+mmc0 is current device
+
+Device 0: unknown device
+ethernet@4500000 Waiting for PHY auto negotiation to complete......... TIMEOUT !
+</pre>
+
+<!-- tail -->
+<br>
+</div>
+
+</div>
+</div>
+</body>
+</html>
