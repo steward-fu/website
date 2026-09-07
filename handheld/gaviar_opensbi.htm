@@ -80,6 +80,7 @@
 參考資訊：<br>
 https://linux-sunxi.org/Allwinner_Nezha<br>
 https://github.com/steward-fu/website/releases/tag/gaviar<br>
+https://docs.riscv.org/reference/sbi/v3.0/ext-legacy.html<br>
 https://github.com/ylyamin/RT-Thread-on-Allwinner-D1H/blob/master/documentation/D1_2_boot_process.md<br><br>
 
 由於全志針對F133的開機設計流程過於複雜，因此，為了可以更精簡以及方便維護程式碼，司徒特別針對小志掌機修改了一版OpenSBI，修改後的流程如下所示<br>
@@ -235,7 +236,97 @@ $ sudo dd if=fw_jump.bin of=/dev/sdX bs=1024 seek=8
 $ sudo dd if=fw_jump.bin of=/dev/sdX bs=1024 seek=40
 $ sudo dd if=dtb         of=/dev/sdX bs=1024 seek=300
 $ sudo dd if=Image       of=/dev/sdX bs=1024 seek=400
+</pre><br>
+
+<p>
+由於目前司徒先使用LED閃爍程式替代Kernel，那是否代表可以修改這個LED閃爍程式來呼叫SBI Interface呢？答案肯定是可以的，程式碼如下：
+</p>
+<pre class="brush:asm">
+    .global _start
+   
+    .text
+    .long 0x05c0006f
+    .byte 'e','G','O','N','.','B','T','0'
+    .long 0x5f0a6c39
+    .long 0x8000
+    .long 0, 0
+    .long 0, 0, 0, 0, 0, 0, 0, 0
+    .long 0, 0, 0, 0, 0, 0, 0, 0
+  
+_start:
+    la a0, msg
+    call sbi_puts
+1:
+    j 1b
+
+sbi_puts:
+    mv t0, a0
+1:
+    lbu a0, 0(t0)
+    beqz a0, 2f
+    li a7, 1
+    ecall
+    addi t0, t0, 1
+    j 1b
+2:
+    ret
+
+msg: .asciz "\n\nHello, world!\n"
+    .end
+</pre><br>
+
+<p>
+編譯、燒錄
+</p>
+<pre>
+$ riscv64-unknown-linux-gnu-as -o main.o main.s
+$ riscv64-unknown-linux-gnu-ld -T main.ld -o main.elf main.o
+$ riscv64-unknown-linux-gnu-objcopy -O binary main.elf tmp.bin
+$ python3 gen_checksum.py tmp.bin main.bin
+$ sudo dd if=main.bin of=/dev/sdb bs=1024 seek=400
+</pre><br>
+
+<p>
+開機後就可以從UART看到<b>Hello, world!</b>字串，如果想從屏幕上印出字串，只要修改<b>lib/sbi/sbi_ecall_legacy.c</b>，將<b>#if 0</b>改成<b>#if 1</b>後，重新編譯燒錄即可
+</p>
+<pre class="brush:cpp">
+static int sbi_ecall_legacy_handler(unsigned long extid, unsigned long funcid,
+                    const struct sbi_trap_regs *regs,
+                    unsigned long *out_val,
+                    struct sbi_trap_info *out_trap)
+{
+    int ret = 0;
+    struct sbi_tlb_info tlb_info;
+    u32 source_hart = current_hartid();
+    ulong hmask = 0;
+
+    switch (extid) {
+    case SBI_EXT_0_1_SET_TIMER:
+#if __riscv_xlen == 32
+        sbi_timer_event_start((((u64)regs-&gt;a1 &lt;&lt; 32) | (u64)regs-&gt;a0));
+#else
+        sbi_timer_event_start((u64)regs-&gt;a0);
+#endif
+        break;
+    case SBI_EXT_0_1_CONSOLE_PUTCHAR:
+        sbi_putc(regs-&gt;a0);
+
+#if 0
+        /* Added by Steward for Gaviar handheld */
+        void f133_slcd_putc(char ch);
+        f133_slcd_putc(regs-&gt;a0);
+#endf
+        break;
 </pre>
+<p>
+<img src="gaviar_opensbi/7.jpg" class="maxSize"><br><br>
+
+Legacy SBI Interface有如下幾個Function，上面的那個main.s範例就是使用EID 0x01的sbi_console_putchar()印出字串，藉由上面的main.s範例，讓我們可以更了解SBI Interface的運作原理<br>
+<img src="gaviar_opensbi/8.jpg" class="maxSize"><br><br>
+
+呼叫的流程如下：<br>
+<img src="gaviar_opensbi/9.jpg" class="maxSize"><br><br>
+</p>
 
 <!-- tail -->
 <br>
