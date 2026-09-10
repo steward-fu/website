@@ -1,0 +1,154 @@
+﻿<!-- head
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+-->
+
+<head>
+<title>司徒的教學網站</title>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+<meta http-equiv="content-type" content="application/xhtml+xml; charset=UTF-8" />
+<meta name="author" content="fullahead.org" />
+<meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+<meta name="description" content="A valid, XHTML 1.0 template" />
+<meta name="robots" content="index, follow, noarchive" />
+<meta name="googlebot" content="noarchive" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=10.0" />
+
+<link rel="shortcut icon" href="../website.ico" />
+<link rel="stylesheet" type="text/css" href="../styles/shCore.css" />
+<link rel="stylesheet" type="text/css" href="../styles/shThemeDefault.css" />
+<link rel="stylesheet" type="text/css" href="../css/html.css" media="screen" />
+<link rel="stylesheet" type="text/css" href="../css/layout.css" media="screen" />
+
+<script type="text/javascript" src="../scripts/shCore.js"></script>
+<script type="text/javascript" src="../scripts/shBrushAppleScript.js"></script>
+<script type="text/javascript" src="../scripts/shBrushAS3.js"></script>
+<script type="text/javascript" src="../scripts/shBrushAsm.js"></script>
+<script type="text/javascript" src="../scripts/shBrushBash.js"></script>
+<script type="text/javascript" src="../scripts/shBrushColdFusion.js"></script>
+<script type="text/javascript" src="../scripts/shBrushCpp.js"></script>
+<script type="text/javascript" src="../scripts/shBrushD.js"></script>
+<script type="text/javascript" src="../scripts/shBrushCSharp.js"></script>
+<script type="text/javascript" src="../scripts/shBrushCss.js"></script>
+<script type="text/javascript" src="../scripts/shBrushDiff.js"></script>
+<script type="text/javascript" src="../scripts/shBrushErlang.js"></script>
+<script type="text/javascript" src="../scripts/shBrushGolang.js"></script>
+<script type="text/javascript" src="../scripts/shBrushGroovy.js"></script>
+<script type="text/javascript" src="../scripts/shBrushInf.js"></script>
+<script type="text/javascript" src="../scripts/shBrushJavaFX.js"></script>
+<script type="text/javascript" src="../scripts/shBrushJava.js"></script>
+<script type="text/javascript" src="../scripts/shBrushJScript.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPas.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPerl.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPhp.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPlain.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPowerShell.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPython.js"></script>
+<script type="text/javascript" src="../scripts/shBrushRuby.js"></script>
+<script type="text/javascript" src="../scripts/shBrushRust.js"></script>
+<script type="text/javascript" src="../scripts/shBrushSass.js"></script>
+<script type="text/javascript" src="../scripts/shBrushScad.js"></script>
+<script type="text/javascript" src="../scripts/shBrushBasic.js"></script>
+<script type="text/javascript" src="../scripts/shBrushVerilog.js"></script>
+<script type="text/javascript" src="../scripts/shBrushScala.js"></script>
+<script type="text/javascript" src="../scripts/shBrushSql.js"></script>
+<script type="text/javascript" src="../scripts/shBrushXml.js"></script>
+<script type="text/javascript" src="../scripts/shBrushFortran.js"></script>
+
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+</head>
+
+<body>
+<div id="wrapper">
+<div id="content">
+
+<div id="header">
+<a href="https://steward-fu.github.io/website/index.htm"><h1><span class="big darkBrown">S</span>teward</h1></a>
+<h2><span class="highlight">分享是一種喜悅、更是一種幸福</span></h2>
+</div>
+
+<div id="page">
+
+<!-- body -->
+<h3><a href="../index.htm">掌機</a> - Gaviar (小志掌機) - <b>Build RT-Thread</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/steward-fu/website/releases/tag/gaviar<br>
+https://github.com/RT-Thread/toolchains-ci/releases#release-v1.4<br>
+https://github.com/RT-Thread/rt-thread/blob/master/bsp/allwinner/d1s/README-MQ.md<br><br>
+</p>
+<pre>
+$ cd
+$ wget https://github.com/RT-Thread/toolchains-ci/releases/download/v1.7/riscv64-linux-musleabi_for_x86_64-pc-linux-gnu_latest.tar.bz2
+$ tar xvf riscv64-linux-musleabi_for_x86_64-pc-linux-gnu_latest.tar.bz2
+$ sudo mv riscv64-linux-musleabi_for_x86_64-pc-linux-gnu /opt
+$ export PATH=/opt/riscv64-linux-musleabi_for_x86_64-pc-linux-gnu/bin:$PATH
+
+$ cd
+$ git clone https://github.com/RT-Thread/userapps.git
+$ cd userapps
+$ git clone -b rt-smart https://gitee.com/rtthread/rt-thread.git
+$ source env.sh
+$ cd rt-thread/bsp/allwinner/d1s
+
+$ vim rt-thread/bsp/allwinner/libraries/drivers/drv_uart.c
+    24   #define UART_DEFAULT_BAUDRATE 115200
+
+$ vim rt-thread/bsp/allwinner/d1s/rtconfig.h
+    44   #define RT_CONSOLE_DEVICE_NAME "uart4"
+    264  #define UART4_TX_USING_GPIOB2
+    265  #define UART4_RX_USING_GPIOB3
+
+$ scons --menuconfig
+$ scons -c
+$ scons
+$ sudo dd if=tools/boot0_sdcard_sun20iw1p1_d1s.bin of=/dev/sdX bs=1024 seek=8
+$ sudo dd if=sd.bin of=/dev/sdX bs=1024 seek=56
+</pre><br>
+
+<p>
+Baudrate 115200bps
+</p>
+
+<pre>
+ \ | /
+- RT -     Thread Smart Operating System
+ / | \     5.0.0 build Sep 10 2026
+ 2006 - 2020 Copyright by rt-thread team
+hal_sdc_create 0
+card_detect insert
+Initial card success. capacity :29818MB
+sdmmc bytes_per_secotr:200, sector count:3a3d000
+found part[0], begin: 16777216, size: 29.106GB
+found partition:sd0 of mbr at offset 0000000000008000, size:0000000003a35000
+hal_sdc_create 1
+card_detect insert
+Initial card failed!!
+[E/drv-sdmmc] init sdmmc failed!
+[E/drv-sdmmc] sdmmc_init failed!
+[D/FAL] (fal_flash_init:47) Flash device |                  sdcard0 | addr: 0x00000000 | len: 0x47a00000 | blk_size: 0x00000200 |initialized finish.
+[I/FAL] ==================== FAL partition table ====================
+[I/FAL] | name       | flash_dev |   offset   |    length  |
+[I/FAL] -------------------------------------------------------------
+[I/FAL] | download   | sdcard0   | 0x00800000 | 0x00800000 |
+[I/FAL] | easyflash  | sdcard0   | 0x01000000 | 0x00100000 |
+[I/FAL] | filesystem | sdcard0   | 0x01100000 | 0x00c00000 |
+[I/FAL] =============================================================
+[I/FAL] RT-Thread Flash Abstraction Layer initialize success.
+Hello RISC-V
+msh /&gt;Mount "sd0p0" on "/" success
+</pre>
+
+<!-- tail -->
+<br>
+</div>
+
+</div>
+</div>
+</body>
+</html>
