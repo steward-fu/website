@@ -326,7 +326,53 @@ Legacy SBI Interface有如下幾個Function，上面的那個main.s範例就是�
 
 呼叫的流程如下：<br>
 <img src="gaviar_opensbi/9.jpg" class="maxSize"><br><br>
+
+Memory Layout如下：<br>
+<img src="gaviar_opensbi/10.jpg" class="maxSize"><br><br>
+
+Device Tree保留這些區域避免被覆蓋
 </p>
+<pre>
+memory@40000000 {
+    device_type = "memory";
+    reg = &lt;0x0 0x40000000 0x0 0x04000000&gt;; /* 64 MB */
+};
+
+reserved-memory {
+    #address-cells = &lt;2&gt;;
+    #size-cells = &lt;2&gt;;
+    ranges;
+
+    opensbi_reserved: opensbi@43e00000 {
+        reg = &lt;0x0 0x43e00000 0x0 0x00080000&gt;; /* 512 KiB */
+        no-map;
+    };
+
+    dtb_reserved: dtb@43d00000 {
+        reg = &lt;0x0 0x43d00000 0x0 0x00010000&gt;; /* 64 KiB */
+        no-map;
+    };
+};
+</pre><br>
+
+<p>
+開機後的Log
+</p>
+<pre>
+[    0.000000] Linux version 5.4.61 (steward@debian) (riscv64-unknown-linux-gnu-gcc (C-SKY RISCV Tools V1.8.4 B20200702) 8.1.0, GNU ld (GNU Binutils) 2.32) #1 PREEMPT Fri Sep 11 07:05:18 CST 2026
+[    0.000000] earlycon: sbi0 at I/O port 0x0 (options '')
+[    0.000000] printk: bootconsole [sbi0] enabled
+[    0.000000] cma: Reserved 16 MiB at 0x0000000042c00000
+[    0.000000] Zone ranges:
+[    0.000000]   DMA32    [mem 0x0000000040000000-0x0000000043ffffff]
+[    0.000000]   Normal   empty
+[    0.000000] Movable zone start for each node
+[    0.000000] Early memory node ranges
+[    0.000000]   node   0: [mem 0x0000000040000000-0x0000000043cfffff]
+[    0.000000]   node   0: [mem 0x0000000043d10000-0x0000000043dfffff]
+[    0.000000]   node   0: [mem 0x0000000043e80000-0x0000000043ffffff]
+[    0.000000] Initmem setup node 0 [mem 0x0000000040000000-0x0000000043ffffff]
+</pre>
 
 <!-- tail -->
 <br>
