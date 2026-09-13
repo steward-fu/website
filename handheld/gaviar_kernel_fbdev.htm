@@ -1,0 +1,669 @@
+﻿<!-- head
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+-->
+
+<head>
+<title>司徒的教學網站</title>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+<meta http-equiv="content-type" content="application/xhtml+xml; charset=UTF-8" />
+<meta name="author" content="fullahead.org" />
+<meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+<meta name="description" content="A valid, XHTML 1.0 template" />
+<meta name="robots" content="index, follow, noarchive" />
+<meta name="googlebot" content="noarchive" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=10.0" />
+
+<link rel="shortcut icon" href="../website.ico" />
+<link rel="stylesheet" type="text/css" href="../styles/shCore.css" />
+<link rel="stylesheet" type="text/css" href="../styles/shThemeDefault.css" />
+<link rel="stylesheet" type="text/css" href="../css/html.css" media="screen" />
+<link rel="stylesheet" type="text/css" href="../css/layout.css" media="screen" />
+
+<script type="text/javascript" src="../scripts/shCore.js"></script>
+<script type="text/javascript" src="../scripts/shBrushAppleScript.js"></script>
+<script type="text/javascript" src="../scripts/shBrushAS3.js"></script>
+<script type="text/javascript" src="../scripts/shBrushAsm.js"></script>
+<script type="text/javascript" src="../scripts/shBrushBash.js"></script>
+<script type="text/javascript" src="../scripts/shBrushColdFusion.js"></script>
+<script type="text/javascript" src="../scripts/shBrushCpp.js"></script>
+<script type="text/javascript" src="../scripts/shBrushD.js"></script>
+<script type="text/javascript" src="../scripts/shBrushCSharp.js"></script>
+<script type="text/javascript" src="../scripts/shBrushCss.js"></script>
+<script type="text/javascript" src="../scripts/shBrushDiff.js"></script>
+<script type="text/javascript" src="../scripts/shBrushErlang.js"></script>
+<script type="text/javascript" src="../scripts/shBrushGolang.js"></script>
+<script type="text/javascript" src="../scripts/shBrushGroovy.js"></script>
+<script type="text/javascript" src="../scripts/shBrushInf.js"></script>
+<script type="text/javascript" src="../scripts/shBrushJavaFX.js"></script>
+<script type="text/javascript" src="../scripts/shBrushJava.js"></script>
+<script type="text/javascript" src="../scripts/shBrushJScript.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPas.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPerl.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPhp.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPlain.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPowerShell.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPython.js"></script>
+<script type="text/javascript" src="../scripts/shBrushRuby.js"></script>
+<script type="text/javascript" src="../scripts/shBrushRust.js"></script>
+<script type="text/javascript" src="../scripts/shBrushSass.js"></script>
+<script type="text/javascript" src="../scripts/shBrushScad.js"></script>
+<script type="text/javascript" src="../scripts/shBrushBasic.js"></script>
+<script type="text/javascript" src="../scripts/shBrushVerilog.js"></script>
+<script type="text/javascript" src="../scripts/shBrushScala.js"></script>
+<script type="text/javascript" src="../scripts/shBrushSql.js"></script>
+<script type="text/javascript" src="../scripts/shBrushXml.js"></script>
+<script type="text/javascript" src="../scripts/shBrushFortran.js"></script>
+
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+</head>
+
+<body>
+<div id="wrapper">
+<div id="content">
+
+<div id="header">
+<a href="https://steward-fu.github.io/website/index.htm"><h1><span class="big darkBrown">S</span>teward</h1></a>
+<h2><span class="highlight">分享是一種喜悅、更是一種幸福</span></h2>
+</div>
+
+<div id="page">
+
+<!-- body -->
+<h3><a href="../index.htm">掌機</a> - Gaviar (小志掌機) - <b>移植Kernel framebuffer</b></h3>
+<hr size="1"><br>
+<p>
+司徒看了一下目前Tina-Linux裡面的Video Framebuffer Driver，發現這個Video Driver是為了可以透過初始化參數的設定就可以點屏，架構相對來說比較複雜一點，對於初期可以很快拿來使用，但是後期我們要做最佳化時，會變成是一個瓶頸，司徒覺得不適合我們短小精幹的小志掌機，為此，司徒將小志掌機的顯示驅動拆成如下三個階段製作：
+</p>
+<pre>
+階段一：使用I/O Toggle方式顯示
+階段二：使用DMA方式顯示
+階段三：加上INT中斷掃屏
+</pre><br>
+
+<p>
+framebuffer位於drivers/video/fbdev資料夾，因此，我們創建一個新檔案st7789.c
+</p>
+<pre class="brush:cpp">
+/*
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option)any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ */
+
+#include &lt;linux/cdev.h&gt;
+#include &lt;linux/module.h&gt;
+#include &lt;linux/kernel.h&gt;
+#include &lt;linux/fb.h&gt;
+#include &lt;linux/dma-mapping.h&gt;
+#include &lt;linux/device.h&gt;
+#include &lt;linux/backlight.h&gt;
+#include &lt;linux/platform_device.h&gt;
+#include &lt;linux/uaccess.h&gt;
+#include &lt;linux/pm_runtime.h&gt;
+#include &lt;linux/interrupt.h&gt;
+#include &lt;linux/wait.h&gt;
+#include &lt;linux/clk.h&gt;
+#include &lt;linux/cpufreq.h&gt;
+#include &lt;linux/console.h&gt;
+#include &lt;linux/spinlock.h&gt;
+#include &lt;linux/slab.h&gt;
+#include &lt;linux/delay.h&gt;
+#include &lt;linux/lcm.h&gt;
+#include &lt;linux/clk-provider.h&gt;
+#include &lt;video/of_display_timing.h&gt;
+#include &lt;linux/gpio.h&gt;
+#include &lt;linux/omapfb.h&gt;
+#include &lt;linux/compiler.h&gt;
+#include &lt;linux/workqueue.h&gt;
+#include &lt;linux/sched.h&gt;
+#include &lt;asm/io.h&gt;
+#include &lt;asm/irq.h&gt;
+
+#define PALETTE_SIZE 256
+#define DRIVER_NAME  "gaviar-fb"
+#define GPIO_BASE    0x02000000
+#define PD_CFG0      0x0090
+#define PD_CFG1      0x0094
+#define PD_CFG2      0x0098
+#define PD_DAT       0x00a0
+#define LCD_RST      (1 &lt;&lt; 0)
+#define LCD_WR       (1 &lt;&lt; 18)
+#define LCD_RS       (1 &lt;&lt; 19)
+#define LCD_RD       (1 &lt;&lt; 20)
+#define LCD_CS       (1 &lt;&lt; 21)
+#define LCD_BL       (1 &lt;&lt; 22)
+
+struct myfb_app {
+    uint32_t yoffset;
+    uint32_t vsync_count;
+};
+
+struct myfb_par {
+    struct device *dev;
+    struct platform_device *pdev;
+
+    resource_size_t p_palette_base;
+    unsigned short *v_palette_base;
+
+    void *vram_virt;
+    uint32_t vram_size;
+    dma_addr_t vram_phys;
+
+    struct myfb_app *app_virt;
+
+    int bpp;
+    int lcdc_irq;
+    int gpio_irq;
+    int lcd_ready;
+    u32 pseudo_palette[16];
+    struct fb_videomode mode;
+};
+
+struct _iomm {
+    uint8_t *gpio;
+};
+
+static struct _iomm iomm = { 0 };
+static struct myfb_par *mypar = NULL;
+static struct fb_var_screeninfo myfb_var = {0};
+
+static struct fb_fix_screeninfo myfb_fix = {
+    .id = DRIVER_NAME,
+    .type = FB_TYPE_PACKED_PIXELS,
+    .type_aux = 0,
+    .visual = FB_VISUAL_TRUECOLOR,
+    .xpanstep = 0,
+    .ypanstep = 1,
+    .ywrapstep = 0,
+    .accel = FB_ACCEL_NONE
+};
+
+static void lcd_write(uint32_t ctl, uint32_t dat)
+{
+    uint32_t r = ctl | ((dat &amp; 0xff) &lt;&lt; 1) | ((dat &amp; 0xff00) &lt;&lt; 2);
+
+    writel(r, iomm.gpio + PD_DAT);
+    r |= LCD_WR;
+    writel(r, iomm.gpio + PD_DAT);
+}
+
+static void lcd_write_cmd(uint32_t cmd)
+{
+    lcd_write(LCD_RD | LCD_BL | LCD_RST, cmd);
+}
+
+static void lcd_write_dat(uint32_t dat)
+{
+    lcd_write(LCD_RS | LCD_RD | LCD_BL | LCD_RST, dat);
+}
+
+static void lcd_reset(void)
+{
+    uint32_t r = 0;
+
+    r = readl(iomm.gpio + PD_DAT);
+    r &amp;= ~LCD_RST;
+    writel(r, iomm.gpio + PD_DAT);
+    mdelay(150);
+
+    r |= LCD_RST;
+    writel(r, iomm.gpio + PD_DAT);
+    mdelay(150);
+}
+
+static int lcd_init(void)
+{
+    writel(0x11111111, iomm.gpio + PD_CFG0);
+    writel(0x11111111, iomm.gpio + PD_CFG1);
+    writel(0x11111111, iomm.gpio + PD_CFG2);
+    writel(0xffffffff, iomm.gpio + PD_DAT);
+
+    lcd_reset();
+    lcd_write_cmd(0xb2);
+    lcd_write_dat(0x5c);
+    lcd_write_dat(0x5c);
+    lcd_write_dat(0x00);
+    lcd_write_dat(0x33);
+    lcd_write_dat(0x33);
+
+    lcd_write_cmd(0xb7);
+    lcd_write_dat(0x35);
+
+    lcd_write_cmd(0x21);
+
+    lcd_write_cmd(0x11);
+
+    mdelay(150);
+
+    lcd_write_cmd(0xe0);
+    lcd_write_dat(0xd0);
+    lcd_write_dat(0x06);
+    lcd_write_dat(0x0b);
+    lcd_write_dat(0x07);
+    lcd_write_dat(0x07);
+    lcd_write_dat(0x24);
+    lcd_write_dat(0x2e);
+    lcd_write_dat(0x32);
+    lcd_write_dat(0x46);
+    lcd_write_dat(0x37);
+    lcd_write_dat(0x13);
+    lcd_write_dat(0x13);
+    lcd_write_dat(0x2d);
+    lcd_write_dat(0x33);
+
+    lcd_write_cmd(0xe1);
+    lcd_write_dat(0xd0);
+    lcd_write_dat(0x02);
+    lcd_write_dat(0x06);
+    lcd_write_dat(0x09);
+    lcd_write_dat(0x08);
+    lcd_write_dat(0x05);
+    lcd_write_dat(0x29);
+    lcd_write_dat(0x44);
+    lcd_write_dat(0x42);
+    lcd_write_dat(0x38);
+    lcd_write_dat(0x14);
+    lcd_write_dat(0x14);
+    lcd_write_dat(0x2a);
+    lcd_write_dat(0x30);
+
+    lcd_write_cmd(0x36);
+    lcd_write_dat(0xb0);
+
+    lcd_write_cmd(0x2a);
+    lcd_write_dat(0x00);
+    lcd_write_dat(0x00);
+    lcd_write_dat(0x01);
+    lcd_write_dat(0x3f);
+
+    lcd_write_cmd(0x2b);
+    lcd_write_dat(0x00);
+    lcd_write_dat(0x00);
+    lcd_write_dat(0x00);
+    lcd_write_dat(0xef);
+
+    lcd_write_cmd(0x3a);
+    lcd_write_dat(0x55);
+
+    lcd_write_cmd(0x29);
+    lcd_write_cmd(0x2c);
+
+    {
+        int i = 0;
+        uint16_t *p = mypar-&gt;vram_virt;
+
+        for (i = 0; i &lt; 320 * 240; i++) {
+            lcd_write_dat(*p++);
+        }
+    }
+
+    return 0;
+}
+
+#define CNVT_TOHW(val, width) ((((val) &lt;&lt; (width)) + 0x7FFF - (val)) &gt;&gt; 16)
+static int myfb_setcolreg(unsigned regno, unsigned red, unsigned green, unsigned blue, unsigned transp, struct fb_info *info)
+{
+    red = CNVT_TOHW(red, info-&gt;var.red.length);
+    blue = CNVT_TOHW(blue, info-&gt;var.blue.length);
+    green = CNVT_TOHW(green, info-&gt;var.green.length);
+    ((u32 *)(info-&gt;pseudo_palette))[regno] = (red &lt;&lt; info-&gt;var.red.offset) | (green &lt;&lt; info-&gt;var.green.offset) | (blue &lt;&lt; info-&gt;var.blue.offset);
+
+    return 0;
+}
+#undef CNVT_TOHW
+
+static int myfb_check_var(struct fb_var_screeninfo *var, struct fb_info *info)
+{
+    int bpp = var-&gt;bits_per_pixel &gt;&gt; 3;
+    struct myfb_par *par = info-&gt;par;
+    unsigned long line_size = var-&gt;xres_virtual * bpp;
+
+    if ((var-&gt;xres != 320) || (var-&gt;yres != 240) || (var-&gt;bits_per_pixel != 16)) {
+        return -EINVAL;
+    }
+
+    var-&gt;transp.offset = 0;
+    var-&gt;transp.length = 0;
+    var-&gt;red.offset = 11;
+    var-&gt;red.length = 5;
+    var-&gt;green.offset = 5;
+    var-&gt;green.length = 6;
+    var-&gt;blue.offset = 0;
+    var-&gt;blue.length = 5;
+    var-&gt;red.msb_right = 0;
+    var-&gt;green.msb_right = 0;
+    var-&gt;blue.msb_right = 0;
+    var-&gt;transp.msb_right = 0;
+    if (line_size * var-&gt;yres_virtual &gt; par-&gt;vram_size) {
+        var-&gt;yres_virtual = par-&gt;vram_size / line_size;
+    }
+    if (var-&gt;yres &gt; var-&gt;yres_virtual) {
+        var-&gt;yres = var-&gt;yres_virtual;
+    }
+    if (var-&gt;xres &gt; var-&gt;xres_virtual) {
+        var-&gt;xres = var-&gt;xres_virtual;
+    }
+    if (var-&gt;xres + var-&gt;xoffset &gt; var-&gt;xres_virtual) {
+        var-&gt;xoffset = var-&gt;xres_virtual - var-&gt;xres;
+    }
+    if (var-&gt;yres + var-&gt;yoffset &gt; var-&gt;yres_virtual) {
+        var-&gt;yoffset = var-&gt;yres_virtual - var-&gt;yres;
+    }
+    return 0;
+}
+
+static int myfb_set_par(struct fb_info *info)
+{
+    struct myfb_par *par = info-&gt;par;
+
+    fb_var_to_videomode(&amp;par-&gt;mode, &amp;info-&gt;var);
+    par-&gt;app_virt-&gt;yoffset = info-&gt;var.yoffset = 0;
+    par-&gt;bpp = info-&gt;var.bits_per_pixel;
+    info-&gt;fix.visual = FB_VISUAL_TRUECOLOR;
+    info-&gt;fix.line_length = (par-&gt;mode.xres * par-&gt;bpp) / 8;
+
+    return 0;
+}
+
+static int myfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg)
+{
+    switch (cmd) {
+    case FBIO_WAITFORVSYNC:
+        break;
+    default:
+        return -1;
+    }
+
+    return 0;
+}
+
+static int myfb_mmap(struct fb_info *info, struct vm_area_struct *vma)
+{
+    const unsigned long offset = vma-&gt;vm_pgoff &lt;&lt; PAGE_SHIFT;
+    const unsigned long size = vma-&gt;vm_end - vma-&gt;vm_start;
+
+    if (offset + size &gt; info-&gt;fix.smem_len) {
+        return -EINVAL;
+    }
+
+    if (remap_pfn_range(vma, vma-&gt;vm_start, (info-&gt;fix.smem_start + offset) &gt;&gt; PAGE_SHIFT, size, vma-&gt;vm_page_prot)) {
+        return -EAGAIN;
+    }
+    return 0;
+}
+
+static int myfb_pan_display(struct fb_var_screeninfo *var, struct fb_info *info)
+{
+    struct myfb_par *par = info-&gt;par;
+
+    if (par &amp;&amp; par-&gt;lcd_ready) {
+        int i = 0;
+        uint16_t *p = mypar-&gt;vram_virt;
+
+        p += 320 * var-&gt;yoffset;
+        for (i = 0; i &lt; 320 * 240; i++) {
+            lcd_write_dat(*p++);
+        }
+    }
+
+    info-&gt;var.xoffset = var-&gt;xoffset;
+    info-&gt;var.yoffset = var-&gt;yoffset;
+    par-&gt;app_virt-&gt;yoffset = var-&gt;yoffset;
+
+    return 0;
+}
+
+static struct fb_ops myfb_ops = {
+    .owner          = THIS_MODULE,
+    .fb_check_var   = myfb_check_var,
+    .fb_set_par     = myfb_set_par,
+    .fb_setcolreg   = myfb_setcolreg,
+    .fb_pan_display = myfb_pan_display,
+    .fb_ioctl       = myfb_ioctl,
+    .fb_mmap        = myfb_mmap,
+
+    .fb_fillrect  = sys_fillrect,
+    .fb_copyarea  = sys_copyarea,
+    .fb_imageblit = sys_imageblit,
+};
+
+static int myfb_probe(struct platform_device *device)
+{
+    int ret = 0;
+    struct fb_info *info = NULL;
+    struct myfb_par *par = NULL;
+    struct fb_videomode *mode = NULL;
+
+    mode = devm_kzalloc(&amp;device-&gt;dev, sizeof(struct fb_videomode), GFP_KERNEL);
+    if (mode == NULL) {
+        return -ENOMEM;
+    }
+    mode-&gt;name = "320x240";
+    mode-&gt;xres = 320;
+    mode-&gt;yres = 240;
+    mode-&gt;vmode = FB_VMODE_NONINTERLACED;
+    pm_runtime_enable(&amp;device-&gt;dev);
+    pm_runtime_get_sync(&amp;device-&gt;dev);
+
+    info = framebuffer_alloc(sizeof(struct myfb_par), &amp;device-&gt;dev);
+    if (!info) {
+        return -ENOMEM;
+    }
+
+    par = info-&gt;par;
+    par-&gt;pdev = device;
+    par-&gt;dev = &amp;device-&gt;dev;
+    par-&gt;bpp = 16;
+    par-&gt;lcd_ready = 0;
+    fb_videomode_to_var(&amp;myfb_var, mode);
+
+    par-&gt;vram_size = (320 * 240 * 2 * 4) + 4096;
+    par-&gt;vram_virt = dma_alloc_coherent(&amp;device-&gt;dev, par-&gt;vram_size, (resource_size_t *)&amp;par-&gt;vram_phys, GFP_KERNEL | GFP_DMA);
+    if (!par-&gt;vram_virt) {
+        return -EINVAL;
+    }
+    info-&gt;screen_base = (char __iomem *)par-&gt;vram_virt;
+    myfb_fix.smem_start = par-&gt;vram_phys;
+    myfb_fix.smem_len = par-&gt;vram_size;
+    myfb_fix.line_length = 320 * 2;
+    par-&gt;app_virt = (struct myfb_app *)((uint8_t *)par-&gt;vram_virt + (320 * 240 * 2 * 4));
+
+    par-&gt;v_palette_base = dma_alloc_coherent(&amp;device-&gt;dev, PALETTE_SIZE, (resource_size_t *)&amp;par-&gt;p_palette_base, GFP_KERNEL | GFP_DMA);
+    if (!par-&gt;v_palette_base) {
+        return -EINVAL;
+    }
+    memset(par-&gt;v_palette_base, 0, PALETTE_SIZE);
+    myfb_var.grayscale = 0;
+    myfb_var.bits_per_pixel = par-&gt;bpp;
+
+    info-&gt;flags = FBINFO_FLAG_DEFAULT;
+    info-&gt;fix = myfb_fix;
+    info-&gt;var = myfb_var;
+    info-&gt;fbops = &amp;myfb_ops;
+    info-&gt;pseudo_palette = par-&gt;pseudo_palette;
+    info-&gt;fix.visual = (info-&gt;var.bits_per_pixel &lt;= 8) ? FB_VISUAL_PSEUDOCOLOR : FB_VISUAL_TRUECOLOR;
+    ret = fb_alloc_cmap(&amp;info-&gt;cmap, PALETTE_SIZE, 0);
+    if (ret) {
+        return -EINVAL;
+    }
+    info-&gt;cmap.len = 32;
+
+    myfb_var.activate = FB_ACTIVATE_FORCE;
+    fb_set_var(info, &amp;myfb_var);
+    dev_set_drvdata(&amp;device-&gt;dev, info);
+    if (register_framebuffer(info) &lt; 0) {
+        return -EINVAL;
+    }
+
+    mypar = par;
+    mypar-&gt;app_virt-&gt;yoffset = 240;
+    mypar-&gt;app_virt-&gt;vsync_count = 0;
+    lcd_init();
+    mypar-&gt;lcd_ready = 1;
+
+    return 0;
+}
+
+static int myfb_remove(struct platform_device *dev)
+{
+    struct fb_info *info = dev_get_drvdata(&amp;dev-&gt;dev);
+    struct myfb_par *par = info-&gt;par;
+
+    if (info) {
+        flush_scheduled_work();
+        unregister_framebuffer(info);
+        fb_dealloc_cmap(&amp;info-&gt;cmap);
+        dma_free_coherent(NULL, PALETTE_SIZE, par-&gt;v_palette_base, par-&gt;p_palette_base);
+        dma_free_coherent(NULL, par-&gt;vram_size, par-&gt;vram_virt, par-&gt;vram_phys);
+        framebuffer_release(info);
+    }
+    iounmap(iomm.gpio);
+
+    return 0;
+}
+
+static int myfb_suspend(struct platform_device *dev, pm_message_t state)
+{
+    struct fb_info *info = platform_get_drvdata(dev);
+
+    console_lock();
+    fb_set_suspend(info, 1);
+    pm_runtime_put_sync(&amp;dev-&gt;dev);
+    console_unlock();
+
+    return 0;
+}
+
+static int myfb_resume(struct platform_device *dev)
+{
+    struct fb_info *info = platform_get_drvdata(dev);
+
+    console_lock();
+    pm_runtime_get_sync(&amp;dev-&gt;dev);
+    fb_set_suspend(info, 0);
+    console_unlock();
+
+    return 0;
+}
+
+static struct platform_driver fb_driver = {
+    .probe    = myfb_probe,
+    .remove   = myfb_remove,
+    .suspend  = myfb_suspend,
+    .resume   = myfb_resume,
+    .driver = {
+        .name   = DRIVER_NAME,
+    },
+};
+
+static struct platform_device *fb_device = NULL;
+
+static void sunxi_ioremap(void)
+{    
+    iomm.gpio = (uint8_t *)ioremap(GPIO_BASE, 1024);
+}
+
+static void sunxi_iounmap(void)
+{
+    iounmap(iomm.gpio);
+}
+
+static int __init myfb_init(void)
+{
+    int ret = 0;
+
+    sunxi_ioremap();
+	ret = platform_driver_register(&amp;fb_driver);
+	if (!ret) {
+		fb_device = platform_device_alloc("gaviar-fb", 0);
+		if (fb_device) {
+			ret = platform_device_add(fb_device);
+        }
+		else {
+			ret = -ENOMEM;
+        }
+
+		if (ret) {
+			platform_device_put(fb_device);
+			platform_driver_unregister(&amp;fb_driver);
+		}
+	}
+
+    return ret;
+}
+
+static void __exit myfb_cleanup(void)
+{
+	platform_device_unregister(fb_device);
+	platform_driver_unregister(&amp;fb_driver);
+    sunxi_iounmap();
+}
+
+module_init(myfb_init);
+module_exit(myfb_cleanup);
+
+MODULE_DESCRIPTION("framebuffer driver for Gaviar handheld");
+MODULE_AUTHOR("Steward Fu &lt;steward.fu@gmail.com&gt;");
+MODULE_LICENSE("GPL");
+</pre><br>
+
+<p>
+drivers/video/fbdev/Kconfig
+</p>
+<pre>
+config FB_ST7789
+    tristate "ST7789 framebuffer support"
+    depends on FB
+    select FB_SYS_FOPS
+    select FB_SYS_FILLRECT
+    select FB_SYS_COPYAREA
+    select FB_SYS_IMAGEBLIT
+    ---help---
+      Frame buffer driver for the Gaviar handheld
+</pre><br>
+
+<p>
+drivers/video/fbdev/Makefile
+</p>
+<pre>
+obj-$(CONFIG_FB_ST7789) += st7789.o
+</pre><br>
+
+<p>
+選擇ST7789<br>
+<img src="gaviar_kernel_fbdev/2.jpg" class="maxSize"><br><br>
+
+編譯下載後就可以看到Linux Boot Logo<br>
+<img src="gaviar_kernel_fbdev/1.jpg" class="maxSize"><br><br>
+
+如果不想手動編譯，可以使用司徒做好的測試Image，如果要自己手動編譯，Commit使用44f254c025465ea58a2f024482f572f59567cb2b
+</p>
+<pre>
+$ cd
+$ wget https://github.com/steward-fu/website/releases/download/gaviar/kernel_test_20260912.img
+$ sudo dd if=kernel_test_20260912.img of=/dev/sdX bs=1M
+</pre>
+
+<!-- tail -->
+<br>
+</div>
+
+</div>
+</div>
+</body>
+</html>
