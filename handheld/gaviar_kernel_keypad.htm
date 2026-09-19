@@ -1,0 +1,382 @@
+﻿<!-- head
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+-->
+
+<head>
+<title>司徒的教學網站</title>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+<meta http-equiv="content-type" content="application/xhtml+xml; charset=UTF-8" />
+<meta name="author" content="fullahead.org" />
+<meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+<meta name="description" content="A valid, XHTML 1.0 template" />
+<meta name="robots" content="index, follow, noarchive" />
+<meta name="googlebot" content="noarchive" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=10.0" />
+
+<link rel="shortcut icon" href="../website.ico" />
+<link rel="stylesheet" type="text/css" href="../styles/shCore.css" />
+<link rel="stylesheet" type="text/css" href="../styles/shThemeDefault.css" />
+<link rel="stylesheet" type="text/css" href="../css/html.css" media="screen" />
+<link rel="stylesheet" type="text/css" href="../css/layout.css" media="screen" />
+
+<script type="text/javascript" src="../scripts/shCore.js"></script>
+<script type="text/javascript" src="../scripts/shBrushAppleScript.js"></script>
+<script type="text/javascript" src="../scripts/shBrushAS3.js"></script>
+<script type="text/javascript" src="../scripts/shBrushAsm.js"></script>
+<script type="text/javascript" src="../scripts/shBrushBash.js"></script>
+<script type="text/javascript" src="../scripts/shBrushColdFusion.js"></script>
+<script type="text/javascript" src="../scripts/shBrushCpp.js"></script>
+<script type="text/javascript" src="../scripts/shBrushD.js"></script>
+<script type="text/javascript" src="../scripts/shBrushCSharp.js"></script>
+<script type="text/javascript" src="../scripts/shBrushCss.js"></script>
+<script type="text/javascript" src="../scripts/shBrushDiff.js"></script>
+<script type="text/javascript" src="../scripts/shBrushErlang.js"></script>
+<script type="text/javascript" src="../scripts/shBrushGolang.js"></script>
+<script type="text/javascript" src="../scripts/shBrushGroovy.js"></script>
+<script type="text/javascript" src="../scripts/shBrushInf.js"></script>
+<script type="text/javascript" src="../scripts/shBrushJavaFX.js"></script>
+<script type="text/javascript" src="../scripts/shBrushJava.js"></script>
+<script type="text/javascript" src="../scripts/shBrushJScript.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPas.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPerl.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPhp.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPlain.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPowerShell.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPython.js"></script>
+<script type="text/javascript" src="../scripts/shBrushRuby.js"></script>
+<script type="text/javascript" src="../scripts/shBrushRust.js"></script>
+<script type="text/javascript" src="../scripts/shBrushSass.js"></script>
+<script type="text/javascript" src="../scripts/shBrushScad.js"></script>
+<script type="text/javascript" src="../scripts/shBrushBasic.js"></script>
+<script type="text/javascript" src="../scripts/shBrushVerilog.js"></script>
+<script type="text/javascript" src="../scripts/shBrushScala.js"></script>
+<script type="text/javascript" src="../scripts/shBrushSql.js"></script>
+<script type="text/javascript" src="../scripts/shBrushXml.js"></script>
+<script type="text/javascript" src="../scripts/shBrushFortran.js"></script>
+
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+</head>
+
+<body>
+<div id="wrapper">
+<div id="content">
+
+<div id="header">
+<a href="https://steward-fu.github.io/website/index.htm"><h1><span class="big darkBrown">S</span>teward</h1></a>
+<h2><span class="highlight">分享是一種喜悅、更是一種幸福</span></h2>
+</div>
+
+<div id="page">
+
+<!-- body -->
+<h3><a href="../index.htm">掌機</a> - Gaviar (小志掌機) - <b>移植Kernel keypad</b></h3>
+<hr size="1"><br>
+<p>
+司徒接著來說明一下如何做Input驅動程式的移植，Input驅動程式支援很多種類型的裝置，包含：鍵盤、滑鼠、觸控等，司徒幫小志掌機設定的類型是鍵盤，因為是比較單純的裝置，相當適合我們的小志掌機，之後要移植的模擬器就只要處理鍵盤訊息即可，這樣的架構就很單純，所以我們要實作的部份如下紅色部份<br>
+<img src="gaviar_kernel_keypad/2.jpg" class="maxSize"><br><br>
+
+小志掌機的按鍵電路圖<br>
+<img src="gaviar_kernel_keypad/3.jpg" class="maxSize">
+</p>
+<pre>
+PE0  =&gt; UP
+PE7  =&gt; DOWN
+PE6  =&gt; LEFT
+PE4  =&gt; RIGHT
+PE13 =&gt; A
+PE12 =&gt; B
+PE11 =&gt; X
+PE2  =&gt; Y
+PE8  =&gt; SELECT
+PE9  =&gt; START
+PE10 =&gt; R1
+PE1  =&gt; L1
+PE3  =&gt; MENU
+</pre><br>
+
+<p>
+drivers/input/keyboard/gaviar-keypad.c
+</p>
+<pre class="brush:cpp">
+/*
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option)any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ */
+
+#include &lt;linux/fs.h&gt;
+#include &lt;linux/kobject.h&gt;
+#include &lt;linux/cdev.h&gt;
+#include &lt;linux/init.h&gt;
+#include &lt;linux/device.h&gt;
+#include &lt;linux/module.h&gt;
+#include &lt;linux/delay.h&gt;
+#include &lt;linux/timer.h&gt;
+#include &lt;linux/gpio.h&gt;
+#include &lt;linux/input.h&gt;
+#include &lt;linux/kernel.h&gt;
+#include &lt;linux/slab.h&gt;
+#include &lt;linux/uaccess.h&gt;
+#include &lt;linux/backlight.h&gt;
+
+#include &lt;sound/core.h&gt;
+#include &lt;sound/pcm.h&gt;
+#include &lt;sound/pcm_params.h&gt;
+#include &lt;sound/soc.h&gt;
+#include &lt;sound/tlv.h&gt;
+#include &lt;sound/initval.h&gt;
+#include &lt;sound/dmaengine_pcm.h&gt;
+#include &lt;linux/gpio.h&gt;
+
+#include &lt;asm/irq.h&gt;
+
+static int myperiod = 30;
+static struct input_dev *mydev;
+static struct timer_list mytimer;
+
+static uint32_t R_UP     = 0x0001;
+static uint32_t R_DOWN   = 0x0002;
+static uint32_t R_LEFT   = 0x0004;
+static uint32_t R_RIGHT  = 0x0008;
+static uint32_t R_A      = 0x0010;
+static uint32_t R_B      = 0x0020;
+static uint32_t R_X      = 0x0040;
+static uint32_t R_Y      = 0x0080;
+static uint32_t R_SELECT = 0x0100;
+static uint32_t R_START  = 0x0200;
+static uint32_t R_L1     = 0x0400;
+static uint32_t R_R1     = 0x0800;
+static uint32_t R_MENU   = 0x1000;
+
+static uint32_t I_UP     = 0;
+static uint32_t I_DOWN   = 0;
+static uint32_t I_LEFT   = 0;
+static uint32_t I_RIGHT  = 0;
+static uint32_t I_A      = 0;
+static uint32_t I_B      = 0;
+static uint32_t I_X      = 0;
+static uint32_t I_Y      = 0;
+static uint32_t I_SELECT = 0;
+static uint32_t I_START  = 0;
+static uint32_t I_L1     = 0;
+static uint32_t I_R1     = 0;
+static uint32_t I_MENU   = 0;
+
+static int do_input_request(uint32_t pin, const char *name)
+{
+    if (gpio_request(pin, name) &lt; 0) {
+        printk("failed to request gpio: %s\n", name);
+        return -1;
+    }
+    gpio_direction_input(pin);
+
+    return 0;
+}
+
+static void print_key(uint32_t val, uint8_t is_pressed)
+{
+    uint32_t i = 0;
+    uint32_t map_val[] = {
+        R_UP, R_DOWN, R_LEFT, R_RIGHT,
+        R_A, R_B, R_X, R_Y,
+        R_SELECT, R_START, R_L1, R_R1, R_MENU, -1
+    };
+    char *map_key[] = {
+        "UP", "DOWN", "LEFT", "RIGHT",
+        "A", "B", "X", "Y",
+        "SELECT", "START", "L1", "R1", "MENU", ""
+    };
+
+    for (i = 0; map_val[i] != -1; i++) {
+        if (map_val[i] == val) {
+            printk("%s: %s\n", map_key[i], is_pressed ? "DOWN" : "UP");
+            break;
+        }
+    }
+}
+
+static void report_key(uint32_t btn, uint32_t mask, uint8_t key)
+{
+    static uint32_t btn_pressed = 0;
+    static uint32_t btn_released = 0xffff;
+
+    if(btn &amp; mask) {
+        btn_released &amp;= ~mask;
+        if((btn_pressed &amp; mask) == 0) {
+            btn_pressed |= mask;
+            input_report_key(mydev, key, 1);
+            print_key(mask, 1);
+        }
+    }
+    else {
+        btn_pressed &amp;= ~mask;
+        if((btn_released &amp; mask) == 0) {
+            btn_released |= mask;
+            input_report_key(mydev, key, 0);
+            print_key(mask, 0);
+        }
+    }
+}
+
+static void keypad_handler(struct timer_list *timer)
+{
+    uint32_t val = 0;
+    static uint32_t pre = 0;
+
+    if (gpio_get_value(I_UP) == 0)     val |= R_UP;
+    if (gpio_get_value(I_DOWN) == 0)   val |= R_DOWN;
+    if (gpio_get_value(I_LEFT) == 0)   val |= R_LEFT;
+    if (gpio_get_value(I_RIGHT) == 0)  val |= R_RIGHT;
+    if (gpio_get_value(I_A) == 0)      val |= R_A;
+    if (gpio_get_value(I_B) == 0)      val |= R_B;
+    if (gpio_get_value(I_X) == 0)      val |= R_X;
+    if (gpio_get_value(I_Y) == 0)      val |= R_Y;
+    if (gpio_get_value(I_L1) == 0)     val |= R_L1;
+    if (gpio_get_value(I_R1) == 0)     val |= R_R1;
+    if (gpio_get_value(I_SELECT) == 0) val |= R_SELECT;
+    if (gpio_get_value(I_START) == 0)  val |= R_START;
+    if (gpio_get_value(I_MENU) == 0)   val |= R_MENU;
+
+    if (pre != val) {
+        pre = val;
+        report_key(pre, R_UP,     KEY_UP);
+        report_key(pre, R_DOWN,   KEY_DOWN);
+        report_key(pre, R_LEFT,   KEY_LEFT);
+        report_key(pre, R_RIGHT,  KEY_RIGHT);
+        report_key(pre, R_A,      KEY_LEFTCTRL);
+        report_key(pre, R_B,      KEY_LEFTALT);
+        report_key(pre, R_X,      KEY_SPACE);
+        report_key(pre, R_Y,      KEY_LEFTSHIFT);
+        report_key(pre, R_L1,     KEY_TAB);
+        report_key(pre, R_R1,     KEY_BACKSPACE);
+        report_key(pre, R_SELECT, KEY_ESC);
+        report_key(pre, R_START,  KEY_ENTER);
+        report_key(pre, R_MENU,   KEY_RIGHTCTRL);
+        input_sync(mydev);
+    }
+    mod_timer(&amp;mytimer, jiffies + msecs_to_jiffies(myperiod));
+}
+
+static int __init kbd_init(void)
+{
+    uint32_t ret = 0;
+
+    I_UP     = ((32 * 4) + 0);
+    I_DOWN   = ((32 * 4) + 7);
+    I_LEFT   = ((32 * 4) + 6);
+    I_RIGHT  = ((32 * 4) + 4);
+    I_A      = ((32 * 4) + 13);
+    I_B      = ((32 * 4) + 12);
+    I_X      = ((32 * 4) + 11);
+    I_Y      = ((32 * 4) + 2);
+    I_SELECT = ((32 * 4) + 8);
+    I_START  = ((32 * 4) + 9);
+    I_R1     = ((32 * 4) + 10);
+    I_L1     = ((32 * 4) + 1);
+    I_MENU   = ((32 * 4) + 3);
+
+    do_input_request(I_MENU,   "menu");
+    do_input_request(I_UP,     "up");
+    do_input_request(I_DOWN,   "down");
+    do_input_request(I_LEFT,   "left");
+    do_input_request(I_RIGHT,  "right");
+    do_input_request(I_A,      "a");
+    do_input_request(I_B,      "b");
+    do_input_request(I_X,      "x");
+    do_input_request(I_Y,      "y");
+    do_input_request(I_SELECT, "select");
+    do_input_request(I_START,  "start");
+    do_input_request(I_L1,     "l1");
+    do_input_request(I_R1,     "r1");
+
+    mydev = input_allocate_device();
+    set_bit(EV_KEY,         mydev-&gt; evbit);
+    set_bit(KEY_UP,         mydev-&gt;keybit);
+    set_bit(KEY_DOWN,       mydev-&gt;keybit);
+    set_bit(KEY_LEFT,       mydev-&gt;keybit);
+    set_bit(KEY_RIGHT,      mydev-&gt;keybit);
+    set_bit(KEY_LEFTCTRL,   mydev-&gt;keybit);
+    set_bit(KEY_LEFTALT,    mydev-&gt;keybit);
+    set_bit(KEY_SPACE,      mydev-&gt;keybit);
+    set_bit(KEY_LEFTSHIFT,  mydev-&gt;keybit);
+    set_bit(KEY_ENTER,      mydev-&gt;keybit);
+    set_bit(KEY_ESC,        mydev-&gt;keybit);
+    set_bit(KEY_TAB,        mydev-&gt;keybit);
+    set_bit(KEY_BACKSPACE,  mydev-&gt;keybit);
+    set_bit(KEY_RIGHTCTRL,  mydev-&gt;keybit);
+    mydev-&gt;name = "gaviar-keypad";
+    mydev-&gt;id.bustype = BUS_HOST;
+    ret = input_register_device(mydev);
+
+    timer_setup(&amp;mytimer, keypad_handler, 0);
+    mod_timer(&amp;mytimer, jiffies + msecs_to_jiffies(myperiod));
+
+    return 0;
+}
+
+static void __exit kbd_exit(void)
+{
+    input_unregister_device(mydev);
+    del_timer(&amp;mytimer);
+}
+
+module_init(kbd_init);
+module_exit(kbd_exit);
+
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("Steward Fu &lt;steward.fu@gmail.com&gt;");
+MODULE_DESCRIPTION("keypad driver for Gaviar handheld");
+</pre><br>
+
+<p>
+drivers/input/keyboard/Kconfig
+</p>
+<pre>
+config KEYBOARD_GAVIAR
+    tristate "keypad driver for Gaviar handheld"
+    help
+      Say Y here if you want to use keypad for Gaviar handheld.
+</pre><br>
+
+<p>
+drivers/input/keyboard/Makefile
+</p>
+<pre>
+obj-$(CONFIG_KEYBOARD_GAVIAR) += gaviar-keypad.o
+</pre><br>
+
+<p>
+選擇Gaviar Keypad<br>
+<img src="gaviar_kernel_keypad/1.jpg" class="maxSize"><br><br>
+
+完成<br>
+<img src="gaviar_kernel_keypad/4.jpg" class="maxSize"><br>
+P.S. commit ec03a6057，測試檔案https://github.com/steward-fu/website/releases/download/gaviar/kernel_test_20260919.img<br><br>
+
+小志掌機的Keypad驅動程式，其運作流程如下：<br>
+<img src="gaviar_kernel_keypad/5.jpg" class="maxSize">
+</p>
+
+<!-- tail -->
+<br>
+</div>
+
+</div>
+</div>
+</body>
+</html>
