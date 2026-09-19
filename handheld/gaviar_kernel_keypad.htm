@@ -369,7 +369,10 @@ obj-$(CONFIG_KEYBOARD_GAVIAR) += gaviar-keypad.o
 P.S. commit ec03a6057，測試檔案https://github.com/steward-fu/website/releases/download/gaviar/kernel_test_20260919.img<br><br>
 
 小志掌機的Keypad驅動程式，其運作流程如下：<br>
-<img src="gaviar_kernel_keypad/5.jpg" class="maxSize">
+<img src="gaviar_kernel_keypad/5.jpg" class="maxSize"><br><br>
+
+小志掌機的Keypad驅動程式只負責註冊InputDevice，接著設定一個Timer做GPIO輪詢的操作，輪詢的間隔是30ms，比較好的作法其實是中斷＋輪詢，不過，簡單製作的話，輪詢方式其實已經很足夠使用了，值得一提是，GPIO驅動程式，因為Tina-Linux已經移植完成，所以我們可以直接透過GPIO驅動程式來取得按鍵的狀態，假如沒有GPIO驅動程式的支援，我們就需要改用I/O Mapping，然後自己去讀取暫存器(Register)的值做處理，兩者都可以達到目的，而處理完的結果，Keypad驅動程式會透過input_report_key()回報給Input Core驅動程式，這樣上層的應用程式就可以透過讀取/dev/input/event0來取得我們回報的按鍵狀態，至於按鍵的回報，司徒採用以前丁果A320的按鍵映射方式，這些按鍵的選擇倒是沒有硬性規定，不過，根據司徒的觀察，以前這些高手的選擇都是經過細心思考且基於模擬器的相容問題來設計，像是DOSBox模擬器，加入Enter、Escape的按鍵映射，可以更加方便的操作<br>
+<img src="gaviar_kernel_keypad/6.jpg" class="maxSize"><br><br>
 </p>
 
 <!-- tail -->
