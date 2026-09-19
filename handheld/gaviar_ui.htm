@@ -1,0 +1,202 @@
+﻿<!-- head
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+-->
+
+<head>
+<title>司徒的教學網站</title>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+<meta http-equiv="content-type" content="application/xhtml+xml; charset=UTF-8" />
+<meta name="author" content="fullahead.org" />
+<meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+<meta name="description" content="A valid, XHTML 1.0 template" />
+<meta name="robots" content="index, follow, noarchive" />
+<meta name="googlebot" content="noarchive" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=10.0" />
+
+<link rel="shortcut icon" href="../website.ico" />
+<link rel="stylesheet" type="text/css" href="../styles/shCore.css" />
+<link rel="stylesheet" type="text/css" href="../styles/shThemeDefault.css" />
+<link rel="stylesheet" type="text/css" href="../css/html.css" media="screen" />
+<link rel="stylesheet" type="text/css" href="../css/layout.css" media="screen" />
+
+<script type="text/javascript" src="../scripts/shCore.js"></script>
+<script type="text/javascript" src="../scripts/shBrushAppleScript.js"></script>
+<script type="text/javascript" src="../scripts/shBrushAS3.js"></script>
+<script type="text/javascript" src="../scripts/shBrushAsm.js"></script>
+<script type="text/javascript" src="../scripts/shBrushBash.js"></script>
+<script type="text/javascript" src="../scripts/shBrushColdFusion.js"></script>
+<script type="text/javascript" src="../scripts/shBrushCpp.js"></script>
+<script type="text/javascript" src="../scripts/shBrushD.js"></script>
+<script type="text/javascript" src="../scripts/shBrushCSharp.js"></script>
+<script type="text/javascript" src="../scripts/shBrushCss.js"></script>
+<script type="text/javascript" src="../scripts/shBrushDiff.js"></script>
+<script type="text/javascript" src="../scripts/shBrushErlang.js"></script>
+<script type="text/javascript" src="../scripts/shBrushGolang.js"></script>
+<script type="text/javascript" src="../scripts/shBrushGroovy.js"></script>
+<script type="text/javascript" src="../scripts/shBrushInf.js"></script>
+<script type="text/javascript" src="../scripts/shBrushJavaFX.js"></script>
+<script type="text/javascript" src="../scripts/shBrushJava.js"></script>
+<script type="text/javascript" src="../scripts/shBrushJScript.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPas.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPerl.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPhp.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPlain.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPowerShell.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPython.js"></script>
+<script type="text/javascript" src="../scripts/shBrushRuby.js"></script>
+<script type="text/javascript" src="../scripts/shBrushRust.js"></script>
+<script type="text/javascript" src="../scripts/shBrushSass.js"></script>
+<script type="text/javascript" src="../scripts/shBrushScad.js"></script>
+<script type="text/javascript" src="../scripts/shBrushBasic.js"></script>
+<script type="text/javascript" src="../scripts/shBrushVerilog.js"></script>
+<script type="text/javascript" src="../scripts/shBrushScala.js"></script>
+<script type="text/javascript" src="../scripts/shBrushSql.js"></script>
+<script type="text/javascript" src="../scripts/shBrushXml.js"></script>
+<script type="text/javascript" src="../scripts/shBrushFortran.js"></script>
+
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+</head>
+
+<body>
+<div id="wrapper">
+<div id="content">
+
+<div id="header">
+<a href="https://steward-fu.github.io/website/index.htm"><h1><span class="big darkBrown">S</span>teward</h1></a>
+<h2><span class="highlight">分享是一種喜悅、更是一種幸福</span></h2>
+</div>
+
+<div id="page">
+
+<!-- body -->
+<h3><a href="../index.htm">掌機</a> - Gaviar (小志掌機) - <b>移植OS-GUI</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://buildroot.org/<br><br>
+
+司徒接著說明一下移植系統UI這個部份，一般市面上常見的UI包含：LVGL、Funkey-OS、Onion等，這些UI都是屬於頂層應用程式，使用的元件都是基於Buildroot建構出來，而Buildroot是一套用來建制精簡Linux系統的工具，因此，移植系統UI指的就是將這些UI重新編譯並且跑在我們期望的平台上，因為某些UI會針對不同晶片或者Kernel做客製化，因此，這部份需要先找出來並且修改成我們想要的樣子，這些層級關係，司徒整理成如下圖片<br>
+<img src="gaviar_ui/1.jpg" class="maxSize"><br><br>
+
+那問題來了，Kernel究竟是如何載入Buildroot File System(rootfs)並且跑起來的呢？一般作法是將rootfs放到一個磁區，例如：Partition 2，然後在Kernel的啟動參數裡面，描述rootfs位於何處以及磁區的類別是什麼，例如：ext4，然後說明第一個init程式位於何處，所以當Kernel開始執行時，MMC驅動程式就會負責偵測SD卡，然後FileSystem驅動程式負責磁區的識別，最後Kernel會執行init程式，整個過程如下圖所示：<br>
+<img src="gaviar_ui/2.jpg" class="maxSize"><br><br>
+
+Buildroot
+</p>
+<pre>
+$ cd
+$ wget https://buildroot.org/downloads/buildroot-2026.08.tar.gz
+$ tar xvf buildroot-2026.08.tar.gz
+$ cd buildroot-2026.08
+$ make menuconfig
+</pre><br>
+
+<p>
+RISC-V<br>
+<img src="gaviar_ui/3.jpg" class="maxSize"><br><br>
+
+glibc、kernel、C++<br>
+<img src="gaviar_ui/4.jpg" class="maxSize"><br><br>
+
+/opt/gaviar<br>
+<img src="gaviar_ui/5.jpg" class="maxSize"><br><br>
+
+hostname<br>
+<img src="gaviar_ui/6.jpg" class="maxSize"><br><br>
+
+SDL<br>
+<img src="gaviar_ui/7.jpg" class="maxSize"><br><br>
+
+squashfs、tar<br>
+<img src="gaviar_ui/8.jpg" class="maxSize"><br><br>
+
+編譯
+</p>
+<pre>
+$ make
+</pre><br>
+
+<p>
+SDCard<br>
+<img src="gaviar_ui/9.jpg" class="maxSize"><br><br>
+
+描述開機磁區位置以及磁區類型
+</p>
+<pre>
+bootargs = "console=ttyS4,115200n8 console=tty ignore_loglevel loglevel=8 root=/dev/mmcblk0p1 rootwait rw rootfstype=ext4 init=/sbin/init";
+</pre><br>
+
+<p>
+將output/images/rootfs.tar解壓縮到第一磁區，開機後就可以看到<b>Welcome to Gaviar</b><br>
+<img src="gaviar_ui/10.jpg" class="maxSize"><br><br>
+
+接著我們來寫一個測試的UI應用程式試試，程式碼如下：
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;SDL.h&gt;
+ 
+int main(int argc, char **argv)
+{
+    SDL_Rect rt = { 0 };
+    SDL_Surface *screen = NULL;
+ 
+    SDL_Init(SDL_INIT_VIDEO);
+    screen = SDL_SetVideoMode(320, 240, 16, SDL_SWSURFACE);
+    SDL_FillRect(screen, &amp;screen-&gt;clip_rect, SDL_MapRGB(screen-&gt;format, 0xff, 0x00, 0x00));
+    SDL_ShowCursor(0);
+
+    rt.x = 50;
+    rt.y = 50;
+    rt.w = 30;
+    rt.h = 30;
+    SDL_FillRect(screen, &amp;rt, SDL_MapRGB(screen-&gt;format, 0x00, 0xff, 0x00));
+ 
+    rt.x = 100;
+    rt.y = 100;
+    rt.w = 50;
+    rt.h = 100;
+    SDL_FillRect(screen, &amp;rt, SDL_MapRGB(screen-&gt;format, 0x00, 0x00, 0xff));
+ 
+    SDL_Flip(screen);
+    SDL_Delay(30000);
+    SDL_Quit();
+
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯(使用Buildroot編譯出來的編譯器)
+</p>
+<pre>
+$ /opt/gaviar/bin/riscv64-linux-gcc main.c -o main -I/opt/gaviar/riscv64-Gaviar-linux-gnu/sysroot/usr/include/SDL -lSDL
+</pre><br>
+
+<p>
+設定開機啟動這個UI應用程式，在SDCard裡面的/etc/init.d/rcS，附加如下指令並且將編譯後的main複製到SDCard的/bin資料夾底下
+</p>
+<pre>
+SDL_NOMOUSE=1 SDL_VIDEODRIVER=fbcon /bin/main
+</pre><br>
+
+<p>
+開機後，就會顯示測試程式的UI畫面<br>
+<img src="gaviar_ui/11.jpg" class="maxSize"><br>
+P.S. 之後如果有時間移植LVGL、Funkey-OS或者Onion，他們就是這個UI應用程式角色<br>
+</p>
+
+<!-- tail -->
+<br>
+</div>
+
+</div>
+</div>
+</body>
+</html>
