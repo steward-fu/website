@@ -78,7 +78,8 @@
 <hr size="1"><br>
 <p>
 參考資訊：<br>
-https://buildroot.org/<br><br>
+https://buildroot.org/<br>
+https://github.com/pcercuei/mininit<br><br>
 
 司徒接著說明一下移植系統UI這個部份，一般市面上常見的UI包含：LVGL、Funkey-OS、Onion等，這些UI都是屬於頂層應用程式，使用的元件都是基於Buildroot建構出來，而Buildroot是一套用來建制精簡Linux系統的工具，因此，移植系統UI指的就是將這些UI重新編譯並且跑在我們期望的平台上，因為某些UI會針對不同晶片或者Kernel做客製化，因此，這部份需要先找出來並且修改成我們想要的樣子，這些層級關係，司徒整理成如下圖片<br>
 <img src="gaviar_ui/1.jpg" class="maxSize"><br><br>
@@ -189,7 +190,119 @@ SDL_NOMOUSE=1 SDL_VIDEODRIVER=fbcon /bin/main
 <p>
 開機後，就會顯示測試程式的UI畫面<br>
 <img src="gaviar_ui/11.jpg" class="maxSize"><br>
-P.S. 之後如果有時間移植LVGL、Funkey-OS或者Onion，他們就是這個UI應用程式角色<br>
+P.S. 之後如果有時間移植LVGL、Funkey-OS或者Onion，他們就是這個UI應用程式角色<br><br>
+
+雖說將rootfs解壓縮到SDCard是一個相當方便、簡單的作法，不過當SDCard的資料正在寫回時，如果不小心斷電或者拔卡，則會很容易造成卡崩的問題，因此，比較好的作法是將磁區改成唯讀的方式，避免卡崩，不過這樣還是浪費一個磁區，所以改用SQUASHFS檔案是一個最佳的方案，因為將rootfs壓縮成一個檔案除了可以節省空間，更可以方便替換rootfs，可是Kernel在開機時，要如何掛載這個SQUASHFS檔案呢？一般常見的作法是使用RAMDisk，不過司徒想幫小志掌機使用另一個方式，這個方式是由OpenDingux Team的Pcercuei製作，GitHub Repo在https://github.com/pcercuei/mininit，mininit是一個在執行init前，用來執行掛載SQUASHFS檔案的小程式，掛載後就將執行權限交給原本的/sbin/init程式，因此，整個執行流程如下：<br>
+<img src="gaviar_ui/12.jpg" class="maxSize"><br><br>
+
+要跑mininit前，必須要確定Kernel開啟如下選項
+</p>
+<pre>
+CONFIG_DEVTMPFS_MOUNT=y
+CONFIG_CMDLINE_BOOL=y
+</pre><br>
+
+<p>
+編譯mininit
+</p>
+<pre>
+$ cd
+$ wget https://github.com/steward-fu/website/releases/download/rg99/src_mininit.tar.gz
+$ tar xvf src_mininit.tar.gz
+$ cd mininit
+
+$ export PATH=/opt/thead/bin:$PATH
+$ vim Makefile
+    CC = riscv64-unknown-linux-gnu-gcc
+
+$ make
+</pre><br>
+
+<p>
+然後將開機參數改成
+</p>
+<pre>
+bootargs = "console=ttyS4,115200n8 console=tty ignore_loglevel loglevel=8 root=/dev/mmcblk0p1 rootwait ro rootfstype=vfat init=/mininit-syspart";
+</pre><br>
+
+<p>
+接著回Buildroot資料夾，新增一個boot資料夾給mininit掛載使用，然後再修改etc/init.d/rcS，編譯後就可以產生我們要的rootfs.squashfs檔案
+</p>
+<pre>
+$ mkdir output/target/boot
+$ sudo vim output/target/etc/init.d/rcS
+    SDL_NOMOUSE=1 SDL_VIDEODRIVER=fbcon /bin/main
+
+$ sudo cp ../main output/target/bin/
+$ make
+</pre><br>
+
+<p>
+接著將rootfs.squashfs以及編譯後的mininit-syspart複製到MicroSD，同時也需要在第一磁區增加兩個空的資料夾(dev, root)，如下圖示：<br>
+<img src="gaviar_ui/13.jpg" class="maxSize"><br><br>
+
+開機後，就會顯示測試程式的UI畫面，只是這次是從rootfs.squash掛載執行<br>
+<img src="gaviar_ui/11.jpg" class="maxSize"><br><br>
+
+接著讓我們來玩玩ucGUI，編譯步驟如下：
+</p>
+<pre>
+$ cd
+$ git clone https://github.com/steward-fu/ucgui
+$ cd ucgui
+$ make MOD=gaviar
+$ ls -al libucgui.a
+    -rw-r--r-- 1 steward steward 6633760 Sep 20 13:54 libucgui.a
+</pre><br>
+
+<p>
+main.c
+</p>
+<pre class="brush:cpp">
+#include "GUI.h"
+#include "TEXT.h"
+#include "FRAMEWIN.h"
+   
+int main(int argc, char *argv[])
+{
+    TEXT_Handle hText = 0;
+    FRAMEWIN_Handle hFrame = 0;
+   
+    GUI_Init();
+    GUI_SetBkColor(GUI_GRAY);
+    GUI_Clear();
+  
+    hFrame = FRAMEWIN_Create("main", 0, WM_CF_SHOW, 10, 10, 300, 200);
+    FRAMEWIN_AddCloseButton(hFrame, FRAMEWIN_BUTTON_RIGHT, 0);
+    FRAMEWIN_AddMaxButton(hFrame, FRAMEWIN_BUTTON_RIGHT, 0);
+    FRAMEWIN_AddMinButton(hFrame, FRAMEWIN_BUTTON_RIGHT, 0);
+    FRAMEWIN_SetText(hFrame, "main");
+    FRAMEWIN_SetFont(hFrame, &amp;GUI_Font8x16);
+ 
+    hText = TEXT_CreateAsChild(20, 100, 200, 30, hFrame, 100, WM_CF_SHOW, "", TEXT_CF_HCENTER);
+    TEXT_SetText(hText, "Hello, Gaviar Handheld !");
+    TEXT_SetFont(hText, &amp;GUI_Font8x16);
+ 
+    FRAMEWIN_SetActive(hFrame, 1);
+    GUI_Delay(1000);
+    FRAMEWIN_Delete(hFrame);
+   
+    GUI_Delay(30000);
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ export PATH=/opt/gaviar/bin:$PATH
+$ riscv64-linux-gcc main.c -o main libucgui.a -IGUI_X -IGUI/Core -IGUI/Widget -IGUI/WM -lSDL
+</pre><br>
+
+<p>
+完成<br>
+<img src="gaviar_ui/14.jpg" class="maxSize"><br><br>
 </p>
 
 <!-- tail -->
