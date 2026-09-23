@@ -4,6 +4,7 @@ All of files or resources used on my website can be found from the following lin
 &nbsp;
 
 [![](img/photos/pandora.jpg)](https://github.com/steward-fu/website/releases/tag/pandora)
+[![](img/photos/mmf.jpg)](https://github.com/steward-fu/website/releases/tag/miyoo-mini-flip)
 [![](img/photos/a320.jpg)](https://github.com/steward-fu/website/releases/tag/a320)
 [![](img/photos/wiz.jpg)](https://github.com/steward-fu/website/releases/tag/wiz)
 [![](img/photos/trimui.jpg)](https://github.com/steward-fu/website/releases/tag/trimui)
