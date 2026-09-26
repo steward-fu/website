@@ -74,52 +74,64 @@
 <div id="page">
 
 <!-- body -->
-<h3><a href="../phone.htm">手機</a> - Nokia N900 - Maemo - <b>客製化.vimrc</b></h3>
+<h3><a href="../index.htm">掌機</a> - Miyoo Mini Flip - <b>如何更新U-Boot Environment CRC32</b></h3>
 <hr size="1"><br>
 <p>
-~/.vimrc
-</p>
-<pre>
-set nu
-set nocp
-set ruler
-set showcmd
-set bg=dark
-set hlsearch
-set showmode
-set enc=utf8
-set expandtab
-set tabstop=4
-set cursorline
-set shiftwidth=4
-set colorcolumn=82
-set backspace=indent,eol,start
-set fencs=utf8,gbk,gb2312,gb18030
-set fileencodings=utf-8,gb2312,gb18030,gbk,ucs-bom,cp936,latin1
-hi cursorline cterm=none ctermbg=darkred ctermfg=white
-autocmd BufEnter *.inc :setlocal filetype=objasm
-autocmd BufEnter *.asm :setlocal filetype=objasm
-syntax on
+CRC32結果位於：0x5f000<br>
+CRC32計算長度：0x5f004~0x60000<br>
+Environment Variables：0x5f004~0x60000<br><br>
 
-map [ :s/&amp;amp;/\&amp;/ge\|:'&lt;,'&gt;s/&amp;gt;/&gt;/ge\|:'&lt;,'&gt;s/&amp;lt;/&lt;/ge
-map ] :s/&amp;/\&amp;amp;/ge\|:'&lt;,'&gt;s/&gt;/\&amp;gt;/ge\|:'&lt;,'&gt;s/&lt;/\&amp;lt;/ge
-map 0 :s/\%xa0/\ /ge
-map &lt;Tab&gt; :set wrap!
+計算方式如下：
+</p>
+<pre class="brush:python">
+import os
+import sys
+import struct
+
+FILE = sys.argv[1]
+
+CRC_START = 0x5f004
+CRC_END   = 0x60000
+CRC_POS   = 0x5f000
+
+def crc32b(data):
+    crc = 0xffffffff
+
+    for byte in data:
+        crc ^= byte
+
+        for _ in range(8):
+            mask = -(crc &amp; 1)
+            crc = (crc &gt;&gt; 1) ^ (0xedb88320 &amp; mask)
+
+    return (~crc) &amp; 0xffffffff
+
+
+with open(FILE, "r+b") as f:
+    f.seek(CRC_START)
+    data = f.read(CRC_END - CRC_START)
+
+    if len(data) != CRC_END - CRC_START:
+        raise RuntimeError(
+            f"read {len(data):#x} bytes, "
+            f"expected {CRC_END - CRC_START:#x} bytes"
+        )
+
+    crc = crc32b(data)
+    print(f"CRC32 = 0x{crc:08x}")
+
+    f.seek(CRC_POS)
+    f.write(struct.pack("&lt;I", crc))
+    print(f"Written to 0x{CRC_POS:05x}")
 </pre><br>
 
 <p>
-VIM編輯Binary且不附加0A
+執行
 </p>
 <pre>
-:set binary noendofline
-</pre><br>
-
-<p>
-設定html檔案都使用xml語法
-</p>
-<pre>
-$ mkdir -p ~/.vim/syntax
-$ echo "set syntax=xml" &gt; ~/.vim/syntax/html.vim
+$ python3 ./patch.py spi.bin 
+    CRC32 = 0x60847167
+    Written to 0x5f000
 </pre>
 
 <!-- tail -->
