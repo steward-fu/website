@@ -74,18 +74,20 @@
 <div id="page">
 
 <!-- body -->
-<h3><a href="../driver.htm">驅動程式</a> - Windows Driver Model (WDM) - 使用範例 - C/C++ (DriverWorks) - <b>make.bat</b></h3>
+<h3><a href="../driver.htm">驅動程式</a> - Windows Driver Model (WDM) - 使用範例 - C/C++ (DriverWorks) - <b>Makefile</b></h3>
 <hr size="1"><br>
 <pre>
-del main.sys
-"c:\xpddk\bin\x86\cl.exe" -nologo -I"c:\xpddk\inc\wxp" -I"c:\xpddk\inc\ddk\wxp" -I"c:\xpddk\inc\ddk\wdm\wxp" -I"c:\xpddk\inc\crt" -I"c:\numega\DriverWorks\include" -I"c:\numega\DriverWorks\source" -D_X86_ -DNTVERSION='WDM' -DDBG=1 /c /Zel /Gz main.cpp
-"c:\xpddk\bin\x86\link.exe" -INCREMENTAL:NO -debug:FULL -debugtype:cv -driver -base:0x10000 -entry:DriverEntry@8 -subsystem:native,5.01 "c:\xpddk\lib\wxp\i386\wdm.lib" "c:\xpddk\lib\wxp\i386\ntoskrnl.lib" "c:\xpddk\lib\wxp\i386\csq.lib" "c:\numega\DriverWorks\lib\i386\checked\vdw_wdm.lib" -out:main.sys main.obj
+all:
+	myx86 "c:\\xpddk\\bin\\x86\\cl.exe" -I"c:\\xpddk\\inc\\wxp" -I"c:\\xpddk\\inc\\ddk\\wxp" -I"c:\\xpddk\\inc\\ddk\\wdm\\wxp" -I"c:\\xpddk\\inc\\crt" -I"c:\\numega\\driverworks\\include" -I"c:\\numega\\driverworks\\source" -D_X86_=1 -DNTVERSION=\'WDM\' -DDBG=1 /c /Zel /Gz main.cpp
+	lld-link /driver /base:0x10000 /subsystem:native /entry:DriverEntry /safeseh:no /opt/wadk/xpddk/lib/wxp/i386/wdm.lib /opt/wadk/xpddk/lib/wxp/i386/ntoskrnl.lib /opt/wadk/numega/driverworks/lib/i386/checked/vdw_wdm.lib main.obj /out:main.sys
+	python3 fix.py main.sys
 
-if exist app.c (
-    del app.exe
-    "c:\xpddk\bin\x86\cl.exe" -nologo -I"c:\xpddk\inc\wxp" -I"c:\xpddk\inc\wxp" -I"c:\xpddk\inc\crt" -D_X86_ -DWIN32_LEAN_AND_MEAN=1 /c /Zel /Gz app.c
-    "c:\xpddk\bin\x86\link.exe" -incremental:no -debug:full -debugtype:cv -entry:mainCRTStartup -subsystem:console "c:\xpddk\lib\wxp\i386\msvcrt.lib" "c:\xpddk\lib\wxp\i386\advapi32.lib" "c:\xpddk\lib\wxp\i386\kernel32.lib" -out:app.exe app.obj
-)
+run:
+	genisoimage -R -J -l -follow -o cdrom.iso * /opt/wadk/tools/sleep.exe /opt/wadk/tools/devcon.exe
+	myqemu win2k
+
+clean:
+	rm -rf cdrom.iso main.obj main.pdb main.sys
 </pre>
 
 <!-- tail -->
