@@ -74,18 +74,20 @@
 <div id="page">
 
 <!-- body -->
-<h3><a href="../driver.htm">驅動程式</a> - Windows Driver Model (WDM) - 使用範例 - C/C++ (DDK) - <b>make.bat</b></h3>
+<h3><a href="../driver.htm">驅動程式</a> - Windows Driver Model (WDM) - 使用範例 - C/C++ (DDK) - <b>Makefile</b></h3>
 <hr size="1"><br>
 <pre>
-del main.sys
-"c:\xpddk\bin\x86\cl.exe" -nologo -I"c:\xpddk\inc\wxp" -I"c:\xpddk\inc\ddk\wxp" -I"c:\xpddk\inc\ddk\wdm\wxp" -I"c:\xpddk\inc\crt" -D_X86_ /c /Zel /Gz main.c
-"c:\xpddk\bin\x86\link.exe" -INCREMENTAL:NO -debug:FULL -debugtype:cv -driver -base:0x10000 -entry:DriverEntry@8 -subsystem:native,5.01 "c:\xpddk\lib\wxp\i386\wdm.lib" "c:\xpddk\lib\wxp\i386\ntoskrnl.lib" "c:\xpddk\lib\wxp\i386\csq.lib" -out:main.sys main.obj
+all:
+	clang -target i686-pc-windows-msvc -I/opt/wadk/xpddk/inc/wxp -I/opt/wadk/xpddk/inc/ddk/wxp -I/opt/wadk/xpddk/inc/ddk/wdm/wxp -I/opt/wadk/xpddk/inc/crt -D_X86_ -Xclang -fdefault-calling-conv=stdcall -c main.c
+	lld-link main.o /driver /base:0x10000 /subsystem:native /entry:DriverEntry /safeseh:no "/opt/wadk/masm32/lib/wxp/i386/ntoskrnl.lib" /out:main.sys
+	python3 fix.py main.sys
 
-if exist app.c (
-    del app.exe
-    "c:\xpddk\bin\x86\cl.exe" -nologo -I"c:\xpddk\inc\wxp" -I"c:\xpddk\inc\crt" -D_X86_ -DWIN32_LEAN_AND_MEAN=1 /c /Zel /Gz app.c
-    "c:\xpddk\bin\x86\link.exe" -incremental:no -debug:full -debugtype:cv -entry:mainCRTStartup -subsystem:console "c:\xpddk\lib\wxp\i386\msvcrt.lib" "c:\xpddk\lib\wxp\i386\advapi32.lib" "c:\xpddk\lib\wxp\i386\kernel32.lib" -out:app.exe app.obj
-)
+run:
+	genisoimage -R -J -o cdrom.iso autorun.inf main.sys main.inf run.bat /opt/wadk/tools/devcon.exe
+	myqemu winxp
+
+clean:
+	rm -rf main.sys main.o cdrom.iso
 </pre>
 
 <!-- tail -->

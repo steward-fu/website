@@ -80,9 +80,7 @@
 參考資訊：<br>
 https://wasm.in/<br>
 http://four-f.narod.ru/<br>
-https://github.com/steward-fu/ddk<br><br>
-
-<b>Hello, world!</b>是學習C/C++程式設計的第一個入門程式，而對於驅動程式來說這個傳統依然不變，因為它是最簡單的程式，寫出一個這樣的程式才會有信心繼續往下一個目標邁進，司徒就先教大家如何寫一個<b>Hello, world!</b>驅動程式<br><br>
+https://github.com/steward-fu/wadk<br><br>
 
 main.c
 </p>
@@ -94,7 +92,7 @@ static PDEVICE_OBJECT pNextDevice = NULL;
 static NTSTATUS AddDevice(PDRIVER_OBJECT pMyDriver, PDEVICE_OBJECT pPhyDevice)
 {
     PDEVICE_OBJECT pMyDevice = NULL;
-    UNICODE_STRING usDeviceName = {0};
+    UNICODE_STRING usDeviceName = { 0 };
 
     DbgPrint("Hello, world!");
     RtlInitUnicodeString(&amp;usDeviceName, L"\\Device\\MyDriver");
@@ -102,6 +100,7 @@ static NTSTATUS AddDevice(PDRIVER_OBJECT pMyDriver, PDEVICE_OBJECT pPhyDevice)
     pNextDevice = IoAttachDeviceToDeviceStack(pMyDevice, pPhyDevice);
     pMyDevice-&gt;Flags &amp;= ~DO_DEVICE_INITIALIZING;
     pMyDevice-&gt;Flags |= DO_BUFFERED_IO;
+
     return STATUS_SUCCESS;
 }
  
@@ -120,6 +119,7 @@ static NTSTATUS IrpDispatch(PDEVICE_OBJECT pMyDevice, PIRP pIrp)
         return STATUS_SUCCESS;
     }
     IoSkipCurrentIrpStackLocation(pIrp);
+
     return IoCallDriver(pNextDevice, pIrp);
 }
  
@@ -128,97 +128,134 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT pMyDriver, PUNICODE_STRING pMyRegistry)
     pMyDriver-&gt;MajorFunction[IRP_MJ_PNP] = IrpDispatch;
     pMyDriver-&gt;DriverExtension-&gt;AddDevice = AddDevice;
     pMyDriver-&gt;DriverUnload = Unload;
+
     return STATUS_SUCCESS;
 }
 </pre>
 <p>
-<b>L39~42</b>：只有做Callback設定的動作，需要設定AddDevice、PNP、DriverUnload這三個Callback<br>
-<b>L07~16</b>：產生一個Device Object，用來管理新加入的裝置(純軟體虛擬裝置也算)，接著初使化相關旗標<br>
-<b>L25~34</b>：主要處理移除Device Object的動作，其餘Irp不處理，直接往下傳遞<br><br>
+<b>L41~43</b>：只有做Callback設定的動作，需要設定AddDevice、PNP、DriverUnload這三個Callback<br>
+<b>L11~15</b>：產生一個Device Object，用來管理新加入的裝置(純軟體虛擬裝置也算)，接著初使化相關旗標<br>
+<b>L28~36</b>：主要處理移除Device Object的動作，其餘Irp不處理，直接往下傳遞<br><br>
 
 main.inf
 </p>
 <pre>
 [Version]
-Signature=$CHICAGO$
+Signature="$WINDOWS NT$"
 Class=Unknown
 Provider=%MFGNAME%
-DriverVer=8/21/2019,1.0.0.0
- 
+DriverVer=10/01/2026,1.0.0.0
+
 [Manufacturer]
 %MFGNAME%=DeviceList
- 
+%MFGNAME%=DeviceList,NTamd64
+
 [DeviceList]
-%DESCRIPTION%=DriverInstall, *MyDriver
- 
+%DESCRIPTION%=DriverInstall.NTamd64,*MyDriver
+
+[DeviceList.NTamd64]
+%DESCRIPTION%=DriverInstall.NTamd64,*MyDriver
+
 [DestinationDirs]
-DefaultDestDir=10,System32\Drivers
- 
-[SourceDisksFiles]
-main.sys=1,,,
- 
+DriverCopyFiles=12
+
 [SourceDisksNames]
-1=%INSTDISK%,,,
- 
-[DriverInstall.NT]
+1=%INSTDISK%
+
+[SourceDisksFiles]
+main.sys=1
+
+[DriverInstall.NTamd64]
 CopyFiles=DriverCopyFiles
- 
+
 [DriverCopyFiles]
-main.sys,,,2
- 
-[DriverInstall.NT.Services]
-AddService=FILEIO,2,DriverService
- 
+main.sys
+
+[DriverInstall.NTamd64.Services]
+AddService=FILEIO,0x00000002,DriverService
+
 [DriverService]
+DisplayName=%SERVICE_DESC%
 ServiceType=1
 StartType=3
 ErrorControl=1
-ServiceBinary=%10%\system32\drivers\main.sys
- 
-[DriverInstall.NT.HW]
+ServiceBinary=%12%\main.sys
+
+[DriverInstall.NTamd64.HW]
 AddReg=DriverHwAddReg
- 
+
 [DriverHwAddReg]
 HKR,,SampleInfo,,""
- 
-[DriverInstall]
-AddReg=DriverAddReg
-CopyFiles=DriverCopyFiles
- 
-[DriverAddReg]
-HKR,,DevLoader,,*ntkern
-HKR,,NTMPDriver,,main.sys
- 
-[DriverInstall.HW]
-AddReg=DriverHwAddReg
- 
+
 [Strings]
 MFGNAME="MyDriver"
 INSTDISK="MyDriver Disc"
 DESCRIPTION="MyDriver"
+SERVICE_DESC="MyDriver Kernel Driver"
+</pre><br>
+
+<p>
+autorun.inf
+</p>
+<pre>
+[autorun]
+open=run.bat
+</pre><br>
+
+<p>
+run.bat
+</p>
+<pre>
+e:\devcon.exe install e:\main.inf *mydriver
+e:\devcon.exe remove e:\main.inf *mydriver
+</pre><br>
+
+<p>
+fix.py
+</p>
+<pre class="brush:python">
+import os
+import sys
+import pefile
+
+if len(sys.argv) != 2:
+    print('Usage: {} xxx'.format(sys.argv[0]))
+    sys.exit()
+
+fname = sys.argv[1]
+pe = pefile.PE(fname);
+pe.OPTIONAL_HEADER.CheckSum = pe.generate_checksum();
+pe.write(fname);
+</pre><br>
+
+<p>
+Makefile
+</p>
+<pre>
+all:
+	clang -target i686-pc-windows-msvc -I/opt/wadk/xpddk/inc/wxp -I/opt/wadk/xpddk/inc/ddk/wxp -I/opt/wadk/xpddk/inc/ddk/wdm/wxp -I/opt/wadk/xpddk/inc/crt -D_X86_ -Xclang -fdefault-calling-conv=stdcall -c main.c
+	lld-link main.o /driver /base:0x10000 /subsystem:native /entry:DriverEntry /safeseh:no "/opt/wadk/masm32/lib/wxp/i386/ntoskrnl.lib" /out:main.sys
+	python3 fix.py main.sys
+
+run:
+	genisoimage -R -J -o cdrom.iso autorun.inf main.sys main.inf run.bat /opt/wadk/tools/devcon.exe
+	myqemu winxp
+
+clean:
+	rm -rf main.sys main.o cdrom.iso
 </pre><br>
 
 <p>
 編譯
 </p>
 <pre>
-"c:\xpddk\bin\x86\cl.exe" -nologo -I"c:\xpddk\inc\wxp" -I"c:\xpddk\inc\ddk\wxp" -I"c:\xpddk\inc\ddk\wdm\wxp" -I"c:\xpddk\inc\crt" -D_X86_ /c /Zel /Gz main.c
-"c:\xpddk\bin\x86\link.exe" -INCREMENTAL:NO -debug:FULL -debugtype:cv -driver -base:0x10000 -entry:DriverEntry@8 -subsystem:native,5.01 "c:\xpddk\lib\wxp\i386\ntoskrnl.lib" -out:main.sys main.obj
+$ make
+$ make run
 </pre><br>
 
 <p>
-在開始安裝驅動程式之前，需要先下載除錯工具，讓驅動程式的Debug訊息可以顯示在除錯工具上面，目前最佳的Debug輸出訊息工具是DbgView，該公司目前已經被Microsoft併購，所以可以從Microsoft網站下載，下載完後執行DbgView並將<b>Capture =&gt; Capture Kernel</b>選項打勾，接著<b>重啟</b>DbgView<br>
-<img src="wdm_asm_hello/1.jpg" class="maxSize"><br><br>
-
-對於驅動程式的安裝工具，司徒目前使用NuMega公司製作的EzDriverInstaller，將main.sys和main.inf放在同一個目錄並執行EzDriverInstaller，選擇<b>File =&gt; Open...</b>(開啟main.inf檔案)，接著按<b>Add New Device</b>就可以在DbgView上面看到輸出訊息<br>
-<img src="wdm_asm_hello/2.jpg" class="maxSize"><br>
-<img src="wdm_asm_hello/3.jpg" class="maxSize"><br><br>
-
-Device Manager<br>
-<img src="wdm_asm_hello/4.jpg" class="maxSize"><br><br>
-
-Device Object<br>
-<img src="wdm_asm_hello/5.jpg" class="maxSize">
+完成<br>
+<img src="wdm_objasm_hello/1.jpg" class="maxSize">
 </p>
 
 <!-- tail -->
