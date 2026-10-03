@@ -1,0 +1,137 @@
+﻿<!-- head
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+-->
+
+<head>
+<title>司徒的教學網站</title>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+<meta http-equiv="content-type" content="application/xhtml+xml; charset=UTF-8" />
+<meta name="author" content="fullahead.org" />
+<meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+<meta name="description" content="A valid, XHTML 1.0 template" />
+<meta name="robots" content="index, follow, noarchive" />
+<meta name="googlebot" content="noarchive" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=10.0" />
+
+<link rel="shortcut icon" href="../website.ico" />
+<link rel="stylesheet" type="text/css" href="../styles/shCore.css" />
+<link rel="stylesheet" type="text/css" href="../styles/shThemeDefault.css" />
+<link rel="stylesheet" type="text/css" href="../css/html.css" media="screen" />
+<link rel="stylesheet" type="text/css" href="../css/layout.css" media="screen" />
+
+<script type="text/javascript" src="../scripts/shCore.js"></script>
+<script type="text/javascript" src="../scripts/shBrushAppleScript.js"></script>
+<script type="text/javascript" src="../scripts/shBrushAS3.js"></script>
+<script type="text/javascript" src="../scripts/shBrushAsm.js"></script>
+<script type="text/javascript" src="../scripts/shBrushBash.js"></script>
+<script type="text/javascript" src="../scripts/shBrushColdFusion.js"></script>
+<script type="text/javascript" src="../scripts/shBrushCpp.js"></script>
+<script type="text/javascript" src="../scripts/shBrushD.js"></script>
+<script type="text/javascript" src="../scripts/shBrushCSharp.js"></script>
+<script type="text/javascript" src="../scripts/shBrushCss.js"></script>
+<script type="text/javascript" src="../scripts/shBrushDiff.js"></script>
+<script type="text/javascript" src="../scripts/shBrushErlang.js"></script>
+<script type="text/javascript" src="../scripts/shBrushGolang.js"></script>
+<script type="text/javascript" src="../scripts/shBrushGroovy.js"></script>
+<script type="text/javascript" src="../scripts/shBrushInf.js"></script>
+<script type="text/javascript" src="../scripts/shBrushJavaFX.js"></script>
+<script type="text/javascript" src="../scripts/shBrushJava.js"></script>
+<script type="text/javascript" src="../scripts/shBrushJScript.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPas.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPerl.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPhp.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPlain.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPowerShell.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPython.js"></script>
+<script type="text/javascript" src="../scripts/shBrushRuby.js"></script>
+<script type="text/javascript" src="../scripts/shBrushRust.js"></script>
+<script type="text/javascript" src="../scripts/shBrushSass.js"></script>
+<script type="text/javascript" src="../scripts/shBrushScad.js"></script>
+<script type="text/javascript" src="../scripts/shBrushBasic.js"></script>
+<script type="text/javascript" src="../scripts/shBrushVerilog.js"></script>
+<script type="text/javascript" src="../scripts/shBrushScala.js"></script>
+<script type="text/javascript" src="../scripts/shBrushSql.js"></script>
+<script type="text/javascript" src="../scripts/shBrushXml.js"></script>
+<script type="text/javascript" src="../scripts/shBrushFortran.js"></script>
+
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+</head>
+
+<body>
+<div id="wrapper">
+<div id="content">
+
+<div id="header">
+<a href="https://steward-fu.github.io/website/index.htm"><h1><span class="big darkBrown">S</span>teward</h1></a>
+<h2><span class="highlight">分享是一種喜悅、更是一種幸福</span></h2>
+</div>
+
+<div id="page">
+
+<!-- body -->
+<h3><a href="../index.htm">掌機</a> - Miyoo Mini Flip - <b>如何添加SSD202D SDK到Buildroot</b></h3>
+<hr size="1"><br>
+<p>
+在Buildroot根目錄
+</p>
+<pre>
+$ mkdir package/mmf
+$ touch package/mmf/mmf.hash
+$ vim package/mmf/Config.in 
+    config BR2_PACKAGE_MMF
+        bool "ssd202d-sdk"
+        help
+          Install SSD202D headers and libraries into the Buildroot staging
+          directory and target filesystem.
+
+$ vim package/mmf/mmf.mk 
+    MMF_SITE = $(TOPDIR)/package/mmf
+    MMF_SITE_METHOD = local
+
+    define MMF_INSTALL_TARGET_CMDS
+        mkdir -p $(STAGING_DIR)/usr/include
+        mkdir -p $(STAGING_DIR)/usr/lib
+
+        cp -a $(@D)/include/. $(STAGING_DIR)/usr/include/
+        cp -a $(@D)/lib/. $(STAGING_DIR)/usr/lib/
+    endef
+
+    $(eval $(generic-package))
+
+$ vim package/Config.in
+    354     source "package/mmf/Config.in"
+    355     source "package/sdl/Config.in"
+
+$ wget https://github.com/steward-fu/website/releases/download/miyoo-mini-flip/sdk.tar.gz
+$ tar xvf sdk.tar.gz -C /tmp
+$ cp -a /tmp/sdk/include package/mmf
+$ cp -a /tmp/sdk/lib package/mmf
+
+$ make menuconfig
+</pre>
+<p>
+<img src="mmf_buildroot_add_pkg/1.jpg" class="maxSize"><br><br>
+
+編譯
+</p>
+<pre>
+$ make
+$ find /opt/mmf/ -name "*mi_*" | head -n 3
+    /opt/mmf/arm-mmf-linux-gnueabihf/sysroot/usr/include/mi_divp_datatype.h
+    /opt/mmf/arm-mmf-linux-gnueabihf/sysroot/usr/include/mi_venc.h
+    /opt/mmf/arm-mmf-linux-gnueabihf/sysroot/usr/include/linux/ipmi_msgdefs.h
+</pre>
+
+<!-- tail -->
+<br>
+</div>
+
+</div>
+</div>
+</body>
+</html>
