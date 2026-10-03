@@ -1,0 +1,313 @@
+﻿<!-- head
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+-->
+
+<head>
+<title>司徒的教學網站</title>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+<meta http-equiv="content-type" content="application/xhtml+xml; charset=UTF-8" />
+<meta name="author" content="fullahead.org" />
+<meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+<meta name="description" content="A valid, XHTML 1.0 template" />
+<meta name="robots" content="index, follow, noarchive" />
+<meta name="googlebot" content="noarchive" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=10.0" />
+
+<link rel="shortcut icon" href="../website.ico" />
+<link rel="stylesheet" type="text/css" href="../styles/shCore.css" />
+<link rel="stylesheet" type="text/css" href="../styles/shThemeDefault.css" />
+<link rel="stylesheet" type="text/css" href="../css/html.css" media="screen" />
+<link rel="stylesheet" type="text/css" href="../css/layout.css" media="screen" />
+
+<script type="text/javascript" src="../scripts/shCore.js"></script>
+<script type="text/javascript" src="../scripts/shBrushAppleScript.js"></script>
+<script type="text/javascript" src="../scripts/shBrushAS3.js"></script>
+<script type="text/javascript" src="../scripts/shBrushAsm.js"></script>
+<script type="text/javascript" src="../scripts/shBrushBash.js"></script>
+<script type="text/javascript" src="../scripts/shBrushColdFusion.js"></script>
+<script type="text/javascript" src="../scripts/shBrushCpp.js"></script>
+<script type="text/javascript" src="../scripts/shBrushD.js"></script>
+<script type="text/javascript" src="../scripts/shBrushCSharp.js"></script>
+<script type="text/javascript" src="../scripts/shBrushCss.js"></script>
+<script type="text/javascript" src="../scripts/shBrushDiff.js"></script>
+<script type="text/javascript" src="../scripts/shBrushErlang.js"></script>
+<script type="text/javascript" src="../scripts/shBrushGolang.js"></script>
+<script type="text/javascript" src="../scripts/shBrushGroovy.js"></script>
+<script type="text/javascript" src="../scripts/shBrushInf.js"></script>
+<script type="text/javascript" src="../scripts/shBrushJavaFX.js"></script>
+<script type="text/javascript" src="../scripts/shBrushJava.js"></script>
+<script type="text/javascript" src="../scripts/shBrushJScript.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPas.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPerl.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPhp.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPlain.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPowerShell.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPython.js"></script>
+<script type="text/javascript" src="../scripts/shBrushRuby.js"></script>
+<script type="text/javascript" src="../scripts/shBrushRust.js"></script>
+<script type="text/javascript" src="../scripts/shBrushSass.js"></script>
+<script type="text/javascript" src="../scripts/shBrushScad.js"></script>
+<script type="text/javascript" src="../scripts/shBrushBasic.js"></script>
+<script type="text/javascript" src="../scripts/shBrushVerilog.js"></script>
+<script type="text/javascript" src="../scripts/shBrushScala.js"></script>
+<script type="text/javascript" src="../scripts/shBrushSql.js"></script>
+<script type="text/javascript" src="../scripts/shBrushXml.js"></script>
+<script type="text/javascript" src="../scripts/shBrushFortran.js"></script>
+
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+</head>
+
+<body>
+<div id="wrapper">
+<div id="content">
+
+<div id="header">
+<a href="https://steward-fu.github.io/website/index.htm"><h1><span class="big darkBrown">S</span>teward</h1></a>
+<h2><span class="highlight">分享是一種喜悅、更是一種幸福</span></h2>
+</div>
+
+<div id="page">
+
+<!-- body -->
+<h3><a href="../index.htm">掌機</a> - Miyoo Mini Flip - <b>移植OS-UI</b></h3>
+<hr size="1"><br>
+<p>
+司徒將目前Miyoo Mini Flip如何從SPI Flash開機的流程以及我們預計修改的流程做一個比較：<br>
+<img src="mmf_port_ui/1.jpg" class="maxSize"><br><br>
+
+由於我們需要添加Miyoo Mini Flip的聲音設定、Kernel Module等檔案，這些檔案是從SPI Flash提取出來的，在Buildroot編譯環境下，可以自己添加需要的檔案，Buildroot稱之為Overlay Directory，最後編譯時，Buildroot會合併使用，相當方便手動添加需要的檔案，如下說明：<br>
+<img src="mmf_port_ui/2.jpg" class="maxSize"><br><br>
+
+司徒將需要的檔案放在board/mmf下
+</p>
+<pre>
+$ ls board/mmf/
+    appconfigs  boot  config  customer  etc  sbin  var  vendor
+</pre><br>
+
+<p>
+System configuration<br>
+<img src="mmf_port_ui/3.jpg" class="maxSize"><br><br>
+
+/sbin/mmf
+</p>
+<pre>
+#!/bin/sh
+mkdir -p /dev/pts
+mount -t sysfs none /sys
+mount -t tmpfs mdev /dev
+mount -t debugfs none /sys/kernel/debug/
+mdev -s
+mkdir -p /var/lock
+mount -t devpts devpts /dev/pts
+ulimit -c unlimited
+
+echo 4 &gt; /sys/class/gpio/export
+echo 0 &gt; /sys/class/pwm/pwmchip0/export
+echo 800 &gt; /sys/class/pwm/pwmchip0/pwm0/period
+echo 50 &gt; /sys/class/pwm/pwmchip0/pwm0/duty_cycle
+echo 1 &gt; /sys/class/pwm/pwmchip0/pwm0/enable
+
+echo 44 &gt; /sys/class/gpio/export 
+echo "low" &gt; /sys/class/gpio/gpio44/direction 
+echo 1 &gt; /sys/class/gpio/gpio44/value 
+
+if [ -e /etc/core.sh ]; then
+    echo "|/etc/core.sh %p" &gt; /proc/sys/kernel/core_pattern
+fi;
+
+insmod /config/modules/4.9.84/mhal.ko
+insmod /config/modules/4.9.84/mi_common.ko
+
+major=`cat /proc/devices | busybox awk "\\$2==\""mi"\" {print \\$1}"\n`
+minor=0
+
+insmod /config/modules/4.9.84/mi_sys.ko cmdQBufSize=128 logBufSize=0
+if [ $? -eq 0 ]; then
+	busybox mknod /dev/mi_sys c $major $minor
+	let minor++
+fi
+
+insmod /config/modules/4.9.84/mi_gfx.ko
+if [ $? -eq 0 ]; then
+	busybox mknod /dev/mi_gfx c $major $minor
+	let minor++
+fi
+
+insmod /config/modules/4.9.84/mi_divp.ko
+if [ $? -eq 0 ]; then
+	busybox mknod /dev/mi_divp c $major $minor
+	let minor++
+fi
+
+insmod /config/modules/4.9.84/mi_vdec.ko
+if [ $? -eq 0 ]; then
+	busybox mknod /dev/mi_vdec c $major $minor
+	let minor++
+fi
+
+insmod /config/modules/4.9.84/mi_ao.ko
+if [ $? -eq 0 ]; then
+	busybox mknod /dev/mi_ao c $major $minor
+	let minor++
+fi
+
+insmod /config/modules/4.9.84/mi_disp.ko
+if [ $? -eq 0 ]; then
+	busybox mknod /dev/mi_disp c $major $minor
+	let minor++
+fi
+
+insmod /config/modules/4.9.84/mi_ipu.ko
+if [ $? -eq 0 ]; then
+	busybox mknod /dev/mi_ipu c $major $minor
+	let minor++
+fi
+
+insmod /config/modules/4.9.84/mi_ai.ko
+if [ $? -eq 0 ]; then
+	busybox mknod /dev/mi_ai c $major $minor
+	let minor++
+fi
+
+insmod /config/modules/4.9.84/mi_venc.ko
+if [ $? -eq 0 ]; then
+	busybox mknod /dev/mi_venc c $major $minor
+	let minor++
+fi
+
+insmod /config/modules/4.9.84/mi_panel.ko
+if [ $? -eq 0 ]; then
+	busybox mknod /dev/mi_panel c $major $minor
+	let minor++
+fi
+
+insmod /config/modules/4.9.84/mi_alsa.ko
+if [ $? -eq 0 ]; then
+	busybox mknod /dev/mi_alsa c $major $minor
+	let minor++
+fi
+
+major=`cat /proc/devices | busybox awk "\\$2==\""mi_poll"\" {print \\$1}"`
+busybox mknod /dev/mi_poll c $major 0
+insmod /config/modules/4.9.84/fbdev.ko
+mdev -s
+
+amixer set "Playback Volume Line Out" 60%
+
+cd /boot
+./main&amp;
+</pre><br>
+
+<p>
+針對屏的亮度設定，司徒透過逆向官方keymon取得如下設定資訊<br>
+<img src="mmf_port_ui/4.jpg" class="maxSize">
+</p>
+<pre>
+echo 4 &gt; /sys/class/gpio/export
+echo 0 &gt; /sys/class/pwm/pwmchip0/export
+echo 800 &gt; /sys/class/pwm/pwmchip0/pwm0/period
+echo 50 &gt; /sys/class/pwm/pwmchip0/pwm0/duty_cycle
+echo 1 &gt; /sys/class/pwm/pwmchip0/pwm0/enable
+</pre><br>
+
+<p>
+如下是喇叭的音量開關設定<br>
+<img src="mmf_port_ui/5.jpg" class="maxSize">
+</p>
+<pre>
+echo 44 &gt; /sys/class/gpio/export 
+echo "low" &gt; /sys/class/gpio/gpio44/direction 
+echo 1 &gt; /sys/class/gpio/gpio44/value
+</pre><br>
+
+<p>
+喇叭音量的設定則是可以透過amixer或者tinymix設定
+</p>
+<pre>
+$ amixer set 'Playback Volume Line Out' 50%
+$ tinymix set 6 50
+</pre><br>
+
+<p>
+接著在Buildroot勾選SDL，這樣我們就可以測試屏的顯示<br>
+<img src="mmf_port_ui/6.jpg" class="maxSize"><br><br>
+
+勾選speaker-test，可以測試喇叭<br>
+<img src="mmf_port_ui/7.jpg" class="maxSize"><br><br>
+
+編譯好Buildroot後，我們編譯一個SDL測試程式
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;SDL.h&gt;
+ 
+int main(int argc, char **argv)
+{
+    SDL_Rect rt = {0};
+    SDL_Surface *screen = NULL;
+ 
+    SDL_Init(SDL_INIT_VIDEO);
+    screen = SDL_SetVideoMode(320, 240, 16, SDL_HWSURFACE);
+    SDL_FillRect(screen, &amp;screen-&gt;clip_rect, SDL_MapRGB(screen-&gt;format, 0xff, 0x00, 0x00));
+ 
+    rt.x = 50;
+    rt.y = 50;
+    rt.w = 30;
+    rt.h = 30;
+    SDL_FillRect(screen, &amp;rt, SDL_MapRGB(screen-&gt;format, 0x00, 0xff, 0x00));
+ 
+    rt.x = 100;
+    rt.y = 100;
+    rt.w = 50;
+    rt.h = 100;
+    SDL_FillRect(screen, &amp;rt, SDL_MapRGB(screen-&gt;format, 0x00, 0x00, 0xff));
+ 
+    SDL_Flip(screen);
+    SDL_Delay(3000);
+    SDL_Quit();
+
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯
+</p>
+<pre>
+$ wget https://github.com/steward-fu/website/releases/download/miyoo-mini-flip/sdk.tar.gz
+$ tar xvf sdk.tar.gz
+$ cd sdk
+$ mv xxx/main.c .
+$ /opt/mmf/bin/arm-linux-gcc \
+    main.c \
+    -o main \
+    -lSDL \
+    -Iinclude \
+    lib/libmi_ao.a \
+    lib/libmi_sys.a \
+    lib/libmi_common.a \
+    -I/opt/mmf/arm-mmf-linux-gnueabihf/sysroot/usr/include/SDL
+</pre>
+<p>
+P.S. 編譯後將main、rootfs.squashfs放到MicroSD根目錄<br><br>
+
+完成<br>
+<img src="mmf_port_ui/8.jpg" class="maxSize"><br>
+P.S. 測試檔案https://github.com/steward-fu/website/releases/download/miyoo-mini-flip/os-ui_test_20261003.img
+</p>
+
+<!-- tail -->
+<br>
+</div>
+
+</div>
+</div>
+</body>
+</html>
