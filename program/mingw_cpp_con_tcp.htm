@@ -1,0 +1,310 @@
+﻿<!-- head
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+-->
+
+<head>
+<title>司徒的教學網站</title>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+<meta http-equiv="content-type" content="application/xhtml+xml; charset=UTF-8" />
+<meta name="author" content="fullahead.org" />
+<meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+<meta name="description" content="A valid, XHTML 1.0 template" />
+<meta name="robots" content="index, follow, noarchive" />
+<meta name="googlebot" content="noarchive" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=10.0" />
+
+<link rel="shortcut icon" href="../website.ico" />
+<link rel="stylesheet" type="text/css" href="../styles/shCore.css" />
+<link rel="stylesheet" type="text/css" href="../styles/shThemeDefault.css" />
+<link rel="stylesheet" type="text/css" href="../css/html.css" media="screen" />
+<link rel="stylesheet" type="text/css" href="../css/layout.css" media="screen" />
+
+<script type="text/javascript" src="../scripts/shCore.js"></script>
+<script type="text/javascript" src="../scripts/shBrushAppleScript.js"></script>
+<script type="text/javascript" src="../scripts/shBrushAS3.js"></script>
+<script type="text/javascript" src="../scripts/shBrushAsm.js"></script>
+<script type="text/javascript" src="../scripts/shBrushBash.js"></script>
+<script type="text/javascript" src="../scripts/shBrushColdFusion.js"></script>
+<script type="text/javascript" src="../scripts/shBrushCpp.js"></script>
+<script type="text/javascript" src="../scripts/shBrushD.js"></script>
+<script type="text/javascript" src="../scripts/shBrushCSharp.js"></script>
+<script type="text/javascript" src="../scripts/shBrushCss.js"></script>
+<script type="text/javascript" src="../scripts/shBrushDiff.js"></script>
+<script type="text/javascript" src="../scripts/shBrushErlang.js"></script>
+<script type="text/javascript" src="../scripts/shBrushGolang.js"></script>
+<script type="text/javascript" src="../scripts/shBrushGroovy.js"></script>
+<script type="text/javascript" src="../scripts/shBrushInf.js"></script>
+<script type="text/javascript" src="../scripts/shBrushJavaFX.js"></script>
+<script type="text/javascript" src="../scripts/shBrushJava.js"></script>
+<script type="text/javascript" src="../scripts/shBrushJScript.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPas.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPerl.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPhp.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPlain.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPowerShell.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPython.js"></script>
+<script type="text/javascript" src="../scripts/shBrushRuby.js"></script>
+<script type="text/javascript" src="../scripts/shBrushRust.js"></script>
+<script type="text/javascript" src="../scripts/shBrushSass.js"></script>
+<script type="text/javascript" src="../scripts/shBrushScad.js"></script>
+<script type="text/javascript" src="../scripts/shBrushBasic.js"></script>
+<script type="text/javascript" src="../scripts/shBrushVerilog.js"></script>
+<script type="text/javascript" src="../scripts/shBrushScala.js"></script>
+<script type="text/javascript" src="../scripts/shBrushSql.js"></script>
+<script type="text/javascript" src="../scripts/shBrushXml.js"></script>
+<script type="text/javascript" src="../scripts/shBrushFortran.js"></script>
+
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+</head>
+
+<body>
+<div id="wrapper">
+<div id="content">
+
+<div id="header">
+<a href="https://steward-fu.github.io/website/index.htm"><h1><span class="big darkBrown">S</span>teward</h1></a>
+<h2><span class="highlight">分享是一種喜悅、更是一種幸福</span></h2>
+</div>
+
+<div id="page">
+
+<!-- body -->
+<h3><a href="../program.htm">程式語言</a> - MinGW - C/C++ - Console - <b>TCP Server、Client</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://www.geeksforgeeks.org/socket-programming-cc/<br><br>
+
+server.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;winsock2.h&gt;
+#include &lt;ws2tcpip.h&gt;
+
+int main(int argc, char *argv[])
+{
+    int r = 0;
+    int opt = 1;
+    SOCKET fd = INVALID_SOCKET;
+    SOCKET new_socket = INVALID_SOCKET;
+    char buf[255] = { 0 };
+    char client_ip[INET_ADDRSTRLEN] = {  0};
+    struct sockaddr_in addr = { 0 };
+    struct sockaddr_in client_addr = { 0 };
+    int addrlen = sizeof(client_addr);
+    const char *hello = "hello from server !";
+    WSADATA wsaData = { 0 }; 
+
+    if (argc != 3) {
+        printf("Usage: %s IP Port\n", argv[0]);
+        return 0;
+    }
+
+    if (WSAStartup(MAKEWORD(2, 2), &amp;wsaData) != 0) {
+        printf("WSAStartup failed: %d\n", WSAGetLastError());
+
+        return 1;
+    }
+
+    fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (fd == INVALID_SOCKET) {
+        printf("socket() failed: %d\n", WSAGetLastError());
+        WSACleanup();
+
+        return 1;
+    }
+
+    if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (const char *)&amp;opt, sizeof(opt)) == SOCKET_ERROR) {
+        printf("setsockopt() failed: %d\n", WSAGetLastError());
+        closesocket(fd);
+        WSACleanup();
+
+        return 1;
+    }
+
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons((u_short)atoi(argv[2]));
+    if (InetPtonA(AF_INET, argv[1], &amp;addr.sin_addr) != 1) {
+        printf("Invalid IP address: %s\n", argv[1]);
+        closesocket(fd);
+        WSACleanup();
+
+        return 1;
+    }
+
+    if (bind(fd, (struct sockaddr *)&amp;addr, sizeof(addr)) == SOCKET_ERROR) {
+        printf("bind() failed: %d\n", WSAGetLastError());
+        closesocket(fd);
+        WSACleanup();
+
+        return 1;
+    }
+
+    if (listen(fd, 3) == SOCKET_ERROR) {
+        printf("listen() failed: %d\n", WSAGetLastError());
+        closesocket(fd);
+        WSACleanup();
+
+        return 1;
+    }
+    printf("Server listening on %s:%s\n", argv[1], argv[2]);
+
+    new_socket = accept(fd, (struct sockaddr *)&amp;client_addr, &amp;addrlen);
+    if (new_socket == INVALID_SOCKET) {
+        printf("accept() failed: %d\n", WSAGetLastError());
+        closesocket(fd);
+        WSACleanup();
+
+        return 1;
+    }
+
+    if (InetNtopA(AF_INET, &amp;client_addr.sin_addr, client_ip, sizeof(client_ip))) {
+        printf("Client connected from %s:%u\n", client_ip, ntohs(client_addr.sin_port));
+    }
+
+    r = recv(new_socket, buf, sizeof(buf) - 1, 0);
+    if (r == SOCKET_ERROR) {
+        printf("recv() failed: %d\n", WSAGetLastError());
+    } else if (r == 0) {
+        printf("Client closed connection\n");
+    } else {
+        buf[r] = '\0';
+        printf("%s (r=%d)\n", buf, r);
+    }
+
+    if (r &gt; 0) {
+        r = send(new_socket, hello, (int)strlen(hello), 0);
+        if (r == SOCKET_ERROR) {
+            printf("send() failed: %d\n", WSAGetLastError());
+        }
+    }
+
+    closesocket(new_socket);
+    closesocket(fd);
+    WSACleanup();
+
+    return 0;
+}
+</pre><br>
+
+<p>
+client.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;winsock2.h&gt;
+#include &lt;ws2tcpip.h&gt;
+
+int main(int argc, char *argv[])
+{
+    int r = 0;
+    SOCKET fd = INVALID_SOCKET;
+    char buf[255] = { 0 };
+    struct sockaddr_in addr = { 0 };
+    const char *hello = "hello from client !";
+    WSADATA wsaData;
+
+    if (argc != 3) {
+        printf("Usage: %s IP Port\n", argv[0]);
+
+        return 0;
+    }
+
+    if (WSAStartup(MAKEWORD(2, 2), &amp;wsaData) != 0) {
+        printf("WSAStartup failed: %d\n", WSAGetLastError());
+
+        return 1;
+    }
+
+    fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (fd == INVALID_SOCKET) {
+        printf("socket() failed: %d\n", WSAGetLastError());
+        WSACleanup();
+
+        return 1;
+    }
+
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons((u_short)atoi(argv[2]));
+    if (InetPtonA(AF_INET, argv[1], &amp;addr.sin_addr) != 1) {
+        printf("Invalid IP address: %s\n", argv[1]);
+        closesocket(fd);
+        WSACleanup();
+
+        return 1;
+    }
+
+    if (connect(fd, (struct sockaddr *)&amp;addr, sizeof(addr)) == SOCKET_ERROR) {
+        printf("connect() failed: %d\n", WSAGetLastError());
+        closesocket(fd);
+        WSACleanup();
+
+        return 1;
+    }
+    printf("Connected to %s:%s\n", argv[1], argv[2]);
+
+    r = send(fd, hello, (int)strlen(hello), 0);
+    if (r == SOCKET_ERROR) {
+        printf("send() failed: %d\n", WSAGetLastError());
+        closesocket(fd);
+        WSACleanup();
+
+        return 1;
+    }
+    printf("Sent %d bytes\n", r);
+
+    r = recv(fd, buf, sizeof(buf) - 1, 0);
+    if (r == SOCKET_ERROR) {
+        printf("recv() failed: %d\n", WSAGetLastError());
+    }
+    else if (r == 0) {
+        printf("Server closed connection\n");
+    }
+    else {
+        buf[r] = '\0';
+        printf("%s (r=%d)\n", buf, r);
+    }
+    closesocket(fd);
+    WSACleanup();
+
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ i686-w64-mingw32-gcc server_win32.c -o server_win32.exe -lws2_32
+$ i686-w64-mingw32-gcc client_win32.c -o client_win32.exe -lws2_32
+$ ./server_win32.exe 127.0.0.1 8888
+    Server listening on 127.0.0.1:8888
+
+$ ./client.exe 127.0.0.1 9999
+    Connected to 127.0.0.1:9999
+    Sent 19 bytes
+    hello from server ! (r=19)
+    
+    Client connected from 127.0.0.1:38460
+    hello from client ! (r=19)
+
+</pre>
+
+<!-- tail -->
+<br>
+</div>
+
+</div>
+</div>
+</body>
+</html>
