@@ -74,42 +74,69 @@
 <div id="page">
 
 <!-- body -->
-<h3><a href="../phone.htm">手機</a> - Zinwa Q25 - LineageOS - <b>安裝系統</b></h3>
+<h3><a href="../phone.htm">手機</a> - Zinwa Q25 - LineageOS - <b>Build Kernel 5.10.198</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
-https://wiki.lineageos.org/devices/Q25/install/#unlocking-the-bootloader<br>
-https://github.com/MindTheGapps/16.0.0-arm64/releases/tag/MindTheGapps-16.0.0-arm64-20260915_222150<br><br>
+https://github.com/LineageOS/android_device_xelex_Q25<br>
+https://github.com/LineageOS/android_kernel_xelex_mt6789<br><br>
 
-在fastboot模式
 </p>
 <pre>
-$ fastboot flash boot boot.img
-$ fastboot flash dtbo dtbo.img
-$ fastboot flash vbmeta vbmeta.img
-$ fastboot reboot bootloader
-$ fastboot flash vendor_boot vendor_boot.img
-$ fastboot reboot recovery
-</pre><br>
-</p>
-先清除資料，接著再選擇Apply update<br>
-<img src="q25_setup_lineageos/1.jpg" class="maxSize">
-</p>
-<pre>
-$ adb -d sideload lineage-23.2-20260927-nightly-Q25-signed.zip
-</pre><br>
+$ cd
+$ wget https://github.com/steward-fu/website/releases/download/q25/clang-r416183b.tar.gz
 
-<p>
-重新開機後，再安裝Apps
-</p>
-<pre>
-$ adb -d sideload MindTheGapps-16.0.0-arm64-20260915_222150.zip
-</pre><br>
+$ git clone https://github.com/LineageOS/android_kernel_xelex_mt6789 -b lineage-23.2 --depth=1
+$ cd android_kernel_xelex_mt6789
+$ mkdir clang
+$ cd clang
+$ tar xvf ~/clang-r416183b.tar.gz
+$ cd ..
 
-<p>
-完成<br>
-<img src="q25_setup_lineageos/2.jpg" class="maxSize">
-</p>
+$ sudo fallocate -l 16G /swapfile
+$ sudo chmod 600 /swapfile
+$ sudo mkswap /swapfile
+$ sudo swapon /swapfile
+
+$ export PATH=$PWD/clang/bin:$PATH
+$ export ARCH=arm64
+$ export CROSS_COMPILE=aarch64-linux-gnu-
+$ export CROSS_COMPILE_COMPAT=arm-linux-gnueabi-
+$ export LLVM=1
+$ export LLVM_IAS=1
+### sudo ln -s /usr/bin/python3 /usr/local/bin/python
+
+$ clang --version
+    Android (7284624, based on r416183b) clang version 12.0.5
+
+$ make mrproper
+$ wget https://github.com/steward-fu/website/releases/download/q25/lineageos_q25_defconfig
+$ cp lineageos_q25_defconfig .config
+$ make olddefconfig
+$ make Image.gz -j4
+
+$ cd
+$ wget https://github.com/steward-fu/website/releases/download/q25/boot_lineageos_usbserial.img
+$ git clone --depth=1 https://android.googlesource.com/platform/system/tools/mkbootimg.git
+$ python3 mkbootimg/unpack_bootimg.py \
+    --boot_img boot_lineageos_usbserial.img \
+    --out out \
+    --format mkbootimg
+
+$ python3 mkbootimg/mkbootimg.py \
+    --header_version 4 \
+    --os_version 16.0.0 \
+    --os_patch_level 2026-09 \
+    --kernel android_kernel_xelex_mt6789/arch/arm64/boot/Image.gz \
+    --ramdisk out/ramdisk \
+    --cmdline '' \
+    --output boot-new.img
+
+$ file boot-new.img 
+    boot-new.img: Android bootimg, kernel (0x275c27), ramdisk (0x630)
+
+$ fastboot flash boot boot-new.img
+</pre>
 
 <!-- tail -->
 <br>
