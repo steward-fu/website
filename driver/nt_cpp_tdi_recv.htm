@@ -1,0 +1,497 @@
+﻿<!-- head
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+-->
+
+<head>
+<title>司徒的教學網站</title>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+<meta http-equiv="content-type" content="application/xhtml+xml; charset=UTF-8" />
+<meta name="author" content="fullahead.org" />
+<meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+<meta name="description" content="A valid, XHTML 1.0 template" />
+<meta name="robots" content="index, follow, noarchive" />
+<meta name="googlebot" content="noarchive" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=10.0" />
+
+<link rel="shortcut icon" href="../website.ico" />
+<link rel="stylesheet" type="text/css" href="../styles/shCore.css" />
+<link rel="stylesheet" type="text/css" href="../styles/shThemeDefault.css" />
+<link rel="stylesheet" type="text/css" href="../css/html.css" media="screen" />
+<link rel="stylesheet" type="text/css" href="../css/layout.css" media="screen" />
+
+<script type="text/javascript" src="../scripts/shCore.js"></script>
+<script type="text/javascript" src="../scripts/shBrushAppleScript.js"></script>
+<script type="text/javascript" src="../scripts/shBrushAS3.js"></script>
+<script type="text/javascript" src="../scripts/shBrushAsm.js"></script>
+<script type="text/javascript" src="../scripts/shBrushBash.js"></script>
+<script type="text/javascript" src="../scripts/shBrushColdFusion.js"></script>
+<script type="text/javascript" src="../scripts/shBrushCpp.js"></script>
+<script type="text/javascript" src="../scripts/shBrushD.js"></script>
+<script type="text/javascript" src="../scripts/shBrushCSharp.js"></script>
+<script type="text/javascript" src="../scripts/shBrushCss.js"></script>
+<script type="text/javascript" src="../scripts/shBrushDiff.js"></script>
+<script type="text/javascript" src="../scripts/shBrushErlang.js"></script>
+<script type="text/javascript" src="../scripts/shBrushGolang.js"></script>
+<script type="text/javascript" src="../scripts/shBrushGroovy.js"></script>
+<script type="text/javascript" src="../scripts/shBrushInf.js"></script>
+<script type="text/javascript" src="../scripts/shBrushJavaFX.js"></script>
+<script type="text/javascript" src="../scripts/shBrushJava.js"></script>
+<script type="text/javascript" src="../scripts/shBrushJScript.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPas.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPerl.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPhp.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPlain.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPowerShell.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPython.js"></script>
+<script type="text/javascript" src="../scripts/shBrushRuby.js"></script>
+<script type="text/javascript" src="../scripts/shBrushRust.js"></script>
+<script type="text/javascript" src="../scripts/shBrushSass.js"></script>
+<script type="text/javascript" src="../scripts/shBrushScad.js"></script>
+<script type="text/javascript" src="../scripts/shBrushBasic.js"></script>
+<script type="text/javascript" src="../scripts/shBrushVerilog.js"></script>
+<script type="text/javascript" src="../scripts/shBrushScala.js"></script>
+<script type="text/javascript" src="../scripts/shBrushSql.js"></script>
+<script type="text/javascript" src="../scripts/shBrushXml.js"></script>
+<script type="text/javascript" src="../scripts/shBrushFortran.js"></script>
+
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+</head>
+
+<body>
+<div id="wrapper">
+<div id="content">
+
+<div id="header">
+<a href="https://steward-fu.github.io/website/index.htm"><h1><span class="big darkBrown">S</span>teward</h1></a>
+<h2><span class="highlight">分享是一種喜悅、更是一種幸福</span></h2>
+</div>
+
+<div id="page">
+
+<!-- body -->
+<h3><a href="../driver.htm">驅動程式</a> - Windows NT Driver (Legacy) - 使用範例 - C/C++ (DDK) - Transport Driver Interface(TDI) - <b>Receive Data</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://codemachine.com/articles/tdi_overview.html<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;ntddk.h&gt;
+#include &lt;tdi.h&gt;
+#include &lt;tdikrnl.h&gt;
+
+static HANDLE hAddr = NULL;
+static HANDLE hConn = NULL;
+static PFILE_OBJECT pAddrObj = NULL;
+static PFILE_OBJECT pConnObj = NULL;
+
+static NTSTATUS TdiCompletion(PDEVICE_OBJECT DevObj, PIRP Irp, PVOID Context)
+{
+    KeSetEvent((PKEVENT)Context, IO_NO_INCREMENT, FALSE);
+
+    return STATUS_MORE_PROCESSING_REQUIRED;
+}
+
+static NTSTATUS TdiCreateAddress(void)
+{
+    ULONG eaSize = 0;
+    NTSTATUS status = 0;
+    HANDLE handle = NULL;
+    IO_STATUS_BLOCK iosb = { 0 };
+    UNICODE_STRING devName = { 0 };
+    OBJECT_ATTRIBUTES objAttr = { 0 };
+    PFILE_OBJECT fileObj = NULL;
+    PTDI_ADDRESS_IP ipAddr = NULL;
+    PFILE_FULL_EA_INFORMATION ea = NULL;
+    PTRANSPORT_ADDRESS tranAddr = NULL;
+
+    eaSize = FIELD_OFFSET(FILE_FULL_EA_INFORMATION, EaName) +
+        TDI_TRANSPORT_ADDRESS_LENGTH +
+        1 +
+        sizeof(TRANSPORT_ADDRESS) + sizeof(TDI_ADDRESS_IP);
+
+    ea = (PFILE_FULL_EA_INFORMATION)ExAllocatePool(NonPagedPool, eaSize);
+
+    RtlZeroMemory(ea, eaSize);
+    ea-&gt;EaNameLength = TDI_TRANSPORT_ADDRESS_LENGTH;
+    ea-&gt;EaValueLength = sizeof(TRANSPORT_ADDRESS) + sizeof(TDI_ADDRESS_IP);
+    RtlCopyMemory(ea-&gt;EaName, TdiTransportAddress, TDI_TRANSPORT_ADDRESS_LENGTH);
+    tranAddr = (PTRANSPORT_ADDRESS)(ea-&gt;EaName + ea-&gt;EaNameLength + 1);
+    tranAddr-&gt;TAAddressCount = 1;
+    tranAddr-&gt;Address[0].AddressLength = sizeof(TDI_ADDRESS_IP);
+    tranAddr-&gt;Address[0].AddressType = TDI_ADDRESS_TYPE_IP;
+    ipAddr = (PTDI_ADDRESS_IP)tranAddr-&gt;Address[0].Address;
+    ipAddr-&gt;in_addr = 0;
+    ipAddr-&gt;sin_port = 0;
+    RtlZeroMemory(ipAddr-&gt;sin_zero, sizeof(ipAddr-&gt;sin_zero));
+    RtlInitUnicodeString(&amp;devName, L"\\Device\\Tcp");
+    InitializeObjectAttributes(&amp;objAttr,
+        &amp;devName,
+        OBJ_CASE_INSENSITIVE,
+        NULL,
+        NULL
+    );
+
+    status = ZwCreateFile(&amp;handle,
+        GENERIC_READ | GENERIC_WRITE | SYNCHRONIZE,
+        &amp;objAttr,
+        &amp;iosb,
+        NULL,
+        0,
+        FILE_SHARE_READ | FILE_SHARE_WRITE,
+        FILE_OPEN_IF,
+        0,
+        ea,
+        eaSize
+    );
+    ExFreePool(ea);
+
+    status = ObReferenceObjectByHandle(handle,
+        FILE_ANY_ACCESS,
+        *IoFileObjectType, KernelMode,
+        (PVOID *)&amp;fileObj,
+        NULL);
+
+    hAddr = handle;
+    pAddrObj = fileObj;
+
+    return STATUS_SUCCESS;
+}
+
+static NTSTATUS TdiCreateConnection(void)
+{
+    NTSTATUS status = 0;
+    UNICODE_STRING devName = { 0 };
+    OBJECT_ATTRIBUTES objAttr = { 0 };
+    IO_STATUS_BLOCK iosb = { 0 };
+    PFILE_FULL_EA_INFORMATION ea = { 0 };
+    ULONG eaSize = 0;
+    HANDLE handle = NULL;
+    PFILE_OBJECT fileObj = NULL;
+    CONNECTION_CONTEXT connContext = { 0 };
+
+    eaSize = FIELD_OFFSET(FILE_FULL_EA_INFORMATION, EaName) +
+        TDI_CONNECTION_CONTEXT_LENGTH +
+        1 +
+        sizeof(CONNECTION_CONTEXT);
+
+    ea = (PFILE_FULL_EA_INFORMATION)ExAllocatePool(NonPagedPool, eaSize);
+    RtlZeroMemory(ea, eaSize);
+    ea-&gt;EaNameLength = TDI_CONNECTION_CONTEXT_LENGTH;
+    ea-&gt;EaValueLength = sizeof(CONNECTION_CONTEXT);
+    RtlCopyMemory(ea-&gt;EaName,
+        TdiConnectionContext,
+        TDI_CONNECTION_CONTEXT_LENGTH
+    );
+
+    connContext = NULL;
+    RtlCopyMemory(ea-&gt;EaName + ea-&gt;EaNameLength + 1,
+        &amp;connContext,
+        sizeof(connContext)
+    );
+
+    RtlInitUnicodeString(&amp;devName, L"\\Device\\Tcp");
+    InitializeObjectAttributes(&amp;objAttr,
+        &amp;devName,
+        OBJ_CASE_INSENSITIVE,
+        NULL,
+        NULL
+    );
+
+    status = ZwCreateFile(&amp;handle,
+        GENERIC_READ | GENERIC_WRITE | SYNCHRONIZE,
+        &amp;objAttr,
+        &amp;iosb,
+        NULL,
+        0,
+        FILE_SHARE_READ | FILE_SHARE_WRITE,
+        FILE_OPEN_IF,
+        0,
+        ea,
+        eaSize
+    );
+
+    ExFreePool(ea);
+    status = ObReferenceObjectByHandle(handle,
+        FILE_ANY_ACCESS,
+        *IoFileObjectType,
+        KernelMode,
+        (PVOID *)&amp;fileObj,
+        NULL
+    );
+
+    hConn = handle;
+    pConnObj = fileObj;
+
+    return STATUS_SUCCESS;
+}
+
+static NTSTATUS TdiAssociateAddress(void)
+{
+    PIRP irp = NULL;
+    NTSTATUS status = 0;
+    KEVENT event = { 0 };
+    PDEVICE_OBJECT devObj = NULL;
+
+    devObj = pConnObj-&gt;DeviceObject;
+    KeInitializeEvent(&amp;event, NotificationEvent, FALSE);
+    irp = IoAllocateIrp(devObj-&gt;StackSize, FALSE);
+    TdiBuildAssociateAddress(irp, devObj, pConnObj, TdiCompletion, &amp;event, hAddr);
+    status = IoCallDriver(devObj, irp);
+    if (status == STATUS_PENDING) {
+        KeWaitForSingleObject(&amp;event, Executive, KernelMode, FALSE, NULL);
+        status = irp-&gt;IoStatus.Status;
+    }
+    IoFreeIrp(irp);
+
+    return status;
+}
+
+static NTSTATUS TdiConnect(void)
+{
+    NTSTATUS status = 0;
+    PIRP irp = NULL;
+    PDEVICE_OBJECT devObj = NULL;
+    KEVENT event = { 0 };
+    PTRANSPORT_ADDRESS remote = NULL;
+    PTDI_ADDRESS_IP ipAddr = NULL;
+    TDI_CONNECTION_INFORMATION connInfo = { 0 };
+    ULONG addrSize = 0;
+
+    addrSize = FIELD_OFFSET(TRANSPORT_ADDRESS, Address[0].Address) +
+        sizeof(TDI_ADDRESS_IP);
+
+    remote = (PTRANSPORT_ADDRESS)ExAllocatePool(NonPagedPool, addrSize);
+    RtlZeroMemory(remote, addrSize);
+    remote-&gt;TAAddressCount = 1;
+    remote-&gt;Address[0].AddressLength = sizeof(TDI_ADDRESS_IP);
+    remote-&gt;Address[0].AddressType = TDI_ADDRESS_TYPE_IP;
+    ipAddr = (PTDI_ADDRESS_IP)remote-&gt;Address[0].Address;
+
+    // 10.0.2.2:9999
+    ipAddr-&gt;in_addr = 0x0202000A;
+    ipAddr-&gt;sin_port = 0x0F27;
+
+    RtlZeroMemory(ipAddr-&gt;sin_zero, sizeof(ipAddr-&gt;sin_zero));
+    RtlZeroMemory(&amp;connInfo, sizeof(connInfo));
+    connInfo.RemoteAddressLength = (LONG)addrSize;
+    connInfo.RemoteAddress = remote;
+    connInfo.UserDataLength = 0;
+    connInfo.UserData = NULL;
+    connInfo.OptionsLength = 0;
+    connInfo.Options = NULL;
+    devObj = pConnObj-&gt;DeviceObject;
+    KeInitializeEvent(&amp;event, NotificationEvent, FALSE);
+    irp = IoAllocateIrp(devObj-&gt;StackSize, FALSE);
+    TdiBuildConnect(irp,
+        devObj,
+        pConnObj,
+        TdiCompletion,
+        &amp;event,
+        NULL,
+        &amp;connInfo,
+        NULL
+    );
+
+    status = IoCallDriver(devObj, irp);
+    if (status == STATUS_PENDING) {
+        KeWaitForSingleObject(&amp;event, Executive, KernelMode, FALSE, NULL);
+        status = irp-&gt;IoStatus.Status;
+    }
+    IoFreeIrp(irp);
+    ExFreePool(remote);
+
+    return status;
+}
+
+static void TdiCleanup(void)
+{
+    ObDereferenceObject(pConnObj);
+    ZwClose(hConn);
+    ObDereferenceObject(pAddrObj);
+    ZwClose(hAddr);
+}
+
+static NTSTATUS TdiSend(const char *buf, ULONG len)
+{
+    PIRP irp = NULL;
+    PMDL mdl = NULL;
+    PVOID buffer = NULL;
+    KEVENT event = { 0 };
+    NTSTATUS status = STATUS_SUCCESS;
+    PDEVICE_OBJECT devObj = NULL;
+
+    buffer = ExAllocatePool(NonPagedPool, len);
+    RtlCopyMemory(buffer, buf, len);
+    mdl = IoAllocateMdl(buffer, len, FALSE, FALSE, NULL);
+    MmBuildMdlForNonPagedPool(mdl);
+    devObj = pConnObj-&gt;DeviceObject;
+    KeInitializeEvent(&amp;event, NotificationEvent, FALSE);
+    irp = IoAllocateIrp(devObj-&gt;StackSize, FALSE);
+    TdiBuildSend(irp, devObj, pConnObj, TdiCompletion, &amp;event, mdl, 0, len);
+    status = IoCallDriver(devObj, irp);
+    if (status == STATUS_PENDING) {
+        KeWaitForSingleObject(&amp;event, Executive, KernelMode, FALSE, NULL);
+        status = irp-&gt;IoStatus.Status;
+    }
+    else {
+        status = irp-&gt;IoStatus.Status;
+    }
+    DbgPrint("Sent %lu bytes\n", (ULONG)irp-&gt;IoStatus.Information);
+    IoFreeIrp(irp);
+    IoFreeMdl(mdl);
+    ExFreePool(buffer);
+
+    return status;
+}
+
+static NTSTATUS TdiRecv(char *buf, ULONG len, PULONG received)
+{
+    PIRP irp = NULL;
+    PMDL mdl = NULL;
+    PVOID buffer = NULL;
+    KEVENT event = { 0 };
+    NTSTATUS status = STATUS_SUCCESS;
+    PDEVICE_OBJECT devObj = NULL;
+
+    *received = 0;
+    buffer = ExAllocatePool(NonPagedPool, len);
+    RtlZeroMemory(buffer, len);
+    mdl = IoAllocateMdl(buffer, len, FALSE, FALSE, NULL);
+    MmBuildMdlForNonPagedPool(mdl);
+    devObj = pConnObj-&gt;DeviceObject;
+    KeInitializeEvent(&amp;event, NotificationEvent, FALSE);
+    irp = IoAllocateIrp(devObj-&gt;StackSize, FALSE);
+    TdiBuildReceive(irp,
+        devObj,
+        pConnObj,
+        TdiCompletion,
+        &amp;event,
+        mdl,
+        TDI_RECEIVE_NORMAL,
+        len
+    );
+
+    status = IoCallDriver(devObj, irp);
+    if (status == STATUS_PENDING) {
+        KeWaitForSingleObject(
+            &amp;event,
+            Executive,
+            KernelMode,
+            FALSE,
+            NULL
+        );
+
+        status = irp-&gt;IoStatus.Status;
+    }
+    else {
+        status = irp-&gt;IoStatus.Status;
+    }
+
+    if (NT_SUCCESS(status)) {
+        *received = (ULONG)irp-&gt;IoStatus.Information;
+        if (*received &gt; len) {
+            *received = len;
+        }
+
+        RtlCopyMemory(buf, buffer, *received);
+    }
+    DbgPrint("Received: \'%s\' (%lu bytes)\n", buf, *received);
+    IoFreeIrp(irp);
+    IoFreeMdl(mdl);
+    ExFreePool(buffer);
+
+    return status;
+}
+
+static void DriverUnload(PDRIVER_OBJECT DriverObj)
+{
+    TdiCleanup();
+}
+
+NTSTATUS DriverEntry(PDRIVER_OBJECT DriverObj, PUNICODE_STRING RegistryPath)
+{
+    NTSTATUS status = 0;
+    const char *p = "Hello, world!";
+    char buf[255] = { 0 };
+    ULONG ret = 0;
+
+    status = TdiCreateAddress();
+    status = TdiCreateConnection();
+    status = TdiAssociateAddress();
+    status = TdiConnect();
+    DbgPrint("Connection result: 0x%x\n", status);
+    TdiSend(p, strlen(p));
+    TdiRecv(buf, sizeof(buf), &amp;ret);
+
+    DriverObj-&gt;DriverUnload = DriverUnload;
+
+    return STATUS_SUCCESS;
+}
+</pre><br>
+
+<p>
+server.c
+</p>
+<pre class="brush:cpp">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;sys/socket.h&gt;
+#include &lt;netinet/in.h&gt;
+#include &lt;arpa/inet.h&gt;
+  
+int main(int argc, char const* argv[])
+{
+    ssize_t r = 0;
+    int opt = 1;
+    int fd = -1;
+    int new_socket = 0;
+    char buf[255] = { 0 };
+    struct sockaddr_in addr = { 0 };
+    const char *hello = "hello from server !";
+  
+    if (argc != 3) {
+        printf("Usage: %s IP Port\n", argv[0]);
+        return 0;
+    }
+  
+    socklen_t addrlen = sizeof(addr);
+    fd = socket(AF_INET, SOCK_STREAM, 0);
+    setsockopt(fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &amp;opt, sizeof(opt));
+  
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = inet_addr(argv[1]);
+    addr.sin_port = htons(atoi(argv[2]));
+  
+    bind(fd, (struct sockaddr *)&amp;addr, sizeof(addr));
+    listen(fd, 3);
+    new_socket = accept(fd, (struct sockaddr *)&amp;addr, &amp;addrlen);
+    printf("new_socket %d\n", new_socket);
+  
+    r = read(new_socket, buf, sizeof(buf));
+    printf("%s (r=%d)\n", buf, r);
+    send(new_socket, hello, strlen(hello), 0);
+    close(new_socket);
+    close(fd);
+ 
+    return 0;
+}
+</pre>
+
+<!-- tail -->
+<br>
+</div>
+
+</div>
+</div>
+</body>
+</html>
