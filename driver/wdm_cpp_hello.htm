@@ -82,48 +82,70 @@ https://wasm.in/<br>
 http://four-f.narod.ru/<br>
 https://github.com/steward-fu/wadk<br><br>
 
+這個驅動程式的主要功能就是列印<b>Hello, world!</b>字串，在DriverEntry()被系統呼叫時，設定AddDevice、PNP、Unload這三個Callback，然後在AddDevice()時，也就是裝置被系統加入時，列印<b>Hello, world!</b>字串，然後在裝置被移除時，將建立的Device Object刪除，是一個相當精簡的WDM驅動程式框架<br><br>
+
 main.c
 </p>
 <pre class="brush:cpp">
 #include &lt;wdm.h&gt;
- 
+  
 static PDEVICE_OBJECT pNextDevice = NULL;
- 
-static NTSTATUS AddDevice(PDRIVER_OBJECT pMyDriver, PDEVICE_OBJECT pPhyDevice)
+  
+static NTSTATUS
+AddDevice(
+    PDRIVER_OBJECT pMyDriver,
+    PDEVICE_OBJECT pPhyDevice)
 {
     PDEVICE_OBJECT pMyDevice = NULL;
     UNICODE_STRING usDeviceName = { 0 };
-
+ 
     DbgPrint("Hello, world!");
     RtlInitUnicodeString(&amp;usDeviceName, L"\\Device\\MyDriver");
-    IoCreateDevice(pMyDriver, 0, &amp;usDeviceName, FILE_DEVICE_UNKNOWN, 0, FALSE, &amp;pMyDevice);
+    IoCreateDevice(pMyDriver,
+        0,
+        &amp;usDeviceName,
+        FILE_DEVICE_UNKNOWN,
+        0,
+        FALSE,
+        &amp;pMyDevice
+    );
+
     pNextDevice = IoAttachDeviceToDeviceStack(pMyDevice, pPhyDevice);
     pMyDevice-&gt;Flags &amp;= ~DO_DEVICE_INITIALIZING;
     pMyDevice-&gt;Flags |= DO_BUFFERED_IO;
 
     return STATUS_SUCCESS;
 }
- 
-static void Unload(PDRIVER_OBJECT pMyDriver)
+  
+static void
+Unload(
+    PDRIVER_OBJECT pMyDriver)
 {
 }
- 
-static NTSTATUS IrpDispatch(PDEVICE_OBJECT pMyDevice, PIRP pIrp)
+  
+static NTSTATUS
+IrpDispatch(
+    PDEVICE_OBJECT pMyDevice,
+    PIRP pIrp)
 {
     PIO_STACK_LOCATION pStack = IoGetCurrentIrpStackLocation(pIrp);
-
+ 
     if (pStack-&gt;MinorFunction == IRP_MN_REMOVE_DEVICE) {
         IoDetachDevice(pNextDevice);
         IoDeleteDevice(pMyDevice);
         IoCompleteRequest(pIrp, IO_NO_INCREMENT);
+
         return STATUS_SUCCESS;
     }
     IoSkipCurrentIrpStackLocation(pIrp);
 
     return IoCallDriver(pNextDevice, pIrp);
 }
- 
-NTSTATUS DriverEntry(PDRIVER_OBJECT pMyDriver, PUNICODE_STRING pMyRegistry)
+  
+NTSTATUS
+DriverEntry(
+    PDRIVER_OBJECT pMyDriver,
+    PUNICODE_STRING pMyRegistry)
 {
     pMyDriver-&gt;MajorFunction[IRP_MJ_PNP] = IrpDispatch;
     pMyDriver-&gt;DriverExtension-&gt;AddDevice = AddDevice;
@@ -131,12 +153,8 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT pMyDriver, PUNICODE_STRING pMyRegistry)
 
     return STATUS_SUCCESS;
 }
-</pre>
+</pre><br>
 <p>
-<b>L41~43</b>：只有做Callback設定的動作，需要設定AddDevice、PNP、DriverUnload這三個Callback<br>
-<b>L11~15</b>：產生一個Device Object，用來管理新加入的裝置(純軟體虛擬裝置也算)，接著初使化相關旗標<br>
-<b>L28~36</b>：主要處理移除Device Object的動作，其餘Irp不處理，直接往下傳遞<br><br>
-
 main.inf
 </p>
 <pre>
@@ -206,8 +224,9 @@ open=run.bat
 run.bat
 </p>
 <pre>
-e:\devcon.exe install e:\main.inf *mydriver
-e:\devcon.exe remove e:\main.inf *mydriver
+e:
+devcon.exe install main.inf *mydriver
+devcon.exe remove main.inf *mydriver
 </pre><br>
 
 <p>
@@ -232,13 +251,29 @@ pe.write(fname);
 Makefile
 </p>
 <pre>
+CFLAGS += -target i686-pc-windows-msvc
+CFLAGS += -D_X86_
+CFLAGS += -Xclang
+CFLAGS += -fdefault-calling-conv=stdcall
+CFLAGS += -I/opt/wadk/xpddk/inc/wxp
+CFLAGS += -I/opt/wadk/xpddk/inc/ddk/wxp
+CFLAGS += -I/opt/wadk/xpddk/inc/ddk/wdm/wxp
+CFLAGS += -I/opt/wadk/xpddk/inc/crt
+
+LDFLAGS += /driver
+LDFLAGS += /base:0x10000
+LDFLAGS += /subsystem:native
+LDFLAGS += /entry:DriverEntry
+LDFLAGS += /safeseh:no
+LDFLAGS += /opt/wadk/masm32/lib/wxp/i386/ntoskrnl.lib
+
 all:
-	clang -target i686-pc-windows-msvc -I/opt/wadk/xpddk/inc/wxp -I/opt/wadk/xpddk/inc/ddk/wxp -I/opt/wadk/xpddk/inc/ddk/wdm/wxp -I/opt/wadk/xpddk/inc/crt -D_X86_ -Xclang -fdefault-calling-conv=stdcall -c main.c
-	lld-link main.o /driver /base:0x10000 /subsystem:native /entry:DriverEntry /safeseh:no "/opt/wadk/masm32/lib/wxp/i386/ntoskrnl.lib" /out:main.sys
+	clang $(CFLAGS) -c main.c
+	lld-link main.o $(LDFLAGS) /out:main.sys
 	python3 fix.py main.sys
 
 run:
-	genisoimage -R -J -o cdrom.iso autorun.inf main.sys main.inf run.bat /opt/wadk/tools/devcon.exe
+	genisoimage -R -J -o cdrom.iso * /opt/wadk/tools/devcon.exe
 	myqemu winxp
 
 clean:
@@ -260,7 +295,7 @@ $ make run
 裝置管理員<br>
 <img style="border: none;" src="wdm_asm_hello/2.jpg" class="maxSize"><br><br>
 
-DeviceObject<br>
+Device Object<br>
 <img style="border: none;" src="wdm_asm_hello/3.jpg" class="maxSize">
 </p>
 
