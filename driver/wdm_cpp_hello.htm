@@ -82,58 +82,16 @@ https://wasm.in/<br>
 http://four-f.narod.ru/<br>
 https://github.com/steward-fu/wadk<br><br>
 
-這個驅動程式的主要功能就是列印<b>Hello, world!</b>字串，在DriverEntry()被系統呼叫時，設定AddDevice、PNP、Unload這三個Callback，然後在AddDevice()時，也就是裝置被系統加入時，列印<b>Hello, world!</b>字串，然後在裝置被移除時，將建立的Device Object刪除，是一個相當精簡的WDM驅動程式框架，需要注意的是，當收到IRP_MN_REMOVE_DEVICE時，由於我們的驅動程式已經是最後一層，因此，不需要再往後傳遞，直接呼叫IoCompleteRequest()完成該IRP的操作即可<br><br>
-
 main.c
 </p>
 <pre class="brush:cpp">
 #include &lt;wdm.h&gt;
   
-static PDEVICE_OBJECT pNextDevice = NULL;
-  
-static NTSTATUS AddDevice(PDRIVER_OBJECT pMyDriver, PDEVICE_OBJECT pPhyDevice)
-{
-    PDEVICE_OBJECT pMyDevice = NULL;
-    UNICODE_STRING usDeviceName = { 0 };
- 
-    DbgPrint("Hello, world!");
-
-    RtlInitUnicodeString(&amp;usDeviceName, L"\\Device\\MyDriver");
-    IoCreateDevice(pMyDriver, 0, &amp;usDeviceName, FILE_DEVICE_UNKNOWN, 0, FALSE, &amp;pMyDevice);
-    pNextDevice = IoAttachDeviceToDeviceStack(pMyDevice, pPhyDevice);
-    pMyDevice-&gt;Flags &amp;= ~DO_DEVICE_INITIALIZING;
-    pMyDevice-&gt;Flags |= DO_BUFFERED_IO;
-
-    return STATUS_SUCCESS;
-}
-  
-static void Unload(PDRIVER_OBJECT pMyDriver)
-{
-}
-  
-static NTSTATUS IrpDispatch(PDEVICE_OBJECT pMyDevice, PIRP pIrp)
-{
-    PIO_STACK_LOCATION pStack = IoGetCurrentIrpStackLocation(pIrp);
- 
-    if (pStack-&gt;MinorFunction == IRP_MN_REMOVE_DEVICE) {
-        IoDetachDevice(pNextDevice);
-        IoDeleteDevice(pMyDevice);
-        IoCompleteRequest(pIrp, IO_NO_INCREMENT);
-
-        return STATUS_SUCCESS;
-    }
-    IoSkipCurrentIrpStackLocation(pIrp);
-
-    return IoCallDriver(pNextDevice, pIrp);
-}
-  
 NTSTATUS DriverEntry(PDRIVER_OBJECT pMyDriver, PUNICODE_STRING pMyRegistry)
 {
-    pMyDriver-&gt;MajorFunction[IRP_MJ_PNP] = IrpDispatch;
-    pMyDriver-&gt;DriverExtension-&gt;AddDevice = AddDevice;
-    pMyDriver-&gt;DriverUnload = Unload;
+    DbgPrint("Hello, world!\n");
 
-    return STATUS_SUCCESS;
+    return -1;
 }
 </pre><br>
 <p>
@@ -272,13 +230,7 @@ $ make run
 
 <p>
 完成<br>
-<img style="border: none;" src="wdm_asm_hello/1.jpg" class="maxSize"><br><br>
-
-裝置管理員<br>
-<img style="border: none;" src="wdm_asm_hello/2.jpg" class="maxSize"><br><br>
-
-Device Object<br>
-<img style="border: none;" src="wdm_asm_hello/3.jpg" class="maxSize">
+<img style="border: none;" src="wdm_cpp_hello/1.jpg" class="maxSize">
 </p>
 
 <!-- tail -->

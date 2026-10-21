@@ -107,14 +107,7 @@ NTSTATUS AddDevice(PDRIVER_OBJECT pMyDriver, PDEVICE_OBJECT pPhyDevice)
     // Step 1
     RtlInitUnicodeString(&amp;usDeviceName, L"\\Device\\MyDriver");
     RtlInitUnicodeString(&amp;usSymbolName, L"\\DosDevices\\MyDriver");
-    IoCreateDevice(pMyDriver,
-        0,
-        &amp;usDeviceName,
-        FILE_DEVICE_UNKNOWN,
-        0,
-        FALSE,
-        &amp;pMyDevice);
-
+    IoCreateDevice(pMyDriver, 0, &amp;usDeviceName, FILE_DEVICE_UNKNOWN, 0, FALSE, &amp;pMyDevice);
     IoCreateSymbolicLink(&amp;usSymbolName, &amp;usDeviceName);
 
     // Step 2
@@ -129,13 +122,13 @@ NTSTATUS AddDevice(PDRIVER_OBJECT pMyDriver, PDEVICE_OBJECT pPhyDevice)
 </pre><br>
 
 <p>
-Step 1<br>
+<b>Step 1</b><br>
 產生一個Device Object(可自己決定名稱)，然後建立一條Symbolic Link(可自己決定名稱)，關於Device Object的位置，Windows將其放在一個特殊的資料夾內，用來統一管理，使用者可以使用WinObj程式去查看有哪些Device Object，而Symbolic Link的名稱則是放在DosDevices資料夾(位於GLOBAL??)，那User Application要如何知道完整路徑名稱並傳給CreateFile()呢？答案是加上<b>\.\\</b>關鍵字，在開啟COM Port時，一般需要使用CreateFile(<b>"\\.\\\\COM1"</b>, ...)的方式開啟，這就是代表完整路徑的意思，在寫COM Port程式時，不一定說是要大於COM9才能加<b>\.\\</b>路徑，其實從COM1就可以開始使用，因為那是Global的名稱表示方式<br><br>
 
-Step 2<br>
+<b>Step 2</b><br>
 把剛剛產生的Device Object串接到Linked List，這樣才可以開始處理I/O Request Packet(IRP)<br><br>
 
-Step 3<br>
+<b>Step 3</b><br>
 初始化相關旗標，比較需要注意的是DO_BUFFERED_IO旗標，因為在做裝置讀寫時，User Application跟驅動程式是否共用同一塊Buffer是取決於該旗標，如果使用者設定成DO_BUFFERED_IO，則代表驅動程式有自己獨立一塊Buffer，驅動程式讀取完硬體資料後，會複製到它自己的Buffer，然後再複製到User Application的Buffer，所以速度會比較慢一些，如果要共用同一塊Buffer的話，需要把旗標設定成DO_DIRECT_IO
 </p>
 
