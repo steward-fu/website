@@ -86,10 +86,10 @@ main.c
 </p>
 <pre class="brush:cpp">
 #include &lt;wdm.h&gt;
- 
-PDEVICE_OBJECT pNextDevice = NULL;
- 
-NTSTATUS AddDevice(PDRIVER_OBJECT pMyDriver, PDEVICE_OBJECT pPhyDevice)
+  
+static PDEVICE_OBJECT pNextDevice = NULL;
+  
+static NTSTATUS AddDevice(PDRIVER_OBJECT pMyDriver, PDEVICE_OBJECT pPhyDevice)
 {
     PDEVICE_OBJECT pMyDevice = NULL;
     UNICODE_STRING usDeviceName = { 0 };
@@ -97,59 +97,73 @@ NTSTATUS AddDevice(PDRIVER_OBJECT pMyDriver, PDEVICE_OBJECT pPhyDevice)
  
     RtlInitUnicodeString(&amp;usDeviceName, L"\\Device\\MyDriver");
     IoCreateDevice(pMyDriver, 0, &amp;usDeviceName, FILE_DEVICE_UNKNOWN, 0, FALSE, &amp;pMyDevice);
+    DbgPrint("%s, pMyDevice = %p\n", __FUNCTION__, pMyDevice);
+
     RtlInitUnicodeString(&amp;usSymbolName, L"\\DosDevices\\MyDriver");
     IoCreateSymbolicLink(&amp;usSymbolName, &amp;usDeviceName);
+
     pNextDevice = IoAttachDeviceToDeviceStack(pMyDevice, pPhyDevice);
+    DbgPrint("%s, pNextDevice = %p\n", __FUNCTION__, pNextDevice);
+
     pMyDevice-&gt;Flags &amp;= ~DO_DEVICE_INITIALIZING;
     pMyDevice-&gt;Flags |= DO_BUFFERED_IO;
     return STATUS_SUCCESS;
 }
- 
-void Unload(PDRIVER_OBJECT pMyDriver)
+  
+static VOID Unload(PDRIVER_OBJECT pMyDriver)
 {
+    DbgPrint("%s, pMyDriver = %p\n", __FUNCTION__, pMyDriver);
 }
- 
-NTSTATUS IrpPnp(PDEVICE_OBJECT pMyDevice, PIRP pIrp)
+  
+static NTSTATUS IrpPnp(PDEVICE_OBJECT pMyDevice, PIRP pIrp)
 {
     UNICODE_STRING usSymbolName = { 0 };
     PIO_STACK_LOCATION pStack = IoGetCurrentIrpStackLocation(pIrp);
- 
+
+    DbgPrint("%s, Major = 0x%x\n", __FUNCTION__, pStack-&gt;MajorFunction);
     if (pStack-&gt;MinorFunction == IRP_MN_REMOVE_DEVICE) {
         RtlInitUnicodeString(&amp;usSymbolName, L"\\DosDevices\\MyDriver");
         IoDeleteSymbolicLink(&amp;usSymbolName);
+        DbgPrint("%s, Delete symbolic link\n", __FUNCTION__);
+
         IoDetachDevice(pNextDevice);
+        DbgPrint("%s, Delete device\n", __FUNCTION__);
+
         IoDeleteDevice(pMyDevice);
         IoCompleteRequest(pIrp, IO_NO_INCREMENT);
         return STATUS_SUCCESS;
     }
+
     IoSkipCurrentIrpStackLocation(pIrp);
     return IoCallDriver(pNextDevice, pIrp);
 }
- 
-NTSTATUS IrpFile(PDEVICE_OBJECT pMyDevice, PIRP pIrp)
+  
+static NTSTATUS IrpFile(PDEVICE_OBJECT pMyDevice, PIRP pIrp)
 {
     PIO_STACK_LOCATION pStack = IoGetCurrentIrpStackLocation(pIrp);
-
+ 
     switch (pStack-&gt;MajorFunction) {
     case IRP_MJ_CREATE:
-        DbgPrint("IRP_MJ_CREATE");
+        DbgPrint("%s, Handle IRP_MJ_CREATE\n", __FUNCTION__);
         break;
     case IRP_MJ_READ:
-        DbgPrint("IRP_MJ_READ");
+        DbgPrint("%s, Handle IRP_MJ_READ\n", __FUNCTION__);
         break;
     case IRP_MJ_WRITE:
-        DbgPrint("IRP_MJ_WRITE");
+        DbgPrint("%s, Handle IRP_MJ_WRITE\n", __FUNCTION__);
         break;
     case IRP_MJ_CLOSE:
-        DbgPrint("IRP_MJ_CLOSE");
+        DbgPrint("%s, Handle IRP_MJ_CLOSE\n", __FUNCTION__);
         break;
     }
+
     IoCompleteRequest(pIrp, IO_NO_INCREMENT);
     return STATUS_SUCCESS;
 }
- 
+  
 NTSTATUS DriverEntry(PDRIVER_OBJECT pMyDriver, PUNICODE_STRING pMyRegistry)
 {
+    DbgPrint("%s, pMyDriver = %p\n", __FUNCTION__, pMyDriver);
     pMyDriver-&gt;MajorFunction[IRP_MJ_PNP]    = IrpPnp;
     pMyDriver-&gt;MajorFunction[IRP_MJ_CREATE] = IrpFile;
     pMyDriver-&gt;MajorFunction[IRP_MJ_READ]   = IrpFile;
@@ -157,42 +171,46 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT pMyDriver, PUNICODE_STRING pMyRegistry)
     pMyDriver-&gt;MajorFunction[IRP_MJ_CLOSE]  = IrpFile;
     pMyDriver-&gt;DriverExtension-&gt;AddDevice   = AddDevice;
     pMyDriver-&gt;DriverUnload = Unload;
+
     return STATUS_SUCCESS;
 }
 </pre><br>
+
 <p>
 app.c</b>
 </p>
 <pre class="brush:cpp">
-#include &lt;windows.h&gt;
 #include &lt;stdio.h&gt;
 #include &lt;stdlib.h&gt;
- 
-int main(int argc, char **argv)
+#include &lt;windows.h&gt;
+#include &lt;strsafe.h&gt;
+#include &lt;setupapi.h&gt;
+  
+int main(int argc, char* argv[])
 {
     DWORD dwRet = 0;
-    char szBuffer[255] = { "I am error" };
+    char szBuffer[32] = { "I am error" };
     HANDLE hFile = INVALID_HANDLE_VALUE;
- 
+  
     hFile = CreateFile("\\\\.\\MyDriver", GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
-
-    dwRet = strlen(szBuffer);
-    printf("WR: %s, %d\n", szBuffer, dwRet);
     WriteFile(hFile, szBuffer, strlen(szBuffer), &amp;dwRet, NULL);
-
-    dwRet = 0;
-    szBuffer[0] = 0;
+    printf("%s, Write %s bytes, return %d bytes\n", __FUNCTION__, szBuffer, dwRet);
+ 
+    memset(szBuffer, 0, sizeof(szBuffer));
     ReadFile(hFile, szBuffer, sizeof(szBuffer), &amp;dwRet, NULL);
-    printf("RD: %s, %d\n", szBuffer, dwRet);
+    printf("%s, Read %s bytes, return %d bytes\n", __FUNCTION__, szBuffer, dwRet);
     CloseHandle(hFile);
+
     return 0;
 }
 </pre><br>
 
 <p>
-完成<br>
-<img src="wdm_asm_file/1.jpg" class="maxSize"><br>
-<img src="wdm_asm_file/2.jpg" class="maxSize">
+由於我們尚未實作驅動程式的檔案讀寫操作，因此，Write、Read的回傳長度都是0 bytes<br>
+<img src="wdm_cpp_file/1.jpg" class="maxSize"><br><br>
+
+Log<br>
+<img src="wdm_cpp_file/2.jpg" class="maxSize">
 </p>
 
 <!-- tail -->

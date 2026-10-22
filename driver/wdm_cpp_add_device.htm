@@ -82,6 +82,12 @@ https://wasm.in/<br>
 http://four-f.narod.ru/<br>
 https://github.com/steward-fu/wadk<br><br>
 
+一般會在DriverEntry()註冊感興趣的Callback，其中，AddDevice是用來添加新裝置的Callback，WDM驅動程式的操作主要都是基於PNP訊息，因此，需要額外註冊IRP_MJ_PNP的Callback，這個Callback可以用來接收IRP_MN_REMOVE_DEVICE訊息並且在此訊息中移除裝置，由於WDM驅動程式是基於Stack方式運作，每一層驅動程式都會有自己的Irp Stack，可以透過IoCallDriver()將控制權交給下一層驅動程式繼續處理，如果目前的Irp Stack不需要額外處理，可以直接呼叫IoSkipCurrentIrpStackLocation()，當收到IRP_MN_REMOVE_DEVICE訊息，由於我們會把新增的裝置刪除，代表這個IRP可以由我們獨立完成，不需要下層的驅動程式干預，直接呼叫IoCompleteRequest()完成這個IRP的處理即可<br><br>
+
+每個Device Object都會有一個名字，可以想像成是驅動程式的名字，當Application要跟驅動程式溝通時，Windows系統允許透過Symbolic Link方式，將Symbolic Link名稱連接到驅動程式的名稱，這是因為驅動程式是位於不同名稱空間的關係，所以Application可以透過存取Symbolic Link來跟驅動程式溝通，一般都是把驅動程式當作檔案操作方式來看待<br><br>
+
+由於驅動程式是屬於Stack操作方式，因此，新增的裝置需要Attach到下層驅動程式，如果不是Bus相關的驅動程式，一般下層驅動程式就是I/O Manager，當要移除裝置時，則是需要從下層驅動程式Detach<br><br>
+
 main.c
 </p>
 <pre class="brush:cpp">
