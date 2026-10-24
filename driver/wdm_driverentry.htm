@@ -85,7 +85,7 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT, PUNICODE_STRING);
 </pre><br>
 
 <p>
-Windows系統透過呼叫DriverEntry()載入驅動程式並傳入兩個參數，第一個參數<b>PDRIVER_OBJECT</b>是指向該驅動程式的資料位置，該位置會包含驅動程式的所有資訊，這些資訊並非全部都提供給使用者使用，有些欄位是Undocumented的，保留給系統調度使用，Microsoft會隨Windows系統不同而做修改，因此，建議使用者不要使用這些Undocumented欄位的資料，另一個參數<b>PUNICODE_STRING</b>則是該驅動程式的Registry位置，驅動程式在安裝時，系統都會產生一個註冊表項目(位於<b>CurrentControlSet\Services\</b>)，該註冊表位置就是當Windows系統啟動時，用來載入驅動程式使用的，Windows系統依據註冊表來決定哪些驅動程式需要被載入以及載入的順序，因此，隨意修改註冊表，可能會導致驅動程式無法被正確載入，嚴重時，可能無法啟動系統<br><br>
+Windows透過呼叫DriverEntry()載入驅動程式並傳入兩個參數，第一個參數<b>PDRIVER_OBJECT</b>是指向該驅動程式的資料位置，該位置會包含驅動程式的所有資訊，這些資訊並非全部都提供給使用者使用，有些欄位是Undocumented的，保留給系統調度使用，Microsoft會隨Windows系統不同而做修改，因此，建議使用者不要使用這些Undocumented欄位的資料，另一個參數<b>PUNICODE_STRING</b>則是該驅動程式的Registry位置，驅動程式在安裝時，系統都會產生一個Registry項目(位於<b>CurrentControlSet\Services\</b>)，該Registry位置就是當Windows啟動時，用來載入驅動程式使用的，Windows依據Registry來決定哪些驅動程式需要被載入以及載入的順序，因此，隨意修改Registry，可能會導致驅動程式無法被正確載入，嚴重時，可能無法啟動系統<br><br>
 
 使用者需要注意的是，就算有多個相同的裝置(如：兩個一樣型號的USB滑鼠插入電腦)，系統只會在發現第一個裝置時，載入該驅動程式並產生一份Driver Object，之後發現的裝置，系統還是使用那份已經產生的Driver Object，使用者可能很好奇，相同裝置使用同一份Driver Object資料？那每個裝置的驅動程式資料不就互相干擾嗎？答案是：不會的，因為每個裝置必須產生自己的Device Object(跟Driver Object是不一樣的東西)，每個裝置的資料必須存在自己產生的Device Object中，因此，每個Device Object各代表不同的裝置<br><br>
 
