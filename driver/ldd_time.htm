@@ -84,7 +84,27 @@ void print_time(void)
 
     do_gettimeofday(&amp;t);
     time_to_tm(t.tv_sec, 0, &amp;broken);
-    printk("%d:%d:%d:%ld\n", broken.tm_hour, broken.tm_min, broken.tm_sec, t.tv_usec);
+
+    printk("%d:%d:%d:%ld\n",
+        broken.tm_hour,
+        broken.tm_min,
+        broken.tm_sec,
+        t.tv_usec);
+}
+
+void print_time64(void)
+{
+    struct timespec64 ts;
+    struct tm broken;
+
+    ktime_get_real_ts64(&amp;ts);
+    time64_to_tm(ts.tv_sec, 0, &amp;broken);
+
+    printk("%02d:%02d:%02d:%09lu\n",
+           broken.tm_hour,
+           broken.tm_min,
+           broken.tm_sec,
+           (unsigned long)ts.tv_nsec);
 }
 </pre>
 
