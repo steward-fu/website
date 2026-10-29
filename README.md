@@ -145,6 +145,7 @@ All of files or resources used on my website can be found from the following lin
 [![](img/photos/fasm.jpg)](https://github.com/steward-fu/website/releases/tag/fasm)
 [![](img/photos/hla.jpg)](https://github.com/steward-fu/website/releases/tag/hla)
 [![](img/photos/vc.jpg)](https://github.com/steward-fu/website/releases/tag/vc)
+[![](img/photos/mingw.jpg)](https://github.com/steward-fu/website/releases/tag/mingw)
 [![](img/photos/bcb6.jpg)](https://github.com/steward-fu/website/releases/tag/bcb6)
 [![](img/photos/freepascal.jpg)](https://github.com/steward-fu/website/releases/tag/freepascal)
 [![](img/photos/freebasic.jpg)](https://github.com/steward-fu/website/releases/tag/freebasic)
