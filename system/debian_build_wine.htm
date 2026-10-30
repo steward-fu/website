@@ -81,40 +81,54 @@
 https://github.com/Winetricks/winetricks<br>
 https://www.reddit.com/r/wine_gaming/comments/7xgux5/wine_3_how_to_build_a_proper_working_wine_for/<br><br>
 
-步驟如下：
+在ARM64上編譯：
 </p>
 <pre>
 $ cd
 $ git clone https://gitlab.winehq.org/wine/wine --recursive
 $ cd wine
-$ mkdir -p build/wine-32
-$ mkdir -p build/wine-64
+$ mkdir -p build_x64
+$ mkdir -p build_i386
+$ mkdir -p build_arm64
 
-$ cd build/wine-64
-$ ../../configure \
-    CFLAGS="-march=native \
-    -O3 \
-    -pipe \
-    -fstack-protector-strong" \
+$ cd ~/wine/build_arm64
+$ ../configure \
+    --prefix=/opt/wine_arm64 \
     --enable-win64
 
 $ make -j4
 $ sudo make install
 
-$ cd ../wine-32
-$ PKG_CONFIG_PATH=/usr/lib/pkgconfig ../../configure \
-    CFLAGS="-march=native \
-    -O3 \
-    -pipe \
-    -fstack-protector-strong" \
-    --with-wine64=../wine-64
+$ cd ~/wine/build_i386
+$ export CC=i686-linux-gnu-gcc
+$ export CXX=i686-linux-gnu-g++
+$ export AR=i686-linux-gnu-ar
+$ export RANLIB=i686-linux-gnu-ranlib
+$ export STRIP=i686-linux-gnu-strip
+$ export PKG_CONFIG=/usr/bin/pkg-config
+$ export PKG_CONFIG_LIBDIR=/usr/lib/i386-linux-gnu/pkgconfig:/usr/share/pkgconfig
+$ ../configure \
+    --build=aarch64-linux-gnu \
+    --host=i686-linux-gnu \
+    --prefix=/opt/wine_i386 \
+    --with-wine-tools=$HOME/wine/build_arm64 \
+    --disable-win64
 
 $ make -j4
 $ sudo make install
 
-$ export WINEARCH=win32
-$ export WINEPREFIX=/home/user/.wine
-$ wine winecfg
+$ export CC=x86_64-linux-gnu-gcc
+$ export CXX=x86_64-linux-gnu-g++
+$ export AR=x86_64-linux-gnu-ar
+$ export RANLIB=x86_64-linux-gnu-ranlib
+$ ../configure \
+    --build=aarch64-linux-gnu \
+    --host=x86_64-linux-gnu \
+    --prefix=/opt/wine_x64 \
+    --enable-win64
+
+$ make -j4
+$ sudo make install
 </pre>
 
 <!-- tail -->
