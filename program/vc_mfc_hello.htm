@@ -98,32 +98,28 @@ CMyApp myApp;
 main.mak
 </p>
 <pre>
-OUTDIR   = Debug
 TARGET   = main
 CPP      = cl.exe
-CXXFLAGS = /nologo /MDd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_AFXDLL" /D "_MBCS" /Fo"$(OUTDIR)\\" /Fd"$(OUTDIR)\\" /FD /GZ /c
-
+CXXFLAGS = /nologo /MD /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_WINDOWS" /D "_AFXDLL" /D "_MBCS" /FD /GZ /c
+RC       = rc.exe
+RCFLAGS  = /l 0x409 /fo "$(TARGET).res" /d "_AFXDLL"
 LD       = link.exe
-LDFLAGS  = /nologo /subsystem:windows /incremental:yes /pdb:"$(OUTDIR)\$(TARGET).pdb" /debug /machine:I386 /out:"$(OUTDIR)\$(TARGET).exe" /pdbtype:sept
-
-OBJS     = "$(OUTDIR)\$(TARGET).obj"
+LDFLAGS  = /nologo /subsystem:windows /machine:I386 /out:$(TARGET).exe opengl32.lib glu32.lib gdi32.lib
+OBJS     = $(TARGET).obj $(TARGET).res
 
 all:
-	if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
+	if not exist $(TARGET).rc copy NUL $(TARGET).rc
 	$(CPP) $(CXXFLAGS) $(TARGET).cpp
+	$(RC) $(RCFLAGS) $(TARGET).rc
 	$(LD) $(LDFLAGS) $(OBJS)
-
-clean:
-	rmdir /s /q $(OUTDIR)
+	$(TARGET)
 </pre><br>
 
 <p>
 編譯、執行
 </p>
 <pre>
-$ WINEPREFIX=~/.wine_x86 box86 wine nmake -f main.mak clean
-$ WINEPREFIX=~/.wine_x86 box86 wine nmake -f main.mak
-$ WINEPREFIX=~/.wine_x86 box86 wine Debug/main.exe
+$ myx86 nmake -f main.mak
 </pre><br>
 
 <p>

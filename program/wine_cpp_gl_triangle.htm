@@ -90,15 +90,14 @@ main.c
 #include &lt;windows.h&gt;
 #include &lt;GL/gl.h&gt;
 #include &lt;GL/glu.h&gt;
-
-static const int W = 320;
-static const int H = 240;
-
+ 
+#define W 320
+#define H 240
+ 
 static HDC hDC = NULL;
 static HGLRC hRC = NULL;
-static HWND hWnd = NULL;
 static WNDPROC defWndProc = NULL;
- 
+
 static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
     switch (uMsg) {
@@ -115,29 +114,21 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
     }
     return CallWindowProc(defWndProc, hWnd, uMsg, wParam, lParam);
 }
- 
+  
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
+    HWND hWnd = NULL;
     GLuint fmt = 0;
-    PIXELFORMATDESCRIPTOR pfd = {
-        sizeof(PIXELFORMATDESCRIPTOR),
-        1,
-        PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,
-        PFD_TYPE_RGBA,
-        16,
-        0, 0, 0, 0, 0, 0,
-        0,
-        0,
-        0,
-        0, 0, 0, 0,
-        16,
-        0,
-        0,
-        PFD_MAIN_PLANE,
-        0,
-        0, 0, 0
-    };
+    PIXELFORMATDESCRIPTOR pfd = { 0 };
 
+    pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
+    pfd.nVersion = 1;
+    pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+    pfd.iPixelType = PFD_TYPE_RGBA;
+    pfd.cColorBits = 16;
+    pfd.cDepthBits = 16;
+    pfd.iLayerType = PFD_MAIN_PLANE;
+ 
     hWnd = CreateWindow(WC_DIALOG,
         "main",
         WS_OVERLAPPEDWINDOW | WS_VISIBLE,
@@ -150,29 +141,29 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         NULL,
         NULL
     );
-
+ 
     defWndProc = (WNDPROC)SetWindowLongPtr(hWnd, GWLP_WNDPROC, (long int)WndProc);
-    
+     
     hDC = GetDC(hWnd);
     fmt = ChoosePixelFormat(hDC, &amp;pfd);
     SetPixelFormat(hDC, fmt, &amp;pfd);
     hRC = wglCreateContext(hDC);
     wglMakeCurrent(hDC, hRC);
     glViewport(0, 0, W, H);
- 
+  
     MSG msg = { 0 };
     while (GetMessage(&amp;msg, NULL, 0, 0)) {
         DispatchMessage(&amp;msg);
-
+ 
         glBegin(GL_TRIANGLES);
             glVertex3f(0.0f, 0.5f, 0.0f);
             glVertex3f(-0.5f, -0.5f, 0.0f);
             glVertex3f(0.5f, -0.5f, 0.0f);
         glEnd();
-
+ 
         SwapBuffers(hDC);
     }
-
+ 
     ExitProcess(0);
     return 0;
 }
