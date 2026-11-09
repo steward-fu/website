@@ -74,7 +74,7 @@
 <div id="page">
 
 <!-- body -->
-<h3><a href="../program.htm">程式語言</a> - Wine - C/C++ - Resource - <b>DialogBox</b></h3>
+<h3><a href="../program.htm">程式語言</a> - Wine - C/C++ - <b>Create DialogBox(Resource)</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
@@ -91,11 +91,11 @@ main.c
 <pre class="brush:cpp">
 #include &lt;windows.h&gt;
 #include "resource.h"
-
-INT_PTR CALLBACK DlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+ 
+static INT_PTR CALLBACK DlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
     DWORD dwID = wParam;
-
+ 
     switch (uMsg) {
     case WM_COMMAND:
         if (dwID == IDOK) {
@@ -106,11 +106,11 @@ INT_PTR CALLBACK DlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     }
     return FALSE;
 }
-
+ 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
     DialogBox(hInstance, MAKEINTRESOURCE(IDD_MAIN), NULL, DlgProc);
-    ExitProcess(0);
+
     return 0;
 }
 </pre><br>
@@ -124,14 +124,14 @@ main.rc
 
 IDR_MAINFRAME ICON "main.ico"
 
-IDD_MAIN DIALOGEX 0, 0, 100, 42
+IDD_MAIN DIALOGEX 0, 0, 100, 50
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "main"
 FONT 10, "MS Shell Dlg", 0, 0, 0x1
 BEGIN
     LTEXT          "MyDialog", IDC_STATIC, 32, 0, 32, 16, SS_NOPREFIX | SS_CENTER
     ICON           IDR_MAINFRAME, IDC_STATIC, 42, 10, 16, 16
-    DEFPUSHBUTTON  "OK", IDOK, 0, 25, 100, 16, WS_GROUP
+    DEFPUSHBUTTON  "OK", IDOK, 0, 30, 100, 16, WS_GROUP
 END
 </pre><br>
 
@@ -146,17 +146,17 @@ resource.h
 
 <p>
 main.ico<br>
-<img style="border:0px" src="nasm_win32_res_dialog/2.png" class="maxSize"><br><br>
+<img style="border:0px" src="wine_cpp_res_dialogbox/1.png" class="maxSize"><br><br>
 
 編譯、執行
 </p>
 <pre>
 $ x86_64-w64-mingw32-windres main.rc -o main.res
 $ winegcc main.c main.res -o main
-$ wine ./main.exe
+$ wine main.exe.so
 </pre>
 <p>
-<img style="border:0px" src="nasm_win32_res_dialog/1.jpg" class="maxSize">
+<img style="border:0px" src="wine_cpp_res_dialogbox/2.jpg" class="maxSize">
 </p>
 
 <!-- tail -->
