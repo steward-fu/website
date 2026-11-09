@@ -74,7 +74,7 @@
 <div id="page">
 
 <!-- body -->
-<h3><a href="../program.htm">程式語言</a> - Wine - C/C++ - Menu - <b>SystemMenu</b></h3>
+<h3><a href="../program.htm">程式語言</a> - Wine - C/C++ - <b>SystemMenu</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
@@ -88,13 +88,13 @@ main.c
 </p>
 <pre class="brush:cpp">
 #include &lt;windows.h&gt;
-
+ 
 #define IDM_EXIT 101
-
-HWND hWin = NULL;
-WNDPROC defWndProc = NULL;
-
-LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+ 
+static HWND hWin = NULL;
+static WNDPROC defWndProc = NULL;
+ 
+static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
     switch (uMsg) {
     case WM_CLOSE:
@@ -113,21 +113,20 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     }
     return CallWindowProc(defWndProc, hWnd, uMsg, wParam, lParam);
 }
-
+ 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
-    hWin = CreateWindow(WC_DIALOG, "main",
-        WS_OVERLAPPEDWINDOW | WS_VISIBLE, 0, 0, 300, 300, NULL, NULL, NULL, NULL);
+    hWin = CreateWindow(WC_DIALOG, "main", WS_OVERLAPPEDWINDOW | WS_VISIBLE, 0, 0, 320, 240, NULL, NULL, NULL, NULL);
     defWndProc = (WNDPROC)SetWindowLongPtr(hWin, GWLP_WNDPROC, (long int)WndProc);
-
+ 
     HMENU hMenu = GetSystemMenu(hWin, 0);
     AppendMenu(hMenu, MF_STRING, IDM_EXIT, "MyExit");
-
-    MSG msg = {0};
+ 
+    MSG msg = { 0 };
     while (GetMessage(&amp;msg, NULL, 0, 0)) {
         DispatchMessage(&amp;msg);
     }
-    ExitProcess(0);
+
     return 0;
 }
 </pre><br>
@@ -137,10 +136,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 </p>
 <pre>
 $ winegcc main.c -o main
-$ wine ./main.exe
+$ wine main.exe.so
 </pre>
 <p>
-<img style="border:0px" src="nasm_win32_menu_system/1.jpg" class="maxSize">
+<img style="border:0px" src="wine_cpp_menu_system/1.jpg" class="maxSize">
 </p>
 
 <!-- tail -->
