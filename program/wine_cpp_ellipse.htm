@@ -74,7 +74,7 @@
 <div id="page">
 
 <!-- body -->
-<h3><a href="../program.htm">程式語言</a> - Wine - C/C++ - Painting - <b>Draw Ellipse</b></h3>
+<h3><a href="../program.htm">程式語言</a> - Wine - C/C++ - <b>Draw Ellipse</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
@@ -85,23 +85,23 @@ http://masm32.com/board/index.php?topic=3584.0<br>
 https://learn.microsoft.com/en-us/windows/win32/winmsg/window-styles<br><br>
 
 使用方式：<br>
-<img src="nasm_win32_ellipse/1.jpg" class="maxSize"><br><br>
+<img src="wine_cpp_ellipse/1.jpg" class="maxSize"><br><br>
 
 main.c
 </p>
 <pre class="brush:cpp">
 #include &lt;windows.h&gt;
-
-HWND hWin = NULL;
-WNDPROC defWndProc = NULL;
-
-LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+ 
+static HWND hWin = NULL;
+static WNDPROC defWndProc = NULL;
+ 
+static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
     HDC hdc = NULL;
     HPEN pen = NULL;
     HBRUSH brush = NULL;
-    PAINTSTRUCT ps = {0};
-
+    PAINTSTRUCT ps = { 0 };
+ 
     switch (uMsg) {
     case WM_CLOSE:
         DestroyWindow(hWnd);
@@ -121,34 +121,32 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         DeleteObject(brush);
         break;
     }
+
     return CallWindowProc(defWndProc, hWnd, uMsg, wParam, lParam);
 }
-
+ 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
-    hWin = CreateWindow(WC_DIALOG, "main", 
-        WS_OVERLAPPEDWINDOW | WS_VISIBLE, 0, 0, 300, 300, NULL, NULL, NULL, NULL);
+    hWin = CreateWindow(WC_DIALOG, "main", WS_OVERLAPPEDWINDOW | WS_VISIBLE, 0, 0, 320, 240, NULL, NULL, NULL, NULL);
     defWndProc = (WNDPROC)SetWindowLongPtr(hWin, GWLP_WNDPROC, (long int)WndProc);
-
-    MSG msg = {0};
+ 
+    MSG msg = { 0 };
     while (GetMessage(&amp;msg, NULL, 0, 0)) {
         DispatchMessage(&amp;msg);
     }
-    ExitProcess(0);
+
     return 0;
 }
-</pre>
+</pre><br>
 <p>
-<b>Line 26</b>：畫出一個Ellipse圖形<br><br>
-
 編譯、執行
 </p>
 <pre>
 $ winegcc main.c -o main -lgdi32
-$ wine ./main.exe
+$ wine main.exe.so
 </pre>
 <p>
-<img style="border:0px" src="nasm_win32_ellipse/2.jpg" class="maxSize">
+<img style="border:0px" src="wine_cpp_ellipse/2.jpg" class="maxSize">
 </p>
 
 <!-- tail -->
