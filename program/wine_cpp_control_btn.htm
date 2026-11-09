@@ -74,7 +74,7 @@
 <div id="page">
 
 <!-- body -->
-<h3><a href="../program.htm">程式語言</a> - Wine - C/C++ - Control - <b>Button</b></h3>
+<h3><a href="../program.htm">程式語言</a> - Wine - C/C++ - <b>Create Button</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
@@ -88,17 +88,18 @@ main.c
 </p>
 <pre class="brush:cpp">
 #include &lt;windows.h&gt;
-
+ 
 #define ID_BTN 1000
-
-HWND hWin = NULL;
-HWND hBtn = NULL;
-WNDPROC defWndProc = NULL;
-
-LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+ 
+static HWND hWin = NULL;
+static HWND hBtn = NULL;
+static WNDPROC defWndProc = NULL;
+ 
+static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
     switch (uMsg) {
     case WM_CLOSE:
+        DestroyWindow(hBtn);
         DestroyWindow(hWnd);
         return 0;
     case WM_DESTROY:
@@ -107,27 +108,25 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     case WM_COMMAND:
         switch (LOWORD(wParam)) {
         case ID_BTN:
-            MessageBox(hWnd, "I am button", "main", MB_OK);
+            MessageBox(hWnd, "I am button", "", MB_OK);
             return 0;
         }
         break;
     }
     return CallWindowProc(defWndProc, hWnd, uMsg, wParam, lParam);
 }
-
+ 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
-    hWin = CreateWindow(WC_DIALOG, "main",
-        WS_OVERLAPPEDWINDOW | WS_VISIBLE, 0, 0, 300, 300, NULL, NULL, NULL, NULL);
-    hBtn = CreateWindow("BUTTON", "Test", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, 50, 50, 100,
-        100, hWin, (HMENU)ID_BTN, NULL, NULL);
+    hWin = CreateWindow(WC_DIALOG, "main", WS_OVERLAPPEDWINDOW | WS_VISIBLE, 0, 0, 320, 240, NULL, NULL, NULL, NULL);
+    hBtn = CreateWindow("BUTTON", "Test", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, 50, 50, 50, 30, hWin, (HMENU)ID_BTN, NULL, NULL);
     defWndProc = (WNDPROC)SetWindowLongPtr(hWin, GWLP_WNDPROC, (long int)WndProc);
-
-    MSG msg = {0};
+ 
+    MSG msg = { 0 };
     while (GetMessage(&amp;msg, NULL, 0, 0)) {
         DispatchMessage(&amp;msg);
     }
-    ExitProcess(0);
+
     return 0;
 }
 </pre><br>
@@ -136,11 +135,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 </p>
 <pre>
 $ winegcc main.c -o main
-$ wine ./main.exe
+$ wine main.exe.so
 </pre>
 <p>
-<img style="border:0px" src="nasm_win32_control_btn/1.jpg" class="maxSize"><br>
-<img style="border:0px" src="nasm_win32_control_btn/2.jpg" class="maxSize">
+<img style="border:0px" src="wine_cpp_control_btn/1.jpg" class="maxSize"><br>
+<img style="border:0px" src="wine_cpp_control_btn/2.jpg" class="maxSize">
 </p>
 
 <!-- tail -->
