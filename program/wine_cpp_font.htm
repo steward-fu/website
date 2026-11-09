@@ -91,17 +91,17 @@ main.c
 <pre class="brush:cpp">
 #include &lt;stdbool.h&gt;
 #include &lt;windows.h&gt;
-  
+   
 static HWND hWin = NULL;
 static WNDPROC defWndProc = NULL;
-  
+   
 static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
     HDC hdc = NULL;
     HFONT font = NULL;
     PAINTSTRUCT ps = { 0 };
     const char *pMsg = "Test";
- 
+  
     switch (uMsg) {
     case WM_CLOSE:
         DestroyWindow(hWnd);
@@ -111,7 +111,7 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
         return 0;
     case WM_PAINT:
         hdc = BeginPaint(hWnd, &amp;ps);
- 
+  
         font = CreateFont(48,
             0,
             0,
@@ -127,29 +127,29 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
             DEFAULT_PITCH | FF_DONTCARE,
             "Arial"
         );
- 
+  
         SetTextColor(hdc, RGB(0xff, 0x00, 0x00));
         SetBkMode(hdc, TRANSPARENT);
         SelectObject(hdc, font);
-        TextOut(hdc, 100, 100, pMsg, strlen(pMsg));
+        TextOut(hdc, 10, 10, pMsg, strlen(pMsg));
         EndPaint(hWnd, &amp;ps);
         DeleteObject(font);
         break;
     }
-
+ 
     return CallWindowProc(defWndProc, hWnd, uMsg, wParam, lParam);
 }
-  
+   
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
     hWin = CreateWindow(WC_DIALOG, "main", WS_OVERLAPPEDWINDOW | WS_VISIBLE, 0, 0, 320, 240, NULL, NULL, NULL, NULL);
     defWndProc = (WNDPROC)SetWindowLongPtr(hWin, GWLP_WNDPROC, (long int)WndProc);
-  
+   
     MSG msg = { 0 };
     while (GetMessage(&amp;msg, NULL, 0, 0)) {
         DispatchMessage(&amp;msg);
     }
-
+ 
     return 0;
 }
 </pre><br>

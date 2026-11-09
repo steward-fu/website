@@ -90,10 +90,10 @@ main.c
 </p>
 <pre class="brush:cpp">
 #include &lt;windows.h&gt;
- 
+  
 static HWND hWin = NULL;
 static WNDPROC defWndProc = NULL;
- 
+  
 static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
     HDC hdc = NULL;
@@ -101,7 +101,7 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
     HPEN g_pen = NULL;
     HPEN b_pen = NULL;
     PAINTSTRUCT ps = { 0 };
- 
+  
     switch (uMsg) {
     case WM_CLOSE:
         DestroyWindow(hWnd);
@@ -114,39 +114,39 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
         r_pen = CreatePen(PS_SOLID, 3, RGB(0xff, 0x00, 0x00));
         g_pen = CreatePen(PS_SOLID, 3, RGB(0x00, 0xff, 0x00));
         b_pen = CreatePen(PS_SOLID, 3, RGB(0x00, 0x00, 0xff));
- 
+  
         SelectObject(hdc, r_pen);
+        MoveToEx(hdc, 10, 50, NULL);
+        LineTo(hdc, 250, 50);
+  
+        SelectObject(hdc, g_pen);
         MoveToEx(hdc, 10, 100, NULL);
         LineTo(hdc, 250, 100);
- 
-        SelectObject(hdc, g_pen);
+  
+        SelectObject(hdc, b_pen);
         MoveToEx(hdc, 10, 150, NULL);
         LineTo(hdc, 250, 150);
- 
-        SelectObject(hdc, b_pen);
-        MoveToEx(hdc, 10, 200, NULL);
-        LineTo(hdc, 250, 200);
- 
+  
         EndPaint(hWnd, &amp;ps);
         DeleteObject(r_pen);
         DeleteObject(g_pen);
         DeleteObject(b_pen);
         break;
     }
-
+ 
     return CallWindowProc(defWndProc, hWnd, uMsg, wParam, lParam);
 }
- 
+  
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
     hWin = CreateWindow(WC_DIALOG, "main", WS_OVERLAPPEDWINDOW | WS_VISIBLE, 0, 0, 320, 240, NULL, NULL, NULL, NULL);
     defWndProc = (WNDPROC)SetWindowLongPtr(hWin, GWLP_WNDPROC, (long int)WndProc);
- 
+  
     MSG msg = { 0 };
     while (GetMessage(&amp;msg, NULL, 0, 0)) {
         DispatchMessage(&amp;msg);
     }
-
+ 
     return 0;
 }
 </pre><br>
