@@ -1,0 +1,279 @@
+﻿<!-- head
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+-->
+
+<head>
+<title>司徒的教學網站</title>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+<meta http-equiv="content-type" content="application/xhtml+xml; charset=UTF-8" />
+<meta name="author" content="fullahead.org" />
+<meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+<meta name="description" content="A valid, XHTML 1.0 template" />
+<meta name="robots" content="index, follow, noarchive" />
+<meta name="googlebot" content="noarchive" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=10.0" />
+
+<link rel="shortcut icon" href="../website.ico" />
+<link rel="stylesheet" type="text/css" href="../styles/shCore.css" />
+<link rel="stylesheet" type="text/css" href="../styles/shThemeDefault.css" />
+<link rel="stylesheet" type="text/css" href="../css/html.css" media="screen" />
+<link rel="stylesheet" type="text/css" href="../css/layout.css" media="screen" />
+
+<script type="text/javascript" src="../scripts/shCore.js"></script>
+<script type="text/javascript" src="../scripts/shBrushAppleScript.js"></script>
+<script type="text/javascript" src="../scripts/shBrushAS3.js"></script>
+<script type="text/javascript" src="../scripts/shBrushAsm.js"></script>
+<script type="text/javascript" src="../scripts/shBrushBash.js"></script>
+<script type="text/javascript" src="../scripts/shBrushColdFusion.js"></script>
+<script type="text/javascript" src="../scripts/shBrushCpp.js"></script>
+<script type="text/javascript" src="../scripts/shBrushD.js"></script>
+<script type="text/javascript" src="../scripts/shBrushCSharp.js"></script>
+<script type="text/javascript" src="../scripts/shBrushCss.js"></script>
+<script type="text/javascript" src="../scripts/shBrushDiff.js"></script>
+<script type="text/javascript" src="../scripts/shBrushErlang.js"></script>
+<script type="text/javascript" src="../scripts/shBrushGolang.js"></script>
+<script type="text/javascript" src="../scripts/shBrushGroovy.js"></script>
+<script type="text/javascript" src="../scripts/shBrushInf.js"></script>
+<script type="text/javascript" src="../scripts/shBrushJavaFX.js"></script>
+<script type="text/javascript" src="../scripts/shBrushJava.js"></script>
+<script type="text/javascript" src="../scripts/shBrushJScript.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPas.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPerl.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPhp.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPlain.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPowerShell.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPython.js"></script>
+<script type="text/javascript" src="../scripts/shBrushRuby.js"></script>
+<script type="text/javascript" src="../scripts/shBrushRust.js"></script>
+<script type="text/javascript" src="../scripts/shBrushSass.js"></script>
+<script type="text/javascript" src="../scripts/shBrushScad.js"></script>
+<script type="text/javascript" src="../scripts/shBrushBasic.js"></script>
+<script type="text/javascript" src="../scripts/shBrushVerilog.js"></script>
+<script type="text/javascript" src="../scripts/shBrushScala.js"></script>
+<script type="text/javascript" src="../scripts/shBrushSql.js"></script>
+<script type="text/javascript" src="../scripts/shBrushXml.js"></script>
+<script type="text/javascript" src="../scripts/shBrushFortran.js"></script>
+
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+</head>
+
+<body>
+<div id="wrapper">
+<div id="content">
+
+<div id="header">
+<a href="https://steward-fu.github.io/website/index.htm"><h1><span class="big darkBrown">S</span>teward</h1></a>
+<h2><span class="highlight">分享是一種喜悅、更是一種幸福</span></h2>
+</div>
+
+<div id="page">
+
+<!-- body -->
+<h3><a href="../program.htm">程式語言</a> - Wine - C/C++ - OpenGL 1.0 - <b>Apply Lighting</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://www.winehq.org/<br>
+https://github.com/gamedev-net/nehe-opengl<br>
+https://wiki.winehq.org/Winelib_User%27s_Guide<br><br>
+
+main.c
+</p>
+<pre class="brush:cpp">
+#include &lt;math.h&gt;
+#include &lt;stdbool.h&gt;
+#include &lt;windows.h&gt;
+#include &lt;GL/gl.h&gt;
+#include &lt;GL/glu.h&gt;
+  
+#define W 320
+#define H 240
+  
+static GLuint tex = 0;
+static HDC hDC = NULL;
+static HGLRC hRC = NULL;
+static WNDPROC defWndProc = NULL;
+ 
+static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+    switch (uMsg) {
+    case WM_CLOSE:
+        glDeleteTextures(1, &amp;tex);
+        wglMakeCurrent(NULL, NULL);
+        wglDeleteContext(hRC);
+        ReleaseDC(hWnd, hDC);
+        DestroyWindow(hWnd);
+        return 0;
+    case WM_DESTROY:
+        PostQuitMessage(0);
+        return 0;
+    }
+    return CallWindowProc(defWndProc, hWnd, uMsg, wParam, lParam);
+}
+   
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
+{
+    HWND hWnd = NULL;
+    GLuint fmt = 0;
+    PIXELFORMATDESCRIPTOR pfd = { 0 };
+    GLdouble nearPlane = 0.1;
+    GLdouble farPlane = 100.0;
+    GLdouble top = nearPlane * tan(45.0 * 3.14159 / 360.0);
+    GLdouble right = top * ((GLfloat)W / (GLfloat)H);
+ 
+    pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
+    pfd.nVersion = 1;
+    pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+    pfd.iPixelType = PFD_TYPE_RGBA;
+    pfd.cColorBits = 16;
+    pfd.cDepthBits = 16;
+    pfd.iLayerType = PFD_MAIN_PLANE;
+  
+    hWnd = CreateWindow(WC_DIALOG,
+        "main",
+        WS_OVERLAPPEDWINDOW | WS_VISIBLE,
+        0,
+        0,
+        W,
+        H,
+        NULL,
+        NULL,
+        NULL,
+        NULL
+    );
+  
+    defWndProc = (WNDPROC)SetWindowLongPtr(hWnd, GWLP_WNDPROC, (long int)WndProc);
+      
+    hDC = GetDC(hWnd);
+    fmt = ChoosePixelFormat(hDC, &amp;pfd);
+    SetPixelFormat(hDC, fmt, &amp;pfd);
+    hRC = wglCreateContext(hDC);
+    wglMakeCurrent(hDC, hRC);
+
+    BITMAP bm = { 0 };
+    BITMAPINFO bmi = { 0 };
+    HBITMAP bmp = (HBITMAP)LoadImageA(NULL, "main.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+    GetObject(bmp, sizeof(BITMAP), &amp;bm);
+
+    bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+    bmi.bmiHeader.biWidth = bm.bmWidth;
+    bmi.bmiHeader.biHeight = -bm.bmHeight;
+    bmi.bmiHeader.biPlanes = 1;
+    bmi.bmiHeader.biBitCount = 24;
+    bmi.bmiHeader.biCompression = BI_RGB;
+
+    int size = bm.bmWidth * bm.bmHeight * 3;
+    BYTE *pixels = HeapAlloc(GetProcessHeap(), 0, size);
+    HDC hdc = GetDC(NULL);
+    GetDIBits(hdc, bmp, 0, bm.bmHeight, pixels, &amp;bmi, DIB_RGB_COLORS);
+    ReleaseDC(NULL, hdc);
+
+    glGenTextures(1, &amp;tex);
+    glBindTexture(GL_TEXTURE_2D, tex);
+    glEnable(GL_TEXTURE_2D);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, bm.bmWidth, bm.bmHeight, 0, GL_BGR, GL_UNSIGNED_BYTE, pixels);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+ 
+    HeapFree(GetProcessHeap(), 0, pixels);
+    DeleteObject(bmp);
+
+    GLfloat LightAmbient[] = {0.1f, 0.1f, 0.1f, 1.0f};
+    GLfloat LightDiffuse[] = {1.0f, 1.0f, 1.0f, 1.0f};
+    GLfloat LightPosition[] = {3.0f, 3.0f, 3.0f, 1.0f};
+ 
+    glEnable(GL_LIGHTING);
+    glEnable(GL_LIGHT1);
+ 
+    glLightfv(GL_LIGHT1, GL_AMBIENT, LightAmbient);
+    glLightfv(GL_LIGHT1, GL_DIFFUSE, LightDiffuse);
+    glLightfv(GL_LIGHT1, GL_POSITION, LightPosition);
+ 
+    glEnable(GL_COLOR_MATERIAL);
+    glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
+
+    glViewport(0, 0, W, H);
+    glMatrixMode(GL_PROJECTION);
+    glFrustum(-right, right, -top, top, nearPlane, farPlane);
+  
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+   
+    MSG msg = { 0 };
+    while (GetMessage(&amp;msg, NULL, 0, 0)) {
+        DispatchMessage(&amp;msg);
+
+        glLoadIdentity();
+        glTranslatef(0.0f, 0.0f, -5.0f);
+        glRotatef(45, 0.0f, 1.0f, 0.0f);
+        glBindTexture(GL_TEXTURE_2D, tex);
+        glBegin(GL_QUADS);
+            glNormal3f(0.0f, 0.0f, 1.0f);
+            glTexCoord2f(0.0f, 1.0f); glVertex3f(-1.0f, -1.0f, 1.0f);
+            glTexCoord2f(1.0f, 1.0f); glVertex3f(1.0f, -1.0f, 1.0f);
+            glTexCoord2f(1.0f, 0.0f); glVertex3f(1.0f, 1.0f, 1.0f);
+            glTexCoord2f(0.0f, 0.0f); glVertex3f(-1.0f, 1.0f, 1.0f);
+     
+            glNormal3f(0.0f, 0.0f, -1.0f);
+            glTexCoord2f(0.0f, 0.0f); glVertex3f(-1.0f, -1.0f, -1.0f);
+            glTexCoord2f(0.0f, 1.0f); glVertex3f(-1.0f, 1.0f, -1.0f);
+            glTexCoord2f(1.0f, 1.0f); glVertex3f(1.0f, 1.0f, -1.0f);
+            glTexCoord2f(1.0f, 0.0f); glVertex3f(1.0f, -1.0f, -1.0f);
+     
+            glNormal3f(0.0f, 1.0f, 0.0f);
+            glTexCoord2f(1.0f, 1.0f); glVertex3f(-1.0f, 1.0f, -1.0f);
+            glTexCoord2f(1.0f, 0.0f); glVertex3f(-1.0f, 1.0f, 1.0f);
+            glTexCoord2f(0.0f, 0.0f); glVertex3f(1.0f, 1.0f, 1.0f);
+            glTexCoord2f(0.0f, 1.0f); glVertex3f(1.0f, 1.0f, -1.0f);
+     
+            glNormal3f(0.0f, -1.0f, 0.0f);
+            glTexCoord2f(0.0f, 1.0f); glVertex3f(-1.0f, -1.0f, -1.0f);
+            glTexCoord2f(1.0f, 1.0f); glVertex3f(1.0f, -1.0f, -1.0f);
+            glTexCoord2f(1.0f, 0.0f); glVertex3f(1.0f, -1.0f, 1.0f);
+            glTexCoord2f(0.0f, 0.0f); glVertex3f(-1.0f, -1.0f, 1.0f);
+     
+            glNormal3f(1.0f, 0.0f, 0.0f);
+            glTexCoord2f(0.0f, 0.0f); glVertex3f(1.0f, -1.0f, -1.0f);
+            glTexCoord2f(0.0f, 1.0f); glVertex3f(1.0f, 1.0f, -1.0f);
+            glTexCoord2f(1.0f, 1.0f); glVertex3f(1.0f, 1.0f, 1.0f);
+            glTexCoord2f(1.0f, 0.0f); glVertex3f(1.0f, -1.0f, 1.0f);
+     
+            glNormal3f(-1.0f, 0.0f, 0.0f);
+            glTexCoord2f(1.0f, 0.0f); glVertex3f(-1.0f, -1.0f, -1.0f);
+            glTexCoord2f(0.0f, 0.0f); glVertex3f(-1.0f, -1.0f, 1.0f);
+            glTexCoord2f(0.0f, 1.0f); glVertex3f(-1.0f, 1.0f, 1.0f);
+            glTexCoord2f(1.0f, 1.0f); glVertex3f(-1.0f, 1.0f, -1.0f);
+        glEnd();
+ 
+        SwapBuffers(hDC);
+    }
+  
+    return 0;
+}
+</pre><br>
+
+<p>
+編譯、執行
+</p>
+<pre>
+$ winegcc main.c -o main.exe -lGL -lGLU -lgdi32 -lopengl32
+$ wine main.exe
+</pre>
+<p>
+<img style="border:0px" src="wine_cpp_gl_light/1.jpg" class="maxSize"><br>
+<img style="border:0px" src="wine_cpp_gl_light/2.jpg" class="maxSize">
+</p>
+
+<!-- tail -->
+<br>
+</div>
+
+</div>
+</div>
+</body>
+</html>
