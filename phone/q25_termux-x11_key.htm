@@ -84,7 +84,7 @@ termux-x11_mod_key_commit-6d62752.diff
 </p>
 <pre>
 diff --git a/app/src/main/cpp/lorie/activity.c b/app/src/main/cpp/lorie/activity.c
-index 8a51c11..19a94f3 100644
+index 8a51c11..a809984 100644
 --- a/app/src/main/cpp/lorie/activity.c
 +++ b/app/src/main/cpp/lorie/activity.c
 @@ -22,6 +22,11 @@
@@ -99,18 +99,24 @@ index 8a51c11..19a94f3 100644
  extern volatile int conn_fd; // The only variable from shared with X server code.
  
  static struct {
-@@ -299,6 +304,10 @@ static void sendMouseEvent(__unused JNIEnv* env, __unused jobject cls, jfloat x,
+@@ -294,11 +299,16 @@ static void sendWindowChange(__unused JNIEnv* env, __unused jobject cls, jint wi
+     }
+ }
+ 
++static int last_code[2] = { 0 };
+ static void sendMouseEvent(__unused JNIEnv* env, __unused jobject cls, jfloat x, jfloat y, jint which_button, jboolean button_down, jboolean relative) {
+     if (conn_fd != -1) {
          if (which_button &gt; 0)
              (*env)-&gt;CallVoidMethod(env, globalThiz, MainActivity.resetIme);
          lorieEvent e = { .mouse = { .t = EVENT_MOUSE, .x = x, .y = y, .detail = which_button, .down = button_down, .relative = relative } };
 +
 +        mouse.x = x;
 +        mouse.y = y;
-+        log(DEBUG, "Sending mouse: %d (x:%f, y:%f, down:%d, relative:%d)", which_button, x, y, button_down, relative);
++        //log(DEBUG, "Steward, mouse: %d (x:%f, y:%f, down:%d, relative:%d)", which_button, x, y, button_down, relative);
          write(conn_fd, &amp;e, sizeof(e));
      }
  }
-@@ -306,6 +315,7 @@ static void sendMouseEvent(__unused JNIEnv* env, __unused jobject cls, jfloat x,
+@@ -306,6 +316,7 @@ static void sendMouseEvent(__unused JNIEnv* env, __unused jobject cls, jfloat x,
  static void sendTouchEvent(__unused JNIEnv* env, __unused jobject cls, jint action, jint id, jint x, jint y) {
      if (conn_fd != -1 &amp;&amp; action != -1) {
          lorieEvent e = { .touch = { .t = EVENT_TOUCH, .type = action, .id = id, .x = x, .y = y } };
@@ -118,11 +124,10 @@ index 8a51c11..19a94f3 100644
          write(conn_fd, &amp;e, sizeof(e));
      }
  }
-@@ -327,12 +337,461 @@ static void requestStylusEnabled(__unused JNIEnv *env, __unused jclass clazz, jb
+@@ -327,12 +338,344 @@ static void requestStylusEnabled(__unused JNIEnv *env, __unused jclass clazz, jb
      }
  }
  
-+static int last_code[2] = { 0 };
 +static jboolean sendMySpecialKey(jint s, jint code, jboolean key_down)
 +{
 +    lorieEvent t = { .key = { .t = EVENT_KEY, .key = code + 8, .state = key_down } };
@@ -158,13 +163,11 @@ index 8a51c11..19a94f3 100644
      if (conn_fd != -1) {
 +        #define MOUSE_MOV_3 3
 +        #define MOUSE_MOV_5 5
-+        static int need_release = 0;
 +        static int alt_press = 0;
++        static int need_release = 0;
 +        static int iso3_press = 0;
 +        static int ctrl_press = 0;
 +        static int shift_press = 0;
-+        static int mouse_mode = 0;
-+        static int mouse_toggle = 0;
 +
          int code = (scan_code) ?: android_to_linux_keycode[key_code];
 -        log(DEBUG, "Sending key: %d (%d %d %d)", code + 8, scan_code, key_code, key_down);
@@ -190,104 +193,24 @@ index 8a51c11..19a94f3 100644
 +
 +        switch (code + 8)   {
 +        case 111: // Up
-+            if (mouse_mode) {
-+                em.mouse.t = EVENT_MOUSE;
-+                em.mouse.x = 0;
-+                em.mouse.y = -MOUSE_MOV_5;
-+                em.mouse.detail = 0;
-+                em.mouse.down = !!key_down;
-+                em.mouse.relative = 1;
-+                write(conn_fd, &amp;em, sizeof(em));
-+                return true;
-+            }
 +            break;
 +        case 116: // Down
-+            if (mouse_mode) {
-+                em.mouse.t = EVENT_MOUSE;
-+                em.mouse.x = 0;
-+                em.mouse.y = MOUSE_MOV_5;
-+                em.mouse.detail = 0;
-+                em.mouse.down = !!key_down;
-+                em.mouse.relative = 1;
-+                write(conn_fd, &amp;em, sizeof(em));
-+                return true;
-+            }
 +            break;
 +        case 113: // Left
-+            if (mouse_mode) {
-+                em.mouse.t = EVENT_MOUSE;
-+                em.mouse.x = -MOUSE_MOV_5;
-+                em.mouse.y = 0;
-+                em.mouse.detail = 0;
-+                em.mouse.down = !!key_down;
-+                em.mouse.relative = 1;
-+                write(conn_fd, &amp;em, sizeof(em));
-+                return true;
-+            }
 +            break;
 +        case 114: // Right
-+            if (mouse_mode) {
-+                em.mouse.t = EVENT_MOUSE;
-+                em.mouse.x = MOUSE_MOV_5;
-+                em.mouse.y = 0;
-+                em.mouse.detail = 0;
-+                em.mouse.down = !!key_down;
-+                em.mouse.relative = 1;
-+                write(conn_fd, &amp;em, sizeof(em));
-+                return true;
-+            }
 +            break;
 +        case 588: // APPSwitch
 +            last_code[1] = code = (alt_press || iso3_press) ? KEY_PAGEUP : KEY_UP;
-+            if (mouse_mode) {
-+                em.mouse.t = EVENT_MOUSE;
-+                em.mouse.x = 0;
-+                em.mouse.y = -MOUSE_MOV_3;
-+                em.mouse.detail = 0;
-+                em.mouse.down = !!key_down;
-+                em.mouse.relative = 1;
-+                write(conn_fd, &amp;em, sizeof(em));
-+                return true;
-+            }
 +            break;
 +        case 166: // Back
 +            last_code[1] = code = (alt_press || iso3_press) ? KEY_PAGEDOWN : KEY_DOWN;
-+            if (mouse_mode) {
-+                em.mouse.t = EVENT_MOUSE;
-+                em.mouse.x = 0;
-+                em.mouse.y = MOUSE_MOV_3;
-+                em.mouse.detail = 0;
-+                em.mouse.down = !!key_down;
-+                em.mouse.relative = 1;
-+                write(conn_fd, &amp;em, sizeof(em));
-+                return true;
-+            }
 +            break;
 +        case 239: // Call
 +            last_code[1] = code = (alt_press || iso3_press) ? KEY_HOME : KEY_LEFT;
-+            if (mouse_mode) {
-+                em.mouse.t = EVENT_MOUSE;
-+                em.mouse.x = -MOUSE_MOV_3;
-+                em.mouse.y = 0;
-+                em.mouse.detail = 0;
-+                em.mouse.down = !!key_down;
-+                em.mouse.relative = 1;
-+                write(conn_fd, &amp;em, sizeof(em));
-+                return true;
-+            }
 +            break;
 +        case 180: // EndCall
 +            last_code[1] = code = (alt_press || iso3_press) ? KEY_END : KEY_RIGHT;
-+            if (mouse_mode) {
-+                em.mouse.t = EVENT_MOUSE;
-+                em.mouse.x = MOUSE_MOV_3;
-+                em.mouse.y = 0;
-+                em.mouse.detail = 0;
-+                em.mouse.down = !!key_down;
-+                em.mouse.relative = 1;
-+                write(conn_fd, &amp;em, sizeof(em));
-+                return true;
-+            }
 +            break;
 +        case 64: // ALT
 +            alt_press = !!key_down;
@@ -411,49 +334,16 @@ index 8a51c11..19a94f3 100644
 +            if (alt_press) {
 +                last_code[1] = code = KEY_4;
 +            }
-+            /*if (iso3_press) {
-+                mouse_toggle = 0;
-+                em.mouse.t = EVENT_MOUSE;
-+                em.mouse.x = 0;
-+                em.mouse.y = 0;
-+                em.mouse.detail = 1;
-+                em.mouse.down = !!key_down;
-+                em.mouse.relative = 1;
-+                write(conn_fd, &amp;em, sizeof(em));
-+                return true;
-+            }*/
 +            break;
 +        case 40: // D
 +            if (alt_press) {
 +                last_code[1] = code = KEY_5;
 +            }
-+            /*if (iso3_press &amp;&amp; key_down) {
-+                mouse_toggle ^= 1;
-+                em.mouse.t = EVENT_MOUSE;
-+                em.mouse.x = 0;
-+                em.mouse.y = 0;
-+                em.mouse.detail = 1;
-+                em.mouse.down = !!mouse_toggle;
-+                em.mouse.relative = 1;
-+                write(conn_fd, &amp;em, sizeof(em));
-+                return true;
-+            }*/
 +            break;
 +        case 41: // F
 +            if (alt_press) {
 +                last_code[1] = code = KEY_6;
 +            }
-+            /*if (iso3_press) {
-+                mouse_toggle = 0;
-+                em.mouse.t = EVENT_MOUSE;
-+                em.mouse.x = 0;
-+                em.mouse.y = 0;
-+                em.mouse.detail = 3;
-+                em.mouse.down = !!key_down;
-+                em.mouse.relative = 1;
-+                write(conn_fd, &amp;em, sizeof(em));
-+                return true;
-+            }*/
 +            break;
 +        case 42: // G
 +            if (alt_press) {
@@ -557,7 +447,6 @@ index 8a51c11..19a94f3 100644
 +                last_code[1] = code = KEY_0;
 +            }
 +            else {
-+                mouse_toggle = 0;
 +                em.mouse.t = EVENT_MOUSE;
 +                em.mouse.x = 0;
 +                em.mouse.y = 0;
@@ -629,13 +518,12 @@ Q25Edge Trackpad =&gt; Mouse (Gesuture) mode
 </pre><br>
 
 <table>
-<tr><th>Q25按鍵</th><th>Debian按鍵</th><th>+MYALT</th><th>+MYSHIFT</th></tr>
-<tr><td>Call</td><td>LEFT</td><td>HOME</td><td>HOME/Mouse (Modes)</td></tr>
-<tr><td>AppSwitch</td><td>UP</td><td>PAGEUP</td><td>PAGEUP/Mouse (Modes)</td></tr>
-<tr><td>Back</td><td>DOWN</td><td>PAGEDOWN</td><td>PAGEDOWN/Mouse (Modes)</td></tr>
-<tr><td>EndCall</td><td>RIGHT</td><td>END</td><td>END/Mouse (Modes)</td></tr>
-<tr><td>Trackball</td><td>Mouse Mode</td><td>Mouse Right Button</td><td></td></tr>
-<tr><td>Mute</td><td>Alt</td><td></td><td></td></tr>
+<tr><th>Q25按鍵</th><th>Debian按鍵</th><th>+MYALT</th><th>+MYISO3</th></tr>
+<tr><td>Call</td><td>LEFT</td><td>HOME</td><td>HOME</td></tr>
+<tr><td>AppSwitch</td><td>UP</td><td>PAGEUP</td><td>PAGEUP</td></tr>
+<tr><td>Back</td><td>DOWN</td><td>PAGEDOWN</td><td>PAGEDOWN</td></tr>
+<tr><td>EndCall</td><td>RIGHT</td><td>END</td><td>END</td></tr>
+<tr><td>Trackball</td><td>Mouse</td><td>Mouse Right Button</td><td></td></tr>
 <tr><td>Q</td><td>q</td><td>#</td><td></td></tr>
 <tr><td>W</td><td>w</td><td>1</td><td>|</td></tr>
 <tr><td>E</td><td>e</td><td>2</td><td>%</td></tr>
@@ -673,7 +561,7 @@ Q25Edge Trackpad =&gt; Mouse (Gesuture) mode
 <tr><td>0</td><td>Mouse Left Button</td><td>0</td><td></td></tr>
 <tr><td>Space</td><td>Space</td><td></td><td>Alt+Space</td></tr>
 <tr><td>sym</td><td>Ctrl</td><td></td><td></td></tr>
-<tr><td>Shift</td><td>MYSHIFT</td><td></td><td></td></tr>
+<tr><td>Shift</td><td>MYISO3</td><td></td><td></td></tr>
 </table>
 
 <!-- tail -->
