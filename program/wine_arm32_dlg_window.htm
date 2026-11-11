@@ -83,22 +83,39 @@ https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-messagebo
 
 Windows的視窗可以分成：<b>Dialog</b>、Single Document Interface(<b>SDI</b>)、Multiple Document Interface(<b>MDI</b>)三種類別，相較於SDI、MDI這兩類別的程式，Dialog類別是比較容易上手學習的一個類別，相當適合初學者入門學習，而Windows程式設計的精髓就是，學會其中一個類別，其餘類別都可以很容易上手，Windows控制項(如：Button、Edit)也是此類道理，比較需要注意的是，Windows視窗程式設計的核心是圍繞着事件處理(處理Message)，任何的視窗設定或者溝通都是以事件導向為原則，因此，寫出一個簡單的視窗框架，將有助於了解Windows視窗程式的運作<br><br>
 
-main.s
+main.S
 </p>
 <pre class="brush:asm">
-    .include "head.inc"
+    .global WinMain
+
+    .equiv WC_DIALOG, 0x8002
+    .equiv WM_DESTROY, 2
+    .equiv WM_CLOSE, 0x10
+    .equiv WS_OVERLAPPED, 0
+    .equiv WS_CAPTION, 0xc00000
+    .equiv WS_SYSMENU, 0x80000
+    .equiv WS_THICKFRAME, 0x40000
+    .equiv WS_MINIMIZEBOX, 0x20000
+    .equiv WS_MAXIMIZEBOX, 0x10000
+    .equiv WS_VISIBLE, 0x10000000
+    .equiv WS_EX_LEFT, 0x00000000
+    .equiv WS_OVERLAPPEDWINDOW, (WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX)
+
+    .data
+szMsg: .skip 28
+szAppName: .asciz "main" 
 
     .text
 WinMain:
     push { lr }
-
+ 
     ldr r3, =0
     ldr r2, =0
     ldr r1, =0
     ldr r0, =0
     push { r0, r1, r2, r3 }
-    ldr r3, =300
-    ldr r2, =300
+    ldr r3, =320
+    ldr r2, =240
     ldr r1, =0
     ldr r0, =0
     push { r0, r1, r2, r3 }
@@ -108,41 +125,33 @@ WinMain:
     ldr r0, =WS_EX_LEFT
     bl CreateWindowExA
     add sp, sp, #32
-
+ 
 loop:
     ldr r3, =0
     ldr r2, =0
     ldr r1, =0
     ldr r0, =szMsg
     bl GetMessageA
-
+ 
     cmp r0, #0
     beq exit
-  
+   
     ldr r0, =szMsg
     bl DispatchMessageA
     b loop
-
-exit:
-    mov r0, #0
-    bl ExitProcess
  
+exit:
     pop { pc }
 </pre>
 <p>
-<b>Line 7~21</b>：在建立Windows視窗時，需要指定對應的Class，如：Edit、Button，除了可以使用系統預設的Class之外，也可以註冊自定義的Class，上面例子使用的WC_DIALOG，就是系統預設定義的Dialog Class，WS_OVERLAPPEDWINDOW代表視窗有標題、最大化、最小化的按鈕，WS_VISIBLE是建立一個可視化的視窗<br>
-<b>Line 22</b>：AAPCS規定Stack的參數必須由呼叫者清除，這點跟X86架構不同<br>
-<b>Line 25~29</b>：從Queue提取Message(包含視窗、系統事件)<br>
-<b>Line 34~35</b>：分發Message到處理視窗事件的副程式，由於目前的Dialog視窗並沒有對應的處理副程式，因此，無法處理任何Message，包含關閉視窗的Message，所以執行後，必須使用kill命令強制關閉該視窗<br><br>
-
 編譯、執行
 </p>
 <pre>
-$ winegcc main.s -o main
-$ wine ./main.exe
+$ winegcc-armhf -b arm-linux-gnueabihf main.S -o main.exe
+$ WINEPREFIX=~/.wine_arm32 myarm32 main.exe.so
 </pre>
 <p>
-<img style="border:0px" src="nasm_win32_dlg_window/1.jpg" class="maxSize">
+<img style="border:0px" src="wine_arm32_dlg_window/1.jpg" class="maxSize">
 </p>
 
 <!-- tail -->
