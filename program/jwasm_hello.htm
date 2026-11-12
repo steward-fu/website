@@ -82,60 +82,47 @@ https://www.masm32.com/<br><br>
 
 經典的<b>Hello, world!</b>程式框架總是能夠讓人細心品味一款程式語言的美好，司徒就使用一個簡單的Message對話盒來展現<b>Hello, world!</b>框架<br><br>
 
-main.s
+main.S
 </p>
 <pre class="brush:asm">
-   .386
+    .386
     .model flat,stdcall
     option casemap:none
-  
+   
 include /opt/wadk/masm32/include/windows.inc
 include /opt/wadk/masm32/include/kernel32.inc
 include /opt/wadk/masm32/include/user32.inc
-  
+   
     .data
-szCaption db "main",0
-szContent db "Hello, world!",0
-  
+szCaption db " ", 0
+szContent db "Hello, world!", 0
+   
     .code
 start:
     invoke MessageBox, NULL, offset szContent, offset szCaption, MB_OK
-    invoke ExitProcess, 0
 end start
-</pre>
+</pre><br>
 <p>
-<b>Line 1</b>：CPU指令<br>
-<b>Line 2</b>：記憶體類型是flat，calling convention使用stdcall<br>
-<b>Line 3</b>：程式區分大小寫<br>
-<b>Line 5~7</b>：Header檔案<br>
-<b>Line 9</b>：初始化的資料區段<br>
-<b>Line 10~11</b>：初始化的Global變數，型態是byte(char)且最後一個byte是0<br>
-<b>Line 13</b>：程式區段<br>
-<b>Line 14</b>：程式進入點<br>
-<b>Line 15</b>：顯示Message對話盒，invoke是一個偽指令，最終會展開成call + push的綜合指令<br>
-<b>Line 16</b>：結束Process並且釋放相關資源<br>
-<b>Line 17</b>：檔案結尾，end指令後的程式將不會被編譯<br><br>
-
 Makefile
 </p>
 <pre>
-export OBJASM_PATH=/opt/wadk/objasm_linux
+export OBJASM_PATH=/opt/wadk/objasm
 
 TARGET   = main
-MYWINE   = WINEPREFIX=~/.wine_x86 box86 wine
 CFLAGS   = -coff
-LDFLAGS  = -lgdi32
+LDFLAGS += -e _start@0
+LDFLAGS += -L/opt/wadk/masm32/lib
+LDFLAGS += -lkernel32
 LDFLAGS += -luser32
 LDFLAGS += -ladvapi32
-LDFLAGS += -lkernel32
-LDFLAGS += -e _start@0
+LDFLAGS += -lgdi32
 
 all:
-	uasm ${CFLAGS} ${TARGET}.s
+	uasm ${CFLAGS} ${TARGET}.S
 	i686-w64-mingw32-ld ${TARGET}.o -o ${TARGET}.exe ${LDFLAGS}
 
 run:
-	${MYWINE} ${TARGET}.exe
+	myx86 ${TARGET}.exe
 
 clean:
 	rm -rf ${TARGET}.exe ${TARGET}.o
@@ -149,7 +136,7 @@ $ make
 $ make run
 </pre>
 <p>
-<img style="border:0px" src="nasm_win32_hello/1.jpg" class="maxSize">
+<img style="border:0px" src="jwasm_hello/1.jpg" class="maxSize">
 </p>
 
 <!-- tail -->
