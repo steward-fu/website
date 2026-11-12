@@ -81,7 +81,7 @@
 https://github.com/ObjAsm<br>
 https://objasm.x10host.com/index.htm<br><br>
 
-main.s
+main.S
 </p>
 <pre class="brush:asm">
 %include @Environ(OBJASM_PATH)/Code/Macros/Model.inc
@@ -97,7 +97,7 @@ ObjectEnd
     .code
 Method MyApp.Init, uses esi
     SetObject esi
-    invoke MessageBox, NULL, $OfsCStr("Hello, world!"), $OfsCStr("main"), MB_OK
+    invoke MessageBox, NULL, $OfsCStr("Hello, world!"), $OfsCStr(" "), MB_OK
 MethodEnd
  
 start proc
@@ -117,23 +117,25 @@ end
 Makefile
 </p>
 <pre>
-export OBJASM_PATH=/opt/wadk/objasm_linux
+export OBJASM_PATH=/opt/wadk/objasm
 
 TARGET   = main
-MYWINE   = WINEPREFIX=~/.wine_x86 box86 wine
 CFLAGS   = -coff
-LDFLAGS  = -lgdi32
+LDFLAGS += -e _start@0
+LDFLAGS += -L/opt/wadk/objasm/Code/Lib/32/Windows
+LDFLAGS += -L/opt/wadk/objasm/Code/Lib/32/ObjAsm
+LDFLAGS += -lObjMem32
+LDFLAGS += -lkernel32
 LDFLAGS += -luser32
 LDFLAGS += -ladvapi32
-LDFLAGS += -lkernel32
-LDFLAGS += -e _start@0
+LDFLAGS += -lgdi32
 
 all:
-	uasm ${CFLAGS} ${TARGET}.s
+	uasm ${CFLAGS} ${TARGET}.S
 	i686-w64-mingw32-ld ${TARGET}.o -o ${TARGET}.exe ${LDFLAGS}
 
 run:
-	${MYWINE} ${TARGET}.exe
+	myx86 ${TARGET}.exe
 
 clean:
 	rm -rf ${TARGET}.exe ${TARGET}.o
@@ -147,7 +149,7 @@ $ make
 $ make run
 </pre>
 <p>
-<img style="border:0px" src="nasm_win32_hello/1.jpg" class="maxSize">
+<img style="border:0px" src="objasm_hello/1.jpg" class="maxSize">
 </p>
 
 <!-- tail -->
