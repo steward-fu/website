@@ -74,57 +74,56 @@
 <div id="page">
 
 <!-- body -->
-<h3><a href="../program.htm">程式語言</a> - ObjAsm - Painting - <b>Draw Ellipse</b></h3>
+<h3><a href="../program.htm">程式語言</a> - ObjAsm - <b>Draw Ellipse</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
 https://github.com/ObjAsm<br>
 https://objasm.x10host.com/index.htm<br><br>
 
-main.asm
+main.S
 </p>
 <pre class="brush:asm">
 %include @Environ(OBJASM_PATH)/Code/Macros/Model.inc
 SysSetup OOP, WIN32, ANSI_STRING
-  
+   
 MakeObjects Primer, Stream, WinPrimer, Window, WinApp, SdiApp
-  
+   
     .const
 CStr szName, "main"
-  
+   
 Object MyApp, , SdiApp
     RedefineMethod Init
     VirtualEvent OnPaint, WM_PAINT
- 
-    DefineVariable wndClass, WNDCLASS, {0}
-ObjectEnd
   
+    DefineVariable wndClass, WNDCLASS, { 0 }
+ObjectEnd
+   
     .code    
 Method MyApp.Init, uses esi
     SetObject esi
     ACall esi.Init
-  
+   
     m2m [esi].wndClass.hbrBackground, COLOR_WINDOW
     m2m [esi].wndClass.lpfnWndProc, $MethodAddr(MyApp.WndProc)
     m2m [esi].wndClass.lpszClassName, offset szName
     invoke RegisterClass, addr [esi].wndClass
-  
-    invoke CreateWindowEx, WS_EX_LEFT, offset szName, offset szName,
-        WS_OVERLAPPEDWINDOW or WS_VISIBLE, 0, 0, 300, 300, NULL, NULL, NULL, pSelf
+   
+    invoke CreateWindowEx, WS_EX_LEFT, offset szName, offset szName, WS_OVERLAPPEDWINDOW or WS_VISIBLE, 0, 0, 320, 240, NULL, NULL, NULL, pSelf
     m2m [esi].hWnd, eax
 MethodEnd
-  
+   
 Method MyApp.OnPaint, uses esi, wParam:WPARAM, lParam:LPARAM
     local hDC:HDC
     local hPen:DWORD
     local hBrush:DWORD
     local PS:PAINTSTRUCT
-  
+   
     SetObject esi
     mov hDC, $invoke(BeginPaint, [esi].hWnd, addr PS)
     mov hPen, $invoke(CreatePen, PS_SOLID, 3, 0ffh)
     mov hBrush, $invoke(CreateSolidBrush, 0ff00h)
-
+ 
     invoke SelectObject, hDC, hPen
     invoke SelectObject, hDC, hBrush
     invoke Ellipse, hDC, 10, 10, 200, 200
@@ -132,24 +131,24 @@ Method MyApp.OnPaint, uses esi, wParam:WPARAM, lParam:LPARAM
     invoke DeleteObject, hPen
     invoke DeleteObject, hBrush
 MethodEnd
- 
+  
 start proc
     SysInit
-  
+   
     OCall $ObjTmpl(MyApp)::MyApp.Init
     OCall $ObjTmpl(MyApp)::MyApp.Run
     OCall $ObjTmpl(MyApp)::MyApp.Done
-  
+   
     SysDone
     invoke ExitProcess, 0
 start endp
-  
+   
 end
 </pre><br>
 
 <p>
 完成<br>
-<img style="border:0px" src="nasm_win32_ellipse/2.jpg" class="maxSize">
+<img style="border:0px" src="objasm_ellipse/1.jpg" class="maxSize">
 </p>
 
 <!-- tail -->
