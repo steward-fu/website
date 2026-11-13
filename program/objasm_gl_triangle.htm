@@ -86,48 +86,48 @@ main.S
 </p>
 <pre class="brush:asm">
 %include @Environ(OBJASM_PATH)/Code/Macros/Model.inc
-SysSetup OOP, WIN32, ANSI_STRING
-       
+SysSetup OOP, WIN32_OPENGL, ANSI_STRING
+        
 MakeObjects Primer
-
+ 
     .const   
 Object MyApp, , Primer
     RedefineMethod Init
     StaticMethod Run
     StaticMethod WndProc, UINT, WPARAM, LPARAM
-  
+   
     DefineVariable hDC, HDC, 0
     DefineVariable hRC, HGLRC, 0
     DefineVariable hWnd, HWND, 0
     DefineVariable pDefWndProc, DWORD, 0
 ObjectEnd
-  
+   
     .data
 MyObj dd 0
-  
+   
     .code
 Method MyApp.Init, uses esi
     local w : dword
     local h : dword
     local fmt : DWORD
     local pfd : PIXELFORMATDESCRIPTOR
-
+ 
     SetObject esi
-
+ 
     mov w, 320
     mov h, 240
     invoke CreateWindowEx, WS_EX_LEFT, WC_DIALOG, $OfsCStr("main"), WS_OVERLAPPEDWINDOW or WS_VISIBLE, 0, 0, w, h, NULL, NULL, NULL, pSelf
     m2m [esi].hWnd, eax
-   
+    
     invoke SetWindowLong, [esi].hWnd, GWL_WNDPROC, $MethodAddr(MyApp.WndProc)
     m2m [esi].pDefWndProc, eax
     m2m MyObj, pSelf
-
+ 
     lea edi, pfd
     mov ecx, sizeof PIXELFORMATDESCRIPTOR
     xor eax, eax
     rep stosb
-
+ 
     mov pfd.nSize, sizeof PIXELFORMATDESCRIPTOR
     mov pfd.nVersion, 1
     mov pfd.dwFlags, PFD_DRAW_TO_WINDOW or PFD_SUPPORT_OPENGL or PFD_DOUBLEBUFFER
@@ -135,7 +135,7 @@ Method MyApp.Init, uses esi
     mov pfd.cColorBits, 16
     mov pfd.cDepthBits, 16
     mov pfd.dwLayerMask, PFD_MAIN_PLANE
-  
+   
     invoke GetDC, [esi].hWnd
     mov [esi].hDC, eax
     invoke ChoosePixelFormat, [esi].hDC, addr pfd
@@ -144,39 +144,39 @@ Method MyApp.Init, uses esi
     invoke wglCreateContext, [esi].hDC
     mov [esi].hRC, eax
     invoke wglMakeCurrent, [esi].hDC, [esi].hRC
-  
+   
     invoke glViewport, 0, 0, w, h
 MethodEnd
-  
+   
 Method MyApp.Run, uses esi
     local msg:MSG
-
+ 
     mov esi, MyObj
     assume esi:ptr $Obj(MyApp)
-
+ 
 @@:
     invoke GetMessage, addr msg, NULL, 0, 0
     cmp eax, 0
     je @f
     invoke DispatchMessage, addr msg
-
-    invoke glBegin, GL_TRIANGLES
-        invoke glVertex3f, fpc(0.0f), fpc(0.5f), fpc(0.0f)
-        invoke glVertex3f, fpc(-0.5f), fpc(-0.5f), fpc(0.0f)
-        invoke glVertex3f, fpc(0.5f), fpc(-0.5f), fpc(0.0f)
-    invoke glEnd
  
+    invoke glBegin, GL_TRIANGLES
+        invoke glVertex3f, fpc(0.0), fpc(0.5), fpc(0.0)
+        invoke glVertex3f, fpc(-0.5), fpc(-0.5), fpc(0.0)
+        invoke glVertex3f, fpc(0.5), fpc(-0.5), fpc(0.0)
+    invoke glEnd
+  
     invoke SwapBuffers, [esi].hDC
-
+ 
     jmp @b
 @@:
     mov eax, msg.wParam
 MethodEnd
-  
+   
 Method MyApp.WndProc, uses esi, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
     mov esi, MyObj
     assume esi:ptr $Obj(MyApp)
-  
+   
     .if uMsg == WM_CLOSE
         invoke DestroyWindow, [esi].hWnd
     .elseif uMsg == WM_DESTROY
@@ -185,18 +185,18 @@ Method MyApp.WndProc, uses esi, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         invoke CallWindowProc, [esi].pDefWndProc, [esi].hWnd, uMsg, wParam, lParam
     .endif
 MethodEnd
-  
+   
 start proc
     SysInit
-   
+    
     OCall $ObjTmpl(MyApp)::MyApp.Init
     OCall $ObjTmpl(MyApp)::MyApp.Run
     OCall $ObjTmpl(MyApp)::MyApp.Done
-       
+        
     SysDone
     invoke ExitProcess, 0
 start endp
-       
+        
 end
 </pre><br>
 
