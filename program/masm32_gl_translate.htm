@@ -89,7 +89,7 @@ main.asm
     .386
     .model flat,stdcall
     option casemap : none
-
+ 
 include c:\masm32\include\windows.inc
 include c:\masm32\include\ogl\kernel32.inc
 include c:\masm32\include\ogl\user32.inc
@@ -97,13 +97,13 @@ include c:\masm32\include\ogl\gdi32.inc
 include c:\masm32\include\ogl\gl.def
 include c:\masm32\include\ogl\glu.def
 include c:\masm32\include\ogl\winextra\winextra.def
-
+ 
 includelib c:\masm32\lib\gdi32.lib
 includelib c:\masm32\lib\glu32.lib
 includelib c:\masm32\lib\user32.lib
 includelib c:\masm32\lib\opengl32.lib
 includelib c:\masm32\lib\kernel32.lib
-
+ 
     .data
 szCaption   db "main", 0
 hWin        dd 0
@@ -115,7 +115,7 @@ hRC         HGLRC 0
 nearPlane   real8 0.1
 farPlane    real8 100.0
 angle       real8 45.0
-
+ 
     .code
 WndProc proc hWnd : HWND, uMsg : UINT, wParam : WPARAM, lParam : LPARAM
     .if uMsg == WM_CLOSE
@@ -127,11 +127,11 @@ WndProc proc hWnd : HWND, uMsg : UINT, wParam : WPARAM, lParam : LPARAM
         xor eax, eax
         ret
     .endif
- 
+  
     invoke CallWindowProc, defWndProc, hWnd, uMsg, wParam, lParam
     ret
 WndProc endp
-  
+   
 WinMain proc hInst : DWORD, hPrevInst : DWORD, CmdLine : DWORD, CmdShow : DWORD
     local w : DWORD
     local h : DWORD
@@ -142,15 +142,15 @@ WinMain proc hInst : DWORD, hPrevInst : DWORD, CmdLine : DWORD, CmdShow : DWORD
     local right : real8
     local mtop : real8
     local mright : real8
- 
+  
     mov w, 320
     mov h, 240
     invoke CreateWindowEx, WS_EX_LEFT, WC_DIALOG, offset szCaption, WS_OVERLAPPEDWINDOW or WS_VISIBLE, 0, 0, w, h, NULL, NULL, NULL, NULL
     mov hWin, eax
-  
+   
     invoke SetWindowLong, hWin, GWL_WNDPROC, WndProc
     mov defWndProc, eax
-
+ 
     invoke RtlZeroMemory, addr pfd, sizeof(PIXELFORMATDESCRIPTOR)
     mov pfd.nSize, sizeof PIXELFORMATDESCRIPTOR
     mov pfd.nVersion, 1
@@ -159,7 +159,7 @@ WinMain proc hInst : DWORD, hPrevInst : DWORD, CmdLine : DWORD, CmdShow : DWORD
     mov pfd.cColorBits, 16
     mov pfd.cDepthBits, 16
     mov pfd.dwLayerMask, PFD_MAIN_PLANE
-
+ 
     invoke GetDC, hWin
     mov hDC, eax
     invoke ChoosePixelFormat, hDC, addr pfd
@@ -168,59 +168,72 @@ WinMain proc hInst : DWORD, hPrevInst : DWORD, CmdLine : DWORD, CmdShow : DWORD
     invoke wglCreateContext, hDC
     mov hRC, eax
     invoke wglMakeCurrent, hDC, hRC
-
+ 
     fld angle
     fldpi
     fmulp st(1), st(0)
-
+ 
     mov eax, 360
     push eax
     fild dword ptr [esp]
     add esp, 4
-
+ 
     fdivp st(1), st(0)
-
+ 
     fptan
     fstp st(0)
-
+ 
     fmul nearPlane
     fstp top
-
+ 
     fld top
-
+ 
     push w
     fild dword ptr [esp]
     add esp, 4
-
+ 
     push h
     fild dword ptr [esp]
     add esp, 4
-
+ 
     fdivp st(1), st(0)
     fmulp st(1), st(0)
     fstp right
-
+ 
     fld top
     fchs
     fstp mtop
-
+ 
     fld right
     fchs
     fstp mright
-
+ 
     invoke glViewport, 0, 0, w, h
     invoke glMatrixMode, GL_PROJECTION
-    _glFrustum mright, right, mtop, top, nearPlane, farPlane
+    invoke glFrustum, \
+        dword ptr [mright + 0], \
+        dword ptr [mright + 4], \
+        dword ptr [right + 0], \
+        dword ptr [right + 4], \
+        dword ptr [mtop + 0], \
+        dword ptr [mtop + 4], \
+        dword ptr [top + 0], \
+        dword ptr [top + 4], \
+        dword ptr [nearPlane + 0], \
+        dword ptr [nearPlane + 4], \
+        dword ptr [farPlane + 0], \
+        dword ptr [farPlane + 4]
 
+ 
     invoke glMatrixMode, GL_MODELVIEW
     invoke glLoadIdentity
-
+ 
 @@:
     invoke GetMessage, addr msg, NULL, 0, 0
     cmp eax, 0
     je @f
     invoke DispatchMessage, addr msg
-
+ 
     invoke glLoadIdentity
     invoke glTranslatef, fpc(-1.5), fpc(0.0), fpc(-10.0)
     invoke glBegin, GL_TRIANGLES
@@ -229,7 +242,7 @@ WinMain proc hInst : DWORD, hPrevInst : DWORD, CmdLine : DWORD, CmdShow : DWORD
         invoke glVertex3f, fpc(-1.0), fpc(-1.0), fpc(0.0)
         invoke glVertex3f, fpc(1.0), fpc(-1.0), fpc(0.0)
     invoke glEnd
-  
+   
     invoke glLoadIdentity
     invoke glTranslatef, fpc(1.5f), fpc(0.0f), fpc(-5.0f)
     invoke glBegin, GL_TRIANGLES
@@ -238,22 +251,22 @@ WinMain proc hInst : DWORD, hPrevInst : DWORD, CmdLine : DWORD, CmdShow : DWORD
         invoke glVertex3f, fpc(-1.0f), fpc(-1.0f), fpc(0.0f)
         invoke glVertex3f, fpc(1.0f), fpc(-1.0f), fpc(0.0f)
     invoke glEnd
-
+ 
     invoke SwapBuffers, hDC
-
+ 
     jmp @b
 @@:
     mov eax, msg.wParam
     ret
 WinMain endp
- 
+  
 start:
     invoke GetModuleHandle, NULL
     mov hInstance, eax
-   
+    
     invoke GetCommandLine
     mov CommandLine, eax
-   
+    
     invoke WinMain, hInstance, NULL, CommandLine, SW_SHOWDEFAULT
     xor eax, eax
     ret
