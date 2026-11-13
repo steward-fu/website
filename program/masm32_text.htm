@@ -74,7 +74,7 @@
 <div id="page">
 
 <!-- body -->
-<h3><a href="../program.htm">程式語言</a> - MASM32 - Painting - <b>Draw Text</b></h3>
+<h3><a href="../program.htm">程式語言</a> - MASM32 - <b>Draw Text</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
@@ -90,48 +90,48 @@ main.asm
     .386
     .model flat,stdcall
     option casemap:none
-                
+                 
 include c:\masm32\include\msvcrt.inc
 include c:\masm32\include\windows.inc
 include c:\masm32\include\kernel32.inc
 include c:\masm32\include\gdi32.inc
 include c:\masm32\include\user32.inc
-                
+                 
 includelib c:\masm32\lib\msvcrt.lib
 includelib c:\masm32\lib\gdi32.lib
 includelib c:\masm32\lib\user32.lib
 includelib c:\masm32\lib\kernel32.lib
-                
+                 
     .data
-szCaption   db "main",0
-szFont      db "Arial",0
-szMsg       db "Test",0
+szCaption   db "main", 0
+szFont      db "Arial", 0
+szMsg       db "Test", 0
 dwMsg       equ ($ - szMsg) - 1
 hWin        dd 0
 hInstance   dd 0
 CommandLine dd 0
 defWndProc  dd 0
-                
+                 
     .code
 WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
     local hdc:dword
     local font:dword
     local ps:PAINTSTRUCT
-  
+   
     .if uMsg == WM_PAINT
         invoke BeginPaint, hWnd, addr ps
         mov hdc, eax
- 
+  
         invoke CreateFont, 48, 0, 0, 0, FW_BOLD, 0, 0, 0, 0, 
             OUT_OUTLINE_PRECIS, CLIP_DEFAULT_PRECIS,
             CLEARTYPE_QUALITY, DEFAULT_PITCH or FF_DONTCARE, offset szFont
         mov font, eax
- 
+  
         invoke SetTextColor, hdc, 0ff0000h
         invoke SetBkMode, hdc, TRANSPARENT
         invoke SelectObject, hdc, font
         invoke DrawText, hdc, offset szMsg, dwMsg, addr ps.rcPaint, DT_SINGLELINE or DT_CENTER or DT_VCENTER
-        
+         
         invoke EndPaint, hWnd, addr ps
         invoke DeleteObject, font
         xor eax, eax
@@ -145,18 +145,17 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         xor eax, eax
         ret
     .endif
-              
+               
     invoke CallWindowProc, defWndProc, hWnd, uMsg, wParam, lParam
     ret
 WndProc endp
-               
+                
 WinMain proc hInst:DWORD, hPrevInst:DWORD, CmdLine:DWORD, CmdShow:DWORD
     local msg:MSG
-                
-    invoke CreateWindowEx, WS_EX_LEFT, WC_DIALOG, offset szCaption, 
-        WS_OVERLAPPEDWINDOW or WS_VISIBLE, 0, 0, 300, 300, NULL, NULL, NULL, NULL
+                 
+    invoke CreateWindowEx, WS_EX_LEFT, WC_DIALOG, offset szCaption, WS_OVERLAPPEDWINDOW or WS_VISIBLE, 0, 0, 320, 240, NULL, NULL, NULL, NULL
     mov hWin, eax
-               
+                
     invoke SetWindowLong, hWin, GWL_WNDPROC, WndProc
     mov defWndProc, eax
 @@:
@@ -169,23 +168,23 @@ WinMain proc hInst:DWORD, hPrevInst:DWORD, CmdLine:DWORD, CmdShow:DWORD
     mov eax, msg.wParam
     ret
 WinMain endp
-              
+               
 start:
     invoke GetModuleHandle, NULL
     mov hInstance, eax
-                
+                 
     invoke GetCommandLine
     mov CommandLine, eax
-                
+                 
     invoke WinMain, hInstance, NULL, CommandLine, SW_SHOWDEFAULT
-    invoke ExitProcess, eax
+    xor eax, eax
+    ret
 end start
-</pre>
-<p>
-<b>Line 44</b>：使用DrawText()顯示文字<br><br>
+</pre><br>
 
+<p>
 完成<br>
-<img style="border:0px" src="nasm_win32_text/1.jpg" class="maxSize">
+<img style="border:0px" src="masm32_text/1.jpg" class="maxSize">
 </p>
 
 <!-- tail -->

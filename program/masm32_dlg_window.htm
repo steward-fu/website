@@ -98,7 +98,7 @@ includelib c:\masm32\lib\user32.lib
 includelib c:\masm32\lib\kernel32.lib
 
     .data
-szCaption   db "main",0
+szCaption   db "main", 0
 CommandLine dd 0
 hInstance   dd 0
 
@@ -106,8 +106,7 @@ hInstance   dd 0
 WinMain proc hInst:DWORD, hPrevInst:DWORD, CmdLine:DWORD, CmdShow:DWORD
     local msg:MSG
 
-    invoke CreateWindowEx, WS_EX_LEFT, WC_DIALOG, offset szCaption, 
-        WS_OVERLAPPEDWINDOW or WS_VISIBLE, 0, 0, 300, 300, NULL, NULL, NULL, NULL
+    invoke CreateWindowEx, WS_EX_LEFT, WC_DIALOG, offset szCaption, WS_OVERLAPPEDWINDOW or WS_VISIBLE, 0, 0, 320, 240, NULL, NULL, NULL, NULL
 
 @@:
     invoke GetMessage, addr msg, NULL, 0, 0
@@ -128,23 +127,13 @@ start:
     mov CommandLine, eax
 
     invoke WinMain, hInstance, NULL, CommandLine, SW_SHOWDEFAULT
-    invoke ExitProcess, eax
+    xor eax, eax
+    ret
 end start
-</pre>
+</pre><br>
 <p>
-<b>Line 18~33</b>：proc、endp用來定義Procedure的區間<br>
-<b>Line 19</b>：Local變數宣告方式<br>
-<b>Line 21~22</b>：在建立Windows視窗時，需要指定對應的Class，如：Edit、Button，除了可以使用系統預設的Class之外，也可以註冊自定義的Class，上面例子使用的WC_DIALOG，就是系統預設定義的Dialog Class，WS_OVERLAPPEDWINDOW代表視窗有標題、最大化、最小化的按鈕，WS_VISIBLE是建立一個可視化的視窗<br>
-<b>Line 24</b>：暫時性的Label，不需要指定名稱，適合小範圍的應用，但需要搭配@f、@b使用<br>
-<b>Line 25</b>：從Queue提取Message(包含視窗、系統事件)，addr用來計算local變數的位址，offset則是global變數位址<br>
-<b>Line 27</b>：@f(forward)代表會跳到下一個@@位置(Line 30)<br>
-<b>Line 28</b>：分發Message到處理視窗事件的副程式，由於目前的Dialog視窗並沒有對應的處理副程式，因此，無法處理任何Message，包含關閉視窗的Message，所以執行後，必須使用kill命令強制關閉該視窗<br>
-<b>Line 29</b>：@b(back)代表會跳到上一個@@位置(Line 24)<br>
-<b>Line 36~40</b>：一般習慣是在程式進入時，保存Instance、CommandLine的內容<br>
-<b>Line 42</b>：呼叫自定義的WinMain()，模擬C語言的WinMain()，當然也可以把內容都寫在start()裡面<br><br>
-
 完成<br>
-<img style="border:0px" src="nasm_win32_dlg_window/1.jpg" class="maxSize"><br><br>
+<img style="border:0px" src="masm32_dlg_window/1.jpg" class="maxSize"><br><br>
 </p>
 
 <!-- tail -->

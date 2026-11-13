@@ -90,26 +90,26 @@ main.asm
     .386
     .model flat,stdcall
     option casemap:none
-     
+      
 include c:\masm32\include\msvcrt.inc
 include c:\masm32\include\windows.inc
 include c:\masm32\include\kernel32.inc
 include c:\masm32\include\user32.inc
-     
+      
 includelib c:\masm32\lib\msvcrt.lib
 includelib c:\masm32\lib\user32.lib
 includelib c:\masm32\lib\kernel32.lib
-     
+      
     .data
-szCaption   db "main",0
+szCaption   db "main", 0
 hWin        dd 0
 hInstance   dd 0
 CommandLine dd 0
 defWndProc  dd 0
 cnt         dd 0
 buf         db 255 dup(0)
-fmt         db "%d",0
-     
+fmt         db "%d", 0
+      
     .code
 WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
     .if uMsg == WM_TIMER
@@ -128,21 +128,20 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         xor eax, eax
         ret
     .endif
-   
+    
     invoke CallWindowProc, defWndProc, hWnd, uMsg, wParam, lParam
     ret
 WndProc endp
-    
+     
 WinMain proc hInst:DWORD, hPrevInst:DWORD, CmdLine:DWORD, CmdShow:DWORD
     local msg:MSG
-     
-    invoke CreateWindowEx, WS_EX_LEFT, WC_DIALOG, offset szCaption, 
-        WS_OVERLAPPEDWINDOW or WS_VISIBLE, 0, 0, 300, 300, NULL, NULL, NULL, NULL
+      
+    invoke CreateWindowEx, WS_EX_LEFT, WC_DIALOG, offset szCaption, WS_OVERLAPPEDWINDOW or WS_VISIBLE, 0, 0, 320, 240, NULL, NULL, NULL, NULL
     mov hWin, eax
-    
+     
     invoke SetWindowLong, hWin, GWL_WNDPROC, WndProc
     mov defWndProc, eax
-
+ 
     invoke SetTimer, hWin, 1, 1000, NULL
 @@:
     invoke GetMessage, addr msg, NULL, 0, 0
@@ -154,25 +153,23 @@ WinMain proc hInst:DWORD, hPrevInst:DWORD, CmdLine:DWORD, CmdShow:DWORD
     mov eax, msg.wParam
     ret
 WinMain endp
-   
+    
 start:
     invoke GetModuleHandle, NULL
     mov hInstance, eax
-     
+      
     invoke GetCommandLine
     mov CommandLine, eax
-     
+      
     invoke WinMain, hInstance, NULL, CommandLine, SW_SHOWDEFAULT
-    invoke ExitProcess, eax
+    xor eax, eax
+    ret
 end start
-</pre>
-<p>
-<b>Line 26~31</b>：累加數值並且顯示在視窗標題<br>
-<b>Line 37</b>：不使用Timer，記得關閉Timer<br>
-<b>Line 57</b>：設定Timer為每秒(1000ms)觸發一次，ID=1<br><br>
+</pre><br>
 
+<p>
 完成<br>
-<img style="border:0px" src="nasm_win32_timer/1.jpg" class="maxSize">
+<img style="border:0px" src="masm32_timer/1.jpg" class="maxSize">
 </p>
 
 <!-- tail -->

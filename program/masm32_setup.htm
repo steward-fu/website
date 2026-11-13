@@ -80,39 +80,43 @@
 參考資訊：<br>
 https://www.masm32.com/<br><br>
 
-司徒目前是使用Box86 + Wine當作開發測試環境，Box86可以用來執行Intel x86指令集的程式，Box64則是可以用來執行Intel x64指令集的程式，而Wine則是可以用來跑Windows程式，Wine是Windows API層相容，但不是二進制層相容，意思就是，如果Wine是ARM armhf版本的話，Wine執行的程式就必須是ARM armhf指令集的程式，而如果Wine是Intel x86/x64版本，Wine執行的程式就必須是Intel x86/x64指令集的程式，這也是為何Windows PE程式(Intel x86/x64)可以在Linux PC(Intel x86/x64)下用Wine來執行的原因，而司徒目前是要在手機(ARM aarch64)上開發Windows x86/x64程式，所以才需要使用Box86 + Wine，司徒使用的Wine版本支援Intel x86(wine)/x64(win64)程式，安裝步驟如下：
+司徒目前是使用Box86 + Wine當作開發測試環境，Box86可以用來執行Intel x86指令集的程式，Box64則是可以用來執行Intel x64指令集的程式，而Wine則是可以用來跑Windows程式，Wine是Windows API層相容，但不是二進制層相容，意思就是，如果Wine是ARM armhf版本的話，Wine執行的程式就必須是ARM armhf指令集的程式，而如果Wine是Intel x86/x64版本，Wine執行的程式就必須是Intel x86/x64指令集的程式，這也是為何Windows PE程式(Intel x86/x64)可以在Linux PC(Intel x86/x64)下用Wine來執行的原因，而司徒目前是要在手機(ARM aarch64)上開發Windows x86/x64程式，所以才需要使用Box86 + Wine，司徒使用的Wine版本支援Intel x86(wine)/x64(win64)程式<br><br>
+
+安裝步驟：
 </p>
 <pre>
 $ cd
-$ wget https://github.com/steward-fu/website/releases/download/pro1/Box86-64_Wine86-64.sh
-$ chmod a+x ./Box86-64_Wine86-64.sh
-$ ./Box86-64_Wine86-64.sh
+$ git clone https://github.com/ptitSeb/box86
+$ mkdir box86/build
+$ cd box86/build
+$ cmake ..
+$ make
+$ sudo make install
 
-$ WINEPREFIX=~/.wine_x86 box86 wine winecfg
-</pre><br>
-
-<p>
-如果字型太小，建議DPI設定成144<br>
-<img style="border:0px" src="nasm_win32_setup/1.jpg" class="maxSize"><br><br>
-
-解壓縮檔案
-</p>
-<pre>
 $ cd
-$ wget https://github.com/steward-fu/website/releases/download/masm32/masm32.tar.gz
-$ tar xvf masm32.tar.gz
-$ mv masm32 ~/.wine_x86/drive_c/
-</pre><br>
+$ wget https://github.com/steward-fu/website/releases/download/wdm/wine_env.tar.gz
+$ wget https://github.com/Kron4ek/Wine-Builds/releases/download/8.21/wine-8.21-x86.tar.xz
+$ wget https://github.com/Kron4ek/Wine-Builds/releases/download/8.21/wine-8.21-amd64.tar.xz
 
-<p>
-接着測試是否可以正常執行程式
-</p>
-<pre>
-$ WINEPREFIX=~/.wine_x86 box86 wine ~/.wine_x86/drive_c/masm32/examples/exampl01/minimum/minimum.exe
+$ tar xvf wine-8.21-x86.tar.xz
+$ tar xvf wine-8.21-amd64.tar.xz
+$ mv wine-8.21-x86 ~/Wine86
+$ mv wine-8.21-amd64 ~/Wine64
+$ sudo vim /usr/local/bin/myx86
+    #!/bin/bash
+    WINEPREFIX=~/.wine_x86 box86 ~/Wine86/bin/wine "$@"
+
+$ sudo chmod a+x /usr/local/bin/myx86
+$ tar xvf wine_env.tar.gz
+
+$ cd
+$ git clone https://github.com/steward-fu/wadk
+$ sudo mv wadk /opt
+
+$ myx86 --version
+    wine-8.21
 </pre>
-<p>
-<img style="border:0px" src="nasm_win32_setup/2.jpg" class="maxSize"><br>
-P.S. 所有需要的Shared Library(*.so and *.dll)都必須成功載入，否者將無法正確執行Windows PE程式
+<p>P.S. 如果是在ARM64上面編譯，使用<b>cmake .. -DRPI4ARM64=1 -DCMAKE_BUILD_TYPE=RelWithDebInfo</b>
 </p>
 
 <!-- tail -->

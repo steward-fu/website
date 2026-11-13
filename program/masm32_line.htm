@@ -74,7 +74,7 @@
 <div id="page">
 
 <!-- body -->
-<h3><a href="../program.htm">程式語言</a> - MASM32 - Painting - <b>Draw Line</b></h3>
+<h3><a href="../program.htm">程式語言</a> - MASM32 - <b>Draw Line</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
@@ -90,54 +90,54 @@ main.asm
     .386
     .model flat,stdcall
     option casemap:none
-          
+           
 include c:\masm32\include\msvcrt.inc
 include c:\masm32\include\windows.inc
 include c:\masm32\include\kernel32.inc
 include c:\masm32\include\gdi32.inc
 include c:\masm32\include\user32.inc
-          
+           
 includelib c:\masm32\lib\msvcrt.lib
 includelib c:\masm32\lib\gdi32.lib
 includelib c:\masm32\lib\user32.lib
 includelib c:\masm32\lib\kernel32.lib
-          
+           
     .data
-szCaption   db "main",0
+szCaption   db "main", 0
 hWin        dd 0
 hInstance   dd 0
 CommandLine dd 0
 defWndProc  dd 0
-          
+           
     .code
 WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
     local hdc:dword
     local pen[3]:dword
     local ps:PAINTSTRUCT
-   
+    
     .if uMsg == WM_PAINT
         invoke BeginPaint, hWnd, addr ps
         mov hdc, eax
-   
+    
         invoke CreatePen, PS_SOLID, 3, 0ffh
         mov pen[0], eax
         invoke CreatePen, PS_SOLID, 3, 0ff00h
         mov pen[4], eax
         invoke CreatePen, PS_SOLID, 3, 0ff0000h
         mov pen[8], eax
-
+ 
         invoke SelectObject, hdc, pen[0]
+        invoke MoveToEx, hdc, 10, 50, NULL
+        invoke LineTo, hdc, 250, 50
+   
+        invoke SelectObject, hdc, pen[4]
         invoke MoveToEx, hdc, 10, 100, NULL
         invoke LineTo, hdc, 250, 100
-  
-        invoke SelectObject, hdc, pen[4]
+   
+        invoke SelectObject, hdc, pen[8]
         invoke MoveToEx, hdc, 10, 150, NULL
         invoke LineTo, hdc, 250, 150
-  
-        invoke SelectObject, hdc, pen[8]
-        invoke MoveToEx, hdc, 10, 200, NULL
-        invoke LineTo, hdc, 250, 200
-  
+   
         invoke EndPaint, hWnd, addr ps
         invoke DeleteObject, pen[0]
         invoke DeleteObject, pen[4]
@@ -153,18 +153,17 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         xor eax, eax
         ret
     .endif
-        
+         
     invoke CallWindowProc, defWndProc, hWnd, uMsg, wParam, lParam
     ret
 WndProc endp
-         
+          
 WinMain proc hInst:DWORD, hPrevInst:DWORD, CmdLine:DWORD, CmdShow:DWORD
     local msg:MSG
-          
-    invoke CreateWindowEx, WS_EX_LEFT, WC_DIALOG, offset szCaption, 
-        WS_OVERLAPPEDWINDOW or WS_VISIBLE, 0, 0, 300, 300, NULL, NULL, NULL, NULL
+           
+    invoke CreateWindowEx, WS_EX_LEFT, WC_DIALOG, offset szCaption, WS_OVERLAPPEDWINDOW or WS_VISIBLE, 0, 0, 320, 240, NULL, NULL, NULL, NULL
     mov hWin, eax
-         
+          
     invoke SetWindowLong, hWin, GWL_WNDPROC, WndProc
     mov defWndProc, eax
 @@:
@@ -177,23 +176,23 @@ WinMain proc hInst:DWORD, hPrevInst:DWORD, CmdLine:DWORD, CmdShow:DWORD
     mov eax, msg.wParam
     ret
 WinMain endp
-        
+         
 start:
     invoke GetModuleHandle, NULL
     mov hInstance, eax
-          
+           
     invoke GetCommandLine
     mov CommandLine, eax
-          
+           
     invoke WinMain, hInstance, NULL, CommandLine, SW_SHOWDEFAULT
-    invoke ExitProcess, eax
+    xor eax, eax
+    ret
 end start
-</pre>
-<p>
-<b>Line 33~50</b>：產生三支Pen並且畫出三條直線，需要注意的是，同一時間只能選擇一支Pen<br><br>
+</pre><br>
 
+<p>
 完成<br>
-<img style="border:0px" src="nasm_win32_line/1.jpg" class="maxSize">
+<img style="border:0px" src="masm32_line/1.jpg" class="maxSize">
 </p>
 
 <!-- tail -->

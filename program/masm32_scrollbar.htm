@@ -90,27 +90,27 @@ main.asm
     .386
     .model flat,stdcall
     option casemap:none
-      
+       
 include c:\masm32\include\msvcrt.inc
 include c:\masm32\include\windows.inc
 include c:\masm32\include\kernel32.inc
 include c:\masm32\include\user32.inc
-      
+       
 includelib c:\masm32\lib\msvcrt.lib
 includelib c:\masm32\lib\user32.lib
 includelib c:\masm32\lib\kernel32.lib
-      
+       
     .data
-szCaption   db "main",0
+szCaption   db "main", 0
 hWin        dd 0
 hInstance   dd 0
 CommandLine dd 0
 defWndProc  dd 0
-SLUP        db "LINE++",0
-SLDN        db "LINE--",0
-SPUP        db "PAGE++",0
-SPDN        db "PAGE--",0
-      
+SLUP        db "LINE++", 0
+SLDN        db "LINE--", 0
+SPUP        db "PAGE++", 0
+SPDN        db "PAGE--", 0
+       
     .code
 WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
     .if uMsg == WM_VSCROLL
@@ -136,21 +136,20 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         xor eax, eax
         ret
     .endif
-    
+     
     invoke CallWindowProc, defWndProc, hWnd, uMsg, wParam, lParam
     ret
 WndProc endp
-     
+      
 WinMain proc hInst:DWORD, hPrevInst:DWORD, CmdLine:DWORD, CmdShow:DWORD
     local msg:MSG
-      
-    invoke CreateWindowEx, WS_EX_LEFT, WC_DIALOG, offset szCaption, 
-        WS_OVERLAPPEDWINDOW or WS_VISIBLE or WS_VSCROLL, 0, 0, 300, 300, NULL, NULL, NULL, NULL
+       
+    invoke CreateWindowEx, WS_EX_LEFT, WC_DIALOG, offset szCaption, WS_OVERLAPPEDWINDOW or WS_VISIBLE or WS_VSCROLL, 0, 0, 320, 240, NULL, NULL, NULL, NULL
     mov hWin, eax
-     
+      
     invoke SetWindowLong, hWin, GWL_WNDPROC, WndProc
     mov defWndProc, eax
- 
+  
     invoke SetScrollRange, hWin, SB_VERT, 0, 100, FALSE
     invoke SetScrollPos, hWin, SB_VERT, 50, TRUE
 @@:
@@ -163,26 +162,23 @@ WinMain proc hInst:DWORD, hPrevInst:DWORD, CmdLine:DWORD, CmdShow:DWORD
     mov eax, msg.wParam
     ret
 WinMain endp
-    
+     
 start:
     invoke GetModuleHandle, NULL
     mov hInstance, eax
-      
+       
     invoke GetCommandLine
     mov CommandLine, eax
-      
+       
     invoke WinMain, hInstance, NULL, CommandLine, SW_SHOWDEFAULT
-    invoke ExitProcess, eax
+    xor eax, eax
+    ret
 end start
-</pre>
-<p>
-<b>Line 27~40</b>：處理Scrollbar訊息並且顯示在視窗標題<br>
-<b>Line 59</b>：WS_VSCROLL是垂直的Scrollbar，WS_HSCROLL則是水平的Scrollbar<br>
-<b>Line 65</b>：設定Scrollbar最大的範圍<br>
-<b>Line 66</b>：設定Scrollbar目前的位置<br><br>
+</pre><br>
 
+<p>
 完成<br>
-<img style="border:0px" src="nasm_win32_scrollbar/1.jpg" class="maxSize">
+<img style="border:0px" src="masm32_scrollbar/1.jpg" class="maxSize">
 </p>
 
 <!-- tail -->

@@ -99,11 +99,11 @@ includelib c:\masm32\lib\user32.lib
 includelib c:\masm32\lib\kernel32.lib
    
     .data
-szName      db "main",0
+szName      db "main", 0
 hWin        dd 0
 hInstance   dd 0
 CommandLine dd 0
-wndClass    WNDCLASS &lt;0&gt;
+wndClass    WNDCLASS &lt; 0 &gt;
    
     .code
 WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
@@ -128,8 +128,7 @@ WinMain proc hInst:DWORD, hPrevInst:DWORD, CmdLine:DWORD, CmdShow:DWORD
     mov wndClass.lpszClassName, offset szName
     invoke RegisterClass, offset wndClass
 
-    invoke CreateWindowEx, WS_EX_LEFT, offset szName, offset szName, 
-        WS_OVERLAPPEDWINDOW or WS_VISIBLE, 0, 0, 300, 300, NULL, NULL, NULL, NULL
+    invoke CreateWindowEx, WS_EX_LEFT, offset szName, offset szName, WS_OVERLAPPEDWINDOW or WS_VISIBLE, 0, 0, 320, 240, NULL, NULL, NULL, NULL
     mov hWin, eax
   
 @@:
@@ -151,15 +150,14 @@ start:
     mov CommandLine, eax
    
     invoke WinMain, hInstance, NULL, CommandLine, SW_SHOWDEFAULT
-    invoke ExitProcess, eax
+    xor eax, eax
+    ret
 end start
-</pre>
-<p>
-<b>Line 21~29</b>：關閉視窗的順序為：主視窗收到WM_CLOSE事件時，呼叫DestroyWindow()，DestroyWindow()會自動將子視窗的相關資源也一併釋放掉(包含Resource描述的資源)，系統接著會發送WM_DESTROY事件給主視窗，待主視窗收到WM_DESTROY事件時，呼叫PostQuitMessage()結束視窗，值得注意的地方是，SendMessage()是屬於Block方式呼叫(必須等待動作執行完畢才返回)，而PostQuitMessage()則是Non-block方式呼叫<br>
-<b>Line 31</b>：其餘事件由系統代為處理</br><br>
+</pre><br>
 
+<p>
 完成<br>
-<img style="border:0px" src="nasm_win32_sdi_window/1.jpg" class="maxSize">
+<img style="border:0px" src="masm32_sdi_window/1.jpg" class="maxSize">
 </p>
 
 <!-- tail -->
