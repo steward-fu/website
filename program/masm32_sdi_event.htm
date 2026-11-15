@@ -90,21 +90,21 @@ main.asm
     .386
     .model flat,stdcall
     option casemap:none
-   
+    
 include c:\masm32\include\windows.inc
 include c:\masm32\include\kernel32.inc
 include c:\masm32\include\user32.inc
-   
+    
 includelib c:\masm32\lib\user32.lib
 includelib c:\masm32\lib\kernel32.lib
-   
+    
     .data
-szName      db "main", 0
-hWin        dd 0
-hInstance   dd 0
-CommandLine dd 0
-wndClass    WNDCLASS &lt; 0 &gt;
-   
+szName      BYTE "main",0
+hWin        DWORD 0
+hInstance   DWORD 0
+pCmdLine    DWORD 0
+wndClass    WNDCLASS &lt;0&gt;
+    
     .code
 WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
     .if uMsg == WM_CLOSE
@@ -116,21 +116,21 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         xor eax, eax
         ret
     .endif
- 
+  
     invoke DefWindowProc, hWnd, uMsg, wParam, lParam
     ret
 WndProc endp
-
+ 
 WinMain proc hInst:DWORD, hPrevInst:DWORD, CmdLine:DWORD, CmdShow:DWORD
     local msg:MSG
-
+ 
     mov wndClass.lpfnWndProc, WndProc
     mov wndClass.lpszClassName, offset szName
     invoke RegisterClass, offset wndClass
-
+ 
     invoke CreateWindowEx, WS_EX_LEFT, offset szName, offset szName, WS_OVERLAPPEDWINDOW or WS_VISIBLE, 0, 0, 320, 240, NULL, NULL, NULL, NULL
     mov hWin, eax
-  
+   
 @@:
     invoke GetMessage, addr msg, NULL, 0, 0
     cmp eax, 0
@@ -141,15 +141,15 @@ WinMain proc hInst:DWORD, hPrevInst:DWORD, CmdLine:DWORD, CmdShow:DWORD
     mov eax, msg.wParam
     ret
 WinMain endp
- 
+  
 start:
     invoke GetModuleHandle, NULL
     mov hInstance, eax
-   
+    
     invoke GetCommandLine
-    mov CommandLine, eax
-   
-    invoke WinMain, hInstance, NULL, CommandLine, SW_SHOWDEFAULT
+    mov pCmdLine, eax
+    
+    invoke WinMain, hInstance, NULL, pCmdLine, SW_SHOWDEFAULT
     xor eax, eax
     ret
 end start

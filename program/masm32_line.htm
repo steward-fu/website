@@ -90,54 +90,54 @@ main.asm
     .386
     .model flat,stdcall
     option casemap:none
-           
+            
 include c:\masm32\include\msvcrt.inc
 include c:\masm32\include\windows.inc
 include c:\masm32\include\kernel32.inc
 include c:\masm32\include\gdi32.inc
 include c:\masm32\include\user32.inc
-           
+            
 includelib c:\masm32\lib\msvcrt.lib
 includelib c:\masm32\lib\gdi32.lib
 includelib c:\masm32\lib\user32.lib
 includelib c:\masm32\lib\kernel32.lib
-           
+            
     .data
-szCaption   db "main", 0
-hWin        dd 0
-hInstance   dd 0
-CommandLine dd 0
-defWndProc  dd 0
-           
+szCaption   BYTE "main",0
+hWin        DWORD 0
+hInstance   DWORD 0
+pCmdLine    DWORD 0
+defWndProc  DWORD 0
+            
     .code
 WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
-    local hdc:dword
-    local pen[3]:dword
+    local hdc:DWORD
+    local pen[3]:DWORD
     local ps:PAINTSTRUCT
-    
+     
     .if uMsg == WM_PAINT
         invoke BeginPaint, hWnd, addr ps
         mov hdc, eax
-    
+     
         invoke CreatePen, PS_SOLID, 3, 0ffh
         mov pen[0], eax
         invoke CreatePen, PS_SOLID, 3, 0ff00h
         mov pen[4], eax
         invoke CreatePen, PS_SOLID, 3, 0ff0000h
         mov pen[8], eax
- 
+  
         invoke SelectObject, hdc, pen[0]
         invoke MoveToEx, hdc, 10, 50, NULL
         invoke LineTo, hdc, 250, 50
-   
+    
         invoke SelectObject, hdc, pen[4]
         invoke MoveToEx, hdc, 10, 100, NULL
         invoke LineTo, hdc, 250, 100
-   
+    
         invoke SelectObject, hdc, pen[8]
         invoke MoveToEx, hdc, 10, 150, NULL
         invoke LineTo, hdc, 250, 150
-   
+    
         invoke EndPaint, hWnd, addr ps
         invoke DeleteObject, pen[0]
         invoke DeleteObject, pen[4]
@@ -153,17 +153,17 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         xor eax, eax
         ret
     .endif
-         
+          
     invoke CallWindowProc, defWndProc, hWnd, uMsg, wParam, lParam
     ret
 WndProc endp
-          
+           
 WinMain proc hInst:DWORD, hPrevInst:DWORD, CmdLine:DWORD, CmdShow:DWORD
     local msg:MSG
-           
+            
     invoke CreateWindowEx, WS_EX_LEFT, WC_DIALOG, offset szCaption, WS_OVERLAPPEDWINDOW or WS_VISIBLE, 0, 0, 320, 240, NULL, NULL, NULL, NULL
     mov hWin, eax
-          
+           
     invoke SetWindowLong, hWin, GWL_WNDPROC, WndProc
     mov defWndProc, eax
 @@:
@@ -176,15 +176,15 @@ WinMain proc hInst:DWORD, hPrevInst:DWORD, CmdLine:DWORD, CmdShow:DWORD
     mov eax, msg.wParam
     ret
 WinMain endp
-         
+          
 start:
     invoke GetModuleHandle, NULL
     mov hInstance, eax
-           
+            
     invoke GetCommandLine
-    mov CommandLine, eax
-           
-    invoke WinMain, hInstance, NULL, CommandLine, SW_SHOWDEFAULT
+    mov pCmdLine, eax
+            
+    invoke WinMain, hInstance, NULL, pCmdLine, SW_SHOWDEFAULT
     xor eax, eax
     ret
 end start
