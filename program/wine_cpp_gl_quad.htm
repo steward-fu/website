@@ -90,21 +90,16 @@ main.c
 #include &lt;windows.h&gt;
 #include &lt;GL/gl.h&gt;
 #include &lt;GL/glu.h&gt;
-  
+   
 #define W 320
 #define H 240
-  
-static HDC hDC = NULL;
-static HGLRC hRC = NULL;
+   
 static WNDPROC defWndProc = NULL;
- 
+  
 static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
     switch (uMsg) {
     case WM_CLOSE:
-        wglMakeCurrent(NULL, NULL);
-        wglDeleteContext(hRC);
-        ReleaseDC(hWnd, hDC);
         DestroyWindow(hWnd);
         return 0;
     case WM_DESTROY:
@@ -113,9 +108,11 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
     }
     return CallWindowProc(defWndProc, hWnd, uMsg, wParam, lParam);
 }
-   
+    
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
+    HDC hDC = NULL;
+    HGLRC hRC = NULL;
     HWND hWnd = NULL;
     GLuint fmt = 0;
     PIXELFORMATDESCRIPTOR pfd = { 0 };
@@ -123,7 +120,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     GLdouble farPlane = 100.0;
     GLdouble top = nearPlane * tan(45.0 * 3.14159 / 360.0);
     GLdouble right = top * ((GLfloat)W / (GLfloat)H);
- 
+  
     pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
     pfd.nVersion = 1;
     pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
@@ -131,76 +128,71 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     pfd.cColorBits = 16;
     pfd.cDepthBits = 16;
     pfd.iLayerType = PFD_MAIN_PLANE;
-  
-    hWnd = CreateWindow(WC_DIALOG,
-        "main",
-        WS_OVERLAPPEDWINDOW | WS_VISIBLE,
-        0,
-        0,
-        W,
-        H,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    );
-  
+   
+    hWnd = CreateWindow(WC_DIALOG, "main", WS_OVERLAPPEDWINDOW | WS_VISIBLE, 0, 0, W, H, NULL, NULL, NULL, NULL);
     defWndProc = (WNDPROC)SetWindowLongPtr(hWnd, GWLP_WNDPROC, (long int)WndProc);
-      
+       
     hDC = GetDC(hWnd);
     fmt = ChoosePixelFormat(hDC, &amp;pfd);
     SetPixelFormat(hDC, fmt, &amp;pfd);
     hRC = wglCreateContext(hDC);
     wglMakeCurrent(hDC, hRC);
  
-    glViewport(0, 0, W, H);
+    RECT rc = { 0 };
+    GetClientRect(hWnd, &amp;rc);
+    glViewport(0, 0, rc.right - rc.left, rc.bottom - rc.top);
+ 
     glMatrixMode(GL_PROJECTION);
     glFrustum(-right, right, -top, top, nearPlane, farPlane);
-  
+   
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
-   
+    
     MSG msg = { 0 };
     while (GetMessage(&amp;msg, NULL, 0, 0)) {
         DispatchMessage(&amp;msg);
-
+ 
         glLoadIdentity();
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
         glTranslatef(-1.0f, 0.0f, -5.0f);
         glBegin(GL_QUADS);
             glColor3f(1.0f, 0.0f, 0.0f);
             glVertex2f(-0.5f, 0.5f);
-     
+      
             glColor3f(0.0f, 1.0f, 0.0f);
             glVertex2f(0.5f, 0.5f);
-     
+      
             glColor3f(0.0f, 0.0f, 1.0f);
             glVertex2f(0.5f, -0.5f);
-     
+      
             glColor3f(1.0f, 1.0f, 0.0f);
             glVertex2f(-0.5f, -0.5f);
         glEnd();
-     
+      
         glLoadIdentity();
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         glTranslatef(1.0f, 0.0f, -5.0f);
         glBegin(GL_QUADS);
             glColor3f(1.0f, 0.0f, 0.0f);
             glVertex2f(-0.5f, 0.5f);
-     
+      
             glColor3f(0.0f, 1.0f, 0.0f);
             glVertex2f(0.5f, 0.5f);
-     
+      
             glColor3f(0.0f, 0.0f, 1.0f);
             glVertex2f(0.5f, -0.5f);
-     
+      
             glColor3f(1.0f, 1.0f, 0.0f);
             glVertex2f(-0.5f, -0.5f);
         glEnd();
- 
+  
         SwapBuffers(hDC);
     }
-  
+   
+    wglMakeCurrent(NULL, NULL);
+    wglDeleteContext(hRC);
+    ReleaseDC(hWnd, hDC);
+
     return 0;
 }
 </pre><br>

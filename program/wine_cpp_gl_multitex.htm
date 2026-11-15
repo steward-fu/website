@@ -91,27 +91,20 @@ main.c
 #include &lt;windows.h&gt;
 #include &lt;GL/gl.h&gt;
 #include &lt;GL/glu.h&gt;
-  
+   
 #define W 320
 #define H 240
-
+ 
 #define TEXCOORD(u, v) \
     pglMultiTexCoord2fARB(GL_TEXTURE0_ARB, u, v); \
     pglMultiTexCoord2fARB(GL_TEXTURE1_ARB, u, v)
-
-static HDC hDC = NULL;
-static HGLRC hRC = NULL;
-static GLuint tex[2] = { 0 };
-static WNDPROC defWndProc = NULL;
  
+static WNDPROC defWndProc = NULL;
+  
 static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
     switch (uMsg) {
     case WM_CLOSE:
-        wglMakeCurrent(NULL, NULL);
-        wglDeleteContext(hRC);
-        ReleaseDC(hWnd, hDC);
-        glDeleteTextures(2, tex);
         DestroyWindow(hWnd);
         return 0;
     case WM_DESTROY:
@@ -120,9 +113,12 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
     }
     return CallWindowProc(defWndProc, hWnd, uMsg, wParam, lParam);
 }
-   
+    
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
+    HDC hDC = NULL;
+    HGLRC hRC = NULL;
+    GLuint tex[2] = { 0 };
     HWND hWnd = NULL;
     GLuint fmt = 0;
     PIXELFORMATDESCRIPTOR pfd = { 0 };
@@ -130,7 +126,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     GLdouble farPlane = 100.0;
     GLdouble top = nearPlane * tan(45.0 * 3.14159 / 360.0);
     GLdouble right = top * ((GLfloat)W / (GLfloat)H);
- 
+  
     pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
     pfd.nVersion = 1;
     pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
@@ -138,83 +134,74 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     pfd.cColorBits = 16;
     pfd.cDepthBits = 16;
     pfd.iLayerType = PFD_MAIN_PLANE;
-  
-    hWnd = CreateWindow(WC_DIALOG,
-        "main",
-        WS_OVERLAPPEDWINDOW | WS_VISIBLE,
-        0,
-        0,
-        W,
-        H,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    );
-  
+
+    hWnd = CreateWindow(WC_DIALOG, "main", WS_OVERLAPPEDWINDOW | WS_VISIBLE, 0, 0, W, H, NULL, NULL, NULL, NULL);
     defWndProc = (WNDPROC)SetWindowLongPtr(hWnd, GWLP_WNDPROC, (long int)WndProc);
-      
+ 
     hDC = GetDC(hWnd);
     fmt = ChoosePixelFormat(hDC, &amp;pfd);
     SetPixelFormat(hDC, fmt, &amp;pfd);
     hRC = wglCreateContext(hDC);
     wglMakeCurrent(hDC, hRC);
-
+ 
     const char *pBMPName[] = { "main.bmp", "bump.bmp" };
     typedef void (APIENTRY *PFNGLMULTITEXCOORD2FPROC)(GLenum target, GLfloat s, GLfloat t);
     PFNGLMULTITEXCOORD2FPROC pglMultiTexCoord2fARB = (PFNGLMULTITEXCOORD2FPROC)wglGetProcAddress("glMultiTexCoord2fARB");
     typedef void (APIENTRY *PFNGLACTIVETEXTUREPROC)(GLenum);
     PFNGLACTIVETEXTUREPROC pglActiveTextureARB = (PFNGLACTIVETEXTUREPROC)wglGetProcAddress("glActiveTextureARB");
-
+ 
     glGenTextures(2, tex);
     for (int i = 0; i &lt; 2; i++) {
         BITMAP bm = { 0 };
         BITMAPINFO bmi = { 0 };
         HBITMAP bmp = (HBITMAP)LoadImageA(NULL, pBMPName[i], IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
         GetObject(bmp, sizeof(BITMAP), &amp;bm);
-
+ 
         bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
         bmi.bmiHeader.biWidth = bm.bmWidth;
         bmi.bmiHeader.biHeight = -bm.bmHeight;
         bmi.bmiHeader.biPlanes = 1;
         bmi.bmiHeader.biBitCount = 24;
         bmi.bmiHeader.biCompression = BI_RGB;
-
+ 
         int size = bm.bmWidth * bm.bmHeight * 3;
         void *pixels = HeapAlloc(GetProcessHeap(), 0, size);
         HDC hdc = GetDC(NULL);
         GetDIBits(hdc, bmp, 0, bm.bmHeight, pixels, &amp;bmi, DIB_RGB_COLORS);
         ReleaseDC(NULL, hdc);
-
+ 
         if (i == 0) {
             pglActiveTextureARB(GL_TEXTURE0_ARB);
         }
         else {
             pglActiveTextureARB(GL_TEXTURE1_ARB);
         }
-
+ 
         glEnable(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, tex[i]);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, bm.bmWidth, bm.bmHeight, 0, GL_BGR, GL_UNSIGNED_BYTE, pixels);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-
+ 
         HeapFree(GetProcessHeap(), 0, pixels);
         DeleteObject(bmp);
     }
 
-    glViewport(0, 0, W, H);
+    RECT rc = { 0 };
+    GetClientRect(hWnd, &amp;rc);
+    glViewport(0, 0, rc.right - rc.left, rc.bottom - rc.top);
+ 
     glMatrixMode(GL_PROJECTION);
     glFrustum(-right, right, -top, top, nearPlane, farPlane);
-  
+   
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
-
+ 
     MSG msg = { 0 };
     while (GetMessage(&amp;msg, NULL, 0, 0)) {
         DispatchMessage(&amp;msg);
-
+ 
         glLoadIdentity();
         glTranslatef(0.0f, 0.0f, -5.0f);
         glRotatef(45, 0.0f, 1.0f, 0.0f);
@@ -223,35 +210,40 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             TEXCOORD(1.0f, 1.0f); glVertex3f( 1.0f, -1.0f,  1.0f);
             TEXCOORD(1.0f, 0.0f); glVertex3f( 1.0f,  1.0f,  1.0f);
             TEXCOORD(0.0f, 0.0f); glVertex3f(-1.0f,  1.0f,  1.0f);
-     
+      
             TEXCOORD(0.0f, 0.0f); glVertex3f(-1.0f, -1.0f, -1.0f);
             TEXCOORD(0.0f, 1.0f); glVertex3f(-1.0f,  1.0f, -1.0f);
             TEXCOORD(1.0f, 1.0f); glVertex3f( 1.0f,  1.0f, -1.0f);
             TEXCOORD(1.0f, 0.0f); glVertex3f( 1.0f, -1.0f, -1.0f);
-     
+      
             TEXCOORD(1.0f, 1.0f); glVertex3f(-1.0f,  1.0f, -1.0f);
             TEXCOORD(1.0f, 0.0f); glVertex3f(-1.0f,  1.0f,  1.0f);
             TEXCOORD(0.0f, 0.0f); glVertex3f( 1.0f,  1.0f,  1.0f);
             TEXCOORD(0.0f, 1.0f); glVertex3f( 1.0f,  1.0f, -1.0f);
-     
+      
             TEXCOORD(0.0f, 1.0f); glVertex3f(-1.0f, -1.0f, -1.0f);
             TEXCOORD(1.0f, 1.0f); glVertex3f( 1.0f, -1.0f, -1.0f);
             TEXCOORD(1.0f, 0.0f); glVertex3f( 1.0f, -1.0f,  1.0f);
             TEXCOORD(0.0f, 0.0f); glVertex3f(-1.0f, -1.0f,  1.0f);
-     
+      
             TEXCOORD(0.0f, 0.0f); glVertex3f( 1.0f, -1.0f, -1.0f);
             TEXCOORD(0.0f, 1.0f); glVertex3f( 1.0f,  1.0f, -1.0f);
             TEXCOORD(1.0f, 1.0f); glVertex3f( 1.0f,  1.0f,  1.0f);
             TEXCOORD(1.0f, 0.0f); glVertex3f( 1.0f, -1.0f,  1.0f);
-     
+      
             TEXCOORD(1.0f, 0.0f); glVertex3f(-1.0f, -1.0f, -1.0f);
             TEXCOORD(0.0f, 0.0f); glVertex3f(-1.0f, -1.0f,  1.0f);
             TEXCOORD(0.0f, 1.0f); glVertex3f(-1.0f,  1.0f,  1.0f);
             TEXCOORD(1.0f, 1.0f); glVertex3f(-1.0f,  1.0f, -1.0f);
         glEnd();
- 
+  
         SwapBuffers(hDC);
     }
+
+    wglMakeCurrent(NULL, NULL);
+    wglDeleteContext(hRC);
+    ReleaseDC(hWnd, hDC);
+    glDeleteTextures(2, tex);
 
     return 0;
 }
