@@ -88,8 +88,8 @@ main.asm
 <pre class="brush:asm">
     .386
     .model flat,stdcall
-    option casemap : none
-  
+    option casemap:none
+   
 include c:\masm32\include\windows.inc
 include c:\masm32\include\ogl\kernel32.inc
 include c:\masm32\include\ogl\user32.inc
@@ -97,32 +97,32 @@ include c:\masm32\include\ogl\gdi32.inc
 include c:\masm32\include\ogl\gl.def
 include c:\masm32\include\ogl\glu.def
 include c:\masm32\include\ogl\winextra\winextra.def
-  
+   
 includelib c:\masm32\lib\gdi32.lib
 includelib c:\masm32\lib\glu32.lib
 includelib c:\masm32\lib\user32.lib
 includelib c:\masm32\lib\opengl32.lib
 includelib c:\masm32\lib\kernel32.lib
-  
+   
     .data
-szCaption       db "main", 0
-hWin            dd 0
-hInstance       dd 0
-CommandLine     dd 0
-defWndProc      dd 0
+szCaption       BYTE "main",0
+hWin            DWORD 0
+hInstance       DWORD 0
+pCmdLine        DWORD 0
+defWndProc      DWORD 0
 hDC             HDC 0
 hRC             HGLRC 0
-nearPlane       real8 0.1
-farPlane        real8 100.0
-angle           real8 45.0
-szBMPName       db "main.bmp", 0
+nearPlane       REAL8 0.1
+farPlane        REAL8 100.0
+angle           REAL8 45.0
+szBMPName       BYTE "main.bmp",0
 tex             GLuint 0
-LightAmbient    real4 0.1, 0.1, 0.1, 1.0
-LightDiffuse    real4 1.0, 1.0, 1.0, 1.0
-LightPosition   real4 3.0, 3.0, 3.0, 1.0
- 
+LightAmbient    REAL4 0.1, 0.1, 0.1, 1.0
+LightDiffuse    REAL4 1.0, 1.0, 1.0, 1.0
+LightPosition   REAL4 3.0, 3.0, 3.0, 1.0
+  
     .code
-WndProc proc hWnd : HWND, uMsg : UINT, wParam : WPARAM, lParam : LPARAM
+WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
     .if uMsg == WM_CLOSE
         invoke DestroyWindow, hWnd
         xor eax, eax
@@ -132,35 +132,36 @@ WndProc proc hWnd : HWND, uMsg : UINT, wParam : WPARAM, lParam : LPARAM
         xor eax, eax
         ret
     .endif
-   
+    
     invoke CallWindowProc, defWndProc, hWnd, uMsg, wParam, lParam
     ret
 WndProc endp
-    
-WinMain proc hInst : DWORD, hPrevInst : DWORD, CmdLine : DWORD, CmdShow : DWORD
-    local w : DWORD
-    local h : DWORD
-    local msg : MSG
-    local fmt : DWORD
-    local pfd : PIXELFORMATDESCRIPTOR
-    local top : real8
-    local right : real8
-    local mtop : real8
-    local mright : real8
-    local bm : BITMAP
-    local bmi : BITMAPINFO
-    local bmp : HBITMAP
-    local len : DWORD
-    local pixels : DWORD
- 
+     
+WinMain proc hInst:DWORD, hPrevInst:DWORD, CmdLine:DWORD, CmdShow:DWORD
+    local w:DWORD
+    local h:DWORD
+    local msg:MSG
+    local fmt:DWORD
+    local pfd:PIXELFORMATDESCRIPTOR
+    local top:REAL8
+    local right:REAL8
+    local mtop:REAL8
+    local mright:REAL8
+    local bm:BITMAP
+    local bmi:BITMAPINFO
+    local bmp:HBITMAP
+    local len:DWORD
+    local pixels:DWORD
+    local rc:RECT
+  
     mov w, 320
     mov h, 240
     invoke CreateWindowEx, WS_EX_LEFT, WC_DIALOG, offset szCaption, WS_OVERLAPPEDWINDOW or WS_VISIBLE, 0, 0, w, h, NULL, NULL, NULL, NULL
     mov hWin, eax
-    
+     
     invoke SetWindowLong, hWin, GWL_WNDPROC, WndProc
     mov defWndProc, eax
-  
+   
     invoke RtlZeroMemory, addr pfd, sizeof PIXELFORMATDESCRIPTOR
     mov pfd.nSize, sizeof PIXELFORMATDESCRIPTOR
     mov pfd.nVersion, 1
@@ -169,7 +170,7 @@ WinMain proc hInst : DWORD, hPrevInst : DWORD, CmdLine : DWORD, CmdShow : DWORD
     mov pfd.cColorBits, 16
     mov pfd.cDepthBits, 16
     mov pfd.dwLayerMask, PFD_MAIN_PLANE
-  
+   
     invoke GetDC, hWin
     mov hDC, eax
     invoke ChoosePixelFormat, hDC, addr pfd
@@ -178,11 +179,11 @@ WinMain proc hInst : DWORD, hPrevInst : DWORD, CmdLine : DWORD, CmdShow : DWORD
     invoke wglCreateContext, hDC
     mov hRC, eax
     invoke wglMakeCurrent, hDC, hRC
- 
+  
     invoke LoadImageA, NULL, offset szBMPName, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE
     mov bmp, eax
     invoke GetObject, bmp, sizeof BITMAP, addr bm
- 
+  
     mov bmi.bmiHeader.biSize, sizeof BITMAPINFOHEADER
     push bm.bmWidth
     pop bmi.bmiHeader.biWidth
@@ -192,7 +193,7 @@ WinMain proc hInst : DWORD, hPrevInst : DWORD, CmdLine : DWORD, CmdShow : DWORD
     mov bmi.bmiHeader.biPlanes, 1
     mov bmi.bmiHeader.biBitCount, 24
     mov bmi.bmiHeader.biCompression, BI_RGB
- 
+  
     mov eax, 3
     mul bm.bmWidth
     mul bm.bmHeight 
@@ -201,68 +202,75 @@ WinMain proc hInst : DWORD, hPrevInst : DWORD, CmdLine : DWORD, CmdShow : DWORD
     invoke HeapAlloc, eax, 0, len
     mov pixels, eax
     invoke GetDIBits, hDC, bmp, 0, bm.bmHeight, pixels, addr bmi, DIB_RGB_COLORS
- 
+  
     invoke glGenTextures, 1, offset tex
     invoke glBindTexture, GL_TEXTURE_2D, tex
     invoke glEnable, GL_TEXTURE_2D
     invoke glTexImage2D, GL_TEXTURE_2D, 0, GL_RGB, bm.bmWidth, bm.bmHeight, 0, GL_BGR, GL_UNSIGNED_BYTE, pixels
     invoke glTexParameteri, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR
     invoke glTexParameteri, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR
-   
+    
     invoke GetProcessHeap
     invoke HeapFree, eax, 0, pixels
     invoke DeleteObject, bmp
- 
+  
     invoke glEnable, GL_LIGHTING
     invoke glEnable, GL_LIGHT1
-  
+   
     invoke glLightfv, GL_LIGHT1, GL_AMBIENT, offset LightAmbient
     invoke glLightfv, GL_LIGHT1, GL_DIFFUSE, offset LightDiffuse
     invoke glLightfv, GL_LIGHT1, GL_POSITION, offset LightPosition
-
+ 
     invoke glEnable, GL_COLOR_MATERIAL
     invoke glColorMaterial, GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE
- 
+  
     fld angle
     fldpi
     fmulp st(1), st(0)
-  
+   
     mov eax, 360
     push eax
     fild dword ptr [esp]
     add esp, 4
-  
+   
     fdivp st(1), st(0)
-  
+   
     fptan
     fstp st(0)
-  
+   
     fmul nearPlane
     fstp top
-  
+   
     fld top
-  
+   
     push w
     fild dword ptr [esp]
     add esp, 4
-  
+   
     push h
     fild dword ptr [esp]
     add esp, 4
-  
+   
     fdivp st(1), st(0)
     fmulp st(1), st(0)
     fstp right
-  
+   
     fld top
     fchs
     fstp mtop
-  
+   
     fld right
     fchs
     fstp mright
-  
-    invoke glViewport, 0, 0, w, h
+   
+    invoke RtlZeroMemory, addr rc, sizeof RECT
+    invoke GetClientRect, hWin, addr rc
+    mov eax, rc.right
+    sub eax, rc.left
+    mov ecx, rc.bottom
+    sub ecx, rc.top
+    invoke glViewport, 0, 0, eax, ecx
+
     invoke glMatrixMode, GL_PROJECTION
     invoke glFrustum, \
         dword ptr [mright + 0], \
@@ -277,103 +285,103 @@ WinMain proc hInst : DWORD, hPrevInst : DWORD, CmdLine : DWORD, CmdShow : DWORD
         dword ptr [nearPlane + 4], \
         dword ptr [farPlane + 0], \
         dword ptr [farPlane + 4]
-  
+   
     invoke glMatrixMode, GL_MODELVIEW
     invoke glLoadIdentity
-  
+   
 @@:
     invoke GetMessage, addr msg, NULL, 0, 0
     cmp eax, 0
     je @f
     invoke DispatchMessage, addr msg
-  
+   
     invoke glLoadIdentity
-    invoke glTranslatef, fpc(0.0), fpc(0.0), fpc(-5.0)
-    invoke glRotatef, fpc(45.0), fpc(0.0), fpc(1.0), fpc(0.0)
+    invoke glTranslatef, f4(0.0), f4(0.0), f4(-5.0)
+    invoke glRotatef, f4(45.0), f4(0.0), f4(1.0), f4(0.0)
     invoke glBindTexture, GL_TEXTURE_2D, tex
     invoke glBegin, GL_QUADS
-        invoke glNormal3f, fpc(0.0), fpc(0.0), fpc(1.0)
-        invoke glTexCoord2f, fpc(0.0), fpc(1.0)
-        invoke glVertex3f, fpc(-1.0), fpc(-1.0), fpc(1.0)
-        invoke glTexCoord2f, fpc(1.0), fpc(1.0)
-        invoke glVertex3f, fpc(1.0), fpc(-1.0), fpc(1.0)
-        invoke glTexCoord2f, fpc(1.0), fpc(0.0)
-        invoke glVertex3f, fpc(1.0), fpc(1.0), fpc(1.0)
-        invoke glTexCoord2f, fpc(0.0), fpc(0.0)
-        invoke glVertex3f, fpc(-1.0), fpc(1.0), fpc(1.0)
-  
-        invoke glNormal3f, fpc(0.0), fpc(0.0), fpc(-1.0)
-        invoke glTexCoord2f, fpc(0.0), fpc(0.0)
-        invoke glVertex3f, fpc(-1.0), fpc(-1.0), fpc(-1.0)
-        invoke glTexCoord2f, fpc(0.0), fpc(1.0)
-        invoke glVertex3f, fpc(-1.0), fpc(1.0), fpc(-1.0)
-        invoke glTexCoord2f, fpc(1.0), fpc(1.0)
-        invoke glVertex3f, fpc(1.0), fpc(1.0), fpc(-1.0)
-        invoke glTexCoord2f, fpc(1.0), fpc(0.0)
-        invoke glVertex3f, fpc(1.0), fpc(-1.0), fpc(-1.0)
-  
-        invoke glNormal3f, fpc(0.0), fpc(1.0), fpc(0.0)
-        invoke glTexCoord2f, fpc(1.0), fpc(1.0)
-        invoke glVertex3f, fpc(-1.0), fpc(1.0), fpc(-1.0)
-        invoke glTexCoord2f, fpc(1.0), fpc(0.0)
-        invoke glVertex3f, fpc(-1.0), fpc(1.0), fpc(1.0)
-        invoke glTexCoord2f, fpc(0.0), fpc(0.0)
-        invoke glVertex3f, fpc(1.0), fpc(1.0), fpc(1.0)
-        invoke glTexCoord2f, fpc(0.0), fpc(1.0)
-        invoke glVertex3f, fpc(1.0), fpc(1.0), fpc(-1.0)
-  
-        invoke glNormal3f, fpc(0.0), fpc(-1.0), fpc(0.0)
-        invoke glTexCoord2f, fpc(0.0), fpc(1.0)
-        invoke glVertex3f, fpc(-1.0), fpc(-1.0), fpc(-1.0)
-        invoke glTexCoord2f, fpc(1.0), fpc(1.0)
-        invoke glVertex3f, fpc(1.0), fpc(-1.0), fpc(-1.0)
-        invoke glTexCoord2f, fpc(1.0), fpc(0.0)
-        invoke glVertex3f, fpc(1.0), fpc(-1.0), fpc(1.0)
-        invoke glTexCoord2f, fpc(0.0), fpc(0.0)
-        invoke glVertex3f, fpc(-1.0), fpc(-1.0), fpc(1.0)
-  
-        invoke glNormal3f, fpc(1.0), fpc(0.0), fpc(0.0)
-        invoke glTexCoord2f, fpc(0.0), fpc(0.0)
-        invoke glVertex3f, fpc(1.0), fpc(-1.0), fpc(-1.0)
-        invoke glTexCoord2f, fpc(0.0), fpc(1.0)
-        invoke glVertex3f, fpc(1.0), fpc(1.0), fpc(-1.0)
-        invoke glTexCoord2f, fpc(1.0), fpc(1.0)
-        invoke glVertex3f, fpc(1.0), fpc(1.0), fpc(1.0)
-        invoke glTexCoord2f, fpc(1.0), fpc(0.0)
-        invoke glVertex3f, fpc(1.0), fpc(-1.0), fpc(1.0)
-  
-        invoke glNormal3f, fpc(-1.0), fpc(0.0), fpc(0.0)
-        invoke glTexCoord2f, fpc(1.0), fpc(0.0)
-        invoke glVertex3f, fpc(-1.0), fpc(-1.0), fpc(-1.0)
-        invoke glTexCoord2f, fpc(0.0), fpc(0.0)
-        invoke glVertex3f, fpc(-1.0), fpc(-1.0), fpc(1.0)
-        invoke glTexCoord2f, fpc(0.0), fpc(1.0)
-        invoke glVertex3f, fpc(-1.0), fpc(1.0), fpc(1.0)
-        invoke glTexCoord2f, fpc(1.0), fpc(1.0)
-        invoke glVertex3f, fpc(-1.0), fpc(1.0), fpc(-1.0)
+        invoke glNormal3f, f4(0.0), f4(0.0), f4(1.0)
+        invoke glTexCoord2f, f4(0.0), f4(1.0)
+        invoke glVertex3f, f4(-1.0), f4(-1.0), f4(1.0)
+        invoke glTexCoord2f, f4(1.0), f4(1.0)
+        invoke glVertex3f, f4(1.0), f4(-1.0), f4(1.0)
+        invoke glTexCoord2f, f4(1.0), f4(0.0)
+        invoke glVertex3f, f4(1.0), f4(1.0), f4(1.0)
+        invoke glTexCoord2f, f4(0.0), f4(0.0)
+        invoke glVertex3f, f4(-1.0), f4(1.0), f4(1.0)
+   
+        invoke glNormal3f, f4(0.0), f4(0.0), f4(-1.0)
+        invoke glTexCoord2f, f4(0.0), f4(0.0)
+        invoke glVertex3f, f4(-1.0), f4(-1.0), f4(-1.0)
+        invoke glTexCoord2f, f4(0.0), f4(1.0)
+        invoke glVertex3f, f4(-1.0), f4(1.0), f4(-1.0)
+        invoke glTexCoord2f, f4(1.0), f4(1.0)
+        invoke glVertex3f, f4(1.0), f4(1.0), f4(-1.0)
+        invoke glTexCoord2f, f4(1.0), f4(0.0)
+        invoke glVertex3f, f4(1.0), f4(-1.0), f4(-1.0)
+   
+        invoke glNormal3f, f4(0.0), f4(1.0), f4(0.0)
+        invoke glTexCoord2f, f4(1.0), f4(1.0)
+        invoke glVertex3f, f4(-1.0), f4(1.0), f4(-1.0)
+        invoke glTexCoord2f, f4(1.0), f4(0.0)
+        invoke glVertex3f, f4(-1.0), f4(1.0), f4(1.0)
+        invoke glTexCoord2f, f4(0.0), f4(0.0)
+        invoke glVertex3f, f4(1.0), f4(1.0), f4(1.0)
+        invoke glTexCoord2f, f4(0.0), f4(1.0)
+        invoke glVertex3f, f4(1.0), f4(1.0), f4(-1.0)
+   
+        invoke glNormal3f, f4(0.0), f4(-1.0), f4(0.0)
+        invoke glTexCoord2f, f4(0.0), f4(1.0)
+        invoke glVertex3f, f4(-1.0), f4(-1.0), f4(-1.0)
+        invoke glTexCoord2f, f4(1.0), f4(1.0)
+        invoke glVertex3f, f4(1.0), f4(-1.0), f4(-1.0)
+        invoke glTexCoord2f, f4(1.0), f4(0.0)
+        invoke glVertex3f, f4(1.0), f4(-1.0), f4(1.0)
+        invoke glTexCoord2f, f4(0.0), f4(0.0)
+        invoke glVertex3f, f4(-1.0), f4(-1.0), f4(1.0)
+   
+        invoke glNormal3f, f4(1.0), f4(0.0), f4(0.0)
+        invoke glTexCoord2f, f4(0.0), f4(0.0)
+        invoke glVertex3f, f4(1.0), f4(-1.0), f4(-1.0)
+        invoke glTexCoord2f, f4(0.0), f4(1.0)
+        invoke glVertex3f, f4(1.0), f4(1.0), f4(-1.0)
+        invoke glTexCoord2f, f4(1.0), f4(1.0)
+        invoke glVertex3f, f4(1.0), f4(1.0), f4(1.0)
+        invoke glTexCoord2f, f4(1.0), f4(0.0)
+        invoke glVertex3f, f4(1.0), f4(-1.0), f4(1.0)
+   
+        invoke glNormal3f, f4(-1.0), f4(0.0), f4(0.0)
+        invoke glTexCoord2f, f4(1.0), f4(0.0)
+        invoke glVertex3f, f4(-1.0), f4(-1.0), f4(-1.0)
+        invoke glTexCoord2f, f4(0.0), f4(0.0)
+        invoke glVertex3f, f4(-1.0), f4(-1.0), f4(1.0)
+        invoke glTexCoord2f, f4(0.0), f4(1.0)
+        invoke glVertex3f, f4(-1.0), f4(1.0), f4(1.0)
+        invoke glTexCoord2f, f4(1.0), f4(1.0)
+        invoke glVertex3f, f4(-1.0), f4(1.0), f4(-1.0)
     invoke glEnd
- 
-    invoke SwapBuffers, hDC
   
+    invoke SwapBuffers, hDC
+   
     jmp @b
 @@:
     invoke wglMakeCurrent, NULL, NULL
     invoke wglDeleteContext, hRC
     invoke ReleaseDC, hWin, hDC
     invoke glDeleteTextures, 1, addr tex
- 
+  
     mov eax, msg.wParam
     ret
 WinMain endp
-   
+    
 start:
     invoke GetModuleHandle, NULL
     mov hInstance, eax
-     
+      
     invoke GetCommandLine
-    mov CommandLine, eax
-     
-    invoke WinMain, hInstance, NULL, CommandLine, SW_SHOWDEFAULT
+    mov pCmdLine, eax
+      
+    invoke WinMain, hInstance, NULL, pCmdLine, SW_SHOWDEFAULT
     xor eax, eax
     ret
 end start
