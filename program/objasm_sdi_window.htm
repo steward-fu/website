@@ -86,42 +86,37 @@ main.S
 <pre class="brush:asm">
 %include @Environ(OBJASM_PATH)/Code/Macros/Model.inc
 SysSetup OOP, WIN32, ANSI_STRING
-      
+       
 MakeObjects Primer, Stream, WinPrimer, Window, WinApp, SdiApp
-  
-    .const
-CStr szName, "main"
- 
+   
 Object MyApp, , SdiApp
     RedefineMethod Init
-  
+   
     DefineVariable wndClass, WNDCLASS, { 0 }
 ObjectEnd
- 
-    .code    
+  
 Method MyApp.Init, uses esi
     SetObject esi
+
     ACall esi.Init
- 
     m2m [esi].wndClass.lpfnWndProc, $MethodAddr(MyApp.WndProc)
-    m2m [esi].wndClass.lpszClassName, offset szName
+    mov [esi].wndClass.lpszClassName, $OfsCStr("main")
     invoke RegisterClass, addr [esi].wndClass
- 
-    invoke CreateWindowEx, WS_EX_LEFT, offset szName, offset szName, WS_OVERLAPPEDWINDOW or WS_VISIBLE, 0, 0, 320, 240, NULL, NULL, NULL, pSelf
-    m2m [esi].hWnd, eax
+  
+    invoke CreateWindowEx, WS_EX_LEFT, $OfsCStr("main"), $OfsCStr("main"), WS_OVERLAPPEDWINDOW or WS_VISIBLE, 0, 0, 320, 240, NULL, NULL, NULL, pSelf
+    mov [esi].hWnd, eax
 MethodEnd
- 
+  
 start proc
     SysInit
-      
     OCall $ObjTmpl(MyApp)::MyApp.Init
     OCall $ObjTmpl(MyApp)::MyApp.Run
     OCall $ObjTmpl(MyApp)::MyApp.Done
-      
     SysDone
-    invoke ExitProcess, 0
+
+    xor eax, eax
+    ret
 start endp
-      
 end
 </pre><br>
 

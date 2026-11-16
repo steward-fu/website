@@ -87,54 +87,46 @@ main.S
 <pre class="brush:asm">
 %include @Environ(OBJASM_PATH)/Code/Macros/Model.inc
 SysSetup OOP, WIN32_OPENGL, ANSI_STRING
-        
+          
 MakeObjects Primer
- 
-    .const   
+   
 Object MyApp, , Primer
     RedefineMethod Init
     StaticMethod Run
     StaticMethod WndProc, UINT, WPARAM, LPARAM
- 
+   
     DefineVariable hDC, HDC, 0
     DefineVariable hRC, HGLRC, 0
     DefineVariable hWnd, HWND, 0
     DefineVariable pDefWndProc, DWORD, 0
-    DefineVariable angle, real8, 45.0
-    DefineVariable farPlane, real8, 100.0
-    DefineVariable nearPlane, real8, 0.1 
 ObjectEnd
-   
-    .data
-MyObj dd 0
-   
-    .code
+     
 Method MyApp.Init, uses esi
-    local w : dword
-    local h : dword
-    local fmt : DWORD
-    local pfd : PIXELFORMATDESCRIPTOR
-    local top : real8
-    local right : real8
-    local mtop : real8
-    local mright : real8
- 
+    local w:DWORD
+    local h:DWORD
+    local fmt:DWORD
+    local pfd:PIXELFORMATDESCRIPTOR
+    local top:REAL8
+    local right:REAL8
+    local mtop:REAL8
+    local mright:REAL8
+    local rc:RECT
+   
     SetObject esi
- 
+   
     mov w, 320
     mov h, 240
     invoke CreateWindowEx, WS_EX_LEFT, WC_DIALOG, $OfsCStr("main"), WS_OVERLAPPEDWINDOW or WS_VISIBLE, 0, 0, w, h, NULL, NULL, NULL, pSelf
-    m2m [esi].hWnd, eax
-    
+    mov [esi].hWnd, eax
+      
     invoke SetWindowLong, [esi].hWnd, GWL_WNDPROC, $MethodAddr(MyApp.WndProc)
-    m2m [esi].pDefWndProc, eax
-    m2m MyObj, pSelf
- 
+    mov [esi].pDefWndProc, eax
+   
     lea edi, pfd
     mov ecx, sizeof PIXELFORMATDESCRIPTOR
     xor eax, eax
     rep stosb
- 
+   
     mov pfd.nSize, sizeof PIXELFORMATDESCRIPTOR
     mov pfd.nVersion, 1
     mov pfd.dwFlags, PFD_DRAW_TO_WINDOW or PFD_SUPPORT_OPENGL or PFD_DOUBLEBUFFER
@@ -142,7 +134,7 @@ Method MyApp.Init, uses esi
     mov pfd.cColorBits, 16
     mov pfd.cDepthBits, 16
     mov pfd.dwLayerMask, PFD_MAIN_PLANE
-   
+     
     invoke GetDC, [esi].hWnd
     mov [esi].hDC, eax
     invoke ChoosePixelFormat, [esi].hDC, addr pfd
@@ -151,118 +143,133 @@ Method MyApp.Init, uses esi
     invoke wglCreateContext, [esi].hDC
     mov [esi].hRC, eax
     invoke wglMakeCurrent, [esi].hDC, [esi].hRC
-   
-    fld [esi].angle
+     
+    fld f4(45.0)
     fldpi
     fmulp st(1), st(0)
-   
+     
     mov eax, 360
     push eax
-    fild dword ptr [esp]
+    fild DWORD ptr [esp]
     add esp, 4
-   
+     
     fdivp st(1), st(0)
-   
+     
     fptan
     fstp st(0)
-   
-    fmul [esi].nearPlane
+     
+    fmul f4(0.1)
     fstp top
-   
+     
     fld top
-   
+     
     push w
-    fild dword ptr [esp]
+    fild DWORD ptr [esp]
     add esp, 4
-   
+     
     push h
-    fild dword ptr [esp]
+    fild DWORD ptr [esp]
     add esp, 4
-   
+     
     fdivp st(1), st(0)
     fmulp st(1), st(0)
     fstp right
-   
+     
     fld top
     fchs
     fstp mtop
-   
+     
     fld right
     fchs
     fstp mright
+ 
+    lea edi, rc
+    mov ecx, sizeof RECT
+    xor eax, eax
+    rep stosb
    
-    invoke glViewport, 0, 0, w, h
+    invoke GetClientRect, [esi].hWnd, addr rc
+    mov eax, rc.right
+    sub eax, rc.left
+    mov ecx, rc.bottom
+    sub ecx, rc.top
+    invoke glViewport, 0, 0, eax, ecx
+  
     invoke glMatrixMode, GL_PROJECTION
     invoke glFrustum, \
-        dword ptr [mright + 0], \
-        dword ptr [mright + 4], \
-        dword ptr [right + 0], \
-        dword ptr [right + 4], \
-        dword ptr [mtop + 0], \
-        dword ptr [mtop + 4], \
-        dword ptr [top + 0], \
-        dword ptr [top + 4], \
-        dword ptr [[esi].nearPlane + 0], \
-        dword ptr [[esi].nearPlane + 4], \
-        dword ptr [[esi].farPlane + 0], \
-        dword ptr [[esi].farPlane + 4]
-  
+        DWORD ptr [mright + 0], \
+        DWORD ptr [mright + 4], \
+        DWORD ptr [right + 0], \
+        DWORD ptr [right + 4], \
+        DWORD ptr [mtop + 0], \
+        DWORD ptr [mtop + 4], \
+        DWORD ptr [top + 0], \
+        DWORD ptr [top + 4], \
+        DWORD ptr [f8(0.1) + 0], \
+        DWORD ptr [f8(0.1) + 4], \
+        DWORD ptr [f8(100.0) + 0], \
+        DWORD ptr [f8(100.0) + 4]
+    
     invoke glMatrixMode, GL_MODELVIEW
     invoke glLoadIdentity
 MethodEnd
-   
+     
 Method MyApp.Run, uses esi
     local msg:MSG
- 
-    mov esi, MyObj
+   
     assume esi:ptr $Obj(MyApp)
- 
+    mov esi, offset $ObjTmpl(MyApp)
+   
 @@:
     invoke GetMessage, addr msg, NULL, 0, 0
     cmp eax, 0
     je @f
     invoke DispatchMessage, addr msg
- 
+   
     invoke glLoadIdentity
-    invoke glTranslatef, fpc(-1.0), fpc(0.0), fpc(-5.0)
+    invoke glTranslatef, f4(-1.0), f4(0.0), f4(-5.0)
     invoke glBegin, GL_TRIANGLES
-        invoke glColor3f, fpc(1.0), fpc(0.0), fpc(0.0)
-        invoke glVertex3f, fpc(0.0), fpc(0.5), fpc(0.0)
-   
-        invoke glColor3f, fpc(0.0), fpc(1.0), fpc(0.0)
-        invoke glVertex3f, fpc(-0.5), fpc(-0.5), fpc(0.0)
-   
-        invoke glColor3f, fpc(0.0), fpc(0.0), fpc(1.0)
-        invoke glVertex3f, fpc(0.5), fpc(-0.5), fpc(0.0)
+        invoke glColor3f, f4(1.0), f4(0.0), f4(0.0)
+        invoke glVertex3f, f4(0.0), f4(0.5), f4(0.0)
+     
+        invoke glColor3f, f4(0.0), f4(1.0), f4(0.0)
+        invoke glVertex3f, f4(-0.5), f4(-0.5), f4(0.0)
+     
+        invoke glColor3f, f4(0.0), f4(0.0), f4(1.0)
+        invoke glVertex3f, f4(0.5), f4(-0.5), f4(0.0)
     invoke glEnd
-   
+     
     invoke glLoadIdentity
-    invoke glTranslatef, fpc(1.0), fpc(0.0), fpc(-5.0)
+    invoke glTranslatef, f4(1.0), f4(0.0), f4(-5.0)
     invoke glBegin, GL_QUADS
-        invoke glColor3f, fpc(1.0), fpc(0.0), fpc(0.0)
-        invoke glVertex3f, fpc(1.0), fpc(1.0), fpc(0.0)
-   
-        invoke glColor3f, fpc(0.0), fpc(1.0), fpc(0.0)
-        invoke glVertex3f, fpc(-1.0), fpc(1.0), fpc(0.0)
-   
-        invoke glColor3f, fpc(0.0), fpc(0.0), fpc(1.0)
-        invoke glVertex3f, fpc(-1.0), fpc(-1.0), fpc(0.0)
-   
-        invoke glColor3f, fpc(1.0), fpc(1.0), fpc(0.0)
-        invoke glVertex3f, fpc(1.0), fpc(-1.0), fpc(0.0)
-    invoke glEnd 
-  
+        invoke glColor3f, f4(1.0), f4(0.0), f4(0.0)
+        invoke glVertex3f, f4(1.0), f4(1.0), f4(0.0)
+     
+        invoke glColor3f, f4(0.0), f4(1.0), f4(0.0)
+        invoke glVertex3f, f4(-1.0), f4(1.0), f4(0.0)
+     
+        invoke glColor3f, f4(0.0), f4(0.0), f4(1.0)
+        invoke glVertex3f, f4(-1.0), f4(-1.0), f4(0.0)
+     
+        invoke glColor3f, f4(1.0), f4(1.0), f4(0.0)
+        invoke glVertex3f, f4(1.0), f4(-1.0), f4(0.0)
+    invoke glEnd
+    
     invoke SwapBuffers, [esi].hDC
- 
+   
     jmp @b
 @@:
+    invoke wglMakeCurrent, NULL, NULL
+    invoke wglDeleteContext, [esi].hRC
+    invoke ReleaseDC, [esi].hWnd, [esi].hDC
+ 
     mov eax, msg.wParam
 MethodEnd
-   
+     
 Method MyApp.WndProc, uses esi, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
-    mov esi, MyObj
     assume esi:ptr $Obj(MyApp)
-   
+    mov esi, offset $ObjTmpl(MyApp)
+     
     .if uMsg == WM_CLOSE
         invoke DestroyWindow, [esi].hWnd
     .elseif uMsg == WM_DESTROY
@@ -271,18 +278,17 @@ Method MyApp.WndProc, uses esi, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         invoke CallWindowProc, [esi].pDefWndProc, [esi].hWnd, uMsg, wParam, lParam
     .endif
 MethodEnd
-   
+     
 start proc
     SysInit
-    
     OCall $ObjTmpl(MyApp)::MyApp.Init
     OCall $ObjTmpl(MyApp)::MyApp.Run
     OCall $ObjTmpl(MyApp)::MyApp.Done
-        
     SysDone
-    invoke ExitProcess, 0
+
+    xor eax, eax
+    ret
 start endp
-        
 end
 </pre><br>
 
