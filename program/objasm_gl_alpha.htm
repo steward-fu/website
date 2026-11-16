@@ -1,0 +1,407 @@
+﻿<!-- head
+ ____________________________________________________________
+|                                                            |
+|    DESIGN + Pat Heard { http://fullahead.org }             |
+|      DATE + 2006.09.12                                     |
+| COPYRIGHT + Free use if this notice is kept in place.      |
+|____________________________________________________________|
+-->
+
+<head>
+<title>司徒的教學網站</title>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+<meta http-equiv="content-type" content="application/xhtml+xml; charset=UTF-8" />
+<meta name="author" content="fullahead.org" />
+<meta name="keywords" content="XHTML, CSS, template, FullAhead" />
+<meta name="description" content="A valid, XHTML 1.0 template" />
+<meta name="robots" content="index, follow, noarchive" />
+<meta name="googlebot" content="noarchive" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.1, maximum-scale=10.0" />
+
+<link rel="shortcut icon" href="../website.ico" />
+<link rel="stylesheet" type="text/css" href="../styles/shCore.css" />
+<link rel="stylesheet" type="text/css" href="../styles/shThemeDefault.css" />
+<link rel="stylesheet" type="text/css" href="../css/html.css" media="screen" />
+<link rel="stylesheet" type="text/css" href="../css/layout.css" media="screen" />
+
+<script type="text/javascript" src="../scripts/shCore.js"></script>
+<script type="text/javascript" src="../scripts/shBrushAppleScript.js"></script>
+<script type="text/javascript" src="../scripts/shBrushAS3.js"></script>
+<script type="text/javascript" src="../scripts/shBrushAsm.js"></script>
+<script type="text/javascript" src="../scripts/shBrushBash.js"></script>
+<script type="text/javascript" src="../scripts/shBrushColdFusion.js"></script>
+<script type="text/javascript" src="../scripts/shBrushCpp.js"></script>
+<script type="text/javascript" src="../scripts/shBrushD.js"></script>
+<script type="text/javascript" src="../scripts/shBrushCSharp.js"></script>
+<script type="text/javascript" src="../scripts/shBrushCss.js"></script>
+<script type="text/javascript" src="../scripts/shBrushDiff.js"></script>
+<script type="text/javascript" src="../scripts/shBrushErlang.js"></script>
+<script type="text/javascript" src="../scripts/shBrushGolang.js"></script>
+<script type="text/javascript" src="../scripts/shBrushGroovy.js"></script>
+<script type="text/javascript" src="../scripts/shBrushInf.js"></script>
+<script type="text/javascript" src="../scripts/shBrushJavaFX.js"></script>
+<script type="text/javascript" src="../scripts/shBrushJava.js"></script>
+<script type="text/javascript" src="../scripts/shBrushJScript.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPas.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPerl.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPhp.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPlain.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPowerShell.js"></script>
+<script type="text/javascript" src="../scripts/shBrushPython.js"></script>
+<script type="text/javascript" src="../scripts/shBrushRuby.js"></script>
+<script type="text/javascript" src="../scripts/shBrushRust.js"></script>
+<script type="text/javascript" src="../scripts/shBrushSass.js"></script>
+<script type="text/javascript" src="../scripts/shBrushScad.js"></script>
+<script type="text/javascript" src="../scripts/shBrushBasic.js"></script>
+<script type="text/javascript" src="../scripts/shBrushVerilog.js"></script>
+<script type="text/javascript" src="../scripts/shBrushScala.js"></script>
+<script type="text/javascript" src="../scripts/shBrushSql.js"></script>
+<script type="text/javascript" src="../scripts/shBrushXml.js"></script>
+<script type="text/javascript" src="../scripts/shBrushFortran.js"></script>
+
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+</head>
+
+<body>
+<div id="wrapper">
+<div id="content">
+
+<div id="header">
+<a href="https://steward-fu.github.io/website/index.htm"><h1><span class="big darkBrown">S</span>teward</h1></a>
+<h2><span class="highlight">分享是一種喜悅、更是一種幸福</span></h2>
+</div>
+
+<div id="page">
+
+<!-- body -->
+<h3><a href="../program.htm">程式語言</a> - ObjAsm - OpenGL 1.0 - <b>Apply Alpha Blending</b></h3>
+<hr size="1"><br>
+<p>
+參考資訊：<br>
+https://github.com/ObjAsm<br>
+https://objasm.x10host.com/index.htm<br>
+https://github.com/gamedev-net/nehe-opengl<br><br>
+
+main.S
+</p>
+<pre class="brush:asm">
+%include @Environ(OBJASM_PATH)/Code/Macros/Model.inc
+SysSetup OOP, WIN32_OPENGL, ANSI_STRING
+           
+MakeObjects Primer
+
+LightAmbient    REAL4 0.1, 0.1, 0.1, 1.0
+LightDiffuse    REAL4 1.0, 1.0, 1.0, 1.0
+LightPosition   REAL4 3.0, 3.0, 3.0, 1.0
+    
+Object MyApp, , Primer
+    RedefineMethod Init
+    StaticMethod Run
+    StaticMethod WndProc, UINT, WPARAM, LPARAM
+ 
+    DefineVariable tex, GLuint, 0   
+    DefineVariable hDC, HDC, 0
+    DefineVariable hRC, HGLRC, 0
+    DefineVariable hWnd, HWND, 0
+    DefineVariable pDefWndProc, DWORD, 0
+ObjectEnd
+      
+Method MyApp.Init, uses esi
+    local w:DWORD
+    local h:DWORD
+    local fmt:DWORD
+    local pfd:PIXELFORMATDESCRIPTOR
+    local top:REAL8
+    local right:REAL8
+    local mtop:REAL8
+    local mright:REAL8
+    local bm:BITMAP
+    local bmi:BITMAPINFO
+    local bmp:HBITMAP
+    local len:DWORD
+    local pixels:DWORD
+    local rc:RECT
+    
+    SetObject esi
+    
+    mov w, 320
+    mov h, 240
+    invoke CreateWindowEx, WS_EX_LEFT, WC_DIALOG, $OfsCStr("main"), WS_OVERLAPPEDWINDOW or WS_VISIBLE, 0, 0, w, h, NULL, NULL, NULL, pSelf
+    mov [esi].hWnd, eax
+       
+    invoke SetWindowLong, [esi].hWnd, GWL_WNDPROC, $MethodAddr(MyApp.WndProc)
+    mov [esi].pDefWndProc, eax
+    
+    lea edi, pfd
+    mov ecx, sizeof PIXELFORMATDESCRIPTOR
+    xor eax, eax
+    rep stosb
+    
+    mov pfd.nSize, sizeof PIXELFORMATDESCRIPTOR
+    mov pfd.nVersion, 1
+    mov pfd.dwFlags, PFD_DRAW_TO_WINDOW or PFD_SUPPORT_OPENGL or PFD_DOUBLEBUFFER
+    mov pfd.iPixelType, PFD_TYPE_RGBA
+    mov pfd.cColorBits, 16
+    mov pfd.cDepthBits, 16
+    mov pfd.dwLayerMask, PFD_MAIN_PLANE
+ 
+    invoke GetDC, [esi].hWnd
+    mov [esi].hDC, eax
+    invoke ChoosePixelFormat, [esi].hDC, addr pfd
+    mov fmt, eax
+    invoke SetPixelFormat, [esi].hDC, fmt, addr pfd
+    invoke wglCreateContext, [esi].hDC
+    mov [esi].hRC, eax
+    invoke wglMakeCurrent, [esi].hDC, [esi].hRC
+      
+    invoke LoadImageA, NULL, $OfsCStr("main.bmp"), IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE
+    mov bmp, eax
+    invoke GetObject, bmp, sizeof BITMAP, addr bm
+   
+    mov bmi.bmiHeader.biSize, sizeof BITMAPINFOHEADER
+    push bm.bmWidth
+    pop bmi.bmiHeader.biWidth
+    mov eax, -1
+    mul bm.bmHeight
+    mov bmi.bmiHeader.biHeight, eax
+    mov bmi.bmiHeader.biPlanes, 1
+    mov bmi.bmiHeader.biBitCount, 24
+    mov bmi.bmiHeader.biCompression, BI_RGB
+   
+    mov eax, 3
+    mul bm.bmWidth
+    mul bm.bmHeight 
+    mov len, eax
+    invoke GetProcessHeap
+    invoke HeapAlloc, eax, 0, len
+    mov pixels, eax
+    invoke GetDIBits, [esi].hDC, bmp, 0, bm.bmHeight, pixels, addr bmi, DIB_RGB_COLORS
+   
+    invoke glGenTextures, 1, addr [esi].tex
+    invoke glBindTexture, GL_TEXTURE_2D, [esi].tex
+    invoke glEnable, GL_TEXTURE_2D
+    invoke glTexImage2D, GL_TEXTURE_2D, 0, GL_RGB, bm.bmWidth, bm.bmHeight, 0, GL_BGR, GL_UNSIGNED_BYTE, pixels
+    invoke glTexParameteri, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR
+    invoke glTexParameteri, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR
+     
+    invoke GetProcessHeap
+    invoke HeapFree, eax, 0, pixels
+    invoke DeleteObject, bmp
+ 
+    invoke glEnable, GL_LIGHTING
+    invoke glEnable, GL_LIGHT1
+    
+    invoke glLightfv, GL_LIGHT1, GL_AMBIENT, offset LightAmbient
+    invoke glLightfv, GL_LIGHT1, GL_DIFFUSE, offset LightDiffuse
+    invoke glLightfv, GL_LIGHT1, GL_POSITION, offset LightPosition
+  
+    invoke glEnable, GL_COLOR_MATERIAL
+    invoke glColorMaterial, GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE
+   
+    invoke glEnable, GL_BLEND
+    invoke glBlendFunc, GL_SRC_ALPHA, GL_ONE
+    invoke glColor4f, f4(1.0), f4(1.0), f4(1.0), f4(0.5)
+ 
+    fld f4(45.0)
+    fldpi
+    fmulp st(1), st(0)
+      
+    mov eax, 360
+    push eax
+    fild DWORD ptr [esp]
+    add esp, 4
+      
+    fdivp st(1), st(0)
+      
+    fptan
+    fstp st(0)
+      
+    fmul f4(0.1)
+    fstp top
+      
+    fld top
+      
+    push w
+    fild DWORD ptr [esp]
+    add esp, 4
+      
+    push h
+    fild DWORD ptr [esp]
+    add esp, 4
+      
+    fdivp st(1), st(0)
+    fmulp st(1), st(0)
+    fstp right
+      
+    fld top
+    fchs
+    fstp mtop
+      
+    fld right
+    fchs
+    fstp mright
+  
+    lea edi, rc
+    mov ecx, sizeof RECT
+    xor eax, eax
+    rep stosb
+    
+    invoke GetClientRect, [esi].hWnd, addr rc
+    mov eax, rc.right
+    sub eax, rc.left
+    mov ecx, rc.bottom
+    sub ecx, rc.top
+    invoke glViewport, 0, 0, eax, ecx
+   
+    invoke glMatrixMode, GL_PROJECTION
+    invoke glFrustum, \
+        DWORD ptr [mright + 0], \
+        DWORD ptr [mright + 4], \
+        DWORD ptr [right + 0], \
+        DWORD ptr [right + 4], \
+        DWORD ptr [mtop + 0], \
+        DWORD ptr [mtop + 4], \
+        DWORD ptr [top + 0], \
+        DWORD ptr [top + 4], \
+        DWORD ptr [f8(0.1) + 0], \
+        DWORD ptr [f8(0.1) + 4], \
+        DWORD ptr [f8(100.0) + 0], \
+        DWORD ptr [f8(100.0) + 4]
+     
+    invoke glMatrixMode, GL_MODELVIEW
+    invoke glLoadIdentity
+MethodEnd
+      
+Method MyApp.Run, uses esi
+    local msg:MSG
+   
+    assume esi:ptr $Obj(MyApp)
+    mov esi, offset $ObjTmpl(MyApp) 
+    
+@@:
+    invoke GetMessage, addr msg, NULL, 0, 0
+    cmp eax, 0
+    je @f
+    invoke DispatchMessage, addr msg
+   
+    invoke glClear, GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT
+ 
+    invoke glLoadIdentity
+    invoke glTranslatef, f4(0.0), f4(0.0), f4(-5.0)
+    invoke glRotatef, f4(45.0), f4(0.0), f4(1.0), f4(0.0)
+    invoke glBindTexture, GL_TEXTURE_2D, [esi].tex
+    invoke glBegin, GL_QUADS
+        invoke glNormal3f, f4(0.0), f4(0.0), f4(1.0)
+        invoke glTexCoord2f, f4(0.0), f4(1.0)
+        invoke glVertex3f, f4(-1.0), f4(-1.0), f4(1.0)
+        invoke glTexCoord2f, f4(1.0), f4(1.0)
+        invoke glVertex3f, f4(1.0), f4(-1.0), f4(1.0)
+        invoke glTexCoord2f, f4(1.0), f4(0.0)
+        invoke glVertex3f, f4(1.0), f4(1.0), f4(1.0)
+        invoke glTexCoord2f, f4(0.0), f4(0.0)
+        invoke glVertex3f, f4(-1.0), f4(1.0), f4(1.0)
+    
+        invoke glNormal3f, f4(0.0), f4(0.0), f4(-1.0)
+        invoke glTexCoord2f, f4(0.0), f4(0.0)
+        invoke glVertex3f, f4(-1.0), f4(-1.0), f4(-1.0)
+        invoke glTexCoord2f, f4(0.0), f4(1.0)
+        invoke glVertex3f, f4(-1.0), f4(1.0), f4(-1.0)
+        invoke glTexCoord2f, f4(1.0), f4(1.0)
+        invoke glVertex3f, f4(1.0), f4(1.0), f4(-1.0)
+        invoke glTexCoord2f, f4(1.0), f4(0.0)
+        invoke glVertex3f, f4(1.0), f4(-1.0), f4(-1.0)
+    
+        invoke glNormal3f, f4(0.0), f4(1.0), f4(0.0)
+        invoke glTexCoord2f, f4(1.0), f4(1.0)
+        invoke glVertex3f, f4(-1.0), f4(1.0), f4(-1.0)
+        invoke glTexCoord2f, f4(1.0), f4(0.0)
+        invoke glVertex3f, f4(-1.0), f4(1.0), f4(1.0)
+        invoke glTexCoord2f, f4(0.0), f4(0.0)
+        invoke glVertex3f, f4(1.0), f4(1.0), f4(1.0)
+        invoke glTexCoord2f, f4(0.0), f4(1.0)
+        invoke glVertex3f, f4(1.0), f4(1.0), f4(-1.0)
+    
+        invoke glNormal3f, f4(0.0), f4(-1.0), f4(0.0)
+        invoke glTexCoord2f, f4(0.0), f4(1.0)
+        invoke glVertex3f, f4(-1.0), f4(-1.0), f4(-1.0)
+        invoke glTexCoord2f, f4(1.0), f4(1.0)
+        invoke glVertex3f, f4(1.0), f4(-1.0), f4(-1.0)
+        invoke glTexCoord2f, f4(1.0), f4(0.0)
+        invoke glVertex3f, f4(1.0), f4(-1.0), f4(1.0)
+        invoke glTexCoord2f, f4(0.0), f4(0.0)
+        invoke glVertex3f, f4(-1.0), f4(-1.0), f4(1.0)
+    
+        invoke glNormal3f, f4(1.0), f4(0.0), f4(0.0)
+        invoke glTexCoord2f, f4(0.0), f4(0.0)
+        invoke glVertex3f, f4(1.0), f4(-1.0), f4(-1.0)
+        invoke glTexCoord2f, f4(0.0), f4(1.0)
+        invoke glVertex3f, f4(1.0), f4(1.0), f4(-1.0)
+        invoke glTexCoord2f, f4(1.0), f4(1.0)
+        invoke glVertex3f, f4(1.0), f4(1.0), f4(1.0)
+        invoke glTexCoord2f, f4(1.0), f4(0.0)
+        invoke glVertex3f, f4(1.0), f4(-1.0), f4(1.0)
+    
+        invoke glNormal3f, f4(-1.0), f4(0.0), f4(0.0)
+        invoke glTexCoord2f, f4(1.0), f4(0.0)
+        invoke glVertex3f, f4(-1.0), f4(-1.0), f4(-1.0)
+        invoke glTexCoord2f, f4(0.0), f4(0.0)
+        invoke glVertex3f, f4(-1.0), f4(-1.0), f4(1.0)
+        invoke glTexCoord2f, f4(0.0), f4(1.0)
+        invoke glVertex3f, f4(-1.0), f4(1.0), f4(1.0)
+        invoke glTexCoord2f, f4(1.0), f4(1.0)
+        invoke glVertex3f, f4(-1.0), f4(1.0), f4(-1.0)
+    invoke glEnd
+ 
+    invoke SwapBuffers, [esi].hDC
+    
+    jmp @b
+@@:
+     
+    invoke wglMakeCurrent, NULL, NULL
+    invoke wglDeleteContext, [esi].hRC
+    invoke ReleaseDC, [esi].hWnd, [esi].hDC
+    invoke glDeleteTextures, 1, addr [esi].tex
+  
+    mov eax, msg.wParam
+MethodEnd
+      
+Method MyApp.WndProc, uses esi, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
+    assume esi:ptr $Obj(MyApp)
+    mov esi, offset $ObjTmpl(MyApp) 
+      
+    .if uMsg == WM_CLOSE
+        invoke DestroyWindow, [esi].hWnd
+    .elseif uMsg == WM_DESTROY
+        invoke PostQuitMessage, 0
+    .else
+        invoke CallWindowProc, [esi].pDefWndProc, [esi].hWnd, uMsg, wParam, lParam
+    .endif
+MethodEnd
+      
+start proc
+    SysInit
+    OCall $ObjTmpl(MyApp)::MyApp.Init
+    OCall $ObjTmpl(MyApp)::MyApp.Run
+    OCall $ObjTmpl(MyApp)::MyApp.Done
+    SysDone
+
+    xor eax, eax
+    ret
+start endp
+end
+</pre><br>
+
+<p>
+完成<br>
+<img style="border:0px" src="objasm_gl_alpha/1.jpg" class="maxSize"><br>
+<img style="border:0px" src="objasm_gl_alpha/2.jpg" class="maxSize">
+</p>
+
+<!-- tail -->
+<br>
+</div>
+
+</div>
+</div>
+</body>
+</html>
