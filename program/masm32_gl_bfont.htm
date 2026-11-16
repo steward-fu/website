@@ -88,8 +88,8 @@ main.asm
 <pre class="brush:asm">
     .386
     .model flat,stdcall
-    option casemap : none
-  
+    option casemap:none
+   
 include c:\masm32\include\windows.inc
 include c:\masm32\include\ogl\kernel32.inc
 include c:\masm32\include\ogl\user32.inc
@@ -97,27 +97,29 @@ include c:\masm32\include\ogl\gdi32.inc
 include c:\masm32\include\ogl\gl.def
 include c:\masm32\include\ogl\glu.def
 include c:\masm32\include\ogl\winextra\winextra.def
-  
+   
 includelib c:\masm32\lib\gdi32.lib
 includelib c:\masm32\lib\glu32.lib
 includelib c:\masm32\lib\user32.lib
 includelib c:\masm32\lib\opengl32.lib
 includelib c:\masm32\lib\kernel32.lib
-  
+   
     .data
-szCaption   db "main", 0
-hWin        dd 0
-hInstance   dd 0
-CommandLine dd 0
-defWndProc  dd 0
+hWin        DWORD 0
+hInstance   DWORD 0
+pCmdLine    DWORD 0
+defWndProc  DWORD 0
 hDC         HDC 0
 hRC         HGLRC 0
-szBMPName   db "main.bmp", 0
 tex         GLuint 0
-buf         byte "Hello, world!",0
- 
+buf         BYTE "Hello, world!",0
+
+    .const
+szCaption   BYTE "main",0
+szBMPName   BYTE "main.bmp",0
+  
     .code
-WndProc proc hWnd : HWND, uMsg : UINT, wParam : WPARAM, lParam : LPARAM
+WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
     .if uMsg == WM_CLOSE
         invoke DestroyWindow, hWnd
         xor eax, eax
@@ -127,42 +129,43 @@ WndProc proc hWnd : HWND, uMsg : UINT, wParam : WPARAM, lParam : LPARAM
         xor eax, eax
         ret
     .endif
-   
+    
     invoke CallWindowProc, defWndProc, hWnd, uMsg, wParam, lParam
     ret
 WndProc endp
-    
-WinMain proc hInst : DWORD, hPrevInst : DWORD, CmdLine : DWORD, CmdShow : DWORD
-    local w : DWORD
-    local h : DWORD
-    local msg : MSG
-    local fmt : DWORD
-    local pfd : PIXELFORMATDESCRIPTOR
-    local top : real8
-    local right : real8
-    local mtop : real8
-    local mright : real8
-    local bm : BITMAP
-    local bmi : BITMAPINFO
-    local bmp : HBITMAP
-    local len : DWORD
-    local pixels : DWORD
+     
+WinMain proc hInst:DWORD, hPrevInst:DWORD, CmdLine:DWORD, CmdShow:DWORD
+    local w:DWORD
+    local h:DWORD
+    local msg:MSG
+    local fmt:DWORD
+    local pfd:PIXELFORMATDESCRIPTOR
+    local top:REAL8
+    local right:REAL8
+    local mtop:REAL8
+    local mright:REAL8
+    local bm:BITMAP
+    local bmi:BITMAPINFO
+    local bmp:HBITMAP
+    local len:DWORD
+    local pixels:DWORD
     local base:DWORD
     local i:DWORD
     local tmp:DWORD
     local ccx:REAL4
     local ccy:REAL4
     local texCoordX:REAL4
-    local tmpFloat:REAL4 
-
+    local tmpFloat:REAL4
+    local rc:RECT
+ 
     mov w, 320
     mov h, 240
     invoke CreateWindowEx, WS_EX_LEFT, WC_DIALOG, offset szCaption, WS_OVERLAPPEDWINDOW or WS_VISIBLE, 0, 0, w, h, NULL, NULL, NULL, NULL
     mov hWin, eax
-    
+     
     invoke SetWindowLong, hWin, GWL_WNDPROC, WndProc
     mov defWndProc, eax
-  
+   
     invoke RtlZeroMemory, addr pfd, sizeof PIXELFORMATDESCRIPTOR
     mov pfd.nSize, sizeof PIXELFORMATDESCRIPTOR
     mov pfd.nVersion, 1
@@ -171,7 +174,7 @@ WinMain proc hInst : DWORD, hPrevInst : DWORD, CmdLine : DWORD, CmdShow : DWORD
     mov pfd.cColorBits, 16
     mov pfd.cDepthBits, 16
     mov pfd.dwLayerMask, PFD_MAIN_PLANE
-  
+   
     invoke GetDC, hWin
     mov hDC, eax
     invoke ChoosePixelFormat, hDC, addr pfd
@@ -180,11 +183,11 @@ WinMain proc hInst : DWORD, hPrevInst : DWORD, CmdLine : DWORD, CmdShow : DWORD
     invoke wglCreateContext, hDC
     mov hRC, eax
     invoke wglMakeCurrent, hDC, hRC
- 
+  
     invoke LoadImageA, NULL, offset szBMPName, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE
     mov bmp, eax
     invoke GetObject, bmp, sizeof BITMAP, addr bm
- 
+  
     mov bmi.bmiHeader.biSize, sizeof BITMAPINFOHEADER
     push bm.bmWidth
     pop bmi.bmiHeader.biWidth
@@ -194,7 +197,7 @@ WinMain proc hInst : DWORD, hPrevInst : DWORD, CmdLine : DWORD, CmdShow : DWORD
     mov bmi.bmiHeader.biPlanes, 1
     mov bmi.bmiHeader.biBitCount, 24
     mov bmi.bmiHeader.biCompression, BI_RGB
- 
+  
     mov eax, 3
     mul bm.bmWidth
     mul bm.bmHeight 
@@ -203,141 +206,148 @@ WinMain proc hInst : DWORD, hPrevInst : DWORD, CmdLine : DWORD, CmdShow : DWORD
     invoke HeapAlloc, eax, 0, len
     mov pixels, eax
     invoke GetDIBits, hDC, bmp, 0, bm.bmHeight, pixels, addr bmi, DIB_RGB_COLORS
- 
+  
     invoke glGenTextures, 1, offset tex
     invoke glBindTexture, GL_TEXTURE_2D, tex
     invoke glEnable, GL_TEXTURE_2D
     invoke glTexImage2D, GL_TEXTURE_2D, 0, GL_RGB, bm.bmWidth, bm.bmHeight, 0, GL_BGR, GL_UNSIGNED_BYTE, pixels
     invoke glTexParameteri, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR
     invoke glTexParameteri, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR
-   
+    
     invoke GetProcessHeap
     invoke HeapFree, eax, 0, pixels
     invoke DeleteObject, bmp
- 
+  
     invoke glGenLists, 256
     mov base, eax
     invoke glBindTexture, GL_TEXTURE_2D, tex
     mov i, 0
 @@:
     mov eax, i
-    and eax, 0Fh
+    and eax, 0fh
     mov tmp, eax
-
-    fild DWORD PTR [tmp]
+ 
+    fild DWORD ptr [tmp]
     fdiv f8(16.0)
     fsubr f4(1.0)
     fstp ccx
-
+ 
     mov eax, i
     shr eax, 4
     mov tmp, eax
-
-    fild DWORD PTR [tmp]
+ 
+    fild DWORD ptr [tmp]
     fdiv f8(16.0)
     fsubr f4(1.0)
     fstp ccy
-
+ 
     mov eax, 255
     sub eax, i
     add eax, base
-
+ 
     invoke glNewList, eax, GL_COMPILE
         invoke glBegin, GL_QUADS
             fld ccx
             fsub f4(0.0625)
             fstp texCoordX
-
+ 
             invoke glTexCoord2f, texCoordX, ccy
             invoke glVertex2i, 0, 0
-
+ 
             invoke glTexCoord2f, ccx, ccy
             invoke glVertex2i, 16, 0
-
+ 
             fld ccy
             fsub f4(0.0625)
             fstp texCoordX
-
+ 
             invoke glTexCoord2f, ccx, texCoordX
             invoke glVertex2i, 16, 16
-
+ 
             fld ccx
             fsub f4(0.0625)
             fstp texCoordX
-
+ 
             fld ccy
             fsub f4(0.0625)
             fstp tmpFloat
-
+ 
             invoke glTexCoord2f, texCoordX, tmpFloat
             invoke glVertex2i, 0, 16
         invoke glEnd
-
-        push DWORD PTR [f8(0.0)+4]
-        push DWORD PTR [f8(0.0)]
-        push DWORD PTR [f8(0.0)+4]
-        push DWORD PTR [f8(0.0)]
-        push DWORD PTR [f8(16.0)+4]
-        push DWORD PTR [f8(16.0)]
+ 
+        push DWORD ptr [f8(0.0)+4]
+        push DWORD ptr [f8(0.0)]
+        push DWORD ptr [f8(0.0)+4]
+        push DWORD ptr [f8(0.0)]
+        push DWORD ptr [f8(16.0)+4]
+        push DWORD ptr [f8(16.0)]
         call glTranslated
     invoke glEndList
-
+ 
     inc i
     cmp i, 256
-    jl @B
+    jl @b
  
-    invoke glViewport, 0, 0, w, h
+    invoke RtlZeroMemory, addr rc, sizeof RECT
+    invoke GetClientRect, hWin, addr rc
+    mov eax, rc.right
+    sub eax, rc.left
+    mov ecx, rc.bottom
+    sub ecx, rc.top
+    invoke glViewport, 0, 0, eax, ecx
+ 
     invoke glMatrixMode, GL_PROJECTION
     invoke glOrtho, \
-        DWORD PTR [f8(0)+0], DWORD PTR [f8(0)+4], \
-        DWORD PTR [f8(320)+0], DWORD PTR [f8(320)+4], \
-        DWORD PTR [f8(0)+0], DWORD PTR [f8(0)+4], \
-        DWORD PTR [f8(240)+0], DWORD PTR [f8(240)+4], \
-        DWORD PTR [f8(-1)+0], DWORD PTR [f8(-1)+4], \
-        DWORD PTR [f8(1)+0], DWORD PTR [f8(1)+4]
-  
+        DWORD ptr [f8(0)+0], DWORD ptr [f8(0)+4], \
+        DWORD ptr [f8(320)+0], DWORD ptr [f8(320)+4], \
+        DWORD ptr [f8(0)+0], DWORD ptr [f8(0)+4], \
+        DWORD ptr [f8(240)+0], DWORD ptr [f8(240)+4], \
+        DWORD ptr [f8(-1)+0], DWORD ptr [f8(-1)+4], \
+        DWORD ptr [f8(1)+0], DWORD ptr [f8(1)+4]
+   
     invoke glMatrixMode, GL_MODELVIEW
     invoke glLoadIdentity
-  
+   
 @@:
     invoke GetMessage, addr msg, NULL, 0, 0
     cmp eax, 0
     je @f
     invoke DispatchMessage, addr msg
-  
+   
     invoke glLoadIdentity
     invoke glTranslated, \
-        DWORD PTR [f8(10.0)+0], DWORD PTR [f8(10.0)+4], \
-        DWORD PTR [f8(100.0)+0], DWORD PTR [f8(100.0)+4], \
-        DWORD PTR [f8(0.0)], DWORD PTR [f8(0.0)+4]
-
+        DWORD ptr [f8(10.0)+0], DWORD ptr [f8(10.0)+4], \
+        DWORD ptr [f8(100.0)+0], DWORD ptr [f8(100.0)+4], \
+        DWORD ptr [f8(0.0)], DWORD ptr [f8(0.0)+4]
+ 
     mov eax, base
     sub eax, 32
     invoke glListBase, eax
     invoke lstrlen, ADDR buf
     invoke glCallLists, eax, GL_BYTE, ADDR buf
- 
-    invoke SwapBuffers, hDC
   
+    invoke SwapBuffers, hDC
+   
     jmp @b
 @@:
     invoke wglMakeCurrent, NULL, NULL
     invoke wglDeleteContext, hRC
     invoke ReleaseDC, hWin, hDC
     invoke glDeleteTextures, 1, offset tex
- 
+  
     mov eax, msg.wParam
     ret
 WinMain endp
-   
+    
 start:
     invoke GetModuleHandle, NULL
     mov hInstance, eax
-     
+      
     invoke GetCommandLine
-    mov CommandLine, eax
-     
-    invoke WinMain, hInstance, NULL, CommandLine, SW_SHOWDEFAULT
+    mov pCmdLine, eax
+      
+    invoke WinMain, hInstance, NULL, pCmdLine, SW_SHOWDEFAULT
     xor eax, eax
     ret
 end start
