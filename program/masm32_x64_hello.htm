@@ -80,7 +80,13 @@
 參考資訊：<br>
 https://www.masm32.com/<br><br>
 
-經典的<b>Hello, world!</b>程式框架總是能夠讓人細心品味一款程式語言的美好，司徒就使用一個簡單的Message對話盒來展現<b>Hello, world!</b>框架<br><br>
+Microsoft規定：<br>
+1. 保留給API呼叫使用的記憶體稱為Shadow Storage<br>
+2. Shadow Storage必須由呼叫者建立跟刪除<br>
+3. Shadow Storage = (參數數量 * 8 bytes)，最少必須是32 bytes(即使參數不足四個)<br>
+4. Stack必須要16 bytes記憶體對齊<br>
+5. 前四個參數放在RCX, RDX, R8, R9<br>
+6. 第五個參數才開始放在Stack<br><br>
 
 main.asm
 </p>
@@ -88,25 +94,31 @@ main.asm
     option dotname
     option casemap:none
     option prologue:rbpFramePrologue
-
+ 
 include c:\masm64\include\temphls.inc
 include c:\masm64\include\win64.inc
 include c:\masm64\include\kernel32.inc
 include c:\masm64\include\user32.inc
-
+ 
 includelib c:\masm64\lib\kernel32.lib
 includelib c:\masm64\lib\user32.lib
-
+ 
     .const
 szCaption BYTE " ",0
 szContent BYTE "Hello, world!",0
-
+ 
     .code
 start proc
-    sub rsp, 5 * 8
-    invoke MessageBox, NULL, &amp;szContent, &amp;szCaption, MB_OK
+    mov rax, rsp
+    and rax, 0fh
+    cmp rax, 8
+    je @f
+    sub rsp, 8
+
+@@:
+    sub rsp, 32
+    invoke MessageBox, NULL, offset szContent, offset szCaption, MB_OK
     invoke ExitProcess, 0
-    ret
 start endp
 end
 </pre><br>
