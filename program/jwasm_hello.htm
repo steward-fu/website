@@ -108,20 +108,17 @@ end start
 Makefile
 </p>
 <pre>
-export OBJASM_PATH=/opt/wadk/objasm
-
 TARGET   = main
-CFLAGS   = -coff
-LDFLAGS += -e _start@0
-LDFLAGS += -L/opt/wadk/masm32/lib
-LDFLAGS += -lkernel32
-LDFLAGS += -luser32
-LDFLAGS += -ladvapi32
-LDFLAGS += -lgdi32
+LDFLAGS += format windows
+LDFLAGS += pe ru windows
+LDFLAGS += libpath /opt/wadk/masm32/lib
+LDFLAGS += library gdi32.lib
+LDFLAGS += library user32.lib
+LDFLAGS += library kernel32.lib
 
 all:
-	uasm ${CFLAGS} ${TARGET}.S
-	i686-w64-mingw32-ld ${TARGET}.o -o ${TARGET}.exe ${LDFLAGS}
+	jwasm ${CFLAGS} ${TARGET}.S
+	jwlink file ${TARGET}.o ${LDFLAGS}
 
 run:
 	myx86 ${TARGET}.exe
