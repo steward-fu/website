@@ -80,17 +80,17 @@
 TARGET   = main
 CFLAGS  += -win64
 CFLAGS  += -Fd
-LDFLAGS += format windows
-LDFLAGS += pe ru windows
-LDFLAGS += libpath /opt/wadk/masm64/lib
-LDFLAGS += library gdi32.lib
-LDFLAGS += library user32.lib
-LDFLAGS += library kernel32.lib
-LDFLAGS += library opengl32.lib
+LDFLAGS += /subsystem:windows
+LDFLAGS += /entry:start
+LDFLAGS += /nodefaultlib
+LDFLAGS += /libpath:/opt/wadk/masm64/lib
+LDFLAGS += user32.lib
+LDFLAGS += kernel32.lib
+LDFLAGS += /out:${TARGET}.exe
 
 all:
 	jwasm ${CFLAGS} ${TARGET}.S
-	jwlink file ${TARGET}.o ${LDFLAGS}
+	lld-link ${LDFLAGS} ${TARGET}.o
 
 run:
 	myx64 ${TARGET}.exe

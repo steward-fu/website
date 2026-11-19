@@ -88,23 +88,19 @@ main.S
     option dotname
     option casemap:none
     option win64:3
- 
+
 include /opt/wadk/masm64/include/win64.inc
 include /opt/wadk/masm64/include/kernel32.inc
 include /opt/wadk/masm64/include/user32.inc
- 
+
     .const
 szCaption BYTE " ",0
 szContent BYTE "Hello, world!",0
- 
-    .code
-start proc frame
-    .endprolog
 
-    sub rsp, 5 * 8
+    .code
+start proc
     invoke MessageBox, NULL, offset szContent, offset szCaption, MB_OK
     invoke ExitProcess, 0
-    ret
 start endp
 end
 </pre><br>
@@ -115,17 +111,17 @@ Makefile
 TARGET   = main
 CFLAGS  += -win64
 CFLAGS  += -Fd
-LDFLAGS += format windows
-LDFLAGS += pe ru windows
-LDFLAGS += libpath /opt/wadk/masm64/lib
-LDFLAGS += library gdi32.lib
-LDFLAGS += library user32.lib
-LDFLAGS += library kernel32.lib
-LDFLAGS += library opengl32.lib
+LDFLAGS += /subsystem:windows
+LDFLAGS += /entry:start
+LDFLAGS += /nodefaultlib
+LDFLAGS += /libpath:/opt/wadk/masm64/lib
+LDFLAGS += user32.lib
+LDFLAGS += kernel32.lib
+LDFLAGS += /out:${TARGET}.exe
 
 all:
 	jwasm ${CFLAGS} ${TARGET}.S
-	jwlink file ${TARGET}.o ${LDFLAGS}
+	lld-link ${LDFLAGS} ${TARGET}.o
 
 run:
 	myx64 ${TARGET}.exe
