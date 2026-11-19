@@ -86,53 +86,44 @@ main.S
 <pre class="brush:asm">
 %include @Environ(OBJASM_PATH)/Code/Macros/Model.inc
 SysSetup OOP, WIN64, ANSI_STRING
- 
+  
 MakeObjects Primer, Stream, WinPrimer, Window, WinApp, SdiApp
-      
+       
 Object MyApp, , SdiApp
     RedefineMethod Init
-      
+       
     DefineVariable wndClass, WNDCLASSEX, { 0 }
 ObjectEnd
-     
+      
 Method MyApp.Init, uses rsi
     SetObject rsi
-  
-    ACall rsi.Init 
+   
+    ACall rsi.Init
     mov [rsi].wndClass.cbSize, sizeof WNDCLASSEX
     m2m [rsi].wndClass.lpfnWndProc, $MethodAddr(SdiApp.WndProc), xdx
-    mov [rsi].wndClass.style, CS_DBLCLKS
-    m2z [rsi].wndClass.cbClsExtra
-    m2z [rsi].wndClass.cbWndExtra
-    m2m [rsi].wndClass.hInstance, hInstance, xdx
-    m2z [rsi].wndClass.hbrBackground
-    m2z [rsi].wndClass.lpszMenuName
     c2m [rsi].wndClass.lpszClassName, $OfsCStr("main"), xdx
-    mov [rsi].wndClass.hIcon, $invoke(LoadIcon, hInstance, $OfsCStr("ICON_APP"))
-    mov [rsi].wndClass.hCursor, $invoke(LoadCursor, 0, IDC_ARROW)
-    m2z [rsi].wndClass.hIconSm
     invoke RegisterClassEx, addr [rsi].wndClass
-     
+      
     invoke CreateWindowEx, WS_EX_LEFT, $OfsCStr("main"), $OfsCStr("main"), WS_OVERLAPPEDWINDOW or WS_VISIBLE, 0, 0, 320, 240, NULL, NULL, NULL, pSelf
     mov [rsi].hWnd, rax
 MethodEnd
-    
+     
 Method MyApp.OnPaint, uses rsi, wParam:WPARAM, lParam:LPARAM
     local hDC:HDC
     local PS:PAINTSTRUCT
-    
+     
     SetObject rsi
     mov hDC, $invoke(BeginPaint, [rsi].hWnd, addr PS) 
     invoke EndPaint, [rsi].hWnd, addr PS
 MethodEnd
-    
+     
 start proc
     SysInit
     OCall $ObjTmpl(MyApp)::MyApp.Init
     OCall $ObjTmpl(MyApp)::MyApp.Run
     OCall $ObjTmpl(MyApp)::MyApp.Done
     SysDone
-
+ 
     invoke ExitProcess, 0  
 start endp
 end
