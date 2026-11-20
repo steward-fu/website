@@ -77,20 +77,26 @@
 <h3><a href="../program.htm">程式語言</a> - Netwide Assembler (NASM) - Win32 API - <b>Makefile</b></h3>
 <hr size="1"><br>
 <pre>
-TARGET=main
-MYWINE=WINEPREFIX=~/.wine_x86 box86 wine
-NASM32=/home/user/.wine_x86/drive_c/nasm
-MASM32=/home/user/.wine_x86/drive_c/masm32
+TARGET   = main
+CFLAGS  += -f win32
+CFLAGS  += -l ${TARGET}.lst
+LDFLAGS += -e _start@0
+LDFLAGS += -L/opt/wadk/masm32/lib
+LDFLAGS += -lkernel32
+LDFLAGS += -luser32
+LDFLAGS += -ladvapi32
+LDFLAGS += -lgdi32
+LDFLAGS += -lopengl32
 
 all:
-	${MYWINE} ${NASM32}/bin/nasm.exe -fwin32 ${TARGET}.asm
-	${MYWINE} ${MASM32}/bin/link.exe /SUBSYSTEM:WINDOWS /MERGE:.rdata=.text ${TARGET}.obj
+	nasm ${CFLAGS} ${TARGET}.asm
+	i686-w64-mingw32-ld ${TARGET}.obj -o ${TARGET}.exe ${LDFLAGS}
 
 run:
-	${MYWINE} ${TARGET}.exe
+	myx86 ${TARGET}.exe
 
 clean:
-	rm -rf ${TARGET}.exe ${TARGET}.obj
+	rm -rf ${TARGET}.exe ${TARGET}.obj ${TARGET}.lst
 </pre>
 
 <!-- tail -->

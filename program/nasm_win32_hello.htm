@@ -86,63 +86,48 @@ https://www.nasm.us/xdoc/2.13rc9/html/nasmdoc0.html<br><br>
 main.asm
 </p>
 <pre class="brush:asm">
-    [bits 32]
-    global _start
+    %include "/opt/wadk/nasm/inc/windows.inc"
 
-    extern _MessageBoxA@16
-    extern _ExitProcess@4
-
-    %define MessageBox  _MessageBoxA@16
-    %define ExitProcess _ExitProcess@4
-
-    section .drectve info
-_entry    db "/entry:start "
-_gdi32    db "/defaultlib:c:\\masm32\\lib\\gdi32.lib "
-_user32   db "/defaultlib:c:\\masm32\\lib\\user32.lib "
-_kernel32 db "/defaultlib:c:\\masm32\\lib\\kernel32.lib "
-
-    segment .data
-szCaption db "main",0
-szContent db "Hello, world!",0
-
-    segment .text
+    .data
+szCaption DB "",0
+szContent DB "Hello, world!",0
+ 
+    .text
 _start:
-    push 0
+    push MB_OK
     push szCaption
     push szContent
-    push 0
+    push NULL
     call MessageBox
-
+ 
     push 0
     call ExitProcess
-</pre>
-<p>
-<b>Line 7~8</b>：為了方便名稱使用，重新定義名稱<br>
-<b>Line 10~14</b>：傳遞給Linker的指令<br>
-<b>Line 16</b>：初始化的資料區段<br>
-<b>Line 17~18</b>：定義字串<br>
-<b>Line 20</b>：程式區段<br>
-<b>Line 21</b>：程式進入點<br>
-<b>Line 22~26</b>：顯示Message對話盒<br>
-<b>Line 28~29</b>：結束Process並且釋放相關資源<br><br>
+</pre><br>
 
+<p>
 Makefile
 </p>
 <pre>
-TARGET=main
-MYWINE=WINEPREFIX=~/.wine_x86 box86 wine
-NASM32=/home/user/.wine_x86/drive_c/nasm
-MASM32=/home/user/.wine_x86/drive_c/masm32
+TARGET   = main
+CFLAGS  += -f win32
+CFLAGS  += -l ${TARGET}.lst
+LDFLAGS += -e _start@0
+LDFLAGS += -L/opt/wadk/masm32/lib
+LDFLAGS += -lkernel32
+LDFLAGS += -luser32
+LDFLAGS += -ladvapi32
+LDFLAGS += -lgdi32
+LDFLAGS += -lopengl32
 
 all:
-	${MYWINE} ${NASM32}/bin/nasm.exe -fwin32 ${TARGET}.asm
-	${MYWINE} ${MASM32}/bin/link.exe /SUBSYSTEM:WINDOWS /MERGE:.rdata=.text ${TARGET}.obj
+	nasm ${CFLAGS} ${TARGET}.asm
+	i686-w64-mingw32-ld ${TARGET}.obj -o ${TARGET}.exe ${LDFLAGS}
 
 run:
-	${MYWINE} ${TARGET}.exe
+	myx86 ${TARGET}.exe
 
 clean:
-	rm -rf ${TARGET}.exe ${TARGET}.obj
+	rm -rf ${TARGET}.exe ${TARGET}.obj ${TARGET}.lst
 </pre><br>
 
 <p>
