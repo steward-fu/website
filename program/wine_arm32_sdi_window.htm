@@ -89,104 +89,84 @@ Windows的視窗可以分成：<b>Dialog</b>、Single Document Interface(<b>SDI<
 main.S
 </p>
 <pre class="brush:asm">
-    .global WinMain
-
-    .equiv WC_DIALOG, 0x8002
-    .equiv WM_DESTROY, 2
-    .equiv WM_CLOSE, 0x10
-    .equiv WS_OVERLAPPED, 0
-    .equiv WS_CAPTION, 0xc00000
-    .equiv WS_SYSMENU, 0x80000
-    .equiv WS_THICKFRAME, 0x40000
-    .equiv WS_MINIMIZEBOX, 0x20000
-    .equiv WS_MAXIMIZEBOX, 0x10000
-    .equiv WS_VISIBLE, 0x10000000
-    .equiv WS_EX_LEFT, 0x00000000
-    .equiv WS_OVERLAPPEDWINDOW, (WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX)
-
-    .equiv WNDCLASS.style, 0
-    .equiv WNDCLASS.lpfnWndProc, 4
-    .equiv WNDCLASS.cbClsExtra, 8
-    .equiv WNDCLASS.cbWndExtra, 12
-    .equiv WNDCLASS.hInstance, 16
-    .equiv WNDCLASS.hIcon, 20
-    .equiv WNDCLASS.hCursor, 24
-    .equiv WNDCLASS.hbrBackground, 28
-    .equiv WNDCLASS.lpszMenuName, 32
-    .equiv WNDCLASS.lpszClassName, 36
-
+    .include "/opt/wadk/wine/include/windows.inc"
+ 
     .data
-hWin: .skip 4
-szMsg: .skip 28
-szAppName: .asciz "main"
-pDefWndProc: .skip 4
+hWin:           .skip 4
+szMsg:          .skip 28
+szAppName:      .asciz "main"
+pDefWndProc:    .skip 4
 wndClass:
-    .space 4   @ style
-    .space 4   @ lpfnWndProc
-    .space 4   @ cbClsExtra
-    .space 4   @ cbWndExtra
-    .space 4   @ hInstance
-    .space 4   @ hIcon
-    .space 4   @ hCursor
-    .space 4   @ hbrBackground
-    .space 4   @ lpszMenuName
-    .space 4   @ lpszClassName
+    .space 4   @style
+    .space 4   @lpfnWndProc
+    .space 4   @cbClsExtra
+    .space 4   @cbWndExtra
+    .space 4   @hInstance
+    .space 4   @hIcon
+    .space 4   @hCursor
+    .space 4   @hbrBackground
+    .space 4   @lpszMenuName
+    .space 4   @lpszClassName
 wndClass_end:
 WNDCLASS_SIZE: .word wndClass_end - wndClass
 
+    .balign 4 
     .text
 WinMain:
     push { lr }
- 
+  
     ldr r0, =wndClass
-    ldr r1, =DefWindowProcA
+    ldr r1, =DefWindowProc
     str r1, [r0, #WNDCLASS.lpfnWndProc]
     ldr r1, =szAppName
     str r1, [r0, #WNDCLASS.lpszClassName]
-    bl RegisterClassA
- 
-    ldr r3, =0
-    ldr r2, =0
-    ldr r1, =0
-    ldr r0, =0
+    bl RegisterClass
+  
+    mov r3, #0
+    mov r2, #0
+    mov r1, #0
+    mov r0, #0
     push { r0, r1, r2, r3 }
-    ldr r3, =300
-    ldr r2, =300
-    ldr r1, =0
-    ldr r0, =0
+    mov r3, #240
+    mov r2, #320
+    mov r1, #0
+    mov r0, #0
     push { r0, r1, r2, r3 }
     ldr r3, =WS_OVERLAPPEDWINDOW | WS_VISIBLE
     ldr r2, =szAppName
     ldr r1, =szAppName
-    ldr r0, =WS_EX_LEFT
-    bl CreateWindowExA
+    mov r0, #WS_EX_LEFT
+    bl CreateWindowEx
     add sp, sp, #32
     ldr r1, =hWin
     str r0, [r1]
- 
-loop:
-    ldr r3, =0
-    ldr r2, =0
-    ldr r1, =0
+  
+0:
+    mov r3, #0
+    mov r2, #0
+    mov r1, #0
     ldr r0, =szMsg
-    bl GetMessageA
- 
+    bl GetMessage
+  
     cmp r0, #0
-    beq exit
-   
+    beq 1f
+    
     ldr r0, =szMsg
-    bl DispatchMessageA
-    b loop
- 
-exit:
+    bl DispatchMessage
+    b 0b
+  
+1:
+    mov r0, #0
+    bl ExitProcess
+
     pop { pc }
 </pre><br>
 <p>
 編譯、執行
 </p>
 <pre>
-$ winegcc-armhf -b arm-linux-gnueabihf main.S -o main.exe
-$ WINEPREFIX=~/.wine_arm32 myarm32 main.exe.so
+$ mywinegcc-armhf main.S -o main.exe
+$ myarm32 main.exe.so
 </pre>
 <p>
 <img style="border:0px" src="wine_arm32_sdi_window/1.jpg" class="maxSize">

@@ -87,24 +87,24 @@ main.S
 </p>
 <pre class="brush:asm">
     .intel_syntax noprefix
-
-    .global WinMain
-    .extern MessageBoxA
-    .extern ExitProcess
-
-    .section .data
+    .include "/opt/wadk/wine/include/windows.inc"
+ 
+    .data
 szCaption: .asciz ""
 szContent: .asciz "Hello, world!"
-
-    .section .text
+ 
+    .text
 WinMain:
     sub rsp, 40
-
+ 
     xor ecx, ecx
     lea rdx, [rip + szContent]
     lea r8,  [rip + szCaption]
     xor r9, r9
-    call MessageBoxA
+    call MessageBox
+ 
+    mov rcx, 0
+    call ExitProcess
 
     xor eax, eax
     add rsp, 40
@@ -115,7 +115,7 @@ WinMain:
 </p>
 <pre>
 $ winegcc main.S -o main.exe
-$ WINEPREFIX=~/.wine_x64 wine main.exe.so
+$ myx64 main.exe.so
 </pre>
 <p>
 <img style="border:0px" src="wine_x64_hello/1.jpg" class="maxSize">

@@ -85,23 +85,24 @@ main.S
 </p>
 <pre class="brush:asm">
     .intel_syntax noprefix
-
+ 
     .global _main
-    .extern _MessageBoxA@16
-
-    .section .data
-info:   .asciz "Hello, world!"
-title:  .asciz "main"
-
-    .section .text
+    .include "/opt/wadk/mingw/include/windows.inc"
+ 
+    .data
+szCaption:  .asciz " "
+szContent:  .asciz "Hello, world!"
+ 
+    .text
 _main:
+    push MB_OK
+    push offset szCaption
+    push offset szContent
+    push NULL
+    call MessageBox
+
     push 0
-    push offset title
-    push offset info
-    push 0
-    call _MessageBoxA@16
-    xor eax, eax
-    ret
+    call ExitProcess
 </pre><br>
 
 <p>
@@ -109,10 +110,10 @@ _main:
 </p>
 <pre>
 $ i686-w64-mingw32-gcc main.S -o main.exe
-$ wine ./main.exe
+$ myx86 main.exe
 </pre>
 <p>
-<img style="border:0px" src="nasm_win32_hello/1.jpg" class="maxSize">
+<img style="border:0px" src="mingw_asm_hello/1.jpg" class="maxSize">
 </p>
 
 <!-- tail -->

@@ -86,24 +86,26 @@ https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-messagebo
 main.S
 </p>
 <pre class="brush:asm">
-    .global WinMain
-    .extern MessageBoxA
-    .extern ExitProcess
- 
+    .include "/opt/wadk/wine/include/windows.inc"
+
     .data
-szCaption: .asciz ""
+szCaption: .asciz " "
 szContent: .asciz "Hello, world!"
- 
+  
+    .balign 4
     .text
 WinMain:
     stp x29, x30, [sp, #-0x10]!
- 
+  
     mov x0, 0
     ldr x1, =szContent
     ldr x2, =szCaption
     mov x3, 0
-    bl MessageBoxA
+    bl MessageBox
 
+    mov x0, 0
+    bl ExitProcess
+ 
     mov x0, 0
     ldp x29, x30, [sp], #0x10
     ret
@@ -113,7 +115,7 @@ WinMain:
 </p>
 <pre>
 $ winegcc main.S -o main.exe
-$ WINEPREFIX=/home/user/.wine_arm64 wine main.exe.so
+$ myarm64 main.exe.so
 </pre>
 <p>
 <img style="border:0px" src="wine_arm64_hello/1.jpg" class="maxSize">
