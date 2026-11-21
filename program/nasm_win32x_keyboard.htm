@@ -100,23 +100,23 @@ lKeyData = lParam;       // key data
 main.asm
 </p>
 <pre class="brush:asm">
-    %include "c:\\nasmx\\inc\\nasmx.inc"
-    %include "c:\\nasmx\\inc\\win32\\msvcrt.inc"
-    %include "c:\\nasmx\\inc\\win32\\windows.inc"
-    %include "c:\\nasmx\\inc\\win32\\user32.inc"
-    %include "c:\\nasmx\\inc\\win32\\kernel32.inc"
-
-    entry start
+    %include "/opt/wadk/nasmx/inc/nasmx.inc"
+    %include "/opt/wadk/nasmx/inc/win32/msvcrt.inc"
+    %include "/opt/wadk/nasmx/inc/win32/windows.inc"
+    %include "/opt/wadk/nasmx/inc/win32/user32.inc"
+    %include "/opt/wadk/nasmx/inc/win32/kernel32.inc"
+  
+    global _start@8
 
     section .data
-hWin         dd 0
-hInstance    dd 0
-defWndProc   dd 0
-CommandLine  dd 0
-buf          times 255 db 0
-fmt          db "Key: %d",0
-szCaption    declare(NASMX_TCHAR) NASMX_TEXT("main"),0
- 
+hWin        DD 0
+hInstance   DD 0
+defWndProc  DD 0
+pCmdLine    DD 0
+buf         times 255 DB 0
+fmt         DB "Key: %d",0
+szCaption   declare(NASMX_TCHAR) NASMX_TEXT("main"),0
+  
 NASMX_ISTRUC msg, MSG
     NASMX_AT hwnd,    NULL
     NASMX_AT message, NULL
@@ -128,67 +128,65 @@ NASMX_ISTRUC msg, MSG
         NASMX_AT y, 0
     NASMX_IENDSTRUC
 NASMX_IENDSTRUC
- 
+  
     section .text
-proc WndProc, dword hWnd, uint_t uMsg, dword wParam, dword lParam
+proc WndProc, DWORD hWnd, uint_t uMsg, DWORD wParam, DWORD lParam
     locals none
- 
-    switch dword [argv(.uMsg)]
-    case dword WM_KEYDOWN
+  
+    switch DWORD [argv(.uMsg)]
+    case DWORD WM_KEYDOWN
         invoke sprintf, buf, fmt, [argv(.wParam)]
         invoke SetWindowText, [argv(.hWnd)], buf
         break
-    case dword WM_SYSKEYDOWN
+    case DWORD WM_SYSKEYDOWN
         invoke sprintf, buf, fmt, [argv(.wParam)]
         invoke SetWindowText, [argv(.hWnd)], buf
         break
-    case dword WM_CLOSE
+    case DWORD WM_CLOSE
         invoke DestroyWindow, [argv(.hWnd)]
         break
-    case dword WM_DESTROY
+    case DWORD WM_DESTROY
         invoke PostQuitMessage, 0
         break
     default
         invoke CallWindowProc, [defWndProc], [argv(.hWnd)], [argv(.uMsg)], [argv(.wParam)], [argv(.lParam)]
     endswitch
 endproc
- 
-proc WinMain, dword hInst, dword hPrevInst, dword CmdLine, dword CmdShow
-    locals none
   
-    invoke CreateWindowEx, WS_EX_LEFT, WC_DIALOG, szCaption, \
-        WS_OVERLAPPEDWINDOW | WS_VISIBLE, 0, 0, 300, 300, NULL, NULL, NULL, NULL
+proc WinMain, DWORD hInst, DWORD hPrevInst, DWORD CmdLine, DWORD CmdShow
+    locals none
+   
+    invoke CreateWindowEx, WS_EX_LEFT, WC_DIALOG, szCaption, WS_OVERLAPPEDWINDOW | WS_VISIBLE, 0, 0, 320, 240, NULL, NULL, NULL, NULL
     mov [hWin], eax
- 
+  
     invoke SetWindowLong, [hWin], GWL_WNDPROC, WndProc
     mov [defWndProc], eax
- 
+  
     do
         invoke DispatchMessage, msg
         invoke GetMessage, msg, NULL, NULL, NULL
     while eax, !=, 0
-  
-    mov eax, dword [msg + MSG.wParam]
+   
+    mov eax, DWORD [msg + MSG.wParam]
 endproc
-  
-proc start, dword argc, dword argv
+   
+proc start, DWORD argc, DWORD argv
     locals none
-  
+   
     invoke GetModuleHandle, NULL
     mov [hInstance], eax
-  
+   
     invoke GetCommandLine, NULL
-    mov [CommandLine], eax
-  
-    invoke WinMain, [hInstance], NULL, [CommandLine], SW_SHOWNORMAL
+    mov [pCmdLine], eax
+   
+    invoke WinMain, [hInstance], NULL, [pCmdLine], SW_SHOWNORMAL
     invoke ExitProcess, NULL
 endproc
-</pre>
-<p>
-<b>Line 35~42</b>：將按鍵數值顯示在視窗標題<br><br>
+</pre><br>
 
+<p>
 完成<br>
-<img style="border:0px" src="nasm_win32_keyboard/1.jpg" class="maxSize">
+<img style="border:0px" src="nasm_win32x_keyboard/1.jpg" class="maxSize">
 </p>
 
 <!-- tail -->
