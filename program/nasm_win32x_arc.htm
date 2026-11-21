@@ -74,7 +74,7 @@
 <div id="page">
 
 <!-- body -->
-<h3><a href="../program.htm">程式語言</a> - Netwide Assembler (NASM) - Win32 API (NASMX) - Painting - <b>Draw Arc</b></h3>
+<h3><a href="../program.htm">程式語言</a> - Netwide Assembler (NASM) - Win32 API (NASMX) - <b>Draw Arc</b></h3>
 <hr size="1"><br>
 <p>
 參考資訊：<br>
@@ -82,106 +82,104 @@ https://masm32.com/board/index.php<br>
 https://www.nasm.us/xdoc/2.13rc9/html/nasmdoc0.html<br><br>
 
 使用方式：<br>
-<img src="nasm_win32_arc/1.jpg" class="maxSize"><br><br>
+<img src="nasm_win32x_arc/1.jpg" class="maxSize"><br><br>
 
 main.asm
 </p>
 <pre class="brush:asm">
-    %include "c:\\nasmx\\inc\\nasmx.inc"
-    %include "c:\\nasmx\\inc\\win32\\msvcrt.inc"
-    %include "c:\\nasmx\\inc\\win32\\windows.inc"
-    %include "c:\\nasmx\\inc\\win32\\gdi32.inc"
-    %include "c:\\nasmx\\inc\\win32\\user32.inc"
-    %include "c:\\nasmx\\inc\\win32\\kernel32.inc"
-           
-    entry start
-           
+    %include "/opt/wadk/nasmx/inc/nasmx.inc"
+    %include "/opt/wadk/nasmx/inc/win32/msvcrt.inc"
+    %include "/opt/wadk/nasmx/inc/win32/windows.inc"
+    %include "/opt/wadk/nasmx/inc/win32/gdi32.inc"
+    %include "/opt/wadk/nasmx/inc/win32/user32.inc"
+    %include "/opt/wadk/nasmx/inc/win32/kernel32.inc"
+  
+    global _start@8
+
     section .data
-hWin         dd 0
-hInstance    dd 0
-defWndProc   dd 0
-CommandLine  dd 0
-szCaption    declare(NASMX_TCHAR) NASMX_TEXT("main"),0
- 
+hWin        DD 0
+hInstance   DD 0
+defWndProc  DD 0
+pCmdLine    DD 0
+szCaption   declare(NASMX_TCHAR) NASMX_TEXT("main"),0
+
 NASMX_ISTRUC msg, MSG
 NASMX_IENDSTRUC
-       
+    
 NASMX_ISTRUC ps, PAINTSTRUCT
 NASMX_IENDSTRUC
-            
+         
     section .text
-proc WndProc, dword hWnd, uint_t uMsg, dword wParam, dword lParam
+proc WndProc, DWORD hWnd, uint_t uMsg, DWORD wParam, DWORD lParam
     locals
         local hdc, DWORD
         local pen, DWORD
         local brush, DWORD
     endlocals
-         
-    switch dword [argv(.uMsg)]
-    case dword WM_PAINT
+          
+    switch DWORD [argv(.uMsg)]
+    case DWORD WM_PAINT
         invoke BeginPaint, [argv(.hWnd)], ps
         mov [var(.hdc)], eax
-       
+        
         invoke CreatePen, PS_SOLID, 3, 0ffh
         mov [var(.pen)], eax
         invoke CreateSolidBrush, 0ff00h
         mov [var(.brush)], eax
-     
+      
         invoke SelectObject, [var(.hdc)], [var(.pen)]
         invoke SelectObject, [var(.hdc)], [var(.brush)]
         invoke Arc, [var(.hdc)], 10, 10, 200, 200, 0, 0, 200, 100
-      
+       
         invoke EndPaint, [argv(.hWnd)], ps
         invoke DeleteObject, [var(.pen)]
         invoke DeleteObject, [var(.brush)]
         break
-    case dword WM_CLOSE
+    case DWORD WM_CLOSE
         invoke DestroyWindow, [argv(.hWnd)]
         break
-    case dword WM_DESTROY
+    case DWORD WM_DESTROY
         invoke PostQuitMessage, 0
         break
     default
         invoke CallWindowProc, [defWndProc], [argv(.hWnd)], [argv(.uMsg)], [argv(.wParam)], [argv(.lParam)]
     endswitch
 endproc
-            
-proc WinMain, dword hInst, dword hPrevInst, dword CmdLine, dword CmdShow
+
+proc WinMain, DWORD hInst, DWORD hPrevInst, DWORD CmdLine, DWORD CmdShow
     locals none
-             
-    invoke CreateWindowEx, WS_EX_LEFT, WC_DIALOG, szCaption, \
-        WS_OVERLAPPEDWINDOW | WS_VISIBLE, 0, 0, 300, 300, NULL, NULL, NULL, NULL
+   
+    invoke CreateWindowEx, WS_EX_LEFT, WC_DIALOG, szCaption, WS_OVERLAPPEDWINDOW | WS_VISIBLE, 0, 0, 320, 240, NULL, NULL, NULL, NULL
     mov [hWin], eax
-            
+  
     invoke SetWindowLong, [hWin], GWL_WNDPROC, WndProc
     mov [defWndProc], eax
-        
+
     do
         invoke DispatchMessage, msg
         invoke GetMessage, msg, NULL, NULL, NULL
     while eax, !=, 0
-             
-    mov eax, dword [msg + MSG.wParam]
+   
+    mov eax, DWORD [msg + MSG.wParam]
 endproc
-             
-proc start, dword argc, dword argv
+   
+proc start, DWORD argc, DWORD argv
     locals none
-             
+   
     invoke GetModuleHandle, NULL
     mov [hInstance], eax
-             
+   
     invoke GetCommandLine, NULL
-    mov [CommandLine], eax
-             
-    invoke WinMain, [hInstance], NULL, [CommandLine], SW_SHOWNORMAL
-    invoke ExitProcess, NULL
+    mov [pCmdLine], eax
+   
+    invoke WinMain, [hInstance], NULL, [pCmdLine], SW_SHOWNORMAL
+    invoke ExitProcess, 0
 endproc
-</pre>
-<p>
-<b>Line 43</b>：畫出一個Arc圖形<br><br>
+</pre><br>
 
+<p>
 完成<br>
-<img style="border:0px" src="nasm_win32_arc/2.jpg" class="maxSize">
+<img style="border:0px" src="nasm_win32x_arc/2.jpg" class="maxSize">
 </p>
 
 <!-- tail -->
