@@ -81,95 +81,113 @@
 https://masm32.com/board/index.php<br>
 https://www.nasm.us/xdoc/2.13rc9/html/nasmdoc0.html<br><br>
 
-當視窗的可視區域(如：300x300像素)小於顯示圖片大小(如：640x480像素)時，這時可以使用Windows視窗元件Scrollbar，用來做顯示位置調整的動作，Scrollbar元件有垂直和水平兩種方向並且提供視窗事件回報機制(WM_VSCROLL、WM_HSCROLL)，因此，這裡的Scrollbar元件並不能夠自動幫忙做顯示位置調整的動作，取而代之的是，在收到WM_VSCROLL、WM_HSCROLL事件時，使用者必須自己決定哪些東西要顯示在視窗的可視區域上<br><br>
+當視窗的可視區域(如：320x240像素)小於顯示圖片大小(如：640x480像素)時，這時可以使用Windows視窗元件Scrollbar，用來做顯示位置調整的動作，Scrollbar元件有垂直和水平兩種方向並且提供視窗事件回報機制(WM_VSCROLL、WM_HSCROLL)，因此，這裡的Scrollbar元件並不能夠自動幫忙做顯示位置調整的動作，取而代之的是，在收到WM_VSCROLL、WM_HSCROLL事件時，使用者必須自己決定哪些東西要顯示在視窗的可視區域上<br><br>
 
 main.asm
 </p>
 <pre class="brush:asm">
-    %include "head.asm" 
+    %include "/opt/wadk/nasm/inc/windows.inc"
+ 
+    section .data
+hWin        DD 0
+pCmdLine    DD 0
+hInstance   DD 0
+pDefWndProc DD 0
+szAppName   DB "main",0
+SLUP        DB "LINE++",0
+SLDN        DB "LINE--",0
+SPUP        DB "PAGE++",0
+SPDN        DB "PAGE--",0
 
-    segment .text
+msg istruc MSG
+    at .hwnd,    DD 0
+    at .message, DD 0
+    at .wParam,  DD 0
+    at .lParam,  DD 0
+    at .time,    DD 0
+    at .pt,      DD 0, 0
+iend
+
+    section .text
 WndProc:
-    push ebp
-    mov ebp, esp
-     
-    cmp dword [ebp + ARG2], WM_VSCROLL
-    je .handle_vscroll
-    cmp dword [ebp + ARG2], WM_CLOSE
-    je .handle_close
-    cmp dword [ebp + ARG2], WM_DESTROY
-    je .handle_destroy
-    jmp .handle_default
- 
-.handle_vscroll:
+    enter 0, 0
+      
+    cmp DWORD [ebp + ARG2], WM_VSCROLL
+    je .vscroll
+    cmp DWORD [ebp + ARG2], WM_CLOSE
+    je .close
+    cmp DWORD [ebp + ARG2], WM_DESTROY
+    je .destroy
+    jmp .default
+  
+.vscroll:
     cmp word [ebp + ARG3], SB_LINEUP
-    je .handle_sb_line_up
+    je .line_up
     cmp word [ebp + ARG3], SB_LINEDOWN
-    je .handle_sb_line_down
+    je .line_down
     cmp word [ebp + ARG3], SB_PAGEUP
-    je .handle_sb_page_up
+    je .page_up
     cmp word [ebp + ARG3], SB_PAGEDOWN
-    je .handle_sb_page_down
+    je .page_down
     jmp .finish
- 
-.handle_sb_line_up:
+  
+.line_up:
     push SLUP
-    push dword [ebp + ARG1]
+    push DWORD [ebp + ARG1]
     call SetWindowText
     jmp .finish
- 
-.handle_sb_line_down:
+  
+.line_down:
     push SLDN
-    push dword [ebp + ARG1]
+    push DWORD [ebp + ARG1]
     call SetWindowText
     jmp .finish
- 
-.handle_sb_page_up:
+  
+.page_up:
     push SPUP
-    push dword [ebp + ARG1]
+    push DWORD [ebp + ARG1]
     call SetWindowText
     jmp .finish
- 
-.handle_sb_page_down:
+  
+.page_down:
     push SPDN
-    push dword [ebp + ARG1]
+    push DWORD [ebp + ARG1]
     call SetWindowText
     jmp .finish
- 
-.handle_close:
-    push dword [ebp + ARG1]
+  
+.close:
+    push DWORD [ebp + ARG1]
     call DestroyWindow
     xor eax, eax
     jmp .finish
-     
-.handle_destroy:
+      
+.destroy:
     push 0
     call PostQuitMessage
     xor eax, eax
     jmp .finish
-     
-.handle_default:
-    push dword [ebp + ARG4]
-    push dword [ebp + ARG3]
-    push dword [ebp + ARG2]
-    push dword [ebp + ARG1]
-    push dword [pDefWndProc]
+      
+.default:
+    push DWORD [ebp + ARG4]
+    push DWORD [ebp + ARG3]
+    push DWORD [ebp + ARG2]
+    push DWORD [ebp + ARG1]
+    push DWORD [pDefWndProc]
     call CallWindowProc
-     
+      
 .finish:
     leave
     ret 16
-     
-WinMain:
-    push ebp
-    mov ebp, esp
       
-    push 0
-    push 0
-    push 0
-    push 0
-    push 300
-    push 300
+WinMain:
+    enter 0, 0
+       
+    push NULL
+    push NULL
+    push NULL
+    push NULL
+    push 240
+    push 320
     push 0
     push 0
     push WS_OVERLAPPEDWINDOW | WS_VISIBLE | WS_VSCROLL
@@ -178,24 +196,24 @@ WinMain:
     push WS_EX_LEFT
     call CreateWindowEx
     mov [hWin], eax
-     
+      
     push WndProc
     push GWL_WNDPROC
-    push dword [hWin]
+    push DWORD [hWin]
     call SetWindowLong
     mov [pDefWndProc], eax
-  
+   
     push 0
     push 100
     push 0
     push SB_VERT
-    push dword [hWin]
+    push DWORD [hWin]
     call SetScrollRange
- 
+  
     push 1
     push 50
     push SB_VERT
-    push dword [hWin]
+    push DWORD [hWin]
     call SetScrollPos
 .loop:
     push 0
@@ -205,39 +223,35 @@ WinMain:
     call GetMessage
     cmp eax, 0
     je .exit
-      
+       
     push msg
     call DispatchMessage
     jmp .loop
-      
+       
 .exit:
     mov eax, [msg + MSG.wParam]
     leave
     ret 16
-      
+       
 _start:
     push 0
     call GetModuleHandle
     mov [hInstance], eax
-      
+       
     call GetCommandLine
-    mov [pCommand], eax
-      
+    mov [pCmdLine], eax
+       
     push SW_SHOWNORMAL
-    push dword [pCommand]
+    push DWORD [pCmdLine]
     push 0
-    push dword [hInstance]
+    push DWORD [hInstance]
     call WinMain
-      
-    push eax
+       
+    push 0
     call ExitProcess
-</pre>
-<p>
-<b>Line 27~55</b>：處理Scrollbar訊息並且顯示在視窗標題<br>
-<b>Line 87</b>：WS_VSCROLL是垂直的Scrollbar，WS_HSCROLL則是水平的Scrollbar<br>
-<b>Line 100~105</b>：設定Scrollbar最大的範圍<br>
-<b>Line 107~111</b>：設定Scrollbar目前的位置<br><br>
+</pre><br>
 
+<p>
 完成<br>
 <img style="border:0px" src="nasm_win32_scrollbar/1.jpg" class="maxSize">
 </p>

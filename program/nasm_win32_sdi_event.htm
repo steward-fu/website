@@ -86,57 +86,83 @@ https://www.nasm.us/xdoc/2.13rc9/html/nasmdoc0.html<br><br>
 main.asm
 </p>
 <pre class="brush:asm">
-    %include "head.asm"
+    %include "/opt/wadk/nasm/inc/windows.inc"
  
-    segment .text
+    section .data
+hWin        DD 0
+pCmdLine    DD 0
+hInstance   DD 0
+szAppName   DB "main",0
+
+msg istruc MSG
+    at .hwnd,    DD 0
+    at .message, DD 0
+    at .wParam,  DD 0
+    at .lParam,  DD 0
+    at .time,    DD 0
+    at .pt,      DD 0, 0
+iend
+
+wndClass istruc WNDCLASS
+    at .style,         DD 0
+    at .lpfnWndProc,   DD 0
+    at .cbClsExtra,    DD 0
+    at .cbWndExtra,    DD 0
+    at .hInstance,     DD 0
+    at .hIcon,         DD 0
+    at .hCursor,       DD 0
+    at .hbrBackground, DD 0
+    at .lpszMenuName,  DD 0
+    at .lpszClassName, DD 0
+iend
+
+    section .text
 WndProc:
-    push ebp
-    mov ebp, esp
-             
-    cmp dword [ebp + ARG2], WM_CLOSE
-    je .handle_close
-    cmp dword [ebp + ARG2], WM_DESTROY
-    je .handle_destroy
-    jmp .handle_default
-        
-.handle_close:
-    push dword [ebp + ARG1]
+    enter 0, 0
+              
+    cmp DWORD [ebp + ARG2], WM_CLOSE
+    je .close
+    cmp DWORD [ebp + ARG2], WM_DESTROY
+    je .destroy
+    jmp .default
+         
+.close:
+    push DWORD [ebp + ARG1]
     call DestroyWindow
     xor eax, eax
     jmp .finish
-             
-.handle_destroy:
+              
+.destroy:
     push 0
     call PostQuitMessage
     xor eax, eax
     jmp .finish
-             
-.handle_default:
-    push dword [ebp + ARG4]
-    push dword [ebp + ARG3]
-    push dword [ebp + ARG2]
-    push dword [ebp + ARG1]
+              
+.default:
+    push DWORD [ebp + ARG4]
+    push DWORD [ebp + ARG3]
+    push DWORD [ebp + ARG2]
+    push DWORD [ebp + ARG1]
     call DefWindowProc
-             
+              
 .finish:
     leave
     ret 16
-             
+              
 WinMain:
-    push ebp
-    mov ebp, esp
- 
-    mov dword [wndClass + WNDCLASS.lpfnWndProc], WndProc
-    mov dword [wndClass + WNDCLASS.lpszClassName], szAppName
+    enter 0, 0
+  
+    mov DWORD [wndClass + WNDCLASS.lpfnWndProc], WndProc
+    mov DWORD [wndClass + WNDCLASS.lpszClassName], szAppName
     push wndClass
     call RegisterClass
-              
-    push 0
-    push 0
-    push 0
-    push 0
-    push 300
-    push 300
+               
+    push NULL
+    push NULL
+    push NULL
+    push NULL
+    push 240
+    push 320
     push 0
     push 0
     push WS_OVERLAPPEDWINDOW | WS_VISIBLE
@@ -145,7 +171,7 @@ WinMain:
     push WS_EX_LEFT
     call CreateWindowEx
     mov [hWin], eax
-             
+              
 .loop:
     push 0
     push 0
@@ -154,39 +180,37 @@ WinMain:
     call GetMessage
     cmp eax, 0
     je .exit
-              
+               
     push msg
     call DispatchMessage
     jmp .loop
-              
+               
 .exit:
     mov eax, [msg + MSG.wParam]
     leave
     ret 16
-              
+               
 _start:
     push 0
     call GetModuleHandle
     mov [hInstance], eax
-              
+               
     call GetCommandLine
-    mov [pCommand], eax
-              
+    mov [pCmdLine], eax
+               
     push SW_SHOWNORMAL
-    push dword [pCommand]
+    push DWORD [pCmdLine]
     push 0
-    push dword [hInstance]
+    push DWORD [hInstance]
     call WinMain
-              
-    push eax
+               
+    push 0
     call ExitProcess
-</pre>
-<p>
-<b>Line 14~24</b>：關閉視窗的順序為：主視窗收到WM_CLOSE事件時，呼叫DestroyWindow()，DestroyWindow()會自動將子視窗的相關資源也一併釋放掉(包含Resource描述的資源)，系統接著會發送WM_DESTROY事件給主視窗，待主視窗收到WM_DESTROY事件時，呼叫PostQuitMessage()結束視窗，值得注意的地方是，SendMessage()是屬於Block方式呼叫(必須等待動作執行完畢才返回)，而PostQuitMessage()則是Non-block方式呼叫<br>
-<b>Line 26~31</b>：其餘事件由系統代為處理</br><br>
+</pre><br>
 
+<p>
 完成<br>
-<img style="border:0px" src="nasm_win32_sdi_window/1.jpg" class="maxSize">
+<img style="border:0px" src="nasm_win32_sdi_event/1.jpg" class="maxSize">
 </p>
 
 <!-- tail -->
