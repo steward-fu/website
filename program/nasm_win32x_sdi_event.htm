@@ -86,33 +86,33 @@ https://www.nasm.us/xdoc/2.13rc9/html/nasmdoc0.html<br><br>
 main.asm
 </p>
 <pre class="brush:asm">
-    %include "c:\\nasmx\\inc\\nasmx.inc"
-    %include "c:\\nasmx\\inc\\win32\\windows.inc"
-    %include "c:\\nasmx\\inc\\win32\\user32.inc"
-    %include "c:\\nasmx\\inc\\win32\\kernel32.inc"
- 
-    entry start
- 
+    %include "/opt/wadk/nasmx/inc/nasmx.inc"
+    %include "/opt/wadk/nasmx/inc/win32/windows.inc"
+    %include "/opt/wadk/nasmx/inc/win32/user32.inc"
+    %include "/opt/wadk/nasmx/inc/win32/kernel32.inc"
+  
+    global _start@8
+
     section .data
-szName       declare(NASMX_TCHAR) NASMX_TEXT("main"),0
-CommandLine  dd 0
-hInstance    dd 0
- 
+szName      declare(NASMX_TCHAR) NASMX_TEXT("main"),0
+pCmdLine    DD 0
+hInstance   DD 0
+  
 NASMX_ISTRUC msg, MSG
 NASMX_IENDSTRUC
-
+ 
 NASMX_ISTRUC wndClass, WNDCLASS
 NASMX_IENDSTRUC
- 
+  
     section .text
-proc WndProc, dword hWnd, uint_t uMsg, dword wParam, dword lParam
+proc WndProc, DWORD hWnd, uint_t uMsg, DWORD wParam, DWORD lParam
     locals none
- 
-    switch dword [argv(.uMsg)]
-    case dword WM_CLOSE
+  
+    switch DWORD [argv(.uMsg)]
+    case DWORD WM_CLOSE
         invoke DestroyWindow, [argv(.hWnd)]
         break
-    case dword WM_DESTROY
+    case DWORD WM_DESTROY
         invoke PostQuitMessage, 0
         break
     default
@@ -120,42 +120,40 @@ proc WndProc, dword hWnd, uint_t uMsg, dword wParam, dword lParam
     endswitch
 endproc
 
-proc WinMain, dword hInst, dword hPrevInst, dword CmdLine, dword CmdShow
+proc WinMain, DWORD hInst, DWORD hPrevInst, DWORD CmdLine, DWORD CmdShow
     locals none
-
-    mov dword [wndClass + WNDCLASS.lpfnWndProc], WndProc
-    mov dword [wndClass + WNDCLASS.lpszClassName], szName
-    invoke RegisterClass, wndClass
-    invoke CreateWindowEx, WS_EX_LEFT, szName, szName, \
-        WS_OVERLAPPEDWINDOW | WS_VISIBLE, 0, 0, 300, 300, NULL, NULL, NULL, NULL
  
-    do 
+    mov DWORD [wndClass + WNDCLASS.lpfnWndProc], WndProc
+    mov DWORD [wndClass + WNDCLASS.lpszClassName], szName
+    invoke RegisterClass, wndClass
+ 
+    invoke CreateWindowEx, WS_EX_LEFT, szName, szName, WS_OVERLAPPEDWINDOW | WS_VISIBLE, 0, 0, 320, 240, NULL, NULL, NULL, NULL
+  
+    do
         invoke DispatchMessage, msg
         invoke GetMessage, msg, NULL, NULL, NULL
     while eax, !=, 0
- 
-    mov eax, dword [msg + MSG.wParam]
+  
+    mov eax, DWORD [msg + MSG.wParam]
 endproc
- 
-proc start, dword argc, dword argv
+  
+proc start, DWORD argc, DWORD argv
     locals none
- 
+  
     invoke GetModuleHandle, NULL
     mov [hInstance], eax
- 
+  
     invoke GetCommandLine, NULL
-    mov [CommandLine], eax
- 
-    invoke WinMain, [hInstance], NULL, [CommandLine], SW_SHOWNORMAL
+    mov [pCmdLine], eax
+  
+    invoke WinMain, [hInstance], NULL, [pCmdLine], SW_SHOWNORMAL
     invoke ExitProcess, NULL
 endproc
-</pre>
-<p>
-<b>Line 23~29</b>：關閉視窗的順序為：主視窗收到WM_CLOSE事件時，呼叫DestroyWindow()，DestroyWindow()會自動將子視窗的相關資源也一併釋放掉(包含Resource描述的資源)，系統接著會發送WM_DESTROY事件給主視窗，待主視窗收到WM_DESTROY事件時，呼叫PostQuitMessage()結束視窗，值得注意的地方是，SendMessage()是屬於Block方式呼叫(必須等待動作執行完畢才返回)，而PostQuitMessage()則是Non-block方式呼叫<br>
-<b>Line 30~31</b>：其餘事件由系統代為處理</br><br>
+</pre><br>
 
+<p>
 完成<br>
-<img style="border:0px" src="nasm_win32_sdi_window/1.jpg" class="maxSize">
+<img style="border:0px" src="nasm_win32x_sdi_event/1.jpg" class="maxSize">
 </p>
 
 <!-- tail -->

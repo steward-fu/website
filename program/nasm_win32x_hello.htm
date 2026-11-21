@@ -91,14 +91,14 @@ main.asm
     %include "/opt/wadk/nasmx/inc/win32/user32.inc"
     %include "/opt/wadk/nasmx/inc/win32/kernel32.inc"
  
-    entry start
+    global _start@8
  
     section .data
-szCaption declare(NASMX_TCHAR) NASMX_TEXT("main"),0
+szCaption declare(NASMX_TCHAR) NASMX_TEXT(""),0
 szContent declare(NASMX_TCHAR) NASMX_TEXT("Hello, world!"),0
  
     section .text
-proc start, dword argc, dword argv
+proc start, DWORD argc, DWORD argv
     locals none
  
     invoke MessageBox, NULL, szContent, szCaption, MB_OK
@@ -113,13 +113,14 @@ Makefile
 TARGET   = main
 CFLAGS  += -f win32
 CFLAGS  += -l ${TARGET}.lst
-LDFLAGS += -e _start@0
+LDFLAGS += -e _start@8
 LDFLAGS += -L/opt/wadk/masm32/lib
 LDFLAGS += -lkernel32
 LDFLAGS += -luser32
 LDFLAGS += -ladvapi32
 LDFLAGS += -lgdi32
 LDFLAGS += -lopengl32
+LDFLAGS += -lmsvcrt
 
 all:
 	nasm ${CFLAGS} ${TARGET}.asm
