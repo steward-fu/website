@@ -81,44 +81,52 @@
 https://www.freepascal.org/<br>
 https://sourceforge.net/projects/freepascal/files/<br><br>
 
-司徒目前是使用Box86 + Wine當作開發測試環境，Box86可以用來執行Intel x86指令集的程式，Box64則是可以用來執行Intel x64指令集的程式，而Wine則是可以用來跑Windows程式，Wine是Windows API層相容，但不是二進制層相容，意思就是，如果Wine是ARM armhf版本的話，Wine執行的程式就必須是ARM armhf指令集的程式，而如果Wine是Intel x86/x64版本，Wine執行的程式就必須是Intel x86/x64指令集的程式，這也是為何Windows PE程式(Intel x86/x64)可以在Linux PC(Intel x86/x64)下用Wine來執行的原因，而司徒目前是要在手機(ARM aarch64)上開發Windows x86/x64程式，所以才需要使用Box86 + Wine，司徒使用的Wine版本支援Intel x86(wine)/x64(win64)程式，安裝步驟如下：
+司徒目前是使用Box86/64 + Wine(Intel x86/AMD x64)當作開發測試環境，Box86可以用來執行Intel x86指令集的程式，Box64則是可以用來執行AMD x64指令集的程式，而Wine則是可以用來跑Windows程式，Wine是Windows API層相容，但不是二進制層相容，意思就是，如果Wine是ARM armhf版本的話，編譯後的Windows程式就必須是ARM armhf指令集的執行檔案，而如果編譯後的Windows執行檔案是Intel x86/AMD x64指令集，就必須用Wine Intel x86/AMD x64版本執行，這也是為何Windows的程式(Intel x86/AMD x64)可以在Linux PC(Intel x86/AMD x64)下用Wine來執行的原因，而司徒目前是要在手機(ARM aarch64)上開發Windows x86/x64程式，所以才需要使用Box86/64搭配Wine(Intel x86/AMD x64)<br><br>
+
+安裝步驟：
 </p>
 <pre>
 $ cd
-$ wget https://github.com/steward-fu/website/releases/download/pro1/Box86-64_Wine86-64.sh
-$ chmod a+x ./Box86-64_Wine86-64.sh
-$ ./Box86-64_Wine86-64.sh
+$ git clone https://github.com/ptitSeb/box86
+$ mkdir box86/build
+$ cd box86/build
+$ cmake .. -DRPI4ARM64=1
+$ make
+$ sudo make install
 
-$ WINEPREFIX=~/.wine_x86 box86 wine winecfg
-</pre><br>
-
-<p>
-如果字型太小，建議DPI設定成144<br>
-<img style="border:0px" src="nasm_win32_setup/1.jpg" class="maxSize"><br><br>
-
-安裝
-</p>
-<pre>
 $ cd
-$ wget https://sourceforge.net/projects/freepascal/files/Win32/3.2.2/fpc-3.2.2.i386-win32.exe/download -O fpc-3.2.2.i386-win32.exe
-$ WINEPREFIX=~/.wine_x86 box86 wine fpc-3.2.2.i386-win32.exe
-</pre><br>
+$ git clone https://github.com/ptitSeb/box64
+$ mkdir box64/build
+$ cd box64/build
+$ cmake ..
+$ make
+$ sudo make install
 
-<p>
-添加環境變數
-</p>
-<pre>
-$ vim ~/.wine_x86/system.reg
-    "PATH"="C:\\FPC\\3.2.2\\bin\\i386-win32"
-</pre><br>
+$ cd
+$ wget https://github.com/steward-fu/website/releases/download/wdm/wine_env.tar.gz
+$ wget https://github.com/Kron4ek/Wine-Builds/releases/download/6.20/wine-6.20-x86.tar.xz
+$ wget https://github.com/Kron4ek/Wine-Builds/releases/download/6.20/wine-6.20-amd64.tar.xz
 
-<p>
-測試環境變數是否設定正確
-</p>
-<pre>
-$ WINEPREFIX=~/.wine_x86 box86 wine fpc -v
-    Free Pascal Compiler version 3.2.2 [2021/05/15] for i386
-    Copyright (c) 1993-2021 by Florian Klaempfl and others
+$ tar xvf wine_env.tar.gz
+$ tar xvf wine-6.20-x86.tar.xz
+$ tar xvf wine-6.20-amd64.tar.xz
+$ mv wine-6.20-x86 ~/Wine86
+$ mv wine-6.20-amd64 ~/Wine64
+
+$ sudo vim /usr/local/bin/myx86
+    #!/bin/bash
+    WINEPREFIX=~/.wine_x86 box86 ~/Wine86/bin/wine "$@"
+
+$ sudo vim /usr/local/bin/myx64
+    #!/bin/bash
+    WINEPREFIX=~/.wine_x64 box64 ~/Wine64/bin/wine "$@"
+
+$ sudo chmod a+x /usr/local/bin/myx86
+$ sudo chmod a+x /usr/local/bin/myx64
+
+$ cd
+$ git clone https://github.com/steward-fu/wadk
+$ sudo mv wadk /opt
 </pre>
 
 <!-- tail -->
