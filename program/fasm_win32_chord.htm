@@ -81,12 +81,31 @@
 https://board.flatassembler.net/<br><br>
 
 使用方式：<br>
-<img src="nasm_win32_chord/1.jpg" class="maxSize"><br><br>
+<img src="fasm_win32_chord/1.jpg" class="maxSize"><br><br>
 
 main.asm
 </p>
 <pre class="brush:asm">
-    include "head.asm"
+    format PE GUI 4.0
+    entry start
+               
+    include "c:\fasm\include\win32a.inc"
+    include "c:\fasm\include\api\kernel32.inc"
+    include "c:\fasm\include\api\gdi32.inc"
+    include "c:\fasm\include\api\user32.inc"
+
+    section ".idata" import data readable writeable
+library \
+    gdi32, "gdi32.dll", \
+    user32, "user32.dll", \
+    kernel32, "kernel32.dll"
+  
+    section ".data" data readable writeable
+hWin        DD 0
+hInstance   DD 0
+pCommand    DD 0
+pDefWndProc DD 0
+szName      DB "main",0
 
     section ".text" code readable executable
 proc WndProc hWnd, uMsg, wParam, lParam
@@ -94,62 +113,61 @@ proc WndProc hWnd, uMsg, wParam, lParam
     local pen:DWORD
     local brush:DWORD
     local ps:PAINTSTRUCT
-        
+         
     mov eax, [uMsg]
     cmp eax, WM_PAINT
-    je .handle_paint
+    je .paint
     cmp eax, WM_CLOSE
-    je .handle_close
+    je .close
     cmp eax, WM_DESTROY
-    je .handle_destroy
+    je .destroy
     invoke CallWindowProc, [pDefWndProc], [hWnd], [uMsg], [wParam], [lParam]
     jmp .finish
-         
-.handle_paint:
+          
+.paint:
     lea eax, [ps]
     invoke BeginPaint, [hWnd], eax
     mov [hdc], eax
-        
+         
     invoke CreatePen, PS_SOLID, 3, 0ffh
     mov [pen], eax
     invoke CreateSolidBrush, 0ff00h
     mov [brush], eax
-     
+      
     invoke SelectObject, [hdc], [pen]
     invoke SelectObject, [hdc], [brush]
     invoke Chord, [hdc], 10, 10, 200, 200, 0, 0, 200, 100
-       
+        
     lea eax, [ps]
     invoke EndPaint, [hWnd], eax
     invoke DeleteObject, [pen]
     invoke DeleteObject, [brush]
     xor eax, eax
     jmp .finish
-         
-.handle_close:
+          
+.close:
     invoke DestroyWindow, [hWnd]
     xor eax, eax
     jmp .finish
-             
-.handle_destroy:
+              
+.destroy:
     invoke PostQuitMessage, 0
     xor eax, eax
     jmp .finish
-              
+               
 .finish:
     ret
 endp
-             
+ 
 proc WinMain hInst, hPrevInst, CmdLine, CmdShow
     local msg:MSG
-             
-    invoke CreateWindowEx, WS_EX_LEFT, WC_DIALOG, szName, \
-        WS_OVERLAPPEDWINDOW or WS_VISIBLE, 0, 0, 300, 300, NULL, NULL, NULL, NULL
+    
+    invoke CreateWindowEx, WS_EX_LEFT, WC_DIALOG, szName, WS_OVERLAPPEDWINDOW or WS_VISIBLE, 0, 0, 320, 240, NULL, NULL, NULL, NULL
     mov [hWin], eax
-             
+ 
     invoke SetWindowLong, [hWin], GWL_WNDPROC, WndProc
     mov [pDefWndProc], eax
-          
+
 @@:
     lea eax, [msg]
     invoke GetMessage, eax, NULL, 0, 0
@@ -158,26 +176,26 @@ proc WinMain hInst, hPrevInst, CmdLine, CmdShow
     lea eax, [msg]
     invoke DispatchMessage, eax
     jmp @b
+ 
 @@:
     mov eax, [msg.wParam]
     ret
 endp
-             
+    
 start:
     invoke GetModuleHandle, NULL
     mov [hInstance], eax
-              
+     
     invoke GetCommandLine
     mov [pCommand], eax
-              
+     
     stdcall WinMain, [hInstance], NULL, [pCommand], SW_SHOWNORMAL
     invoke ExitProcess, eax
-</pre>
-<p>
-<b>Line 32</b>：畫出一個Chord圖形<br><br>
+</pre><br>
 
+<p>
 完成<br>
-<img style="border:0px" src="nasm_win32_chord/2.jpg" class="maxSize">
+<img style="border:0px" src="fasm_win32_chord/2.jpg" class="maxSize">
 </p>
 
 <!-- tail -->
