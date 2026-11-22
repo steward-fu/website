@@ -101,52 +101,72 @@ lKeyData = lParam;       // key data
 main.asm
 </p>
 <pre class="brush:asm">
-    include "head.asm" 
-
+    format PE GUI 4.0
+    entry start
+               
+    include "c:\fasm\include\win32a.inc"
+    include "c:\fasm\include\api\kernel32.inc"
+    include "c:\fasm\include\api\gdi32.inc"
+    include "c:\fasm\include\api\user32.inc"
+ 
+    section ".idata" import data readable writeable
+library \
+    gdi32, "gdi32.dll", \
+    user32, "user32.dll", \
+    kernel32, "kernel32.dll"
+  
+    section ".data" data readable writeable
+hWin        DD 0
+hInstance   DD 0
+pCommand    DD 0
+pDefWndProc DD 0
+szName      DB "main",0
+szBuf       DB 255 dup(0)
+FMT_KBD     DB "Key: %d",0
+ 
     section ".text" code readable executable
 proc WndProc hWnd, uMsg, wParam, lParam
     mov eax, [uMsg]
     cmp eax, WM_KEYDOWN
-    je .handle_key
+    je .key
     cmp eax, WM_SYSKEYDOWN
-    je .handle_key
+    je .key
     cmp eax, WM_CLOSE
-    je .handle_close
+    je .close
     cmp eax, WM_DESTROY
-    je .handle_destroy
+    je .destroy
     invoke CallWindowProc, [pDefWndProc], [hWnd], [uMsg], [wParam], [lParam]
     jmp .finish
- 
-.handle_key:
+  
+.key:
     invoke wsprintf, szBuf, FMT_KBD, [wParam]
     invoke SetWindowText, [hWnd], szBuf
     xor eax, eax
     jmp .finish
- 
-.handle_close:
+  
+.close:
     invoke DestroyWindow, [hWnd]
     xor eax, eax
     jmp .finish
-  
-.handle_destroy:
+   
+.destroy:
     invoke PostQuitMessage, 0
     xor eax, eax
     jmp .finish
-   
+    
 .finish:
     ret
 endp
-  
+ 
 proc WinMain hInst, hPrevInst, CmdLine, CmdShow
     local msg:MSG
-  
-    invoke CreateWindowEx, WS_EX_LEFT, WC_DIALOG, szName, \
-        WS_OVERLAPPEDWINDOW or WS_VISIBLE, 0, 0, 300, 300, NULL, NULL, NULL, NULL
+    
+    invoke CreateWindowEx, WS_EX_LEFT, WC_DIALOG, szName, WS_OVERLAPPEDWINDOW or WS_VISIBLE, 0, 0, 320, 240, NULL, NULL, NULL, NULL
     mov [hWin], eax
-  
+ 
     invoke SetWindowLong, [hWin], GWL_WNDPROC, WndProc
     mov [pDefWndProc], eax
-  
+    
 @@:
     lea eax, [msg]
     invoke GetMessage, eax, NULL, 0, 0
@@ -155,26 +175,26 @@ proc WinMain hInst, hPrevInst, CmdLine, CmdShow
     lea eax, [msg]
     invoke DispatchMessage, eax
     jmp @b
+ 
 @@:
     mov eax, [msg.wParam]
     ret
 endp
-  
+    
 start:
     invoke GetModuleHandle, NULL
     mov [hInstance], eax
-   
+     
     invoke GetCommandLine
     mov [pCommand], eax
-   
+     
     stdcall WinMain, [hInstance], NULL, [pCommand], SW_SHOWNORMAL
     invoke ExitProcess, eax
-</pre>
-<p>
-<b>Line 18~19</b>：將按鍵數值顯示在視窗標題<br><br>
+</pre><br>
 
+<p>
 完成<br>
-<img style="border:0px" src="nasm_win32_keyboard/1.jpg" class="maxSize">
+<img style="border:0px" src="fasm_win32_keyboard/1.jpg" class="maxSize">
 </p>
 
 <!-- tail -->

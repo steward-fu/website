@@ -85,73 +85,96 @@ https://board.flatassembler.net/<br><br>
 main.asm
 </p>
 <pre class="brush:asm">
-    include "head.asm"
+    format PE GUI 4.0
+    entry start
+               
+    include "c:\fasm\include\win32a.inc"
+    include "c:\fasm\include\api\kernel32.inc"
+    include "c:\fasm\include\api\gdi32.inc"
+    include "c:\fasm\include\api\user32.inc"
  
+    section ".idata" import data readable writeable
+library \
+    gdi32, "gdi32.dll", \
+    user32, "user32.dll", \
+    kernel32, "kernel32.dll"
+  
+    section ".data" data readable writeable
+hWin        DD 0
+hInstance   DD 0
+pCommand    DD 0
+pDefWndProc DD 0
+szName      DB "main",0
+SLUP        DB "LINE++",0
+SLDN        DB "LINE--",0
+SPUP        DB "PAGE++",0
+SPDN        DB "PAGE--",0
+
     section ".text" code readable executable
 proc WndProc hWnd, uMsg, wParam, lParam
     mov eax, [uMsg]
     cmp eax, WM_VSCROLL
-    je .handle_vscroll
+    je .vscroll
     cmp eax, WM_CLOSE
-    je .handle_close
+    je .close
     cmp eax, WM_DESTROY
-    je .handle_destroy
+    je .destroy
     invoke CallWindowProc, [pDefWndProc], [hWnd], [uMsg], [wParam], [lParam]
     jmp .finish
- 
-.handle_vscroll:
+  
+.vscroll:
     cmp word [wParam], SB_LINEUP
-    je .handle_sb_line_up
+    je .sb_line_up
     cmp word [wParam], SB_LINEDOWN
-    je .handle_sb_line_down
+    je .sb_line_down
     cmp word [wParam], SB_PAGEUP
-    je .handle_sb_page_up
+    je .sb_page_up
     cmp word [wParam], SB_PAGEDOWN
-    je .handle_sb_page_down
+    je .sb_page_down
     jmp .finish
- 
-.handle_sb_line_up:
+  
+.sb_line_up:
     invoke SetWindowText, [hWnd], SLUP
     jmp .finish
- 
-.handle_sb_line_down:
+  
+.sb_line_down:
     invoke SetWindowText, [hWnd], SLDN
     jmp .finish
- 
-.handle_sb_page_up:
+  
+.sb_page_up:
     invoke SetWindowText, [hWnd], SPUP
     jmp .finish
- 
-.handle_sb_page_down:
+  
+.sb_page_down:
     invoke SetWindowText, [hWnd], SPDN
     jmp .finish
- 
-.handle_close:
+  
+.close:
     invoke DestroyWindow, [hWnd]
     xor eax, eax
     jmp .finish
-     
-.handle_destroy:
+      
+.destroy:
     invoke PostQuitMessage, 0
     xor eax, eax
     jmp .finish
-      
+       
 .finish:
     ret
 endp
-     
+ 
 proc WinMain hInst, hPrevInst, CmdLine, CmdShow
     local msg:MSG
-     
-    invoke CreateWindowEx, WS_EX_LEFT, WC_DIALOG, szName, \
-        WS_OVERLAPPEDWINDOW or WS_VISIBLE or WS_VSCROLL, 0, 0, 300, 300, NULL, NULL, NULL, NULL
+    
+    invoke CreateWindowEx, WS_EX_LEFT, WC_DIALOG, szName, WS_OVERLAPPEDWINDOW or WS_VISIBLE or WS_VSCROLL, 0, 0, 320, 240, NULL, NULL, NULL, NULL
     mov [hWin], eax
-     
+ 
     invoke SetWindowLong, [hWin], GWL_WNDPROC, WndProc
     mov [pDefWndProc], eax
-  
+
     invoke SetScrollRange, [hWin], SB_VERT, 0, 100, FALSE
     invoke SetScrollPos, [hWin], SB_VERT, 50, TRUE
+
 @@:
     lea eax, [msg]
     invoke GetMessage, eax, NULL, 0, 0
@@ -160,29 +183,26 @@ proc WinMain hInst, hPrevInst, CmdLine, CmdShow
     lea eax, [msg]
     invoke DispatchMessage, eax
     jmp @b
+ 
 @@:
     mov eax, [msg.wParam]
     ret
 endp
-     
+    
 start:
     invoke GetModuleHandle, NULL
     mov [hInstance], eax
-      
+     
     invoke GetCommandLine
     mov [pCommand], eax
-      
+     
     stdcall WinMain, [hInstance], NULL, [pCommand], SW_SHOWNORMAL
     invoke ExitProcess, eax
-</pre>
-<p>
-<b>Line 26~40</b>：處理Scrollbar訊息並且顯示在視窗標題<br>
-<b>Line 60</b>：WS_VSCROLL是垂直的Scrollbar，WS_HSCROLL則是水平的Scrollbar<br>
-<b>Line 66</b>：設定Scrollbar最大的範圍<br>
-<b>Line 67</b>：設定Scrollbar目前的位置<br><br>
+</pre><br>
 
+<p>
 完成<br>
-<img style="border:0px" src="nasm_win32_scrollbar/1.jpg" class="maxSize">
+<img style="border:0px" src="fasm_win32_scrollbar/1.jpg" class="maxSize">
 </p>
 
 <!-- tail -->
