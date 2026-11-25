@@ -85,91 +85,71 @@ http://bzz.wallizard.com:8081/share/books/RUST/Programming%20Rust%202nd%20Editio
 main.rs
 </p>
 <pre class="brush:rust">
-extern crate libc;
+use std::ffi::CString;
+use std::os::raw::{c_char, c_int, c_uchar, c_void};
 
-use libc::types::os::arch::c95::c_schar;
-use libc::{c_void, c_uint, c_int, c_float, c_uchar, uint8_t, uint16_t, uint32_t, int16_t, int8_t, int32_t};
-
-pub const SDL_INIT_VIDEO : uint32_t = 0x00000020;
-pub const SDL_SWSURFACE  : uint32_t = 0x00000000;
-pub const SDL_HWSURFACE  : uint32_t = 0x00000001;
-
-pub struct SDL_Rect {
-    pub x: i16,
-    pub y: i16,
-    pub w: u16,
-    pub h: u16
+#[repr(C)]
+struct SDL_Surface {
+    _private: [u8; 0],
 }
 
-pub struct SDL_Color {
-    pub r: uint8_t,
-    pub g: uint8_t,
-    pub b: uint8_t,
-    pub unused: uint8_t
-}
+#[link(name = "SDL")]
+unsafe extern "C" {
+    fn SDL_Init(flags: u32) -&gt; c_int;
 
-pub struct SDL_Palette {
-    pub ncolors: c_int,
-    pub colors: *mut SDL_Color,
-}
+    fn SDL_SetVideoMode(
+        width: c_int,
+        height: c_int,
+        bpp: c_int,
+        flags: u32,
+    ) -&gt; *mut SDL_Surface;
 
-pub struct SDL_PixelFormat {
-    pub palette: *mut SDL_Palette,
-    pub BitsPerPixel: uint8_t,
-    pub BytesPerPixel: uint8_t,
-    pub Rloss: uint8_t,
-    pub Gloss: uint8_t,
-    pub Bloss: uint8_t,
-    pub Aloss: uint8_t,
-    pub Rshift: uint8_t,
-    pub Gshift: uint8_t,
-    pub Bshift: uint8_t,
-    pub Ashift: uint8_t,
-    pub Rmask: uint32_t,
-    pub Gmask: uint32_t,
-    pub Bmask: uint32_t,
-    pub Amask: uint32_t,
-    pub colorkey: uint32_t,
-    pub alpha: uint8_t,
-}
-
-pub struct SDL_Surface {
-    pub flags: uint32_t,
-    pub format: *mut SDL_PixelFormat,
-    pub w: c_int,
-    pub h: c_int,
-    pub pitch: uint16_t,
-    pub pixels: *mut c_void,
-    pub offset: c_int,
-    pub hwdata: *mut c_void,
-    pub clip_rect: SDL_Rect,
-    pub unused1: uint32_t,
-    pub locked: uint32_t,
-    pub map: *mut c_void,
-    pub format_version: c_uint,
-    pub refcount: c_int
-}
-    
-#[link(name="SDL")]
-#[link(name="SDL_gfx")]
-extern {
-    fn SDL_Quit();
-    fn SDL_Delay(flags: uint32_t);
-    fn SDL_Init(flags: uint32_t) -&gt; c_int;
     fn SDL_Flip(screen: *mut SDL_Surface) -&gt; c_int;
-    fn SDL_InitSubSystem(flags: uint32_t) -&gt; c_int;
-    fn SDL_FillRect(dst: *mut SDL_Surface, dstrect: *mut SDL_Rect, color: uint32_t) -&gt; c_int;
-    fn SDL_SetVideoMode(width: c_int, height: c_int, bpp: c_int, flags: uint32_t) -&gt; *mut SDL_Surface;
-    fn stringRGBA(dst: *mut SDL_Surface, x: int16_t, y: int16_t, s: *const c_uchar, r: uint8_t, g: uint8_t, b: uint8_t, a: uint8_t) -&gt; c_int;
+
+    fn SDL_Delay(ms: u32);
+
+    fn SDL_Quit();
 }
+
+#[link(name = "SDL_gfx")]
+unsafe extern "C" {
+    fn stringRGBA(
+        dst: *mut SDL_Surface,
+        x: i16,
+        y: i16,
+        text: *const c_char,
+        r: c_uchar,
+        g: c_uchar,
+        b: c_uchar,
+        a: c_uchar,
+    ) -&gt; c_int;
+}
+
+const SDL_INIT_VIDEO: u32 = 0x00000020;
+const SDL_HWSURFACE: u32 = 0x00000001;
 
 fn main() {
-    let mut screen;
-
     unsafe {
         SDL_Init(SDL_INIT_VIDEO);
-        screen = SDL_SetVideoMode(320, 240, 32, SDL_HWSURFACE);
-        stringRGBA(screen, 100, 100, "hello, world!".as_ptr(), 0xff, 0xff, 0xff, 0xff);
+        let screen = SDL_SetVideoMode(
+            320,
+            240,
+            16,
+            SDL_HWSURFACE,
+        );
+
+        let msg = CString::new("Hello, world!").unwrap();
+        stringRGBA(
+            screen,
+            100,
+            100,
+            msg.as_ptr(),
+            0xff,
+            0xff,
+            0xff,
+            0xff,
+        );
+
         SDL_Flip(screen);
         SDL_Delay(3000);
         SDL_Quit();
@@ -182,16 +162,16 @@ Cargo.toml
 </p>
 <pre>
 [package]
-name = "main"
-version = "0.0.1"
-authors = ["Steward-Fu &lt;steward.fu@gmail.com&gt;"]
+name = "rust-sdl12"
+version = "0.1.0"
+edition = "2021"
 
 [[bin]]
 name = "main"
 path = "main.rs"
 
 [dependencies]
-libc = "0.1"
+sdl = "0.3.6"
 </pre><br>
 
 <p>
