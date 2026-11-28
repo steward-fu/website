@@ -97,7 +97,7 @@ index daef0bc..65c8209 100644
      }
  
 diff --git a/app/src/main/cpp/lorie/activity.c b/app/src/main/cpp/lorie/activity.c
-index 8a51c11..1fadb3f 100644
+index 8a51c11..81d248e 100644
 --- a/app/src/main/cpp/lorie/activity.c
 +++ b/app/src/main/cpp/lorie/activity.c
 @@ -22,6 +22,11 @@
@@ -131,7 +131,7 @@ index 8a51c11..1fadb3f 100644
          write(conn_fd, &amp;e, sizeof(e));
      }
  }
-@@ -327,10 +337,303 @@ static void requestStylusEnabled(__unused JNIEnv *env, __unused jclass clazz, jb
+@@ -327,10 +337,323 @@ static void requestStylusEnabled(__unused JNIEnv *env, __unused jclass clazz, jb
      }
  }
  
@@ -374,6 +374,26 @@ index 8a51c11..1fadb3f 100644
 +                last_code[1] = code = KEY_APOSTROPHE;
 +            }
 +            if (iso3_press) {
++                if (key_down) {
++                    lorieEvent t[] = {
++                        { .key = { .t = EVENT_KEY, .key = KEY_LEFTCTRL + 8, .state = 1 } },
++                        { .key = { .t = EVENT_KEY, .key = KEY_LEFTALT + 8,  .state = 1 } },
++                        { .key = { .t = EVENT_KEY, .key = KEY_G + 8,        .state = 1 } },
++                    };
++
++                    write(conn_fd, t, sizeof(t));
++                }
++                else {
++                    lorieEvent t[] = {
++                        { .key = { .t = EVENT_KEY, .key = KEY_LEFTCTRL + 8, .state = 0 } },
++                        { .key = { .t = EVENT_KEY, .key = KEY_LEFTALT + 8,  .state = 0 } },
++                        { .key = { .t = EVENT_KEY, .key = KEY_G + 8,        .state = 0 } },
++                    };
++
++                    write(conn_fd, t, sizeof(t));
++                }
++
++                return true;
 +            }
 +            break;
 +        case 22: // BACKSPACE
@@ -513,7 +533,7 @@ Termux-X11 =&gt; Keyboard =&gt; Prefer scancodes when possible =&gt; On
 <tr><td>H</td><td>h</td><td>#</td><td>]</td></tr>
 <tr><td>J</td><td>j</td><td>+</td><td></td></tr>
 <tr><td>K</td><td>k</td><td>"</td><td>Print</td></tr>
-<tr><td>L</td><td>l</td><td>'</td><td></td></tr>
+<tr><td>L</td><td>l</td><td>'</td><td>Ctrl+Alt+G</td></tr>
 <tr><td>Backspace</td><td>Backspace</td><td>Tab</td><td></td></tr>
 
 <tr><td>Z</td><td>z</td><td>!</td><td></td></tr>
